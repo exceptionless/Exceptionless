@@ -24,6 +24,17 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
   4. Change the WebsiteMode to Production in the Web.config appSettings section.
 
+
+##  How is Exceptionless licensed?
+
+The Exceptionless server is licensed under GNU AGPL v3.0. The client libraries are licensed under Apache License v2.0.
+
+We want Exceptionless to be free for those of you who want to host the application and data internally or just simply do not want to pay for a hosted account. Our hope is that by making the application free and open source that more people will be aware of it and use it which will indirectly result in more people using our hosted service.
+
+The server is licensed under the AGPL license to ensure that any modifications that are made will be contributed back to the community.
+
+We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
+
 ## Roadmap
 
 This is a list of high level things that we are planning to do:
