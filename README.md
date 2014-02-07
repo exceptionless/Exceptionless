@@ -23,3 +23,11 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   2. Setup IIS and add the Exceptionless website.
   3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
   4. Change the WebsiteMode to Production in the Web.config appSettings section.
+
+## Roadmap
+
+This is a list of high level things that we are planning to do:
+- Refactor client so that the base client is a PCL library thus supporting WinRT and Mono.
+- Implement search features using ElasticSearch.
+- JavaScript client for reporting client side errors.
+- Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS.
