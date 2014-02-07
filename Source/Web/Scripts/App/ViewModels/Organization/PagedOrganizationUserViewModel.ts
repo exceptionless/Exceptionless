@@ -3,23 +3,16 @@
 module exceptionless.organization {
     export class PagedOrganizationUserViewModel extends user.PagedUserViewModel {
         private _organizationId: string;
-        private _invites = [];
 
-        constructor(elementId: string, url: string, action: string, organizationId: string, invites: any[], pageSize?: number, autoUpdate?: boolean, data?: KnockoutObservableArray<any>) {
+        constructor(elementId: string, url: string, action: string, organizationId: string, pageSize?: number, autoUpdate?: boolean, data?: KnockoutObservableArray<any>) {
             super(elementId, url, action, pageSize, autoUpdate, data);
             this._organizationId = organizationId;
-            this._invites = invites;
 
             this.applyBindings();
         }
 
         public populateViewModel(data?: any) {
             super.populateViewModel(data);
-
-            for (var i = 0; i < this._invites.length; i++) {
-                if (!ko.utils.arrayFirst(this.items(), (user: models.User) => { return user.emailAddress() === this._invites[i].EmailAddress; }))
-                    this.items.push(new models.User(null, null, this._invites[i].EmailAddress, false, true));
-            }
 
             this.items.sort((a: models.User, b: models.User) => { return a.emailAddress().toLowerCase() > b.emailAddress().toLowerCase() ? 1 : -1; });
         }
@@ -39,7 +32,6 @@ module exceptionless.organization {
                 $("#add-new-item-modal").modal('hide');
 
                 if (!data) {
-                    this._invites.push(this.newItem());
                     this.items.push(new models.User(null, null, this.newItem(), false, true));
                     App.showSuccessNotification(StringUtil.format('Successfully invited {emailAddress}!', { emailAddress: this.newItem() }));
                 } else {

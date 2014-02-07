@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Net;
 using System.Threading;
@@ -22,12 +23,14 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Utility;
 using Exceptionless.Membership;
 using Exceptionless.Models;
 using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models.Account;
 using Exceptionless.Web.Models.Common;
 using Exceptionless.Web.Models.Project;
+using Exceptionless.Web.Models.User;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers {
@@ -41,8 +44,11 @@ namespace Exceptionless.Web.Controllers {
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;
         private readonly IMailer _mailer;
+        private readonly DataHelper _dataHelper;
 
-        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer) {
+        private static bool _isFirstUserChecked;
+
+        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer, DataHelper dataHelper) {
             _membershipProvider = membership;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -50,6 +56,7 @@ namespace Exceptionless.Web.Controllers {
             _billingManager = billingManager;
             _notificationSender = notificationSender;
             _mailer = mailer;
+            _dataHelper = dataHelper;
         }
 
         [Authorize(Roles = AuthorizationRoles.User)]
@@ -76,13 +83,14 @@ namespace Exceptionless.Web.Controllers {
             }
 
             return Json(new {
-                User = new {
+                User = new UserModel {
                     Id = User.UserEntity.Id,
                     FullName = User.UserEntity.FullName,
                     EmailAddress = User.UserEntity.EmailAddress,
                     IsEmailAddressVerified = User.UserEntity.IsEmailAddressVerified,
                     HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin)
                 },
+                EnableBilling = Settings.Current.EnableBilling,
                 BillingInfo = BillingManager.Plans,
                 Organizations = organizations,
                 Projects = projects.Select(Mapper.Map<Project, ProjectInfoModel>),
@@ -139,9 +147,7 @@ namespace Exceptionless.Web.Controllers {
                     ViewBag.Token = token;
                     ViewBag.ReturnUrl = Url.Action("Index", "Project");
 
-                    return View(new RegisterModel {
-                        EmailAddress = invite.EmailAddress
-                    });
+                    return View(new RegisterModel { EmailAddress = invite.EmailAddress });
                 }
 
                 SetErrorAlert("This invite is no longer valid.");
@@ -163,12 +169,17 @@ namespace Exceptionless.Web.Controllers {
                         return View(model);
                     }
 
-                    var user = new User {
-                        EmailAddress = model.EmailAddress,
-                        Password = model.Password,
-                        FullName = model.FullName
-                    };
+                    var user = new User { EmailAddress = model.EmailAddress, Password = model.Password, FullName = model.FullName };
                     user.Roles.Add(AuthorizationRoles.User);
+
+                    // Add the GlobalAdmin role to the first user of the system.
+                    if (!_isFirstUserChecked) {
+                        _isFirstUserChecked = true;
+
+                        if (_userRepository.All().FirstOrDefault() == null)
+                            user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+                    }
+
                     _membershipProvider.CreateAccount(user);
 
                     if (!String.IsNullOrEmpty(token)) {
@@ -179,8 +190,14 @@ namespace Exceptionless.Web.Controllers {
                         _mailer.SendVerifyEmailAsync(user);
                     }
 
+                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev && user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
+                        _dataHelper.CreateSampleOrganizationAndProject(user.Id);
+                        return String.IsNullOrEmpty(returnUrl) ? RedirectToAction("Index", "Project") : RedirectToLocal(returnUrl);
+                    }
+
                     return String.IsNullOrEmpty(returnUrl) ? RedirectToAction("Add", "Project") : RedirectToLocal(returnUrl);
                 } catch (MembershipException e) {
+                    _isFirstUserChecked = false;
                     ModelState.AddModelError("", ErrorCodeToString(e.StatusCode));
                 }
             }
@@ -457,10 +474,21 @@ namespace Exceptionless.Web.Controllers {
 
             if (ModelState.IsValid) {
                 if (!_membershipProvider.HasLocalAccount(model.EmailAddress)) {
+                    var roles = new Collection<string> { AuthorizationRoles.User };
+
+                    // Add the GlobalAdmin role to the first user of the system.
+                    if (!_isFirstUserChecked) {
+                        _isFirstUserChecked = true;
+                        if (_userRepository.All().FirstOrDefault() == null)
+                            roles.Add(AuthorizationRoles.GlobalAdmin);
+                    }
+
+                    // TODO: Should we be using and merging User.UserEntity if authenticated?
                     User user = _membershipProvider.CreateOAuthAccount(account, new User {
                         EmailAddress = model.EmailAddress,
-                        FullName = model.FullName
-                    }); // TODO: @eric, why not use and merge User.UserEntity if authenticated?
+                        FullName = model.FullName,
+                        Roles = roles
+                    }); 
 
                     if (!String.IsNullOrEmpty(token))
                         AddInvitedUserToOrganization(token, user);
@@ -472,12 +500,16 @@ namespace Exceptionless.Web.Controllers {
                         _mailer.SendVerifyEmailAsync(user);
                     }
 
+                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev && user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+                        _dataHelper.CreateSampleOrganizationAndProject(user.Id);
+
                     return RedirectToLocal(returnUrl);
                 }
 
                 ModelState.AddModelError("EmailAddress", "Email Address already exists. Please enter a different Email Address.");
             }
 
+            _isFirstUserChecked = false;
             ViewBag.ProviderDisplayName = _membershipProvider.GetOAuthClientData(account.Provider).DisplayName;
             ViewBag.ReturnUrl = returnUrl;
             ViewBag.Token = token;

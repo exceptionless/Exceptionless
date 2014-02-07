@@ -11,40 +11,50 @@
 
 using System;
 using System.Linq;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
-    public class ResetDataHelper {
+    public class DataHelper {
+        private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
+        private readonly UserRepository _userRepository;
         private readonly ErrorRepository _errorRepository;
         private readonly ErrorStackRepository _errorStackRepository;
         private readonly DayStackStatsRepository _dayStackStats;
         private readonly MonthStackStatsRepository _monthStackStats;
         private readonly DayProjectStatsRepository _dayProjectStats;
         private readonly MonthProjectStatsRepository _monthProjectStats;
-        private readonly OrganizationRepository _organizationRepository;
         private readonly ErrorStatsHelper _statsHelper;
+        private readonly BillingManager _billingManager;
 
-        public ResetDataHelper(ProjectRepository projectRepository,
+        public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
+
+        public DataHelper(OrganizationRepository organizationRepository,
+            ProjectRepository projectRepository,
+            UserRepository userRepository,
             ErrorRepository errorRepository,
             ErrorStackRepository errorStackRepository,
-            OrganizationRepository organizationRepository,
             DayStackStatsRepository dayStackStats,
             MonthStackStatsRepository monthStackStats,
             DayProjectStatsRepository dayProjectStats,
             MonthProjectStatsRepository monthProjectStats,
-            ErrorStatsHelper errorStatsHelper) {
-            _projectRepository = projectRepository;
-            _errorRepository = errorRepository;
+            ErrorStatsHelper errorStatsHelper,
+            BillingManager billingManager) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
+            _userRepository = userRepository;
+            _errorRepository = errorRepository;
             _errorStackRepository = errorStackRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
             _monthProjectStats = monthProjectStats;
             _statsHelper = errorStatsHelper;
+            _billingManager = billingManager;
         }
 
         public void ResetProjectData(string projectId) {
@@ -103,6 +113,27 @@ namespace Exceptionless.Core.Utility {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;
             }
+        }
+
+        public void CreateSampleOrganizationAndProject(string userId) {
+            if (_projectRepository.GetByApiKey(SAMPLE_API_KEY) != null)
+                return;
+
+            User user = _userRepository.GetByIdCached(userId);
+            var organization = new Organization { Name = "Acme" };
+            _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
+            organization = _organizationRepository.Add(organization);
+
+            var project = new Project { Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
+            project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
+            project.ApiKeys.Add(SAMPLE_API_KEY);
+            project.AddDefaultOwnerNotificationSettings(userId);
+            project = _projectRepository.Add(project);
+
+            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Update(user);
         }
     }
 }

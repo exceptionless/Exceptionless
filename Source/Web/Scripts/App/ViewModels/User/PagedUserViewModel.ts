@@ -7,7 +7,7 @@ module exceptionless.user {
         }
 
         public populateResultItem(data: any): any {
-            return new models.User(data.Id, data.FullName, data.EmailAddress, data.IsEmailAddressVerfied, data.IsInvite);
+            return new models.User(data.Id, data.FullName, data.EmailAddress, data.IsEmailAddressVerified, data.IsInvite, data.HasAdminRole);
         }
     }
 }

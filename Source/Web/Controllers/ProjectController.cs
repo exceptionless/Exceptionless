@@ -178,7 +178,7 @@ namespace Exceptionless.Web.Controllers {
                     return View(model);
                 }
 
-                _billingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, User.UserEntity);
+                _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, User.UserEntity);
                 organization = _organizationRepository.Add(organization);
                 _notificationSender.OrganizationUpdated(organization.Id);
 

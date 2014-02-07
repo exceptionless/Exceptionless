@@ -74,7 +74,7 @@ module exceptionless.models {
 
         public get selectedPlan(): account.BillingPlan {
             var plan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.id === this.planId);
-            return plan ? plan : new account.BillingPlan(Constants.FREE_PLAN_ID, 'Free', 'Free', 0, false, 1, 2500, 5, 1, 7);
+            return plan ? plan : new account.BillingPlan(Constants.FREE_PLAN_ID, 'Free', 'Free', 0, false, 1, 2500, 5, 1, 7, false);
         }
 
         public get billingStatusAbbr(): string {

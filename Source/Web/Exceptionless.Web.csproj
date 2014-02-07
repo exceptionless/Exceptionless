@@ -398,7 +398,7 @@
     <Compile Include="Models\Common\NewPasswordModel.cs" />
     <Compile Include="Models\Account\RegisterModel.cs" />
     <Compile Include="Models\Account\ManageModel.cs" />
-    <Compile Include="Models\Common\UserModel.cs" />
+    <Compile Include="Models\Common\UserModelBase.cs" />
     <Compile Include="Models\Common\EmailAddressModel.cs" />
     <Compile Include="Models\Error\ErrorModel.cs" />
     <Compile Include="Models\Error\ExtendedDataItemModel.cs" />
@@ -407,6 +407,7 @@
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\Project\ProjectModel.cs" />
     <Compile Include="Models\Project\ProjectInfoModel.cs" />
+    <Compile Include="Models\User\UserModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
     <Content Include="Content\bootstrap-datepicker.css" />

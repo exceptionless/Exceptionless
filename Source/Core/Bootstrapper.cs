@@ -86,7 +86,7 @@ namespace Exceptionless.Core {
             container.Register<ErrorSignatureFactory>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
-            container.RegisterSingle<ResetDataHelper>();
+            container.RegisterSingle<DataHelper>();
         }
     }
 }

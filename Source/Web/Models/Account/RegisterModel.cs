@@ -14,7 +14,7 @@ using System.ComponentModel.DataAnnotations;
 using Exceptionless.Web.Models.Common;
 
 namespace Exceptionless.Web.Models.Account {
-    public class RegisterModel : UserModel {
+    public class RegisterModel : UserModelBase {
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]

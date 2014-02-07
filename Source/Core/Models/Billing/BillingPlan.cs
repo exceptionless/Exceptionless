@@ -22,5 +22,6 @@ namespace Exceptionless.Core.Models.Billing {
         public int RetentionDays { get; set; }
         public int MaxErrorsPerDay { get; set; }
         public bool HasPremiumFeatures { get; set; }
+        public bool IsHidden { get; set; }
     }
 }

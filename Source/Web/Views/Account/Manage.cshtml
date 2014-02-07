@@ -3,7 +3,7 @@
     ViewBag.Title = "My Account";
     Layout = "~/Views/Shared/_AppLayout.cshtml";
 
-    var isVerfied = (bool)ViewBag.IsVerified;
+    var isVerified = (bool)ViewBag.IsVerified;
 }
 
 <div class="row">
@@ -87,7 +87,7 @@
     @Html.Partial("_CommandButtonTemplate")
     <script type="text/javascript">
         $(document).ready(function() {
-            var vm = new exceptionless.account.ManageAccountViewModel('manage-account', 'main-nav', 'account-tabs', '#default > form', '#password > form', @Model.EmailNotificationsEnabled.ToString().ToLower(), @isVerfied.ToString().ToLower());
+            var vm = new exceptionless.account.ManageAccountViewModel('manage-account', 'main-nav', 'account-tabs', '#default > form', '#password > form', @Model.EmailNotificationsEnabled.ToString().ToLower(), @isVerified.ToString().ToLower());
         });
     </script>   
 }

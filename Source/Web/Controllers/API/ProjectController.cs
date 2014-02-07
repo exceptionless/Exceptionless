@@ -32,20 +32,20 @@ using Exceptionless.Web.Models.Project;
 namespace Exceptionless.Web.Controllers.Service {
     [ConfigurationResponseFilter]
     public class ProjectController : RepositoryOwnedByOrganizationApiController<Project, IProjectRepository> {
-        private readonly ResetDataHelper _resetDataHelper;
+        private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;
 
         public ProjectController(IProjectRepository repository,
             OrganizationRepository organizationRepository,
-            ResetDataHelper resetDataHelper,
+            DataHelper dataHelper,
             BillingManager billingManager,
             NotificationSender notificationSender) : base(repository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
             _notificationSender = notificationSender;
-            _resetDataHelper = resetDataHelper;
+            _dataHelper = dataHelper;
         }
 
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
@@ -267,7 +267,7 @@ namespace Exceptionless.Web.Controllers.Service {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return;
 
-            _resetDataHelper.ResetProjectData(id);
+            _dataHelper.ResetProjectData(id);
         }
 
         // TODO: Move this to use patch.

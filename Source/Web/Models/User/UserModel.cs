@@ -10,12 +10,12 @@
 #endregion
 
 using System;
-using System.ComponentModel.DataAnnotations;
 
-namespace Exceptionless.Web.Models.Common {
-    public class UserModel : EmailAddressModel {
-        [Required(ErrorMessage = "Full name is required.")]
-        [Display(Name = "Name")]
-        public string FullName { get; set; }
+namespace Exceptionless.Web.Models.User {
+    public class UserModel : Common.UserModelBase {
+        public string Id { get; set; }
+        public bool IsEmailAddressVerified { get; set; }
+        public bool IsInvite { get; set; }
+        public bool HasAdminRole { get; set; }
     }
 }

@@ -56,7 +56,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunMongoMigrations", "Sourc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchedulerService", "Source\SchedulerService\SchedulerService.csproj", "{26B3C998-1516-477B-8612-8259EDBF97A8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorSharpEmail", "Source\RazorSharpEmail\Source\RazorSharpEmail\RazorSharpEmail.csproj", "{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorSharpEmail", "Source\RazorSharpEmail\RazorSharpEmail.csproj", "{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

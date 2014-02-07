@@ -41,14 +41,6 @@
     <AssemblyOriginatorKeyFile>..\Exceptionless.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ActionMailer.Net, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Libraries\ActionMailer\ActionMailer.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="ActionMailer.Net.Standalone, Version=0.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Libraries\ActionMailer\ActionMailer.Net.Standalone.dll</HintPath>
-    </Reference>
     <Reference Include="ApprovalTests">
       <HintPath>..\..\packages\ApprovalTests.3.0.5\lib\net40\ApprovalTests.dll</HintPath>
     </Reference>
