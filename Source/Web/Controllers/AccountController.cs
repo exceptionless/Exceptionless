@@ -30,6 +30,7 @@ using Exceptionless.Web.Hubs;
 using Exceptionless.Web.Models.Account;
 using Exceptionless.Web.Models.Common;
 using Exceptionless.Web.Models.Project;
+using Exceptionless.Web.Models.User;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Web.Controllers {
@@ -82,7 +83,7 @@ namespace Exceptionless.Web.Controllers {
             }
 
             return Json(new {
-                User = new {
+                User = new UserModel {
                     Id = User.UserEntity.Id,
                     FullName = User.UserEntity.FullName,
                     EmailAddress = User.UserEntity.EmailAddress,

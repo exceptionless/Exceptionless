@@ -21,13 +21,16 @@ using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Web.OData;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
+using Exceptionless.Web.Models.User;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Web.Controllers.Service {
     public class UserController : RepositoryApiController<User, IUserRepository> {
         private readonly ICacheClient _cacheClient;
+        private readonly IOrganizationRepository _organizationRepository;
 
-        public UserController(IUserRepository repository, ICacheClient cacheClient) : base(repository) {
+        public UserController(IUserRepository repository, IOrganizationRepository organizationRepository, ICacheClient cacheClient) : base(repository) {
+            _organizationRepository = organizationRepository;
             _cacheClient = cacheClient;
         }
 
@@ -63,7 +66,7 @@ namespace Exceptionless.Web.Controllers.Service {
 
         [HttpGet]
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
-        public PagedResult<User> GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
+        public PagedResult<UserModel> GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
 
@@ -74,10 +77,13 @@ namespace Exceptionless.Web.Controllers.Service {
             if (pageSize < 1)
                 pageSize = 10;
 
-            var results = _repository.GetByOrganizationId(organizationId).Select(u => 
-                new User { Id = u.Id, OrganizationIds = new Collection<string> { organizationId }, FullName = u.FullName, EmailAddress = u.EmailAddress, IsActive = u.IsActive, Roles = u.Roles }) .ToList();
+            List<UserModel> results = _repository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
 
-            var result = new PagedResult<User>(results.Skip(skip).Take(pageSize).ToList()) {
+            var organization = _organizationRepository.GetByIdCached(organizationId);
+            if (organization.Invites.Any())
+                results.AddRange(organization.Invites.Select(i => new UserModel { EmailAddress = i.EmailAddress, IsInvite = true }));
+
+            var result = new PagedResult<UserModel>(results.Skip(skip).Take(pageSize).ToList()) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10,
                 TotalCount = results.Count

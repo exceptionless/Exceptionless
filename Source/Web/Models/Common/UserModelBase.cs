@@ -10,10 +10,12 @@
 #endregion
 
 using System;
-using Exceptionless.Web.Models.Common;
+using System.ComponentModel.DataAnnotations;
 
-namespace Exceptionless.Web.Models.Account {
-    public class ExternalLoginConfirmationModel : UserModelBase {
-        public string ExternalLoginData { get; set; }
+namespace Exceptionless.Web.Models.Common {
+    public class UserModelBase : EmailAddressModel {
+        [Required(ErrorMessage = "Full name is required.")]
+        [Display(Name = "Name")]
+        public string FullName { get; set; }
     }
 }

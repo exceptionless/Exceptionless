@@ -29,7 +29,7 @@ module exceptionless.organization {
 
             // TODO Optmize this into only loading the data when the tab changes and or consolidate it into one request.
             this._pagedProjectsViewModel = new project.PagedProjectInfosViewModel(projectsElementId, '/project', '/organization/' + organizationId, pageSize, autoUpdate);
-            this._pagedOrganizationUserViewModel = new PagedOrganizationUserViewModel(usersElementId, '/user/organization/' + organizationId, null, organizationId, data.Invites, pageSize, autoUpdate);
+            this._pagedOrganizationUserViewModel = new PagedOrganizationUserViewModel(usersElementId, '/user/organization/' + organizationId, null, organizationId, pageSize, autoUpdate);
             this._pagedOrganizationPaymentsViewModel = new PagedOrganizationPaymentsViewModel(billingElementId, '/organization/' + organizationId, '/payments', organizationId, 12, autoUpdate);
 
             this.saveCommand = ko.asyncCommand({

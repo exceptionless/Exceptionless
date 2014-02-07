@@ -136,7 +136,7 @@ module exceptionless {
         }
 
         private static populateViewModel(data: any) {
-            App.user(new models.User(data.User.Id, data.User.FullName, data.User.EmailAddress, data.User.IsEmailAddressVerified, false, data.User.HasAdminRole));
+            App.user(new models.User(data.User.Id, data.User.FullName, data.User.EmailAddress, data.User.IsEmailAddressVerified, data.User.IsInvite, data.User.HasAdminRole));
 
             App.enableBilling(data.EnableBilling);
 
