@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>Exceptionless.Mvc</id>
+    <version>$version$</version>
+    <authors>Exceptionless</authors>
+    <owners>Exceptionless</owners>
+    <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.com and provides aggregated views and analytics.</description>
+    <projectUrl>http://exceptionless.com</projectUrl>
+    <iconUrl>http://app.exceptionless.com/images/exceptionless-32.png</iconUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <releaseNotes>http://exceptionless.com/category/versions/</releaseNotes>
+    <tags>Error Report Reporting Exception Logging Log ELMAH</tags>
+    <dependencies>
+      <dependency id="Exceptionless" version="[$version$]" />
+    </dependencies>
+  </metadata>
+</package>

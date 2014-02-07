@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>MongoMigrations</id>
+    <version>$version$</version>
+    <authors>https://github.com/g0t4/DotNetMongoMigrations</authors>
+    <owners></owners>
+    <licenseUrl>https://github.com/g0t4/DotNetMongoMigrations</licenseUrl>
+    <projectUrl>https://github.com/g0t4/DotNetMongoMigrations</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Mongo migrations for dot net developers</description>
+    <tags>Mongo Migrations</tags>
+  </metadata>
+</package>

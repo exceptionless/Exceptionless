@@ -1,0 +1,32 @@
+﻿@model Exceptionless.Models.ErrorStack
+@{
+    Layout = "~/Views/Shared/_AppLayout.cshtml";
+}
+
+<div id="free-plan-notification" class="alert in fade alert-success" style="display: none;">
+    <strong>You are on a free plan.</strong>
+    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable premium features and extra storage!
+</div>
+
+<div id="stack-@Model.Id" class="widget">
+    <div class="widget-header">
+        <h3>This error occurrence is no longer available.</h3>
+    </div>
+    <!-- /widget-header -->
+    <div class="widget-content">
+        <p>We apologize, but this error occurrence has been removed due to the organizations retention limits. 
+            You can still view the error occurrences for this stack by clicking on the button below.</p>
+
+        <div class="form-actions">
+            @Html.ActionLink("Go To Stack", "Index", "Stack", new { id = Model.Id }, new { @class = "btn btn-primary" })
+        </div>
+    </div>
+</div>
+
+@section FooterContent {
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var vm = new exceptionless.error.OccurrenceNotFoundViewModel('stack-@Model.Id', 'main-nav', '@Model.ProjectId');
+        });
+    </script>
+}

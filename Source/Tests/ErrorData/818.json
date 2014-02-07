@@ -1,0 +1,60 @@
+﻿{
+  "OccurrenceDate": "2013-04-08T13:47:46.21851-05:00",
+  "Tags": [],
+  "SignatureInfo": {
+    "HttpMethod": "GET",
+    "Path": "/articles/print.aspx",
+    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
+  },
+  "RequestInfo": {
+    "UserAgent": "Mozilla/4.0 (compatible; Synapse)",
+    "HttpMethod": "GET",
+    "IsSecure": false,
+    "Host": "www.test.com",
+    "Port": 80,
+    "Path": "/articles/print.aspx",
+    "ClientIpAddress": "127.0.0.1",
+    "Cookies": {},
+    "Form": {},
+    "QueryString": {
+      "": "-1'"
+    },
+    "ExtendedData": {}
+  },
+  "ExceptionlessClientInfo": {
+    "Version": "0.9.0.818",
+    "InstallIdentifier": "94ea0bfb-b737-470e-80ae-26ad9b292751",
+    "InstallDate": "2013-03-21T15:14:17-05:00",
+    "StartCount": 24,
+    "SubmitCount": 1359,
+    "Platform": ".NET Web",
+    "SubmissionMethod": "HttpApplicationError"
+  },
+  "Modules": [],
+  "EnvironmentInfo": {
+    "ProcessorCount": 1,
+    "TotalPhysicalMemory": 6441984000,
+    "AvailablePhysicalMemory": 358043648,
+    "CommandLine": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe -ap \"PublicSite\" -v \"v4.0\" -l \"webengine4.dll\" -a \\\\.\\pipe\\iisipm49d6fb75-4d75-4c26-b219-2cef547d94c1 -h \"C:\\inetpub\\temp\\apppools\\PublicSite\\PublicSite.config\" -w \"\" -m 0 -t 20",
+    "ProcessName": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
+    "ProcessId": "26052",
+    "ProcessMemorySize": 135569408,
+    "ThreadId": "25412",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows Web Server 2008 R2 ",
+    "OSVersion": "6.1.7601.65536",
+    "MachineName": "WWW",
+    "RuntimeVersion": "4.0.30319.544",
+    "IpAddress": "127.0.0.1",
+    "ExtendedData": {
+      "AppDomainName": "/LM/W3SVC/4/ROOT-1-130098958450601491"
+    }
+  },
+  "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown.",
+  "Type": "System.Web.HttpUnhandledException",
+  "Code": "404",
+  "ExtendedData": {
+    "ExceptionInfo": "{\r\n  \"WebEventCode\": 0,\r\n  \"ErrorCode\": -2147467259,\r\n  \"Data\": {\r\n    \"ASPIMPERSONATING\": \"\"\r\n  }\r\n}"
+  },
+  "StackTrace": []
+}

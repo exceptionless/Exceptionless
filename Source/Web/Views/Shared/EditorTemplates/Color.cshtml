@@ -1,0 +1,7 @@
+﻿@{
+    var attributes = new Dictionary<string, object>();
+
+    attributes.Add("type", "color");
+    attributes.Add("class", "text-box single-line");
+}
+@Html.TextBox("", ViewData.TemplateInfo.FormattedModelValue, attributes)

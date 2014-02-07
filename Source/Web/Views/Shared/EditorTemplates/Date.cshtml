@@ -1,0 +1,12 @@
+﻿@{
+    var attributes = new Dictionary<string, object>();
+
+    attributes.Add("type", "date");
+    attributes.Add("class", "text-box single-line");
+
+    if (ViewData.ModelMetadata.IsRequired)
+    {
+        attributes.Add("required", "required");
+    }
+}
+@Html.TextBox("", ViewData.TemplateInfo.FormattedModelValue, attributes)

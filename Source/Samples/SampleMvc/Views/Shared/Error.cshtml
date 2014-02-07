@@ -1,0 +1,18 @@
+﻿@model HandleErrorInfo 
+@{
+    Layout = "_Layout.cshtml";
+}
+
+@if (ViewBag.ExceptionlessIdentifier == null) {  
+    <p>No identifier.</p>
+} else {
+    using (Html.BeginForm("Error", "Home", FormMethod.Post)) {
+        @Html.AntiForgeryToken()
+        @Html.Hidden("Identifier", (string)ViewBag.ExceptionlessIdentifier)
+        
+        @Html.TextBox("EmailAddress")<br/>
+        @Html.TextArea("Description")<br/>
+        
+        <input type="submit" value="Submit Feedback" />
+    }
+}

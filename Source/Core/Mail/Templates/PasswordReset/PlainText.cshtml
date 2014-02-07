@@ -1,0 +1,9 @@
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.UserModel>
+
+We heard you need a password reset. Click the link below and you'll be redirected to a secure site from which you can set a new password.
+
+@Model.BaseUrl/account/resetpassword?token=@Model.User.PasswordResetToken
+
+If you didn't try to reset your password, click the link below and we'll forget this ever happened.
+
+@Model.BaseUrl/account/resetpassword?token=@Model.User.PasswordResetToken&cancel=true

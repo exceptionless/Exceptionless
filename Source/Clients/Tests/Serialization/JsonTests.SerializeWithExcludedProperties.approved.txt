@@ -1,0 +1,13 @@
+﻿{
+  "CardFullName": "Blake Niemyjski",
+  "CardLastFour": "4242",
+  "CardType": "Visa",
+  "Expiration": "2013-01-01T00:00:00",
+  "UserName": "bniemyjski",
+  "PasswordSalt": "5C365DCF-A426-4D8F-9662-2B62DC4FC4E3",
+  "HashCode": "0F3F5D30-DDE8-4086-8A77-632E85CF542E",
+  "ResetPasswordAfter90Days": true,
+  "RememberMe": true,
+  "PhoneNumber": "123-456-7890",
+  "DateOfBirth": "1986-10-16T00:00:00"
+}

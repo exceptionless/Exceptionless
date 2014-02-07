@@ -1,0 +1,31 @@
+﻿@using CodeSmith.Core.Extensions
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.ErrorNotificationModel>
+@if (Model.IsNew) {
+<text>
+A new @if (Model.IsCritical) { <text>critical </text> }error has occurred in the "@Model.ProjectName" project.
+</text>
+} else if (Model.IsRegression) {
+<text>
+@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has regressed in the "@Model.ProjectName" project.
+</text>
+} else {
+<text>
+@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has reoccurred for the @Model.TotalOccurrences.ToOrdinal() time in the "@Model.ProjectName" project.
+</text>
+}
+
+Type:
+@Model.FullTypeName
+
+Message:
+@Model.Message
+
+@if (!String.IsNullOrEmpty(Model.Url)) {
+<text>
+Source:
+@Model.Url
+</text>
+}
+
+View the error:
+@Model.BaseUrl/error/@Model.ErrorStackId/@Model.ErrorId

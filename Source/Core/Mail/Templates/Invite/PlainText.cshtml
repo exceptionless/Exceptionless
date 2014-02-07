@@ -1,0 +1,8 @@
+﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.InviteModel>
+
+You've been invited to become Exceptionless!
+
+What is Exceptionless? Exceptionless is an error reporting service. 
+Go from signing up to catching every error in your application in 15 minutes or less.
+
+@Model.BaseUrl/signup?token=@Model.Invite.Token

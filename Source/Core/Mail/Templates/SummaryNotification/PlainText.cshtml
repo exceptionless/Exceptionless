@@ -1,0 +1,15 @@
+﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.SummaryNotificationModel>
+
+Summary for @Model.StartDate.ToShortDateString()
+
+@if (Model.HasSubmittedErrors) {
+    if (Model.Total > 0) {
+<text>The "@Model.ProjectName" project had @Model.Total total, @Model.UniqueTotal unique, and @Model.NewTotal new errors.</text>
+        } else {
+<text>Congrats! The "@Model.ProjectName" project was exceptionless!</text>
+        }
+
+<text>@Model.BaseUrl/project/@Model.ProjectId</text>
+} else {
+<text>Unfortunately, it appears that your "@Model.ProjectName" project has not yet been configured to send errors to Exceptionless. Send us an email at support@Exceptionless.com if you have any questions or need help getting started.</text>
+}

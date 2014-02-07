@@ -1,0 +1,22 @@
+﻿@{
+    var attributes = new Dictionary<string, object>();
+
+    attributes.Add("type", "email");
+    
+    attributes.Add("class", "text-box single-line");
+    attributes.Add("placeholder", ViewData.ModelMetadata.Watermark);
+
+    //since this is a constraint, IsRequired and other constraints 
+    //won't necessarily apply in the browser, but in case script 
+    //turns off readonly we want the constraints passed
+    if (ViewData.ModelMetadata.IsReadOnly)
+    {
+        attributes.Add("readonly", "readonly");
+    }
+
+    if (ViewData.ModelMetadata.IsRequired)
+    {
+        attributes.Add("required", "required");
+    }
+}
+@Html.TextBox("", ViewData.TemplateInfo.FormattedModelValue, attributes)

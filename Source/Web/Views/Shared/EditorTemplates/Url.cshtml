@@ -1,0 +1,18 @@
+﻿@{
+    var attributes = new Dictionary<string, object>();
+
+    attributes.Add("type", "url");
+    attributes.Add("class", "text-box single-line");
+    attributes.Add("placeholder", ViewData.ModelMetadata.Watermark);
+
+    if (ViewData.ModelMetadata.IsRequired)
+    {
+        attributes.Add("required", "required");
+    }
+
+    if (ViewData.ModelMetadata.IsReadOnly)
+    {
+        attributes.Add("readonly", "readonly");
+    }
+}
+@Html.TextBox("", ViewData.TemplateInfo.FormattedModelValue, attributes)

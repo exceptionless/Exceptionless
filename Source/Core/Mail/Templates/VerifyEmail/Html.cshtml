@@ -1,0 +1,38 @@
+﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.UserModel>
+@{ Layout = "_Layout.html.cshtml"; }
+
+<!-- BODY -->
+<table class="body-wrap" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; width: 100%;">
+    <tr style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
+        <td style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;"></td>
+        <td class="container" bgcolor="#F7F7F7" style="margin: 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; display: block; max-width: 600px; clear: both;">
+
+            <div class="content" style="margin: 0 auto; padding: 15px; font-family: 'Open Sans', arial, sans-serif; max-width: 600px; display: block;">
+                <table style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; width: 100%;">
+                    <tr style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
+                        <td style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
+                            <h1 style="font-size: 20px; font-family:'Open Sans', arial, sans-serif; margin-bottom: 10px; color: #333;">Hello @Model.User.FullName,</h1>
+                            <p class="lead" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 17px; line-height: 1.6;">
+                                We're ready to activate your account. All we need to do is make sure this is your email address.
+                            </p>
+
+                            <!-- Button -->
+                            <p class="center" style="margin: 10px auto 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
+                                <a class="btn" href="@Model.BaseUrl/account/verify?token=@Model.User.VerifyEmailAddressToken" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">Verify Address</a>
+                            </p>
+
+                            <p style="font: 15px/19px 'Open Sans', arial, sans-serif; font-family:'Open Sans', arial, sans-serif; color: #939393; margin-bottom: 0;">
+                                If you didn't create an Exceptionless account, just delete this email and everything will go back to the way it was.
+                            </p>
+
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <!-- /content -->
+
+        </td>
+        <td style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;"></td>
+    </tr>
+</table>
+<!-- /BODY -->
