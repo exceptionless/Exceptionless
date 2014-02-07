@@ -227,6 +227,23 @@ namespace Exceptionless.Core.Billing {
             }
         }
 
-        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, SmallPlan, MediumPlan, LargePlan };
+        public static BillingPlan UnlimitedPlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_UNLIMITED",
+                    Name = "Unlimited",
+                    Description = "Unlimited",
+                    IsHidden = true,
+                    Price = 0,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = -1,
+                    MaxErrorsPerDay = -1,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, SmallPlan, MediumPlan, LargePlan, UnlimitedPlan };
     }
 }

@@ -56,6 +56,9 @@ namespace Exceptionless.Web.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
 
+            if (!Settings.Current.EnableBilling)
+                return Json(new { Success = false, Message = "Plans cannot be changed while billing is disabled." });
+
             Organization organization = _repository.GetById(organizationId);
             if (organization == null)
                 return Json(new { Success = false, Message = "Invalid OrganizationId." });

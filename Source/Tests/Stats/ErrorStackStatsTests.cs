@@ -25,7 +25,7 @@ using Xunit;
 
 namespace Exceptionless.Tests.Analytics {
     public class ErrorStackStatsTests : MongoRepositoryTestBaseWithIdentity<Error, IErrorRepository> {
-        private readonly ResetDataHelper _resetDataHelper = IoC.GetInstance<ResetDataHelper>();
+        private readonly DataHelper _dataHelper = IoC.GetInstance<DataHelper>();
         private readonly ErrorStatsHelper _errorStatsHelper = IoC.GetInstance<ErrorStatsHelper>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
@@ -89,7 +89,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanAggregateStatsOverTwoMonths() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             var overallsw = new Stopwatch();
             var sw = new Stopwatch();
@@ -125,7 +125,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanAggregateStatsOverSeveralMonths() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
@@ -145,7 +145,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanAggregateStatsOverSeveralMonthsForMultipleProjects() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
@@ -177,7 +177,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanStackErrors() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
@@ -199,7 +199,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanStackErrorsForMultipleProjects() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
@@ -242,7 +242,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanResetStackStats() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-45);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
@@ -277,7 +277,7 @@ namespace Exceptionless.Tests.Analytics {
 
         [Fact]
         public void CanHideStacksFromStats() {
-            _resetDataHelper.ResetProjectData(TestConstants.ProjectId);
+            _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;

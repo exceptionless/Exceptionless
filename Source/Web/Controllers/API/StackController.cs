@@ -43,10 +43,10 @@ namespace Exceptionless.Web.Controllers.Service {
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectHookRepository _projectHookRepository;
         private readonly NotificationSender _notificationSender;
-        private readonly ResetDataHelper _resetDataHelper;
+        private readonly DataHelper _dataHelper;
 
         public StackController(IErrorStackRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
-            IProjectHookRepository projectHookRepository, IMessageFactory messageFactory, BillingManager billingManager, NotificationSender notificationSender, ResetDataHelper resetDataHelper)
+            IProjectHookRepository projectHookRepository, IMessageFactory messageFactory, BillingManager billingManager, NotificationSender notificationSender, DataHelper dataHelper)
             : base(repository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -54,7 +54,7 @@ namespace Exceptionless.Web.Controllers.Service {
             _messageFactory = messageFactory;
             _billingManager = billingManager;
             _notificationSender = notificationSender;
-            _resetDataHelper = resetDataHelper;
+            _dataHelper = dataHelper;
         }
 
         public override IEnumerable<ErrorStack> Get() {
@@ -279,7 +279,7 @@ namespace Exceptionless.Web.Controllers.Service {
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return;
 
-            _resetDataHelper.ResetStackData(id);
+            _dataHelper.ResetStackData(id);
             _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
         }
     }

@@ -31,7 +31,9 @@
                 <a class="dropdown-toggle" data-toggle="dropdown" href="@Url.Action("Manage", "Account")">@userFullName <b class="caret"></b></a>
                 <ul class="dropdown-menu">
                     <li><a href="@Url.Action("Manage", "Account")"><i class="fa fa-user fa-fw"></i>My Account</a></li>
+@if (Settings.Current.EnableBilling) {
                     <li><a href="#plan-modal" data-bind="click: function(){ exceptionless.App.showChangePlanDialog(); return true; }"><i class="fa fa-credit-card fa-fw"></i>Change Plan</a></li>
+}
                     <li><a href="@Url.Action("Manage", "Account")#password"><i class="fa fa-lock fa-fw"></i>Change Password</a></li>
                     <li class="divider"></li>
                     <li><a href="@Url.Action("LogOff", "Account")"><i class="fa fa-power-off fa-fw"></i>Logout</a></li>
@@ -52,7 +54,9 @@
                 <li class="visible-phone @if(Html.IsActiveMenuItem("New", "Project")){ <text>active</text>}">
                     <a data-bind="attr: { href: '/project/' + selectedProjectId() + '/new' }" href="/project/new"><i class="fa fa-asterisk fa-fw"></i>New</a>
                 </li>
+@if (Settings.Current.EnableBilling) {
                 <li><a href="#plan-modal" data-bind="click: function(){ exceptionless.App.showChangePlanDialog(); return true; }"><i class="fa fa-credit-card fa-fw"></i>Change Plan</a></li>
+}
                 <li @if (Html.IsActiveMenuItem("List", "Project")) { <text>class="active"</text>}>
                     <a href="@Url.Action("List", "Project")"><i class="fa fa-briefcase fa-fw"></i>My Projects</a>
                 </li>
@@ -62,11 +66,11 @@
                 <li @if(Html.IsActiveMenuItem("Manage", "Account")){ <text>class="active"</text>}>
                     <a href="@Url.Action("Manage", "Account")"><i class="fa fa-user fa-fw"></i>My Account</a>
                 </li>
-                @if (User.IsInRole(Exceptionless.Core.Authorization.AuthorizationRoles.GlobalAdmin)) {
+@if (Settings.Current.EnableBilling && User.IsInRole(Exceptionless.Core.Authorization.AuthorizationRoles.GlobalAdmin)) {
                 <li @if (Html.IsActiveMenuItem("Index", "Admin")) { <text>class="active"</text>}>
                     <a href="@Url.Action("Index", "Admin")"><i class="fa fa-cog fa-fw"></i>Admin</a>
                 </li>
-                }
+}
                 <li><a href="@Url.Action("LogOff", "Account")"><i class="fa fa-power-off fa-fw"></i>Logout</a></li>
             </ul>
         </div>
@@ -83,8 +87,7 @@
                 <div class='notifications bottom-left'></div>
                 <div class="row">
                     <div class="span3 hidden-phone">
-                        @if (ViewBag.User != null)
-                        {
+@if (ViewBag.User != null) {
                         <div class="account-container">
                             <div class="account-avatar">
                                 <a href="@Url.Action("Manage", "Account")">
@@ -101,9 +104,9 @@
                         <!-- /account-container -->
         
                         <hr />
-                        }
+}
                         <ul id="main-nav" class="nav nav-tabs nav-stacked">
-                            @if (ViewBag.User != null) {
+@if (ViewBag.User != null) {
                             <li @if (Html.IsActiveMenuItem("Index", "Project")) { <text>class="active"</text>}>
                                 <a data-bind="attr: { href: '/project/' + selectedProjectId() }"><i class="fa fa-dashboard fa-fw"></i>Dashboard</a>
                             </li>
@@ -117,7 +120,7 @@
                             <li @if (Html.IsActiveMenuItem("New", "Project")) { <text>class="active"</text>}>
                                 <a data-bind="attr: { href: '/project/' + selectedProjectId() + '/new' }"><i class="fa fa-asterisk fa-fw"></i>New</a>
                             </li>
-                            }
+}
                             <li @if (Html.IsActiveMenuItem("List", "Project")) { <text>class="active"</text>}>
                                 <a href="@Url.Action("List", "Project")"><i class="fa fa-briefcase fa-fw"></i>My Projects</a>
                             </li>
@@ -127,21 +130,21 @@
                             <li @if (Html.IsActiveMenuItem("Manage", "Account")) { <text>class="active"</text>}>
                                 <a href="@Url.Action("Manage", "Account")"><i class="fa fa-user fa-fw"></i>My Account</a>
                             </li>
-                            @if (User.IsInRole(Exceptionless.Core.Authorization.AuthorizationRoles.GlobalAdmin)) {
+@if (Settings.Current.EnableBilling && User.IsInRole(Exceptionless.Core.Authorization.AuthorizationRoles.GlobalAdmin)) {
                             <li @if (Html.IsActiveMenuItem("Index", "Admin")) { <text>class="active"</text>}>
                                 <a href="@Url.Action("Index", "Admin")"><i class="fa fa-cog fa-fw"></i>Admin</a>
                             </li>
-                            }
+}
                             <li>
                                 <a href="javascript:void(0)" data-uv-lightbox="classic_widget" data-uv-mode="feedback" data-uv-primary-color="#568f01" data-uv-link-color="#78b001" data-uv-default-mode="support" data-uv-forum-id="199409">
                                     <i class="fa fa-comment fa-fw"></i>Feedback
                                 </a>
                             </li>
-                            @if (Settings.Current.EnableIntercom) {
+@if (Settings.Current.EnableIntercom) {
                             <li>
                                 <a id="intercom" href="mailto:6c0d76e0bec950052459f5cb4b727a949aeabbe1@incoming.intercom.io"><i class="fa fa-envelope fa-fw"></i>Support</a>
                             </li>
-                            }
+}
                         </ul>
                         <br />
 
@@ -190,8 +193,7 @@
             user_hash: '@intercomData.UserHash',
             email: '@intercomData.UserEmail',
             created_at: @intercomData.UserCreated,
-            @if (intercomData.HasCompany)
-            {
+@if (intercomData.HasCompany) {
         <text>
             company: {
                 id: '@intercomData.CompanyId',
@@ -203,7 +205,7 @@
                 subscribe_at: @intercomData.SubscribeDate
             },
         </text>
-            }
+}
             app_id: '@Settings.Current.IntercomAppId',
             widget: {
                 activator: '#intercom',

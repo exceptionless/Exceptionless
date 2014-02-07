@@ -155,9 +155,9 @@ namespace Exceptionless.Web.Controllers.Service {
                 throw new HttpResponseException(DuplicateResponseMessage(value.Id));
 
             if (!_billingManager.CanAddOrganization(User.UserEntity))
-                throw new HttpResponseException(PlanLimitReached("Please upgrade your plan to add an additional orgnaization."));
+                throw new HttpResponseException(PlanLimitReached("Please upgrade your plan to add an additional organization."));
 
-            _billingManager.ApplyBillingPlan(value, BillingManager.FreePlan, User.UserEntity);
+            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, User.UserEntity);
 
             value.ProjectCount = 0;
             value.StackCount = 0;

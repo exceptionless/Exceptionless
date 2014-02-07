@@ -17,13 +17,15 @@ module exceptionless {
         public static organizations = ko.observableArray<models.Organization>([]);
         private static _previousOrganization: models.Organization;
 
-		public static projects = ko.observableArray<models.ProjectInfo>([]);
+        public static projects = ko.observableArray<models.ProjectInfo>([]);
         public static selectedProject = ko.observable<models.ProjectData>(new models.ProjectInfo('', 'Loading...', '', DateUtil.timeZoneOffset(), 0, 0, 0));
         public static user = ko.observable<models.User>(new models.User(null, 'Loading...', '', false, false, false));
+
+        public static enableBilling = ko.observable(true);
         public static plans = ko.observableArray<account.BillingPlan>([]);
 
         public static loading = ko.observable<boolean>(false);
-		
+
         constructor() {}
 
         public static init() {
@@ -85,22 +87,22 @@ module exceptionless {
                 }
             });
 
-			(<any>App).selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
-	        (<any>App).selectedOrganization.subscribe((o)=> {
-		        if (App._previousOrganization
-			        && !StringUtil.isNullOrEmpty(App._previousOrganization.id)
-			        && o
-			        && !StringUtil.isNullOrEmpty(o.id)
-			        && (App._previousOrganization.id === o.id)
-			        && (App._previousOrganization.isSuspended !== o.isSuspended)) {
-			        location.reload();
-		        }
-	        });
+            (<any>App).selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
+            (<any>App).selectedOrganization.subscribe((o)=> {
+                if (App._previousOrganization
+                    && !StringUtil.isNullOrEmpty(App._previousOrganization.id)
+                    && o
+                    && !StringUtil.isNullOrEmpty(o.id)
+                    && (App._previousOrganization.id === o.id)
+                    && (App._previousOrganization.isSuspended !== o.isSuspended)) {
+                    location.reload();
+                }
+            });
 
             App.onPlanChanged.subscribe(() => App.refreshViewModelData());
             App.onOrganizationUpdated.subscribe(() => App.refreshViewModelData());
             App.onProjectUpdated.subscribe(() => App.refreshViewModelData());
-	        
+
             App.refreshViewModelData();
 
             setTimeout(App.startSignalr, 1000);
@@ -127,36 +129,38 @@ module exceptionless {
 
             $.ajax(url, {
                 dataType: 'json',
-                success: (data: any) => this.populateViewModel(data),
-                error: () => this.showErrorNotification('An error occurred while retrieving profile information.'),
+                success: (data: any) => App.populateViewModel(data),
+                error: () => App.showErrorNotification('An error occurred while retrieving profile information.'),
                 complete: () => App.loading(false)
             });
         }
 
         private static populateViewModel(data: any) {
-            this.user(new models.User(data.User.Id, data.User.FullName, data.User.EmailAddress, data.User.IsEmailAddressVerified, false, data.User.HasAdminRole));
+            App.user(new models.User(data.User.Id, data.User.FullName, data.User.EmailAddress, data.User.IsEmailAddressVerified, false, data.User.HasAdminRole));
+
+            App.enableBilling(data.EnableBilling);
 
             var plans: account.BillingPlan[] = [];
-            $.each(data.BillingInfo, (index, p) => plans.push(new account.BillingPlan(p.Id, p.Name, p.Description, p.Price, p.HasPremiumFeatures, p.MaxProjects, p.MaxErrors, p.MaxPerStack, p.MaxUsers, p.StatRetention)));
-            this.plans(plans);
-            this.plans.sort((a: account.BillingPlan, b: account.BillingPlan) => { return a.price > b.price ? 1 : -1; });
+            $.each(data.BillingInfo, (index, p) => plans.push(new account.BillingPlan(p.Id, p.Name, p.Description, p.Price, p.HasPremiumFeatures, p.MaxProjects, p.MaxErrors, p.MaxPerStack, p.MaxUsers, p.StatRetention, p.IsHidden)));
+            App.plans(plans);
+            App.plans.sort((a: account.BillingPlan, b: account.BillingPlan) => { return a.price > b.price ? 1 : -1; });
 
             var organizations: models.Organization[] = [];
             $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes)));
-            this.organizations(organizations);
-            this.organizations.sort((a: models.Organization, b: models.Organization) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
+            App.organizations(organizations);
+            App.organizations.sort((a: models.Organization, b: models.Organization) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
             var projects: models.ProjectInfo[] = [];
             $.each(data.Projects, (index, p) => projects.push(new models.ProjectInfo(p.Id, p.Name, p.OrganizationId, p.TimeZoneOffset, p.StackCount, p.ErrorCount, p.TotalErrorCount)));
-            this.projects(projects);
-            this.projects.sort((a: models.ProjectInfo, b: models.ProjectInfo) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
+            App.projects(projects);
+            App.projects.sort((a: models.ProjectInfo, b: models.ProjectInfo) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
-            if (StringUtil.isNullOrEmpty(this.selectedProject().id)) {
-	            var project = ko.utils.arrayFirst(this.projects(), (project: models.Project)=> project.id === DataUtil.getProjectId());
-	            if (!project && this.projects().length > 0)
-		            project = this.projects()[0];
+            if (StringUtil.isNullOrEmpty(App.selectedProject().id)) {
+                var project = ko.utils.arrayFirst(App.projects(), (project: models.Project)=> project.id === DataUtil.getProjectId());
+                if (!project && App.projects().length > 0)
+                    project = App.projects()[0];
 
-	            this.selectedProject(<models.ProjectData>project);
+                App.selectedProject(<models.ProjectData>project);
             }
         }
 
@@ -169,6 +173,11 @@ module exceptionless {
         }
 
         public static showChangePlanDialog(organization?: { id: string; name: string; planId: string }) {
+            if (!App.enableBilling()) {
+                App.showErrorNotification('Plans cannot be changed while billing is disabled.');
+                return;
+            }
+
             if (!organization || StringUtil.isNullOrEmpty(organization.id))
                 organization = App.selectedOrganization();
 
@@ -176,9 +185,9 @@ module exceptionless {
             var org = ko.utils.arrayFirst(App.organizations(), o=> o.id === organization.id);
             if (org == null) {
                 if (organization instanceof models.Organization)
-                    this.organizations.push(<models.Organization>organization);
+                    App.organizations.push(<models.Organization>organization);
                 else
-                    this.organizations.push(new models.Organization(organization.id, organization.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, organization.name, '', ''));
+                    App.organizations.push(new models.Organization(organization.id, organization.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, organization.name, '', ''));
             }
 
             $('#plan-modal').data('organizationId', organization.id).modal('show');

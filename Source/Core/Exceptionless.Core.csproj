@@ -252,7 +252,7 @@
     <Compile Include="Utility\CompareObjects.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
-    <Compile Include="Utility\ResetDataHelper.cs" />
+    <Compile Include="Utility\DataHelper.cs" />
     <Compile Include="Utility\SimpleInjectorActionFilterProvider.cs" />
     <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
     <Compile Include="Jobs\ExceptionlessJobHttpModule.cs" />

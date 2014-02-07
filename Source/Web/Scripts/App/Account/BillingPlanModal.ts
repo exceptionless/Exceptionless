@@ -124,7 +124,7 @@ module exceptionless.account {
         cardMode = 'new';
 
         selectedOrganization = new models.Organization('', 'Loading...', 0, 0, 0, 0);
-        selectedPlan = new account.BillingPlan(Constants.FREE_PLAN_ID, 'Free', 'Free', 0, false, 1, 2500, 5, 1, 7);
+        selectedPlan = new account.BillingPlan(Constants.FREE_PLAN_ID, 'Free', 'Free', 0, false, 1, 2500, 5, 1, 7, false);
 
         constructor() {
             ko.track(this);
@@ -149,7 +149,9 @@ module exceptionless.account {
         }
 
         public get plans(): account.BillingPlan[]{
-            return App.plans();
+            var currentPlan: account.BillingPlan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.id === this.selectedOrganizationPlan.id);
+
+            return ko.utils.arrayFilter(App.plans(), (p: account.BillingPlan) => !p.isHidden || currentPlan.id === p.id || App.user().hasAdminRole());
         }
         
         public get selectedOrganizationPlan(): account.BillingPlan {
@@ -168,8 +170,9 @@ module exceptionless.account {
         maxPerStack: number;
         maxUsers: number;
         statRetention: number;
+        isHidden: boolean;
 
-        constructor(id: string, name: string, description: string, price: number, hasPremiumFeatures: boolean, maxProjects: number, maxErrors: number, maxPerStack: number, maxUsers: number, statRetention: number) {
+        constructor(id: string, name: string, description: string, price: number, hasPremiumFeatures: boolean, maxProjects: number, maxErrors: number, maxPerStack: number, maxUsers: number, statRetention: number, isHidden: boolean) {
             this.id = id;
             this.name = name;
             this.description = description;
@@ -180,6 +183,7 @@ module exceptionless.account {
             this.maxPerStack = maxPerStack;
             this.maxUsers = maxUsers;
             this.statRetention = statRetention;
+            this.isHidden = isHidden;
 
             ko.track(this);
         }
