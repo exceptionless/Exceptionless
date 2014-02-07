@@ -14,12 +14,12 @@ properties {
     $configuration = "Release"
 
     $base_dir = Resolve-Path "."
-    $source_dir = "$base_dir\source"
-    $lib_dir = "$base_dir\libraries"
-    $build_dir = "$base_dir\build"
-    $working_dir = "$build_dir\working"
-    $deploy_dir = "$build_dir\deploy"
-    $packages_dir = "$base_dir\packages"
+    $source_dir = "$base_dir\Source"
+    $lib_dir = "$base_dir\Libraries"
+    $build_dir = "$base_dir\Build"
+    $working_dir = "$build_dir\Working"
+    $deploy_dir = "$build_dir\Deploy"
+    $packages_dir = "$base_dir\Packages"
 
     $sln_file = "$base_dir\Exceptionless.NoSamples.sln"
     $sign_file = "$source_dir\Exceptionless.snk"
@@ -50,8 +50,9 @@ properties {
 
 Include .\teamcity.ps1
 
-task default -depends Publish
-task client -depends PublishClient
+task default -depends Package
+task client -depends PackageClient
+task server -depends PackageServer
 
 task Clean {
     Delete-Directory $build_dir
@@ -169,7 +170,7 @@ task TestServer -depends BuildServer {
 
 task Test -depends TestClient, TestServer
 
-task PackClient -depends TestClient {
+task PackageClient -depends TestClient {
     Create-Directory $deploy_dir
 
     ForEach ($p in $client_projects) {
@@ -249,36 +250,16 @@ task PackClient -depends TestClient {
     Delete-Directory $working_dir
 }
 
-task PublishClient -depends PackClient {
-    if ([string]::IsNullOrWhiteSpace($env:nuget_api_key)) {
-        TeamCity-ReportBuildStatus 'FAILURE' "Unable to publish. No NuGet API key was specified."
-        throw "Error: Unable to publish. No NuGet API key was specified."
-    }
-
-    Get-ChildItem -Path "$deploy_dir\packages" -Recurse | ForEach-Object {
-        $filename = $_.Directory.ToString() + '\' + $_.Name
-        TeamCity-ReportBuildStatus 'SUCCESS' "Publishing NuGet package $_"
-        
-        if ($env:nuget_source -ne $null) {
-            exec { & $base_dir\.nuget\NuGet.exe push $filename -Source $env:nuget_source $env:nuget_api_key }
-        } else {
-            exec { & $base_dir\.nuget\NuGet.exe push $filename $env:nuget_api_key }
-        }
-    }
-
-    TeamCity-ReportBuildStatus 'SUCCESS' "Success"
-}
-
-task PublishServer -depends BuildServer { # -depends TestServer {
+task PackageServer -depends TestServer {
     Create-Directory $deploy_dir
 
-    Publish-BuildArtifact "$source_dir\Web\" "$deploy_dir\Exceptionless.Web.zip"
-    Publish-BuildArtifact "$source_dir\SchedulerService\" "$deploy_dir\SchedulerService.zip"
+    ZipAndPublishArtifact "$source_dir\Web\" "$deploy_dir\Exceptionless.Web.zip"
+    ZipAndPublishArtifact "$source_dir\SchedulerService\" "$deploy_dir\SchedulerService.zip"
 
     TeamCity-ReportBuildStatus 'SUCCESS' "Success"
 }
 
-task Publish -depends PublishClient, PublishServer
+task Package -depends PackageClient, PackageServer
 
 Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersionNumber, [string] $assemblyFileVersionNumber, [string] $assemblyInformationalVersionNumber) {
     $assemblyVersion = "AssemblyVersion(`"$assemblyVersionNumber`")"
@@ -303,7 +284,7 @@ Function Verify-BuildRequirements() {
     }
 }
 
-Function Publish-BuildArtifact ([string] $sourceDir, [string] $artifactFilePath) {
+Function ZipAndPublishArtifact ([string] $sourceDir, [string] $artifactFilePath) {
     Create-Directory $working_dir
 
     $exclude = @('*.cs', '*.csproj', '*.ide', '*.pdb', '*.resx', '*.settings', '*.suo', '*.user', '*.xsd', 'packages.config' )
@@ -317,10 +298,6 @@ Function Publish-BuildArtifact ([string] $sourceDir, [string] $artifactFilePath)
     Delete-Directory $working_dir
 
     TeamCity-PublishArtifact $artifactFilePath
-
-    if (Test-Path -Path $env:Artifacts_Directory) {
-        Copy-Item -Path $artifactFilePath -Destination $env:Artifacts_Directory
-    }
 
     TeamCity-ReportBuildStatus 'SUCCESS' "Publishing build artifact $artifactFilePath"
 }
