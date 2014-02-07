@@ -41,7 +41,7 @@ namespace Exceptionless.Tests.Jobs {
             Project project = ProjectData.GenerateProject(generateId: true, name: "Project1", nextSummaryEndOfDayTicks: DateTime.UtcNow.AddHours(OFFSET).AddMinutes(-1).Ticks);
             Repository.Add(project);
 
-            Project project2 = ProjectData.GenerateProject(generateId: true, name: "Project2", nextSummaryEndOfDayTicks: DateTime.UtcNow.AddHours(OFFSET).AddSeconds(5).Ticks);
+            Project project2 = ProjectData.GenerateProject(generateId: true, name: "Project2", nextSummaryEndOfDayTicks: DateTime.UtcNow.AddHours(OFFSET).AddMilliseconds(250).Ticks);
             Repository.Add(project2);
 
             var job = new DailyNotificationJob(Repository as ProjectRepository, _messageFactoryMock.Object);
@@ -57,7 +57,7 @@ namespace Exceptionless.Tests.Jobs {
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
             Assert.Equal(project2.NextSummaryEndOfDayTicks, Repository.GetById(project2.Id).NextSummaryEndOfDayTicks);
 
-            Thread.Sleep(5000);
+            Thread.Sleep(250);
             job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(2, _messages.Count);
