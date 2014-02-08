@@ -104,6 +104,7 @@
     <Content Include="nlog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="SchedulerService.nuspec" />
     <None Include="Jobs.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

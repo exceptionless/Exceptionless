@@ -14,8 +14,9 @@ using System.Web.Mvc;
 using Exceptionless.Core;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
+using Exceptionless.Web.Controllers;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     [Authorize]
     [ProjectRequiredActionFilter]
     public class StackController : ExceptionlessController {

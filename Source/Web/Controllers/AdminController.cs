@@ -11,15 +11,16 @@
 
 using System;
 using System.Web.Mvc;
+using Exceptionless.App.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
-using Exceptionless.Web.Hubs;
+using Exceptionless.Web.Controllers;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
     public class AdminController : ExceptionlessController {
         private readonly IOrganizationRepository _repository;

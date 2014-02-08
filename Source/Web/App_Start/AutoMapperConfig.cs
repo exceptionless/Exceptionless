@@ -11,15 +11,15 @@
 
 using System;
 using AutoMapper;
+using Exceptionless.App.Models.Error;
+using Exceptionless.App.Models.Organization;
+using Exceptionless.App.Models.Project;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Models;
-using Exceptionless.Web.Models.Error;
-using Exceptionless.Web.Models.Organization;
-using Exceptionless.Web.Models.Project;
 using Stripe;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public class AutoMapperConfig {
         public static void CreateMappings() {
             Mapper.CreateMap<Error, ErrorModel>().AfterMap((e, em) => {

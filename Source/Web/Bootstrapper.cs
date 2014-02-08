@@ -11,15 +11,15 @@
 
 using System;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.App.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Membership;
-using Exceptionless.Web.Hubs;
 using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 using SimpleInjector;
 using SimpleInjector.Packaging;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             container.Options.AllowOverridingRegistrations = true;

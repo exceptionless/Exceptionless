@@ -1,5 +1,6 @@
 ﻿@using System.Web.UI.WebControls
-@model Exceptionless.Web.Models.Project.ProjectModel
+@using Exceptionless.App.Extensions
+@model Exceptionless.App.Models.Project.ProjectModel
 @{
     ViewBag.Title = "Add Project";
     Layout = (bool)ViewBag.HasOrganizations ? "~/Views/Shared/_AppLayout.cshtml" : "~/Views/Shared/_BareLayout.cshtml";

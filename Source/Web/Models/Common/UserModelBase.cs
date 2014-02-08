@@ -12,7 +12,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Exceptionless.Web.Models.Common {
+namespace Exceptionless.App.Models.Common {
     public class UserModelBase : EmailAddressModel {
         [Required(ErrorMessage = "Full name is required.")]
         [Display(Name = "Name")]

@@ -14,7 +14,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Web.Mvc;
 using DataAnnotationsExtensions;
 
-namespace Exceptionless.Web.Models.Account {
+namespace Exceptionless.App.Models.Account {
     public class ManageModel : LocalPasswordModel {
         [Required(ErrorMessage = "Full name is required.")]
         [Display(Name = "Full name")]

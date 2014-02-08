@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Exceptionless.Web.Models.User {
+namespace Exceptionless.App.Models.User {
     public class UserModel : Common.UserModelBase {
         public string Id { get; set; }
         public bool IsEmailAddressVerified { get; set; }

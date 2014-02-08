@@ -11,17 +11,18 @@
 
 using System;
 using System.Web.Mvc;
+using Exceptionless.App.Hubs;
+using Exceptionless.App.Models.Organization;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
-using Exceptionless.Web.Hubs;
-using Exceptionless.Web.Models.Organization;
+using Exceptionless.Web.Controllers;
 using NLog.Fluent;
 using Stripe;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     [Authorize]
     public class OrganizationController : ExceptionlessController {
         private readonly IOrganizationRepository _repository;

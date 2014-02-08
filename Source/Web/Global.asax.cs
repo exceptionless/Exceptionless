@@ -21,12 +21,12 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using System.Web.Security;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.App.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
-using Exceptionless.Web.Hubs;
 using Microsoft.AspNet.SignalR;
 using MongoDB.Driver;
 using NLog;
@@ -34,7 +34,7 @@ using NLog.Fluent;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public class GlobalApplication : HttpApplication {
         protected void Application_Start() {
             AreaRegistration.RegisterAllAreas();

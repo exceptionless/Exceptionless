@@ -22,7 +22,6 @@ namespace NLog.Fluent {
                     errorBuilderAction(exBuilder);
 
                 exBuilder.Submit();
-                ;
             }
 
             return builder;

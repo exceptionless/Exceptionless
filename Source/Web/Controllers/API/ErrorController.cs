@@ -32,7 +32,7 @@ using NLog.Fluent;
 using ServiceStack.CacheAccess;
 using ServiceStack.Messaging;
 
-namespace Exceptionless.Web.Controllers.Service {
+namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
     public class ErrorController : RepositoryOwnedByOrganizationApiController<Error, IErrorRepository> {
         private readonly ICacheClient _cacheClient;

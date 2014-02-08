@@ -18,6 +18,11 @@ using System.Threading;
 using System.Web.Mvc;
 using AutoMapper;
 using DotNetOpenAuth.AspNet;
+using Exceptionless.App.Hubs;
+using Exceptionless.App.Models.Account;
+using Exceptionless.App.Models.Common;
+using Exceptionless.App.Models.Project;
+using Exceptionless.App.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -26,14 +31,10 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Utility;
 using Exceptionless.Membership;
 using Exceptionless.Models;
-using Exceptionless.Web.Hubs;
-using Exceptionless.Web.Models.Account;
-using Exceptionless.Web.Models.Common;
-using Exceptionless.Web.Models.Project;
-using Exceptionless.Web.Models.User;
+using Exceptionless.Web.Controllers;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     [Authorize]
     public class AccountController : ExceptionlessController {
         private readonly IMembershipProvider _membershipProvider;

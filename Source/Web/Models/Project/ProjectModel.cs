@@ -15,7 +15,7 @@ using System.ComponentModel.DataAnnotations;
 using Exceptionless.Models;
 using Foolproof;
 
-namespace Exceptionless.Web.Models.Project {
+namespace Exceptionless.App.Models.Project {
     public class ProjectModel {
         public string Id { get; set; }
 

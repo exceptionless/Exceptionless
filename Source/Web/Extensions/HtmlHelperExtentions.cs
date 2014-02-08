@@ -18,7 +18,7 @@ using System.Reflection;
 using System.Web;
 using System.Web.Mvc;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App.Extensions {
     public static class HtmlHelperExtentions {
         public static bool IsDebug(this HtmlHelper htmlHelper) {
 #if DEBUG

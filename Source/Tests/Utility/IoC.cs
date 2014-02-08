@@ -11,8 +11,8 @@
 
 using System;
 using System.Web.Http;
+using Exceptionless.App;
 using Exceptionless.Core.Mail;
-using Exceptionless.Web.App_Start;
 using SimpleInjector;
 
 namespace Exceptionless.Tests.Utility {

@@ -16,9 +16,9 @@ using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using System.Web.Mvc;
+using Exceptionless.App;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using Exceptionless.Web.App_Start;
 using SimpleInjector;
 using SimpleInjector.Integration.Web.Mvc;
 using WebActivator;
@@ -26,7 +26,7 @@ using IFilterProvider = System.Web.Http.Filters.IFilterProvider;
 
 [assembly: PreApplicationStartMethod(typeof(SimpleInjectorInitializer), "Initialize")]
 
-namespace Exceptionless.Web.App_Start {
+namespace Exceptionless.App {
     public static class SimpleInjectorInitializer {
         public static void Initialize() {
             Container container = CreateContainer();

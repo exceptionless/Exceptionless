@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Exceptionless.Web.Models.Error {
+namespace Exceptionless.App.Models.Error {
     public class ExtendedDataItemModel {
         public ExtendedDataItemModel() {
             CanBePromoted = true;

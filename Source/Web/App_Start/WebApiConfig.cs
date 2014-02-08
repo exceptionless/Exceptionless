@@ -19,7 +19,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using ServiceStack.Redis;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public static class WebApiConfig {
         public const string SERVICE_URL_VERISON1 = "api/v1/";
 

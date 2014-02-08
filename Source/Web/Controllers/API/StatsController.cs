@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using Exceptionless.App.Models.Stats;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -21,12 +22,11 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
-using Exceptionless.Web.Models.Stats;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using ServiceStack.CacheAccess;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers.API {
     [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
         private readonly ErrorStatsHelper _statsHelper;

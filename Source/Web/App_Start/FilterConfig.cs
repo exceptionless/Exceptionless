@@ -12,7 +12,7 @@
 using System;
 using System.Web.Mvc;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public class FilterConfig {
         public static void RegisterGlobalFilters(GlobalFilterCollection filters) {
             filters.Add(new HandleErrorAttribute());

@@ -24,7 +24,7 @@ using Exceptionless.Models.Admin;
 using MongoDB.Driver.Builders;
 using Newtonsoft.Json.Linq;
 
-namespace Exceptionless.Web.Controllers.Service {
+namespace Exceptionless.App.Controllers.API {
     [ExceptionlessAuthorize]
     public class ProjectHookController : RepositoryApiController<ProjectHook, IProjectHookRepository> {
         private readonly IProjectRepository _projectRepository;

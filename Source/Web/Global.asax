@@ -1,2 +1,2 @@
-﻿<%@ Application Codebehind="Global.asax.cs" Inherits="Exceptionless.Web.GlobalApplication" Language="C#" %>
+﻿<%@ Application Codebehind="Global.asax.cs" Inherits="Exceptionless.App.GlobalApplication" Language="C#" %>
 <%@ Import Namespace="System" %>

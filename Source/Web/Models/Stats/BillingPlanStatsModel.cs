@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Exceptionless.Web.Models.Stats {
+namespace Exceptionless.App.Models.Stats {
     public class BillingPlanStatsModel {
         public int SmallTotal { get; set; }
         public int SmallYearlyTotal { get; set; }

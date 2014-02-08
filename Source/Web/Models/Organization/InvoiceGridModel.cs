@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Exceptionless.Web.Models.Organization {
+namespace Exceptionless.App.Models.Organization {
     public class InvoiceGridModel {
         public string Id { get; set; }
 

@@ -16,6 +16,8 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.App.Hubs;
+using Exceptionless.App.Models.Project;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -26,10 +28,8 @@ using Exceptionless.Core.Web;
 using Exceptionless.Core.Web.OData;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
-using Exceptionless.Web.Hubs;
-using Exceptionless.Web.Models.Project;
 
-namespace Exceptionless.Web.Controllers.Service {
+namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
     public class ProjectController : RepositoryOwnedByOrganizationApiController<Project, IProjectRepository> {
         private readonly DataHelper _dataHelper;

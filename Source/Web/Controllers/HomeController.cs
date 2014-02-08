@@ -12,11 +12,11 @@
 using System;
 using System.Net;
 using System.Web.Mvc;
-using Exceptionless.Web.Hubs;
+using Exceptionless.App.Hubs;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     public class HomeController : Controller {
         private readonly ICacheClient _cacheClient;
         private readonly IRedisClientsManager _clientsManager;

@@ -11,12 +11,12 @@
 
 using System;
 using DataAnnotationsExtensions.ClientValidation;
-using Exceptionless.Web.App_Start;
+using Exceptionless.App;
 using WebActivator;
 
 [assembly: PreApplicationStartMethod(typeof(RegisterClientValidationExtensions), "Start")]
 
-namespace Exceptionless.Web.App_Start {
+namespace Exceptionless.App {
     public static class RegisterClientValidationExtensions {
         public static void Start() {
             DataAnnotationsModelValidatorProviderExtensions.RegisterValidationExtensions();

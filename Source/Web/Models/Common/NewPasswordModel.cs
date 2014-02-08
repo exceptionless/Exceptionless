@@ -12,7 +12,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Exceptionless.Web.Models.Common {
+namespace Exceptionless.App.Models.Common {
     public class NewPasswordModel {
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} characters long.", MinimumLength = 6)]

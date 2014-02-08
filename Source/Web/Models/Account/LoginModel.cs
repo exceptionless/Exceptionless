@@ -13,7 +13,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using DataAnnotationsExtensions;
 
-namespace Exceptionless.Web.Models.Account {
+namespace Exceptionless.App.Models.Account {
     public class LoginModel {
         [Required]
         [DataType(DataType.Password)]

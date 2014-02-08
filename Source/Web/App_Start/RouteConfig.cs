@@ -15,7 +15,7 @@ using System.Web.Routing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public static class RouteConfig {
         public static void RegisterRoutes(RouteCollection routes) {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");

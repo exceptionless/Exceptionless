@@ -10,9 +10,9 @@
 #endregion
 
 using System;
-using Exceptionless.Web.Models.Common;
+using Exceptionless.App.Models.Common;
 
-namespace Exceptionless.Web.Models.Account {
+namespace Exceptionless.App.Models.Account {
     public class ExternalLoginConfirmationModel : UserModelBase {
         public string ExternalLoginData { get; set; }
     }

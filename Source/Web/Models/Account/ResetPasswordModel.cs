@@ -11,9 +11,9 @@
 
 using System;
 using System.ComponentModel.DataAnnotations;
-using Exceptionless.Web.Models.Common;
+using Exceptionless.App.Models.Common;
 
-namespace Exceptionless.Web.Models.Account {
+namespace Exceptionless.App.Models.Account {
     public class ResetPasswordModel : NewPasswordModel {
         [Required]
         [Display(Name = "Reset password token")]

@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.App.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -29,11 +30,10 @@ using Exceptionless.Core.Web.OData;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Stats;
-using Exceptionless.Web.Hubs;
 using Newtonsoft.Json.Linq;
 using ServiceStack.Messaging;
 
-namespace Exceptionless.Web.Controllers.Service {
+namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
     [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryOwnedByOrganizationApiController<ErrorStack, IErrorStackRepository> {

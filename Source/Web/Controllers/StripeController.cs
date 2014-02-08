@@ -17,7 +17,7 @@ using Exceptionless.Core.Billing;
 using NLog.Fluent;
 using Stripe;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     public class StripeController : Controller {
         private readonly StripeEventHandler _stripeEventHandler;
 

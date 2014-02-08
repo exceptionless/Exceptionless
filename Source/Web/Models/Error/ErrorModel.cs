@@ -16,7 +16,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Models;
 using UAParser;
 
-namespace Exceptionless.Web.Models.Error {
+namespace Exceptionless.App.Models.Error {
     public class ErrorModel : Exceptionless.Models.Error {
         public virtual void PopulateExtraInfo() {
             if (RequestInfo != null && RequestInfo.UserAgent != null) {

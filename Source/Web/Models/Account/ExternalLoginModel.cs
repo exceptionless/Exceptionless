@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Exceptionless.Web.Models.Account {
+namespace Exceptionless.App.Models.Account {
     public class ExternalLoginModel {
         public string Provider { get; set; }
         public string ProviderDisplayName { get; set; }

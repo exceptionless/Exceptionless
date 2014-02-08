@@ -13,7 +13,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using DataAnnotationsExtensions;
 
-namespace Exceptionless.Web.Models.Common {
+namespace Exceptionless.App.Models.Common {
     public class EmailAddressModel {
         [Email]
         [Required]

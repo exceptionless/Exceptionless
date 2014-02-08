@@ -20,7 +20,7 @@ using Microsoft.AspNet.SignalR;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
-namespace Exceptionless.Web.Hubs {
+namespace Exceptionless.App.Hubs {
     public class Notifier : Hub {
         public override Task OnConnected() {
             var user = Context.User as ExceptionlessPrincipal;

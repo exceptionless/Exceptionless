@@ -10,13 +10,13 @@
 #endregion
 
 using System;
-using Exceptionless.Web;
+using Exceptionless.App;
 using Microsoft.Owin;
 using Owin;
 
 [assembly: OwinStartup(typeof(Startup))]
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public class Startup {
         public void Configuration(IAppBuilder app) {
             app.MapSignalR();

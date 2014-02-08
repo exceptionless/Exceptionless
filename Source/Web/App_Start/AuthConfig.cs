@@ -15,7 +15,7 @@ using DotNetOpenAuth.AspNet.Clients;
 using Exceptionless.Core;
 using Exceptionless.Membership;
 
-namespace Exceptionless.Web {
+namespace Exceptionless.App {
     public static class AuthConfig {
         public static void RegisterAuth() {
             if (!String.IsNullOrEmpty(Settings.Current.MicrosoftAppId)) {

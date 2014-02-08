@@ -16,11 +16,11 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Mvc;
+using Exceptionless.App;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Tests.Utility;
 using Exceptionless.Web;
-using Exceptionless.Web.App_Start;
 using SimpleInjector;
 
 namespace Exceptionless.Tests.Controllers.Base {

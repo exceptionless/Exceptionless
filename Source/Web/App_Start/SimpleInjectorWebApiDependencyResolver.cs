@@ -15,7 +15,7 @@ using System.Diagnostics;
 using System.Web.Http.Dependencies;
 using SimpleInjector;
 
-namespace Exceptionless.Web.App_Start {
+namespace Exceptionless.App {
     public sealed class SimpleInjectorWebApiDependencyResolver : IDependencyResolver {
         private readonly Container _container;
 

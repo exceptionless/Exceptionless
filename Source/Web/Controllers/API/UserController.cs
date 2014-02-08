@@ -15,13 +15,13 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using Exceptionless.App.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Models.Stats;
-using Exceptionless.Web.Models.User;
 
-namespace Exceptionless.Web.Controllers.Service {
+namespace Exceptionless.App.Controllers.API {
     public class UserController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
