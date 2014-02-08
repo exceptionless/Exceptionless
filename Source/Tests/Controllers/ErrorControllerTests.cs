@@ -261,7 +261,7 @@ namespace Exceptionless.Tests.Controllers {
                 HttpResponseMessage post = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
                 Assert.Equal(HttpStatusCode.Created, post.StatusCode);
 
-                Thread.Sleep(250);
+                Thread.Sleep(500);
                 response = PatchResponse(TestConstants.ErrorId3, new {
                     UserEmail = "some@email.com"
                 });
