@@ -110,7 +110,7 @@ namespace Exceptionless.Tests.Controllers.Base {
 
         protected virtual void OnResponseCreated(HttpResponseMessage response) {}
 
-        protected virtual HttpConfiguration CreateConfigruation() {
+        protected virtual HttpConfiguration CreateConfiguration() {
             var config = new HttpConfiguration {
                 IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always
             };
@@ -135,7 +135,7 @@ namespace Exceptionless.Tests.Controllers.Base {
         protected override void SetUp() {
             base.SetUp();
 
-            _server = new HttpServer(CreateConfigruation());
+            _server = new HttpServer(CreateConfiguration());
         }
 
         protected override void TearDown() {

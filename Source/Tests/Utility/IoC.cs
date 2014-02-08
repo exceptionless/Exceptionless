@@ -47,8 +47,6 @@ namespace Exceptionless.Tests.Utility {
 
             RegisterServices(_container);
 
-            _container.Verify();
-
             SimpleInjectorInitializer.RegisterIFilterProvider(GlobalConfiguration.Configuration.Services, _container);
             GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(_container);
         }

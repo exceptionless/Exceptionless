@@ -147,8 +147,6 @@ namespace Exceptionless.Tests.Controllers {
             response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId4));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-
-            Thread.Sleep(5000);
         }
 
         [Fact]
@@ -156,7 +154,7 @@ namespace Exceptionless.Tests.Controllers {
             SetValidApiKey();
 
             IEnumerable<FileInfo> files = new DirectoryInfo(Path.GetFullPath(@"..\..\ErrorData\")).GetFiles().Where(f => !f.Name.EndsWith(".expected.json"));
-            ;
+            
             foreach (FileInfo file in files) {
                 JObject jObject = JObject.Parse(File.ReadAllText(file.FullName));
                 Assert.NotNull(jObject);
@@ -170,7 +168,6 @@ namespace Exceptionless.Tests.Controllers {
                 HttpResponseMessage response = PostResponse(error);
                 Assert.Equal(HttpStatusCode.Created, response.StatusCode);
             }
-            Thread.Sleep(15000);
         }
 
         [Fact]
@@ -264,7 +261,7 @@ namespace Exceptionless.Tests.Controllers {
                 HttpResponseMessage post = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
                 Assert.Equal(HttpStatusCode.Created, post.StatusCode);
 
-                Thread.Sleep(5000);
+                Thread.Sleep(100);
                 response = PatchResponse(TestConstants.ErrorId3, new {
                     UserEmail = "some@email.com"
                 });

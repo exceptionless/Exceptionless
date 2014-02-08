@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Text.RegularExpressions;
+using System.Web.Management;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Tests.Stacking;
@@ -43,30 +44,6 @@ namespace Exceptionless.Tests.Models {
                 Error ed = ex.ToErrorModel();
                 Compare(ex, ed);
             }
-        }
-
-        [Fact]
-        public void PopulateFromSqlExceptionWithExtendedData() {
-            const string key = "Test";
-            const string data = "Custom exception data";
-
-            var ex = Record.Exception(() => {
-                using (var connection = new SqlConnection("Data Source=.; Database=InvalidDatabaseThatDoesNotExist"))
-                    connection.Open();
-            }) as SqlException;
-
-            Assert.NotNull(ex);
-            Assert.NotNull(ex.Data);
-            Assert.False(ex.Data.Contains(key));
-            ex.Data[key] = data;
-            Assert.True(ex.Data.Contains(key));
-            Assert.Equal(ex.Data[key].ToString(), data);
-
-            Error ed = ex.ToErrorModel();
-            Assert.True(ed.ExtendedData.ContainsKey(ExtendedDataDictionary.EXCEPTION_INFO_KEY));
-            var extraProperties = ed.ExtendedData.GetValue<Dictionary<string, object>>(ExtendedDataDictionary.EXCEPTION_INFO_KEY);
-            Assert.NotNull(extraProperties);
-            Assert.True(extraProperties.ContainsKey("Data"));
         }
 
         [Fact]
