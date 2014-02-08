@@ -235,7 +235,7 @@ task PackageClient -depends TestClient {
             $nuspec.Save($nuspecFile);
         }
         
-        $packageDir = "$deploy_dir\client-packages"
+        $packageDir = "$deploy_dir\ClientPackages"
         Create-Directory $packageDir
 
         exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version }
@@ -253,7 +253,7 @@ task PackageClient -depends TestClient {
 task PackageServer -depends TestServer {
     Create-Directory $deploy_dir
 
-    $packageDir = "$deploy_dir\server-packages"
+    $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
