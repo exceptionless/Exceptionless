@@ -77,7 +77,6 @@
 $config = @{}
 
 foreach ($param in $OctopusParameters.keys) {
-  Write-Host "$param : $($OctopusParameters[$param])"
   if ($param.StartsWith("appSettings.")) {
     if ($config["appSettings"] -eq $null) {
         $config["appSettings"] = @{}
@@ -98,13 +97,6 @@ foreach ($param in $OctopusParameters.keys) {
   }
 }
 
-Get-Variable |%{ "Name : {0}`r`nValue: {1}`r`n" -f $_.Name,$_.Value }
-
-$scriptPath = $MyInvocation.MyCommand.Path
-$dir = Resolve-Path "."
-Write-Host $dir
-Write-Host $scriptPath
-
 $configPath = $OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\Web.config"
 
-#Update-ApplicationConfig -configPath $configPath -variables $config
+Update-ApplicationConfig -configPath $configPath -variables $config
