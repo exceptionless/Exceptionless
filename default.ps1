@@ -266,7 +266,7 @@ Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersio
     $assemblyFileVersion = "AssemblyFileVersion(`"$assemblyFileVersionNumber`")"
     $assemblyInformationalVersion = "AssemblyInformationalVersion(`"$assemblyInformationalVersionNumber`")"
 
-    TeamCity-ReportBuildProgress "Version: $version Bind Version: $bind_version Info Version: $info_version"
+    TeamCity-ReportBuildProgress "Version: $assemblyVersionNumber Bind Version: $assemblyFileVersionNumber Info Version: $assemblyInformationalVersionNumber"
 
     (Get-Content $filename) | ForEach-Object {
         % {$_ -replace 'AssemblyVersion\("[^"]+"\)', $assemblyVersion } |
