@@ -13,6 +13,6 @@
     <releaseNotes>http://exceptionless.com/category/versions/</releaseNotes>
   </metadata>
   <files>
-    <file src="**\*.*" target="" exclude="**\_references.js;**\*.ts;*.nuspec;*.settings;**\*.cs;packages.config;**\*.less;*.csproj;*.user;*.suo;**\*.xsd;obj\**\*.*;**\*.ide" />
+    <file src="**\*.*" target="" exclude="**\_references.js;**\*.ts;*.nuspec;*.settings;**\*.cs;packages.config;*.csproj;*.user;*.suo;**\*.xsd;obj\**\*.*;**\*.ide" />
   </files>
 </package>
