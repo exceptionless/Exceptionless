@@ -11,57 +11,43 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Web.OData;
-using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using Exceptionless.Web.Models.User;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Web.Controllers.Service {
-    public class UserController : RepositoryApiController<User, IUserRepository> {
-        private readonly ICacheClient _cacheClient;
+    public class UserController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IUserRepository _userRepository;
 
-        public UserController(IUserRepository repository, IOrganizationRepository organizationRepository, ICacheClient cacheClient) : base(repository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository) {
             _organizationRepository = organizationRepository;
-            _cacheClient = cacheClient;
+            _userRepository = userRepository;
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override IEnumerable<User> Get() {
-            return base.Get();
-        }
+        [HttpPut]
+        [ExceptionlessAuthorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public HttpResponseMessage UpdateAdminRole(string id) {
+            if (String.IsNullOrEmpty(id))
+                return BadRequestErrorResponseMessage();
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override User Get(string id) {
-            return base.Get(id);
-        }
+            var user = _userRepository.GetByIdCached(id);
+            if(user == null)
+                return NotFoundErrorResponseMessage(id);
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override HttpResponseMessage Post(User value) {
-            return base.Post(value);
-        }
+            if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+                user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
+            else
+                user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override HttpResponseMessage Put(string id, Delta<User> value) {
-            return base.Put(id, value);
-        }
-
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override HttpResponseMessage Patch(string id, Delta<User> value) {
-            return base.Patch(id, value);
-        }
-
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.Admin)]
-        public override HttpResponseMessage Delete(string id) {
-            return base.Delete(id);
+            _userRepository.Update(user);
+            return new HttpResponseMessage(HttpStatusCode.OK);
         }
 
         [HttpGet]
@@ -77,7 +63,7 @@ namespace Exceptionless.Web.Controllers.Service {
             if (pageSize < 1)
                 pageSize = 10;
 
-            List<UserModel> results = _repository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
+            List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
 
             var organization = _organizationRepository.GetByIdCached(organizationId);
             if (organization.Invites.Any())
@@ -89,7 +75,6 @@ namespace Exceptionless.Web.Controllers.Service {
                 TotalCount = results.Count
             };
 
-            // TODO: Only return the populated fields (currently all properties are being returned).
             return result;
         }
     }

@@ -52,13 +52,20 @@
                                 <thead>
                                     <tr>
                                         <th>Email Address</th>
-                                        <th class="action" data-bind="visible: items().length > 0">&nbsp;</th>
+                                        <th data-bind="visible: items().length > 0, css: exceptionless.App.user().hasAdminRole() ? 'action-large' : 'action'">&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody data-bind="foreach: items">
                                     <tr>
-                                        <td><span data-bind="text: emailAddress"></span><span class="invite" data-bind="visible: isInvite"> [Invited]</span></td>
                                         <td>
+                                            <span data-bind="text: emailAddress"></span>
+                                            <span class="label label-info" data-bind="visible: hasAdminRole">Admin</span>
+                                            <span class="label label-success" data-bind="visible: isInvite">Invited</span>
+                                        </td>
+                                        <td>
+                                            <a style="display: none" class="btn btn-small" data-bind="visible: !isInvite() && exceptionless.App.user().hasAdminRole(), click: $parent.updateAdminRole, attr: { title: !hasAdminRole() ? 'Add Admin Role' : 'Remove Admin Role' }">
+                                                <i class="fa fa-user"></i>
+                                            </a>
                                             <a class="btn btn-small" data-bind="click: $parent.resendNotification, attr: { title: 'Resend Invite Email' }">
                                                 <i class="fa fa-envelope"></i>
                                             </a>

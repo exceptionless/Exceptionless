@@ -31,16 +31,8 @@ module exceptionless.organization {
             this.insert(null, resource, (data) => {
                 $("#add-new-item-modal").modal('hide');
 
-                if (!data) {
-                    this.items.push(new models.User(null, null, this.newItem(), false, true));
-                    App.showSuccessNotification(StringUtil.format('Successfully invited {emailAddress}!', { emailAddress: this.newItem() }));
-                } else {
-                    var item = this.populateResultItem(data);
-                    if (item)
-                        this.items.push(item);
-
-                    App.showSuccessNotification(StringUtil.format('Successfully added {emailAddress} to the organization.', { emailAddress: this.newItem() }));
-                }
+                this.refreshViewModelData();
+                App.showSuccessNotification(StringUtil.format('Successfully {action} {emailAddress} to the organization.', { action: !data ? 'invited' : 'added', emailAddress: this.newItem() }));
 
                 complete();
             }, (jqXHR: JQueryXHR, status: string, errorThrown: string) => {
@@ -63,6 +55,25 @@ module exceptionless.organization {
 
                 App.showErrorNotification(StringUtil.format('An error occurred while inviting {emailAddress} to the organization.', { emailAddress: this.newItem() }));
                 complete();
+            });
+        }
+
+        public updateAdminRole(user: models.User) {
+            var message = StringUtil.format('Are you sure you want to {action} the admin role for this user?', { action: user.hasAdminRole() ? 'remove' : 'add' });
+            App.showConfirmDangerDialog(message, StringUtil.format('{action} ADMIN ROLE', { action: user.hasAdminRole() ? 'REMOVE' : 'ADD' }), result => {
+                if (!result)
+                    return;
+
+                var url = StringUtil.format('/api/v1/user/{id}/updateadminrole', { id: user.id() });
+                this.update(url, null, (data) => {
+                    if (user.id() === App.user().id()) {
+                        window.location.reload();
+                        return;
+                    }
+
+                    this.refreshViewModelData();
+                    App.showSuccessNotification(StringUtil.format('Successfully {action} the admin role.', { action: user.hasAdminRole() ? 'removed' : 'added' }));
+                }, StringUtil.format('An error occurred while {action} the admin role.', { action: user.hasAdminRole() ? 'removing' : 'adding' }));
             });
         }
 
@@ -99,6 +110,7 @@ module exceptionless.organization {
         }
 
         public applyBindings() {
+            this.updateAdminRole = <any>this.updateAdminRole.bind(this);
             this.resendNotification = <any>this.resendNotification.bind(this);
             this.removeItem = <any>this.removeItem.bind(this);
             super.applyBindings();
