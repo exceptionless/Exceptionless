@@ -21,7 +21,7 @@ properties {
     $deploy_dir = "$build_dir\Deploy"
     $packages_dir = "$base_dir\Packages"
 
-    $sln_file = "$base_dir\Exceptionless.NoSamples.sln"
+    $sln_file = "$base_dir\Exceptionless.ServerOnly.sln"
     $sign_file = "$source_dir\Exceptionless.snk"
 
     $client_projects = @(
@@ -235,13 +235,13 @@ task PackageClient -depends TestClient {
             $nuspec.Save($nuspecFile);
         }
         
-        $packageDir = "$deploy_dir\packages"
+        $packageDir = "$deploy_dir\client-packages"
         Create-Directory $packageDir
 
         exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version }
     }
 
-    Get-ChildItem -Path "$deploy_dir\packages" -Recurse | ForEach-Object {
+    Get-ChildItem -Path $packageDir -Recurse | ForEach-Object {
         $filename = $_.Directory.ToString() + '\' + $_.Name
         TeamCity-PublishArtifact $filename
     }
@@ -253,8 +253,16 @@ task PackageClient -depends TestClient {
 task PackageServer -depends TestServer {
     Create-Directory $deploy_dir
 
-    ZipAndPublishArtifact "$source_dir\Web\" "$deploy_dir\Exceptionless.Web.zip"
-    ZipAndPublishArtifact "$source_dir\SchedulerService\" "$deploy_dir\SchedulerService.zip"
+    $packageDir = "$deploy_dir\server-packages"
+    Create-Directory $packageDir
+
+    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    
+	Get-ChildItem -Path $packageDir -Recurse | ForEach-Object {
+        $filename = $_.Directory.ToString() + '\' + $_.Name
+        TeamCity-PublishArtifact $filename
+    }
 
     TeamCity-ReportBuildStatus 'SUCCESS' "Success"
 }
@@ -282,24 +290,6 @@ Function Verify-BuildRequirements() {
     if ((ls "$env:windir\Microsoft.NET\Framework\v4.0*") -eq $null) {
         throw "Building Exceptionless requires .NET 4.0/4.5, which doesn't appear to be installed on this machine."
     }
-}
-
-Function ZipAndPublishArtifact ([string] $sourceDir, [string] $artifactFilePath) {
-    Create-Directory $working_dir
-
-    $exclude = @('*.cs', '*.csproj', '*.ide', '*.pdb', '*.resx', '*.settings', '*.suo', '*.user', '*.xsd', 'packages.config' )
-    Get-ChildItem $sourceDir -Recurse -Exclude $exclude | ? { $_.FullName -notmatch "\\obj\\?" } | Copy-Item -Destination {Join-Path $working_dir $_.FullName.Substring($sourceDir.length)}
-
-    # Remove empty folders
-    Get-ChildItem $working_dir -Recurse | Where {$_.PSIsContainer -and @(Get-ChildItem -Lit $_.Fullname -r | Where {!$_.PSIsContainer}).Length -eq 0} | Remove-Item -Recurse
-
-    Compress-7Zip -ArchiveFileName $artifactFilePath -Path $working_dir -Format Zip
-
-    Delete-Directory $working_dir
-
-    TeamCity-PublishArtifact $artifactFilePath
-
-    TeamCity-ReportBuildStatus 'SUCCESS' "Publishing build artifact $artifactFilePath"
 }
 
 Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [string] $sourceAssembly, [string] $assembliesToMerge, [string] $targetFramworkVersion) {

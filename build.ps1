@@ -14,7 +14,6 @@ $scriptDir = Split-Path $scriptPath
 
 .nuget\NuGet.exe install .nuget\packages.config -OutputDirectory packages
 Import-Module (Get-ChildItem "$scriptDir\packages\psake.*\tools\psake.psm1" | Select-Object -First 1)
-Import-Module (Get-ChildItem "$scriptDir\packages\7Zip4Powershell.*\tools\7Zip4Powershell.dll" | Select-Object -First 1)
 
 $psake.use_exit_on_error = $true
 Invoke-psake "$scriptDir\default.ps1" $task -properties $properties

@@ -297,7 +297,7 @@
       <Project>{b551dbcb-e732-4cfb-9361-cd74f1ba82f5}</Project>
       <Name>RazorSharpEmail</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Web\Exceptionless.App.csproj">
+    <ProjectReference Include="..\App\Exceptionless.App.csproj">
       <Project>{75b70e03-6f3d-4b05-979f-8e0bdaad732c}</Project>
       <Name>Exceptionless.App</Name>
     </ProjectReference>

@@ -1,21 +1,21 @@
-/Source/Web/App_Data/*
+/Source/App/App_Data/*
 /TestResults
-/Source/Web/Scripts/app*.js
-/Source/Web/Content/exceptionless.min.css
-/Source/Web/Content/exceptionless.css
+/Source/App/Scripts/app*.js
+/Source/App/Content/exceptionless.min.css
+/Source/App/Content/exceptionless.css
 /Build
-/Source/Web/Scripts/mvcfoolproof.unobtrusive.min.min.js
-/Source/Web/Content/app.css
-/source/web/Scripts/app.min.js
-/source/web/Scripts/app.js
-/Source/Web/Content/app.min.css
-/Source/Web/Scripts/bootbox.min.js
-/Source/Web/Scripts/jquery.validate.unobtrusive-custom-for-bootstrap.min.js
+/Source/App/Scripts/mvcfoolproof.unobtrusive.min.min.js
+/Source/App/Content/app.css
+/Source/App/Scripts/app.min.js
+/Source/App/Scripts/app.js
+/Source/App/Content/app.min.css
+/Source/App/Scripts/bootbox.min.js
+/Source/App/Scripts/jquery.validate.unobtrusive-custom-for-bootstrap.min.js
 /Source/Samples/SampleWeb/App_Data
-/Source/Web/Content/bootstrap-datepicker.min.css
-/Source/Web/Scripts/App/*.map
-/Source/Web/Scripts/jquery.bootstrap.wizard.min.js
-/Source/Web/Scripts/jquery.scrollto.min.js
+/Source/App/Content/bootstrap-datepicker.min.css
+/Source/App/Scripts/App/*.map
+/Source/App/Scripts/jquery.bootstrap.wizard.min.js
+/Source/App/Scripts/jquery.scrollto.min.js
 /Exceptionless.sln.ide/graph/Exceptionless.sln.ide
 
 ## Ignore Visual Studio temporary files, build results, and
