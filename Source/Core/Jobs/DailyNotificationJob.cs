@@ -12,6 +12,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models;
@@ -56,11 +57,17 @@ namespace Exceptionless.Core.Jobs {
                 Debug.Assert(projects.Count == result.DocumentsAffected);
 
                 foreach (var project in projects) {
+                    var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
+                    if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
+                        Log.Info().Message("Skipping Summary Notification older than two days for Project: {0} with a start time of {1}.", project.Id, utcStartTime);
+                        continue;
+                    }
+
                     if (_messageFactory != null) {
                         using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
                             var notification = new SummaryNotification {
                                 Id = project.Id,
-                                UtcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay),
+                                UtcStartTime = utcStartTime,
                                 UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                             };
 
