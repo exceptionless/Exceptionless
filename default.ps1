@@ -113,14 +113,15 @@ task BuildClient -depends Init {
 }
 
 task BuildServer -depends Init {			
-    TeamCity-ReportBuildStart "Building Exceptionless" 
+    TeamCity-ReportBuildStart "Building Server" 
     exec { msbuild "$sln_file" /p:Configuration="$configuration" /p:Platform="Any CPU" /t:Rebuild }
-    TeamCity-ReportBuildFinish "Finished building Exceptionless"
+    TeamCity-ReportBuildFinish "Finished building Server"
 }
 
 task Build -depends BuildClient, BuildServer
 
 task TestClient -depends BuildClient {
+	TeamCity-ReportBuildProgress "Running Client Tests"
     ForEach ($p in $client_test_projects) {
         if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
             TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
@@ -132,6 +133,7 @@ task TestClient -depends BuildClient {
 }
 
 task TestServer -depends BuildServer {
+	TeamCity-ReportBuildProgress "Running Server Tests"
     ForEach ($p in $server_test_projects) {
         if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
             TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
@@ -219,6 +221,8 @@ task PackageClient -depends TestClient {
 
     Delete-Directory "$build_dir\$configuration"
     Delete-Directory $working_dir
+
+	TeamCity-ReportBuildProgress ""
 }
 
 task PackageServer -depends TestServer {
@@ -231,6 +235,8 @@ task PackageServer -depends TestServer {
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 	TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+
+	TeamCity-ReportBuildProgress ""
 }
 
 task Package -depends PackageClient, PackageServer
