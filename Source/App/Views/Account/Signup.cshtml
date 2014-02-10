@@ -1,4 +1,5 @@
-﻿@using Exceptionless.App.Extensions
+﻿@using System.Web.Optimization
+@using Exceptionless.App.Extensions
 @model Exceptionless.App.Models.Account.RegisterModel
 @{
     ViewBag.Title = "Sign Up";
@@ -36,7 +37,7 @@
                             </div>
                         </div>
                         @Html.ValidationSummary(true, null, new Dictionary<string, object> { { "style", "color: red;" } })
-                        @using (Html.BeginForm("Signup", "Account", new { ReturnUrl = ViewBag.ReturnUrl, Token = ViewBag.Token }, FormMethod.Post, new { @class="form-horizontal" })) {
+                        @using (Html.BeginForm("Signup", "Account", new { ReturnUrl = ViewBag.ReturnUrl, Token = ViewBag.Token }, FormMethod.Post, new { onsubmit="return trackSignup();", id="signupform", @class="form-horizontal" })) {
                             @Html.AntiForgeryToken()
                             <div class="controls">
                                 <h4 style="margin-top: 0;">Create an account</h4>
@@ -87,6 +88,20 @@
             </div>
         </div>
 
-        
     </div>
 </div>
+
+@section FooterContent {
+    @Scripts.Render("~/scripts/main.js")
+    <script type="text/javascript">
+        function trackSignup() {
+            var form = $("#signupform");
+            form.validate();
+            var isValid = form.valid();
+            if (isValid)
+                ga('send', 'event', 'Signup', 'Submit');
+
+            return isValid;
+        }
+    </script>
+}
