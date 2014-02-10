@@ -128,7 +128,7 @@ namespace Exceptionless.Core {
             settings.EnableSignalR = ConfigurationManager.AppSettings.GetBool("EnableSignalR", true);
             settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
             settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
-            settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", true);
+            settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", false);
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
             settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
             settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);
