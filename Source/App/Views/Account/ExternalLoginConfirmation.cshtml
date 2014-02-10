@@ -1,4 +1,5 @@
-﻿@using Exceptionless.App.Extensions
+﻿@using System.Web.Optimization
+@using Exceptionless.App.Extensions
 @model Exceptionless.App.Models.Account.ExternalLoginConfirmationModel
 @{
     ViewBag.Title = "Register";
@@ -10,7 +11,7 @@
         <h3>Confirm Your @ViewBag.ProviderDisplayName Account Details</h3>
     </div> <!-- /widget-header -->
     <div class="widget-content">
-        @using (Html.BeginForm("ExternalLoginConfirmation", "Account", new { ReturnUrl = ViewBag.ReturnUrl, Token = ViewBag.Token }, FormMethod.Post, new { @class = "form-horizontal" })) {
+        @using (Html.BeginForm("ExternalLoginConfirmation", "Account", new { ReturnUrl = ViewBag.ReturnUrl, Token = ViewBag.Token }, FormMethod.Post, new { onsubmit = "return trackSignup();", id = "confirmform", @class = "form-horizontal" })) {
             @Html.AntiForgeryToken()
 
             @Html.BeginControlGroupFor(m => m.FullName)
@@ -37,3 +38,18 @@
         }
     </div> <!-- /widget-content -->
 </div> <!-- /widget -->
+
+@section FooterContent {
+    @Scripts.Render("~/scripts/main.js")
+    <script type="text/javascript">
+        function trackSignup() {
+            var form = $("#confirmform");
+            form.validate();
+            var isValid = form.valid();
+            if (isValid)
+                ga('send', 'event', 'Signup', 'Submit');
+
+            return isValid;
+        }
+    </script>
+}
