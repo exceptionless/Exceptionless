@@ -49,11 +49,8 @@ properties {
 }
 
 Include .\teamcity.ps1
-TaskSetup {
-    TeamCity-ReportBuildProgress "Running task $($psake.context.Peek().currentTaskName)"
-}
 
-task default -depends Package
+task default -depends Build, Test, Package
 task client -depends PackageClient
 task server -depends PackageServer
 
