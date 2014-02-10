@@ -96,8 +96,20 @@ function TeamCity-ReportBuildFinish([string]$message) {
 	TeamCity-WriteServiceMessage 'progressFinish' $message
 }
 
-function TeamCity-ReportBuildStatus([string]$status, [string]$text='') {
-	TeamCity-WriteServiceMessage 'buildStatus' @{ status=$status; text=$text }
+function TeamCity-ReportBuildProblem([string]$description, [string]$identity='') {
+	if (![string]::IsNullOrEmpty($identity)) {
+		Write-Output "##teamcity[buildProblem description='$description' identity='$identity']"
+	} else {
+		Write-Output "##teamcity[buildProblem description='$description']"
+	}
+}
+
+function TeamCity-ReportBuildStatus([string]$text, [string]$status='') {
+	if (![string]::IsNullOrEmpty($status)) {
+		Write-Output "##teamcity[buildStatus status='$status' text='$text']"
+	} else {
+		Write-Output "##teamcity[buildStatus text='$text']"
+	}
 }
 
 function TeamCity-SetBuildNumber([string]$buildNumber) {

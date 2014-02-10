@@ -49,6 +49,9 @@ properties {
 }
 
 Include .\teamcity.ps1
+TaskSetup {
+    TeamCity-ReportBuildProgress "Running task $($psake.context.Peek().currentTaskName)"
+}
 
 task default -depends Package
 task client -depends PackageClient
@@ -121,50 +124,24 @@ task BuildServer -depends Init {
 task Build -depends BuildClient, BuildServer
 
 task TestClient -depends BuildClient {
-    $failure = $FALSE
-
     ForEach ($p in $client_test_projects) {
         if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
-            TeamCity-ReportBuildStatus 'FAILURE' "Unit test project $($p.Name) needs to be compiled first."
-            return;
+            TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
+            Exit
         }
 
         exec { & "$lib_dir\xunit\xunit.console.clr4.exe" "$($p.BuildDir)\$($p.Name).dll"; }
-        if ($lastExitCode -ne 0) {
-            $failure = $TRUE
-            TeamCity-ReportBuildStatus 'FAILURE' "One or more client unit test in project $($p.Name) failed."
-        } else {
-            TeamCity-ReportBuildStatus 'SUCCESS' "Finished client unit testing project $($p.Name)"
-        }
-    }
-
-    if ($failure) {
-        TeamCity-ReportBuildStatus 'FAILURE' "One or more client unit tests failed."
-        Throw "One or more client unit tests failed."
     }
 }
 
 task TestServer -depends BuildServer {
-    $failure = $FALSE
-
     ForEach ($p in $server_test_projects) {
         if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
-            TeamCity-ReportBuildStatus 'FAILURE' "Unit test project $($p.Name) needs to be compiled first."
-            return;
+            TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
+            Exit
         }
 
         exec { & "$lib_dir\xunit\xunit.console.clr4.exe" "$($p.BuildDir)\$($p.Name).dll"; }
-        if ($lastExitCode -ne 0) {
-            $failure = $TRUE
-            TeamCity-ReportBuildStatus 'FAILURE' "One or more server unit test in project $($p.Name) failed."
-        } else {
-            TeamCity-ReportBuildStatus 'SUCCESS' "Finished server unit testing project $($p.Name)"
-        }
-    }
-
-    if ($failure) {
-        TeamCity-ReportBuildStatus 'FAILURE' "One or more server unit tests failed."
-        Throw "One or more server unit tests failed."
     }
 }
 
@@ -176,6 +153,8 @@ task PackageClient -depends TestClient {
     ForEach ($p in $client_projects) {
         $workingDirectory = "$working_dir\$($p.Name)"
         Create-Directory $workingDirectory
+
+		TeamCity-ReportBuildProgress "Building Client NuGet Package: $($p.Name)"
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
@@ -241,11 +220,6 @@ task PackageClient -depends TestClient {
         exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version }
     }
 
-    Get-ChildItem -Path $packageDir -Recurse | ForEach-Object {
-        $filename = $_.Directory.ToString() + '\' + $_.Name
-        TeamCity-PublishArtifact $filename
-    }
-
     Delete-Directory "$build_dir\$configuration"
     Delete-Directory $working_dir
 }
@@ -256,15 +230,10 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
+	TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+	TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
-    
-	Get-ChildItem -Path $packageDir -Recurse | ForEach-Object {
-        $filename = $_.Directory.ToString() + '\' + $_.Name
-        TeamCity-PublishArtifact $filename
-    }
-
-    TeamCity-ReportBuildStatus 'SUCCESS' "Success"
 }
 
 task Package -depends PackageClient, PackageServer
