@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ using CodeSmith.Core.Helpers;
 using Exceptionless;
 using Exceptionless.Models;
 using Exceptionless.Serialization;
+using Exceptionless.Extensions;
 
 namespace SampleConsole {
     internal class Program {
@@ -37,24 +39,26 @@ namespace SampleConsole {
                     Console.WriteLine("1: Send 1\r\n2: Send 100\r\n3: Send 1 per second\r\n4: Send 10 per second\r\n5: Send 1,000\r\n6: Process queue\r\n7: Process directory\r\n\r\nQ: Quit");
                 }
 
-                ConsoleKeyInfo key = Console.ReadKey(true);
-                if (key.Key == ConsoleKey.D1)
+                ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                Trace.WriteLine(String.Format("Key {0} pressed.", keyInfo.Key));
+
+                if (keyInfo.Key == ConsoleKey.D1)
                     SendError(errorCode: errorCode);
-                if (key.Key == ConsoleKey.D2)
+                if (keyInfo.Key == ConsoleKey.D2)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 100, uniqueCount: 25);
-                else if (key.Key == ConsoleKey.D3)
+                else if (keyInfo.Key == ConsoleKey.D3)
                     SendContinuousErrors(1000, token, uniqueCount: 5);
-                else if (key.Key == ConsoleKey.D4)
+                else if (keyInfo.Key == ConsoleKey.D4)
                     SendContinuousErrors(50, token, uniqueCount: 5);
-                else if (key.Key == ConsoleKey.D5)
+                else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
-                else if (key.Key == ConsoleKey.D6)
+                else if (keyInfo.Key == ConsoleKey.D6)
                     ExceptionlessClient.Current.ProcessQueue();
-                else if (key.Key == ConsoleKey.D7)
+                else if (keyInfo.Key == ConsoleKey.D7)
                     SendAllCapturedErrorsFromDisk();
-                else if (key.Key == ConsoleKey.Q)
+                else if (keyInfo.Key == ConsoleKey.Q)
                     break;
-                else if (key.Key == ConsoleKey.S) {
+                else if (keyInfo.Key == ConsoleKey.S) {
                     tokenSource.Cancel();
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
@@ -88,6 +92,7 @@ namespace SampleConsole {
 
                     Console.SetCursorPosition(0, 13);
                     Console.WriteLine("Sent {0} errors.", errorCount);
+                    Trace.WriteLine(String.Format("Sent {0} errors.", errorCount));
 
                     Thread.Sleep(delay);
                 }
@@ -101,22 +106,26 @@ namespace SampleConsole {
             try {
                 throw new MyException(errorCode.Value, Guid.NewGuid().ToString());
             } catch (Exception ex) {
-                ErrorBuilder err = ex.ToExceptionless().AddObject(new Version(1, 0), "myApplicationVersion").AddObject(new {
-                    myApplicationVersion = new Version(1, 0),
-                    Date = DateTime.Now,
-                    __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23",
-                    SomeField10 = "testing"
-                });
+                ErrorBuilder err = ex.ToExceptionless()
+                    .AddObject(new {
+                        myApplicationVersion = new Version(1, 0),
+                        Date = DateTime.Now,
+                        __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23",
+                        SomeField10 = "testing"
+                    }, "Object From Code");
                 if (randomizeDates)
                     err.Target.OccurrenceDate = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-90), maximum: DateTime.Now);
                 if (critical)
                     err.MarkAsCritical();
+                if (ExceptionlessClient.Current.Configuration.GetBoolean("IncludeConditionalData"))
+                    err.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
                 err.Submit();
             }
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, 11);
                 Console.WriteLine("Sent 1 error.");
+                Trace.WriteLine("Sent 1 error.");
             }
         }
 

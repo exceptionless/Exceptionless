@@ -19,9 +19,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSmith.Core", "Source\CodeSmith.Core\CodeSmith.Core.csproj", "{C2E6E845-B50D-45B8-B188-E2F63B3E468F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Clients", "Clients", "{AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}"
-	ProjectSection(SolutionItems) = preProject
-		Source\Clients\LICENSE.txt = Source\Clients\LICENSE.txt
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Mvc", "Source\Clients\Mvc\Exceptionless.Mvc.csproj", "{811BC612-86AA-4039-BD8F-4ADC27D3EED9}"
 EndProject
