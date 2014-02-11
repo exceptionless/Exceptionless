@@ -133,6 +133,10 @@ namespace Exceptionless.Configuration {
             // apply the config values from the server to the current client configuration
             foreach (string k in serverConfig.Keys)
                 accessors.Configuration[k] = serverConfig[k];
+
+            // if a set of data exclusions are not sent down, then it means that there aren't any exclusions.
+            if (!serverConfig.ContainsKey("@@DataExclusions"))
+                accessors.Configuration["@@DataExclusions"] = String.Empty;
         }
 
         internal static ClientConfiguration Create(ExceptionlessClient client) {
