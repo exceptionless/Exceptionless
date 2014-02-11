@@ -127,6 +127,7 @@ namespace Exceptionless.Core.Utility {
             var project = new Project { Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
             project.ApiKeys.Add(SAMPLE_API_KEY);
+            project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = _projectRepository.Add(project);
 
