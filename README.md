@@ -42,3 +42,4 @@ This is a list of high level things that we are planning to do:
 - Implement search features using ElasticSearch.
 - JavaScript client for reporting client side errors.
 - Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS.
+- Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications.
