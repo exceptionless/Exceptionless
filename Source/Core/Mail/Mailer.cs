@@ -11,11 +11,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Models;
+using NLog.Fluent;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Mail {
@@ -139,7 +141,16 @@ namespace Exceptionless.Core.Mail {
         private void SendMessage(MailMessage message) {
             var client = new SmtpClient();
             CleanAddresses(message);
-            client.Send(message);
+
+            try {
+                client.Send(message);
+            } catch (SmtpException ex) {
+                var wex = ex.InnerException as WebException;
+                if (ex.StatusCode == SmtpStatusCode.GeneralFailure && wex != null && wex.Status == WebExceptionStatus.ConnectFailure)
+                    Log.Error().Exception(ex).Message(String.Format("Unable to connect to the mail server. Exception: {0}", wex.Message)).Write();
+                else
+                    throw;
+            }
         }
 
         private static void CleanAddresses(MailMessage msg) {
