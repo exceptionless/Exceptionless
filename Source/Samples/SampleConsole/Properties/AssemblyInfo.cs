@@ -22,4 +22,6 @@ using Exceptionless.Configuration;
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: Guid("2a45b7bb-82b6-4055-8c8e-1a3c81afb4f1")]
-[assembly: Exceptionless("http://localhost:40000", "e3d51ea621464280bbcb79c11fd6483e", EnableSSL = false)]
+
+// example of setting an attribute value in config.
+[assembly: ExceptionlessSetting("AttributeSettings", "AttributeValue")]
