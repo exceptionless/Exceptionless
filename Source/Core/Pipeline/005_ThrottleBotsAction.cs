@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Pipeline {
     public class ThrottleBotsAction : ErrorPipelineActionBase {
         private readonly ICacheClient _cacheClient;
         private readonly ErrorRepository _errorRepository;
-        private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(15);
+        private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
         public ThrottleBotsAction(ICacheClient cacheClient, ErrorRepository errorRepository) {
             _cacheClient = cacheClient;
@@ -31,7 +31,10 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(ErrorPipelineContext ctx) {
-            // throttle errors by client ip address to no more than X every 15 minutes.
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                return;
+
+            // Throttle errors by client ip address to no more than X every 5 minutes.
             string clientIp = null;
             if (ctx.Error.RequestInfo != null && !String.IsNullOrEmpty(ctx.Error.RequestInfo.ClientIpAddress))
                 clientIp = ctx.Error.RequestInfo.ClientIpAddress;
