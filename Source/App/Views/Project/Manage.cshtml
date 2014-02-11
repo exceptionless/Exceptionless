@@ -166,13 +166,17 @@
                                 </div>
                             </div> <!-- /form-actions -->
                         </div>
-                        
+
                         <div class="tab-pane" id="settings">
                             <h5>Data Exclusions</h5>
-                            <p>A comma delimited list of field names that should be removed from any error report data. 
-                                For example, entering <strong>CreditCard</strong> will remove any extended data properties, 
-                                form fields, cookies and query parameters from the report.</p>
-                            <input type="text" class="input-xxlarge" data-bind="value: dataExclusions" placeholder="Example: Password, CreditCard, SSN" />
+                            <p>
+                                A comma delimited list of field names that should be removed from any error report data
+                                (e.g.,  extended data properties, form fields, cookies and query parameters). You can also
+                                specify a <a href="http://docs.exceptionless.com/contents/security/" target="_blank" title="Data Exclusions documentation">field name with a wildcard (<strong>*</strong>)</a>
+                                to specify starts with, ends with, or contains just to be extra safe.
+                            </p>
+
+                            <input type="text" class="input-xxlarge" data-bind="value: dataExclusions" placeholder="Example: *Password*, CreditCard*, SSN" />
 
                             <h5>Client Configuration</h5>
                             <p>The configuration values on this page will be automatically sent to the Exceptionless clients for your project and be available in the <code>ExceptionlessClient.Current.Configuration</code> dictionary.</p>
@@ -208,27 +212,29 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            
+
                             <div class="form-actions">
                                 @Html.ActionLink("Go To Dashboard", "Index", "Project", null, new { @class = "btn" })
                                 <div class="pull-right">
                                     <button class="btn" data-bind="click: $root.addConfigurationValue">Add</button>
                                     <button class="btn btn-primary" data-bind="command: saveConfigurationSettingsCommand, template: { name: 'command-button-template', data: { command: saveConfigurationSettingsCommand, name: 'Save', executingName: 'Saving' } }">Save</button>
-                                    
+
                                 </div>
                             </div> <!-- /form-actions -->
                         </div>
-                        
+
                         <div class="tab-pane" id="integrations">
                             <div class="alert in fade alert-success" style="display: none;" data-bind="visible: !hasPremiumFeatures()">
                                 <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable integrations!
                             </div>
-                            
-                            <p>The following web hooks will be called for this project. We also support 
-                                <a href="http://zapier.com/" target="_blank">Zapier</a> which allows 
-                                you to easily integrate Exceptionless with many different services (200+) 
-                                like JIRA, HipChat, Twilio, Basecamp and more.</p>
-                            
+
+                            <p>
+                                The following web hooks will be called for this project. We also support
+                                <a href="http://zapier.com/" target="_blank">Zapier</a> which allows
+                                you to easily integrate Exceptionless with many different services (200+)
+                                like JIRA, HipChat, Twilio, Basecamp and more.
+                            </p>
+
                             <table class="table table-striped table-bordered table-fixed">
                                 <thead>
                                     <tr>
@@ -254,14 +260,14 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            
+
                             <div class="form-actions">
                                 @Html.ActionLink("Go To Dashboard", "Index", "Project", null, new { @class = "btn" })
                                 <div class="pull-right">
-                                    <button class="btn btn-primary" data-bind="click: $root.addProjectHook">Add Web Hook</button>            
+                                    <button class="btn btn-primary" data-bind="click: $root.addProjectHook">Add Web Hook</button>
                                 </div>
                             </div> <!-- /form-actions -->
-                            
+
                             <div id="add-new-item-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="add-new-item-modal" aria-hidden="true">
                                 <div class="modal-header">
                                     <a href="#" class="close" data-dismiss="modal">&times;</a>
@@ -278,19 +284,19 @@
                                     <div class="control-group" data-bind="validationElement: eventTypes">
                                         <div class="controls controls-row">
                                             <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.NewError"> 
+                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.NewError">
                                                 <abbr title="Occurs when a new error that has never been seen before is reported to your project.">New Error</abbr>
                                             </label>
                                             <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.ErrorRegression"> 
+                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.ErrorRegression">
                                                 <abbr title="Occurs when an error that has been marked as fixed is reported to your project.">Regression</abbr>
                                             </label>
                                             <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.CriticalError"> 
+                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.CriticalError">
                                                 <abbr title="Occurs when an error that has been marked as critical is reported to your project.">Critical Error</abbr>
                                             </label>
                                             <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.StackPromoted"> 
+                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.StackPromoted">
                                                 <abbr title="Used to promote error stacks to external systems.">Promoted</abbr>
                                             </label>
                                         </div>
@@ -303,13 +309,12 @@
                                 </div>
                             </div>
                         </div>
-                    </div> 
+                    </div>
                 </div>
             </div> <!-- /widget-content -->
         </div> <!-- /widget -->
     </div> <!-- /span9 -->
 </div> <!-- /row -->
-
 @section FooterContent {
     @Html.Partial("_CommandButtonTemplate")
     <script type="text/javascript">
