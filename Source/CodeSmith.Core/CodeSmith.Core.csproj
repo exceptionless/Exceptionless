@@ -329,7 +329,7 @@
     <Compile Include="Text\NameFormatter.cs" />
     <Compile Include="Threading\CallerThreadContext.cs" />
     <Compile Include="Threading\Exceptions.cs" />
-    <Compile Include="Threading\GlobalSingleInstance.cs" />
+    <Compile Include="Threading\SingleGlobalInstance.cs" />
     <Compile Include="Threading\Interfaces.cs" />
     <Compile Include="Threading\PriorityQueue.cs" />
     <Compile Include="Threading\SafeDelegate.cs" />

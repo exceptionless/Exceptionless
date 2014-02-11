@@ -17,7 +17,7 @@ using Xunit;
 using Xunit.Helpers;
 
 namespace Exceptionless.Client.Tests.Core {
-    public class GlobalSingleInstanceTests : MarshalByRefObject {
+    public class SingleGlobalInstanceTests : MarshalByRefObject {
         [Fact]
         public void CanNestLockForSameKey() {
             using (new SingleGlobalInstance("key1"))

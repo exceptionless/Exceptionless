@@ -83,7 +83,7 @@
     </Compile>
     <Compile Include="Configuration\LocalStorageTests.cs" />
     <Compile Include="TestHelpers\FullTrustAttribute.cs" />
-    <Compile Include="Core\GlobalSingleInstanceTests.cs" />
+    <Compile Include="Core\SingleGlobalInstanceTests.cs" />
     <Compile Include="TestHelpers\PartialTrustClassCommand.cs" />
     <Compile Include="TestHelpers\PartialTrustCommand.cs" />
     <Compile Include="TestHelpers\PartialTrustFact.cs" />

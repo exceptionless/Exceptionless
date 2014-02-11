@@ -117,8 +117,8 @@
     <Compile Include="..\..\CodeSmith.Core\Reflection\AssemblyHelper.cs">
       <Link>Utility\AssemblyHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\CodeSmith.Core\Threading\GlobalSingleInstance.cs">
-      <Link>Utility\GlobalSingleInstance.cs</Link>
+    <Compile Include="..\..\CodeSmith.Core\Threading\SingleGlobalInstance.cs">
+      <Link>Utility\SingleGlobalInstance.cs</Link>
     </Compile>
     <Compile Include="..\..\Core\Extensions\ToErrorModelExtensions.cs">
       <Link>Extensions\ToErrorModelExtensions.cs</Link>
