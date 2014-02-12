@@ -180,6 +180,9 @@ task PackageClient -depends TestClient {
                 }
             }
         }
+
+        # Copy the source code for Symbol Source.
+        Copy-Item -Path "$($p.SourceDir)" -Destination "$workingDirectory\src" -Recurse -Filter "*.cs"
         
         if ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
             Copy-Item "$($p.SourceDir)\NuGet\*" $workingDirectory -Recurse
