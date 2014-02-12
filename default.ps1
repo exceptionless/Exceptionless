@@ -172,17 +172,11 @@ task PackageClient -depends TestClient {
             #}
 
             # Work around until we are able to merge dependencies and update other project dependencies pre build (E.G., MVC client references Models)
-            Copy-Item -Path "$buildDirectory\$($p.Name).dll" -Destination $workingLibDirectory
-            if (Test-Path -Path "$buildDirectory\$($p.Name).xml") {
-                Copy-Item -Path "$buildDirectory\$($p.Name).xml" -Destination $workingLibDirectory
-            }
+            Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$($p.Name).dll" -Or $_.Name -eq "$($p.Name).pdb" -or $_.Name -eq "$($p.Name).xml" } | Copy-Item -Destination $destination
 
             if ($($p.MergeDependencies) -ne $null) {
                 ForEach ($assembly in $($p.MergeDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
-                    Copy-Item -Path "$buildDirectory\$assembly" -Destination $workingLibDirectory
-                    if (Test-Path -Path "$buildDirectory\$assembly".Replace(".dll", ".xml")) {
-                        Copy-Item -Path "$buildDirectory\$assembly".Replace(".dll", ".xml") -Destination $workingLibDirectory
-                    }
+                    Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$assembly" -Or $_.Name -eq "$assembly".Replace(".dll", ".pdb") -or $_.Name -eq "$assembly".Replace(".dll", ".xml") } | Copy-Item -Destination $destination
                 }
             }
         }
@@ -216,7 +210,7 @@ task PackageClient -depends TestClient {
         $packageDir = "$deploy_dir\ClientPackages"
         Create-Directory $packageDir
 
-        exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version }
+        exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
     }
 
     Delete-Directory "$build_dir\$configuration"
