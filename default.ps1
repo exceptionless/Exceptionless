@@ -183,6 +183,8 @@ task PackageClient -depends TestClient {
 
         # Copy the source code for Symbol Source.
         robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs /S /NP /XD obj
+        Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
+
         If ($p.Name -eq "Exceptionless") {
             robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
             robocopy "$base_dir\Source\Core" "$workingDirectory\src\Source\Core" *.cs /S /NP /XD obj
@@ -197,7 +199,7 @@ task PackageClient -depends TestClient {
             Copy-Item "$($p.SourceDir)\NuGet\*" $workingDirectory -Recurse
         }
 
-        Copy-Item "$($source_dir)\Clients\LICENSE.txt" $workingDirectory
+        Copy-Item "$($source_dir)\Clients\LICENSE.txt" "$workingDirectory"
         Copy-Item "$($source_dir)\Clients\Shared\NuGet\tools\exceptionless.psm1" "$workingDirectory\tools"
 
         $nuspecFile = "$workingDirectory\$($p.Name).nuspec"
