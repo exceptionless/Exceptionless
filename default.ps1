@@ -183,16 +183,12 @@ task PackageClient -depends TestClient {
 
         # Copy the source code for Symbol Source.
         robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs /S /NP /XD obj
+        robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
+        robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
 
-        If ($p.Name -eq "Exceptionless") {
-            robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
-            robocopy "$base_dir\Source\Core" "$workingDirectory\src\Source\Core" *.cs /S /NP /XD obj
-            robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
-        } ElseIf ($p.Name -eq "Exceptionless.Mvc") {
+        If ($p.Name -eq "Exceptionless.Mvc") {
             robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
-        } ElseIf ($p.Name -eq "Exceptionless.WebApi") {
-            Copy-Item "$base_dir\Source\CodeSmith.Core\Helpers\TaskHelper.cs" "$workingDirectory\src\Source\CodeSmith.Core\Helpers\TaskHelper.cs"
         }
         
         If ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
