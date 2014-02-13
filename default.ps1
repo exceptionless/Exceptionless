@@ -61,13 +61,13 @@ task Clean {
 task Init -depends Clean {
     Verify-BuildRequirements
 
-    if (![string]::IsNullOrWhiteSpace($env:BUILD_NUMBER)) {
+    If (![string]::IsNullOrWhiteSpace($env:BUILD_NUMBER)) {
         $build_number = $env:BUILD_NUMBER
     } else {
         $build_number = "0"
     }
 
-    if (![string]::IsNullOrWhiteSpace($env:BUILD_VCS_NUMBER_Exceptionless_Master)) {
+    If (![string]::IsNullOrWhiteSpace($env:BUILD_VCS_NUMBER_Exceptionless_Master)) {
         $git_hash = $env:BUILD_VCS_NUMBER_Exceptionless_Master.Substring(0, 10)
         TeamCity-ReportBuildProgress "VCS Revision: $git_hash"
     }
@@ -84,7 +84,7 @@ task Init -depends Clean {
 task BuildClient -depends Init {			
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            if ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
             
@@ -121,9 +121,9 @@ task BuildServer -depends Init {
 task Build -depends BuildClient, BuildServer
 
 task TestClient -depends BuildClient {
-	TeamCity-ReportBuildProgress "Running Client Tests"
+    TeamCity-ReportBuildProgress "Running Client Tests"
     ForEach ($p in $client_test_projects) {
-        if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
+        If (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
             TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
             Exit
         }
@@ -133,9 +133,9 @@ task TestClient -depends BuildClient {
 }
 
 task TestServer -depends BuildServer {
-	TeamCity-ReportBuildProgress "Running Server Tests"
+    TeamCity-ReportBuildProgress "Running Server Tests"
     ForEach ($p in $server_test_projects) {
-        if (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
+        If (!(Test-Path -Path "$($p.BuildDir)\$($p.Name).dll")) {
             TeamCity-ReportBuildProblem "Unit test project $($p.Name) needs to be compiled first."
             Exit
         }
@@ -153,11 +153,11 @@ task PackageClient -depends TestClient {
         $workingDirectory = "$working_dir\$($p.Name)"
         Create-Directory $workingDirectory
 
-		TeamCity-ReportBuildProgress "Building Client NuGet Package: $($p.Name)"
+        TeamCity-ReportBuildProgress "Building Client NuGet Package: $($p.Name)"
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            if ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
 
@@ -165,7 +165,7 @@ task PackageClient -depends TestClient {
             $workingLibDirectory = "$workingDirectory\lib\$($b.NuGetDir)"
             Create-Directory $workingLibDirectory
 
-            #if ($($p.MergeDependencies) -ne $null) {
+            #If ($($p.MergeDependencies) -ne $null) {
             #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersion)"
             #} else {
             #	Copy-Item -Path "$buildDirectory\$($p.Name).dll" -Destination $workingLibDirectory
@@ -174,7 +174,7 @@ task PackageClient -depends TestClient {
             # Work around until we are able to merge dependencies and update other project dependencies pre build (E.G., MVC client references Models)
             Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$($p.Name).dll" -Or $_.Name -eq "$($p.Name).pdb" -or $_.Name -eq "$($p.Name).xml" } | Copy-Item -Destination $workingLibDirectory
 
-            if ($($p.MergeDependencies) -ne $null) {
+            If ($($p.MergeDependencies) -ne $null) {
                 ForEach ($assembly in $($p.MergeDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
                     Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$assembly" -Or $_.Name -eq "$assembly".Replace(".dll", ".pdb") -or $_.Name -eq "$assembly".Replace(".dll", ".xml") } | Copy-Item -Destination $workingLibDirectory
                 }
@@ -182,13 +182,18 @@ task PackageClient -depends TestClient {
         }
 
         # Copy the source code for Symbol Source.
-		robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs /S /NP /XD obj
-		if ($p.Name -eq "Exceptionless") {
-			robocopy $base_dir\Source\CodeSmith.Core $workingDirectory\src\Source\CodeSmith.Core *.cs /S /NP /XD obj
-			robocopy $base_dir\Source\Models $workingDirectory\src\Source\Models *.cs /S /NP /XD obj
-		}
+        robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs /S /NP /XD obj
+        If ($p.Name -eq "Exceptionless") {
+            robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
+            robocopy "$base_dir\Source\Core" "$workingDirectory\src\Source\Core" *.cs /S /NP /XD obj
+            robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
+        } ElseIf ($p.Name -eq "Exceptionless.Mvc") {
+            robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
+        } ElseIf ($p.Name -eq "Exceptionless.WebApi") {
+            Copy-Item "$base_dir\Source\CodeSmith.Core\Helpers\TaskHelper.cs" "$workingDirectory\src\Source\CodeSmith.Core\Helpers\TaskHelper.cs"
+        }
         
-        if ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
+        If ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
             Copy-Item "$($p.SourceDir)\NuGet\*" $workingDirectory -Recurse
         }
 
@@ -198,14 +203,14 @@ task PackageClient -depends TestClient {
         $nuspecFile = "$workingDirectory\$($p.Name).nuspec"
         
         # update NuGet nuspec file.
-        if (($($p.ExternalNuGetDependencies) -ne $null) -and (Test-Path -Path "$($p.SourceDir)\packages.config")) {
+        If (($($p.ExternalNuGetDependencies) -ne $null) -and (Test-Path -Path "$($p.SourceDir)\packages.config")) {
             $packages = [xml](Get-Content "$($p.SourceDir)\packages.config")
             $nuspec = [xml](Get-Content $nuspecFile)
             
             ForEach ($d in $($p.ExternalNuGetDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
                 $package = $packages.SelectSinglenode("/packages/package[@id=""$d""]")
                 $nuspec | Select-Xml '//dependency' |% {
-                    if($_.Node.Id.Equals($d)){
+                    If($_.Node.Id.Equals($d)){
                         $_.Node.Version = "$($package.version)"
                     }
                 }
@@ -223,7 +228,7 @@ task PackageClient -depends TestClient {
     Delete-Directory "$build_dir\$configuration"
     Delete-Directory $working_dir
 
-	TeamCity-ReportBuildProgress ""
+    TeamCity-ReportBuildProgress ""
 }
 
 task PackageServer -depends TestServer {
@@ -232,12 +237,12 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
-	TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
+    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
-	TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
+    TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 
-	TeamCity-ReportBuildProgress ""
+    TeamCity-ReportBuildProgress ""
 }
 
 task Package -depends PackageClient, PackageServer
@@ -260,7 +265,7 @@ Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersio
 }
 
 Function Verify-BuildRequirements() {
-    if ((ls "$env:windir\Microsoft.NET\Framework\v4.0*") -eq $null) {
+    If ((ls "$env:windir\Microsoft.NET\Framework\v4.0*") -eq $null) {
         throw "Building Exceptionless requires .NET 4.0/4.5, which doesn't appear to be installed on this machine."
     }
 }
@@ -269,14 +274,14 @@ Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [str
     Create-Directory $destinationDir
 
     $targetplatform = $null
-    if (($targetFramworkVersion -eq "v4.5") -or ($targetFramworkVersion -eq "v4.0")) {
+    If (($targetFramworkVersion -eq "v4.5") -or ($targetFramworkVersion -eq "v4.0")) {
         $v4_net_version = (Resolve-Path -Path "$env:windir\Microsoft.NET\Framework\v4.0*")
         $targetplatform = "/targetplatform:`"v4,$v4_net_version`""
     }
 
     $assemblies = ""
     ForEach ($assembly in $assembliesToMerge.Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
-        if (Test-Path -Path "$sourceDir\$assembly") {
+        If (Test-Path -Path "$sourceDir\$assembly") {
             $assemblies += "$sourceDir\$assembly "
         } else {
             $assemblies += "$assembly "
@@ -292,7 +297,7 @@ Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [str
 }
 
 Function Create-Directory([string] $directory_name) {
-    if (!(Test-Path -Path $directory_name)) {
+    If (!(Test-Path -Path $directory_name)) {
         New-Item $directory_name -ItemType Directory | Out-Null
     }
 }
