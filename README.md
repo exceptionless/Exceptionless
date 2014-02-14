@@ -4,7 +4,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ## Getting Started
 
-1. Start MongoDB and Redis by opening PowerShell and executing `.\StartBackendServers.ps1`. Please ensure that you can execute all powershell scripts before running by running the powershell command [Set-ExecutionPolicy Unrestricted](http://go.microsoft.com/fwlink/?LinkID=135170) in an administrative powershell instance.
+1. Start MongoDB and Redis by opening `StartBackendServers.bat`.
 2. Open the `Exceptionless.sln` Visual Studio solution file.
 3. Select `Exceptionless.App` and `Exceptionless.SampleConsole` as startup projects.
 4. Run the project.

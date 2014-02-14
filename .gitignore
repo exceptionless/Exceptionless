@@ -169,3 +169,6 @@ $RECYCLE.BIN/
 
 # Mac crap
 .DS_Store
+
+# Redis
+/appendonly.aof
