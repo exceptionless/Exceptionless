@@ -98,8 +98,13 @@
             var form = $("#signupform");
             form.validate();
             var isValid = form.valid();
+            
+    @if (Exceptionless.Core.Settings.Current.EnableGoogleAnalytics) {
+        <text>
             if (isValid)
                 ga('send', 'event', 'Signup', 'Submit');
+        </text>
+    }
 
             return isValid;
         }
