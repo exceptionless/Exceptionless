@@ -172,3 +172,4 @@ $RECYCLE.BIN/
 
 # Redis
 /appendonly.aof
+dump.rdb
