@@ -40,7 +40,7 @@
 
     function onError(error, inputElement) {  // 'this' is the form element
         var container = $(this).find("[data-valmsg-for='" + escapeAttributeValue(inputElement[0].name) + "']"),
-            replace = $.parseJSON(container.attr("data-valmsg-replace")) !== false;
+            replace = $.parseJSON(container.attr("data-valmsg-replace") || "null") !== false;
 
         container.removeClass("field-validation-valid").addClass("field-validation-error");
         container.closest(".control-group").addClass("error");
@@ -62,7 +62,7 @@
         if (list && list.length && validator.errorList.length) {
             list.empty();
             container.addClass("validation-summary-errors").removeClass("validation-summary-valid");
-            
+
             $.each(validator.errorList, function () {
                 $("<li />").html(this.message).appendTo(list);
             });
@@ -71,7 +71,7 @@
 
     function onSuccess(error) {  // 'this' is the form element
         var container = error.data("unobtrusiveContainer"),
-            replace = $.parseJSON(container.attr("data-valmsg-replace"));
+            replace = $.parseJSON(container.attr("data-valmsg-replace") || "null");
 
         if (container) {
             container.addClass("field-validation-valid").removeClass("field-validation-error");
@@ -195,7 +195,7 @@
             /// <param name="selector" type="String">Any valid jQuery selector.</param>
             var $forms = $(selector)
                 .parents("form")
-                .addBack()
+                .andSelf()
                 .add($(selector).find("form"))
                 .filter("form");
 
@@ -345,4 +345,4 @@
     $(function () {
         $jQval.unobtrusive.parse(document);
     });
-} (jQuery));
+}(jQuery));
