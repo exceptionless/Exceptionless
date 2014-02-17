@@ -442,14 +442,6 @@
     <Content Include="Scripts\App\ViewModels\Organization\SearchablePagedOrganizationViewModel.ts" />
     <Content Include="Scripts\bootstrap-datepicker.js" />
     <Content Include="Scripts\bootstrap.js" />
-    <Content Include="Scripts\handlebars.amd.js" />
-    <Content Include="Scripts\handlebars.amd.min.js" />
-    <Content Include="Scripts\handlebars.js" />
-    <Content Include="Scripts\handlebars.min.js" />
-    <Content Include="Scripts\handlebars.runtime.amd.js" />
-    <Content Include="Scripts\handlebars.runtime.amd.min.js" />
-    <Content Include="Scripts\handlebars.runtime.js" />
-    <Content Include="Scripts\handlebars.runtime.min.js" />
     <Content Include="Content\fonts\fontawesome-webfont.woff" />
     <Content Include="Content\fonts\fontawesome-webfont.ttf" />
     <Content Include="Content\fonts\fontawesome-webfont.eot" />
@@ -460,6 +452,14 @@
       <DependentUpon>toastr.css</DependentUpon>
     </Content>
     <None Include="Scripts\jquery-2.1.0.intellisense.js" />
+    <Content Include="Scripts\handlebars.amd.js" />
+    <Content Include="Scripts\handlebars.amd.min.js" />
+    <Content Include="Scripts\handlebars.js" />
+    <Content Include="Scripts\handlebars.min.js" />
+    <Content Include="Scripts\handlebars.runtime.amd.js" />
+    <Content Include="Scripts\handlebars.runtime.amd.min.js" />
+    <Content Include="Scripts\handlebars.runtime.js" />
+    <Content Include="Scripts\handlebars.runtime.min.js" />
     <Content Include="Scripts\jquery-2.1.0.js" />
     <Content Include="Scripts\jquery-2.1.0.min.js" />
     <Content Include="Scripts\jquery.fancybox-buttons.js" />
