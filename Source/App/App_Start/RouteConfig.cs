@@ -20,59 +20,25 @@ namespace Exceptionless.App {
         public static void RegisterRoutes(RouteCollection routes) {
             routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
-            routes.MapRouteLowercase(
-                                     "Sign Up",
-                "signup",
-                new {
-                    controller = "Account",
-                    action = "Signup"
-                });
+#if DEBUG
+            routes.IgnoreRoute("{*browserlink}", new { browserlink = @".*/arterySignalR/ping" });
+#endif
 
-            routes.MapRouteLowercase(
-                                     "Error Notifications",
-                "error/{stackId}/{errorId}",
-                new {
-                    controller = "Error",
-                    action = "Notification"
-                },
-                new {
-                    stackId = @"^[a-zA-Z\d]{24}$",
-                    errorId = @"^[a-zA-Z\d]{24}$"
-                }
-                );
+            routes.MapRouteLowercase("Sign Up", "signup", new { controller = "Account", action = "Signup" });
 
-            routes.MapRouteLowercase(
-                                     "Middle Id",
-                "{controller}/{id}/{action}",
-                new {
-                    action = "Index"
-                },
-                new {
-                    id = @"^[a-zA-Z\d]{24}$"
-                }
-                );
+            routes.MapRouteLowercase("Error Notifications", 
+                "error/{stackId}/{errorId}", 
+                new { controller = "Error", action = "Notification" }, 
+                new { stackId = @"^[a-zA-Z\d]{24}$", errorId = @"^[a-zA-Z\d]{24}$" });
 
-            routes.MapRouteLowercase(
-                                     "Root",
+            routes.MapRouteLowercase("Middle Id", "{controller}/{id}/{action}", new { action = "Index" }, new { id = @"^[a-zA-Z\d]{24}$" });
+
+            routes.MapRouteLowercase("Root", 
                 "{action}/{id}",
-                new {
-                    controller = "Home",
-                    id = UrlParameter.Optional
-                },
-                new {
-                    action = new IsControllerActionNameConstraint("Home")
-                }
-                );
+                new { controller = "Home", id = UrlParameter.Optional }, 
+                new { action = new IsControllerActionNameConstraint("Home") });
 
-            routes.MapRouteLowercase(
-                                     "Default",
-                "{controller}/{action}/{id}",
-                new {
-                    controller = "Home",
-                    action = "Index",
-                    id = UrlParameter.Optional
-                }
-                );
+            routes.MapRouteLowercase("Default", "{controller}/{action}/{id}", new { controller = "Home", action = "Index", id = UrlParameter.Optional });
         }
     }
 }
