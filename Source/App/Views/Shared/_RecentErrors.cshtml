@@ -1,5 +1,5 @@
 ﻿@model bool
-<div id="most-recent">
+<div id="most-recent" data-spinner-size="small" data-spinner-top="5">
     <table class="table table-striped table-bordered table-clickable table-hover table-fixed">
         <thead>
             <tr>
@@ -8,22 +8,23 @@
             </tr>
         </thead>
         <tbody>
-        <!-- ko foreach: items -->
-        <tr data-bind="click: $parent.rowClick">
-            <td data-bind="template: { name: 'paged-errors-template', afterRender: $root.truncate }"></td>
-            <td><abbr data-bind="livestamp: $data.occurrence"></abbr></td>
-        </tr>
-        <!-- /ko -->
-        <tr style="display: none" data-bind="visible: !loading() && totalLimitedByPlan() > 0">
-            <td colspan="2">
-                <a href="#plan-modal" data-bind="click: function(){ exceptionless.App.showChangePlanDialog(); return true; }">Upgrade your plan</a> to see <strong data-bind="formatNumber: totalLimitedByPlan"></strong> additional records.
-            </td>
-        </tr>
-        <tr style="display: none" data-bind="visible: items().length === 0 && !loading() && totalLimitedByPlan() === 0">
-            <td colspan="2">
-                <strong>Congratulations!</strong> You are <strong>exceptionless!</strong>
-            </td>
-        </tr>
+            <!-- ko foreach: items -->
+            <tr data-bind="click: $parent.rowClick">
+                <td data-bind="template: { name: 'paged-errors-template', afterRender: $root.truncate }"></td>
+                <td><abbr data-bind="livestamp: $data.occurrence"></abbr></td>
+            </tr>
+            <!-- /ko -->
+            <tr style="display: none" data-bind="visible: !loading() && totalLimitedByPlan() > 0">
+                <td colspan="2">
+                    <a href="#plan-modal" data-bind="click: function(){ exceptionless.App.showChangePlanDialog(); return true; }">Upgrade your plan</a> to see <strong data-bind="formatNumber: totalLimitedByPlan"></strong> additional records.
+                </td>
+            </tr>
+            <tr style="display: none" data-bind="visible: items().length === 0 && !loading() && totalLimitedByPlan() === 0">
+                <td colspan="2">
+                    <strong>Congratulations!</strong> You are <strong>exceptionless!</strong>
+                </td>
+            </tr>
+        </tbody>
     </table>
     @Html.Partial("_Pager")
 </div>

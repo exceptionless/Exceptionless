@@ -139,7 +139,7 @@ namespace Exceptionless.App.Controllers.API {
             if (end.Value <= start.Value)
                 throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
+            DateTime retentionUteCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
 
@@ -152,7 +152,7 @@ namespace Exceptionless.App.Controllers.API {
 
             long count;
             List<Error> query = _repository.GetNewest(projectId, utcStart, utcEnd, skip, pageSize, out count).ToList();
-            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= rententionUtcCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
+            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUteCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
             var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
@@ -181,7 +181,7 @@ namespace Exceptionless.App.Controllers.API {
             if (end.Value <= start.Value)
                 throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
 
@@ -194,7 +194,7 @@ namespace Exceptionless.App.Controllers.API {
 
             long count;
             List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= rententionUtcCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
+            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUtcCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
             var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
@@ -228,7 +228,7 @@ namespace Exceptionless.App.Controllers.API {
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, end.Value);
 
             Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
             int skip = (page - 1) * pageSize;
             if (skip < 0)
@@ -240,7 +240,7 @@ namespace Exceptionless.App.Controllers.API {
             long count;
             List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize, out count).ToList();
 
-            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= rententionUtcCutoff).Select(e => e.ToProjectLocalTime(_projectRepository)).Select(Mapper.Map<Error, ErrorResult>).ToList();
+            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUtcCutoff).Select(e => e.ToProjectLocalTime(_projectRepository)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
             var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
