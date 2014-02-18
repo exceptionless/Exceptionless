@@ -4,12 +4,16 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ## Getting Started
 
+_** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.com](http://exceptionless.com) and signup for an account and you will be up and running in seconds._
+
 1. Start MongoDB and Redis by opening `StartBackendServers.bat`.
 2. Open the `Exceptionless.sln` Visual Studio solution file.
 3. Select `Exceptionless.App` and `Exceptionless.SampleConsole` as startup projects.
 4. Run the project.
 5. The app will automatically make the 1st user that is created a Global Admin and will also create a sample `Acme` organization and project.
 6. Send a test error from the sample console application and you should see it show up immediately in the website.
+
+Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 
 ## Using Exceptionless
 
