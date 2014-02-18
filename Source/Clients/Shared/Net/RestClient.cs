@@ -24,6 +24,11 @@ namespace Exceptionless.Net {
         private const string HTTP_METHOD_OVERRIDE = "X-HTTP-Method-Override";
         private readonly ManualResetEvent _complete = new ManualResetEvent(false);
 
+        static RestClient() {
+            // ignore invalid SSL certificate warnings.
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+        }
+
         public RestClient(Uri baseUri) {
             BaseUri = baseUri;
             RequestHeaders = new WebHeaderCollection();
