@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Text;
 
 namespace Exceptionless.Models {
@@ -85,22 +84,14 @@ namespace Exceptionless.Models {
             while (currentEx != null) {
                 if (html)
                     sb.Append("<span class=\"ex-type\">");
-#if !PFX_LEGACY_3_5 && !PORTABLE40
-                sb.Append(html ? WebUtility.HtmlEncode(currentEx.Type) : currentEx.Type);
-#else
-                sb.Append(currentEx.Type);
-#endif
+                sb.Append(html ? currentEx.Type.HtmlEntityEncode() : currentEx.Type);
                 if (html)
                     sb.Append("</span>");
 
                 if (!String.IsNullOrEmpty(currentEx.Message)) {
                     if (html)
                         sb.Append("<span class=\"ex-message\">");
-#if !PFX_LEGACY_3_5 && !PORTABLE40
-                    sb.Append(": ").Append(html ? WebUtility.HtmlEncode(currentEx.Message) : currentEx.Message);
-#else
-                    sb.Append(": ").Append(currentEx.Message);
-#endif
+                    sb.Append(": ").Append(html ? currentEx.Message.HtmlEntityEncode() : currentEx.Message);
                     if (html)
                         sb.Append("</span>");
                 }

@@ -13,7 +13,7 @@ namespace Exceptionless.Utility {
 #if SILVERLIGHT
             assembly = GetAssemblies().FirstOrDefault();
 #else
-            assembly = Assembly.GetEntryAssembly();
+            assembly = Assembly.GetCallingAssembly();
 #endif
             if (assembly == null)
                 assembly = Assembly.GetCallingAssembly();

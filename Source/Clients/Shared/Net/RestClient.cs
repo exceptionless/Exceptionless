@@ -12,6 +12,8 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Net.Security;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using Exceptionless.Extensions;
@@ -23,6 +25,11 @@ namespace Exceptionless.Net {
         private const string DEFAULT_CONTENT_TYPE = "application/json";
         private const string HTTP_METHOD_OVERRIDE = "X-HTTP-Method-Override";
         private readonly ManualResetEvent _complete = new ManualResetEvent(false);
+
+        static RestClient() {
+            // ignore invalid SSL certificate warnings.
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+        }
 
         public RestClient(Uri baseUri) {
             BaseUri = baseUri;

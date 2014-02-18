@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Exceptionless</RootNamespace>
+    <AssemblyName>Exceptionless</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>Profile136</TargetFrameworkProfile>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;PORTABLE40</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
+      <Link>Models\ClientConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\EnvironmentInfo.cs">
+      <Link>Models\EnvironmentInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Error.cs">
+      <Link>Models\Error.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\ErrorInfo.cs">
+      <Link>Models\ErrorInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\ExceptionlessClientInfo.cs">
+      <Link>Models\ExceptionlessClientInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Method.cs">
+      <Link>Models\Method.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Module.cs">
+      <Link>Models\Module.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Parameter.cs">
+      <Link>Models\Parameter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\RequestInfo.cs">
+      <Link>Models\RequestInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\StackFrame.cs">
+      <Link>Models\StackFrame.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\StringUtilities.cs">
+      <Link>Models\StringUtilities.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ConfigurationDictionary.cs">
+      <Link>Collections\ConfigurationDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ExtendedDataDictionary.cs">
+      <Link>Collections\ExtendedDataDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\GenericArguments.cs">
+      <Link>Collections\GenericArguments.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ModuleCollection.cs">
+      <Link>Collections\ModuleCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
+      <Link>Collections\ParameterCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
+      <Link>Collections\StackFrameCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\TagSet.cs">
+      <Link>Collections\TagSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Interfaces\IIdentity.cs">
+      <Link>Models\IIdentity.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Interfaces\IOwnedByOrganization.cs">
+      <Link>Models\IOwnedByOrganization.cs</Link>
+    </Compile>
+    <Compile Include="Configuration.cs" />
+    <Compile Include="Dependency\DefaultDependencyResolver.cs" />
+    <Compile Include="Dependency\DependencyResolver.cs" />
+    <Compile Include="Dependency\DependencyResolverExtensions.cs" />
+    <Compile Include="Dependency\IDependencyResolver.cs" />
+    <Compile Include="ErrorBuilder.cs" />
+    <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
+    <Compile Include="Events\ErrorModelEventArgs.cs" />
+    <Compile Include="Events\SendErrorCompletedEventArgs.cs" />
+    <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
+    <Compile Include="ExceptionlessClient.cs" />
+    <Compile Include="Extensions\DateTimeExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="Plugins\ExceptionlessPlugin.cs" />
+    <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
+    <Compile Include="Plugins\IExceptionlessPlugin.cs" />
+    <Compile Include="Polyfill\ObjectPool.cs" />
+    <Compile Include="Serializer\DefaultSerializer.cs" />
+    <Compile Include="Serializer\IJsonSerializer.cs" />
+    <Compile Include="Logging\ExceptionlessLogExtensions.cs" />
+    <Compile Include="Logging\IExceptionlessLog.cs" />
+    <Compile Include="Logging\NullExceptionlessLog.cs" />
+    <Compile Include="Logging\SafeExceptionlessLog.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Serializer\SimpleJson.cs" />
+    <Compile Include="Storage\DefaultFileStorage.cs" />
+    <Compile Include="Storage\DefaultKeyValueStorage.cs" />
+    <Compile Include="Storage\IFileStorage.cs" />
+    <Compile Include="Storage\IKeyValueStorage.cs" />
+    <Compile Include="Submission\DefaultSubmissionClient.cs" />
+    <Compile Include="Submission\ISubmissionClient.cs" />
+    <Compile Include="Polyfill\ConcurrentQueue.cs" />
+    <Compile Include="Utility\MD5.cs" />
+    <Compile Include="Utility\ObjectId.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Zlib.Portable">
+      <HintPath>..\..\..\packages\Zlib.Portable.1.9.2\lib\portable-net4+sl4+wp71+win8\Zlib.Portable.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

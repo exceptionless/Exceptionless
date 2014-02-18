@@ -6,13 +6,10 @@
 //
 //--------------------------------------------------------------------------
 
-#if !SILVERLIGHT
-
-using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Threading;
-using System.Diagnostics;
 
 namespace System.Collections.Concurrent
 {
@@ -216,5 +213,3 @@ namespace System.Collections.Concurrent
         #endregion
     }
 }
-
-#endif

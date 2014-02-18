@@ -126,27 +126,13 @@ namespace Exceptionless.Models {
             return sb.ToString();
         }
 
-        private static readonly string[] UriRfc3986CharsToEscape = new[] { "!", "*", "'", "(", ")" };
+        private static readonly char[] _uriRfc3986CharsToEscape = { '!', '*', '\'', '(', ')' };
 
         private static string EscapeUriDataStringRfc3986(string value) {
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            // Start with RFC 2396 escaping by calling the .NET method to do the work.
-            // This MAY sometimes exhibit RFC 3986 behavior (according to the documentation).
-            // If it does, the escaping we do that follows it will be a no-op since the
-            // characters we search for to replace can't possibly exist in the String.
-            var escaped = new StringBuilder(Uri.EscapeDataString(value));
-
-            // TODO: Find a replacement for Uri.HexEscape for portable lib
-#if !PORTABLE40
-            // Upgrade the escaping to RFC 3986, if necessary.
-            for (int i = 0; i < UriRfc3986CharsToEscape.Length; i++)
-                escaped.Replace(UriRfc3986CharsToEscape[i], Uri.HexEscape(UriRfc3986CharsToEscape[i][0]));
-#endif
-
-            // Return the fully-RFC3986-escaped String.
-            return escaped.ToString();
+            return value.HexEscape(_uriRfc3986CharsToEscape);
         }
     }
 }
