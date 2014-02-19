@@ -18,11 +18,11 @@ namespace Exceptionless.Utility {
         private void InitWaitHandle() {
             string mutexId = String.Format("Global\\{{{0}}}", _key);
 
-            var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), MutexRights.FullControl, AccessControlType.Allow);
-            var securitySettings = new MutexSecurity();
-            securitySettings.AddAccessRule(allowEveryoneRule);
-
             try {
+                var allowEveryoneRule = new MutexAccessRule(new SecurityIdentifier(WellKnownSidType.WorldSid, null), MutexRights.FullControl, AccessControlType.Allow);
+                var securitySettings = new MutexSecurity();
+                securitySettings.AddAccessRule(allowEveryoneRule);
+
                 bool wasCreated = false;
                 _waitHandle = new Mutex(false, mutexId, out wasCreated, securitySettings);
             } catch (Exception) {

@@ -70,9 +70,11 @@ namespace Exceptionless.Extensions {
             error.PopulateStackTrace(error, exception);
 
 #if !SILVERLIGHT
-            PropertyInfo info = type.GetProperty("HResult", BindingFlags.NonPublic | BindingFlags.Instance);
-            if (info != null)
-                error.Code = info.GetValue(exception, null).ToString();
+            try {
+                PropertyInfo info = type.GetProperty("HResult", BindingFlags.NonPublic | BindingFlags.Instance);
+                if (info != null)
+                    error.Code = info.GetValue(exception, null).ToString();
+            } catch (Exception) {}
 #endif
 
             if (exception.TargetSite != null) {

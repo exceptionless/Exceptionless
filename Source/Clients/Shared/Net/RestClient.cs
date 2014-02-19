@@ -267,9 +267,12 @@ namespace Exceptionless.Net {
 
             CopyHeaders(RequestHeaders, webRequest.Headers);
 
-            webRequest.UseDefaultCredentials = true;
-            if (Credentials != null)
-                webRequest.Credentials = Credentials;
+            try {
+                webRequest.UseDefaultCredentials = true;
+                if (Credentials != null)
+                    webRequest.Credentials = Credentials;
+            } catch (Exception) {}
+
 #if !SILVERLIGHT
             if (Proxy != null)
                 webRequest.Proxy = Proxy;
