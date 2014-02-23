@@ -104,7 +104,7 @@ namespace Exceptionless.Models {
 
         private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
             if (args == null)
-                throw new ArgumentNullException("args");
+                return String.Empty;
 
             if (!args.Any())
                 return String.Empty;
@@ -112,10 +112,8 @@ namespace Exceptionless.Models {
             var sb = new StringBuilder(args.Count() * 10);
 
             foreach (var p in args) {
-                if (String.IsNullOrEmpty(p.Key))
-                    throw new NullReferenceException(String.Format("Key \"{0}\" is not allowed to be null.", p.Key));
-                if (p.Value == null)
-                    throw new NullReferenceException(String.Format("Value for key \"{0}\" is not allowed to be null.", p.Key));
+                if (String.IsNullOrEmpty(p.Key) || p.Value == null)
+                    continue;
                 sb.Append(Uri.EscapeDataString(p.Key));
                 sb.Append('=');
                 sb.Append(EscapeUriDataStringRfc3986(p.Value));
