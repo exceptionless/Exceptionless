@@ -112,11 +112,15 @@ namespace Exceptionless.Models {
             var sb = new StringBuilder(args.Count() * 10);
 
             foreach (var p in args) {
-                if (String.IsNullOrEmpty(p.Key) || p.Value == null)
+                if (String.IsNullOrEmpty(p.Key) && p.Value == null)
                     continue;
-                sb.Append(Uri.EscapeDataString(p.Key));
-                sb.Append('=');
-                sb.Append(EscapeUriDataStringRfc3986(p.Value));
+
+                if (!String.IsNullOrEmpty(p.Key)) {
+                    sb.Append(Uri.EscapeDataString(p.Key));
+                    sb.Append('=');
+                }
+                if (p.Value != null)
+                    sb.Append(EscapeUriDataStringRfc3986(p.Value));
                 sb.Append('&');
             }
             sb.Length--; // remove trailing &
