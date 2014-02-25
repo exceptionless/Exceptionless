@@ -14,6 +14,8 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Models {
     public class TagSet : HashSet<string> {
+        public TagSet() : base(StringComparer.OrdinalIgnoreCase) {}
+
         public new IDisposable Add(string item) {
             base.Add(item);
             return new DisposableTag(this, item);
