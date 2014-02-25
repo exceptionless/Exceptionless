@@ -86,24 +86,29 @@ namespace Exceptionless.Core.Pipeline {
             } else {
                 var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId);
 
-                List<string> newTags = ctx.Error.Tags != null ? ctx.Error.Tags.Where(t => !stack.Tags.Contains(t)).ToList() : new List<string>();
-                if (newTags.Count > 0) {
-                    stack.Tags.AddRange(newTags);
-                    _stackRepository.Update(stack);
-                }
-
                 // TODO: Update unit tests to work with this check.
                 //if (stack == null || stack.ProjectId != error.ProjectId)
                 //    throw new InvalidOperationException("Invalid ErrorStackId.");
+                if (stack == null)
+                    return;
 
-                if (stack != null) {
-                    ctx.StackInfo = new ErrorStackInfo {
-                        Id = stack.Id,
-                        DateFixed = stack.DateFixed,
-                        OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                        SignatureHash = stack.SignatureHash
-                    };
+                if (ctx.Error.Tags != null && ctx.Error.Tags.Count > 0) {
+                    if(stack.Tags == null)
+                        stack.Tags = new TagSet();
+
+                    List<string> newTags = ctx.Error.Tags.Where(t => !stack.Tags.Contains(t)).ToList();
+                    if (newTags.Count > 0) {
+                        stack.Tags.AddRange(newTags);
+                        _stackRepository.Update(stack);
+                    }
                 }
+
+                ctx.StackInfo = new ErrorStackInfo {
+                    Id = stack.Id,
+                    DateFixed = stack.DateFixed,
+                    OccurrencesAreCritical = stack.OccurrencesAreCritical,
+                    SignatureHash = stack.SignatureHash
+                };
             }
         }
     }
