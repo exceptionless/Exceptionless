@@ -56,13 +56,10 @@ namespace Exceptionless.Utility {
         public long GetFileSize(string filename) {
             string path = Path.Combine(SubDirectory, filename);
             string fullPath = IsolatedStorage.GetFullPath(path);
-            try
-            {
+            try {
                 if (File.Exists(fullPath))
                     return new FileInfo(fullPath).Length;
-            }
-            catch (IOException ex)
-            {
+            } catch (IOException ex) {
                 System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
             }
 

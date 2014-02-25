@@ -37,16 +37,13 @@ namespace Exceptionless.Logging {
         }
 
         protected virtual long GetFileSize() {
-            try
-            {
-              if (File.Exists(FilePath))
-                  return new FileInfo(FilePath).Length;
-            }
-            catch (IOException ex)
-            {
+            try {
+                if (File.Exists(FilePath))
+                    return new FileInfo(FilePath).Length;
+            } catch (IOException ex) {
                 System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
             }
-            
+
             return -1;
         }
 
