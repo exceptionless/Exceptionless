@@ -20,7 +20,7 @@ module exceptionless.organization {
         }
 
         public addItem() {
-            var freeOrganizations = ko.utils.arrayFilter(this.items(), (organization: models.Organization) => organization.selectedPlan.id === Constants.FREE_PLAN_ID);
+            var freeOrganizations = ko.utils.arrayFilter(this.items(), (o: models.Organization) => o.selectedPlan.id === Constants.FREE_PLAN_ID);
             if (freeOrganizations.length > 0) {
                 bootbox.confirm('You already have one free account. You are not allowed to create more than one free account.', 'Cancel', 'Upgrade Plan', (result: boolean) => {
                     if (result) {

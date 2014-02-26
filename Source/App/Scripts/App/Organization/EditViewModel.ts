@@ -21,8 +21,8 @@ module exceptionless.organization {
             App.organizations.subscribe((organizations) => {
                 $('#free-plan-notification').hide();
 
-                var organization = ko.utils.arrayFirst(organizations, (o) => (<any>o).id === organizationId);
-                if (organization != null && organization.planId === Constants.FREE_PLAN_ID) {
+                var org = ko.utils.arrayFirst(organizations, (o) => (<any>o).id === organizationId);
+                if (org != null && org.planId === Constants.FREE_PLAN_ID) {
                     $('#free-plan-notification').show();
                 }
             });

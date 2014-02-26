@@ -172,25 +172,24 @@ module exceptionless {
             return ko.computed(() => App.selectedProject() && App.selectedProject().organization ? App.selectedProject().organization : new models.Organization('', 'Loading...', 0, 0, 0, 0));
         }
 
-        public static showChangePlanDialog(organization?: { id: string; name: string; planId: string }) {
+        public static showChangePlanDialog(org?: { id: string; name: string; planId: string }) {
             if (!App.enableBilling()) {
                 App.showErrorNotification('Plans cannot be changed while billing is disabled.');
                 return;
             }
 
-            if (!organization || StringUtil.isNullOrEmpty(organization.id))
-                organization = App.selectedOrganization();
+            if (!org || StringUtil.isNullOrEmpty(org.id))
+                org = App.selectedOrganization();
 
             // Detect if the current organization exists.
-            var org = ko.utils.arrayFirst(App.organizations(), o=> o.id === organization.id);
-            if (org == null) {
-                if (organization instanceof models.Organization)
-                    App.organizations.push(<models.Organization>organization);
+            if (ko.utils.arrayFirst(App.organizations(), o=> o.id === org.id) == null) {
+                if (org instanceof models.Organization)
+                    App.organizations.push(<models.Organization>org);
                 else
-                    App.organizations.push(new models.Organization(organization.id, organization.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, organization.name, '', ''));
+                    App.organizations.push(new models.Organization(org.id, org.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, org.name, '', ''));
             }
 
-            $('#plan-modal').data('organizationId', organization.id).modal('show');
+            $('#plan-modal').data('organizationId', org.id).modal('show');
         }
 
         public static showConfirmDangerDialog(message: string, dangerButtonText: string, callback: (result: boolean) => void) {

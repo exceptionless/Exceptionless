@@ -39,19 +39,19 @@ module exceptionless.admin {
             this.refreshViewModelData();
         }
 
-        public suspendOrganization(organization: models.Organization) {
+        public suspendOrganization(org: models.Organization) {
             if (!App.user().hasAdminRole)
                 return;
 
-            this.suspendedOrganization(organization);
-            this.suspensionNotes(organization.suspensionNotes);
+            this.suspendedOrganization(org);
+            this.suspensionNotes(org.suspensionNotes);
 
-            if (organization.isSuspended) {
+            if (org.isSuspended) {
                 App.showConfirmDangerDialog('Are you sure you want to remove the suspension status for this organization?', 'UNSUSPEND ORGANIZATION', result=> {
                     if (!result)
                         return;
 
-                    var url = StringUtil.format('{url}/{id}', { url: this.baseUrl, id: organization.id });
+                    var url = StringUtil.format('{url}/{id}', { url: this.baseUrl, id: org.id });
                     this.patch(url, { IsSuspended: false, SuspensionCode: null, SuspensionNotes: null }, () => {
                         this.refreshViewModelData();
                         App.showSuccessNotification('Successfully removed the suspension status for this organization.');
