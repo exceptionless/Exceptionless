@@ -1419,9 +1419,37 @@ interface JQuery {
     innerHeight(): number;
 
     /**
+     * Sets the inner height on elements in the set of matched elements, including padding but not border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    innerHeight(height: number): JQuery;
+
+    /**
+     * Sets the inner height on elements in the set of matched elements, including padding but not border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    innerHeight(height: string): JQuery;
+
+    /**
      * Get the current computed width for the first element in the set of matched elements, including padding but not border.
      */
     innerWidth(): number;
+
+    /**
+     * Sets the inner width on elements in the set of matched elements, including padding but not border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    innerWidth(width: number): JQuery;
+
+    /**
+     * Sets the inner width on elements in the set of matched elements, including padding but not border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    innerWidth(width: string): JQuery;
 
     /**
      * Get the current coordinates of the first element in the set of matched elements, relative to the document.
@@ -1448,11 +1476,39 @@ interface JQuery {
     outerHeight(includeMargin?: boolean): number;
 
     /**
+     * Sets the outer height on elements in the set of matched elements, including padding and border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    outerHeight(height: number): JQuery;
+
+    /**
+     * Sets the outer height on elements in the set of matched elements, including padding and border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    outerHeight(height: string): JQuery;
+
+    /**
      * Get the current computed width for the first element in the set of matched elements, including padding and border.
      *
      * @param includeMargin A Boolean indicating whether to include the element's margin in the calculation.
      */
     outerWidth(includeMargin?: boolean): number;
+
+    /**
+     * Sets the outer width on elements in the set of matched elements, including padding and border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    outerWidth(width: number): JQuery;
+
+    /**
+     * Sets the outer width on elements in the set of matched elements, including padding and border.
+     *
+     * @param value An integer representing the number of pixels, or an integer along with an optional unit of measure appended (as a string).
+     */
+    outerWidth(width: string): JQuery;
 
     /**
      * Get the current coordinates of the first element in the set of matched elements, relative to the offset parent.
@@ -2028,14 +2084,59 @@ interface JQuery {
      */
     toggle(showOrHide: boolean): JQuery;
 
-    // Events
+    /**
+     * Attach a handler to an event for the elements.
+     * 
+     * @param eventType A string containing one or more DOM event types, such as "click" or "submit," or custom event names.
+     * @param eventData An object containing data that will be passed to the event handler.
+     * @param handler A function to execute each time the event is triggered.
+     */
     bind(eventType: string, eventData: any, handler: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Attach a handler to an event for the elements.
+     * 
+     * @param eventType A string containing one or more DOM event types, such as "click" or "submit," or custom event names.
+     * @param handler A function to execute each time the event is triggered.
+     */
     bind(eventType: string, handler: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Attach a handler to an event for the elements.
+     * 
+     * @param eventType A string containing one or more DOM event types, such as "click" or "submit," or custom event names.
+     * @param eventData An object containing data that will be passed to the event handler.
+     * @param preventBubble Setting the third argument to false will attach a function that prevents the default action from occurring and stops the event from bubbling. The default is true.
+     */
     bind(eventType: string, eventData: any, preventBubble: boolean): JQuery;
+    /**
+     * Attach a handler to an event for the elements.
+     * 
+     * @param eventType A string containing one or more DOM event types, such as "click" or "submit," or custom event names.
+     * @param preventBubble Setting the third argument to false will attach a function that prevents the default action from occurring and stops the event from bubbling. The default is true.
+     */
     bind(eventType: string, preventBubble: boolean): JQuery;
-    bind(...events: any[]): JQuery;
+    /**
+     * Attach a handler to an event for the elements.
+     * 
+     * @param events An object containing one or more DOM event types and functions to execute for them.
+     */
+    bind(events: any): JQuery;
 
+    /**
+     * Trigger the "blur" event on an element
+     */
+    blur(): JQuery;
+    /**
+     * Bind an event handler to the "blur" JavaScript event
+     *
+     * @param handler A function to execute each time the event is triggered.
+     */
     blur(handler: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Bind an event handler to the "blur" JavaScript event
+     *
+     * @param eventData An object containing data that will be passed to the event handler.
+     * @param handler A function to execute each time the event is triggered.
+     */
     blur(eventData?: any, handler?: (eventObject: JQueryEventObject) => any): JQuery;
 
     /**
@@ -2560,38 +2661,219 @@ interface JQuery {
      */
     trigger(event: JQueryEventObject, extraParameters?: Object): JQuery;
 
+    /**
+     * Execute all handlers attached to an element for an event.
+     * 
+     * @param eventType A string containing a JavaScript event type, such as click or submit.
+     * @param extraParameters An array of additional parameters to pass along to the event handler.
+     */
     triggerHandler(eventType: string, ...extraParameters: any[]): Object;
 
+    /**
+     * Remove a previously-attached event handler from the elements.
+     * 
+     * @param eventType A string containing a JavaScript event type, such as click or submit.
+     * @param handler The function that is to be no longer executed.
+     */
     unbind(eventType?: string, handler?: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Remove a previously-attached event handler from the elements.
+     * 
+     * @param eventType A string containing a JavaScript event type, such as click or submit.
+     * @param fls Unbinds the corresponding 'return false' function that was bound using .bind( eventType, false ).
+     */
     unbind(eventType: string, fls: boolean): JQuery;
+    /**
+     * Remove a previously-attached event handler from the elements.
+     * 
+     * @param evt A JavaScript event object as passed to an event handler.
+     */
     unbind(evt: any): JQuery;
 
+    /**
+     * Remove a handler from the event for all elements which match the current selector, based upon a specific set of root elements.
+     */
     undelegate(): JQuery;
-    undelegate(selector: any, eventType: string, handler?: (eventObject: JQueryEventObject) => any): JQuery;
-    undelegate(selector: any, events: any): JQuery;
+    /**
+     * Remove a handler from the event for all elements which match the current selector, based upon a specific set of root elements.
+     * 
+     * @param selector A selector which will be used to filter the event results.
+     * @param eventType A string containing a JavaScript event type, such as "click" or "keydown"
+     * @param handler A function to execute at the time the event is triggered.
+     */
+    undelegate(selector: string, eventType: string, handler?: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Remove a handler from the event for all elements which match the current selector, based upon a specific set of root elements.
+     * 
+     * @param selector A selector which will be used to filter the event results.
+     * @param events An object of one or more event types and previously bound functions to unbind from them.
+     */
+    undelegate(selector: string, events: Object): JQuery;
+    /**
+     * Remove a handler from the event for all elements which match the current selector, based upon a specific set of root elements.
+     * 
+     * @param namespace A string containing a namespace to unbind all events from.
+     */
     undelegate(namespace: string): JQuery;
 
+    /**
+     * Bind an event handler to the "unload" JavaScript event. (DEPRECATED from v1.8)
+     * 
+     * @param handler A function to execute when the event is triggered.
+     */
     unload(handler: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Bind an event handler to the "unload" JavaScript event. (DEPRECATED from v1.8)
+     * 
+     * @param eventData A plain object of data that will be passed to the event handler.
+     * @param handler A function to execute when the event is triggered.
+     */
     unload(eventData?: any, handler?: (eventObject: JQueryEventObject) => any): JQuery;
 
-    // Internals
+    /**
+     * The DOM node context originally passed to jQuery(); if none was passed then context will likely be the document. (DEPRECATED from v1.10)
+     */
     context: Element;
+
     jquery: string;
 
+    /**
+     * Bind an event handler to the "error" JavaScript event. (DEPRECATED from v1.8)
+     * 
+     * @param handler A function to execute when the event is triggered.
+     */
     error(handler: (eventObject: JQueryEventObject) => any): JQuery;
+    /**
+     * Bind an event handler to the "error" JavaScript event. (DEPRECATED from v1.8)
+     * 
+     * @param eventData A plain object of data that will be passed to the event handler.
+     * @param handler A function to execute when the event is triggered.
+     */
     error(eventData: any, handler: (eventObject: JQueryEventObject) => any): JQuery;
 
+    /**
+     * Add a collection of DOM elements onto the jQuery stack.
+     * 
+     * @param elements An array of elements to push onto the stack and make into a new jQuery object.
+     */
     pushStack(elements: any[]): JQuery;
-    pushStack(elements: any[], name: any, arguments: any): JQuery;
+    /**
+     * Add a collection of DOM elements onto the jQuery stack.
+     * 
+     * @param elements An array of elements to push onto the stack and make into a new jQuery object.
+     * @param name The name of a jQuery method that generated the array of elements.
+     * @param arguments The arguments that were passed in to the jQuery method (for serialization).
+     */
+    pushStack(elements: any[], name: string, arguments: any[]): JQuery;
 
-    // Manipulation
-    after(...content: any[]): JQuery;
-    after(func: (index: any) => any): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param content1 HTML string, DOM element, array of elements, or jQuery object to insert after each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert after each element in the set of matched elements.
+     */
+    after(content1: JQuery, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param content1 HTML string, DOM element, array of elements, or jQuery object to insert after each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert after each element in the set of matched elements.
+     */
+    after(content1: any[], ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param content1 HTML string, DOM element, array of elements, or jQuery object to insert after each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert after each element in the set of matched elements.
+     */
+    after(content1: Element, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param content1 HTML string, DOM element, array of elements, or jQuery object to insert after each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert after each element in the set of matched elements.
+     */
+    after(content1: Text, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param content1 HTML string, DOM element, array of elements, or jQuery object to insert after each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert after each element in the set of matched elements.
+     */
+    after(content1: string, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, after each element in the set of matched elements.
+     * 
+     * param func A function that returns an HTML string, DOM element(s), or jQuery object to insert after each element in the set of matched elements. Receives the index position of the element in the set as an argument. Within the function, this refers to the current element in the set.
+     */
+    after(func: (index: number) => any): JQuery;
 
-    append(...content: any[]): JQuery;
-    append(func: (index: any, html: any) => any): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param content1 DOM element, array of elements, HTML string, or jQuery object to insert at the end of each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert at the end of each element in the set of matched elements.
+     */
+    append(content1: JQuery, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param content1 DOM element, array of elements, HTML string, or jQuery object to insert at the end of each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert at the end of each element in the set of matched elements.
+     */
+    append(content1: any[], ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param content1 DOM element, array of elements, HTML string, or jQuery object to insert at the end of each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert at the end of each element in the set of matched elements.
+     */
+    append(content1: Element, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param content1 DOM element, array of elements, HTML string, or jQuery object to insert at the end of each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert at the end of each element in the set of matched elements.
+     */
+    append(content1: Text, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param content1 DOM element, array of elements, HTML string, or jQuery object to insert at the end of each element in the set of matched elements.
+     * param content2 One or more additional DOM elements, arrays of elements, HTML strings, or jQuery objects to insert at the end of each element in the set of matched elements.
+     */
+    append(content1: string, ...content2: any[]): JQuery;
+    /**
+     * Insert content, specified by the parameter, to the end of each element in the set of matched elements.
+     * 
+     * param func A function that returns an HTML string, DOM element(s), or jQuery object to insert at the end of each element in the set of matched elements. Receives the index position of the element in the set and the old HTML value of the element as arguments. Within the function, this refers to the current element in the set.
+     */
+    append(func: (index: number, html: string) => any): JQuery;
 
-    appendTo(target: any): JQuery;
+    /**
+     * Insert every element in the set of matched elements to the end of the target.
+     * 
+     * @param target A selector, element, HTML string, array of elements, or jQuery object; the matched set of elements will be inserted at the end of the element(s) specified by this parameter.
+     */
+    appendTo(target: JQuery): JQuery;
+    /**
+     * Insert every element in the set of matched elements to the end of the target.
+     * 
+     * @param target A selector, element, HTML string, array of elements, or jQuery object; the matched set of elements will be inserted at the end of the element(s) specified by this parameter.
+     */
+    appendTo(target: any[]): JQuery;
+    /**
+     * Insert every element in the set of matched elements to the end of the target.
+     * 
+     * @param target A selector, element, HTML string, array of elements, or jQuery object; the matched set of elements will be inserted at the end of the element(s) specified by this parameter.
+     */
+    appendTo(target: Element): JQuery;
+    /**
+     * Insert every element in the set of matched elements to the end of the target.
+     * 
+     * @param target A selector, element, HTML string, array of elements, or jQuery object; the matched set of elements will be inserted at the end of the element(s) specified by this parameter.
+     */
+    appendTo(target: string): JQuery;
 
     before(...content: any[]): JQuery;
     before(func: (index: any) => any): JQuery;
