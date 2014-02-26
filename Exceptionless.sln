@@ -56,6 +56,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE.txt = LICENSE.txt
 		Source\nlog.config = Source\nlog.config
 		README.md = README.md
+		WebEssentials-Settings.json = WebEssentials-Settings.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.SampleMvc", "Source\Samples\SampleMvc\Exceptionless.SampleMvc.csproj", "{B7075822-FBB6-4B3A-A639-37C39DC27BB6}"
