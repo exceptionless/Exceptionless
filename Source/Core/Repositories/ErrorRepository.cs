@@ -121,11 +121,11 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<Error> collection) {
             base.InitializeCollection(collection);
 
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ProjectId));
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
-            collection.EnsureIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC));
-            collection.EnsureIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC));
-            collection.EnsureIndex(IndexKeys.Descending(FieldNames.ErrorStackId, FieldNames.OccurrenceDate_UTC));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.ErrorStackId, FieldNames.OccurrenceDate_UTC));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Error> cm) {

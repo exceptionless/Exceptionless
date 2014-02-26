@@ -42,10 +42,10 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<User> collection) {
             base.InitializeCollection(collection);
 
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds));
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true));
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true));
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.Roles));
+            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds));
+            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true));
+            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.Roles));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<User> cm) {

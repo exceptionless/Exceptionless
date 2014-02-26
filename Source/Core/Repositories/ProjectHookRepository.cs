@@ -46,8 +46,8 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<ProjectHook> collection) {
             base.InitializeCollection(collection);
 
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ProjectId));
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.Url));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<ProjectHook> cm) {
