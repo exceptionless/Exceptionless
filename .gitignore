@@ -173,3 +173,4 @@ $RECYCLE.BIN/
 # Redis
 /appendonly.aof
 dump.rdb
+/_NCrunch*

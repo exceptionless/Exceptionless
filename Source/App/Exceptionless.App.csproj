@@ -798,6 +798,7 @@
     <Content Include="Scripts\typings\jquery.livestampjs\jquery.livestampjs.d.ts" />
   </ItemGroup>
   <ItemGroup>
+    <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
     <TypeScriptCompile Include="Scripts\typings\signalr\signalr.d.ts" />
   </ItemGroup>
   <PropertyGroup>
