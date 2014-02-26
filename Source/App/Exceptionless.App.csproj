@@ -790,6 +790,7 @@
     <Content Include="Scripts\typings\fancybox\fancybox.d.ts" />
     <Content Include="Scripts\typings\zeroclipboard\zeroclipboard.d.ts" />
     <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
+    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
     <Content Include="Scripts\typings\jquery.livestampjs\jquery.livestampjs.d.ts" />
     <Content Include="Scripts\typings\bootstrap\bootstrap.d.ts" />
     <Content Include="Scripts\typings\d3\d3.d.ts" />
