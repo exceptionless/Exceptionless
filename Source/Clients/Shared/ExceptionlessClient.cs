@@ -498,6 +498,9 @@ namespace Exceptionless {
                             while (manifests.Count > 0) {
                                 Log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
                                 foreach (Manifest manifest in manifests) {
+                                    if (manifest.IsSent)
+                                        continue;
+
                                     SendManifest(manifest);
                                     if (!manifest.BreakProcessing)
                                         continue;
