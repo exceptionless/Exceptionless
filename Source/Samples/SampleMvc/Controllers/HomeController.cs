@@ -19,6 +19,7 @@ namespace Exceptionless.SampleMvc.Controllers {
         public string Blah { get; set; }
     }
 
+    [HandleError(View = "CustomError", ExceptionType = typeof(ArgumentException))]
     public class HomeController : Controller {
         public ActionResult Index() {
             return View();
@@ -32,6 +33,11 @@ namespace Exceptionless.SampleMvc.Controllers {
         [HttpGet]
         public ViewResult Error() {
             return View("Error");
+        }
+
+        [HttpGet]
+        public ViewResult CustomError() {
+            return View("CustomError");
         }
 
         [HttpPost]
@@ -60,6 +66,11 @@ namespace Exceptionless.SampleMvc.Controllers {
         [HttpGet]
         public ActionResult Boom() {
             throw new ApplicationException("Boom!");
+        }
+
+        [HttpGet]
+        public ActionResult CustomBoom() {
+            throw new ArgumentException("Boom!");
         }
 
         [HttpGet]

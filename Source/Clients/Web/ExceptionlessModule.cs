@@ -8,7 +8,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Web;
 
 namespace Exceptionless.Web {
@@ -30,18 +29,14 @@ namespace Exceptionless.Web {
         }
 
         private void OnError(object sender, EventArgs e) {
-            HttpContext context = HttpContext.Current;
-            if (context == null)
+            if (HttpContext.Current == null)
                 return;
 
-            Exception exception = context.Server.GetLastError();
+            Exception exception = HttpContext.Current.Server.GetLastError();
             if (exception == null)
                 return;
 
-            var contextData = new Dictionary<string, object> {
-                { "HttpContext", new HttpContextWrapper(context) }
-            };
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, contextData);
+            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, HttpContext.Current.ToDictionary());
         }
     }
 }

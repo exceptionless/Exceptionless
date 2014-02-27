@@ -68,9 +68,9 @@
     <Compile Include="..\Web\WebLastErrorIdManager.cs">
       <Link>WebLastErrorIdManager.cs</Link>
     </Compile>
-    <Compile Include="ExceptionlessHandleErrorAttribute.cs" />
     <Compile Include="ExceptionlessModule.cs" />
     <Compile Include="ExceptionlessMvcPlugin.cs" />
+    <Compile Include="ExceptionlessSendErrorsAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

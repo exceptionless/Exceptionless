@@ -24,7 +24,7 @@ namespace Exceptionless.Web {
 
             // if the context is not passed in, try and grab it
             if (httpContext == null && HttpContext.Current != null)
-                httpContext = new HttpContextWrapper(HttpContext.Current);
+                httpContext = HttpContext.Current.ToWrapped();
 
             if (httpContext == null)
                 return;
@@ -57,7 +57,7 @@ namespace Exceptionless.Web {
 
             // if the context is not passed in, try and grab it
             if (httpContext == null && HttpContext.Current != null)
-                httpContext = new HttpContextWrapper(HttpContext.Current);
+                httpContext = HttpContext.Current.ToWrapped();
 
             if (httpContext == null)
                 return;
