@@ -163,7 +163,7 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
 
