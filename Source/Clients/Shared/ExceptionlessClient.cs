@@ -498,8 +498,15 @@ namespace Exceptionless {
                             while (manifests.Count > 0) {
                                 Log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
                                 foreach (Manifest manifest in manifests) {
-                                    if (manifest.IsSent)
+                                    if (manifest.IsSent) {
+                                        try {
+                                            _queue.Delete(manifest.Id);
+                                        } catch (Exception ex) {
+                                            Log.Error(ex, "An error occurred while trying to delete a previously sent error.");
+                                        }
+
                                         continue;
+                                    }
 
                                     SendManifest(manifest);
                                     if (!manifest.BreakProcessing)
