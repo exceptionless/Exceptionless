@@ -15,17 +15,13 @@ You can get your Exceptionless api key by logging into http://exceptionless.com
 and viewing your project configuration page.
 
 -------------------------------------
-		 Nancy Integration
+		 ASP.NET Integration
 -------------------------------------
-The Exceptionless.Nancy NuGet package will automatically configure your web.config. 
-Next, add your Exceptionless api key to the web.config Exceptionless section.
+The Exceptionless.Mvc NuGet package will automatically configure your web.config. 
+To start reporting unhandled exceptions in your application, add your Exceptionless 
+api key to the web.config Exceptionless section.
 
 <exceptionless apiKey="API_KEY_HERE" />
-
-Finally, you must call the following line of code to inside of your NancyBootstrapper's
-ApplicationStartup method to start reporting unhandled exceptions.
-
-ExceptionlessClient.Current.RegisterNancy(pipelines)
 
 -------------------------------------
    Manually reporting an exception
