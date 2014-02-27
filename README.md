@@ -40,6 +40,12 @@ The server is licensed under the AGPL license to ensure that any modifications t
 
 We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
 
+## Contributing
+
+Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
+
+In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.com with the name of your organization and we will upgrade you to a paid plan.
+
 ## Roadmap
 
 This is a list of high level things that we are planning to do:
