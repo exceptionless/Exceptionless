@@ -25,7 +25,7 @@ namespace Exceptionless {
             if (context == null)
                 return error;
 
-            error.AddRequestInfo(client, new HttpContextWrapper(context));
+            error.AddRequestInfo(client, context.ToWrapped());
 
             return error;
         }
@@ -38,7 +38,7 @@ namespace Exceptionless {
         /// <param name="context">The http context to gather information from.</param>
         public static Error AddRequestInfo(this Error error, ExceptionlessClient client, HttpContextBase context = null) {
             if (context == null && HttpContext.Current != null)
-                context = new HttpContextWrapper(HttpContext.Current);
+                context = HttpContext.Current.ToWrapped();
 
             if (context == null)
                 return error;
@@ -55,6 +55,16 @@ namespace Exceptionless {
         public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder) {
             builder.Target.AddRequestInfo(builder.Client);
             return builder;
+        }
+
+        internal static IDictionary<string, object> ToDictionary(this HttpContext context) {
+            return new Dictionary<string, object> {
+                { "HttpContext", context.ToWrapped() }
+            };
+        }
+
+        internal static HttpContextBase ToWrapped(this HttpContext context) {
+            return new HttpContextWrapper(context);
         }
 
         internal static HttpContextBase GetHttpContext(this IDictionary<string, object> data) {

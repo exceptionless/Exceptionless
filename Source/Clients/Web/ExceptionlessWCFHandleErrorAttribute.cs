@@ -27,18 +27,11 @@ namespace Exceptionless.Web {
         }
 
         public virtual bool HandleError(Exception exception) {
-            Dictionary<string, object> contextData = null;
+            IDictionary<string, object> contextData = null;
 
             HttpContext context = HttpContext.Current;
-            if (context != null) {
-                //Exception exception = context.Server.GetLastError();
-                //if (exception == null)
-                //    return true;
-
-                contextData = new Dictionary<string, object> {
-                    { "HttpContext", new HttpContextWrapper(context) }
-                };
-            }
+            if (context != null)
+                contextData = HttpContext.Current.ToDictionary();
 
             ExceptionlessClient.Current.ProcessUnhandledException(exception, "WCFServiceError", true, contextData);
 
