@@ -170,10 +170,15 @@ namespace Exceptionless {
                 manifest.LogMessages.Add(String.Concat(DateTime.UtcNow.ToString(), " - ", ex.ToString()));
                 Log.FormattedError(typeof(ExceptionlessClient), "Problem sending report {0}: {1}", manifest.Id, ex.Message);
             } finally {
-                if (manifest.IsComplete() || manifest.ShouldDiscard())
-                    _queue.Delete(manifest.Id);
-                else
+                if (manifest.IsComplete() || manifest.ShouldDiscard()) {
+                    try {
+                        _queue.Delete(manifest.Id);
+                    } catch (Exception) {
+                        _queue.UpdateManifest(manifest);
+                    }
+                } else {
                     _queue.UpdateManifest(manifest);
+                }
             }
         }
 
