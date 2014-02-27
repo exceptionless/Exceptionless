@@ -63,6 +63,12 @@ namespace Exceptionless {
             };
         }
 
+        internal static IDictionary<string, object> ToDictionary(this HttpContextBase context) {
+            return new Dictionary<string, object> {
+                { "HttpContext", context }
+            };
+        }
+
         internal static HttpContextBase ToWrapped(this HttpContext context) {
             return new HttpContextWrapper(context);
         }
