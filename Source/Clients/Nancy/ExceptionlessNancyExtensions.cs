@@ -30,7 +30,7 @@ namespace Exceptionless {
         private static Response OnError(NancyContext context, Exception exception) {
             var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
 
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "UnhandledNancyPipelineException", true, contextData);
+            ExceptionlessClient.Current.ProcessUnhandledException(exception, "NancyPipelineException", true, contextData);
 
             return context.Response;
         }
