@@ -11,45 +11,39 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
-using System.Reflection;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Nancy;
-using Nancy.Extensions;
 using Nancy.Helpers;
 
-namespace Exceptionless.ExtendedData
-{
-    internal static class NancyRequestInfoCollector
-    {
-        public static RequestInfo Collect(NancyContext context, ExceptionlessClient client)
-        {
+namespace Exceptionless.ExtendedData {
+    internal static class NancyRequestInfoCollector {
+        public static RequestInfo Collect(NancyContext context, ExceptionlessClient client) {
             if (context == null)
                 return null;
-            var request = context.Request;
-            var info = new RequestInfo
-            {
-                ClientIpAddress = request.UserHostAddress.Equals("::1") ? "localhost" : request.UserHostAddress,
-                HttpMethod = request.Method
+ 
+            var info = new RequestInfo {
+                ClientIpAddress = context.Request.UserHostAddress,
+                HttpMethod = context.Request.Method
             };
 
-            if (request.Headers.UserAgent != null)
-                info.UserAgent = request.Headers.UserAgent;
+            if (context.Request.Headers.UserAgent != null)
+                info.UserAgent = context.Request.Headers.UserAgent;
 
-            if (request.Url != null)
-            {
-                info.Host = request.Url.HostName;
-                info.IsSecure = request.Url.IsSecure;
-                info.Path = request.Url.BasePath + request.Url.Path;
-                info.Port = request.Url.Port ?? 80;
+            if (context.Request.Url != null) {
+                info.Host = context.Request.Url.HostName;
+                info.IsSecure = context.Request.Url.IsSecure;
+                info.Path = context.Request.Url.BasePath + context.Request.Url.Path;
+                info.Port = context.Request.Url.Port ?? 80;
             }
 
-            if (request.Headers.Referrer != null)
-                info.Referrer = request.Headers.Referrer;
+            if (context.Request.Headers.Referrer != null)
+                info.Referrer = context.Request.Headers.Referrer;
 
-            info.Cookies = request.Cookies.ToDictionary(client);
+            info.Cookies = context.Request.Cookies.ToDictionary(client);
 
-            info.QueryString = HttpUtility.ParseQueryString(request.Url.Query).ToDictionary(client);
+            if (context.Request.Url != null && !String.IsNullOrWhiteSpace(context.Request.Url.Query))
+                info.QueryString = HttpUtility.ParseQueryString(context.Request.Url.Query).ToDictionary(client);
 
             return info;
         }
@@ -65,29 +59,34 @@ namespace Exceptionless.ExtendedData
             "_ncfa"
         };
 
-        private static Dictionary<string, string> ToDictionary(this IDictionary<string, string> kvs, ExceptionlessClient client)
-        {
+        private static Dictionary<string, string> ToDictionary(this IEnumerable<KeyValuePair<string, string>> cookies, ExceptionlessClient client) {
             var d = new Dictionary<string, string>();
-            foreach (var kv in kvs)
-            {
-                if (kv.Key.AnyWildcardMatches(_ignoredFormFields, true)
-                    || kv.Key.AnyWildcardMatches(_ignoredCookies, true)
-                    || kv.Key.AnyWildcardMatches(client.Configuration.DataExclusions, true))
-                {
-                    continue;
-                }
-                d.Add(kv.Key, kv.Value);
+
+            foreach (var kv in cookies.Where(pair => !String.IsNullOrEmpty(pair.Key) && !pair.Key.AnyWildcardMatches(_ignoredCookies, true) && !pair.Key.AnyWildcardMatches(client.Configuration.DataExclusions, true))) {
+                if (!d.ContainsKey(kv.Key))
+                    d.Add(kv.Key, kv.Value);
             }
+
             return d;
         }
-        public static Dictionary<string, string> ToDictionary(this NameValueCollection collection, ExceptionlessClient client)
-        {
-            var dictionary = new Dictionary<string, string>();
-            foreach (var key in collection.AllKeys)
-            {
-                dictionary.Add(key, collection[key]);
+
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ExceptionlessClient client) {
+            var d = new Dictionary<string, string>();
+
+            foreach (string key in values.AllKeys) {
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(client.Configuration.DataExclusions, true))
+                    continue;
+
+                try {
+                    string value = values.Get(key);
+                    d.Add(key, value);
+                } catch (Exception ex) {
+                    if (!d.ContainsKey(key))
+                        d.Add(key, ex.Message);
+                }
             }
-            return dictionary.ToDictionary(client);
+
+            return d;
         }
     }
 }

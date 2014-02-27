@@ -27,6 +27,7 @@ properties {
     $client_projects = @(
         @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
         @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
@@ -84,10 +85,10 @@ task Init -depends Clean {
 task BuildClient -depends Init {			
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
-            
+
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
             
             TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersion))" 
