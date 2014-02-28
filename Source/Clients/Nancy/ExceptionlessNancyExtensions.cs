@@ -14,20 +14,25 @@ using Exceptionless.Models;
 using Exceptionless.Nancy;
 using Nancy;
 using Nancy.Bootstrapper;
+using Exceptionless.Exceptions;
 
-namespace Exceptionless {
-    public static class ExceptionlessNancyExtensions {
-        private const string NANCY_CONTEXT= "NancyContext";
+namespace Exceptionless
+{
+    public static class ExceptionlessNancyExtensions
+    {
+        private const string NANCY_CONTEXT = "NancyContext";
 
-        public static void RegisterNancy(this ExceptionlessClient client, IPipelines pipelines) {
+        public static void RegisterNancy(this ExceptionlessClient client, IPipelines pipelines)
+        {
             client.RegisterPlugin(new ExceptionlessNancyPlugin());
             client.Startup();
             client.Configuration.IncludePrivateInformation = true;
-
             pipelines.OnError += OnError;
+            pipelines.AfterRequest += AfterRequest;
         }
 
-        private static Response OnError(NancyContext context, Exception exception) {
+        private static Response OnError(NancyContext context, Exception exception)
+        {
             var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
 
             ExceptionlessClient.Current.ProcessUnhandledException(exception, "NancyPipelineException", true, contextData);
@@ -35,33 +40,51 @@ namespace Exceptionless {
             return context.Response;
         }
 
-        public static void UnregisterNancy(this ExceptionlessClient client) {
+        private static void AfterRequest(NancyContext context)
+        {
+            if (context.Response.StatusCode == HttpStatusCode.NotFound)
+            {
+                var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
+                var ex = new NotFoundException().ToExceptionless(true);
+                ex.AddRequestInfo(context);
+                ex.Target.Message = "Not found";
+                ex.Target.Code = "404";
+                ExceptionlessClient.Current.SubmitError(ex.Target);
+            }
+        }
+
+        public static void UnregisterNancy(this ExceptionlessClient client)
+        {
             client.UnregisterPlugin(typeof(ExceptionlessNancyPlugin).FullName);
             client.Shutdown();
         }
 
-        public static Error AddRequestInfo(this Error error, NancyContext context) {
+        public static Error AddRequestInfo(this Error error, NancyContext context)
+        {
             if (context == null)
                 return error;
- 
+
             error.RequestInfo = NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Current);
- 
+
             return error;
         }
 
-        public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder, NancyContext context) {
+        public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder, NancyContext context)
+        {
             builder.Target.AddRequestInfo(context);
             return builder;
         }
 
-        internal static NancyContext GetNancyContext(this IDictionary<string, object> data) {
+        internal static NancyContext GetNancyContext(this IDictionary<string, object> data)
+        {
             if (!data.HasNancyContext())
                 return null;
 
             return data[NANCY_CONTEXT] as NancyContext;
         }
 
-        internal static bool HasNancyContext(this IDictionary<string, object> data) {
+        internal static bool HasNancyContext(this IDictionary<string, object> data)
+        {
             return data.ContainsKey(NANCY_CONTEXT);
         }
     }
