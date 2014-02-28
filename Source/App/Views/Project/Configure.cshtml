@@ -40,6 +40,9 @@
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless'">
                 <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Startup()</code> during the startup of your app.</p>
             </li>
+            <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless.Nancy'">
+                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)</code> with an instance of Nancy.Bootstrapper.IPipelines inside of your NancyBootstrapper's ApplicationStartup method.</p>
+            </li>
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless.Windows' || $root.selectedProjectType().key() === 'Exceptionless.Wpf'">
                 <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Register()</code> during the startup of your app.</p>
             </li>

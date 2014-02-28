@@ -42,6 +42,7 @@ module exceptionless.project {
             this.projectTypes.push(new models.KeyValuePair('Exceptionless.Web', 'ASP.NET Web Forms'));
             this.projectTypes.push(new models.KeyValuePair('Exceptionless.Windows', 'Windows Forms'));
             this.projectTypes.push(new models.KeyValuePair('Exceptionless.Wpf', 'Windows Presentation Foundation (WPF)'));
+            this.projectTypes.push(new models.KeyValuePair('Exceptionless.Nancy', 'Nancy'));
             this.projectTypes.push(new models.KeyValuePair('Exceptionless', 'Console'));
             this.selectedProjectType(this.projectTypes()[0]);
         }
