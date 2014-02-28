@@ -175,19 +175,23 @@ namespace Exceptionless.App.Controllers.API {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public BillingPlanStatsModel Plans() {
             MongoCursor<Organization> query = ((OrganizationRepository)_organizationRepository).Collection.FindAll()
-                .SetFields(OrganizationRepository.FieldNames.PlanId, OrganizationRepository.FieldNames.BillingPrice, OrganizationRepository.FieldNames.BillingStatus);
+                .SetFields(OrganizationRepository.FieldNames.PlanId, OrganizationRepository.FieldNames.IsSuspended, OrganizationRepository.FieldNames.BillingPrice, OrganizationRepository.FieldNames.BillingStatus);
 
             List<Organization> results = query.SetSortOrder(SortBy.Descending(OrganizationRepository.FieldNames.PlanId)).ToList();
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
-            decimal monthlyTotalPaid = smallOrganizations.Sum(o => o.BillingPrice) + mediumOrganizations.Sum(o => o.BillingPrice) + largeOrganizations.Sum(o => o.BillingPrice);
+            decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             List<Organization> smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            decimal yearlyTotalPaid = smallYearlyOrganizations.Sum(o => o.BillingPrice) + mediumYearlyOrganizations.Sum(o => o.BillingPrice) + largeYearlyOrganizations.Sum(o => o.BillingPrice);
+            decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             return new BillingPlanStatsModel {
                 SmallTotal = smallOrganizations.Count,

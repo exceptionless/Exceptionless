@@ -89,19 +89,23 @@ namespace Exceptionless.App.Controllers.API {
                         Query.Or(
                             Query.And(
                                 Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), 
-                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing))), 
+                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
+                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))),  
                             Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(true))));
                 else
                     queries.Add(Query.And(
                             Query.Or(
                                 Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)),
-                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing))),
+                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
+                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))), 
                             Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(false))));
             }
 
             SortByBuilder sort;
             if (sortBy == OrganizationSortBy.Newest)
                 sort = SortBy.Descending(OrganizationRepository.FieldNames.Id);
+            else if (sortBy == OrganizationSortBy.Subscribed)
+                sort = SortBy.Descending(OrganizationRepository.FieldNames.SubscribeDate);
             else if (sortBy == OrganizationSortBy.MostActive)
                 sort = SortBy.Descending(OrganizationRepository.FieldNames.TotalErrorCount);
             else
@@ -390,8 +394,9 @@ namespace Exceptionless.App.Controllers.API {
 
         public enum OrganizationSortBy {
             Newest = 0,
-            MostActive = 1,
-            Alphabetical = 2,
+            Subscribed = 1,
+            MostActive = 2,
+            Alphabetical = 3,
         }
     }
 }
