@@ -207,7 +207,7 @@ namespace Exceptionless.App.Controllers.API {
                 FreeAccounts = results.Count(o => String.Equals(o.PlanId, BillingManager.FreePlan.Id)),
                 PaidAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice > 0),
                 FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice <= 0),
-                SuspendedAccounts = results.Count(o => o.BillingStatus != BillingStatus.Active && o.BillingStatus != BillingStatus.Trialing),
+                SuspendedAccounts = results.Count(o => o.IsSuspended),
             };
         }
     }
