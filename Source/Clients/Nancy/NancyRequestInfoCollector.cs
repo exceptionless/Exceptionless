@@ -21,7 +21,7 @@ namespace Exceptionless.ExtendedData {
         public static RequestInfo Collect(NancyContext context, ExceptionlessClient client) {
             if (context == null)
                 return null;
- 
+
             var info = new RequestInfo {
                 ClientIpAddress = context.Request.UserHostAddress,
                 HttpMethod = context.Request.Method

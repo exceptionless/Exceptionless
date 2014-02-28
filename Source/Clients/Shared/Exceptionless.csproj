@@ -132,7 +132,6 @@
     <Compile Include="Configuration\IConfigurationAccessor.cs" />
     <Compile Include="ErrorBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
-    <Compile Include="Exceptions\NotFoundException.cs" />
     <Compile Include="Extensions\ClientConfigurationExtensions.cs" />
     <Compile Include="Extensions\DictionaryExtensions.cs" />
     <Compile Include="IConfigurationAndLogAccessor.cs" />

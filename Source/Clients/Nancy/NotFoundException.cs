@@ -9,10 +9,12 @@
 
 using System;
 
-namespace Exceptionless.Exceptions
-{
-    public class NotFoundException : Exception
-    {
-        public NotFoundException() : base("Not found") { }
+namespace Exceptionless.Nancy {
+    public class NotFoundException : Exception {
+        public NotFoundException() : base("Not found") {}
+
+        internal int HResult {
+            get { return 404; }
+        }
     }
 }

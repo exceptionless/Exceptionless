@@ -46,6 +46,7 @@
     <Compile Include="ExceptionlessNancyExtensions.cs" />
     <Compile Include="ExceptionlessNancyPlugin.cs" />
     <Compile Include="NancyRequestInfoCollector.cs" />
+    <Compile Include="NotFoundException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

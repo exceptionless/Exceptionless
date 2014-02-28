@@ -13,34 +13,27 @@ using Exceptionless.Models;
 using Exceptionless.Plugins;
 using Nancy;
 
-namespace Exceptionless.Nancy
-{
-    internal class ExceptionlessNancyPlugin : ExceptionlessPlugin
-    {
-        public override void AfterCreated(ExceptionlessPluginContext context, Error error, Exception exception)
-        {
+namespace Exceptionless.Nancy {
+    internal class ExceptionlessNancyPlugin : ExceptionlessPlugin {
+        public override void AfterCreated(ExceptionlessPluginContext context, Error error, Exception exception) {
             base.AfterCreated(context, error, exception);
 
             error.ExceptionlessClientInfo.Platform = "Nancy";
         }
 
-        public override void AddDefaultInformation(ExceptionlessPluginContext context, Error error)
-        {
+        public override void AddDefaultInformation(ExceptionlessPluginContext context, Error error) {
             base.AddDefaultInformation(context, error);
 
             NancyContext nancyContext = context.Data.GetNancyContext();
             if (nancyContext == null)
                 return;
 
-            try
-            {
+            try {
                 error.AddRequestInfo(nancyContext);
 
                 if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
                     error.UserName = nancyContext.CurrentUser.UserName;
-            }
-            catch (Exception ex)
-            {
+            } catch (Exception ex) {
                 context.Client.Log.Error(typeof(ExceptionlessNancyPlugin), ex, "Error adding request info.");
             }
         }
