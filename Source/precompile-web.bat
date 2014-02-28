@@ -1,0 +1,1 @@
+aspnet_compiler -v /Exceptionless.Web -p C:\Code\Exceptionless\Source\App -errorstack

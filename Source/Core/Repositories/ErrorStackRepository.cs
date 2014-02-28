@@ -61,9 +61,9 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<ErrorStack> collection) {
             base.InitializeCollection(collection);
 
-            collection.EnsureIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true));
-            collection.EnsureIndex(M.IndexKeys.Descending(FieldNames.LastOccurrence));
-            collection.EnsureIndex(M.IndexKeys.Descending(FieldNames.IsHidden, FieldNames.DateFixed));
+            collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true));
+            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.LastOccurrence));
+            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.IsHidden, FieldNames.DateFixed));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<ErrorStack> cm) {

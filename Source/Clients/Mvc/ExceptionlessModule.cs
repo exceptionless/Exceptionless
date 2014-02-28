@@ -8,8 +8,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 
@@ -30,38 +28,18 @@ namespace Exceptionless.Mvc {
             _context = context;
             _context.Error += OnError;
 
-            ReplaceErrorHandler();
-        }
-
-        private void ReplaceErrorHandler() {
-            Filter filter = GlobalFilters.Filters.FirstOrDefault(f => f.Instance is IExceptionFilter);
-            var handler = new ExceptionlessHandleErrorAttribute();
-
-            if (filter != null) {
-                if (filter.Instance is ExceptionlessHandleErrorAttribute)
-                    return;
-
-                GlobalFilters.Filters.Remove(filter.Instance);
-
-                handler.WrappedHandler = (IExceptionFilter)filter.Instance;
-            }
-
-            GlobalFilters.Filters.Add(handler);
+            GlobalFilters.Filters.Add(new ExceptionlessSendErrorsAttribute());
         }
 
         private void OnError(object sender, EventArgs e) {
-            HttpContext context = HttpContext.Current;
-            if (context == null)
+            if (HttpContext.Current == null)
                 return;
 
-            Exception exception = context.Server.GetLastError();
+            Exception exception = HttpContext.Current.Server.GetLastError();
             if (exception == null)
                 return;
 
-            var contextData = new Dictionary<string, object> {
-                { "HttpContext", new HttpContextWrapper(context) }
-            };
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, contextData);
+            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, HttpContext.Current.ToDictionary());
         }
     }
 }

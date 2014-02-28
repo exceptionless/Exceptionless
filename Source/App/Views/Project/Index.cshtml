@@ -4,7 +4,7 @@
 }
 
 <div id="overview" class="stat-container">
-    <div class="stat-holder">
+    <div class="stat-holder loading-spinner">
         <div id="totalStatBox" class="stat">
             <span class="stat-text" data-bind="formatNumber: total">0</span>
             <span class="visible-desktop">Total Exceptions</span>
@@ -14,7 +14,7 @@
     </div>
     <!-- /stat-holder -->
 
-    <div class="stat-holder">
+    <div class="stat-holder loading-spinner">
         <div id="uniqueStatBox" class="stat">
             <span class="stat-text" data-bind="formatNumber: uniqueTotal">0</span>
             <span class="visible-desktop">Unique Exceptions</span>
@@ -24,7 +24,7 @@
     </div>
     <!-- /stat-holder -->
 
-    <div class="stat-holder">
+    <div class="stat-holder loading-spinner">
         <div class="stat">
             <span class="stat-text" data-bind="formatNumber: newTotal">0</span>
             <span class="visible-desktop">New Exceptions</span>
@@ -34,7 +34,7 @@
     </div>
     <!-- /stat-holder -->
 
-    <div class="stat-holder">
+    <div class="stat-holder loading-spinner">
         <div class="stat">
             <span class="stat-text" data-bind="formatNumber: perHourAverage">0</span>
             <span class="visible-desktop">Exceptions Per Hour</span>
@@ -47,7 +47,6 @@
 <!-- /stat-container -->
 
 <div class="widget">
-
     <div class="widget-header">
         <i class="fa fa-bar-chart-o"></i>
         <h3>Exception History</h3>

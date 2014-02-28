@@ -142,7 +142,8 @@ module exceptionless.organization {
 
     export enum OrganizationSortBy {
         Newest = 0,
-        MostActive = 1,
-        Alphabetical = 2,
+        Subscribed = 1,
+        MostActive = 2,
+        Alphabetical = 3,
     }
 }

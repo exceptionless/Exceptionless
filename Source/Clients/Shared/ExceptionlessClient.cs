@@ -170,10 +170,15 @@ namespace Exceptionless {
                 manifest.LogMessages.Add(String.Concat(DateTime.UtcNow.ToString(), " - ", ex.ToString()));
                 Log.FormattedError(typeof(ExceptionlessClient), "Problem sending report {0}: {1}", manifest.Id, ex.Message);
             } finally {
-                if (manifest.IsComplete() || manifest.ShouldDiscard())
-                    _queue.Delete(manifest.Id);
-                else
+                if (manifest.IsComplete() || manifest.ShouldDiscard()) {
+                    try {
+                        _queue.Delete(manifest.Id);
+                    } catch (Exception) {
+                        _queue.UpdateManifest(manifest);
+                    }
+                } else {
                     _queue.UpdateManifest(manifest);
+                }
             }
         }
 
@@ -493,6 +498,16 @@ namespace Exceptionless {
                             while (manifests.Count > 0) {
                                 Log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
                                 foreach (Manifest manifest in manifests) {
+                                    if (manifest.IsSent) {
+                                        try {
+                                            _queue.Delete(manifest.Id);
+                                        } catch (Exception ex) {
+                                            Log.Error(ex, "An error occurred while trying to delete a previously sent error.");
+                                        }
+
+                                        continue;
+                                    }
+
                                     SendManifest(manifest);
                                     if (!manifest.BreakProcessing)
                                         continue;

@@ -1,15 +1,20 @@
-# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:bt27\)/statusIcon)](http://teamcity.codesmithtools.com/project.html?projectId=Exceptionless)
+﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:bt27\)/statusIcon)](http://teamcity.codesmithtools.com/project.html?projectId=Exceptionless)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time .NET error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
 ## Getting Started
 
-1. Start MongoDB and Redis by opening PowerShell and executing `.\StartBackendServers.ps1`.
-2. Open the `Exceptionless.sln` Visual Studio solution file.
-3. Select `Exceptionless.App` and `Exceptionless.SampleConsole` as startup projects.
-4. Run the project.
-5. The app will automatically make the 1st user that is created a Global Admin and will also create a sample `Acme` organization and project.
-6. Send a test error from the sample console application and you should see it show up immediately in the website.
+_** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.com](http://exceptionless.com) and signup for a free account and you will be up and running in seconds._
+
+1. You will need to have Visual Studio 2013 installed.
+2. Start MongoDB and Redis by opening `StartBackendServers.bat`.
+3. Open the `Exceptionless.sln` Visual Studio solution file.
+4. Select `Exceptionless.App` and `Exceptionless.SampleConsole` as startup projects.
+5. Run the project.
+6. The app will automatically make the 1st user that is created a Global Admin and will also create a sample `Acme` organization and project.
+7. Send a test error from the sample console application and you should see it show up immediately in the website.
+
+Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 
 ## Using Exceptionless
 
@@ -35,6 +40,12 @@ The server is licensed under the AGPL license to ensure that any modifications t
 
 We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
 
+## Contributing
+
+Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
+
+In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.com with the name of your organization and we will upgrade you to a paid plan.
+
 ## Roadmap
 
 This is a list of high level things that we are planning to do:
@@ -42,4 +53,5 @@ This is a list of high level things that we are planning to do:
 - Implement search features using ElasticSearch.
 - JavaScript client for reporting client side errors.
 - Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS.
+  - **We are looking for an AngularJS consultant to work on rewriting our UI layer.**
 - Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications.

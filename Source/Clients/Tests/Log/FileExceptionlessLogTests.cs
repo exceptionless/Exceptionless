@@ -89,6 +89,12 @@ namespace Exceptionless.Client.Tests.Log {
         }
 
         [Fact]
+        public void CheckSizeDoesNotFailIfLogIsMissing() {
+            FileExceptionlessLog log = GetLog(LOG_FILE + ".doesnotexist");
+            Assert.DoesNotThrow(log.CheckFileSize);
+        }
+
+        [Fact]
         public void LogIsThreadSafe() {
             FileExceptionlessLog log = GetLog(LOG_FILE);
 

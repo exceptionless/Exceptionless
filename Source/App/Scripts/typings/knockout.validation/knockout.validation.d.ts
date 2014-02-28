@@ -138,7 +138,7 @@ interface KnockoutStatic {
     applyBindingsWithValidation(viewModel: any, rootNode?: any, options?: KnockoutValidationConfiguration): void;
 }
 
-interface KnockoutSubscribableFunctions {
+interface KnockoutSubscribableFunctions<T> {
     isModified(): boolean;
     isModified(val: boolean): void;
     isValid: KnockoutComputed<boolean>;

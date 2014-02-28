@@ -2,8 +2,8 @@
 
 module exceptionless.project {
     export class DashboardViewModel extends ReportViewModelBase {
-        private _stats: KnockoutObservableArray<any> = ko.observableArray([]);
-        private _frequentErrorStacks = ko.observableArray([]);
+        private _stats = ko.observableArray<{ Date: Date; Total: number; UniqueTotal: number; }>([]);
+        private _frequentErrorStacks = ko.observableArray<models.ErrorStack>([]);
         private _checkForErrorData = true;
 
         private _pagedFrequentErrorStackStatsViewModel: stats.PagedFrequentErrorStackStatsViewModel;
@@ -33,8 +33,10 @@ module exceptionless.project {
                 this.retrieve(this.retrieveResource);
             });
 
-            this._pagedFrequentErrorStackStatsViewModel = new stats.PagedFrequentErrorStackStatsViewModel(frequentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate, <any>this._frequentErrorStacks);
             this._pagedRecentErrorsViewModel = new error.PagedRecentErrorsViewModel(recentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
+            this._pagedFrequentErrorStackStatsViewModel = new stats.PagedFrequentErrorStackStatsViewModel(frequentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate, this._frequentErrorStacks);
+            this.loading.subscribe((isLoading) => this._pagedFrequentErrorStackStatsViewModel.loading(isLoading));
+
             this.retrieve(this.retrieveResource);
         }
 
@@ -59,7 +61,6 @@ module exceptionless.project {
             }
 
             this.chart.update();
-            //this.chartSpinner.stop();
         }
 
         public get chartOptions(): any {

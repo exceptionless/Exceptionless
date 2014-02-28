@@ -129,8 +129,8 @@ module exceptionless.account {
         constructor() {
             ko.track(this);
 
-            ko.getObservable(this, 'selectedOrganization').subscribe((organization) => {
-                this.cardMode = !organization.cardLast4 ? 'new' : 'existing';
+            ko.getObservable(this, 'selectedOrganization').subscribe((org) => {
+                this.cardMode = !org.cardLast4 ? 'new' : 'existing';
 
                 var currentPlan: account.BillingPlan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.id === this.selectedOrganizationPlan.id);
                 var upsell: account.BillingPlan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.price > this.selectedOrganizationPlan.price);

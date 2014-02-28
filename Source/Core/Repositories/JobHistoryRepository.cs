@@ -35,7 +35,7 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<JobHistory> collection) {
             base.InitializeCollection(collection);
 
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.Name, FieldNames.StartTime));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Name, FieldNames.StartTime));
         }
 
         public const string CollectionName = "jobhistory";

@@ -51,3 +51,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
   The Exceptionless team may recommend adjustments to your code. Part of interacting with a healthy open-source community requires you to be open to learning new techniques and strategies; *don't get discouraged!* Remember: if the Exceptionless team suggest changes to your code, **they care enough about your work that they want to include it**, and hope that you can assist by implementing those revisions on your own.
   
 [m]: https://exceptionless.uservoice.com
+
+## Appreciation
+
+Anyone who submits a non-trivial pull request will be given a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.com with the name of your organization and we will upgrade you to a paid plan.

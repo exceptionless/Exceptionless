@@ -28,8 +28,8 @@ module exceptionless.organization {
         }
 
         public get selectedOrganization(): KnockoutComputed<models.Organization> {
-            var organization = ko.utils.arrayFirst(App.organizations(), (o: models.Organization) => o.id === this._organizationId);
-            return ko.computed(() => organization ? organization : new models.Organization('', 'Loading...', 0, 0, 0, 0), this);
+            var org = ko.utils.arrayFirst(App.organizations(), (o: models.Organization) => o.id === this._organizationId);
+            return ko.computed(() => org ? org : new models.Organization('', 'Loading...', 0, 0, 0, 0), this);
         }
 
         public get selectedPlan(): KnockoutComputed<account.BillingPlan> {

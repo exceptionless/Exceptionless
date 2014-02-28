@@ -50,8 +50,11 @@ namespace Exceptionless.Models {
                 if (!linkFilePath)
                     sb.Append(FileName);
                 else {
-                    var uri = new Uri(FileName);
-                    sb.AppendFormat("<a href=\"").Append(uri.AbsoluteUri).Append("\" target=\"_blank\">").Append(FileName).Append("</a>");
+                    Uri uri;
+                    if (Uri.TryCreate(FileName, UriKind.Absolute, out uri))
+                        sb.AppendFormat("<a href=\"").Append(uri.AbsoluteUri).Append("\" target=\"_blank\">").Append(FileName).Append("</a>");
+                    else
+                        sb.Append(FileName);
                 }
 
                 if (LineNumber > 0)

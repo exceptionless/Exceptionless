@@ -10,7 +10,7 @@
 Framework "4.5.1"
 
 properties {
-    $version =  "1.3"
+    $version =  "1.4"
     $configuration = "Release"
 
     $base_dir = Resolve-Path "."
@@ -27,6 +27,7 @@ properties {
     $client_projects = @(
         @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
         @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
@@ -84,15 +85,20 @@ task Init -depends Clean {
 task BuildClient -depends Init {			
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
-            
+
+            $assemblyOriginatorKeyFile = $sign_file
+            If ($($p.Name) -eq "Exceptionless.Nancy") {
+                $assemblyOriginatorKeyFile = $null 
+            }
+
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
             
             TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersion))" 
             exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
-                /p:AssemblyOriginatorKeyFile="$sign_file" `
+                /p:AssemblyOriginatorKeyFile="$assemblyOriginatorKeyFile" `
                 /p:Configuration="$configuration" `
                 /p:Platform="AnyCPU" `
                 /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
@@ -157,7 +163,7 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
                 Continue;
             }
 

@@ -1,18 +1,15 @@
-﻿@model HandleErrorInfo 
+﻿@using Exceptionless
+@model HandleErrorInfo
 @{
     Layout = "_Layout.cshtml";
 }
-
-@if (ViewBag.ExceptionlessIdentifier == null) {  
-    <p>No identifier.</p>
-} else {
-    using (Html.BeginForm("Error", "Home", FormMethod.Post)) {
-        @Html.AntiForgeryToken()
-        @Html.Hidden("Identifier", (string)ViewBag.ExceptionlessIdentifier)
+<h1>Error</h1>
+@using (Html.BeginForm("Error", "Home", FormMethod.Post)) {
+    @Html.AntiForgeryToken()
+    @Html.Hidden("Identifier", ExceptionlessClient.Current.GetLastErrorId())
         
-        @Html.TextBox("EmailAddress")<br/>
-        @Html.TextArea("Description")<br/>
+    @Html.TextBox("EmailAddress")<br/>
+    @Html.TextArea("Description")<br/>
         
-        <input type="submit" value="Submit Feedback" />
-    }
+    <input type="submit" value="Submit Feedback" />
 }

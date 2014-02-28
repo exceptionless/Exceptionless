@@ -62,14 +62,14 @@ namespace CodeSmith.Core.DataAnnotations
         }
 
         /// <summary>
-        /// Determines whether the credit card is exired.
+        /// Determines whether the credit card is expired.
         /// </summary>
         /// <param name="year">The year.</param>
         /// <param name="month">The month.</param>
         /// <returns>
-        /// 	<c>true</c> if credit card is exired; otherwise, <c>false</c>.
+        /// 	<c>true</c> if credit card is expired; otherwise, <c>false</c>.
         /// </returns>
-        public static bool IsCardExired(int year, int month)
+        public static bool IsCardExpired(int year, int month)
         {
             // last day of the month
             var expireDate = new DateTime(year, month, 1)

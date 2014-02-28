@@ -17,16 +17,6 @@ module exceptionless {
 
             this.registerNewItemRules();
 
-            this.loading.subscribe((isLoading) => {
-                if (this.updating())
-                    return;
-
-                if (isLoading)
-                    this.spinner.spin(document.getElementById(elementId));
-                else
-                    this.spinner.stop();
-            });
-
             this.pager = new PagerViewModel(elementId + '-page', 0, pageSize);
             this.pager.currentPage.subscribe(() => {
                 $.scrollTo('#' + elementId, { offset: { top: -110 } });

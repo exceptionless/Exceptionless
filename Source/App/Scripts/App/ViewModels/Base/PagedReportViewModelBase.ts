@@ -7,7 +7,7 @@ module exceptionless {
         filterViewModel: FilterViewModel;
         projectListViewModel: ProjectListViewModel;
 
-        constructor(elementId: string, url: string, action: string, projectListViewModel: ProjectListViewModel, filterViewModel: FilterViewModel, pageSize?: number, autoUpdate?: boolean, data?: KnockoutObservableArray<any>) {
+        constructor(elementId: string, url: string, action: string, projectListViewModel: ProjectListViewModel, filterViewModel: FilterViewModel, pageSize?: number, autoUpdate?: boolean, data?: KnockoutObservableArray<T>) {
             super(elementId, url, action, pageSize, autoUpdate, data);
 
             this.projectListViewModel = projectListViewModel;

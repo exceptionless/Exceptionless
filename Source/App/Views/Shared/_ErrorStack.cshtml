@@ -1,6 +1,6 @@
 ﻿@model string
 
-<div id="@Model">
+<div id="@Model" data-spinner-size="small" data-spinner-top="5">
     <table class="table table-striped table-bordered table-clickable table-hover table-fixed">
         <thead>
             <tr>
@@ -13,7 +13,7 @@
         <tbody>
             <!-- ko foreach: items -->
             <tr data-bind="click: $parent.rowClick">
-                <td  data-bind="template: { name: 'paged-stacks-template', afterRender: $root.truncate }"></td>
+                <td data-bind="template: { name: 'paged-stacks-template', afterRender: $root.truncate }"></td>
                 <td data-bind="formatNumber: $data.totalOccurrences"></td>
                 <td class="hidden-phone"><abbr data-bind="livestamp: $data.firstOccurrence"></abbr></td>
                 <td><abbr data-bind="livestamp: $data.lastOccurrence"></abbr></td>

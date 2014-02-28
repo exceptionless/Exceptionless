@@ -14,7 +14,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class OrganizationExtensions {
-        public static DateTime GetRententionUtcCutoff(this Organization organization) {
+        public static DateTime GetRetentionUtcCutoff(this Organization organization) {
             return organization.RetentionDays <= 0 ? DateTime.MinValue : DateTime.UtcNow.Date.AddDays(-organization.RetentionDays);
         }
 

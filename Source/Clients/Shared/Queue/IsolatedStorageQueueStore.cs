@@ -44,7 +44,7 @@ namespace Exceptionless.Queue {
                     dir.DeleteFile(filename);
                 }
             } catch (Exception ex) {
-                LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), "Problem verifing isolated storage store: {0}", ex.Message);
+                LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), "Problem verifying isolated storage store: {0}", ex.Message);
                 return false;
             }
 

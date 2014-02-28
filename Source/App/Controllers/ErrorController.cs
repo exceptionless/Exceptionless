@@ -54,8 +54,8 @@ namespace Exceptionless.App.Controllers {
             model.PromotedTabs = project.PromotedTabs;
             model.CustomContent = project.CustomContent;
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
-            if (model.OccurrenceDate.UtcDateTime <= rententionUtcCutoff)
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            if (model.OccurrenceDate.UtcDateTime <= retentionUtcCutoff)
                 return View("RetentionLimitReached", model);
 
             return View("ErrorOccurrence", model);

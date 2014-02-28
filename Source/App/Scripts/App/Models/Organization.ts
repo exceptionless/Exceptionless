@@ -20,11 +20,11 @@ module exceptionless.models {
         cardLast4: string;
         stripeCustomerId: string;
 
-		isSuspended: boolean;
-		suspensionCode: string;
-		suspensionDate: Date;
+        isSuspended: boolean;
+        suspensionCode: string;
+        suspensionDate: Date;
         suspendedByUserId: string;
-		suspensionNotes: string;
+        suspensionNotes: string;
 
         constructor(id: string, name: string, projectCount: number, stackCount: number, errorCount: number, totalErrorCount: number, lastErrorDate?: Date, subscribeDate?: Date, billingChangeDate?: Date, billingChangedByUserId?: string, billingStatus?: number, billingPrice?:number, planId?: string, cardLast4?: string, stripeCustomerId?: string, isSuspended?: boolean, suspensionCode?: string, suspensionDate?: Date, suspendedByUserId?: string, suspensionNotes?: string) {
             this.id = id;
@@ -51,14 +51,14 @@ module exceptionless.models {
             this.cardLast4 = cardLast4;
             this.stripeCustomerId = stripeCustomerId;
 
-			this.isSuspended = isSuspended == true;
-			this.suspensionCode = !StringUtil.isNullOrEmpty(suspensionCode) ? suspensionCode : '';
-			this.suspendedByUserId = !StringUtil.isNullOrEmpty(suspendedByUserId) ? suspendedByUserId : '';
-			this.suspensionNotes = !StringUtil.isNullOrEmpty(suspensionNotes) ? suspensionNotes : '';
+            this.isSuspended = isSuspended == true;
+            this.suspensionCode = !StringUtil.isNullOrEmpty(suspensionCode) ? suspensionCode : '';
+            this.suspendedByUserId = !StringUtil.isNullOrEmpty(suspendedByUserId) ? suspendedByUserId : '';
+            this.suspensionNotes = !StringUtil.isNullOrEmpty(suspensionNotes) ? suspensionNotes : '';
 
-			if (suspensionDate)
-				this.suspensionDate = suspensionDate;
-			
+            if (suspensionDate)
+                this.suspensionDate = suspensionDate;
+            
             ko.track(this);
         }
 

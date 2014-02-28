@@ -31,7 +31,7 @@ namespace Exceptionless.Tests.Pipeline {
         public ErrorPipelineTests() : base(IoC.GetInstance<ErrorRepository>(), true) {}
 
         [Fact]
-        public void ProcessErrorTest() {
+        public void VerifyOrganizationAndProjectStatistics() {
             Error error = ErrorData.GenerateError(id: TestConstants.ErrorId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
 
             var organization = _organizationRepository.GetById(TestConstants.OrganizationId);
@@ -108,6 +108,40 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(2, project.StackCount);
             Assert.Equal(1, project.ErrorCount);
             Assert.Equal(3, project.TotalErrorCount);
+        }
+
+        [Fact]
+        public void SyncErrorStackTags() {
+            const string Tag1 = "Tag One";
+            const string Tag2 = "Tag Two";
+            const string Tag2_Lowercase = "tag two";
+
+            Error error = ErrorData.GenerateError(id: TestConstants.ErrorId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            error.Tags = new TagSet { Tag1 };
+
+            var pipeline = IoC.GetInstance<ErrorPipeline>();
+            Assert.DoesNotThrow(() => pipeline.Run(error));
+
+            error = Repository.GetById(error.Id);
+            Assert.NotNull(error);
+            Assert.NotNull(error.ErrorStackId);
+
+            var stack = _errorStackRepository.GetById(error.ErrorStackId);
+            Assert.Equal(new TagSet { Tag1 }, stack.Tags);
+
+            error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            error.Tags = new TagSet { Tag2 };
+
+            Assert.DoesNotThrow(() => pipeline.Run(error));
+            stack = _errorStackRepository.GetById(error.ErrorStackId);
+            Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
+
+            error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            error.Tags = new TagSet { Tag2_Lowercase };
+
+            Assert.DoesNotThrow(() => pipeline.Run(error));
+            stack = _errorStackRepository.GetById(error.ErrorStackId);
+            Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
         protected override void CreateData() {

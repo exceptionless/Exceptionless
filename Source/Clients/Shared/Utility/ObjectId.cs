@@ -51,7 +51,7 @@ namespace Exceptionless.Utility {
             __staticIncrement = (new Random()).Next();
 
             try {
-                __staticPid = (short)GetCurrentProcessId(); // use low order two bytes only
+                __staticPid = (short)SafeGetCurrentProcessId(); // use low order two bytes only
             } catch (SecurityException) {
                 __staticPid = 0;
             }
@@ -322,19 +322,24 @@ namespace Exceptionless.Utility {
             increment = (bytes[9] << 16) + (bytes[10] << 8) + bytes[11];
         }
 
-        // private static methods
-        /// <summary>
-        /// Gets the current process id.  This method exists because of how CAS operates on the call stack, checking
-        /// for permissions before executing the method.  Hence, if we inlined this call, the calling method would not execute
-        /// before throwing an exception requiring the try/catch at an even higher level that we don't necessarily control.
-        /// </summary>
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private static int GetCurrentProcessId() {
-            return Process.GetCurrentProcess().Id;
+        private static int SafeGetCurrentProcessId() {
+            try {
+                return EnvironmentInfo.GetCurrentProcessId != null ? EnvironmentInfo.GetCurrentProcessId() : 0;
+            } catch {
+                return 0;
+            }
+        }
+
+        private static string SafeGetMachineName() {
+            try {
+                return EnvironmentInfo.GetMachineName != null ? EnvironmentInfo.GetMachineName() ?? Guid.NewGuid().ToString("N") : Guid.NewGuid().ToString("N");
+            } catch {
+                return Guid.NewGuid().ToString("N");
+            }
         }
 
         private static int GetMachineHash() {
-            var hostName = Environment.MachineName; // use instead of Dns.HostName so it will work offline
+            var hostName = SafeGetMachineName();
             var md5 = MD5.Create();
             var hash = md5.ComputeHash(Encoding.UTF8.GetBytes(hostName));
             return (hash[0] << 16) + (hash[1] << 8) + hash[2]; // use first 3 bytes of hash
@@ -504,6 +509,16 @@ namespace Exceptionless.Utility {
 
         ulong IConvertible.ToUInt64(IFormatProvider provider) {
             throw new InvalidCastException();
+        }
+
+        public static class EnvironmentInfo {
+            public static Func<string> GetMachineName = () => Environment.MachineName;
+            public static Func<int> GetCurrentProcessId = DefaultGetCurrentProcessId;
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            private static int DefaultGetCurrentProcessId() {
+                return Process.GetCurrentProcess().Id;
+            }
         }
     }
 }

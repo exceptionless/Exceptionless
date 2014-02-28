@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Repositories {
             Console.WriteLine(exception);
 
             Assert.NotNull(exception);
-            Assert.IsType<WriteConcernException>(exception);
+            Assert.IsType<MongoDuplicateKeyException>(exception);
         }
 
         [Fact]

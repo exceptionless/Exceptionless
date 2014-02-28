@@ -10,7 +10,7 @@
     <div class="container">
         <div class="row">
             <div class="span12" style="text-align: center; margin-top: 20px; margin-bottom: 20px;">
-                <a href="/"><img src="/images/exceptionless-350.png" style="float: none; margin-left: 0;" /></a>
+                <a href="http://exceptionless.com/"><img src="/images/exceptionless-350.png" style="float: none; margin-left: 0;" /></a>
             </div>
         </div>
 
@@ -98,8 +98,13 @@
             var form = $("#signupform");
             form.validate();
             var isValid = form.valid();
+            
+    @if (Exceptionless.Core.Settings.Current.EnableGoogleAnalytics) {
+        <text>
             if (isValid)
                 ga('send', 'event', 'Signup', 'Submit');
+        </text>
+    }
 
             return isValid;
         }

@@ -5,7 +5,6 @@ module exceptionless {
         private _graph: any;
 
         chartElementId: string;
-        //chartSpinner: Spinner;
         chartTimeline: any;
 
         constructor (elementId: string, chartElementId: string, url: string, autoUpdate?: boolean) {
@@ -15,8 +14,8 @@ module exceptionless {
                 return;
 
             this.chartElementId = chartElementId;
-            //this.chartSpinner = new Spinner(this.spinnerOptions);
-            
+            super.startSpinner($(this.chartElementId));
+
             App.onResize.subscribe(width => {
                 if (!this._graph)
                     return;
@@ -28,15 +27,6 @@ module exceptionless {
 
                 this._graph.update();
             });
-
-            //this.loading.subscribe((isLoading) => {
-            //    if (this.updating())
-            //        return;
-
-            //    if (isLoading) {
-            //        this.chartSpinner.spin($(chartElementId + '>div'));
-            //    }
-            //});
         }
 
         public get canRetrieve(): boolean {
@@ -135,6 +125,16 @@ module exceptionless {
             });
 
             yAxis.render();
+        }
+
+        public startSpinner(element: JQuery) {
+            super.startSpinner(element);
+            super.startSpinner($(this.chartElementId));
+        }
+
+        public stopSpinner(element: JQuery) {
+            super.stopSpinner(element);
+            super.stopSpinner($(this.chartElementId));
         }
     }
 }

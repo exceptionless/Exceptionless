@@ -244,7 +244,7 @@ namespace Exceptionless.App.Controllers.API {
             if (end.Value <= start.Value)
                 throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
 
@@ -257,7 +257,7 @@ namespace Exceptionless.App.Controllers.API {
 
             long count;
             List<ErrorStack> query = _repository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= rententionUtcCutoff).Select(Mapper.Map<ErrorStack, ErrorStackResult>).ToList();
+            List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<ErrorStack, ErrorStackResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
             var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan) {

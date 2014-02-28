@@ -52,8 +52,8 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
-            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, rententionUtcCutoff, hidden, @fixed, notfound);
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
             result.MostRecent = Recent(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
 
@@ -77,7 +77,7 @@ namespace Exceptionless.App.Controllers.API {
 
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
             int skip = (page - 1) * pageSize;
             if (skip < 0)
@@ -88,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
 
             long count;
             List<ErrorStack> query = _errorStackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorStack> errorStacks = query.Where(es => es.LastOccurrence >= rententionUtcCutoff).ToList();
+            List<ErrorStack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
             var result = new PlanPagedResult<ErrorStackResult>(null, query.Count - errorStacks.Count);
             result.Results.AddRange(errorStacks.Select(s => new ErrorStackResult {
@@ -119,8 +119,8 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
 
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
-            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, rententionUtcCutoff, hidden, @fixed, notfound);
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             return Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
         }
 
@@ -167,27 +167,31 @@ namespace Exceptionless.App.Controllers.API {
                 throw new ArgumentException("Invalid error stack id.", "stackId"); // TODO: These should probably throw http Response exceptions.
 
             Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
-            DateTime rententionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRententionUtcCutoff();
-            return _statsHelper.GetErrorStackStats(stackId, _projectRepository.GetDefaultTimeOffset(errorStack.ProjectId), start, end, rententionUtcCutoff);
+            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            return _statsHelper.GetErrorStackStats(stackId, _projectRepository.GetDefaultTimeOffset(errorStack.ProjectId), start, end, retentionUtcCutoff);
         }
 
         [HttpGet]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public BillingPlanStatsModel Plans() {
             MongoCursor<Organization> query = ((OrganizationRepository)_organizationRepository).Collection.FindAll()
-                .SetFields(OrganizationRepository.FieldNames.PlanId, OrganizationRepository.FieldNames.BillingPrice, OrganizationRepository.FieldNames.BillingStatus);
+                .SetFields(OrganizationRepository.FieldNames.PlanId, OrganizationRepository.FieldNames.IsSuspended, OrganizationRepository.FieldNames.BillingPrice, OrganizationRepository.FieldNames.BillingStatus);
 
             List<Organization> results = query.SetSortOrder(SortBy.Descending(OrganizationRepository.FieldNames.PlanId)).ToList();
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
-            decimal monthlyTotalPaid = smallOrganizations.Sum(o => o.BillingPrice) + mediumOrganizations.Sum(o => o.BillingPrice) + largeOrganizations.Sum(o => o.BillingPrice);
+            decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             List<Organization> smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
-            decimal yearlyTotalPaid = smallYearlyOrganizations.Sum(o => o.BillingPrice) + mediumYearlyOrganizations.Sum(o => o.BillingPrice) + largeYearlyOrganizations.Sum(o => o.BillingPrice);
+            decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             return new BillingPlanStatsModel {
                 SmallTotal = smallOrganizations.Count,
