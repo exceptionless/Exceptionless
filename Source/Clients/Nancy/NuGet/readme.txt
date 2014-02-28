@@ -18,14 +18,16 @@ and viewing your project configuration page.
 		 Nancy Integration
 -------------------------------------
 The Exceptionless.Nancy NuGet package will automatically configure your web.config. 
-Next, add your Exceptionless api key to the web.config Exceptionless section.
+All you need to do is open the web.config and add your Exceptionless api key to 
+the web.config Exceptionless section.
 
 <exceptionless apiKey="API_KEY_HERE" />
 
-Finally, you must call the following line of code to inside of your NancyBootstrapper's
-ApplicationStartup method to start reporting unhandled exceptions.
+Finally, you must import the "Exceptionless" namespace and call the following line
+of code inside of your NancyBootstrapper's ApplicationStartup method to start reporting 
+unhandled exceptions. You will need to pass an Nancy.Bootstrapper.IPipelines instance.
 
-ExceptionlessClient.Current.RegisterNancy(pipelines)
+Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)
 
 -------------------------------------
    Manually reporting an exception
