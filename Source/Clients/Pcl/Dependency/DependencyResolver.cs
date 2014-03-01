@@ -20,8 +20,6 @@ namespace Exceptionless.Dependency {
             }
         }
 
-        internal static IExceptionlessLog Log { get { return Current.Resolve<IExceptionlessLog>() ?? NullExceptionlessLog.Instance; } }
-
         public static void RegisterDefaultServices(IDependencyResolver resolver) {
             resolver.Register(typeof(IExceptionlessLog), () => NullExceptionlessLog.Instance);
 

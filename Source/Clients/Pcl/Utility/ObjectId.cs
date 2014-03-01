@@ -17,15 +17,14 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Threading;
+using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Services;
 
 namespace Exceptionless.Utility {
     /// <summary>
     /// Represents an ObjectId (see also BsonObjectId).
     /// </summary>
-#if !SILVERLIGHT && !PORTABLE40
-    [Serializable]
-#endif
     internal struct ObjectId : IComparable<ObjectId>, IEquatable<ObjectId>, IConvertible {
         // private static fields
         private static ObjectId __emptyInstance = default(ObjectId);
@@ -327,13 +326,13 @@ namespace Exceptionless.Utility {
         /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int GetCurrentProcessId() {
-            // can't access process id from portable library.
-            return 0;
+            var environmentInfoCollector = DependencyResolver.Current.Resolve<IEnvironmentInfoCollector>(DefaultEnvironmentInfoCollector.Instance);
+            return environmentInfoCollector.GetEnvironmentInfo().ProcessId;
         }
 
         private static int GetMachineHash() {
-            // can't access machine name from portable library.
-            var machineName = Guid.NewGuid().ToString("N");
+            var environmentInfoCollector = DependencyResolver.Current.Resolve<IEnvironmentInfoCollector>(DefaultEnvironmentInfoCollector.Instance);
+            var machineName = environmentInfoCollector.GetEnvironmentInfo().MachineName;
             var hash = MD5Core.GetHash(machineName);
             return (hash[0] << 16) + (hash[1] << 8) + hash[2]; // use first 3 bytes of hash
         }

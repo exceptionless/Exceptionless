@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Exceptionless.Extensions {
     internal static class StringExtensions {
@@ -49,5 +50,100 @@ namespace Exceptionless.Extensions {
                 sb.Append(b.ToString("x2"));
             return sb.ToString();
         }
+
+        public static bool IsNullOrEmpty(this string item) {
+            return String.IsNullOrEmpty(item);
+        }
+
+        public static bool IsNullOrWhiteSpace(this string item) {
+            return String.IsNullOrEmpty(item) || item.All(Char.IsWhiteSpace);
+        }
+
+        public static bool IsMixedCase(this string s) {
+            if (s.IsNullOrEmpty())
+                return false;
+
+            var containsUpper = false;
+            var containsLower = false;
+
+            foreach (var c in s) {
+                if (Char.IsUpper(c))
+                    containsUpper = true;
+
+                if (Char.IsLower(c))
+                    containsLower = true;
+            }
+
+            return containsLower && containsUpper;
+        }
+
+        public static string ToPascalCase(this string value, Regex splitRegex) {
+            if (String.IsNullOrEmpty(value))
+                return value;
+
+            var mixedCase = value.IsMixedCase();
+            var names = splitRegex.Split(value);
+            var output = new StringBuilder();
+
+            if (names.Length > 1) {
+                foreach (string name in names) {
+                    if (name.Length > 1) {
+                        output.Append(Char.ToUpper(name[0]));
+                        output.Append(mixedCase ? name.Substring(1) : name.Substring(1).ToLower());
+                    } else {
+                        output.Append(name);
+                    }
+                }
+            } else if (value.Length > 1) {
+                output.Append(Char.ToUpper(value[0]));
+                output.Append(mixedCase ? value.Substring(1) : value.Substring(1).ToLower());
+            } else {
+                output.Append(value.ToUpper());
+            }
+
+            return output.ToString();
+        }
+
+        public static string ToPascalCase(this string value) {
+            return value.ToPascalCase(_splitNameRegex);
+        }
+
+        /// <summary>
+        /// Takes a NameIdentifier and spaces it out into words "Name Identifier".
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>The string</returns>
+        public static string[] ToWords(this string value) {
+            var words = new List<string>();
+            value = ToPascalCase(value);
+
+            MatchCollection wordMatches = _properWordRegex.Matches(value);
+            foreach (Match word in wordMatches) {
+                if (!word.Value.IsNullOrWhiteSpace())
+                    words.Add(word.Value);
+            }
+
+            return words.ToArray();
+        }
+
+        /// <summary>
+        /// Takes a NameIdentifier and spaces it out into words "Name Identifier".
+        /// </summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns>The string</returns>
+        public static string ToSpacedWords(this string value) {
+            string[] words = ToWords(value);
+
+            var spacedName = new StringBuilder();
+            foreach (string word in words) {
+                spacedName.Append(word);
+                spacedName.Append(' ');
+            }
+
+            return spacedName.ToString().Trim();
+        }
+
+        private static readonly Regex _properWordRegex = new Regex(@"([A-Z][a-z]*)|([0-9]+)");
+        private static readonly Regex _splitNameRegex = new Regex(@"[\W_]+");
     }
 }

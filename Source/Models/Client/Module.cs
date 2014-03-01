@@ -15,7 +15,7 @@ using System.Text;
 namespace Exceptionless.Models {
     public class Module {
         public Module() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
         }
 
         public int ModuleId { get; set; }
@@ -24,15 +24,15 @@ namespace Exceptionless.Models {
         public bool IsEntry { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
 
         public override string ToString() {
             var sb = new StringBuilder();
             sb.Append(Name);
             sb.Append(", Version=");
             sb.Append(Version);
-            if (ExtendedData.ContainsKey("PublicKeyToken"))
-                sb.Append(", PublicKeyToken=").Append(ExtendedData["PublicKeyToken"]);
+            if (Data.ContainsKey("PublicKeyToken"))
+                sb.Append(", PublicKeyToken=").Append(Data["PublicKeyToken"]);
 
             return sb.ToString();
         }

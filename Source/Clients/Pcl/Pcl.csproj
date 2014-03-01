@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\core\web\ExceptionlessHeaders.cs">
+      <Link>Submission\Net\ExceptionlessHeaders.cs</Link>
+    </Compile>
     <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
       <Link>Models\ClientConfiguration.cs</Link>
     </Compile>
@@ -108,7 +111,10 @@
     <Compile Include="ExceptionlessClient.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\JsonSerialzierExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="LastErrorIdManager\DefaultLastErrorIdManager.cs" />
+    <Compile Include="LastErrorIdManager\ILastErrorIdManager.cs" />
     <Compile Include="Plugins\ExceptionlessPlugin.cs" />
     <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
     <Compile Include="Plugins\IExceptionlessPlugin.cs" />
@@ -121,6 +127,8 @@
     <Compile Include="Logging\SafeExceptionlessLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serializer\SimpleJson.cs" />
+    <Compile Include="Services\DefaultEnvironmentInfoCollector.cs" />
+    <Compile Include="Services\IEnvironmentInfoCollector.cs" />
     <Compile Include="Storage\DefaultFileStorage.cs" />
     <Compile Include="Storage\DefaultKeyValueStorage.cs" />
     <Compile Include="Storage\IFileStorage.cs" />
@@ -128,16 +136,17 @@
     <Compile Include="Submission\DefaultSubmissionClient.cs" />
     <Compile Include="Submission\ISubmissionClient.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
+    <Compile Include="Submission\Net\AuthorizationHeader.cs" />
+    <Compile Include="Submission\Net\AuthorizationState.cs" />
+    <Compile Include="Submission\Net\ContentTypeHeader.cs" />
+    <Compile Include="Submission\Net\RestClient.cs" />
+    <Compile Include="Submission\Net\RestRequestCompletedEventArgs.cs" />
+    <Compile Include="Submission\Net\RestState.cs" />
     <Compile Include="Utility\MD5.cs" />
     <Compile Include="Utility\ObjectId.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="Zlib.Portable">
-      <HintPath>..\..\..\packages\Zlib.Portable.1.9.2\lib\portable-net4+sl4+wp71+win8\Zlib.Portable.dll</HintPath>
-    </Reference>
+    <None Include="app.config" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />

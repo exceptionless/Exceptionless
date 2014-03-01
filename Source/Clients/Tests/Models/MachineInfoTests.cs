@@ -18,7 +18,7 @@ namespace Exceptionless.Tests.Models {
     public class MachineInfoTests {
         [Fact]
         public void ToXml() {
-            EnvironmentInfo info = MachineInfoCollector.Collect();
+            EnvironmentInfo info = EnvironmentInfoCollector.Collect();
 
             Assert.NotNull(info);
         }

@@ -11,7 +11,6 @@ using Exceptionless.Utility;
 
 namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
-        private readonly IDependencyResolver _resolver;
         private readonly Dictionary<string, IExceptionlessPlugin> _plugins = new Dictionary<string, IExceptionlessPlugin>();
         private readonly IExceptionlessLog _log;
 
@@ -22,15 +21,17 @@ namespace Exceptionless {
                 throw new ArgumentNullException("resolver");
 
             Configuration = configuration;
-            _resolver = resolver;
-            _log = _resolver.Resolve<IExceptionlessLog>(NullExceptionlessLog.Instance);
+            Resolver = resolver;
+            _log = Resolver.Resolve<IExceptionlessLog>(NullExceptionlessLog.Instance);
         }
 
         public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }, DependencyResolver.Current) {}
 
-        public ExceptionlessClient() : this(Configuration.Default, DependencyResolver.Current) { }
+        public ExceptionlessClient() : this(Configuration.Current, DependencyResolver.Current) { }
 
         public Configuration Configuration { get; private set; }
+
+        public IDependencyResolver Resolver { get; private set; }
 
         /// <summary>
         /// Submits the error report.
@@ -50,22 +51,22 @@ namespace Exceptionless {
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (data.ExceptionlessClientInfo == null)
-                data.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(this, Configuration.IncludePrivateInformation);
-            if (String.IsNullOrEmpty(data.Id))
-                data.Id = ObjectId.GenerateNewId().ToString();
-            _queue.Enqueue(data);
+            //if (data.ExceptionlessClientInfo == null)
+            //    data.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(this, Configuration.IncludePrivateInformation);
+            //if (String.IsNullOrEmpty(data.Id))
+            //    data.Id = ObjectId.GenerateNewId().ToString();
+            //_queue.Enqueue(data);
 
-            _log.FormattedInfo(typeof(ExceptionlessClient), "Setting last error id '{0}'", data.Id);
-            LastErrorIdManager.SetLast(data.Id);
+            //_log.FormattedInfo(typeof(ExceptionlessClient), "Setting last error id '{0}'", data.Id);
+            //LastErrorIdManager.SetLast(data.Id);
 
-            QuickTimer();
-            SaveEmailAddress(data.UserEmail, false);
-            LocalConfiguration.SubmitCount++;
-            // TODO: This can be removed once we fix the bug in the ObservableConcurrentDictionary where IsDirty is not set immediately.
-            LocalConfiguration.IsDirty = true;
+            //QuickTimer();
+            //SaveEmailAddress(data.UserEmail, false);
+            //LocalConfiguration.SubmitCount++;
+            //// TODO: This can be removed once we fix the bug in the ObservableConcurrentDictionary where IsDirty is not set immediately.
+            //LocalConfiguration.IsDirty = true;
 
-            LocalConfiguration.Save();
+            //LocalConfiguration.Save();
         }
 
         /// <summary>
@@ -157,10 +158,11 @@ namespace Exceptionless {
             if (String.IsNullOrEmpty(email) && String.IsNullOrEmpty(description))
                 return true;
 
-            return SubmitPatch(id, new {
-                UserEmail = email,
-                UserDescription = description
-            });
+            return true;
+            //return SubmitPatch(id, new {
+            //    UserEmail = email,
+            //    UserDescription = description
+            //});
         }
 
         /// <summary>
@@ -180,58 +182,58 @@ namespace Exceptionless {
                 return;
             }
 
-            if (_processingQueue)
-                return;
+            //if (_processingQueue)
+            //    return;
 
-            lock (_queueLock) {
-                _processingQueue = true;
-                _isProcessQueueScheduled = false;
-                bool useSlowTimer = false;
-                StopTimer();
+            //lock (_queueLock) {
+            //    _processingQueue = true;
+            //    _isProcessQueueScheduled = false;
+            //    bool useSlowTimer = false;
+            //    StopTimer();
 
-                try {
-                    using (new SingleGlobalInstance(Configuration.ApiKey, 500)) {
-                        try {
-                            // discard older cases and make sure the queue isn't filling up
-                            int count = _queue.Cleanup(DateTime.UtcNow.AddDays(-3));
-                            if (count > 0)
-                                _log.FormattedInfo(typeof(ExceptionlessClient), "Cleaning {0} old items from the queue.", count);
+            //    try {
+            //        using (new SingleGlobalInstance(Configuration.ApiKey, 500)) {
+            //            try {
+            //                // discard older cases and make sure the queue isn't filling up
+            //                int count = _queue.Cleanup(DateTime.UtcNow.AddDays(-3));
+            //                if (count > 0)
+            //                    _log.FormattedInfo(typeof(ExceptionlessClient), "Cleaning {0} old items from the queue.", count);
 
-                            DateTime processReportsOlderThan = DateTime.Now;
+            //                DateTime processReportsOlderThan = DateTime.Now;
 
-                            // loop through reports getting 20 at a time until there are no more reports to be sent
-                            List<Manifest> manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
-                            while (manifests.Count > 0) {
-                                _log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
-                                foreach (Manifest manifest in manifests) {
-                                    SendManifest(manifest);
-                                    if (!manifest.BreakProcessing)
-                                        continue;
+            //                // loop through reports getting 20 at a time until there are no more reports to be sent
+            //                List<Manifest> manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
+            //                while (manifests.Count > 0) {
+            //                    _log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
+            //                    foreach (Manifest manifest in manifests) {
+            //                        SendManifest(manifest);
+            //                        if (!manifest.BreakProcessing)
+            //                            continue;
 
-                                    useSlowTimer = true;
-                                    break;
-                                }
+            //                        useSlowTimer = true;
+            //                        break;
+            //                    }
 
-                                manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
-                            }
-                        } catch (SecurityException se) {
-                            useSlowTimer = true;
-                            _log.FormattedError(typeof(ExceptionlessClient), "Security exception while processing queue: {0}", se.Message);
-                        } catch (Exception ex) {
-                            _log.FormattedError(typeof(ExceptionlessClient), "Queue error: {0}", ex.Message);
-                        }
-                    }
-                } catch (TimeoutException) { } catch (Exception ex) {
-                    _log.FormattedError(typeof(ExceptionlessClient), ex, "Error trying to obtain instance lock: {0}", ex.Message);
-                } finally {
-                    _processingQueue = false;
+            //                    manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
+            //                }
+            //            } catch (SecurityException se) {
+            //                useSlowTimer = true;
+            //                _log.FormattedError(typeof(ExceptionlessClient), "Security exception while processing queue: {0}", se.Message);
+            //            } catch (Exception ex) {
+            //                _log.FormattedError(typeof(ExceptionlessClient), "Queue error: {0}", ex.Message);
+            //            }
+            //        }
+            //    } catch (TimeoutException) { } catch (Exception ex) {
+            //        _log.FormattedError(typeof(ExceptionlessClient), ex, "Error trying to obtain instance lock: {0}", ex.Message);
+            //    } finally {
+            //        _processingQueue = false;
 
-                    if (useSlowTimer)
-                        SlowTimer();
-                    else
-                        PollTimer();
-                }
-            }
+            //        if (useSlowTimer)
+            //            SlowTimer();
+            //        else
+            //            PollTimer();
+            //    }
+            //}
         }
 
         /// <summary>Creates a new instance of <see cref="Error" />.</summary>
@@ -252,40 +254,40 @@ namespace Exceptionless {
         public Error CreateError(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
             Error error = ToError(this, ex, submissionMethod, contextData);
 
-            if (extendedData != null) {
-                foreach (object o in extendedData)
-                    error.AddObject(o);
-            }
+            //if (extendedData != null) {
+            //    foreach (object o in extendedData)
+            //        error.AddObject(o);
+            //}
 
-            if (tags != null)
-                error.Tags.AddRange(tags);
+            //if (tags != null)
+            //    error.Tags.AddRange(tags);
 
-            if (isCritical)
-                error.MarkAsCritical();
+            //if (isCritical)
+            //    error.MarkAsCritical();
 
-            if (addDefaultInformation)
-                error.AddDefaultInformation(contextData);
+            //if (addDefaultInformation)
+            //    error.AddDefaultInformation(contextData);
 
             return error;
         }
 
         internal static Error ToError(ExceptionlessClient client, Exception exception, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
-            Error error = exception.ToErrorModel();
-            error.Id = ObjectId.GenerateNewId().ToString();
-            error.OccurrenceDate = DateTimeOffset.Now;
-            error.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
-            error.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
+            //Error error = exception.ToErrorModel();
+            //error.Id = ObjectId.GenerateNewId().ToString();
+            //error.OccurrenceDate = DateTimeOffset.Now;
+            //error.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
+            //error.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
 
-            foreach (IExceptionlessPlugin plugin in client.Plugins) {
-                try {
-                    var ctx = new ExceptionlessPluginContext(client, contextData);
-                    plugin.AfterCreated(ctx, error, exception);
-                } catch (Exception ex) {
-                    client._log.FormattedError(typeof(ErrorExtensions), ex, "Error creating error model information: {0}", ex.Message);
-                }
-            }
+            //foreach (IExceptionlessPlugin plugin in client.Plugins) {
+            //    try {
+            //        var ctx = new ExceptionlessPluginContext(client, contextData);
+            //        plugin.AfterCreated(ctx, error, exception);
+            //    } catch (Exception ex) {
+            //        client._log.FormattedError(typeof(ErrorExtensions), ex, "Error creating error model information: {0}", ex.Message);
+            //    }
+            //}
 
-            return error;
+            return new Error();
         }
 
         #region Events
@@ -410,7 +412,7 @@ namespace Exceptionless {
         /// <see cref="ExtendedDataInfo">ExtendedDataInfo</see>, the settings from that will be used to add the ExtendedData.
         /// </param>
         public static void Submit(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<string> tags = null, params object[] extendedData) {
-            Default.SubmitError(ex, isCritical, addDefaultInformation, tags, extendedData);
+            Current.SubmitError(ex, isCritical, addDefaultInformation, tags, extendedData);
         }
 
         /// <summary>
@@ -418,20 +420,20 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="ex">The exception to submit.</param>
         public static ErrorBuilder Create(Exception ex) {
-            return ex.ToExceptionless();
+            return null; //ex.ToExceptionless();
         }
 
-        #region Default
+        #region Current
 
-        private static ExceptionlessClient _defaultClient = new ExceptionlessClient();
+        private static ExceptionlessClient _currentClient = new ExceptionlessClient();
 
-        public static ExceptionlessClient Default {
-            get { return _defaultClient; }
+        public static ExceptionlessClient Current {
+            get { return _currentClient; }
             set {
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                _defaultClient = value;
+                _currentClient = value;
             }
         }
 

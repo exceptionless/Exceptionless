@@ -15,7 +15,7 @@ using System.Text;
 namespace Exceptionless.Models {
     public class Method {
         public Method() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
             GenericArguments = new GenericArguments();
             Parameters = new ParameterCollection();
         }
@@ -105,7 +105,7 @@ namespace Exceptionless.Models {
         public string Name { get; set; }
 
         public int ModuleId { get; set; }
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
         public ParameterCollection Parameters { get; set; }
     }

@@ -78,7 +78,7 @@ namespace Exceptionless {
                 error.UserName = Environment.UserName;
 
             try {
-                error.EnvironmentInfo = MachineInfoCollector.Collect();
+                error.EnvironmentInfo = EnvironmentInfoCollector.Collect();
             } catch (Exception ex) {
                 client.Log.FormattedError(typeof(ErrorExtensions), ex, "Error adding machine information: {0}", ex.Message);
             }

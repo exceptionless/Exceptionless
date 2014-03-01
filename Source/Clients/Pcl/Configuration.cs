@@ -12,8 +12,8 @@ namespace Exceptionless {
             Enabled = true;
             SslEnabled = true;
             DefaultTags = new TagSet();
-            DefaultExtendedData = new ExtendedDataDictionary();
-            Settings = new Dictionary<string, string>();
+            DefaultData = new DataDictionary();
+            Settings = new SettingsDictionary();
             DataExclusions = new Collection<string>();
         }
 
@@ -45,12 +45,12 @@ namespace Exceptionless {
         /// <summary>
         /// A default list of of extended data objects that will automatically be added to every report submitted to the server.
         /// </summary>
-        public ExtendedDataDictionary DefaultExtendedData { get; private set; }
+        public DataDictionary DefaultData { get; private set; }
 
         /// <summary>
         /// Contains a dictionary of custom settings that can be used to control the client and will be automatically updated from the server.
         /// </summary>
-        public IDictionary<string, string> Settings { get; private set; }
+        public SettingsDictionary Settings { get; private set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to include private information about the local machine.
@@ -77,17 +77,17 @@ namespace Exceptionless {
             }
         }
 
-        #region Default
+        #region Current
 
-        private static Configuration _defaultConfiguration = new Configuration();
+        private static Configuration _currentConfiguration = new Configuration();
 
-        public static Configuration Default {
-            get { return _defaultConfiguration; }
+        public static Configuration Current {
+            get { return _currentConfiguration; }
             set {
                 if (value == null)
                     throw new ArgumentNullException("value");
 
-                _defaultConfiguration = value;
+                _currentConfiguration = value;
             }
         }
 

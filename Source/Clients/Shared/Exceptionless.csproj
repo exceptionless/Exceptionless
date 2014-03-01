@@ -356,7 +356,7 @@
     <Compile Include="Serialization\ModelSerializer.cs" />
     <Compile Include="Configuration\ClientConfigurationReader.cs" />
     <Compile Include="Diagnostics\ExceptionlessTraceListener.cs" />
-    <Compile Include="ExtendedData\MachineInfoCollector.cs" />
+    <Compile Include="ExtendedData\EnvironmentInfoCollector.cs" />
     <Compile Include="ExtendedData\ExceptionlessClientInfoCollector.cs" />
     <Compile Include="Extensions\ErrorExtensions.cs" />
     <Compile Include="Queue\Manifest.cs" />

@@ -13,11 +13,11 @@ using System;
 using System.Collections.Generic;
 
 namespace Exceptionless.Models {
-    public class ExtendedDataDictionary : Dictionary<string, object> {
+    public class DataDictionary : Dictionary<string, object> {
         public const string EXCEPTION_INFO_KEY = "__ExceptionInfo";
         public const string TRACE_LOG_KEY = "TraceLog";
 
-        public ExtendedDataDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
+        public DataDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
 
         public object GetValueOrDefault(string key) {
             object value;

@@ -15,7 +15,7 @@ using Exceptionless.Models;
 namespace Exceptionless {
     public class ErrorBuilder {
         public ErrorBuilder(Error error, ExceptionlessClient client = null) {
-            Client = client ?? ExceptionlessClient.Default;
+            Client = client ?? ExceptionlessClient.Current;
             Target = error;
         }
 
@@ -28,7 +28,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="contextData">Any contextual data objects to be used in gathering the default information.</param>
         public ErrorBuilder AddDefaultInformation(IDictionary<string, object> contextData = null) {
-            Target.AddDefaultInformation(contextData);
+            //Target.AddDefaultInformation(contextData);
             return this;
         }
 
@@ -81,7 +81,7 @@ namespace Exceptionless {
         /// <param name="excludedPropertyNames">Any property names that should be excluded.</param>
         /// <param name="ignoreSerializationErrors">Specifies if properties that throw serialization errors should be ignored.</param>
         public ErrorBuilder AddObject(object data, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false) {
-            Target.AddObject(data, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
+            //Target.AddObject(data, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
             return this;
         }
 

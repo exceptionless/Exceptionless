@@ -20,7 +20,7 @@ using Exceptionless.Models;
 using Microsoft.VisualBasic.Devices;
 
 namespace Exceptionless.ExtendedData {
-    internal static class MachineInfoCollector {
+    internal static class EnvironmentInfoCollector {
         private static EnvironmentInfo _environmentInfo;
 
         /// <summary>

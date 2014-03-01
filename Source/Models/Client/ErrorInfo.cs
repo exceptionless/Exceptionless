@@ -17,7 +17,7 @@ using System.Text;
 namespace Exceptionless.Models {
     public class ErrorInfo {
         public ErrorInfo() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
             StackTrace = new StackFrameCollection();
         }
 
@@ -39,7 +39,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Extended data entries for this error.
         /// </summary>
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
 
         /// <summary>
         /// An inner (nested) error.

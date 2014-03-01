@@ -14,7 +14,7 @@ using System;
 namespace Exceptionless.Models {
     public class EnvironmentInfo {
         public EnvironmentInfo() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
         }
 
         /// <summary>
@@ -50,7 +50,7 @@ namespace Exceptionless.Models {
         /// Gets the process id.
         /// </summary>
         /// <value>The process id.</value>
-        public string ProcessId { get; set; }
+        public int ProcessId { get; set; }
 
         /// <summary>
         /// Gets the amount of physical memory used by the process.
@@ -104,6 +104,6 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Extended data entries for this machine environment.
         /// </summary>
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
     }
 }

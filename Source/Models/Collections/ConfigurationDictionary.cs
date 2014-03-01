@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 
 namespace Exceptionless.Models {
-    public class ConfigurationDictionary : Dictionary<string, string> {
-        public ConfigurationDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
+    public class SettingsDictionary : Dictionary<string, string> {
+        public SettingsDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
     }
 }

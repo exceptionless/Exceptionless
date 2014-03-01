@@ -14,7 +14,7 @@ using System;
 namespace Exceptionless.Models {
     public class Parameter {
         public Parameter() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
             GenericArguments = new GenericArguments();
         }
 
@@ -31,7 +31,7 @@ namespace Exceptionless.Models {
             }
         }
 
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
     }
 }

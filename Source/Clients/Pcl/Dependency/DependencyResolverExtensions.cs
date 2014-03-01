@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Logging;
+using Exceptionless.Services;
 
 namespace Exceptionless.Dependency {
     public static class DependencyResolverExtensions {
@@ -44,6 +46,18 @@ namespace Exceptionless.Dependency {
                 throw new ArgumentNullException("resolver");
 
             resolver.Register(typeof(TService), () => implementation);
+        }
+
+        internal static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
+            return resolver.Resolve<IExceptionlessLog>() ?? NullExceptionlessLog.Instance;
+        }
+
+        internal static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
+            return resolver.Resolve<IEnvironmentInfoCollector>() ?? DefaultEnvironmentInfoCollector.Instance;
+        }
+
+        internal static ILastErrorIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
+            return resolver.Resolve<ILastErrorIdManager>() ?? DefaultLastErrorIdManager.Instance;
         }
     }
 }

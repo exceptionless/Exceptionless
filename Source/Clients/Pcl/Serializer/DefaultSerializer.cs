@@ -10,8 +10,8 @@ namespace Exceptionless.Serializer {
             return SimpleJson.SerializeObject(model);
         }
 
-        public T Deserialize<T>(string json) {
-            return SimpleJson.DeserializeObject<T>(json);
+        public object Deserialize(string json, Type type) {
+            return SimpleJson.DeserializeObject(json, type);
         }
 
         internal class JsonSerializerWithExclusionsStrategy : IJsonSerializerStrategy {

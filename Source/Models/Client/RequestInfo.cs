@@ -17,7 +17,7 @@ using System.Text;
 namespace Exceptionless.Models {
     public class RequestInfo {
         public RequestInfo() {
-            ExtendedData = new ExtendedDataDictionary();
+            Data = new DataDictionary();
             Cookies = new Dictionary<string, string>();
             QueryString = new Dictionary<string, string>();
         }
@@ -100,7 +100,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Extended data entries for this error.
         /// </summary>
-        public ExtendedDataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
 
         private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
             if (args == null)
