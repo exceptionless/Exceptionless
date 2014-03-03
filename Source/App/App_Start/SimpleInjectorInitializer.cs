@@ -10,19 +10,16 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Reflection;
 using System.Web.Http;
-using System.Web.Http.Controllers;
-using System.Web.Http.Filters;
 using System.Web.Mvc;
 using Exceptionless.App;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using SimpleInjector;
 using SimpleInjector.Integration.Web.Mvc;
+using SimpleInjector.Integration.WebApi;
 using WebActivator;
-using IFilterProvider = System.Web.Http.Filters.IFilterProvider;
 
 [assembly: PreApplicationStartMethod(typeof(SimpleInjectorInitializer), "Initialize")]
 
@@ -36,7 +33,6 @@ namespace Exceptionless.App {
 
             container.Verify();
 
-            RegisterIFilterProvider(GlobalConfiguration.Configuration.Services, container);
             GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             DependencyResolver.SetResolver(new SimpleInjectorDependencyResolver(container));
         }
@@ -51,12 +47,10 @@ namespace Exceptionless.App {
             container.RegisterMvcControllers(Assembly.GetExecutingAssembly());
             container.RegisterMvcAttributeFilterProvider();
 
-            return container;
-        }
+            //container.RegisterWebApiControllers(GlobalConfiguration.Configuration);
+            container.RegisterWebApiFilterProvider(GlobalConfiguration.Configuration);
 
-        public static void RegisterIFilterProvider(ServicesContainer services, Container container) {
-            services.Remove(typeof(IFilterProvider), GlobalConfiguration.Configuration.Services.GetFilterProviders().OfType<ActionDescriptorFilterProvider>().Single());
-            services.Add(typeof(IFilterProvider), new SimpleInjectorActionFilterProvider(container));
+            return container;
         }
     }
 }

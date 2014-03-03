@@ -115,8 +115,7 @@ namespace Exceptionless.Tests.Controllers.Base {
                 IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always
             };
 
-            SimpleInjectorInitializer.RegisterIFilterProvider(config.Services, IoC.GetInstance<Container>());
-
+            IoC.GetInstance<Container>().RegisterWebApiFilterProvider(config);
             WebApiConfig.Register(config);
 
             config.DependencyResolver = GlobalConfiguration.Configuration.DependencyResolver;
