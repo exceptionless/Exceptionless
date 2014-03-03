@@ -22,6 +22,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorStatsHelper {
@@ -710,10 +711,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_dayStackStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _dayStackStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _dayStackStats.Collection.Insert(CreateBlankDayStackStats(error));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _dayStackStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -770,10 +775,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_dayProjectStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _dayProjectStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _dayProjectStats.Collection.Insert(CreateBlankDayProjectStats(error, isNew));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _dayProjectStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -837,10 +846,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_monthStackStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _monthStackStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _monthStackStats.Collection.Insert(CreateBlankMonthStackStats(utcOffset, localDate, error.ErrorStackId, error.ProjectId));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _monthStackStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -896,10 +909,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_monthProjectStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _monthProjectStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _monthProjectStats.Collection.Insert(CreateBlankMonthProjectStats(utcOffset, localDate, error.ProjectId, error.ErrorStackId, isNew));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _monthProjectStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
