@@ -28,9 +28,6 @@ namespace Exceptionless.App {
         public static void Initialize() {
             Container container = CreateContainer();
 
-            //ServicesContainer services = GlobalConfiguration.Configuration.Services;
-            //services.GetHttpControllerTypeResolver().GetControllerTypes(services.GetAssembliesResolver()).Each(container.Register);
-
             container.Verify();
 
             GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
@@ -47,7 +44,6 @@ namespace Exceptionless.App {
             container.RegisterMvcControllers(Assembly.GetExecutingAssembly());
             container.RegisterMvcAttributeFilterProvider();
 
-            //container.RegisterWebApiControllers(GlobalConfiguration.Configuration);
             container.RegisterWebApiFilterProvider(GlobalConfiguration.Configuration);
 
             return container;
