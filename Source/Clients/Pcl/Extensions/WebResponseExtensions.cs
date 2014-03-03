@@ -8,8 +8,8 @@
 #endregion
 
 using System;
+using System.IO;
 using System.Net;
-using System.Text;
 
 namespace Exceptionless.Extensions {
     internal static class WebResponseExtensions {
@@ -20,9 +20,17 @@ namespace Exceptionless.Extensions {
             return false;
         }
 
-        public static string GetResponseText(this HttpWebResponse response) {
-            using (var reader = new System.IO.StreamReader(response.GetResponseStream(), Encoding.UTF8)) {
-                return reader.ReadToEnd();
+        public static string GetResponseText(this WebResponse response) {
+            try {
+                using (response) {
+                    using (var stream = response.GetResponseStream()) {
+                        using (var reader = new StreamReader(stream)) {
+                            return reader.ReadToEnd();
+                        }
+                    }
+                }
+            } catch (Exception) {
+                return null;
             }
         }
     }

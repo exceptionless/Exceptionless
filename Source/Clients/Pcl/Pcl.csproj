@@ -108,6 +108,7 @@
     <Compile Include="ExceptionlessClient.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\WebResponseExtensions.cs" />
     <Compile Include="Extensions\JsonSerialzierExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
@@ -138,6 +139,8 @@
     <Compile Include="Submission\ISubmissionClient.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />
+    <Compile Include="Submission\SettingsResponse.cs" />
+    <Compile Include="Submission\SubmissionResponse.cs" />
     <Compile Include="Utility\MD5.cs" />
     <Compile Include="Utility\ObjectId.cs" />
   </ItemGroup>
