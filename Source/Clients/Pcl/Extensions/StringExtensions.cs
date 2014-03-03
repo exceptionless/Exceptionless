@@ -1,4 +1,13 @@
-﻿using System;
+﻿#region Copyright 2014 Exceptionless
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+#endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -56,7 +65,7 @@ namespace Exceptionless.Extensions {
         }
 
         public static bool IsNullOrWhiteSpace(this string item) {
-            return String.IsNullOrEmpty(item) || item.All(Char.IsWhiteSpace);
+            return String.IsNullOrWhiteSpace(item);
         }
 
         public static bool IsMixedCase(this string s) {

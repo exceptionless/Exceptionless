@@ -5,7 +5,9 @@ using Exceptionless.Extensions;
 using Pcl;
 
 namespace Exceptionless.Serializer {
-    public class DefaultSerializer : IJsonSerializer {
+    public class DefaultJsonSerializer : IJsonSerializer {
+        internal static IJsonSerializer Instance = new DefaultJsonSerializer();
+
         public string Serialize(object model, string[] exclusions = null) {
             return SimpleJson.SerializeObject(model);
         }

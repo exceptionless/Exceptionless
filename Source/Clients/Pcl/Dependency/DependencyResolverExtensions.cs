@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Logging;
+using Exceptionless.Serializer;
 using Exceptionless.Services;
 
 namespace Exceptionless.Dependency {
@@ -58,6 +59,10 @@ namespace Exceptionless.Dependency {
 
         internal static ILastErrorIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
             return resolver.Resolve<ILastErrorIdManager>() ?? DefaultLastErrorIdManager.Instance;
+        }
+
+        internal static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
+            return resolver.Resolve<IJsonSerializer>() ?? DefaultJsonSerializer.Instance;
         }
     }
 }

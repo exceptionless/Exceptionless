@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace Exceptionless.Net {
+namespace Exceptionless.Submission.Net {
     internal class AuthorizationHeader {
         public AuthorizationHeader() {
             Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
