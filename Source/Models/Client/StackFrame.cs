@@ -42,8 +42,8 @@ namespace Exceptionless.Models {
 
             AppendMethod(sb);
 
-            if (includeOffsets && (Data.ContainsKey("ILOffset") || Data.ContainsKey("NativeOffset")))
-                sb.AppendFormat(" at offset {0}", Data["ILOffset"] ?? Data["NativeOffset"]);
+            if (includeOffsets && (ExtendedData.ContainsKey("ILOffset") || ExtendedData.ContainsKey("NativeOffset")))
+                sb.AppendFormat(" at offset {0}", ExtendedData["ILOffset"] ?? ExtendedData["NativeOffset"]);
 
             if (!String.IsNullOrEmpty(FileName)) {
                 sb.Append(" in ");

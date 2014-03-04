@@ -15,14 +15,14 @@ using System.Linq;
 namespace Exceptionless.Models {
     public class OAuthAccount : IEquatable<OAuthAccount> {
         public OAuthAccount() {
-            ExtraData = new ConfigurationDictionary();
+            ExtraData = new SettingsDictionary();
         }
 
         public string Provider { get; set; }
         public string ProviderUserId { get; set; }
         public string Username { get; set; }
 
-        public ConfigurationDictionary ExtraData { get; private set; }
+        public SettingsDictionary ExtraData { get; private set; }
 
         public bool Equals(OAuthAccount other) {
             if (ReferenceEquals(null, other))

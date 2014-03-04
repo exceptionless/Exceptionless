@@ -50,6 +50,6 @@
     </table>
 }
 
-@if (Model.StackingExtendedData != null && Model.StackingExtendedData.ContainsKey(ExtendedDataDictionary.EXCEPTION_INFO_KEY)) {
-    @Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = new KeyValuePair<string, object>(ExtendedDataDictionary.EXCEPTION_INFO_KEY, Model.StackingExtendedData[ExtendedDataDictionary.EXCEPTION_INFO_KEY]), Title = "Additional Data" })
+@if (Model.StackingExtendedData != null && Model.StackingExtendedData.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY)) {
+    @Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = new KeyValuePair<string, object>(DataDictionary.EXCEPTION_INFO_KEY, Model.StackingExtendedData[DataDictionary.EXCEPTION_INFO_KEY]), Title = "Additional Data" })
 }

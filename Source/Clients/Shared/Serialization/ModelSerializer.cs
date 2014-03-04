@@ -39,7 +39,7 @@ namespace Exceptionless.Serialization {
             };
 
             settings.Converters.Add(new StringEnumConverter());
-            settings.Converters.Add(new ExtendedDataDictionaryConverter());
+            settings.Converters.Add(new DataDictionaryConverter());
             settings.Converters.Add(new RequestInfoConverter());
 
             return settings;

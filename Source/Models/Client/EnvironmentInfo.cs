@@ -14,7 +14,7 @@ using System;
 namespace Exceptionless.Models {
     public class EnvironmentInfo {
         public EnvironmentInfo() {
-            Data = new DataDictionary();
+            ExtendedData = new DataDictionary();
         }
 
         /// <summary>
@@ -104,6 +104,6 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Extended data entries for this machine environment.
         /// </summary>
-        public DataDictionary Data { get; set; }
+        public DataDictionary ExtendedData { get; set; }
     }
 }

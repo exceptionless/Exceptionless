@@ -68,25 +68,25 @@ namespace Exceptionless.Queue {
 
             if (error.Modules != null) {
                 foreach (Module m in error.Modules)
-                    SerializeExtendedDataObjectsToStrings(accessor, error.Id, m.ExtendedData);
+                    SerializeDataObjectsToStrings(accessor, error.Id, m.ExtendedData);
             }
 
             if (error.RequestInfo != null)
-                SerializeExtendedDataObjectsToStrings(accessor, error.Id, error.RequestInfo.ExtendedData);
+                SerializeDataObjectsToStrings(accessor, error.Id, error.RequestInfo.ExtendedData);
 
             if (error.EnvironmentInfo != null)
-                SerializeExtendedDataObjectsToStrings(accessor, error.Id, error.EnvironmentInfo.ExtendedData);
+                SerializeDataObjectsToStrings(accessor, error.Id, error.EnvironmentInfo.ExtendedData);
 
             ErrorInfo current = error;
             while (current != null) {
-                SerializeExtendedDataObjectsToStrings(accessor, error.Id, current.ExtendedData);
+                SerializeDataObjectsToStrings(accessor, error.Id, current.ExtendedData);
 
                 if (current.StackTrace != null) {
                     foreach (StackFrame s in current.StackTrace) {
-                        SerializeExtendedDataObjectsToStrings(accessor, error.Id, s.ExtendedData);
+                        SerializeDataObjectsToStrings(accessor, error.Id, s.ExtendedData);
                         if (s.Parameters != null) {
                             foreach (Parameter p in s.Parameters)
-                                SerializeExtendedDataObjectsToStrings(accessor, error.Id, p.ExtendedData);
+                                SerializeDataObjectsToStrings(accessor, error.Id, p.ExtendedData);
                         }
                     }
                 }
@@ -95,7 +95,7 @@ namespace Exceptionless.Queue {
             }
         }
 
-        internal static void SerializeExtendedDataObjectsToStrings(IConfigurationAndLogAccessor accessor, string id, ExtendedDataDictionary extendedData) {
+        internal static void SerializeDataObjectsToStrings(IConfigurationAndLogAccessor accessor, string id, DataDictionary extendedData) {
             if (extendedData == null)
                 return;
 

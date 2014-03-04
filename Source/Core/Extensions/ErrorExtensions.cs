@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Extensions {
             return error.ToProjectLocalTime(repository.GetByIdCached(error.ProjectId));
         }
 
-        public static T GetValue<T>(this ExtendedDataDictionary extendedData, string key) {
+        public static T GetValue<T>(this DataDictionary extendedData, string key) {
             if (!extendedData.ContainsKey(key))
                 throw new KeyNotFoundException(String.Format("Key \"{0}\" not found in the dictionary.", key));
 

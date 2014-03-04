@@ -28,12 +28,12 @@ namespace Exceptionless.Tests.Serialization {
         public class Person {
             public Person(string name) {
                 Name = name;
-                ExtendedData = new ExtendedDataDictionary();
+                ExtendedData = new DataDictionary();
             }
 
             public string Name { get; set; }
 
-            public ExtendedDataDictionary ExtendedData { get; set; }
+            public DataDictionary ExtendedData { get; set; }
 
             public object UnknownData { get; set; }
 

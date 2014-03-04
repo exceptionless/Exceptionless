@@ -78,7 +78,7 @@ namespace Exceptionless.SampleClient {
 
         private void InitializeReport(Error report) {
             if (report.ExtendedData == null)
-                report.ExtendedData = new ExtendedDataDictionary();
+                report.ExtendedData = new DataDictionary();
             if (report.Tags == null)
                 report.Tags = new TagSet();
 

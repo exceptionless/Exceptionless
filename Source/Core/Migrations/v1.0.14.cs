@@ -35,9 +35,9 @@ namespace Exceptionless.Core.Migrations {
                         extendedData = newDoc;
                     }
 
-                    renamed |= extendedData.AsBsonDocument.ChangeName("ExtraExceptionProperties", ExtendedDataDictionary.EXCEPTION_INFO_KEY);
-                    renamed |= extendedData.AsBsonDocument.ChangeName("ExceptionInfo", ExtendedDataDictionary.EXCEPTION_INFO_KEY);
-                    renamed |= extendedData.AsBsonDocument.ChangeName("TraceInfo", ExtendedDataDictionary.TRACE_LOG_KEY);
+                    renamed |= extendedData.AsBsonDocument.ChangeName("ExtraExceptionProperties", DataDictionary.EXCEPTION_INFO_KEY);
+                    renamed |= extendedData.AsBsonDocument.ChangeName("ExceptionInfo", DataDictionary.EXCEPTION_INFO_KEY);
+                    renamed |= extendedData.AsBsonDocument.ChangeName("TraceInfo", DataDictionary.TRACE_LOG_KEY);
                 }
 
                 if (currentDoc.Contains(ErrorRepository.FieldNames.Inner)) {

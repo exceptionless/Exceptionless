@@ -14,18 +14,18 @@ using Exceptionless.Json.Linq;
 using Exceptionless.Models;
 
 namespace Exceptionless.Serialization {
-    internal class ExtendedDataDictionaryConverter : CustomCreationConverter<ExtendedDataDictionary> {
-        public override ExtendedDataDictionary Create(Type objectType) {
-            return new ExtendedDataDictionary();
+    internal class DataDictionaryConverter : CustomCreationConverter<DataDictionary> {
+        public override DataDictionary Create(Type objectType) {
+            return new DataDictionary();
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
             object obj = base.ReadJson(reader, objectType, existingValue, serializer);
-            var result = obj as ExtendedDataDictionary;
+            var result = obj as DataDictionary;
             if (result == null)
                 return obj;
 
-            var dictionary = new ExtendedDataDictionary();
+            var dictionary = new DataDictionary();
             foreach (string key in result.Keys) {
                 object value = result[key];
                 if (value is JObject)

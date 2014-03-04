@@ -126,7 +126,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="error">The error model.</param>
         public static void AddRecentTraceLogEntries(this Error error) {
-            if (error.ExtendedData.ContainsKey(ExtendedDataDictionary.TRACE_LOG_KEY))
+            if (error.ExtendedData.ContainsKey(DataDictionary.TRACE_LOG_KEY))
                 return;
 
             ExceptionlessTraceListener traceListener = Trace.Listeners
@@ -138,7 +138,7 @@ namespace Exceptionless {
 
             List<string> logEntries = traceListener.GetLogEntries();
             if (logEntries.Count > 0)
-                error.ExtendedData.Add(ExtendedDataDictionary.TRACE_LOG_KEY, traceListener.GetLogEntries());
+                error.ExtendedData.Add(DataDictionary.TRACE_LOG_KEY, traceListener.GetLogEntries());
         }
 #endif
 

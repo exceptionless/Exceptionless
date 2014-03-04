@@ -13,7 +13,7 @@ namespace Exceptionless.Nancy {
     public class NotFoundException : Exception {
         public NotFoundException() : base("Not found") {}
 
-        internal int HResult {
+        internal new int HResult {
             get { return 404; }
         }
     }

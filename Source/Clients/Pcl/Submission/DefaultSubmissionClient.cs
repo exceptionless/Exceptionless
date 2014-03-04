@@ -34,7 +34,7 @@ namespace Exceptionless.Submission {
                 var response = (HttpWebResponse)t.Result;
 
                 int settingsVersion;
-                if (!Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
+                if (!Int32.TryParse(response.Headers["v"], out settingsVersion))
                     settingsVersion = -1;
 
                 // TODO: Add support for sending errors later (e.g., Suspended Account. Invalid API Key).

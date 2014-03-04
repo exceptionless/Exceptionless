@@ -92,7 +92,7 @@ namespace Exceptionless.Tests.Configuration {
 
         [Fact]
         public void CanReadCachedServerConfig() {
-            var serverConfig = new ConfigurationDictionary {
+            var serverConfig = new SettingsDictionary {
                 { "FromServer", "Server" }
             };
             var client = new ExceptionlessClient();

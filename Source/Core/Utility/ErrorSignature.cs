@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Utility {
 
             EmptyNamespaceIsUserMethod = emptyNamespaceIsUserMethod;
 
-            SignatureInfo = new ConfigurationDictionary();
+            SignatureInfo = new SettingsDictionary();
             ShouldFlagSignatureTarget = shouldFlagSignatureTarget;
 
             Parse();
@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Utility {
 
         public bool EmptyNamespaceIsUserMethod { get; private set; }
 
-        public ConfigurationDictionary SignatureInfo { get; private set; }
+        public SettingsDictionary SignatureInfo { get; private set; }
 
         public string SignatureHash { get; private set; }
 
@@ -170,10 +170,10 @@ namespace Exceptionless.Core.Utility {
         }
 
         private void AddSpecialCaseDetails(ErrorInfo error) {
-            if (!error.ExtendedData.ContainsKey(ExtendedDataDictionary.EXCEPTION_INFO_KEY))
+            if (!error.ExtendedData.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY))
                 return;
 
-            var extraProperties = error.ExtendedData.GetValue<Dictionary<string, object>>(ExtendedDataDictionary.EXCEPTION_INFO_KEY);
+            var extraProperties = error.ExtendedData.GetValue<Dictionary<string, object>>(DataDictionary.EXCEPTION_INFO_KEY);
             if (extraProperties == null)
                 return;
 

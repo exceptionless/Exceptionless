@@ -43,7 +43,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// The collection of information that went into creating the signature hash for the stack.
         /// </summary>
-        public ConfigurationDictionary SignatureInfo { get; set; }
+        public SettingsDictionary SignatureInfo { get; set; }
 
         /// <summary>
         /// The version the error was fixed in.

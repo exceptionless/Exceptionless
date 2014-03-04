@@ -40,6 +40,6 @@ namespace Exceptionless.App.Models.Error {
         public string StackingType { get; set; }
         public string StackingMethod { get; set; }
         public string StackingMessage { get; set; }
-        public ExtendedDataDictionary StackingExtendedData { get; set; }
+        public DataDictionary StackingExtendedData { get; set; }
     }
 }

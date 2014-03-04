@@ -105,7 +105,7 @@ namespace Exceptionless.Configuration {
             return list.AsReadOnly();
         }
 
-        internal static void ProcessServerConfigResponse(IConfigurationAndLogAccessor accessors, ConfigurationDictionary serverConfig, string storeId) {
+        internal static void ProcessServerConfigResponse(IConfigurationAndLogAccessor accessors, SettingsDictionary serverConfig, string storeId) {
             if (serverConfig == null)
                 return;
 

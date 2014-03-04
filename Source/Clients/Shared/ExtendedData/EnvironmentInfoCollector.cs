@@ -98,7 +98,7 @@ namespace Exceptionless.ExtendedData {
             }
 
             try {
-                machineInfo.ProcessId = KernelNativeMethods.GetCurrentProcessId().ToString(NumberFormatInfo.InvariantInfo);
+                machineInfo.ProcessId = KernelNativeMethods.GetCurrentProcessId();
             } catch (Exception e) {
                 Trace.WriteLine(String.Format("Unable to get process id. Error message: {0}", e.Message));
             }
