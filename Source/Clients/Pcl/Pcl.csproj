@@ -136,6 +136,7 @@
     <Compile Include="Storage\IFileStorage.cs" />
     <Compile Include="Storage\IKeyValueStorage.cs" />
     <Compile Include="Submission\DefaultSubmissionClient.cs" />
+    <Compile Include="Submission\Net\ExceptionlessHeaders.cs" />
     <Compile Include="Submission\ISubmissionClient.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />
