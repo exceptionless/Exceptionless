@@ -17,7 +17,7 @@
 // <website>https://github.com/facebook-csharp-sdk/simple-json</website>
 //-----------------------------------------------------------------------
 
-// VERSION: 0.30.0
+// VERSION: 0.34.0
 
 // NOTE: uncomment the following line to make SimpleJson class internal.
 #define SIMPLE_JSON_INTERNAL
@@ -30,6 +30,9 @@
 
 // NOTE: uncomment the following line to enable DataContract support.
 //#define SIMPLE_JSON_DATACONTRACT
+
+// NOTE: uncomment the following line to enable IReadOnlyCollection<T> and IReadOnlyList<T> support.
+//#define SIMPLE_JSON_READONLY_COLLECTIONS
 
 // NOTE: uncomment the following line to disable linq expressions/compiled lambda (better performance) instead of method.invoke().
 // define if you are using .net framework <= 3.0 or < WP7.5
@@ -512,6 +515,22 @@ namespace Pcl
         private const int TOKEN_NULL = 11;
         private const int BUILDER_CAPACITY = 2000;
 
+        private static readonly char[] EscapeTable;
+        private static readonly char[] EscapeCharacters = new char[] { '"', '\\', '\b', '\f', '\n', '\r', '\t' };
+        private static readonly string EscapeCharactersString = new string(EscapeCharacters);
+
+        static SimpleJson()
+        {
+            EscapeTable = new char[93];
+            EscapeTable['"'] = '"';
+            EscapeTable['\\'] = '\\';
+            EscapeTable['\b'] = 'b';
+            EscapeTable['\f'] = 'f';
+            EscapeTable['\n'] = 'n';
+            EscapeTable['\r'] = 'r';
+            EscapeTable['\t'] = 't';
+        }
+
         /// <summary>
         /// Parses the string json into a value
         /// </summary>
@@ -537,7 +556,7 @@ namespace Pcl
         /// <returns>
         /// Returns true if successfull otherwise false.
         /// </returns>
-        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification="Need to support .NET 2")]
+        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification = "Need to support .NET 2")]
         public static bool TryDeserializeObject(string json, out object obj)
         {
             bool success = true;
@@ -1073,29 +1092,50 @@ namespace Pcl
 
         static bool SerializeString(string aString, StringBuilder builder)
         {
-            builder.Append("\"");
+            // Happy path if there's nothing to be escaped. IndexOfAny is highly optimized (and unmanaged)
+            if (aString.IndexOfAny(EscapeCharacters) == -1)
+            {
+                builder.Append('"');
+                builder.Append(aString);
+                builder.Append('"');
+
+                return true;
+            }
+
+            builder.Append('"');
+            int safeCharacterCount = 0;
             char[] charArray = aString.ToCharArray();
+
             for (int i = 0; i < charArray.Length; i++)
             {
                 char c = charArray[i];
-                if (c == '"')
-                    builder.Append("\\\"");
-                else if (c == '\\')
-                    builder.Append("\\\\");
-                else if (c == '\b')
-                    builder.Append("\\b");
-                else if (c == '\f')
-                    builder.Append("\\f");
-                else if (c == '\n')
-                    builder.Append("\\n");
-                else if (c == '\r')
-                    builder.Append("\\r");
-                else if (c == '\t')
-                    builder.Append("\\t");
+
+                // Non ascii characters are fine, buffer them up and send them to the builder
+                // in larger chunks if possible. The escape table is a 1:1 translation table
+                // with \0 [default(char)] denoting a safe character.
+                if (c >= EscapeTable.Length || EscapeTable[c] == default(char))
+                {
+                    safeCharacterCount++;
+                }
                 else
-                    builder.Append(c);
+                {
+                    if (safeCharacterCount > 0)
+                    {
+                        builder.Append(charArray, i - safeCharacterCount, safeCharacterCount);
+                        safeCharacterCount = 0;
+                    }
+
+                    builder.Append('\\');
+                    builder.Append(EscapeTable[c]);
+                }
             }
-            builder.Append("\"");
+
+            if (safeCharacterCount > 0)
+            {
+                builder.Append(charArray, charArray.Length - safeCharacterCount, safeCharacterCount);
+            }
+
+            builder.Append('"');
             return true;
         }
 
@@ -1182,7 +1222,7 @@ namespace Pcl
 
 #endif
     }
-    
+
     [GeneratedCode("simple-json", "1.0.0")]
 #if SIMPLE_JSON_INTERNAL
     internal
@@ -1191,7 +1231,7 @@ namespace Pcl
 #endif
  interface IJsonSerializerStrategy
     {
-        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification="Need to support .NET 2")]
+        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification = "Need to support .NET 2")]
         bool TrySerializeNonPrimitiveObject(object input, out object output);
         object DeserializeObject(object value, Type type);
     }
@@ -1290,12 +1330,12 @@ namespace Pcl
             if (type == null) throw new ArgumentNullException("type");
             string str = value as string;
 
-            if (type == typeof (Guid) && string.IsNullOrEmpty(str))
+            if (type == typeof(Guid) && string.IsNullOrEmpty(str))
                 return default(Guid);
 
             if (value == null)
                 return null;
-            
+
             object obj = null;
 
             if (str != null)
@@ -1310,7 +1350,7 @@ namespace Pcl
                         return new Guid(str);
                     if (type == typeof(Uri))
                     {
-                        bool isValid =  Uri.IsWellFormedUriString(str, UriKind.RelativeOrAbsolute);
+                        bool isValid = Uri.IsWellFormedUriString(str, UriKind.RelativeOrAbsolute);
 
                         Uri result;
                         if (isValid && Uri.TryCreate(str, UriKind.RelativeOrAbsolute, out result))
@@ -1333,7 +1373,7 @@ namespace Pcl
             }
             else if (value is bool)
                 return value;
-            
+
             bool valueIsLong = value is long;
             bool valueIsDouble = value is double;
             if ((valueIsLong && type == typeof(long)) || (valueIsDouble && type == typeof(double)))
@@ -1423,7 +1463,7 @@ namespace Pcl
             return Convert.ToDouble(p, CultureInfo.InvariantCulture);
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification="Need to support .NET 2")]
+        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification = "Need to support .NET 2")]
         protected virtual bool TrySerializeKnownTypes(object input, out object output)
         {
             bool returnValue = true;
@@ -1448,7 +1488,7 @@ namespace Pcl
             }
             return returnValue;
         }
-        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification="Need to support .NET 2")]
+        [SuppressMessage("Microsoft.Design", "CA1007:UseGenericsWhereAppropriate", Justification = "Need to support .NET 2")]
         protected virtual bool TrySerializeUnknownTypes(object input, out object output)
         {
             if (input == null) throw new ArgumentNullException("input");
@@ -1550,7 +1590,7 @@ namespace Pcl
     namespace Reflection
     {
         // This class is meant to be copied into other libraries. So we want to exclude it from Code Analysis rules
- 	    // that might be in place in the target project.
+        // that might be in place in the target project.
         [GeneratedCode("reflection-utils", "1.0.0")]
 #if SIMPLE_JSON_REFLECTION_UTILS_PUBLIC
         public
@@ -1603,7 +1643,7 @@ namespace Pcl
                 foreach (Type implementedInterface in interfaces)
                 {
                     if (IsTypeGeneric(implementedInterface) &&
-                        implementedInterface.GetGenericTypeDefinition() == typeof (IList<>))
+                        implementedInterface.GetGenericTypeDefinition() == typeof(IList<>))
                     {
                         return GetGenericTypeArguments(implementedInterface)[0];
                     }
@@ -1646,7 +1686,14 @@ namespace Pcl
 
                 Type genericDefinition = type.GetGenericTypeDefinition();
 
-                return (genericDefinition == typeof(IList<>) || genericDefinition == typeof(ICollection<>) || genericDefinition == typeof(IEnumerable<>));
+                return (genericDefinition == typeof(IList<>)
+                    || genericDefinition == typeof(ICollection<>)
+                    || genericDefinition == typeof(IEnumerable<>)
+#if SIMPLE_JSON_READONLY_COLLECTIONS
+                    || genericDefinition == typeof(IReadOnlyCollection<>)
+                    || genericDefinition == typeof(IReadOnlyList<>)
+#endif
+);
             }
 
             public static bool IsAssignableFrom(Type type1, Type type2)
