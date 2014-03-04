@@ -1,21 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using Exceptionless.Dependency;
 using Exceptionless.Models;
+using Exceptionless.Plugins;
 
 namespace Exceptionless {
     public class Configuration {
         private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.com";
+        private IDependencyResolver _resolver;
 
-        public Configuration() {
+        public Configuration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
             Enabled = true;
             SslEnabled = true;
             DefaultTags = new TagSet();
-            DefaultData = new DataDictionary();
+            DefaultExtendedData = new DataDictionary();
             Settings = new SettingsDictionary();
             DataExclusions = new Collection<string>();
+            Resolver = resolver;
         }
+
+        public Configuration() : this(DependencyResolver.Current) {}
 
         /// <summary>
         /// The server url that all reports will be sent to.
@@ -45,7 +52,7 @@ namespace Exceptionless {
         /// <summary>
         /// A default list of of extended data objects that will automatically be added to every report submitted to the server.
         /// </summary>
-        public DataDictionary DefaultData { get; private set; }
+        public DataDictionary DefaultExtendedData { get; private set; }
 
         /// <summary>
         /// Contains a dictionary of custom settings that can be used to control the client and will be automatically updated from the server.
@@ -67,6 +74,14 @@ namespace Exceptionless {
         /// </summary>
         public ICollection<string> DataExclusions { get; set; }
 
+        /// <summary>
+        /// The dependency resolver to use for this configuration.
+        /// </summary>
+        public IDependencyResolver Resolver {
+            get { return _resolver ?? DependencyResolver.Current; }
+            set {_resolver = value; }
+        }
+
         internal bool HasValidApiKey {
             get {
                 string key = ApiKey != null ? ApiKey.Trim() : null;
@@ -76,6 +91,72 @@ namespace Exceptionless {
                        && !String.Equals(key, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase);
             }
         }
+
+        public Configuration Clone() {
+            return new Configuration(this.Resolver) {
+                ServerUrl = this.ServerUrl,
+                ApiKey = this.ApiKey,
+                Enabled = this.Enabled,
+                SslEnabled = this.SslEnabled,
+                DefaultTags = new TagSet(this.DefaultTags.ToArray()),
+                DefaultExtendedData = new DataDictionary(this.DefaultExtendedData.ToArray()),
+                Settings = new SettingsDictionary(this.Settings.ToArray()),
+                IncludePrivateInformation = this.IncludePrivateInformation,
+                DataExclusions = new Collection<string>(this.DataExclusions.ToArray()),
+                Resolver = this.Resolver
+            };
+        }
+
+        #region Plugins
+
+        private readonly Dictionary<string, IExceptionlessPlugin> _plugins = new Dictionary<string, IExceptionlessPlugin>();
+
+        /// <summary>
+        /// The list of plugins that will be used in this configuration.
+        /// </summary>
+        public IEnumerable<IExceptionlessPlugin> Plugins { get { return _plugins.Values; } }
+
+        /// <summary>
+        /// Register a plugin to be used in this configuration.
+        /// </summary>
+        /// <param name="plugin">The plugin to be used.</param>
+        public void RegisterPlugin(IExceptionlessPlugin plugin) {
+            if (plugin == null)
+                return;
+
+            RegisterPlugin(plugin.GetType().FullName, plugin);
+        }
+
+        /// <summary>
+        /// Register a plugin to be used in this configuration.
+        /// </summary>
+        /// <param name="key">The key used to identify the plugin.</param>
+        /// <param name="plugin">The plugin to be used.</param>
+        public void RegisterPlugin(string key, IExceptionlessPlugin plugin) {
+            if (_plugins.ContainsKey(key))
+                _plugins[key] = plugin;
+            else
+                _plugins.Add(key, plugin);
+        }
+
+        /// <summary>
+        /// Remove a plugin from this configuration.
+        /// </summary>
+        /// <param name="plugin">The plugin to be removed.</param>
+        public void UnregisterPlugin(IExceptionlessPlugin plugin) {
+            UnregisterPlugin(plugin.GetType().FullName);
+        }
+
+        /// <summary>
+        /// Remove a plugin by key from this configuration.
+        /// </summary>
+        /// <param name="key">The key for the plugin to be removed.</param>
+        public void UnregisterPlugin(string key) {
+            if (_plugins.ContainsKey(key))
+                _plugins.Remove(key);
+        }
+
+        #endregion
 
         #region Current
 

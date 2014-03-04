@@ -15,5 +15,10 @@ using System.Collections.Generic;
 namespace Exceptionless.Models {
     public class SettingsDictionary : Dictionary<string, string> {
         public SettingsDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
+
+        public SettingsDictionary(IEnumerable<KeyValuePair<string, string>> values) : base(StringComparer.OrdinalIgnoreCase) {
+            foreach (var kvp in values)
+                Add(kvp.Key, kvp.Value);
+        }
     }
 }

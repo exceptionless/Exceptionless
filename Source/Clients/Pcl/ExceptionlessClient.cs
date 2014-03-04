@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Dependency;
-using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Plugins;
@@ -11,27 +10,21 @@ using Exceptionless.Utility;
 
 namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
-        private readonly Dictionary<string, IExceptionlessPlugin> _plugins = new Dictionary<string, IExceptionlessPlugin>();
         private readonly IExceptionlessLog _log;
 
-        public ExceptionlessClient(Configuration configuration, IDependencyResolver resolver) {
+        public ExceptionlessClient(Configuration configuration) {
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
-            if (resolver == null)
-                throw new ArgumentNullException("resolver");
 
             Configuration = configuration;
-            Resolver = resolver;
-            _log = Resolver.Resolve<IExceptionlessLog>(NullExceptionlessLog.Instance);
+            _log = configuration.Resolver.Resolve<IExceptionlessLog>(NullExceptionlessLog.Instance);
         }
 
-        public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }, DependencyResolver.Current) {}
+        public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }) {}
 
-        public ExceptionlessClient() : this(Configuration.Current, DependencyResolver.Current) { }
+        public ExceptionlessClient() : this(Configuration.Current) { }
 
         public Configuration Configuration { get; private set; }
-
-        public IDependencyResolver Resolver { get; private set; }
 
         /// <summary>
         /// Submits the error report.
@@ -86,7 +79,7 @@ namespace Exceptionless {
                 return;
 
             if (args.ShouldShowUI) {
-                IExceptionlessPlugin uiPlugin = Plugins.FirstOrDefault(p => p.SupportsShowingUnhandledErrorSubmissionUI);
+                IExceptionlessPlugin uiPlugin = Configuration.Plugins.FirstOrDefault(p => p.SupportsShowingUnhandledErrorSubmissionUI);
                 if (uiPlugin != null) {
                     if (!uiPlugin.ShowUnhandledErrorSubmissionUI(new ExceptionlessPluginContext(this, contextData), error))
                         return;
@@ -278,7 +271,7 @@ namespace Exceptionless {
             //error.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
             //error.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
 
-            //foreach (IExceptionlessPlugin plugin in client.Plugins) {
+            //foreach (IExceptionlessPlugin plugin in client.Configuration.Plugins) {
             //    try {
             //        var ctx = new ExceptionlessPluginContext(client, contextData);
             //        plugin.AfterCreated(ctx, error, exception);
@@ -361,35 +354,6 @@ namespace Exceptionless {
         protected void OnSendingError(ErrorModelEventArgs e) {
             if (SendingError != null)
                 SendingError(this, e);
-        }
-
-        #endregion
-
-        #region Plugins
-
-        internal IEnumerable<IExceptionlessPlugin> Plugins { get { return _plugins.Values; } }
-
-        public void RegisterPlugin(IExceptionlessPlugin plugin) {
-            if (plugin == null)
-                return;
-
-            RegisterPlugin(plugin.GetType().FullName, plugin);
-        }
-
-        public void RegisterPlugin(string key, IExceptionlessPlugin plugin) {
-            if (_plugins.ContainsKey(key))
-                _plugins[key] = plugin;
-            else
-                _plugins.Add(key, plugin);
-        }
-
-        public void UnregisterPlugin(IExceptionlessPlugin plugin) {
-            UnregisterPlugin(plugin.GetType().FullName);
-        }
-
-        public void UnregisterPlugin(string key) {
-            if (_plugins.ContainsKey(key))
-                _plugins.Remove(key);
         }
 
         #endregion
