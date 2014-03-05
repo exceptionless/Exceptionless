@@ -185,12 +185,11 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="UAParser, Version=1.0.1.0, Culture=neutral, PublicKeyToken=f7377bf021646069, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="UAParser">
       <HintPath>..\..\packages\UAParser.1.0.2.0\lib\net40\UAParser.dll</HintPath>
     </Reference>
     <Reference Include="YamlDotNet">
-      <HintPath>..\..\packages\YamlDotNet.3.1.0\lib\net35\YamlDotNet.dll</HintPath>
+      <HintPath>..\..\packages\YamlDotNet.3.0.0\lib\net35\YamlDotNet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
