@@ -22,7 +22,7 @@ using System.Threading.Tasks;
 namespace Exceptionless.Core.Web {
     public class EncodingDelegatingHandler : DelegatingHandler {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            if (request.Method != HttpMethod.Get && request.Content.Headers.ContentEncoding.Any()) {
+            if (request.Method != HttpMethod.Get && request.Content != null && request.Content.Headers.ContentEncoding.Any()) {
                 string encodingType = request.Content.Headers.ContentEncoding.First().ToLowerInvariant();
                 if (encodingType == "gzip" || encodingType == "deflate")
                     request.Content = new CompressedContent(request.Content, encodingType);
