@@ -14,19 +14,19 @@ namespace Exceptionless {
     /// <summary>
     /// EventArgs derived type which holds the custom event fields
     /// </summary>
-    public class ErrorModelEventArgs : EventArgs {
+    public class EventModelEventArgs : EventArgs {
         /// <summary>
-        /// Initializes a new instance of the <see cref="ErrorModelEventArgs" /> class.
+        /// Initializes a new instance of the <see cref="EventModelEventArgs" /> class.
         /// </summary>
-        /// <param name="error">The case error.</param>
-        public ErrorModelEventArgs(Error error) {
-            Error = error;
+        /// <param name="data">The event.</param>
+        public EventModelEventArgs(Event data) {
+            Event = data;
         }
 
         /// <summary>
-        /// Gets the error.
+        /// Gets the event.
         /// </summary>
-        /// <value>The error.</value>
-        public Error Error { get; private set; }
+        /// <value>The event.</value>
+        public Event Event { get; private set; }
     }
 }

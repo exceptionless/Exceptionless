@@ -35,38 +35,38 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Core\Extensions\ErrorExtensions.cs">
+      <Link>Extensions\ErrorExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Extensions\ToErrorModelExtensions.cs">
+      <Link>Extensions\ToErrorModelExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
       <Link>Models\ClientConfiguration.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\EnvironmentInfo.cs">
-      <Link>Models\EnvironmentInfo.cs</Link>
+      <Link>Models\Data\EnvironmentInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\Error.cs">
-      <Link>Models\Error.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\ErrorInfo.cs">
-      <Link>Models\ErrorInfo.cs</Link>
+      <Link>Models\Data\Error.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\ExceptionlessClientInfo.cs">
       <Link>Models\ExceptionlessClientInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\Method.cs">
-      <Link>Models\Method.cs</Link>
+      <Link>Models\Data\Method.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\Module.cs">
-      <Link>Models\Module.cs</Link>
+      <Link>Models\Data\Module.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\Parameter.cs">
-      <Link>Models\Parameter.cs</Link>
+      <Link>Models\Data\Parameter.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\RequestInfo.cs">
-      <Link>Models\RequestInfo.cs</Link>
+      <Link>Models\Data\RequestInfo.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\StackFrame.cs">
-      <Link>Models\StackFrame.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\StringUtilities.cs">
-      <Link>Models\StringUtilities.cs</Link>
+      <Link>Models\Data\StackFrame.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Collections\ConfigurationDictionary.cs">
       <Link>Collections\ConfigurationDictionary.cs</Link>
@@ -89,12 +89,6 @@
     <Compile Include="..\..\Models\Collections\TagSet.cs">
       <Link>Collections\TagSet.cs</Link>
     </Compile>
-    <Compile Include="..\..\Models\Interfaces\IIdentity.cs">
-      <Link>Models\IIdentity.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Interfaces\IOwnedByOrganization.cs">
-      <Link>Models\IOwnedByOrganization.cs</Link>
-    </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
@@ -102,10 +96,11 @@
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="ErrorBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
-    <Compile Include="Events\ErrorModelEventArgs.cs" />
+    <Compile Include="Events\EventModelEventArgs.cs" />
     <Compile Include="Events\SendErrorCompletedEventArgs.cs" />
     <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
+    <Compile Include="Extensions\SettingsDictionaryExtensions.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
@@ -117,6 +112,8 @@
     </Compile>
     <Compile Include="LastErrorIdManager\DefaultLastErrorIdManager.cs" />
     <Compile Include="LastErrorIdManager\ILastErrorIdManager.cs" />
+    <Compile Include="Models\Event.cs" />
+    <Compile Include="Models\SessionInfo.cs" />
     <Compile Include="Plugins\ExceptionlessPlugin.cs" />
     <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
     <Compile Include="Plugins\IExceptionlessPlugin.cs" />

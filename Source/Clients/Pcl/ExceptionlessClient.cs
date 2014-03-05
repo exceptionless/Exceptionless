@@ -6,7 +6,6 @@ using Exceptionless.Dependency;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Plugins;
-using Exceptionless.Utility;
 
 namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
@@ -321,7 +320,7 @@ namespace Exceptionless {
         /// <summary>
         /// Occurs when the error is being sent to the server.
         /// </summary>
-        public event EventHandler<ErrorModelEventArgs> SendingError;
+        public event EventHandler<EventModelEventArgs> SendingError;
 
         /// <summary>
         /// Occurs when the error has been sent to the server.
@@ -343,15 +342,15 @@ namespace Exceptionless {
         }
 
         private void OnSendingError(Error error) {
-            var args = new ErrorModelEventArgs(error);
+            var args = new EventModelEventArgs(error);
             OnSendingError(args);
         }
 
         /// <summary>
         /// Raises the <see cref="SendingError" /> event.
         /// </summary>
-        /// <param name="e">The <see cref="ErrorModelEventArgs" /> instance containing the event data.</param>
-        protected void OnSendingError(ErrorModelEventArgs e) {
+        /// <param name="e">The <see cref="EventModelEventArgs" /> instance containing the event data.</param>
+        protected void OnSendingError(EventModelEventArgs e) {
             if (SendingError != null)
                 SendingError(this, e);
         }
