@@ -16,7 +16,7 @@ namespace Exceptionless {
             Enabled = true;
             SslEnabled = true;
             DefaultTags = new TagSet();
-            DefaultExtendedData = new DataDictionary();
+            DefaultData = new DataDictionary();
             Settings = new SettingsDictionary();
             DataExclusions = new Collection<string>();
             Resolver = resolver;
@@ -52,7 +52,7 @@ namespace Exceptionless {
         /// <summary>
         /// A default list of of extended data objects that will automatically be added to every report submitted to the server.
         /// </summary>
-        public DataDictionary DefaultExtendedData { get; private set; }
+        public DataDictionary DefaultData { get; private set; }
 
         /// <summary>
         /// Contains a dictionary of custom settings that can be used to control the client and will be automatically updated from the server.
@@ -99,7 +99,7 @@ namespace Exceptionless {
                 Enabled = this.Enabled,
                 SslEnabled = this.SslEnabled,
                 DefaultTags = new TagSet(this.DefaultTags.ToArray()),
-                DefaultExtendedData = new DataDictionary(this.DefaultExtendedData.ToArray()),
+                DefaultData = new DataDictionary(this.DefaultData.ToArray()),
                 Settings = new SettingsDictionary(this.Settings.ToArray()),
                 IncludePrivateInformation = this.IncludePrivateInformation,
                 DataExclusions = new Collection<string>(this.DataExclusions.ToArray()),

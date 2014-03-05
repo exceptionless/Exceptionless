@@ -71,9 +71,9 @@
     <Compile Include="Admin\Stats\MonthStackStats.cs" />
     <Compile Include="Admin\Stats\DayStackStats.cs" />
     <Compile Include="Collections\GenericArguments.cs" />
-    <Compile Include="Collections\ExtendedDataDictionary.cs" />
+    <Compile Include="Collections\DataDictionary.cs" />
     <Compile Include="Collections\TagSet.cs" />
-    <Compile Include="Collections\ConfigurationDictionary.cs" />
+    <Compile Include="Collections\SettingsDictionary.cs" />
     <Compile Include="Enums\ResponseStatusType.cs" />
     <Compile Include="Client\ErrorInfo.cs" />
     <Compile Include="Client\Error.cs" />

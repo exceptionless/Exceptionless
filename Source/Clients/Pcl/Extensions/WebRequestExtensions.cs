@@ -12,7 +12,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
-using Exceptionless.Submission;
 using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Extensions {

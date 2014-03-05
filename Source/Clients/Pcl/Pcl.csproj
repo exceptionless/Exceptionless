@@ -35,12 +35,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Core\Extensions\ErrorExtensions.cs">
-      <Link>Extensions\ErrorExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Core\Extensions\ToErrorModelExtensions.cs">
-      <Link>Extensions\ToErrorModelExtensions.cs</Link>
-    </Compile>
     <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
       <Link>Models\ClientConfiguration.cs</Link>
     </Compile>
@@ -68,11 +62,8 @@
     <Compile Include="..\..\Models\Client\StackFrame.cs">
       <Link>Models\Data\StackFrame.cs</Link>
     </Compile>
-    <Compile Include="..\..\Models\Collections\ConfigurationDictionary.cs">
-      <Link>Collections\ConfigurationDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ExtendedDataDictionary.cs">
-      <Link>Collections\ExtendedDataDictionary.cs</Link>
+    <Compile Include="..\..\Models\Collections\DataDictionary.cs">
+      <Link>Collections\DataDictionary.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Collections\GenericArguments.cs">
       <Link>Collections\GenericArguments.cs</Link>
@@ -82,6 +73,9 @@
     </Compile>
     <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
       <Link>Collections\ParameterCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\SettingsDictionary.cs">
+      <Link>Collections\SettingsDictionary.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
       <Link>Collections\StackFrameCollection.cs</Link>
@@ -100,12 +94,11 @@
     <Compile Include="Events\SendErrorCompletedEventArgs.cs" />
     <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
-    <Compile Include="Extensions\SettingsDictionaryExtensions.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\WebResponseExtensions.cs" />
-    <Compile Include="Extensions\JsonSerialzierExtensions.cs" />
+    <Compile Include="Extensions\JsonSerializerExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\WebRequestExtensions.cs">
       <SubType>Code</SubType>
@@ -139,8 +132,6 @@
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />
     <Compile Include="Submission\SettingsResponse.cs" />
     <Compile Include="Submission\SubmissionResponse.cs" />
-    <Compile Include="Utility\MD5.cs" />
-    <Compile Include="Utility\ObjectId.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
