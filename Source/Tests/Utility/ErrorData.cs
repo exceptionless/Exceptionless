@@ -63,7 +63,7 @@ namespace Exceptionless.Tests.Utility {
             if (!errorStackId.IsNullOrEmpty())
                 error.ErrorStackId = errorStackId;
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, 5); i++) {
+            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
                 string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
                 while (error.ExtendedData.ContainsKey(key))
                     key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
@@ -71,7 +71,7 @@ namespace Exceptionless.Tests.Utility {
                 error.ExtendedData.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
             }
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, 5); i++) {
+            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
                 string tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
                 while (error.Tags.Contains(tag))
                     tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
@@ -94,7 +94,7 @@ namespace Exceptionless.Tests.Utility {
             if (RandomHelper.GetBool())
                 target.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, 5); i++) {
+            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
                 string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
                 while (target.ExtendedData.ContainsKey(key))
                     key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));

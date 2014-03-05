@@ -137,6 +137,28 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         [Fact]
+        public void PostExtremelyLargeError() {
+            SetValidApiKey();
+
+            var error = ErrorData.GenerateError(id: TestConstants.ErrorId3);
+            for (int i = 0; i < 4; i++)
+                error.ExtendedData.Add(Guid.NewGuid().ToString(), new string('x', 512 * 1024));
+
+            HttpResponseMessage response = PostResponse(error);
+            Assert.NotNull(response);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            Assert.NotNull(response.Headers);
+            KeyValuePair<string, IEnumerable<string>> header = response.Headers.FirstOrDefault(h => String.Equals(h.Key, "Location", StringComparison.OrdinalIgnoreCase));
+            Assert.NotNull(header);
+            Assert.NotNull(header.Value);
+            Assert.Equal(1, header.Value.Count());
+            Assert.NotNull(header.Value.First());
+
+            Assert.Contains(String.Concat("error/", TestConstants.ErrorId3), header.Value.First());
+        }
+
+        [Fact]
         public void PostDuplicate() {
             SetValidApiKey();
 
