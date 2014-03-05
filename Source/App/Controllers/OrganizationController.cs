@@ -127,7 +127,7 @@ namespace Exceptionless.App.Controllers {
 
                 _notificationSender.PlanChanged(organization.Id);
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report().Write();
+                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
                 return Json(new { Success = false, Message = e.Message });
             }
 
