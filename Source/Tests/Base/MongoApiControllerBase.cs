@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Mvc;
@@ -20,7 +22,7 @@ using Exceptionless.App;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Tests.Utility;
-using Exceptionless.Web;
+using Newtonsoft.Json;
 using SimpleInjector;
 
 namespace Exceptionless.Tests.Controllers.Base {
@@ -75,7 +77,7 @@ namespace Exceptionless.Tests.Controllers.Base {
                     task = client.GetAsync(uri);
                     break;
                 case HttpVerbs.Post:
-                    task = client.PostAsJsonAsync(uri.ToString(), (TModel)value);
+                    task = client.PostAsync(uri, new StringContent(JsonConvert.SerializeObject(value), Encoding.UTF8, "application/json"));
                     break;
                 case HttpVerbs.Put:
                     task = client.PutAsJsonAsync(uri.ToString(), (TModel)value);
@@ -116,15 +118,18 @@ namespace Exceptionless.Tests.Controllers.Base {
             };
 
             IoC.GetInstance<Container>().RegisterWebApiFilterProvider(config);
-            WebApiConfig.Register(config);
-
             config.DependencyResolver = GlobalConfiguration.Configuration.DependencyResolver;
+
+            WebApiConfig.Register(config);
 
             return config;
         }
 
         protected virtual HttpClient CreateClient(HttpServer server, HttpVerbs verb) {
-            return new HttpClient(server);
+            var client = new HttpClient(server);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            return client;
         }
 
         protected virtual Uri GetUri(HttpVerbs verb, string id) {
