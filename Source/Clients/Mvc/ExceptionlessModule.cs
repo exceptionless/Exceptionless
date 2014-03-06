@@ -8,6 +8,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 
@@ -26,9 +27,11 @@ namespace Exceptionless.Mvc {
             ExceptionlessClient.Current.Startup();
             ExceptionlessClient.Current.Configuration.IncludePrivateInformation = true;
             _context = context;
+            _context.Error -= OnError;
             _context.Error += OnError;
 
-            GlobalFilters.Filters.Add(new ExceptionlessSendErrorsAttribute());
+            if (!GlobalFilters.Filters.Any(f => f.Instance is ExceptionlessSendErrorsAttribute))
+                GlobalFilters.Filters.Add(new ExceptionlessSendErrorsAttribute());
         }
 
         private void OnError(object sender, EventArgs e) {
