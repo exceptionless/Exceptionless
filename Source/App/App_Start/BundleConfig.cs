@@ -107,7 +107,7 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/rickshaw.js")
                 .Include("~/Scripts/rickshaw.custom.js")
                 .Include("~/Scripts/spin.js")
-                .Include("~/Scripts/numeral.min.js")
+                .Include("~/Scripts/numeral.js")
                 .Include("~/Scripts/toastr.js")
                 .Include("~/Scripts/trunk8.js")
                 .Include("~/Scripts/underscore.js")

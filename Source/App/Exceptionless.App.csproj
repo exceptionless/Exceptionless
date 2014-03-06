@@ -402,19 +402,9 @@
     <Content Include="Content\bootstrap.min.css" />
     <Content Include="Content\css\font-awesome.css" />
     <Content Include="Content\css\font-awesome.min.css" />
-    <Content Include="Content\fancybox\blank.gif" />
-    <Content Include="Content\fancybox\fancybox_buttons.png" />
-    <Content Include="Content\fancybox\fancybox_loading%402x.gif" />
-    <Content Include="Content\fancybox\fancybox_loading.gif" />
-    <Content Include="Content\fancybox\fancybox_overlay.png" />
-    <Content Include="Content\fancybox\fancybox_sprite%402x.png" />
-    <Content Include="Content\fancybox\fancybox_sprite.png" />
     <Content Include="Content\fonts\fontawesome-webfont.svg" />
     <Content Include="Content\images\glyphicons-halflings-white.png" />
     <Content Include="Content\images\glyphicons-halflings.png" />
-    <Content Include="Content\jquery.fancybox-buttons.css" />
-    <Content Include="Content\jquery.fancybox-thumbs.css" />
-    <Content Include="Content\jquery.fancybox.css" />
     <Content Include="Content\rickshaw.css" />
     <Content Include="Content\rickshaw.min.css" />
     <Content Include="Content\toastr.css">
@@ -460,24 +450,19 @@
     <Content Include="Scripts\handlebars.runtime.min.js" />
     <Content Include="Scripts\jquery-2.1.0.js" />
     <Content Include="Scripts\jquery-2.1.0.min.js" />
-    <Content Include="Scripts\jquery.fancybox-buttons.js" />
-    <Content Include="Scripts\jquery.fancybox-media.js" />
-    <Content Include="Scripts\jquery.fancybox-thumbs.js" />
-    <Content Include="Scripts\jquery.fancybox.js" />
-    <Content Include="Scripts\jquery.fancybox.pack.js" />
-    <Content Include="Scripts\jquery.mousewheel-3.0.6.pack.js" />
     <Content Include="Scripts\jquery.scrollTo.js" />
     <Content Include="Scripts\jquery.signalR-2.0.2.js" />
     <Content Include="Scripts\jquery.signalR-2.0.2.min.js" />
     <Content Include="Scripts\jquery.unobtrusive-ajax.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jstz.js" />
-    <Content Include="Scripts\knockout-3.0.0.debug.js" />
-    <Content Include="Scripts\knockout-3.0.0.js" />
+    <Content Include="Scripts\knockout-3.1.0.debug.js" />
+    <Content Include="Scripts\knockout-3.1.0.js" />
     <Content Include="Scripts\moment-with-langs.js" />
     <Content Include="Scripts\moment-with-langs.min.js" />
     <Content Include="Scripts\moment.js" />
     <Content Include="Scripts\moment.min.js" />
+    <Content Include="Scripts\numeral.js" />
     <Content Include="Scripts\numeral.min.js" />
     <Content Include="Scripts\rickshaw.js" />
     <Content Include="Scripts\rickshaw.min.js" />
@@ -538,8 +523,6 @@
     <Content Include="Scripts\knockout.activity.js" />
     <Content Include="Scripts\knockout.command.js" />
     <Content Include="Scripts\knockout.dirtyFlag.js" />
-    <Content Include="Content\responsiveslides.css" />
-    <Content Include="Scripts\responsiveslides.min.js" />
     <Content Include="Scripts\trunk8.js" />
     <None Include="Scripts\typings\bootstrap.datepicker\bootstrap.datepicker.d.ts" />
     <None Include="Scripts\typings\knockout.es5\knockout.es5.d.ts" />
@@ -566,9 +549,8 @@
     <Content Include="Scripts\bootstrap-select.js" />
     <Content Include="Scripts\livestamp.js" />
     <Content Include="Scripts\spin.js" />
-    <Content Include="Scripts\spin.min.js" />
+    <Content Include="Scripts\underscore-min.js" />
     <Content Include="Scripts\underscore.js" />
-    <Content Include="Scripts\underscore.min.js" />
     <Content Include="Scripts\ZeroClipboard.js" />
     <Content Include="Scripts\ZeroClipboard.swf" />
     <Content Include="touch-icon-ipad-114.png" />
@@ -597,8 +579,8 @@
     <Content Include="Scripts\d3.v3.js" />
     <Content Include="Scripts\d3.v3.min.js" />
     <Content Include="Views\Admin\Index.cshtml" />
-    <Content Include="Scripts\underscore.min.map" />
     <Content Include="Views\Organization\Suspended.cshtml" />
+    <Content Include="Scripts\underscore-min.map" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ClientAccessPolicy.xml">
@@ -785,7 +767,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Scripts\typings\bootbox\bootbox.d.ts" />
-    <Content Include="Scripts\typings\fancybox\fancybox.d.ts" />
     <Content Include="Scripts\typings\zeroclipboard\zeroclipboard.d.ts" />
     <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
     <Content Include="Scripts\typings\jquery\jquery.d.ts" />

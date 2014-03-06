@@ -67,7 +67,7 @@ module exceptionless {
                 App.updateTrunk8();
             });
 
-            ZeroClipboard.setDefaults({ moviePath: '/scripts/zeroclipboard.swf' });
+            ZeroClipboard.config({ moviePath: '/scripts/zeroclipboard.swf' });
 
             moment.lang('en', {
                 relativeTime: {
