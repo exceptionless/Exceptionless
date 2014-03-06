@@ -182,8 +182,8 @@ namespace Exceptionless.App.Controllers.API {
                 throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
+            DateTime utcStart = start != DateTime.MinValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value) : DateTime.MinValue;
+            DateTime utcEnd = end != DateTime.MaxValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value) : DateTime.MaxValue;
 
             int skip = (page - 1) * pageSize;
             if (skip < 0)

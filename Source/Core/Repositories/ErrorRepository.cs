@@ -473,10 +473,13 @@ namespace Exceptionless.Core {
 
         public IEnumerable<Error> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var conditions = new List<IMongoQuery> {
-                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
-                Query.GTE(FieldNames.OccurrenceDate_UTC, utcStart.Ticks),
-                Query.LTE(FieldNames.OccurrenceDate_UTC, utcEnd.Ticks)
+                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId)))
             };
+
+            if (utcStart != DateTime.MinValue)
+                conditions.Add(Query.GTE(FieldNames.OccurrenceDate_UTC, utcStart.Ticks));
+            if (utcEnd != DateTime.MaxValue)
+                conditions.Add(Query.LTE(FieldNames.OccurrenceDate_UTC, utcEnd.Ticks));
 
             if (!includeHidden || !includeFixed) {
                 var excludedIds = new List<BsonObjectId>();
@@ -500,6 +503,7 @@ namespace Exceptionless.Core {
             if (take.HasValue)
                 cursor.SetLimit(take.Value);
 
+            // TODO: this is consistently our slowest query
             count = cursor.Count();
             return cursor;
         }
