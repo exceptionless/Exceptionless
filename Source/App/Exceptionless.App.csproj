@@ -568,6 +568,7 @@
     <Content Include="Scripts\underscore-min.js" />
     <Content Include="Scripts\underscore.js" />
     <Content Include="Scripts\ZeroClipboard.js" />
+    <Content Include="Scripts\ZeroClipboard.min.js" />
     <Content Include="Scripts\ZeroClipboard.swf" />
     <Content Include="touch-icon-ipad-114.png" />
     <Content Include="touch-icon-ipad-144.png" />
