@@ -124,47 +124,6 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanUpdateEntity(original, value);
         }
 
-        [HttpGet]
-        public IHttpActionResult New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            start = start ?? DateTime.MinValue;
-            end = end ?? DateTime.MaxValue;
-
-            if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
-
-            DateTime retentionUteCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
-
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-
-            long count;
-            List<Error> query = _repository.GetNewest(projectId, utcStart, utcEnd, skip, pageSize, out count).ToList();
-            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUteCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
-
-            long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
-            };
-
-            // TODO: Only return the populated fields (currently all properties are being returned).
-            return Ok(result);
-        }
-
         // TODO: Use the cache client.
         [HttpGet]
         public IHttpActionResult Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {

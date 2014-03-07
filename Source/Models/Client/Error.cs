@@ -23,6 +23,7 @@ namespace Exceptionless.Models {
         /// </summary>
         public string Id { get; set; }
 
+#if !EMBEDDED
         /// <summary>
         /// The organization that the error belongs to.
         /// </summary>
@@ -37,6 +38,7 @@ namespace Exceptionless.Models {
         /// The error stack that the error belongs to.
         /// </summary>
         public string ErrorStackId { get; set; }
+#endif
 
         /// <summary>
         /// The date that the error occurred on.
@@ -82,6 +84,18 @@ namespace Exceptionless.Models {
         /// Information about the machine that the error occurred on.
         /// </summary>
         public EnvironmentInfo EnvironmentInfo { get; set; }
+
+#if !EMBEDDED
+        /// <summary>
+        /// Wether the error has been marked as fixed or not.
+        /// </summary>
+        public bool IsFixed { get; set; }
+
+        /// <summary>
+        /// Wether the error has been marked as hidden or not.
+        /// </summary>
+        public bool IsHidden { get; set; }
+#endif
 
         /// <summary>
         /// Marks the error as being a critical occurrence.

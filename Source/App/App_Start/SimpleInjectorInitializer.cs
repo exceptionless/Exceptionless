@@ -28,7 +28,7 @@ namespace Exceptionless.App {
         public static void Initialize() {
             Container container = CreateContainer();
 
-            container.Verify();
+            //container.Verify();
 
             GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             DependencyResolver.SetResolver(new SimpleInjectorDependencyResolver(container));

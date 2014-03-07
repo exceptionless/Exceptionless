@@ -23,17 +23,15 @@ using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core {
     public class ErrorRepository : MongoRepositoryOwnedByOrganization<Error>, IErrorRepository {
-        private readonly ErrorStackRepository _errorStackRepository;
         private readonly ProjectRepository _projectRepository;
         private readonly OrganizationRepository _organizationRepository;
-        private readonly ErrorStatsHelper _statsHelper;
+        //private readonly ErrorStatsHelper _statsHelper;
 
-        public ErrorRepository(MongoDatabase database, ErrorStackRepository errorStackRepository, ProjectRepository projectRepository, OrganizationRepository organizationRepository, ICacheClient cacheClient = null, ErrorStatsHelper statsHelper = null)
+        public ErrorRepository(MongoDatabase database, ProjectRepository projectRepository, OrganizationRepository organizationRepository, ICacheClient cacheClient = null)
             : base(database, cacheClient) {
-            _errorStackRepository = errorStackRepository;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
-            _statsHelper = statsHelper;
+            //_statsHelper = statsHelper;
         }
 
         public const string CollectionName = "error";
@@ -116,6 +114,8 @@ namespace Exceptionless.Core {
             public const string IsEntry = "ent";
             public const string CreatedDate = "crt";
             public const string ModifiedDate = "mod";
+            public const string IsFixed = "fix";
+            public const string IsHidden = "hid";
         }
 
         protected override void InitializeCollection(MongoCollection<Error> collection) {
@@ -123,7 +123,7 @@ namespace Exceptionless.Core {
 
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Code));
             collection.CreateIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC));
             collection.CreateIndex(IndexKeys.Descending(FieldNames.ErrorStackId, FieldNames.OccurrenceDate_UTC));
         }
@@ -141,6 +141,8 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.ExceptionlessClientInfo).SetElementName(FieldNames.ExceptionlessClientInfo).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.Modules).SetElementName(FieldNames.Modules).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.EnvironmentInfo).SetElementName(FieldNames.EnvironmentInfo).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
+            cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(ErrorInfo))) {
                 BsonClassMap.RegisterClassMap<ErrorInfo>(cmm => {
@@ -292,6 +294,30 @@ namespace Exceptionless.Core {
                 Add(error);
         }
 
+        public void UpdateFixedByStackId(string stackId, bool value) {
+            if (String.IsNullOrEmpty(stackId))
+                throw new ArgumentNullException("stackId");
+
+            IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
+
+            var update = new UpdateBuilder();
+            update.Set(FieldNames.IsFixed, new BsonBoolean(value));
+
+            Collection.Update(query, update);
+        }
+
+        public void UpdateHiddenByStackId(string stackId, bool value) {
+            if (String.IsNullOrEmpty(stackId))
+                throw new ArgumentNullException("stackId");
+
+            IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
+
+            var update = new UpdateBuilder();
+            update.Set(FieldNames.IsHidden, new BsonBoolean(value));
+
+            Collection.Update(query, update);
+        }
+
         public void RemoveAllByProjectId(string projectId) {
             const int batchSize = 150;
 
@@ -413,17 +439,17 @@ namespace Exceptionless.Core {
                 Delete(errors);
                 // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
 
-                var groups = errors.GroupBy(e => new {
-                    e.OrganizationId,
-                    e.ProjectId,
-                    e.ErrorStackId
-                }).ToList();
-                foreach (var grouping in groups) {
-                    if (_statsHelper == null)
-                        continue;
+                //var groups = errors.GroupBy(e => new {
+                //    e.OrganizationId,
+                //    e.ProjectId,
+                //    e.ErrorStackId
+                //}).ToList();
+                //foreach (var grouping in groups) {
+                //    if (_statsHelper == null)
+                //        continue;
 
-                    //_statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
-                }
+                //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
+                //}
 
                 errors = Collection.Find(Query.And(
                                                    Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
@@ -481,15 +507,11 @@ namespace Exceptionless.Core {
             if (utcEnd != DateTime.MaxValue)
                 conditions.Add(Query.LTE(FieldNames.OccurrenceDate_UTC, utcEnd.Ticks));
 
-            if (!includeHidden || !includeFixed) {
-                var excludedIds = new List<BsonObjectId>();
-                if (!includeHidden)
-                    excludedIds.AddRange(_errorStackRepository.GetHiddenIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
-                if (!includeFixed)
-                    excludedIds.AddRange(_errorStackRepository.GetFixedIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
+            if (!includeHidden)
+                conditions.Add(Query.NE(FieldNames.IsHidden, true));
 
-                conditions.Add(Query.NotIn(FieldNames.ErrorStackId, excludedIds));
-            }
+            if (!includeFixed)
+                conditions.Add(Query.NE(FieldNames.IsFixed, true));
 
             if (!includeNotFound)
                 conditions.Add(Query.NE(FieldNames.Code, "404"));
@@ -504,25 +526,6 @@ namespace Exceptionless.Core {
                 cursor.SetLimit(take.Value);
 
             // TODO: this is consistently our slowest query
-            count = cursor.Count();
-            return cursor;
-        }
-
-        public IEnumerable<Error> GetNewest(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            // these dates are assumed to be in the project's time zone.
-            // TODO: We should query the error stack collection and set Fields.Include on the cursor so only the id's are returned. https://jira.mongodb.org/browse/CSHARP-456?focusedCommentId=116273&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel
-            long temp;
-            var errorStackIds = _errorStackRepository.GetNew(projectId, utcStart, utcEnd, null, null, out temp, includeHidden, includeFixed, includeNotFound).Select(s => new BsonObjectId(new ObjectId(s.Id))).ToList();
-
-            var cursor = _collection.FindAs<Error>(Query.In(FieldNames.ErrorStackId, errorStackIds));
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.OccurrenceDate_UTC));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
             count = cursor.Count();
             return cursor;
         }

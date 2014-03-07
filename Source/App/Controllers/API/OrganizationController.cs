@@ -122,9 +122,9 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpGet]
         [Authorize(Roles = AuthorizationRoles.User)]
-        public PagedResult<InvoiceGridModel> Payments(string id, int page = 1, int pageSize = 12) {
+        public IHttpActionResult Payments(string id, int page = 1, int pageSize = 12) {
             if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
-                throw new HttpResponseException(BadRequestErrorResponseMessage());
+                return NotFound();
 
             int skip = (page - 1) * pageSize;
             if (skip < 0)
@@ -135,15 +135,15 @@ namespace Exceptionless.App.Controllers.API {
 
             Organization organization = _repository.GetByIdCached(id);
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
-                return new PagedResult<InvoiceGridModel>();
+                return NotFound();
 
             var invoiceService = new StripeInvoiceService();
             List<InvoiceGridModel> invoices = invoiceService.List(pageSize, skip, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
-            return new PagedResult<InvoiceGridModel>(invoices) {
+            return Ok(new PagedResult<InvoiceGridModel>(invoices) {
                 Page = page,
                 PageSize = pageSize,
                 TotalCount = invoices.Count // TODO: Return the total count.
-            };
+            });
         }
 
         protected override Organization GetEntity(string id) {
