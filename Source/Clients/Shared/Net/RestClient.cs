@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Compression;
 using System.Net;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using Exceptionless.Extensions;
@@ -26,7 +27,7 @@ namespace Exceptionless.Net {
 
         static RestClient() {
             // ignore invalid SSL certificate warnings.
-            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            SafeConfigureSSLCertificateValidation();
         }
 
         public RestClient(Uri baseUri) {
@@ -36,6 +37,15 @@ namespace Exceptionless.Net {
             RequestContentType = DEFAULT_CONTENT_TYPE;
             ResponseContentType = DEFAULT_CONTENT_TYPE;
             Timeout = TimeSpan.FromMinutes(1);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeConfigureSSLCertificateValidation() {
+            try {
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            } catch (Exception) {
+                // todo: Log this failure.
+            }
         }
 
         #region Events
