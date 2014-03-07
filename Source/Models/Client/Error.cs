@@ -13,7 +13,11 @@ using System;
 using Exceptionless.Models.Collections;
 
 namespace Exceptionless.Models {
-    public class Error : ErrorInfo, IOwnedByOrganization {
+    public class Error : ErrorInfo
+#if !EMBEDDED
+        , IOwnedByOrganization
+#endif
+    {
         public Error() {
             Tags = new TagSet();
         }
