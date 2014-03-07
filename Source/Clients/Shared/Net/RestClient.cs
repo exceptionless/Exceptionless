@@ -43,8 +43,8 @@ namespace Exceptionless.Net {
         private static void SafeConfigureSSLCertificateValidation() {
             try {
                 ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-            } catch (Exception) {
-                // todo: Log this failure.
+            } catch (Exception ex) {
+                ExceptionlessClient.Current.Log.Error("An error occurred while configuring SSL certificate validation.", exception: ex);
             }
         }
 
