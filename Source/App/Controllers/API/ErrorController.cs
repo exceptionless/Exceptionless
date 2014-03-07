@@ -125,13 +125,13 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        public PlanPagedResult<ErrorResult> New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
+        public IHttpActionResult New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
@@ -162,18 +162,18 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
 
         // TODO: Use the cache client.
         [HttpGet]
-        public PlanPagedResult<ErrorResult> Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
@@ -205,24 +205,24 @@ namespace Exceptionless.App.Controllers.API {
 
             // TODO: Only return the Exception Type properties type name without the namespace.
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
 
         // TODO: Use the cache client.
         [HttpGet]
-        public PlanPagedResult<ErrorResult> GetByStack(string stackId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
+        public IHttpActionResult GetByStack(string stackId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException("stackId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             ErrorStack errorStack = ErrorStackRepository.GetByIdCached(stackId);
             if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
-                throw new ArgumentException("Invalid error stack id.", "stackId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
 
             if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, end.Value);
@@ -250,7 +250,7 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
     }
 }

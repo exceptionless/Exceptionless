@@ -14,6 +14,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
@@ -69,16 +70,22 @@ namespace Exceptionless.App {
             notificationSender.Listen();
         }
 
-        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs unhandledExceptionReportingEventArgs) {
+        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs args) {
+            if (args.Exception.GetType() == typeof(OperationCanceledException)
+                || args.Exception.GetType() == typeof(TaskCanceledException)) {
+                args.Cancel = true;
+                return;
+            }
+
             var p = Thread.CurrentPrincipal as ExceptionlessPrincipal;
             if (p == null)
                 return;
 
             if (p.Project != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.Project, "Project");
+                args.Error.AddObject(p.Project, "Project");
 
             if (p.UserEntity != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.UserEntity, "User");
+                args.Error.AddObject(p.UserEntity, "User");
         }
 
         private static bool? _dbIsUpToDate;

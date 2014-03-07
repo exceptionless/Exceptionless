@@ -44,30 +44,41 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        public ProjectErrorStatsResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, int page = 1, int pageSize = 10, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, int page = 1, int pageSize = 10, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
-            result.MostRecent = Recent(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
+            result.MostRecent = RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
 
-            return result;
+            return Ok(result);
         }
 
         [HttpGet]
-        public PlanPagedResult<ErrorStackResult> Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
+
+            return Ok(RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound));
+        }
+
+        public PlanPagedResult<ErrorStackResult> RecentInternal(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException();
+
+            Project project = _projectRepository.GetByIdCached(projectId);
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+                throw new ArgumentException();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
@@ -111,17 +122,17 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        public PlanPagedResult<ErrorStackResult> Frequent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Frequent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
-            return Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
+            return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
         }
 
         private PlanPagedResult<ErrorStackResult> Frequent(List<ErrorStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
@@ -161,19 +172,19 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        public StackStatsResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
+        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
             ErrorStack errorStack = _errorStackRepository.GetById(stackId);
             if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
                 throw new ArgumentException("Invalid error stack id.", "stackId"); // TODO: These should probably throw http Response exceptions.
 
             Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            return _statsHelper.GetErrorStackStats(stackId, _projectRepository.GetDefaultTimeOffset(errorStack.ProjectId), start, end, retentionUtcCutoff);
+            return Ok(_statsHelper.GetErrorStackStats(stackId, _projectRepository.GetDefaultTimeOffset(errorStack.ProjectId), start, end, retentionUtcCutoff));
         }
 
         [HttpGet]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public BillingPlanStatsModel Plans() {
+        public IHttpActionResult Plans() {
             MongoCursor<Organization> query = ((OrganizationRepository)_organizationRepository).Collection.FindAll()
                 .SetFields(OrganizationRepository.FieldNames.PlanId, OrganizationRepository.FieldNames.IsSuspended, OrganizationRepository.FieldNames.BillingPrice, OrganizationRepository.FieldNames.BillingStatus);
 
@@ -193,7 +204,7 @@ namespace Exceptionless.App.Controllers.API {
                 + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
-            return new BillingPlanStatsModel {
+            return Ok(new BillingPlanStatsModel {
                 SmallTotal = smallOrganizations.Count,
                 SmallYearlyTotal = smallYearlyOrganizations.Count,
                 MediumTotal = mediumOrganizations.Count,
@@ -208,7 +219,7 @@ namespace Exceptionless.App.Controllers.API {
                 PaidAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice > 0),
                 FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice <= 0),
                 SuspendedAccounts = results.Count(o => o.IsSuspended),
-            };
+            });
         }
     }
 }
