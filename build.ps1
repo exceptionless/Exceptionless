@@ -12,8 +12,8 @@ param($task = "default", $properties = @{})
 $scriptPath = $MyInvocation.MyCommand.Path
 $scriptDir = Split-Path $scriptPath
 
-#NuGet.exe install packages.config -OutputDirectory packages
-#NuGet.exe restore Exceptionless.sln
+nuget\NuGet.exe install nuget\packages.config -OutputDirectory packages
+nuget\NuGet.exe restore Exceptionless.sln
 Import-Module (Get-ChildItem "$scriptDir\packages\psake.*\tools\psake.psm1" | Select-Object -First 1)
 
 $psake.use_exit_on_error = $true
