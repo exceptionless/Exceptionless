@@ -833,7 +833,6 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <PropertyGroup>
     <PreBuildEvent>copy "$(SolutionDir)Source\Jobs.config" "$(ProjectDir)Jobs.config"
 copy "$(SolutionDir)Source\nlog.config" "$(ProjectDir)nlog.config"
