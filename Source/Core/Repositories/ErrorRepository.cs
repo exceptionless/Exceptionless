@@ -301,7 +301,10 @@ namespace Exceptionless.Core {
             IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
 
             var update = new UpdateBuilder();
-            update.Set(FieldNames.IsFixed, new BsonBoolean(value));
+            if (value)
+                update.Set(FieldNames.IsFixed, true);
+            else
+                update.Unset(FieldNames.IsFixed);
 
             Collection.Update(query, update);
         }
@@ -313,7 +316,10 @@ namespace Exceptionless.Core {
             IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
 
             var update = new UpdateBuilder();
-            update.Set(FieldNames.IsHidden, new BsonBoolean(value));
+            if (value)
+                update.Set(FieldNames.IsHidden, true);
+            else
+                update.Unset(FieldNames.IsHidden);
 
             Collection.Update(query, update);
         }
