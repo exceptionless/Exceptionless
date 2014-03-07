@@ -124,7 +124,7 @@ namespace Exceptionless.App {
 
             ignoreList.Ignore("*.intellisense.js");
             ignoreList.Ignore("*-vsdoc.js");
-            ignoreList.Ignore("*.debug.js", OptimizationMode.WhenEnabled);
+            //ignoreList.Ignore("*.debug.js", OptimizationMode.WhenEnabled);
             //ignoreList.Ignore("*.min.js", OptimizationMode.WhenDisabled);
             ignoreList.Ignore("*.min.css", OptimizationMode.WhenDisabled);
         }
