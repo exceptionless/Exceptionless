@@ -94,7 +94,7 @@ namespace Exceptionless.App {
 
         public static bool IsDbUpToDate() {
             lock (_dbIsUpToDateLock) {
-                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds > 10))
+                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds < 10))
                     return _dbIsUpToDate.Value;
 
                 _lastDbUpToDateCheck = DateTime.Now;
@@ -108,28 +108,16 @@ namespace Exceptionless.App {
                 if (Settings.Current.AppendMachineNameToDatabase)
                     databaseName += String.Concat("-", Environment.MachineName.ToLower());
 
-                try {
-                    _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
-                } catch (Exception e) {
-                    Log.Error().Exception(e).Message("Error checking db version: {0}", e.Message).Report().Write();
-                }
+                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
+                if (_dbIsUpToDate.Value)
+                    return true;
 
-                if (!_dbIsUpToDate.HasValue || !_dbIsUpToDate.Value) {
-                    // if enabled, auto upgrade the database
-                    if (Settings.Current.ShouldAutoUpgradeDatabase) {
-                        try {
-                            MongoMigrationChecker.EnsureLatest(connectionString, databaseName);
-                        } catch (Exception e) {
-                            Log.Error().Exception(e).Message("Error ensuring latest db version: {0}", e.Message).Report().Write();
-                        }
-                        _dbIsUpToDate = true;
-                        return true;
-                    }
+                // if enabled, auto upgrade the database
+                if (Settings.Current.ShouldAutoUpgradeDatabase)
+                    Task.Factory.StartNew(() => MongoMigrationChecker.EnsureLatest(connectionString, databaseName))
+                        .ContinueWith(_ => { _dbIsUpToDate = false; });
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
         }
 
