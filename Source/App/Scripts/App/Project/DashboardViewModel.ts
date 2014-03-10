@@ -20,24 +20,28 @@ module exceptionless.project {
             this.applyBindings();
             this._stats.subscribe(() => this.tryUpdateChart());
 
-            this.filterViewModel.selectedDateRange.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showHidden.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showFixed.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showNotFound.subscribe(() => this.retrieve(this.retrieveResource));
+            this.filterViewModel.selectedDateRange.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showHidden.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showFixed.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showNotFound.subscribe(() => this.refreshViewModelData());
             App.selectedProject.subscribe((project: models.ProjectInfo) => { 
                 var notification = '<div class="alert in fade alert-success" style="display: block;">' +
                     '<h4>We haven\'t received any data!</h4><a href="/project/' + project.id + '/configure">Configure your client</a> and start becoming exceptionless in less than 60 seconds!</div>';
 
                 $(Constants.NOTIFICATION_SYSTEM_ID).html(project.totalErrorCount === 0 ? notification : '');
 
-                this.retrieve(this.retrieveResource);
+                this.refreshViewModelData();
             });
 
             this._pagedRecentErrorsViewModel = new error.PagedRecentErrorsViewModel(recentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
             this._pagedFrequentErrorStackStatsViewModel = new stats.PagedFrequentErrorStackStatsViewModel(frequentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate, this._frequentErrorStacks);
-            this.loading.subscribe((isLoading) => this._pagedFrequentErrorStackStatsViewModel.loading(isLoading));
 
-            this.retrieve(this.retrieveResource);
+            this.refreshViewModelData();
+        }
+
+        public refreshViewModelData() {
+            this._pagedFrequentErrorStackStatsViewModel.loading(true);
+            super.refreshViewModelData();
         }
 
         public populateViewModel(data?: any) {

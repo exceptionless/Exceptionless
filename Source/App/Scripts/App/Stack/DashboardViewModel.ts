@@ -79,18 +79,16 @@ module exceptionless.stack {
             this.applyBindings();
 
             exceptionless.App.onStackUpdated.subscribe((value: any) => {
-                if (value.stackId === this._errorStackId && this.canRetrieve) {
-                    this.updating(true);
+                if (value.stackId === this._errorStackId && this.canRetrieve)
                     this.refreshViewModelData();
-                }
             });
 
-            this.filterViewModel.selectedDateRange.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showHidden.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showFixed.subscribe(() => this.retrieve(this.retrieveResource));
-            this.filterViewModel.showNotFound.subscribe(() => this.retrieve(this.retrieveResource));
+            this.filterViewModel.selectedDateRange.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showHidden.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showFixed.subscribe(() => this.refreshViewModelData());
+            this.filterViewModel.showNotFound.subscribe(() => this.refreshViewModelData());
 
-            this.retrieve(this.retrieveResource);
+            this.refreshViewModelData();
             this._pagedErrorsByErrorStackIdViewModel = new error.PagedErrorsByErrorStackIdViewModel(recentElementId, errorStackId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
         }
 
@@ -347,7 +345,7 @@ module exceptionless.stack {
                 this.populateViewModel(data);
             });
 
-            this.retrieve(this.retrieveResource);
+            this.refreshViewModelData();
         }
 
         public get canRetrieve(): boolean {

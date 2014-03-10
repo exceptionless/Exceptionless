@@ -30,7 +30,7 @@ module exceptionless.admin {
             this._adminSearchablePagedOrganizationViewModel = new AdminSearchablePagedOrganizationViewModel(organizationsElementId, '/organization', '/list', emailAddress, pageSize, autoUpdate);            
 
             this.applyBindings();
-            this.retrieve(this.retrieveResource);
+            this.refreshViewModelData();
         }
 
         public populateViewModel(data?: any) {

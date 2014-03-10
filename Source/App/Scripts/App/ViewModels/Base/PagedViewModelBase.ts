@@ -20,7 +20,7 @@ module exceptionless {
             this.pager = new PagerViewModel(elementId + '-page', 0, pageSize);
             this.pager.currentPage.subscribe(() => {
                 $.scrollTo('#' + elementId, { offset: { top: -110 } });
-                this.retrieve(this.retrieveResource);
+                this.refreshViewModelData();
             });
 
             if (data) {
@@ -34,7 +34,7 @@ module exceptionless {
             }
 
             if (!data || this.pager.currentPage() !== 1)
-                this.retrieve(this.retrieveResource);
+                this.refreshViewModelData();
 
             this.saveItemCommand = ko.asyncCommand({
                 canExecute: (isExecuting) => {

@@ -84,17 +84,13 @@ module exceptionless {
             });
 
             App.onStackUpdated.subscribe(() => {
-                if (this.canRetrieve) {
-                    this.updating(true);
+                if (this.canRetrieve)
                     this.refreshViewModelData();
-                }
             });
 
             App.onErrorOccurred.subscribe(() => {
-                if (this.canRetrieve) {
-                    this.updating(true);
+                if (this.canRetrieve)
                     this.refreshViewModelData();
-                }
             });
 
             App.selectedPlan.subscribe((plan: account.BillingPlan) => {

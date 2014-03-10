@@ -19,17 +19,13 @@ module exceptionless {
                 this._navigationViewModel = new NavigationViewModel(navigationElementId, this.projectListViewModel);
 
             App.onStackUpdated.subscribe(() => {
-                if (this.canRetrieve) {
-                    this.updating(true);
+                if (this.canRetrieve)
                     this.refreshViewModelData();
-                }
             });
 
             App.onErrorOccurred.subscribe(() => {
-                if (this.canRetrieve) {
-                    this.updating(true);
+                if (this.canRetrieve)
                     this.refreshViewModelData();
-                }
             });
 
             App.selectedPlan.subscribe((plan: account.BillingPlan) => {
