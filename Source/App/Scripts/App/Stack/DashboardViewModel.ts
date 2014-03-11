@@ -345,7 +345,7 @@ module exceptionless.stack {
                 this.populateViewModel(data);
             });
 
-            this.refreshViewModelData();
+            this.retrieve(this.retrieveResource);
         }
 
         public get canRetrieve(): boolean {
