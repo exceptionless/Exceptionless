@@ -229,6 +229,7 @@
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Migrations\v1.0.25.cs" />
     <Compile Include="Migrations\v1.0.24.cs" />
     <Compile Include="Migrations\v1.0.23.cs" />
@@ -256,6 +257,7 @@
     <Compile Include="AppStats\NullAppStatsClient.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
+    <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
     <Compile Include="Utility\DataHelper.cs" />

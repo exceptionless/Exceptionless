@@ -71,9 +71,9 @@ namespace Exceptionless.App.Controllers.API {
                 value.ProjectId = User.Project.Id;
                 value.OrganizationId = User.Project.OrganizationId;
             }
-
+            
             if (value.OccurrenceDate == DateTimeOffset.MinValue)
-                value.OccurrenceDate = DateTimeOffset.UtcNow;
+                value.OccurrenceDate = DateTimeOffset.Now;
 
             string message = User == null ? String.Format("Inserting error '{0}'.", value.Id) : String.Format("Inserting error '{0}' with API key '{1}'.", value.Id, User.Identity.Name);
             if (value.RequestInfo != null)
