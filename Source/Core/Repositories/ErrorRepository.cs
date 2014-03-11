@@ -573,7 +573,7 @@ namespace Exceptionless.Core {
                                                    Query.And(
                                                              Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(error.ErrorStackId))),
                                                        Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(error.Id))),
-                                                       Query.LTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.Ticks)));
+                                                       Query.LTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.UtcTicks)));
 
             cursor.SetSortOrder(SortBy.Descending(FieldNames.OccurrenceDate_UTC));
             cursor.SetLimit(10);
@@ -590,7 +590,7 @@ namespace Exceptionless.Core {
             // we have records with the exact same occurrence date, we need to figure out the order of those
             // put our target error into the mix, sort it and return the result before the target
             var unionResults = results.Union(new[] { Tuple.Create(error.Id, error.OccurrenceDate) })
-                .OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1)
+                .OrderBy(t => t.Item2.UtcTicks).ThenBy(t => t.Item1)
                 .ToList();
 
             var index = unionResults.FindIndex(t => t.Item1 == error.Id);
@@ -606,7 +606,7 @@ namespace Exceptionless.Core {
                                                    Query.And(
                                                              Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(error.ErrorStackId))),
                                                        Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(error.Id))),
-                                                       Query.GTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.Ticks)));
+                                                       Query.GTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.UtcTicks)));
 
             cursor.SetSortOrder(SortBy.Ascending(FieldNames.OccurrenceDate_UTC));
             cursor.SetLimit(10);

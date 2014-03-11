@@ -44,7 +44,7 @@ namespace MongoMigrations {
 
         public virtual AppliedMigration GetLastAppliedMigration() {
             return GetMigrationsCollection()
-                .FindAll()
+                .Find(Query.NE("CompletedOn", String.Empty))
                 .ToList() // in memory but this will never get big enough to matter
                 .OrderByDescending(v => v.Version)
                 .FirstOrDefault();
@@ -52,12 +52,15 @@ namespace MongoMigrations {
 
         public virtual AppliedMigration StartMigration(Migration migration) {
             var appliedMigration = new AppliedMigration(migration);
+            var collection = GetMigrationsCollection();
+            long docCount = collection.Count();
+            appliedMigration.TotalCount = docCount;
             GetMigrationsCollection().Insert(appliedMigration);
             return appliedMigration;
         }
 
         public virtual void SetMigrationLastId(MigrationVersion version, string id) {
-            GetMigrationsCollection().Update(Query.EQ("_id", new BsonString(version.ToString())), Update.Set("LastCompletedId", id));
+            GetMigrationsCollection().Update(Query.EQ("_id", new BsonString(version.ToString())), Update.Set("LastCompletedId", id).Inc("CompletedCount", 1));
         }
 
         public virtual void CompleteMigration(AppliedMigration appliedMigration) {
