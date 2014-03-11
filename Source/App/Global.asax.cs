@@ -168,6 +168,9 @@ namespace Exceptionless.App {
 
         private void RedirectToMaintenancePage() {
             string path = Request.Path.ToLower();
+            if (path.Equals("/status"))
+                return;
+
             if (path.StartsWith("/api")) {
                 Response.Clear();
                 Response.StatusCode = 503;
