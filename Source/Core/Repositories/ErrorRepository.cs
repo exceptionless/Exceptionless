@@ -17,6 +17,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using ServiceStack.CacheAccess;
@@ -120,7 +121,7 @@ namespace Exceptionless.Core {
 
         protected override void InitializeCollection(MongoCollection<Error> collection) {
             base.InitializeCollection(collection);
-
+            
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
             collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Code));
@@ -132,7 +133,7 @@ namespace Exceptionless.Core {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.ErrorStackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.OccurrenceDate).SetElementName(FieldNames.OccurrenceDate);
+            cm.GetMemberMap(c => c.OccurrenceDate).SetElementName(FieldNames.OccurrenceDate).SetSerializer(new UtcDateTimeOffsetSerializer());
             cm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Error)obj).Tags.Any());
             cm.GetMemberMap(c => c.UserEmail).SetElementName(FieldNames.UserEmail).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.UserName).SetElementName(FieldNames.UserName).SetIgnoreIfNull(true);

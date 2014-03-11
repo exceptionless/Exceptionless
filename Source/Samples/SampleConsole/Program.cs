@@ -47,9 +47,9 @@ namespace SampleConsole {
                 if (keyInfo.Key == ConsoleKey.D2)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 100, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D3)
-                    SendContinuousErrors(1000, token, uniqueCount: 5);
+                    SendContinuousErrors(1000, token, randomizeDates: true, uniqueCount: 5, maxDaysOld: 1);
                 else if (keyInfo.Key == ConsoleKey.D4)
-                    SendContinuousErrors(50, token, uniqueCount: 5);
+                    SendContinuousErrors(50, token, randomizeDates: true, uniqueCount: 5);
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D6)
@@ -68,7 +68,7 @@ namespace SampleConsole {
             }
         }
 
-        private static void SendContinuousErrors(int delay, CancellationToken token, bool randomizeDates = false, int maxErrors = Int32.MaxValue, int uniqueCount = 1, bool randomizeCritical = true) {
+        private static void SendContinuousErrors(int delay, CancellationToken token, bool randomizeDates = false, int maxErrors = Int32.MaxValue, int uniqueCount = 1, bool randomizeCritical = true, int maxDaysOld = 90) {
             _sendingContinuous = true;
             Console.WriteLine();
             Console.WriteLine("Press 's' to stop sending.");
@@ -87,7 +87,7 @@ namespace SampleConsole {
                         break;
                     }
 
-                    SendError(randomizeDates, errorCodeList.Random(), randomizeCritical ? RandomHelper.GetBool() : false, writeToConsole: false);
+                    SendError(randomizeDates, errorCodeList.Random(), randomizeCritical ? RandomHelper.GetBool() : false, writeToConsole: false, maxDaysOld: maxDaysOld);
                     errorCount++;
 
                     Console.SetCursorPosition(0, 13);
@@ -99,7 +99,7 @@ namespace SampleConsole {
             }, token);
         }
 
-        private static void SendError(bool randomizeDates = false, int? errorCode = null, bool critical = false, bool writeToConsole = true) {
+        private static void SendError(bool randomizeDates = false, int? errorCode = null, bool critical = false, bool writeToConsole = true, int maxDaysOld = 90) {
             if (!errorCode.HasValue)
                 errorCode = _random.Next();
 
@@ -114,7 +114,7 @@ namespace SampleConsole {
                         SomeField10 = "testing"
                     }, "Object From Code");
                 if (randomizeDates)
-                    err.Target.OccurrenceDate = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-90), maximum: DateTime.Now);
+                    err.Target.OccurrenceDate = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
                 if (critical)
                     err.MarkAsCritical();
                 if (ExceptionlessClient.Current.Configuration.GetBoolean("IncludeConditionalData"))
