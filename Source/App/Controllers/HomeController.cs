@@ -86,8 +86,6 @@ namespace Exceptionless.App.Controllers {
                     return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB Schema Outdated");
 
                 var user = _userRepository.All().Take(1).FirstOrDefault();
-                if (user == null)
-                    return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB cant retrieve");
             } catch (Exception ex) {
                 return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo Not Working: " + ex.Message);
             }
