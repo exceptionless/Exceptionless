@@ -25,6 +25,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Core.Web.OData;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Bson;
@@ -64,6 +65,9 @@ namespace Exceptionless.App.Controllers.API {
         public override HttpResponseMessage Post(Error value) {
             if (value == null)
                 return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid error posted.");
+
+            if (_cacheClient.TryGet<bool>("ApiDisabled", false))
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
 
             _stats.Counter(StatNames.ErrorsSubmitted);
 

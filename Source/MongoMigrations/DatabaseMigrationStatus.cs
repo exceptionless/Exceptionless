@@ -52,8 +52,11 @@ namespace MongoMigrations {
 
         public virtual AppliedMigration StartMigration(Migration migration) {
             var appliedMigration = new AppliedMigration(migration);
-            var collection = GetMigrationsCollection();
-            long docCount = collection.Count();
+            long docCount = 0;
+            if (migration is CollectionMigration) {
+                var collection = ((CollectionMigration)migration).GetCollection();
+                docCount = collection.Count();
+            }
             appliedMigration.TotalCount = docCount;
             GetMigrationsCollection().Insert(appliedMigration);
             return appliedMigration;

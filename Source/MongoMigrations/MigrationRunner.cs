@@ -44,8 +44,8 @@ namespace MongoMigrations {
         protected virtual void ApplyMigration(Migration migration) {
             Trace.TraceInformation("Applying migration \"{0}\" for version {1} to database \"{2}\".", migration.Description, migration.Version, Database.Name);
 
-            var appliedMigration = DatabaseStatus.StartMigration(migration);
             migration.Database = Database;
+            var appliedMigration = DatabaseStatus.StartMigration(migration);
             try {
                 var m = migration as CollectionMigration;
                 if (m != null) {
