@@ -10,9 +10,11 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Web.Mvc;
 using Exceptionless.App.Hubs;
+using Exceptionless.Core;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
@@ -21,11 +23,13 @@ namespace Exceptionless.App.Controllers {
         private readonly ICacheClient _cacheClient;
         private readonly IRedisClientsManager _clientsManager;
         private readonly NotificationSender _notificationSender;
+        private readonly IUserRepository _userRepository;
 
-        public HomeController(ICacheClient cacheClient, IRedisClientsManager clientsManager, NotificationSender notificationSender) {
+        public HomeController(ICacheClient cacheClient, IRedisClientsManager clientsManager, NotificationSender notificationSender, IUserRepository userRepository) {
             _cacheClient = cacheClient;
             _clientsManager = clientsManager;
             _notificationSender = notificationSender;
+            _userRepository = userRepository;
         }
 
         public ActionResult Index() {
@@ -80,6 +84,10 @@ namespace Exceptionless.App.Controllers {
             try {
                 if (!GlobalApplication.IsDbUpToDate())
                     return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB Schema Outdated");
+
+                var user = _userRepository.All().Take(1).FirstOrDefault();
+                if (user == null)
+                    return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB cant retrieve");
             } catch (Exception ex) {
                 return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo Not Working: " + ex.Message);
             }
