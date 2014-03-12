@@ -77,6 +77,7 @@
 $config = @{}
 
 foreach ($param in $OctopusParameters.keys) {
+  Write-Host "$param = $OctopusParameters[$param]"
   if ($param.StartsWith("appSettings.")) {
     if ($config["appSettings"] -eq $null) {
         $config["appSettings"] = @{}
