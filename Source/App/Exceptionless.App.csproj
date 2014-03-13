@@ -451,7 +451,7 @@
     <Content Include="Content\fonts\fontawesome-webfont.eot" />
     <Content Include="Content\fonts\FontAwesome.otf" />
     <Content Include="Exceptionless.App.nuspec" />
-    <Content Include="PostDeploy.ps1" />
+    <Content Include="PreDeploy.ps1" />
     <Content Include="Content\toastr.css.map">
       <DependentUpon>toastr.css</DependentUpon>
     </Content>
