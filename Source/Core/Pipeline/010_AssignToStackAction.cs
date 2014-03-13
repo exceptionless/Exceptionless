@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool IsCritical { get { return true; } }
 
         public override void Process(ErrorPipelineContext ctx) {
-            ctx.StackingInfo = ctx.Error.GetStackingInfo();
+            ctx.StackingInfo = ctx.Error.GetStackingInfo(_signatureFactory);
             if (String.IsNullOrEmpty(ctx.Error.ErrorStackId)) {
                 if (_stackRepository == null)
                     throw new InvalidOperationException("You must pass a non-null stackRepository parameter to the constructor.");
@@ -41,8 +41,6 @@ namespace Exceptionless.Core.Pipeline {
                 Log.Trace().Message("Error did not specify an ErrorStackId.").Write();
                 var signature = _signatureFactory.GetSignature(ctx.Error);
                 ctx.StackingInfo = ctx.Error.GetStackingInfo();
-                Log.Trace().Message("Created Error Signature. Error is null: {0}", ctx.Error == null).Write();
-
                 // Set Path to be the only thing we stack on for 404 errors
                 if (ctx.Error.Code == "404" && ctx.Error.RequestInfo != null) {
                     Log.Trace().Message("Updating SignatureInfo for 404 error.").Write();

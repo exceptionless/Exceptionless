@@ -27,6 +27,7 @@ using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Controllers {
     public class ErrorControllerTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, IErrorRepository> {
@@ -171,25 +172,22 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
-        [Fact]
-        public void PostJsonErrors() {
+        [Theory]
+        [PropertyData("Errors")]
+        public void PostJsonErrors(string errorFilePath) {
             SetValidApiKey();
 
-            IEnumerable<FileInfo> files = new DirectoryInfo(Path.GetFullPath(@"..\..\ErrorData\")).GetFiles().Where(f => !f.Name.EndsWith(".expected.json"));
-            
-            foreach (FileInfo file in files) {
-                JObject jObject = JObject.Parse(File.ReadAllText(file.FullName));
-                Assert.NotNull(jObject);
+            JObject jObject = JObject.Parse(File.ReadAllText(errorFilePath));
+            Assert.NotNull(jObject);
 
-                DocumentUpgrader.Current.Upgrade<Error>(jObject);
+            DocumentUpgrader.Current.Upgrade<Error>(jObject);
 
-                Error error = null;
-                Assert.Null(Record.Exception(() => error = JsonConvert.DeserializeObject<Error>(jObject.ToString())));
-                Assert.NotNull(error);
+            Error error = null;
+            Assert.Null(Record.Exception(() => error = JsonConvert.DeserializeObject<Error>(jObject.ToString())));
+            Assert.NotNull(error);
 
-                HttpResponseMessage response = PostResponse(error);
-                Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            }
+            HttpResponseMessage response = PostResponse(error);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
         [Fact]
@@ -370,6 +368,16 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public void Batch() {
             // TODO: Add batch unit tests.
+        }
+
+        public static IEnumerable<object[]> Errors {
+            get {
+                var result = new List<object[]>();
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                    result.Add(new object[] { file });
+
+                return result.ToArray();
+            }
         }
 
         private HttpResponseMessage GetResponseMessage(string id) {

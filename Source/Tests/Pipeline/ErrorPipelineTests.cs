@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
@@ -18,7 +20,9 @@ using Exceptionless.Membership;
 using Exceptionless.Models;
 using Exceptionless.Tests.Controllers.Base;
 using Exceptionless.Tests.Utility;
+using Newtonsoft.Json;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Pipeline {
     public class ErrorPipelineTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, ErrorRepository> {
@@ -142,6 +146,32 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.DoesNotThrow(() => pipeline.Run(error));
             stack = _errorStackRepository.GetById(error.ErrorStackId);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
+        }
+
+        [Theory]
+        [PropertyData("Errors")]
+        public void ProcessErrors(string errorFilePath) {
+            // TODO: We currently fail to process this error due to https://jira.mongodb.org/browse/CSHARP-930
+            if (errorFilePath.Contains("881")) 
+                return;
+
+            var pipeline = IoC.GetInstance<ErrorPipeline>();
+            var error = JsonConvert.DeserializeObject<Error>(File.ReadAllText(errorFilePath));
+            Assert.NotNull(error);
+            error.ProjectId = TestConstants.ProjectId;
+            error.OrganizationId = TestConstants.OrganizationId;
+
+            Assert.DoesNotThrow(() => pipeline.Run(error));
+        }
+
+        public static IEnumerable<object[]> Errors {
+            get {
+                var result = new List<object[]>();
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.expected.json", SearchOption.AllDirectories))
+                    result.Add(new object[] { file });
+
+                return result.ToArray();
+            }
         }
 
         protected override void CreateData() {

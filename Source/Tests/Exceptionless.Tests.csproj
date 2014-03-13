@@ -239,6 +239,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
     </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GlobalAssemblyInfo.cs">
@@ -312,6 +315,8 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="ErrorData\1858.expected.json" />
+    <None Include="ErrorData\1858.json" />
     <None Include="ErrorData\1477.expected.json" />
     <None Include="ErrorData\1477.json" />
     <None Include="ErrorData\404WithNoRequestInfo.json" />

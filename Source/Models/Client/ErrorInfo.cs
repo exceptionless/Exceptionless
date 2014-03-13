@@ -58,13 +58,13 @@ namespace Exceptionless.Models {
         public Method TargetMethod { get; set; }
 
         public override string ToString() {
-            var sb = new StringBuilder(255);
+            var sb = new StringBuilder(2048);
             AppendError(sb);
             return sb.ToString().Trim();
         }
 
         public string ToHtmlString() {
-            var sb = new StringBuilder(255);
+            var sb = new StringBuilder(4096);
             AppendError(sb, true, traceIndentValue: " ");
             return sb.ToString().Trim();
         }
