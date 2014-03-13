@@ -120,9 +120,11 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\JavaScriptEngineSwitcher.Core.1.1.0\lib\net40\JavaScriptEngineSwitcher.Core.dll</HintPath>
     </Reference>
-    <Reference Include="JavaScriptEngineSwitcher.Msie, Version=1.1.2.0, Culture=neutral, PublicKeyToken=c608b2a8cc9e4472, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Msie.1.1.2\lib\net40\JavaScriptEngineSwitcher.Msie.dll</HintPath>
+    <Reference Include="JavaScriptEngineSwitcher.Jurassic">
+      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.0\lib\net40\JavaScriptEngineSwitcher.Jurassic.dll</HintPath>
+    </Reference>
+    <Reference Include="Jurassic">
+      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.0\lib\net40\Jurassic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.0.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -167,10 +169,6 @@
     </Reference>
     <Reference Include="Mono.Math">
       <HintPath>..\..\packages\DotNetOpenAuth.OpenId.Core.4.3.4.13329\lib\net45-full\Mono.Math.dll</HintPath>
-    </Reference>
-    <Reference Include="MsieJavaScriptEngine, Version=1.4.0.0, Culture=neutral, PublicKeyToken=a3a2846a37ac0d3e, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\MsieJavaScriptEngine.1.4.0\lib\net40\MsieJavaScriptEngine.dll</HintPath>
     </Reference>
     <Reference Include="MVC Foolproof Validation">
       <HintPath>..\..\packages\foolproof.0.9.4517\lib\MVC Foolproof Validation.dll</HintPath>
