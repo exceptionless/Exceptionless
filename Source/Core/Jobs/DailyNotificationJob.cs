@@ -48,7 +48,10 @@ namespace Exceptionless.Core.Jobs {
             IMongoQuery query = Query.LT(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * 9)));
             UpdateBuilder update = Update.Inc(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
 
-            var projects = _projectRepository.Collection.FindAs<Project>(query).SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks).SetLimit(BATCH_SIZE).ToList();
+            var projects = _projectRepository.Collection.FindAs<Project>(query)
+                .SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks)
+                .SetLimit(BATCH_SIZE).ToList();
+
             while (projects.Count > 0) {
                 IMongoQuery queryWithProjectIds = Query.And(Query.In(ProjectRepository.FieldNames.Id, projects.Select(p => new BsonObjectId(new ObjectId(p.Id)))), query);
                 var result = _projectRepository.Collection.Update(queryWithProjectIds, update, UpdateFlags.Multi);
@@ -78,7 +81,9 @@ namespace Exceptionless.Core.Jobs {
                         Log.Error().Message("Message Factory is null").Write();
                 }
 
-                projects = _projectRepository.Collection.FindAs<Project>(query).SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks).SetLimit(BATCH_SIZE).ToList();
+                projects = _projectRepository.Collection.FindAs<Project>(query)
+                    .SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks)
+                    .SetLimit(BATCH_SIZE).ToList();
             }
 
             return new JobResult {

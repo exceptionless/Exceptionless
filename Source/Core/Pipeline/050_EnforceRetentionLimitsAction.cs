@@ -38,8 +38,9 @@ namespace Exceptionless.Core.Pipeline {
             if (organization != null)
                 maxErrorsPerStack = organization.MaxErrorsPerDay > 0 ? organization.MaxErrorsPerDay + Math.Min(50, organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
 
-            // get a list of oldest ids that exceed our desired max errors
-            var errors = _errorRepository.Collection.Find(Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.Error.ErrorStackId))))
+            // Get a list of oldest ids that exceed our desired max errors.
+            var errors = _errorRepository.Collection.Find(
+                Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.Error.ErrorStackId))))
                 .SetSortOrder(SortBy.Descending(ErrorRepository.FieldNames.OccurrenceDate_UTC))
                 .SetFields(ErrorRepository.FieldNames.Id)
                 .SetSkip(maxErrorsPerStack)
