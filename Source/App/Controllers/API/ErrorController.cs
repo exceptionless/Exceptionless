@@ -154,6 +154,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -199,6 +201,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize, out count).ToList();

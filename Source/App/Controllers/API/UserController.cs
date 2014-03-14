@@ -62,6 +62,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
 

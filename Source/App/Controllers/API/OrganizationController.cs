@@ -71,6 +71,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             var queries = new List<IMongoQuery>();
             if (!String.IsNullOrWhiteSpace(criteria))
@@ -132,6 +134,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             Organization organization = _repository.GetByIdCached(id);
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))

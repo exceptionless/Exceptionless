@@ -103,6 +103,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             return base.Get().Skip(skip).Take(pageSize).Select(p => {
                 ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
@@ -124,6 +126,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             List<Project> projects = _repository.GetByOrganizationId(organizationId).ToList();
             List<ProjectInfoModel> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {

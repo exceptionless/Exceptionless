@@ -96,6 +96,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<ErrorStack> query = _errorStackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -142,6 +144,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList(), totalLimitedByPlan);
             IQueryable<ErrorStack> errorStacks = _errorStackRepository.GetByIds(ers.Results.Select(s => s.Id));
