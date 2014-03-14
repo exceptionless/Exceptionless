@@ -395,7 +395,8 @@ namespace Exceptionless.Core {
         public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
             const int batchSize = 150;
 
-            var errors = Collection.Find(Query.And(Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
+            var errors = Collection.Find(Query.And(
+                Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
                 Query.LT(FieldNames.OccurrenceDate_UTC, utcCutoffDate.Ticks)))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)

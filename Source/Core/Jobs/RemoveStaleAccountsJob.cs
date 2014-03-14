@@ -58,7 +58,9 @@ namespace Exceptionless.Core.Jobs {
 
             int skip = 0;
             var organizations = _organizationRepository.Collection.FindAs<Organization>(
-                                                                                        Query.And(Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
+                Query.And(
+                    Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), 
+                    Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
                 .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
                 .SetLimit(20).SetSkip(skip).ToList();
 
@@ -68,7 +70,9 @@ namespace Exceptionless.Core.Jobs {
 
                 skip += 20;
                 organizations = _organizationRepository.Collection.FindAs<Organization>(
-                                                                                        Query.And(Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
+                    Query.And(
+                        Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), 
+                        Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
                     .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
                     .SetLimit(20).SetSkip(skip).ToList();
             }
