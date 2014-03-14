@@ -121,12 +121,13 @@ namespace Exceptionless.Core {
 
         protected override void InitializeCollection(MongoCollection<Error> collection) {
             base.InitializeCollection(collection);
-            
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Code));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.ErrorStackId, FieldNames.OccurrenceDate_UTC));
+
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.OccurrenceDate_UTC), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Code), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Descending(FieldNames.ErrorStackId, FieldNames.OccurrenceDate_UTC), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Error> cm) {
@@ -394,8 +395,7 @@ namespace Exceptionless.Core {
         public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
             const int batchSize = 150;
 
-            var errors = Collection.Find(Query.And(
-                                                   Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
+            var errors = Collection.Find(Query.And(Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
                 Query.LT(FieldNames.OccurrenceDate_UTC, utcCutoffDate.Ticks)))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
@@ -411,7 +411,7 @@ namespace Exceptionless.Core {
                 Delete(errors);
 
                 errors = Collection.Find(Query.And(
-                                                   Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
+                    Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
                     Query.LT(FieldNames.OccurrenceDate_UTC, utcCutoffDate.Ticks)))
                     .SetLimit(batchSize)
                     .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
@@ -420,8 +420,7 @@ namespace Exceptionless.Core {
                         OrganizationId = e.OrganizationId,
                         ProjectId = e.ProjectId,
                         ErrorStackId = e.ErrorStackId
-                    })
-                    .ToArray();
+                    }).ToArray();
             }
         }
 
@@ -429,7 +428,7 @@ namespace Exceptionless.Core {
             const int batchSize = 150;
 
             var errors = Collection.Find(Query.And(
-                                                   Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
+                Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
                 Query.GTE(FieldNames.OccurrenceDate_UTC, utcStartDate.Ticks),
                 Query.LTE(FieldNames.OccurrenceDate_UTC, utcEndDate.Ticks)))
                 .SetLimit(batchSize)
@@ -459,7 +458,7 @@ namespace Exceptionless.Core {
                 //}
 
                 errors = Collection.Find(Query.And(
-                                                   Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
+                    Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
                     Query.GTE(FieldNames.OccurrenceDate_UTC, utcStartDate.Ticks),
                     Query.LTE(FieldNames.OccurrenceDate_UTC, utcEndDate.Ticks)))
                     .SetLimit(batchSize)
