@@ -12,6 +12,7 @@
 using System;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Driver.Builders;
 using MongoMigrations;
 
 namespace Exceptionless.Core.Migrations {
@@ -19,6 +20,10 @@ namespace Exceptionless.Core.Migrations {
         public ErrorOccurrenceDateLocalToUtcMigration()
             : base("1.0.27", ErrorRepository.CollectionName) {
             Description = "Change occurrence date ticks to be stored in utc ticks.";
+        }
+
+        public override IMongoQuery Filter() {
+            return Query.GT(ErrorRepository.FieldNames.Id, new ObjectId("8000000088e20d1ee801b3c2"));
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {

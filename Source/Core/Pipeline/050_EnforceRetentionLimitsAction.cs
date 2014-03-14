@@ -50,7 +50,8 @@ namespace Exceptionless.Core.Pipeline {
                     OrganizationId = ctx.Error.OrganizationId,
                     ProjectId = ctx.Error.ProjectId,
                     ErrorStackId = ctx.Error.ErrorStackId
-                }).ToArray();
+                })
+                .ToArray();
 
             if (errors.Length > 0)
                 _errorRepository.Delete(errors);
