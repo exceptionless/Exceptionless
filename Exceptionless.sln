@@ -7,13 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.App", "Source
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Models", "Source\Models\Exceptionless.Models.csproj", "{A14E78DE-A085-4647-BA2D-E6237D7D8057}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{59AD0561-9148-4243-BD54-87FDC70F9A3B}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-		.nuget\NuGet.exe = .nuget\NuGet.exe
-		.nuget\NuGet.targets = .nuget\NuGet.targets
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Tests", "Source\Tests\Exceptionless.Tests.csproj", "{713D0F53-1052-4F0C-8872-5B0050056022}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSmith.Core", "Source\CodeSmith.Core\CodeSmith.Core.csproj", "{C2E6E845-B50D-45B8-B188-E2F63B3E468F}"

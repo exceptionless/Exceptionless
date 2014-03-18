@@ -14,6 +14,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
@@ -69,16 +70,22 @@ namespace Exceptionless.App {
             notificationSender.Listen();
         }
 
-        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs unhandledExceptionReportingEventArgs) {
+        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs args) {
+            if (args.Exception.GetType() == typeof(OperationCanceledException)
+                || args.Exception.GetType() == typeof(TaskCanceledException)) {
+                args.Cancel = true;
+                return;
+            }
+
             var p = Thread.CurrentPrincipal as ExceptionlessPrincipal;
             if (p == null)
                 return;
 
             if (p.Project != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.Project, "Project");
+                args.Error.AddObject(p.Project, "Project");
 
             if (p.UserEntity != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.UserEntity, "User");
+                args.Error.AddObject(p.UserEntity, "User");
         }
 
         private static bool? _dbIsUpToDate;
@@ -87,7 +94,7 @@ namespace Exceptionless.App {
 
         public static bool IsDbUpToDate() {
             lock (_dbIsUpToDateLock) {
-                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds > 10))
+                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds < 10))
                     return _dbIsUpToDate.Value;
 
                 _lastDbUpToDateCheck = DateTime.Now;
@@ -101,28 +108,16 @@ namespace Exceptionless.App {
                 if (Settings.Current.AppendMachineNameToDatabase)
                     databaseName += String.Concat("-", Environment.MachineName.ToLower());
 
-                try {
-                    _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
-                } catch (Exception e) {
-                    Log.Error().Exception(e).Message("Error checking db version: {0}", e.Message).Report().Write();
-                }
+                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
+                if (_dbIsUpToDate.Value)
+                    return true;
 
-                if (!_dbIsUpToDate.HasValue || !_dbIsUpToDate.Value) {
-                    // if enabled, auto upgrade the database
-                    if (Settings.Current.ShouldAutoUpgradeDatabase) {
-                        try {
-                            MongoMigrationChecker.EnsureLatest(connectionString, databaseName);
-                        } catch (Exception e) {
-                            Log.Error().Exception(e).Message("Error ensuring latest db version: {0}", e.Message).Report().Write();
-                        }
-                        _dbIsUpToDate = true;
-                        return true;
-                    }
+                // if enabled, auto upgrade the database
+                if (Settings.Current.ShouldAutoUpgradeDatabase)
+                    Task.Factory.StartNew(() => MongoMigrationChecker.EnsureLatest(connectionString, databaseName))
+                        .ContinueWith(_ => { _dbIsUpToDate = false; });
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
         }
 
@@ -173,6 +168,9 @@ namespace Exceptionless.App {
 
         private void RedirectToMaintenancePage() {
             string path = Request.Path.ToLower();
+            if (path.Equals("/status"))
+                return;
+
             if (path.StartsWith("/api")) {
                 Response.Clear();
                 Response.StatusCode = 503;

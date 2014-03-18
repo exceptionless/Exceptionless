@@ -89,21 +89,14 @@ task BuildClient -depends Init {
                 Continue;
             }
 
-            $assemblyOriginatorKeyFile = $sign_file
-            If ($($p.Name) -eq "Exceptionless.Nancy") {
-                $assemblyOriginatorKeyFile = $null 
-            }
-
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
             
             TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersion))" 
             exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
-                /p:AssemblyOriginatorKeyFile="$assemblyOriginatorKeyFile" `
                 /p:Configuration="$configuration" `
                 /p:Platform="AnyCPU" `
                 /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
                 /p:OutputPath="$outputDirectory" `
-                /p:SignAssembly=true `
                 /p:TargetFrameworkVersion="$($b.TargetFrameworkVersion)" `
                 /t:"Rebuild" }
             
@@ -227,7 +220,7 @@ task PackageClient -depends TestClient {
         $packageDir = "$deploy_dir\ClientPackages"
         Create-Directory $packageDir
 
-        exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
+        exec { & $base_dir\nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
     }
 
     Delete-Directory "$build_dir\$configuration"
@@ -243,9 +236,9 @@ task PackageServer -depends TestServer {
     Create-Directory $packageDir
 
     TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
-    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
     TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
-    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 
     TeamCity-ReportBuildProgress ""
 }

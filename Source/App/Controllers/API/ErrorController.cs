@@ -25,6 +25,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Core.Web.OData;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Bson;
@@ -65,15 +66,18 @@ namespace Exceptionless.App.Controllers.API {
             if (value == null)
                 return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid error posted.");
 
+            if (_cacheClient.TryGet<bool>("ApiDisabled", false))
+                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+
             _stats.Counter(StatNames.ErrorsSubmitted);
 
             if (User != null && User.Project != null) {
                 value.ProjectId = User.Project.Id;
                 value.OrganizationId = User.Project.OrganizationId;
             }
-
+            
             if (value.OccurrenceDate == DateTimeOffset.MinValue)
-                value.OccurrenceDate = DateTimeOffset.UtcNow;
+                value.OccurrenceDate = DateTimeOffset.Now;
 
             string message = User == null ? String.Format("Inserting error '{0}'.", value.Id) : String.Format("Inserting error '{0}' with API key '{1}'.", value.Id, User.Identity.Name);
             if (value.RequestInfo != null)
@@ -124,56 +128,15 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanUpdateEntity(original, value);
         }
 
-        [HttpGet]
-        public PlanPagedResult<ErrorResult> New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
-
-            Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
-
-            start = start ?? DateTime.MinValue;
-            end = end ?? DateTime.MaxValue;
-
-            if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
-
-            DateTime retentionUteCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
-
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-
-            long count;
-            List<Error> query = _repository.GetNewest(projectId, utcStart, utcEnd, skip, pageSize, out count).ToList();
-            List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUteCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
-
-            long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
-            };
-
-            // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
-        }
-
         // TODO: Use the cache client.
         [HttpGet]
-        public PlanPagedResult<ErrorResult> Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
@@ -182,8 +145,8 @@ namespace Exceptionless.App.Controllers.API {
                 throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
+            DateTime utcStart = start != DateTime.MinValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value) : DateTime.MinValue;
+            DateTime utcEnd = end != DateTime.MaxValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value) : DateTime.MaxValue;
 
             int skip = (page - 1) * pageSize;
             if (skip < 0)
@@ -191,6 +154,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -205,24 +170,24 @@ namespace Exceptionless.App.Controllers.API {
 
             // TODO: Only return the Exception Type properties type name without the namespace.
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
 
         // TODO: Use the cache client.
         [HttpGet]
-        public PlanPagedResult<ErrorResult> GetByStack(string stackId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
+        public IHttpActionResult GetByStack(string stackId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException("stackId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             ErrorStack errorStack = ErrorStackRepository.GetByIdCached(stackId);
             if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
-                throw new ArgumentException("Invalid error stack id.", "stackId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             start = start ?? DateTime.MinValue;
             end = end ?? DateTime.MaxValue;
 
             if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, start.Value);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, end.Value);
@@ -236,6 +201,8 @@ namespace Exceptionless.App.Controllers.API {
 
             if (pageSize < 1)
                 pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize, out count).ToList();
@@ -250,7 +217,7 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
     }
 }

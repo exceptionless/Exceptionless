@@ -62,8 +62,14 @@ namespace Exceptionless.Models {
 
         public int TotalOccurrences { get; set; }
 
+        /// <summary>
+        /// The date of the 1st occurrence of this error in UTC time.
+        /// </summary>
         public DateTime FirstOccurrence { get; set; }
 
+        /// <summary>
+        /// The date of the last occurrence of this error in UTC time.
+        /// </summary>
         public DateTime LastOccurrence { get; set; }
 
         /// <summary>

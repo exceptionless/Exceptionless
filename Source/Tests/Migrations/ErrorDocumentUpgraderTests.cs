@@ -19,6 +19,7 @@ using Exceptionless.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Migrations {
     public class ErrorDocumentUpgraderTests {
@@ -26,34 +27,28 @@ namespace Exceptionless.Tests.Migrations {
             RegisterUpgrades();
         }
 
-        [Fact]
-        public void EnsureBackwardsCompatibility() {
-            FileInfo[] files = new DirectoryInfo(Path.GetFullPath(@"..\..\ErrorData\")).GetFiles();
-            foreach (FileInfo file in files) {
-                JObject jObject = JObject.Parse(File.ReadAllText(file.FullName));
-                Assert.NotNull(jObject);
+        [Theory]
+        [PropertyData("Errors")]
+        public void EnsureBackwardsCompatibility(string errorFilePath) {
+            JObject jObject = JObject.Parse(File.ReadAllText(errorFilePath));
+            Assert.NotNull(jObject);
 
-                DocumentUpgrader.Current.Upgrade<Error>(jObject);
-                Assert.Null(Record.Exception(() => JsonConvert.DeserializeObject<Error>(jObject.ToString())));
-            }
+            DocumentUpgrader.Current.Upgrade<Error>(jObject);
+            Assert.Null(Record.Exception(() => JsonConvert.DeserializeObject<Error>(jObject.ToString())));
         }
 
-        [Fact]
-        public void CheckForExpectedResults() {
+        [Theory]
+        [PropertyData("Errors")]
+        public void CheckForExpectedResults(string errorFilePath) {
             ErrorDocumentUpgrader.RegisterUpgrades();
 
-            IEnumerable<FileInfo> files = new DirectoryInfo(Path.GetFullPath(@"..\..\ErrorData\")).GetFiles().Where(f => !f.Name.EndsWith(".expected.json"));
-            foreach (FileInfo file in files) {
-                Console.WriteLine("Checking " + file.FullName);
-                string expected = Regex.Replace(File.ReadAllText(Path.ChangeExtension(file.FullName, ".expected.json")), @"\s", "");
-                JObject jObject = JObject.Parse(File.ReadAllText(file.FullName));
-                Assert.NotNull(jObject);
+            string expected = Regex.Replace(File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json")), @"\s", "");
+            JObject jObject = JObject.Parse(File.ReadAllText(errorFilePath));
+            Assert.NotNull(jObject);
 
-                DocumentUpgrader.Current.Upgrade<Error>(jObject);
-                Assert.Equal(Regex.Replace(jObject.ToString(), @"\s", ""), expected);
-                Assert.Null(Record.Exception(() => JsonConvert.DeserializeObject<Error>(jObject.ToString())));
-                Console.WriteLine("Checked " + file.FullName);
-            }
+            DocumentUpgrader.Current.Upgrade<Error>(jObject);
+            Assert.Equal(Regex.Replace(jObject.ToString(), @"\s", ""), expected);
+            Assert.Null(Record.Exception(() => JsonConvert.DeserializeObject<Error>(jObject.ToString())));
         }
 
         [Fact]
@@ -144,6 +139,16 @@ namespace Exceptionless.Tests.Migrations {
                 if (clientInfo["StartCount"] != null)
                     clientInfo.Remove("StartCount");
             });
+        }
+
+        public static IEnumerable<object[]> Errors {
+            get {
+                var result = new List<object[]>();
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                    result.Add(new object[] { file });
+
+                return result.ToArray();
+            }
         }
     }
 

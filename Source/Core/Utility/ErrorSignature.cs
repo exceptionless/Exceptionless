@@ -66,9 +66,7 @@ namespace Exceptionless.Core.Utility {
 
             // start at the inner most exception and work our way out until we find a user method
             ErrorInfo current = Error;
-            var errorStack = new List<ErrorInfo> {
-                current
-            };
+            var errorStack = new List<ErrorInfo> { current };
             while (current.Inner != null) {
                 current = current.Inner;
                 errorStack.Add(current);
@@ -96,29 +94,33 @@ namespace Exceptionless.Core.Utility {
                 }
             }
 
-            // we haven't found a user method yet, try some alternatives with the inner most error
+            // We haven't found a user method yet, try some alternatives with the inner most error.
             ErrorInfo innerMostError = errorStack[0];
 
             if (innerMostError.TargetMethod != null) {
-                // use the target method if it exists
+                // Use the target method if it exists.
                 SignatureInfo.Add("ExceptionType", innerMostError.Type);
                 SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.TargetMethod));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.TargetMethod.IsSignatureTarget = true;
-                AddSpecialCaseDetails(innerMostError);
             } else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0) {
-                // use the topmost stack frame
+                // Use the topmost stack frame.
                 SignatureInfo.Add("ExceptionType", innerMostError.Type);
                 SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.StackTrace[0].IsSignatureTarget = true;
-                AddSpecialCaseDetails(innerMostError);
             } else {
-                // all else failed, use the type and message
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Message", innerMostError.Message);
-                AddSpecialCaseDetails(innerMostError);
+                // All else failed, use the type and message.
+                if (!String.IsNullOrWhiteSpace(innerMostError.Type))
+                    SignatureInfo.Add("ExceptionType", innerMostError.Type);
+
+                if (!String.IsNullOrWhiteSpace(innerMostError.Message))
+                    SignatureInfo.Add("Message", innerMostError.Message);
             }
+
+            AddSpecialCaseDetails(innerMostError);
+            if (SignatureInfo.Count == 0)
+                SignatureInfo.Add("NoStackingInformation", Guid.NewGuid().ToString());
 
             UpdateInfo(false);
         }
@@ -129,7 +131,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void RecalculateHash() {
-            SignatureHash = SignatureInfo.Values.ToSHA1();
+            SignatureHash = SignatureInfo.Values.Any(v => v != null) ? SignatureInfo.Values.ToSHA1() : null;
         }
 
         private string GetStackFrameSignature(Method method) {

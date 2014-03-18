@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -26,7 +27,7 @@ namespace Exceptionless.Core.Controllers {
         public RepositoryOwnedByOrganizationApiController(TRepository repository) : base(repository) {}
 
         public override IEnumerable<TModel> Get() {
-            return _repository.GetByOrganizationIds(User.GetAssociatedOrganizationIds());
+            return _repository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).Take(100);
         }
 
         protected override TModel GetEntity(string id) {

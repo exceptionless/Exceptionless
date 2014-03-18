@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless;
 
 namespace NLog.Fluent {
@@ -20,6 +21,8 @@ namespace NLog.Fluent {
 
                 if (errorBuilderAction != null)
                     errorBuilderAction(exBuilder);
+
+                exBuilder.AddObject(builder.LogEventInfo, name: "Log Info", excludedPropertyNames: new List<string> { "Exception", "Message", "LoggerShortName", "SequenceID", "TimeStamp" });
 
                 exBuilder.Submit();
             }

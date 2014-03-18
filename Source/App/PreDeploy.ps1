@@ -97,6 +97,14 @@ foreach ($param in $OctopusParameters.keys) {
   }
 }
 
-$configPath = $OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\Web.config"
+if (Test-Path ($OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\Web.config")) {
+  $configPath = $OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\Web.config"
+} else {
+  $configPath = $OctopusParameters["OctopusOriginalPackageDirectoryPath"] + "\Web.config"
+}
 
-Update-ApplicationConfig -configPath $configPath -variables $config
+if (Test-Path $configPath) {
+  Update-ApplicationConfig -configPath $configPath -variables $config
+} else {
+  Write-Host "Could not resolve config path."
+}

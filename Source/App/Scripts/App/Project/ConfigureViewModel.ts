@@ -10,12 +10,12 @@ module exceptionless.project {
             super(elementId, navigationElementId, chartElementId, '/project', projectsElementId, dateRangeElementId, null, autoUpdate);
 
             var clip = new ZeroClipboard();
-            clip.addEventListener('noflash wrongflash', () => $(copyApiKeyButtonElementId).hide());
-            clip.addEventListener('load', (client, text) => {
-                clip.setHandCursor(true);
-                clip.glue($(copyApiKeyButtonElementId));
+            clip.on('noflash wrongflash', () => $(copyApiKeyButtonElementId).hide());
+            clip.on('load', (client, text) => {
+                clip.forceHandCursor(true);
+                clip.clip($(copyApiKeyButtonElementId));
             });
-            clip.addEventListener('complete', (client, text) => App.showSuccessNotification('Copied!'));
+            clip.on('complete', (client, text) => App.showSuccessNotification('Copied!'));
 
             App.selectedProject.subscribe((project: models.ProjectInfo) => {
                 this.apiKey('Loading');

@@ -51,7 +51,7 @@ namespace MongoMigrations {
 
         public abstract void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document);
 
-        protected virtual MongoCollection<BsonDocument> GetCollection() {
+        public virtual MongoCollection<BsonDocument> GetCollection() {
             return Database.GetCollection(CollectionName);
         }
 

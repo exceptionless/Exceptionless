@@ -27,6 +27,7 @@ using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Controllers {
     public class ErrorControllerTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, IErrorRepository> {
@@ -137,6 +138,28 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         [Fact]
+        public void PostExtremelyLargeError() {
+            SetValidApiKey();
+
+            var error = ErrorData.GenerateError(id: TestConstants.ErrorId3);
+            for (int i = 0; i < 4; i++)
+                error.ExtendedData.Add(Guid.NewGuid().ToString(), new string('x', 512 * 1024));
+
+            HttpResponseMessage response = PostResponse(error);
+            Assert.NotNull(response);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            Assert.NotNull(response.Headers);
+            KeyValuePair<string, IEnumerable<string>> header = response.Headers.FirstOrDefault(h => String.Equals(h.Key, "Location", StringComparison.OrdinalIgnoreCase));
+            Assert.NotNull(header);
+            Assert.NotNull(header.Value);
+            Assert.Equal(1, header.Value.Count());
+            Assert.NotNull(header.Value.First());
+
+            Assert.Contains(String.Concat("error/", TestConstants.ErrorId3), header.Value.First());
+        }
+
+        [Fact]
         public void PostDuplicate() {
             SetValidApiKey();
 
@@ -149,25 +172,22 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
-        [Fact]
-        public void PostJsonErrors() {
+        [Theory]
+        [PropertyData("Errors")]
+        public void PostJsonErrors(string errorFilePath) {
             SetValidApiKey();
 
-            IEnumerable<FileInfo> files = new DirectoryInfo(Path.GetFullPath(@"..\..\ErrorData\")).GetFiles().Where(f => !f.Name.EndsWith(".expected.json"));
-            
-            foreach (FileInfo file in files) {
-                JObject jObject = JObject.Parse(File.ReadAllText(file.FullName));
-                Assert.NotNull(jObject);
+            JObject jObject = JObject.Parse(File.ReadAllText(errorFilePath));
+            Assert.NotNull(jObject);
 
-                DocumentUpgrader.Current.Upgrade<Error>(jObject);
+            DocumentUpgrader.Current.Upgrade<Error>(jObject);
 
-                Error error = null;
-                Assert.Null(Record.Exception(() => error = JsonConvert.DeserializeObject<Error>(jObject.ToString())));
-                Assert.NotNull(error);
+            Error error = null;
+            Assert.Null(Record.Exception(() => error = JsonConvert.DeserializeObject<Error>(jObject.ToString())));
+            Assert.NotNull(error);
 
-                HttpResponseMessage response = PostResponse(error);
-                Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            }
+            HttpResponseMessage response = PostResponse(error);
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
 
         [Fact]
@@ -348,6 +368,16 @@ namespace Exceptionless.Tests.Controllers {
         [Fact]
         public void Batch() {
             // TODO: Add batch unit tests.
+        }
+
+        public static IEnumerable<object[]> Errors {
+            get {
+                var result = new List<object[]>();
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                    result.Add(new object[] { file });
+
+                return result.ToArray();
+            }
         }
 
         private HttpResponseMessage GetResponseMessage(string id) {

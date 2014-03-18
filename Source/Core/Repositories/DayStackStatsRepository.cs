@@ -46,8 +46,8 @@ namespace Exceptionless.Core.Repositories {
         protected override void InitializeCollection(MongoCollection<DayStackStats> collection) {
             base.InitializeCollection(collection);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {

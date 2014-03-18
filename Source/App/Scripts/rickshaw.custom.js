@@ -70,7 +70,7 @@ Rickshaw.Graph.RangeSelector = Rickshaw.Class.create({
                 'height': 0,
             });
         }, true);
-        graph.element.addEventListener('mouseup', function (event) {
+        document.body.addEventListener('mouseup', function (event) {
             if (!selectionControl || selectionControl === false)
                 return;
             

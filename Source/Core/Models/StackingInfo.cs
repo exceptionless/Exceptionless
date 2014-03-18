@@ -28,9 +28,9 @@ namespace Exceptionless.Core.Models {
 
             Tuple<ErrorInfo, Method> st = error.GetStackingTarget();
 
-            // if we can't find the info, try doing a new signature to mark the target.
+            // If we can't find the info, try doing a new signature to mark the target.
             if (st == null) {
-                ErrorSignature sig = errorSignatureFactory.GetSignature(error);
+                errorSignatureFactory.GetSignature(error);
                 st = error.GetStackingTarget();
             }
 

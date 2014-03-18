@@ -14,6 +14,7 @@ using System.Web.Http;
 using Exceptionless.App;
 using Exceptionless.Core.Mail;
 using SimpleInjector;
+using SimpleInjector.Integration.WebApi;
 
 namespace Exceptionless.Tests.Utility {
     public static class IoC {
@@ -47,7 +48,6 @@ namespace Exceptionless.Tests.Utility {
 
             RegisterServices(_container);
 
-            SimpleInjectorInitializer.RegisterIFilterProvider(GlobalConfiguration.Configuration.Services, _container);
             GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(_container);
         }
 

@@ -22,6 +22,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorStatsHelper {
@@ -84,9 +85,10 @@ namespace Exceptionless.Core.Utility {
             if (localEndDate.Value <= localStartDate.Value)
                 throw new ArgumentException("End date must be greater than start date.", "localEndDate");
 
-            var results = _monthProjectStats.Collection.Find(Query.And(
-                                                                       Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localStartDate.Value, utcOffset, projectId)),
-                Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localEndDate.Value, utcOffset, projectId))
+            var results = _monthProjectStats.Collection.Find(
+                Query.And(
+                    Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localStartDate.Value, utcOffset, projectId)),
+                    Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localEndDate.Value, utcOffset, projectId))
                 )).ToList();
 
             if (results.Count > 0) {
@@ -211,9 +213,10 @@ namespace Exceptionless.Core.Utility {
             DateTime utcStartDate = new DateTimeOffset(localStartDate.Value.Ticks, utcOffset).UtcDateTime;
             DateTime utcEndDate = new DateTimeOffset(localEndDate.Value.Ticks, utcOffset).UtcDateTime;
 
-            List<DayProjectStats> results = _dayProjectStats.Collection.Find(Query.And(
-                                                                                       Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcStartDate)),
-                Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcEndDate))
+            List<DayProjectStats> results = _dayProjectStats.Collection.Find(
+                Query.And(
+                    Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcStartDate)),
+                    Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcEndDate))
                 )).ToList();
 
             if (results.Count > 0) {
@@ -357,9 +360,11 @@ namespace Exceptionless.Core.Utility {
             if (localEndDate.Value <= localStartDate.Value)
                 throw new ArgumentException("End date must be greater than start date.", "localEndDate");
 
-            var results = _monthStackStats.Collection.Find(Query.And(
-                                                                     Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localStartDate.Value, utcOffset, errorStackId)),
-                Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localEndDate.Value, utcOffset, errorStackId)))).ToList();
+            var results = _monthStackStats.Collection.Find(
+                Query.And(
+                    Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localStartDate.Value, utcOffset, errorStackId)),
+                    Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localEndDate.Value, utcOffset, errorStackId)))
+                ).ToList();
 
             if (results.Count > 0) {
                 var firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.DayStats.Any(ds => ds.Value > 0));
@@ -433,7 +438,11 @@ namespace Exceptionless.Core.Utility {
             DateTime utcStartDate = new DateTimeOffset(localStartDate.Value.Ticks, utcOffset).UtcDateTime;
             DateTime utcEndDate = new DateTimeOffset(localEndDate.Value.Ticks, utcOffset).UtcDateTime;
 
-            List<DayStackStats> results = _dayStackStats.Collection.Find(Query.And(Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(errorStackId, utcStartDate)), Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(errorStackId, utcEndDate)))).ToList();
+            List<DayStackStats> results = _dayStackStats.Collection.Find(
+                Query.And(
+                    Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(errorStackId, utcStartDate)), 
+                    Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(errorStackId, utcEndDate)))
+                ).ToList();
 
             if (results.Count > 0) {
                 DayStackStats firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.MinuteStats.Any(ds => ds.Value > 0));
@@ -710,10 +719,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_dayStackStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _dayStackStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _dayStackStats.Collection.Insert(CreateBlankDayStackStats(error));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _dayStackStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -770,10 +783,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_dayProjectStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _dayProjectStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _dayProjectStats.Collection.Insert(CreateBlankDayProjectStats(error, isNew));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _dayProjectStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -837,10 +854,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_monthStackStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _monthStackStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _monthStackStats.Collection.Insert(CreateBlankMonthStackStats(utcOffset, localDate, error.ErrorStackId, error.ProjectId));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _monthStackStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 
@@ -896,10 +917,14 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             lock (_monthProjectStatsLock) {
-                // try to update again inside the lock since another thread could have created the doc
-                result = _monthProjectStats.Collection.Update(query, update);
-                if (result.DocumentsAffected == 0)
+                try {
                     _monthProjectStats.Collection.Insert(CreateBlankMonthProjectStats(utcOffset, localDate, error.ProjectId, error.ErrorStackId, isNew));
+                } catch (MongoDuplicateKeyException) {
+                    // the doc was already created by another thread, update it.
+                    result = _monthProjectStats.Collection.Update(query, update);
+                    if (result.DocumentsAffected == 0)
+                        Log.Error().Project(error.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
+                }
             }
         }
 

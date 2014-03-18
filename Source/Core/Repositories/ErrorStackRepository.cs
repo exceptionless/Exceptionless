@@ -24,10 +24,13 @@ namespace Exceptionless.Core {
     public class ErrorStackRepository : MongoRepositoryOwnedByOrganization<ErrorStack>, IErrorStackRepository {
         private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
+        private readonly ErrorRepository _errorRepository;
 
-        public ErrorStackRepository(MongoDatabase database, OrganizationRepository organizationRepository, ProjectRepository projectRepository, ICacheClient cacheClient = null) : base(database, cacheClient) {
+        public ErrorStackRepository(MongoDatabase database, OrganizationRepository organizationRepository, ProjectRepository projectRepository, ErrorRepository errorRepository, ICacheClient cacheClient = null)
+            : base(database, cacheClient) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _errorRepository = errorRepository;
         }
 
         public const string CollectionName = "errorstack";
@@ -61,9 +64,9 @@ namespace Exceptionless.Core {
         protected override void InitializeCollection(MongoCollection<ErrorStack> collection) {
             base.InitializeCollection(collection);
 
-            collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true));
-            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.LastOccurrence));
-            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.IsHidden, FieldNames.DateFixed));
+            collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true).SetBackground(true));
+            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), M.IndexOptions.SetBackground(true));
+            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), M.IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<ErrorStack> cm) {
@@ -88,10 +91,14 @@ namespace Exceptionless.Core {
 
         public override void InvalidateCache(ErrorStack entity) {
             var originalStack = GetByIdCached(entity.Id);
-            if (originalStack.DateFixed != entity.DateFixed)
+            if (originalStack.DateFixed != entity.DateFixed) {
+                _errorRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
                 InvalidateFixedIdsCache(entity.ProjectId);
-            if (originalStack.IsHidden != entity.IsHidden)
+            }
+            if (originalStack.IsHidden != entity.IsHidden) {
+                _errorRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
                 InvalidateHiddenIdsCache(entity.ProjectId);
+            }
 
             InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
 
@@ -216,7 +223,7 @@ namespace Exceptionless.Core {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.EQ(FieldNames.IsHidden, BsonBoolean.True))
+                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.EQ(FieldNames.IsHidden, BsonBoolean.True)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -235,7 +242,7 @@ namespace Exceptionless.Core {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__FIXED"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.Exists(FieldNames.DateFixed))
+                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.Exists(FieldNames.DateFixed)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -254,7 +261,7 @@ namespace Exceptionless.Core {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.Exists(FieldNames.SignatureInfo_Path))
+                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.Exists(FieldNames.SignatureInfo_Path)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -276,15 +283,11 @@ namespace Exceptionless.Core {
                 M.Query.LTE(FieldNames.LastOccurrence, utcEnd)
             };
 
-            if (!includeHidden || !includeFixed || !includeNotFound) {
-                var excludedIds = new List<BsonObjectId>();
-                if (!includeHidden)
-                    excludedIds.AddRange(GetHiddenIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
-                if (!includeFixed)
-                    excludedIds.AddRange(GetFixedIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
+            if (!includeFixed)
+                conditions.Add(M.Query.NotExists(FieldNames.DateFixed));
 
-                conditions.Add(M.Query.NotIn(FieldNames.Id, excludedIds));
-            }
+            if (!includeHidden)
+                conditions.Add(M.Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
                 conditions.Add(M.Query.NotExists(FieldNames.SignatureInfo_Path));
@@ -309,15 +312,11 @@ namespace Exceptionless.Core {
                 M.Query.LTE(FieldNames.FirstOccurrence, utcEnd)
             };
 
-            if (!includeHidden || !includeFixed || !includeNotFound) {
-                var excludedIds = new List<BsonObjectId>();
-                if (!includeHidden)
-                    excludedIds.AddRange(GetHiddenIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
-                if (!includeFixed)
-                    excludedIds.AddRange(GetFixedIds(projectId).Select(id => new BsonObjectId(new ObjectId(id))).ToArray());
+            if (!includeFixed)
+                conditions.Add(M.Query.NotExists(FieldNames.DateFixed));
 
-                conditions.Add(M.Query.NotIn(FieldNames.Id, excludedIds));
-            }
+            if (!includeHidden)
+                conditions.Add(M.Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
                 conditions.Add(M.Query.NotExists(FieldNames.SignatureInfo_Path));

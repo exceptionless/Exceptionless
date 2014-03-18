@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using AutoMapper;
+using CodeSmith.Core.Component;
 using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Project;
 using Exceptionless.Core;
@@ -122,6 +123,12 @@ namespace Exceptionless.App.Controllers {
         [HttpGet]
         [ProjectRequiredActionFilter]
         public ActionResult Configure(string id) {
+            if (String.IsNullOrEmpty(id) && User != null && User.UserEntity != null && User.UserEntity.OrganizationIds.Count > 0) {
+                var project = _projectRepository.GetByOrganizationId(User.UserEntity.OrganizationIds.First()).FirstOrDefault();
+                if (project != null)
+                    id = project.Id;
+            }
+
             if (String.IsNullOrEmpty(id) || _projectRepository.GetByIdCached(id) == null)
                 return RedirectToAction("Index");
 

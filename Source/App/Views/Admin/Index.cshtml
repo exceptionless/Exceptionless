@@ -26,7 +26,7 @@
                 <div class="tab-content">
                     <div class="tab-pane active" id="statistics">
                         <div class="stat-container">
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text positive-number" data-bind="formatCurrency: monthlyTotal">0</span>
                                     <span class="visible-desktop">Monthly Total</span>
@@ -36,7 +36,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text positive-number" data-bind="formatCurrency: yearlyTotal">0</span>
                                     <span class="visible-desktop">Projected Yearly Total</span>
@@ -46,7 +46,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: paidAccounts">0</span>
                                     <span class="visible-desktop">Total Paid Accounts</span>
@@ -59,7 +59,7 @@
                         <!-- /stat-container -->
 
                         <div class="stat-container">
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: monthlyTotalAccounts">0</span>
                                     <span class="visible-desktop">Monthly Paid Accounts</span>
@@ -69,7 +69,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: yearlyTotalAccounts">0</span>
                                     <span class="visible-desktop">Yearly Paid Accounts</span>
@@ -78,7 +78,7 @@
                                 <!-- /stat -->
                             </div>
                             <!-- /stat-holder -->
-                            <div class="stat-holder loading-spinner" data-bind="click: function() { viewSuspendedAccounts('#admin-tabs', '#organizations'); ; return true; }">
+                            <div class="stat-holder loading-indicator" data-bind="click: function() { viewSuspendedAccounts('#admin-tabs', '#organizations'); ; return true; }">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: suspendedAccounts, css: suspendedAccounts() > 0 ? 'negitive-number' : ''">0</span>
                                     <span class="visible-desktop">Suspended Accounts</span>

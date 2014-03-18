@@ -76,9 +76,10 @@ namespace Exceptionless.Tests.Repositories {
         private readonly List<Tuple<string, DateTimeOffset>> _ids = new List<Tuple<string, DateTimeOffset>>();
 
         protected override void CreateData() {
-            var occurrenceDateStart = new DateTimeOffset(DateTime.Now.AddMinutes(-30));
-            var occurrenceDateMid = new DateTimeOffset(DateTime.Now);
-            var occurrenceDateEnd = new DateTimeOffset(DateTime.Now.AddMinutes(30));
+            var baseDate = DateTimeOffset.Now;
+            var occurrenceDateStart = baseDate.AddMinutes(-30);
+            var occurrenceDateMid = baseDate;
+            var occurrenceDateEnd = baseDate.AddMinutes(30);
 
             _errorStackRepository.Add(ErrorStackData.GenerateErrorStack(id: TestConstants.ErrorStackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
 
@@ -88,13 +89,10 @@ namespace Exceptionless.Tests.Repositories {
             _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateEnd));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), new DateTimeOffset(DateTime.Now.AddMinutes(-10))));
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), baseDate.AddMinutes(-10)));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), new DateTimeOffset(DateTime.Now.AddMinutes(-20))));
-            Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
-
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateMid));
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), baseDate.AddMinutes(-20)));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
             _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateMid));
@@ -103,13 +101,16 @@ namespace Exceptionless.Tests.Repositories {
             _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateMid));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), new DateTimeOffset(DateTime.Now.AddMinutes(20))));
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateMid));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), new DateTimeOffset(DateTime.Now.AddMinutes(10))));
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), baseDate.AddMinutes(20)));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
-            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), new DateTimeOffset(DateTime.Now.AddSeconds(1))));
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), baseDate.AddMinutes(10)));
+            Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
+
+            _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), baseDate.AddSeconds(1)));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
 
             _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateEnd));
