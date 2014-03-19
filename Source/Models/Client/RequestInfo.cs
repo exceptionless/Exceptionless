@@ -132,7 +132,7 @@ namespace Exceptionless.Models {
             if (value == null)
                 throw new ArgumentNullException("value");
 
-            return value.HexEscape(_uriRfc3986CharsToEscape);
+            return value; //.HexEscape(_uriRfc3986CharsToEscape);
         }
     }
 }

@@ -19,13 +19,13 @@ using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        public Task<SubmissionResponse> SubmitAsync(IEnumerable<Error> errors, Configuration configuration) {
+        public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.ServerUrl, "error"));
             client.AddAuthorizationHeader(configuration);
 
             // TODO: We only support one error right now..
             var serializer = DependencyResolver.Current.GetJsonSerializer();
-            var data = serializer.Serialize(errors.FirstOrDefault());
+            var data = serializer.Serialize(events.FirstOrDefault());
 
             return client.PostJsonAsync(data).ContinueWith(t => {
                 // TODO: We need to break down the aggregate exceptions error message into something usable.

@@ -29,7 +29,7 @@ namespace Exceptionless {
         /// Submits the error report.
         /// </summary>
         /// <param name="data">The error data.</param>
-        public void SubmitError(Error data) {
+        public void SubmitEvent(Event data) {
             _log.FormattedInfo(typeof(ExceptionlessClient), "Submitting error: id={0} type={1}", data != null ? data.Id : "null", data != null ? data.Type : "null");
 
             if (CheckForDuplicateError(data))
@@ -69,10 +69,10 @@ namespace Exceptionless {
         /// <param name="includeDefaultInformation">Whether to add the default information to the case or not</param>
         /// <param name="contextData">Any additional contextual data that should be used during creation of the error information.</param>
         public void ProcessUnhandledException(Exception ex, string submissionMethod, bool includeDefaultInformation = true, IDictionary<string, object> contextData = null) {
-            Error error = CreateError(ex, addDefaultInformation: includeDefaultInformation, submissionMethod: submissionMethod, contextData: contextData);
+            Event data = CreateEvent(ex, addDefaultInformation: includeDefaultInformation, submissionMethod: submissionMethod, contextData: contextData);
             _log.FormattedInfo(typeof(ExceptionlessClient), "Processing unhandled exception of type '{0}'...", ex.GetType().FullName);
 
-            var args = new UnhandledExceptionReportingEventArgs(ex, error);
+            var args = new UnhandledExceptionReportingEventArgs(ex, data);
             OnUnhandledExceptionReporting(args);
             if (args.Cancel)
                 return;
@@ -80,39 +80,39 @@ namespace Exceptionless {
             if (args.ShouldShowUI) {
                 IExceptionlessPlugin uiPlugin = Configuration.Plugins.FirstOrDefault(p => p.SupportsShowingUnhandledErrorSubmissionUI);
                 if (uiPlugin != null) {
-                    if (!uiPlugin.ShowUnhandledErrorSubmissionUI(new ExceptionlessPluginContext(this, contextData), error))
+                    if (!uiPlugin.ShowUnhandledErrorSubmissionUI(new ExceptionlessPluginContext(this, contextData), data))
                         return;
                 }
             }
 
-            SubmitError(error);
+            SubmitEvent(data);
         }
 
-        private bool CheckForDuplicateError(ErrorInfo exception) {
-            ErrorInfo current = exception;
-            DateTime repeatWindow = DateTime.Now.AddSeconds(-2);
+        private bool CheckForDuplicateError(Event data) {
+            //ErrorInfo current = exception;
+            //DateTime repeatWindow = DateTime.Now.AddSeconds(-2);
 
-            while (current != null) {
-                int hashCode = current.GetHashCode();
-                _log.FormattedTrace(typeof(ExceptionlessClient), "Checking for duplicate exception: hash={0} type={1}", hashCode, current.Type);
-                _log.FormattedTrace(typeof(ExceptionlessClient), "Error contents: {0}", current.ToString());
+            //while (current != null) {
+            //    int hashCode = current.GetHashCode();
+            //    _log.FormattedTrace(typeof(ExceptionlessClient), "Checking for duplicate exception: hash={0} type={1}", hashCode, current.Type);
+            //    _log.FormattedTrace(typeof(ExceptionlessClient), "Error contents: {0}", current.ToString());
 
-                // make sure that we don't process the same error multiple times within 2 seconds.
-                if (_recentlyProcessedErrors.Any(s => s.Item1 == hashCode && s.Item2 >= repeatWindow)) {
-                    _log.FormattedInfo(typeof(ExceptionlessClient), "Ignoring duplicate exception: type={0}", current.Type);
-                    return true;
-                }
+            //    // make sure that we don't process the same error multiple times within 2 seconds.
+            //    if (_recentlyProcessedErrors.Any(s => s.Item1 == hashCode && s.Item2 >= repeatWindow)) {
+            //        _log.FormattedInfo(typeof(ExceptionlessClient), "Ignoring duplicate exception: type={0}", current.Type);
+            //        return true;
+            //    }
 
-                // add this exception to our list of recent errors that we have processed.
-                _recentlyProcessedErrors.Enqueue(Tuple.Create(hashCode, DateTime.Now));
+            //    // add this exception to our list of recent errors that we have processed.
+            //    _recentlyProcessedErrors.Enqueue(Tuple.Create(hashCode, DateTime.Now));
 
-                // only keep the last 10 recent errors
-                Tuple<int, DateTime> temp;
-                while (_recentlyProcessedErrors.Count > 10)
-                    _recentlyProcessedErrors.TryDequeue(out temp);
+            //    // only keep the last 10 recent errors
+            //    Tuple<int, DateTime> temp;
+            //    while (_recentlyProcessedErrors.Count > 10)
+            //        _recentlyProcessedErrors.TryDequeue(out temp);
 
-                current = current.Inner;
-            }
+            //    current = current.Inner;
+            //}
 
             return false;
         }
@@ -133,8 +133,8 @@ namespace Exceptionless {
         /// As list of objects to add to the error's ExtendedData collection. If the object is an
         /// <see cref="ExtendedDataInfo">ExtendedDataInfo</see>, the settings from that will be used to add the ExtendedData.
         /// </param>
-        public void SubmitError(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<string> tags = null, params object[] extendedData) {
-            SubmitError(CreateError(ex, isCritical, addDefaultInformation, extendedData, tags));
+        public void SubmitEvent(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<string> tags = null, params object[] extendedData) {
+            SubmitEvent(CreateEvent(ex, isCritical, addDefaultInformation, extendedData, tags));
         }
 
         /// <summary>
@@ -243,8 +243,8 @@ namespace Exceptionless {
         /// <param name="submissionMethod">The method that was used to collect the error.</param>
         /// <param name="contextData">Any additional contextual data that should be used during creation of the error information.</param>
         /// <returns>A new instance of <see cref="Error" />.</returns>
-        public Error CreateError(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
-            Error error = ToError(this, ex, submissionMethod, contextData);
+        public Event CreateEvent(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
+            Event data = ToEvent(this, ex, submissionMethod, contextData);
 
             //if (extendedData != null) {
             //    foreach (object o in extendedData)
@@ -260,10 +260,10 @@ namespace Exceptionless {
             //if (addDefaultInformation)
             //    error.AddDefaultInformation(contextData);
 
-            return error;
+            return data;
         }
 
-        internal static Error ToError(ExceptionlessClient client, Exception exception, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
+        internal static Event ToEvent(ExceptionlessClient client, Exception exception, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
             //Error error = exception.ToErrorModel();
             //error.Id = ObjectId.GenerateNewId().ToString();
             //error.OccurrenceDate = DateTimeOffset.Now;
@@ -279,7 +279,7 @@ namespace Exceptionless {
             //    }
             //}
 
-            return new Error();
+            return new Event();
         }
 
         #region Events
@@ -320,39 +320,39 @@ namespace Exceptionless {
         /// <summary>
         /// Occurs when the error is being sent to the server.
         /// </summary>
-        public event EventHandler<EventModelEventArgs> SendingError;
+        public event EventHandler<EventModelEventArgs> SendingEvent;
 
         /// <summary>
         /// Occurs when the error has been sent to the server.
         /// </summary>
-        public event EventHandler<SendErrorCompletedEventArgs> SendErrorCompleted;
+        public event EventHandler<SendEventCompletedEventArgs> SendEventCompleted;
 
         /// <summary>
-        /// Raises the <see cref="SendErrorCompleted" /> event.
+        /// Raises the <see cref="SendEventCompleted" /> event.
         /// </summary>
-        /// <param name="e">The <see cref="SendErrorCompletedEventArgs" /> instance containing the event data.</param>
-        protected void OnSendErrorCompleted(SendErrorCompletedEventArgs e) {
+        /// <param name="e">The <see cref="SendEventCompletedEventArgs" /> instance containing the event data.</param>
+        protected void OnSendEventCompleted(SendEventCompletedEventArgs e) {
             if (e.Error != null)
                 _log.FormattedError(typeof(ExceptionlessClient), "Sending error report failed: {0}", e.Error.Message);
             else
                 _log.FormattedDebug(typeof(ExceptionlessClient), "Report completed for {0}.", e.ErrorId);
 
-            if (SendErrorCompleted != null)
-                SendErrorCompleted(this, e);
+            if (SendEventCompleted != null)
+                SendEventCompleted(this, e);
         }
 
-        private void OnSendingError(Error error) {
-            var args = new EventModelEventArgs(error);
-            OnSendingError(args);
+        private void OnSendingEvent(Event data) {
+            var args = new EventModelEventArgs(data);
+            OnSendingEvent(args);
         }
 
         /// <summary>
-        /// Raises the <see cref="SendingError" /> event.
+        /// Raises the <see cref="SendingEvent" /> event.
         /// </summary>
         /// <param name="e">The <see cref="EventModelEventArgs" /> instance containing the event data.</param>
-        protected void OnSendingError(EventModelEventArgs e) {
-            if (SendingError != null)
-                SendingError(this, e);
+        protected void OnSendingEvent(EventModelEventArgs e) {
+            if (SendingEvent != null)
+                SendingEvent(this, e);
         }
 
         #endregion
@@ -375,7 +375,7 @@ namespace Exceptionless {
         /// <see cref="ExtendedDataInfo">ExtendedDataInfo</see>, the settings from that will be used to add the ExtendedData.
         /// </param>
         public static void Submit(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<string> tags = null, params object[] extendedData) {
-            Current.SubmitError(ex, isCritical, addDefaultInformation, tags, extendedData);
+            Current.SubmitEvent(ex, isCritical, addDefaultInformation, tags, extendedData);
         }
 
         /// <summary>

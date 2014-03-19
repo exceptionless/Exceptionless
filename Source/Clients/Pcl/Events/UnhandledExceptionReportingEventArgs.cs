@@ -12,9 +12,9 @@ using Exceptionless.Models;
 
 namespace Exceptionless {
     public class UnhandledExceptionReportingEventArgs : EventArgs {
-        public UnhandledExceptionReportingEventArgs(Exception exception, Error error) {
+        public UnhandledExceptionReportingEventArgs(Exception exception, Event data) {
             Exception = exception;
-            Error = error;
+            Event = data;
             ShouldShowUI = true;
         }
 
@@ -23,7 +23,7 @@ namespace Exceptionless {
         /// cancelled.
         /// </summary>
         /// <value>The case error.</value>
-        public Error Error { get; private set; }
+        public Event Event { get; private set; }
 
         /// <summary>
         /// The unhandled exception that triggered the event.

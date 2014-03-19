@@ -14,13 +14,13 @@ using Exceptionless.Models;
 
 namespace Exceptionless {
     public class ErrorBuilder {
-        public ErrorBuilder(Error error, ExceptionlessClient client = null) {
+        public ErrorBuilder(Event data, ExceptionlessClient client = null) {
             Client = client ?? ExceptionlessClient.Current;
-            Target = error;
+            Target = data;
         }
 
         public ExceptionlessClient Client { get; set; }
-        public Error Target { get; private set; }
+        public Event Target { get; private set; }
 
         /// <summary>
         ///     Add all of the default information to the error.  This information can be controlled from the server configuration
@@ -37,7 +37,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="emailAddress">The user's email adddress that the error happened to.</param>
         public ErrorBuilder SetUserEmail(string emailAddress) {
-            Target.UserEmail = emailAddress;
+            //Target.UserEmail = emailAddress;
             return this;
         }
 
@@ -46,7 +46,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="userName">The user's name that the error happened to.</param>
         public ErrorBuilder SetUserName(string userName) {
-            Target.UserName = userName;
+            //Target.UserName = userName;
             return this;
         }
 
@@ -55,7 +55,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="description">The user's name description of the error.</param>
         public ErrorBuilder SetUserDescription(string description) {
-            Target.UserDescription = description;
+            //Target.UserDescription = description;
             return this;
         }
 
@@ -89,7 +89,7 @@ namespace Exceptionless {
         ///     Marks the error as being a critical occurrence.
         /// </summary>
         public ErrorBuilder MarkAsCritical() {
-            Target.MarkAsCritical();
+            //Target.MarkAsCritical();
             return this;
         }
 
@@ -97,7 +97,7 @@ namespace Exceptionless {
         ///     Submits the error report.
         /// </summary>
         public void Submit() {
-            Client.SubmitError(Target);
+            Client.SubmitEvent(Target);
         }
     }
 }

@@ -11,15 +11,15 @@ using System;
 using System.ComponentModel;
 
 namespace Exceptionless {
-    public class SendErrorCompletedEventArgs : AsyncCompletedEventArgs {
+    public class SendEventCompletedEventArgs : AsyncCompletedEventArgs {
         /// <summary>
-        /// Initializes a new instance of the <see cref="SendErrorCompletedEventArgs" /> class.
+        /// Initializes a new instance of the <see cref="SendEventCompletedEventArgs" /> class.
         /// </summary>
         /// <param name="errorId">The error response.</param>
         /// <param name="e">The exception.</param>
         /// <param name="canceled">if set to <c>true</c> then canceled.</param>
         /// <param name="state">The state object.</param>
-        public SendErrorCompletedEventArgs(string errorId, Exception e, bool canceled, object state) : base(e, canceled, state) {
+        public SendEventCompletedEventArgs(string errorId, Exception e, bool canceled, object state) : base(e, canceled, state) {
             ErrorId = errorId;
         }
 

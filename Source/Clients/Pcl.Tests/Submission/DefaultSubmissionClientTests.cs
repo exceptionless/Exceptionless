@@ -20,14 +20,14 @@ namespace Pcl.Tests.Submission {
     public class DefaultSubmissionClientTests {
         [Fact]
         public void SubmitAsync() {
-            var errors = new List<Error>() { new Error { Code = "Testing" }};
+            var events = new List<Event>() { new Event { Message = "Testing" } };
             var configuration = new Configuration {
                 ServerUrl = "http://localhost:40000/api/v1/",
                 ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
             };
 
             var client = new DefaultSubmissionClient();
-            var response = client.SubmitAsync(errors, configuration).Result;
+            var response = client.SubmitAsync(events, configuration).Result;
             Assert.True(response.Success);
             Assert.NotEqual(-1, response.SettingsVersion);
             Assert.Null(response.ErrorMessage);

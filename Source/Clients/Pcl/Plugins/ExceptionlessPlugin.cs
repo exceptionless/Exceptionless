@@ -12,13 +12,13 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Plugins {
     public class ExceptionlessPlugin : IExceptionlessPlugin {
-        public virtual void AfterCreated(ExceptionlessPluginContext context, Error error, Exception exception) {}
+        public virtual void AfterCreated(ExceptionlessPluginContext context, Event data, Exception exception) {}
 
-        public virtual void AddDefaultInformation(ExceptionlessPluginContext context, Error error) {}
+        public virtual void AddDefaultInformation(ExceptionlessPluginContext context, Event data) { }
 
         public virtual bool SupportsShowingUnhandledErrorSubmissionUI { get { return false; } }
 
-        public virtual bool ShowUnhandledErrorSubmissionUI(ExceptionlessPluginContext context, Error error) {
+        public virtual bool ShowUnhandledErrorSubmissionUI(ExceptionlessPluginContext context, Event data) {
             return true;
         }
     }

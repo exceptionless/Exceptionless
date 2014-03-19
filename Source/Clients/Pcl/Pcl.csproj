@@ -15,14 +15,13 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
-    <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;PORTABLE40</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;PORTABLE40;EMBEDDED</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -41,44 +40,17 @@
     <Compile Include="..\..\Models\Client\EnvironmentInfo.cs">
       <Link>Models\Data\EnvironmentInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Models\Client\Error.cs">
-      <Link>Models\Data\Error.cs</Link>
-    </Compile>
     <Compile Include="..\..\Models\Client\ExceptionlessClientInfo.cs">
       <Link>Models\ExceptionlessClientInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Method.cs">
-      <Link>Models\Data\Method.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Module.cs">
-      <Link>Models\Data\Module.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Parameter.cs">
-      <Link>Models\Data\Parameter.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Client\RequestInfo.cs">
       <Link>Models\Data\RequestInfo.cs</Link>
     </Compile>
-    <Compile Include="..\..\Models\Client\StackFrame.cs">
-      <Link>Models\Data\StackFrame.cs</Link>
-    </Compile>
     <Compile Include="..\..\Models\Collections\DataDictionary.cs">
       <Link>Collections\DataDictionary.cs</Link>
     </Compile>
-    <Compile Include="..\..\Models\Collections\GenericArguments.cs">
-      <Link>Collections\GenericArguments.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ModuleCollection.cs">
-      <Link>Collections\ModuleCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
-      <Link>Collections\ParameterCollection.cs</Link>
-    </Compile>
     <Compile Include="..\..\Models\Collections\SettingsDictionary.cs">
       <Link>Collections\SettingsDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
-      <Link>Collections\StackFrameCollection.cs</Link>
     </Compile>
     <Compile Include="..\..\Models\Collections\TagSet.cs">
       <Link>Collections\TagSet.cs</Link>
@@ -91,7 +63,7 @@
     <Compile Include="ErrorBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventModelEventArgs.cs" />
-    <Compile Include="Events\SendErrorCompletedEventArgs.cs" />
+    <Compile Include="Events\SendEventCompletedEventArgs.cs" />
     <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
@@ -136,15 +108,7 @@
   <ItemGroup>
     <None Include="app.config" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
-    <PropertyGroup>
-      <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
-    </PropertyGroup>
-    <Error Condition="!Exists('$(SolutionDir)\.nuget\NuGet.targets')" Text="$([System.String]::Format('$(ErrorText)', '$(SolutionDir)\.nuget\NuGet.targets'))" />
-  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

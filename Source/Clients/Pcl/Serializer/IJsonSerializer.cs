@@ -2,7 +2,7 @@
 
 namespace Exceptionless {
     public interface IJsonSerializer {
-        string Serialize(object model, string[] exclusions = null);
+        string Serialize(object model, string[] exclusions = null, int maxDepth = 5);
         object Deserialize(string json, Type type);
     }
 }
