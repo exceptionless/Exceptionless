@@ -452,7 +452,7 @@
     <None Include="Mail\Templates\_Layout.html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Migrations\v1.0.26.cs" />
+    <Compile Include="Migrations\v1.0.28.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />
