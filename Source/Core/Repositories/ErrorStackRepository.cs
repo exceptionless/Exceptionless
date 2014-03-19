@@ -91,16 +91,19 @@ namespace Exceptionless.Core {
 
         public override void InvalidateCache(ErrorStack entity) {
             var originalStack = GetByIdCached(entity.Id);
-            if (originalStack.DateFixed != entity.DateFixed) {
-                _errorRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
-                InvalidateFixedIdsCache(entity.ProjectId);
-            }
-            if (originalStack.IsHidden != entity.IsHidden) {
-                _errorRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
-                InvalidateHiddenIdsCache(entity.ProjectId);
-            }
+            if (originalStack != null) {
+                if (originalStack.DateFixed != entity.DateFixed) {
+                    _errorRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
+                    InvalidateFixedIdsCache(entity.ProjectId);
+                }
 
-            InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+                if (originalStack.IsHidden != entity.IsHidden) {
+                    _errorRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
+                    InvalidateHiddenIdsCache(entity.ProjectId);
+                }
+
+                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+            }
 
             base.InvalidateCache(entity);
         }
