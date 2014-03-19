@@ -65,15 +65,6 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public PagedResult<Organization> List(string criteria = null, bool? isPaidPlan = null, bool? isSuspended = null, OrganizationSortBy sortBy = OrganizationSortBy.Newest, int page = 1, int pageSize = 10) {
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
-
             var queries = new List<IMongoQuery>();
             if (!String.IsNullOrWhiteSpace(criteria))
                 queries.Add(Query.Matches(OrganizationRepository.FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
@@ -113,6 +104,9 @@ namespace Exceptionless.App.Controllers.API {
             else
                 sort = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
 
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
+
             MongoCursor<Organization> query = queries.Count > 0 ? ((OrganizationRepository)_repository).Collection.Find(Query.And(queries)) : ((OrganizationRepository)_repository).Collection.FindAll();
             List<Organization> results = query.SetSortOrder(sort).SetSkip(skip).SetLimit(pageSize).ToList();
             return new PagedResult<Organization>(results) {
@@ -128,18 +122,12 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
                 return NotFound();
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
-
             Organization organization = _repository.GetByIdCached(id);
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
+
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             var invoiceService = new StripeInvoiceService();
             List<InvoiceGridModel> invoices = invoiceService.List(pageSize, skip, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();

@@ -97,14 +97,8 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
         public IEnumerable<ProjectInfoModel> List(int page = 1, int pageSize = 100) {
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             return base.Get().Skip(skip).Take(pageSize).Select(p => {
                 ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
@@ -116,18 +110,12 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpGet]
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
-        public PagedResult<ProjectInfoModel> GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
+        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
-                throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             List<Project> projects = _repository.GetByOrganizationId(organizationId).ToList();
             List<ProjectInfoModel> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {
@@ -144,7 +132,7 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
 
         protected override Project InsertEntity(Project value) {
@@ -243,22 +231,19 @@ namespace Exceptionless.App.Controllers.API {
         /// <returns>The Configuration for a specific project.</returns>
         [HttpGet]
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
-        public ClientConfiguration Config(string id = null) {
+        public IHttpActionResult Config(string id = null) {
             // TODO: Only the client should be using this..
             if (User.Identity.AuthenticationType.Equals("ApiKey"))
-                return User.Project.Configuration;
+                return Ok(User.Project.Configuration);
 
             if (String.IsNullOrEmpty(id))
-                throw new ArgumentException("id must be specified.", "id");
+                return NotFound();
 
-            Project entity = _repository.GetById(id);
-            if (entity == null)
-                throw new HttpResponseException(NotFoundErrorResponseMessage(id));
+            Project project = _repository.GetById(id);
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+                return NotFound();
 
-            if (!User.CanAccessOrganization(entity.OrganizationId))
-                throw new Exception("Invalid organization.");
-
-            return entity.Configuration;
+            return Ok(project.Configuration);
         }
 
         [HttpGet]

@@ -138,24 +138,16 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            start = start ?? DateTime.MinValue;
-            end = end ?? DateTime.MaxValue;
-
-            if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = start != DateTime.MinValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value) : DateTime.MinValue;
-            DateTime utcEnd = end != DateTime.MaxValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value) : DateTime.MaxValue;
+            DateTime utcStart = range.Item1 != DateTime.MinValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1) : DateTime.MinValue;
+            DateTime utcEnd = range.Item2 != DateTime.MaxValue ? _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2) : DateTime.MaxValue;
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             long count;
             List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -183,26 +175,18 @@ namespace Exceptionless.App.Controllers.API {
             if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
                 return NotFound();
 
-            start = start ?? DateTime.MinValue;
-            end = end ?? DateTime.MaxValue;
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
 
-            if (end.Value <= start.Value)
-                return NotFound();
-
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, end.Value);
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, range.Item1);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, range.Item2);
 
             Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             long count;
             List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize, out count).ToList();
