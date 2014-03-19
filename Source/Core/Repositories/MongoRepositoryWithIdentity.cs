@@ -36,15 +36,22 @@ namespace Exceptionless.Core {
         /// Returns the T by its given id.
         /// </summary>
         /// <param name="id">The string representing the ObjectId of the entity to retrieve.</param>
+        /// <param name="usePrimary">Force the document to be read from the primary.</param>
         /// <returns>The Entity T.</returns>
-        public T GetById(string id) {
+        public T GetById(string id, bool usePrimary = false) {
             if (String.IsNullOrWhiteSpace(id))
                 throw new ArgumentNullException("id");
 
             T result = null;
 
             try {
-                result = _collection.FindOneByIdAs<T>(new BsonObjectId(new ObjectId(id)));
+                var findArgs = new FindOneArgs {
+                    Query = Query.EQ("_id", new ObjectId(id))
+                };
+                if (usePrimary)
+                    findArgs.ReadPreference = ReadPreference.PrimaryPreferred;
+
+                result = _collection.FindOneAs<T>(findArgs);
             } catch (ArgumentOutOfRangeException) {}
 
             return result;
@@ -54,14 +61,15 @@ namespace Exceptionless.Core {
         /// Returns the T by its given id using a cache.
         /// </summary>
         /// <param name="id">The string representing the ObjectId of the entity to retrieve.</param>
+        /// <param name="usePrimary">Force the document to be read from the primary.</param>
         /// <returns>The Entity T.</returns>
-        public T GetByIdCached(string id) {
+        public T GetByIdCached(string id, bool usePrimary = false) {
             if (String.IsNullOrWhiteSpace(id))
                 throw new ArgumentNullException("id");
 
             var result = Cache.Get<T>(GetScopedCacheKey(id));
             if (result == null) {
-                result = GetById(id);
+                result = GetById(id, usePrimary);
 
                 if (result != null)
                     Cache.Set(GetScopedCacheKey(id), result);

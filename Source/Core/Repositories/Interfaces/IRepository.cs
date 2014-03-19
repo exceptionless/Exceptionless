@@ -24,27 +24,31 @@ namespace Exceptionless.Core {
         /// Adds the new entity in the repository.
         /// </summary>
         /// <param name="entity">The entity to add.</param>
+        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <returns>The added entity including its new ObjectId.</returns>
-        T Add(T entity);
+        T Add(T entity, bool addToCache = false);
 
         /// <summary>
         /// Adds the new entities in the repository.
         /// </summary>
+        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <param name="entities">The entities of type T.</param>
-        void Add(IEnumerable<T> entities);
+        void Add(IEnumerable<T> entities, bool addToCache = false);
 
         /// <summary>
         /// Updates an entity.
         /// </summary>
         /// <param name="entity">The entity.</param>
+        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <returns>The updated entity.</returns>
-        T Update(T entity);
+        T Update(T entity, bool addToCache = false);
 
         /// <summary>
         /// Updates the entities.
         /// </summary>
+        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <param name="entities">The entities to update.</param>
-        void Update(IEnumerable<T> entities);
+        void Update(IEnumerable<T> entities, bool addToCache = false);
 
         /// <summary>
         /// Deletes the given entity.
