@@ -308,7 +308,7 @@ namespace Exceptionless.Core {
             else
                 update.Unset(FieldNames.IsFixed);
 
-            Collection.Update(query, update);
+            Collection.Update(query, update, UpdateFlags.Multi);
         }
 
         public void UpdateHiddenByStackId(string stackId, bool value) {
@@ -323,7 +323,7 @@ namespace Exceptionless.Core {
             else
                 update.Unset(FieldNames.IsHidden);
 
-            Collection.Update(query, update);
+            Collection.Update(query, update, UpdateFlags.Multi);
         }
 
         public void RemoveAllByProjectId(string projectId) {
