@@ -39,7 +39,7 @@ namespace Exceptionless.Core {
         public virtual T Add(T entity, bool addToCache = false) {
             _collection.Insert<T>(entity);
             InvalidateCache(entity);
-            if (addToCache)
+            if (addToCache && Cache != null)
                 Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
             return entity;
         }
@@ -54,7 +54,7 @@ namespace Exceptionless.Core {
             _collection.InsertBatch<T>(list);
             foreach (var entity in list) {
                 InvalidateCache(entity);
-                if (addToCache)
+                if (addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
             }
         }
@@ -171,7 +171,7 @@ namespace Exceptionless.Core {
         public virtual T Update(T entity, bool addToCache = false) {
             InvalidateCache(entity);
             _collection.Save<T>(entity);
-            if (addToCache)
+            if (addToCache && Cache != null)
                 Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
 
             return entity;
@@ -184,7 +184,7 @@ namespace Exceptionless.Core {
         /// <param name="addToCache">Add the documents to the cache immediately.</param>
         public void Update(IEnumerable<T> entities, bool addToCache = false) {
             foreach (T entity in entities)
-                Update(entity);
+                Update(entity, addToCache);
         }
     }
 }

@@ -45,9 +45,7 @@ namespace Exceptionless.Core {
             T result = null;
 
             try {
-                var findArgs = new FindOneArgs {
-                    Query = Query.EQ("_id", new ObjectId(id))
-                };
+                var findArgs = new FindOneArgs { Query = Query.EQ("_id", new ObjectId(id)) };
                 if (usePrimary)
                     findArgs.ReadPreference = ReadPreference.PrimaryPreferred;
 
