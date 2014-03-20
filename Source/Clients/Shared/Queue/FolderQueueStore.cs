@@ -176,7 +176,7 @@ namespace Exceptionless.Queue {
         }
 
         private IEnumerable<FileInfo> GetManifestsSortedByOldestWriteFirst(DateTime? manifestsLastWriteTimeOlderThan = null) {
-            DateTime lastWriteTimeFilter = manifestsLastWriteTimeOlderThan ?? DateTime.Now;
+            DateTime lastWriteTimeFilter = manifestsLastWriteTimeOlderThan.HasValue ? manifestsLastWriteTimeOlderThan.Value : DateTime.Now;
 
             return GetManifestInfos().Where(m => m.LastWriteTime <= lastWriteTimeFilter).OrderBy(m => m.LastWriteTime);
         }
@@ -187,11 +187,10 @@ namespace Exceptionless.Queue {
 
         public IEnumerable<Manifest> GetManifests(int? limit = null, bool includePostponed = true, DateTime? manifestsLastWriteTimeOlderThan = null) {
             var manifests = new List<Manifest>();
-            IEnumerable<FileInfo> files;
+            IEnumerable<FileInfo> files = GetManifestsSortedByOldestWriteFirst(manifestsLastWriteTimeOlderThan);
+
             if (limit.HasValue)
-                files = GetManifestsSortedByOldestWriteFirst(manifestsLastWriteTimeOlderThan).Take(limit.Value).ToList();
-            else
-                files = GetManifestsSortedByOldestWriteFirst(manifestsLastWriteTimeOlderThan);
+                files = files.Take(limit.Value).ToList();
 
             foreach (string file in files.Select(i => i.FullName)) {
                 try {

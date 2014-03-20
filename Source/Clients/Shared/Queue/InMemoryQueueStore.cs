@@ -69,11 +69,10 @@ namespace Exceptionless.Queue {
         public IExceptionlessLogAccessor LogAccessor { get; set; }
 
         public virtual IEnumerable<Manifest> GetManifests(int? limit, bool includePostponed = true, DateTime? manifestsLastWriteTimeOlderThan = null) {
-            IEnumerable<Tuple<Manifest, Error>> manifests;
+            IEnumerable<Tuple<Manifest, Error>> manifests = _data.Where(m => includePostponed || m.Item1.ShouldRetry());
+
             if (manifestsLastWriteTimeOlderThan.HasValue)
-                manifests = _data.Where(m => includePostponed || m.Item1.ShouldRetry()).Where(m => m.Item1.LastAttempt.HasValue && m.Item1.LastAttempt < manifestsLastWriteTimeOlderThan.Value);
-            else
-                manifests = _data.Where(m => includePostponed || m.Item1.ShouldRetry());
+                manifests = manifests.Where(m => m.Item1.LastAttempt.HasValue && m.Item1.LastAttempt < manifestsLastWriteTimeOlderThan.Value);
 
             if (limit.HasValue)
                 manifests = manifests.Take(limit.Value);
