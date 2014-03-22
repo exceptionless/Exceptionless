@@ -6,7 +6,7 @@ module exceptionless.organization {
         private _navigationViewModel: NavigationViewModel;
         
         constructor(elementId: string, navigationElementId: string, organizationId: string) {
-            super(elementId, '/organization');
+            super(elementId);
 
             this._organizationId = organizationId;
             this._navigationViewModel = new NavigationViewModel(navigationElementId);
