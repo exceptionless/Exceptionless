@@ -15,11 +15,9 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core {
     public interface IErrorRepository : IRepositoryOwnedByOrganization<Error> {
-        IEnumerable<Error> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        IEnumerable<Error> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
 
-        IEnumerable<Error> GetByErrorStackId(string errorStackId, int? skip, int? take, out long count);
-
-        IEnumerable<Error> GetByErrorStackIdOccurrenceDate(string errorStackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count);
+        IEnumerable<Error> GetByErrorStackIdOccurrenceDate(string errorStackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take);
 
         string GetPreviousErrorOccurrenceId(string id);
 

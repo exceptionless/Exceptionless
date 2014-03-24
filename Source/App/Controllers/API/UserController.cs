@@ -65,10 +65,9 @@ namespace Exceptionless.App.Controllers.API {
             if (organization.Invites.Any())
                 results.AddRange(organization.Invites.Select(i => new UserModel { EmailAddress = i.EmailAddress, IsInvite = true }));
 
-            var result = new PagedResult<UserModel>(results.Skip(skip).Take(pageSize).ToList()) {
+            var result = new PagedResult<UserModel>(results.Skip(skip).Take(pageSize).ToList(), results.Count) {
                 Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = results.Count
+                PageSize = pageSize >= 1 ? pageSize : 10
             };
 
             return Ok(result);

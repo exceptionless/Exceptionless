@@ -3,14 +3,16 @@
 module exceptionless {
     export class PagerViewModel {
         private _id: string;
+        private _items = ko.observableArray<any>();
         pageSize = ko.observable(20);
         pageSlide = ko.observable(2);
 
         currentPage = ko.observable<number>(1);
         totalCount = ko.observable<number>(0);
 
-        constructor(id: string, totalCount?: number, pageSize?: number, pageSlide?: number) {
+        constructor(id: string, totalCount?: number, pageSize?: number, pageSlide?: number, items?: KnockoutObservableArray<any>) {
             this._id = id;
+            this._items = items;
 
             if (totalCount)
                 this.totalCount(totalCount);
@@ -36,19 +38,25 @@ module exceptionless {
 
         public get lastPage(): KnockoutComputed<number> {
             return ko.computed(() => {
-                return Math.floor((this.totalCount() - 1) / this.pageSize()) + 1;
+                return this.totalCount() !== null ? Math.floor((this.totalCount() - 1) / this.pageSize()) + 1 : null;
             }, this);
         }
 
         public get hasNextPage(): KnockoutComputed<boolean> {
             return ko.computed(() => {
-                return this.currentPage() < this.lastPage();
+                return this.lastPage() !== null ? this.currentPage() < this.lastPage() : this.currentItemsCount() === this.pageSize();
             }, this);
         }
 
         public get hasPreviousPage(): KnockoutComputed<boolean> {
             return ko.computed(() => {
                 return this.currentPage() > 1;
+            }, this);
+        }
+
+        public get currentItemsCount(): KnockoutComputed<number> {
+            return ko.computed(() => {
+                return this._items() ? this._items().length : this.pageSize();
             }, this);
         }
 
@@ -60,7 +68,7 @@ module exceptionless {
 
         public get lastItemIndex(): KnockoutComputed<number> {
             return ko.computed(() => {
-                return Math.min(this.firstItemIndex() + this.pageSize() - 1, this.totalCount());
+                return this.firstItemIndex() + this.currentItemsCount() - 1;
             }, this);
         }
         

@@ -504,7 +504,7 @@ namespace Exceptionless.Core {
 
         #region Queries
 
-        public IEnumerable<Error> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+        public IEnumerable<Error> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var conditions = new List<IMongoQuery> {
                 Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId)))
             };
@@ -532,25 +532,10 @@ namespace Exceptionless.Core {
             if (take.HasValue)
                 cursor.SetLimit(take.Value);
 
-            // TODO: this is consistently our slowest query
-            count = cursor.Count();
             return cursor;
         }
 
-        public IEnumerable<Error> GetByErrorStackId(string errorStackId, int? skip, int? take, out long count) {
-            var cursor = _collection.FindAs<Error>(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
-            count = cursor.Count();
-            return cursor;
-        }
-
-        public IEnumerable<Error> GetByErrorStackIdOccurrenceDate(string errorStackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count) {
+        public IEnumerable<Error> GetByErrorStackIdOccurrenceDate(string errorStackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take) {
             var cursor = _collection.FindAs<Error>(Query.And(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))), Query.GTE(FieldNames.OccurrenceDate_UTC, utcStart.Ticks), Query.LTE(FieldNames.OccurrenceDate_UTC, utcEnd.Ticks)));
             cursor.SetSortOrder(SortBy.Descending(FieldNames.OccurrenceDate_UTC));
 
@@ -560,7 +545,6 @@ namespace Exceptionless.Core {
             if (take.HasValue)
                 cursor.SetLimit(take.Value);
 
-            count = cursor.Count();
             return cursor;
         }
 

@@ -254,10 +254,9 @@ namespace Exceptionless.App.Controllers.API {
             List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<ErrorStack, ErrorStackResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan) {
+            var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
                 Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
+                PageSize = pageSize >= 1 ? pageSize : 10
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).

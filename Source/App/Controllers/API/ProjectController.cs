@@ -125,10 +125,9 @@ namespace Exceptionless.App.Controllers.API {
                 return pi;
             }).ToList();
 
-            var result = new PagedResult<ProjectInfoModel>(projectInfos) {
+            var result = new PagedResult<ProjectInfoModel>(projectInfos, projects.Count) {
                 Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = projects.Count
+                PageSize = pageSize >= 1 ? pageSize : 10
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
