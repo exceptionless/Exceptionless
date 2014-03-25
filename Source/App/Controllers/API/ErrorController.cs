@@ -157,15 +157,12 @@ namespace Exceptionless.App.Controllers.API {
             else if (pageSize > 100)
                 pageSize = 100;
 
-            long count;
-            List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
+            List<Error> query = _repository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, hidden, @fixed, notfound).ToList();
             List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUtcCutoff).Select(e => e.ToProjectLocalTime(project)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 
-            long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
+            var result = new PlanPagedResult<ErrorResult>(models, query.Count > models.Count) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
             };
 
             // TODO: Only return the Exception Type properties type name without the namespace.
@@ -204,16 +201,13 @@ namespace Exceptionless.App.Controllers.API {
             else if (pageSize > 100)
                 pageSize = 100;
 
-            long count;
-            List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize, out count).ToList();
+            List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize).ToList();
 
             List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUtcCutoff).Select(e => e.ToProjectLocalTime(_projectRepository)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 
-            long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorResult>(models, totalLimitedByPlan) {
+            var result = new PlanPagedResult<ErrorResult>(models, query.Count > models.Count) {
                 Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
+                PageSize = pageSize >= 1 ? pageSize : 10
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).

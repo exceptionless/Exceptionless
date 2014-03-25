@@ -103,7 +103,7 @@ namespace Exceptionless.App.Controllers.API {
             List<ErrorStack> query = _errorStackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
             List<ErrorStack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
-            var result = new PlanPagedResult<ErrorStackResult>(null, query.Count - errorStacks.Count);
+            var result = new PlanPagedResult<ErrorStackResult>(null, totalLimitedByPlan: query.Count - errorStacks.Count, totalCount: count);
             result.Results.AddRange(errorStacks.Select(s => new ErrorStackResult {
                 Id = s.Id,
                 Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null,
@@ -116,7 +116,6 @@ namespace Exceptionless.App.Controllers.API {
                 Last = s.LastOccurrence
             }));
 
-            result.TotalCount = count;
             result.Page = page > 1 ? page : 1;
             result.PageSize = pageSize >= 1 ? pageSize : 10;
 
@@ -147,7 +146,7 @@ namespace Exceptionless.App.Controllers.API {
             else if (pageSize > 100)
                 pageSize = 100;
 
-            var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList(), totalLimitedByPlan);
+            var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList());
             IQueryable<ErrorStack> errorStacks = _errorStackRepository.GetByIds(ers.Results.Select(s => s.Id));
             foreach (ErrorStackResult stats in ers.Results.ToList()) {
                 ErrorStack stack = errorStacks.SingleOrDefault(s => s.Id == stats.Id);

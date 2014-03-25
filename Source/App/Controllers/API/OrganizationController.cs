@@ -115,10 +115,9 @@ namespace Exceptionless.App.Controllers.API {
 
             MongoCursor<Organization> query = queries.Count > 0 ? ((OrganizationRepository)_repository).Collection.Find(Query.And(queries)) : ((OrganizationRepository)_repository).Collection.FindAll();
             List<Organization> results = query.SetSortOrder(sort).SetSkip(skip).SetLimit(pageSize).ToList();
-            return new PagedResult<Organization>(results) {
+            return new PagedResult<Organization>(results, query.Count()) {
                 Page = page,
-                PageSize = pageSize,
-                TotalCount = query.Count()
+                PageSize = pageSize
             };
         }
 
@@ -145,8 +144,7 @@ namespace Exceptionless.App.Controllers.API {
             List<InvoiceGridModel> invoices = invoiceService.List(pageSize, skip, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
             return Ok(new PagedResult<InvoiceGridModel>(invoices) {
                 Page = page,
-                PageSize = pageSize,
-                TotalCount = invoices.Count // TODO: Return the total count.
+                PageSize = pageSize
             });
         }
 

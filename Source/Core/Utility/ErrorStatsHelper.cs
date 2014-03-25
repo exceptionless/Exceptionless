@@ -182,7 +182,7 @@ namespace Exceptionless.Core.Utility {
                     .Select(v => new ErrorStackResult {
                         Id = v.Key,
                         Total = v.Sum(kvp => kvp.Value)
-                    }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan),
+                    }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan: totalLimitedByPlan, totalCount: days.Count),
                 Stats = days.GroupBy(s => s.Key.Floor(groupTimeSpan)).Select(kvp => new DateProjectStatsResult {
                     Date = kvp.Key,
                     Total = kvp.Sum(b => b.Value.Total),
@@ -306,7 +306,7 @@ namespace Exceptionless.Core.Utility {
                     .Select(v => new ErrorStackResult {
                         Id = v.Key,
                         Total = v.Sum(kvp => kvp.Value),
-                    }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan),
+                    }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan: totalLimitedByPlan, totalCount: minuteBlocks.Count),
                 Stats = minuteBlocks.GroupBy(s => s.Key.Floor(groupTimeSpan)).Select(kvp => new DateProjectStatsResult {
                     Date = kvp.Key,
                     Total = kvp.Sum(b => b.Value.Total),

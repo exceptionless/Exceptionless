@@ -17,7 +17,7 @@ module exceptionless {
 
             this.registerNewItemRules();
 
-            this.pager = new PagerViewModel(elementId + '-page', 0, pageSize);
+            this.pager = new PagerViewModel(elementId + '-page', 0, pageSize, null, this.items);
             this.pager.currentPage.subscribe(() => {
                 $.scrollTo('#' + elementId, { offset: { top: -110 } });
                 this.refreshViewModelData();
@@ -59,10 +59,10 @@ module exceptionless {
             if (!data)
                 return;
 
-            this.totalLimitedByPlan(data.TotalLimitedByPlan);
+            this.totalLimitedByPlan(data.IsLimitedByPlan);
 
             var results = data.Results ? data.Results : data;
-            this.pager.totalCount(data.TotalCount ? data.TotalCount : data.length);
+            this.pager.totalCount(data.TotalCount);
 
             // HACK: We can remove this once ODATA supports paging.
             if (data.PageSize)
