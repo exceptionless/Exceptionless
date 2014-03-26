@@ -118,6 +118,7 @@ namespace Exceptionless.App.Controllers.API {
                     //original.FixedInVersion = "TODO";
                     original.IsRegressed = false;
                 } else {
+                    //original.DateFixed = null;
                     //original.FixedInVersion = null;
                 }
             }
@@ -131,7 +132,7 @@ namespace Exceptionless.App.Controllers.API {
                 _repository.InvalidateFixedIdsCache(original.ProjectId);
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return stack;
         }
@@ -181,6 +182,7 @@ namespace Exceptionless.App.Controllers.API {
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
+            // TODO: Implement Fixed in version.
             stack.DateFixed = DateTime.UtcNow;
             //stack.FixedInVersion = "TODO";
             stack.IsRegressed = false;
@@ -191,7 +193,7 @@ namespace Exceptionless.App.Controllers.API {
             _repository.InvalidateFixedIdsCache(stack.ProjectId);
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -224,7 +226,7 @@ namespace Exceptionless.App.Controllers.API {
             }
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -281,7 +283,7 @@ namespace Exceptionless.App.Controllers.API {
                 return;
 
             _dataHelper.ResetStackData(id);
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
         }
     }
 }

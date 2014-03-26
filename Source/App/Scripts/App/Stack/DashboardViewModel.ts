@@ -30,11 +30,11 @@ module exceptionless.stack {
             this._stats.subscribe(() => this.tryUpdateChart());
             this.fixedOn.subscribe((date: Date) => this.isFixed(date != null));
 
-            var notificiation = DataUtil.getQueryStringValue('notification');
-            if (!StringUtil.isNullOrEmpty(notificiation)) {
-                if (notificiation === 'mark-fixed') {
+            var notification = DataUtil.getQueryStringValue('notification');
+            if (!StringUtil.isNullOrEmpty(notification)) {
+                if (notification === 'mark-fixed') {
                     App.showSuccessNotification('Successfully marked the error stack as fixed.', null, { fadeOut: 10000, extendedTimeOut: 1000 });
-                } else if (notificiation === 'stop-notifications') {
+                } else if (notification === 'stop-notifications') {
                     App.showSuccessNotification('Successfully updated the error stack notification settings.', null, { fadeOut: 10000, extendedTimeOut: 1000 });
                 }
 
@@ -78,8 +78,8 @@ module exceptionless.stack {
             this.populateViewModel(data);
             this.applyBindings();
 
-            exceptionless.App.onStackUpdated.subscribe((value: any) => {
-                if (value.stackId === this._errorStackId && this.canRetrieve)
+            exceptionless.App.onStackUpdated.subscribe((stack) => {
+                if (stack.id === this._errorStackId && this.canRetrieve)
                     this.refreshViewModelData();
             });
 
@@ -90,6 +90,20 @@ module exceptionless.stack {
 
             this.refreshViewModelData();
             this._pagedErrorsByErrorStackIdViewModel = new error.PagedErrorsByErrorStackIdViewModel(recentElementId, errorStackId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
+        }
+
+        public onStackUpdated(stack) {
+            if (stack.id !== this._errorStackId)
+                return;
+
+            super.onStackUpdated(stack);
+        }
+
+        public onNewError(error) {
+            if (error.stackId !== this._errorStackId)
+                return;
+
+	        super.onNewError(error);
         }
 
         public populateViewModel(data?: any) {

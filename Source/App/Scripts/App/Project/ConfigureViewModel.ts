@@ -26,9 +26,9 @@ module exceptionless.project {
                 });
             });
 
-            exceptionless.App.onErrorOccurred.subscribe(() => {
+            exceptionless.App.onNewError.subscribe((error) => {
                 if (App.selectedProject().totalErrorCount === 0) {
-                    window.location.href = '/project/' + App.selectedProject().id;
+                    window.location.href = '/project/' + error.projectId;
                 }
             });
 

@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Pipeline {
                 var signature = _signatureFactory.GetSignature(ctx.Error);
                 ctx.StackingInfo = ctx.Error.GetStackingInfo();
                 // Set Path to be the only thing we stack on for 404 errors
-                if (ctx.Error.Code == "404" && ctx.Error.RequestInfo != null) {
+                if (ctx.Error.Is404() && ctx.Error.RequestInfo != null) {
                     Log.Trace().Message("Updating SignatureInfo for 404 error.").Write();
                     signature.SignatureInfo.Clear();
                     signature.SignatureInfo.Add("HttpMethod", ctx.Error.RequestInfo.HttpMethod);

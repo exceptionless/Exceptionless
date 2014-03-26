@@ -55,10 +55,19 @@ namespace Exceptionless.App.Hubs {
                                 Ping(this, EventArgs.Empty);
 
                             string[] parts = msg.Split(':');
-                            if (parts.Length != 2)
+                            if (parts.Length != 6)
                                 return;
 
-                            NewError(parts[0], parts[1]);
+                            bool isHidden;
+                            Boolean.TryParse(parts[3], out isHidden);
+
+                            bool isFixed;
+                            Boolean.TryParse(parts[4], out isFixed);
+
+                            bool is404;
+                            Boolean.TryParse(parts[5], out is404);
+
+                            NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
                         };
                         RetryUtil.Retry(() => subscription.SubscribeToChannels(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY));
                     }
@@ -157,7 +166,7 @@ namespace Exceptionless.App.Hubs {
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
 
-        public void StackUpdated(string organizationId, string projectId, string stackId) {
+        public void StackUpdated(string organizationId, string projectId, string stackId, bool isHidden, bool isFixed, bool is404) {
             if (!Settings.Current.EnableSignalR)
                 return;
 
@@ -173,11 +182,11 @@ namespace Exceptionless.App.Hubs {
             if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
-            context.Clients.Group(organizationId).stackUpdated(projectId, stackId);
+            context.Clients.Group(organizationId).stackUpdated(projectId, stackId, isHidden, isFixed, is404);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
 
-        public void NewError(string organizationId, string projectId) {
+        public void NewError(string organizationId, string projectId, string stackId, bool isHidden, bool isFixed, bool is404) {
             if (!Settings.Current.EnableSignalR)
                 return;
 
@@ -194,7 +203,7 @@ namespace Exceptionless.App.Hubs {
             if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
-            context.Clients.Group(organizationId).newError(projectId);
+            context.Clients.Group(organizationId).newError(projectId, stackId, isHidden, isFixed, is404);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
     }

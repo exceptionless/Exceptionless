@@ -89,5 +89,12 @@ namespace Exceptionless.Core.Extensions {
 
             return error == null ? null : new StackingInfo(error, errorSignatureFactory);
         }
+
+        public static bool Is404(this Error error) {
+            if (error == null)
+                return false;
+
+            return error.Code == "404";
+        }
     }
 }

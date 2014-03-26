@@ -83,21 +83,43 @@ module exceptionless {
                     this._canRetrieve = true;
             });
 
-            App.onStackUpdated.subscribe(() => {
-                if (this.pager.currentPage() === 1 && this.canRetrieve)
-                    this.refreshViewModelData();
-            });
-
-            App.onErrorOccurred.subscribe(() => {
-                if (this.pager.currentPage() === 1 && this.canRetrieve)
-                    this.refreshViewModelData();
-            });
+            App.onStackUpdated.subscribe((stack) => this.onStackUpdated(stack));
+            App.onNewError.subscribe((error) => this.onNewError(error));
 
             App.selectedPlan.subscribe((plan: account.BillingPlan) => {
                 $('#free-plan-notification').hide();
                 if (plan.id === Constants.FREE_PLAN_ID)
                     $('#free-plan-notification').show();
             });
+        }
+
+        public onStackUpdated(stack) {
+            if (stack.isHidden && !this.filterViewModel.showHidden)
+                return;
+
+            if (stack.isFixed && !this.filterViewModel.showFixed)
+                return;
+
+            if (stack.is404 && !this.filterViewModel.showNotFound)
+                return;
+
+            if (this.pager.currentPage() === 1 && this.canRetrieve)
+                this.refreshViewModelData();
+        }
+
+        public onNewError(error) {
+            if (error.isHidden && !this.filterViewModel.showHidden)
+                return;
+
+            if (error.isFixed && !this.filterViewModel.showFixed)
+                return;
+
+            if (error.is404 && !this.filterViewModel.showNotFound)
+                return;
+
+            console.log(error);
+            if (this.pager.currentPage() === 1 && this.canRetrieve)
+                this.refreshViewModelData();
         }
 
         public get canRetrieve(): boolean {

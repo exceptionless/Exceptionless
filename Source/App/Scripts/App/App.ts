@@ -11,8 +11,8 @@ module exceptionless {
         public static onPlanChanged = ko.observable<{ organizationId: string; }>();
         public static onOrganizationUpdated = ko.observable<{ organizationId: string; }>();
         public static onProjectUpdated = ko.observable<{ projectId: string; }>();
-        public static onStackUpdated = ko.observable<{ stackId: string; }>();
-        public static onErrorOccurred = ko.observable<{ projectId: string; }>();
+        public static onStackUpdated = ko.observable<{ projectId: string; id: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
+        public static onNewError = ko.observable<{ projectId: string; stackId: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
 
         public static organizations = ko.observableArray<models.Organization>([]);
         private static _previousOrganization: models.Organization;
@@ -509,14 +509,14 @@ module exceptionless {
                 App.onProjectUpdated({ projectId: projectId });
             };
 
-            notifier.client.stackUpdated = (projectId: string, stackId: string) => {
+            notifier.client.stackUpdated = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onStackUpdated({ stackId: stackId });
+                    App.onStackUpdated({ projectId: projectId, id: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
             };
 
-            notifier.client.newError = (projectId: string) => {
+            notifier.client.newError = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onErrorOccurred({ projectId: App.selectedProject().id });
+                    App.onNewError({ projectId: projectId, stackId: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
             };
 
             $.connection.hub.start();
