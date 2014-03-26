@@ -34,13 +34,10 @@ namespace Exceptionless.Core {
         /// Adds the new entity in the repository.
         /// </summary>
         /// <param name="entity">The entity T.</param>
-        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <returns>The added entity including its new ObjectId.</returns>
-        public virtual T Add(T entity, bool addToCache = false) {
+        public virtual T Add(T entity) {
             _collection.Insert<T>(entity);
             InvalidateCache(entity);
-            if (addToCache && Cache != null)
-                Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
             return entity;
         }
 
@@ -48,15 +45,11 @@ namespace Exceptionless.Core {
         /// Adds the new entities in the repository.
         /// </summary>
         /// <param name="entities">The entities of type T.</param>
-        /// <param name="addToCache">Add the documents to the cache immediately.</param>
-        public virtual void Add(IEnumerable<T> entities, bool addToCache = false) {
+        public virtual void Add(IEnumerable<T> entities) {
             var list = entities.ToList();
             _collection.InsertBatch<T>(list);
-            foreach (var entity in list) {
+            foreach (var entity in list)
                 InvalidateCache(entity);
-                if (addToCache && Cache != null)
-                    Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
-            }
         }
 
         /// <summary>
@@ -166,13 +159,10 @@ namespace Exceptionless.Core {
         /// Updates an entity.
         /// </summary>
         /// <param name="entity">The entity.</param>
-        /// <param name="addToCache">Add the document to the cache immediately.</param>
         /// <returns>The updated entity.</returns>
-        public virtual T Update(T entity, bool addToCache = false) {
+        public virtual T Update(T entity) {
             InvalidateCache(entity);
             _collection.Save<T>(entity);
-            if (addToCache && Cache != null)
-                Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
 
             return entity;
         }
@@ -181,10 +171,9 @@ namespace Exceptionless.Core {
         /// Updates the entities.
         /// </summary>
         /// <param name="entities">The entities to update.</param>
-        /// <param name="addToCache">Add the documents to the cache immediately.</param>
-        public void Update(IEnumerable<T> entities, bool addToCache = false) {
+        public void Update(IEnumerable<T> entities) {
             foreach (T entity in entities)
-                Update(entity, addToCache);
+                Update(entity);
         }
     }
 }

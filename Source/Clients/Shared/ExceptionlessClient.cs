@@ -146,7 +146,7 @@ namespace Exceptionless {
         /// </summary>
         internal ExceptionlessClient(IQueueStore store = null, IExceptionlessLog log = null) {
             _queueTimer = new Timer(OnQueueTimer, null, Timeout.Infinite, Timeout.Infinite);
-            _log = log ?? new NullExceptionlessLog();
+            _log = log ?? _nullLogger;
 
             try {
                 _configuration = Config.ClientConfiguration.Create(this);

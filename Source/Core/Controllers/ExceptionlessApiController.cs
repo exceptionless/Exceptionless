@@ -50,34 +50,5 @@ namespace Exceptionless.Core.Controllers {
         protected virtual HttpResponseMessage PlanLimitReached(string message = "Your plan limit has been reached. Please upgrade your plan.") {
             return Request != null ? Request.CreateErrorResponse(HttpStatusCode.UpgradeRequired, message) : new HttpResponseMessage(HttpStatusCode.UpgradeRequired);
         }
-
-        protected int GetPageSize(int pageSize) {
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
-
-            return pageSize;
-        }
-
-        protected int GetSkip(int currentPage, int pageSize) {
-            int skip = (currentPage - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            return skip;
-        }
-
-        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
-            if (starTime == null)
-                starTime = DateTime.MinValue;
-
-            if (endTime == null)
-                endTime = DateTime.MaxValue;
-
-            return starTime < endTime 
-                ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) 
-                : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
-        }
     }
 }

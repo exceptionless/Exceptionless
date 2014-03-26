@@ -264,7 +264,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.format(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDate'] = true;
@@ -276,7 +276,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDayYear(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithMonthDayYear'] = true;
@@ -288,7 +288,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDay(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithMonthDay'] = true;
@@ -300,7 +300,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFullDateAndTime(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithFullDateAndTime'] = true;
@@ -329,7 +329,7 @@ module exceptionless {
                             $(element).text(date.fromNow()).livestamp(date);
                         }
                     } else {
-                        $(element).text(<any>value).livestamp('destroy');
+                        $(element).text(value).livestamp('destroy');
                     }
                 }
             };
@@ -342,7 +342,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyFullDate(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyFullDate'] = true;
@@ -354,7 +354,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyMonthDayYear(moment(value)));
                     else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyMonthDayYear'] = true;
@@ -370,7 +370,7 @@ module exceptionless {
                             $(element).text((<any>value.start()).twix(value.end()).format());
                         }
                     } else
-                        $(element).text(<any>value);
+                        $(element).text(value);
                 }
             };
             ko.virtualElements.allowedBindings['customDateRangeFriendlyName'] = true;

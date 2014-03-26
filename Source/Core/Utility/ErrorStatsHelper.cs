@@ -43,29 +43,47 @@ namespace Exceptionless.Core.Utility {
         }
 
         public ProjectErrorStatsResult GetProjectErrorStats(string projectId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null, bool includeHidden = false, bool includeFixed = false, bool include404s = true) {
-            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job.
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
+
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            // round date range to blocks of 15 minutes since stats are per 15 minute block
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromMinutes(15));
             if (retentionStartDate.HasValue)
                 retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
 
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromMinutes(15));
-            if (range.Item1 == range.Item2)
-                return new ProjectErrorStatsResult();
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
 
-            // Use finer grained minute blocks if the range is less than 5 days.
-            return range.Item2.Subtract(range.Item1).TotalDays < 5 
-                ? GetProjectErrorStatsByMinuteBlock(projectId, utcOffset, localStartDate, localEndDate, retentionStartDate, includeHidden, includeFixed, include404s) 
-                : GetProjectErrorStatsByDay(projectId, utcOffset, localStartDate, localEndDate, retentionStartDate, includeHidden, includeFixed, include404s);
+            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job
+
+            // use finer grained minute blocks if the range is less than 5 days
+            if (localEndDate.Value.Subtract(localStartDate.Value).TotalDays < 5)
+                return GetProjectErrorStatsByMinuteBlock(projectId, utcOffset, localStartDate, localEndDate, retentionStartDate, includeHidden, includeFixed, include404s);
+
+            return GetProjectErrorStatsByDay(projectId, utcOffset, localStartDate, localEndDate, retentionStartDate, includeHidden, includeFixed, include404s);
         }
 
         public ProjectErrorStatsResult GetProjectErrorStatsByDay(string projectId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job
-            // Round date range to be full days since stats are per day.
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromDays(1));
-            if (range.Item1 == range.Item2)
-                return new ProjectErrorStatsResult();
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
 
-            localStartDate = range.Item1;
-            localEndDate = range.Item2;
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job
+
+            // round date range to be full days since stats are per day
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromDays(1));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromDays(1));
+            if (retentionStartDate.HasValue)
+                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromDays(1));
+
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
 
             var results = _monthProjectStats.Collection.Find(
                 Query.And(
@@ -82,31 +100,28 @@ namespace Exceptionless.Core.Utility {
                 }
 
                 if (!includeHidden) {
-                    // Remove stats from hidden doc ids.
+                    // remove stats from hidden doc ids.
                     var hiddenIds = _errorStackRepository.GetHiddenIds(projectId);
                     if (hiddenIds.Length > 0)
                         DecrementMonthProjectStatsByStackIds(results, hiddenIds);
                 }
 
                 if (!includeNotFound) {
-                    // Remove stats from not found doc ids.
+                    // remove stats from not found doc ids.
                     var notFoundIds = _errorStackRepository.GetNotFoundIds(projectId);
                     if (notFoundIds.Length > 0)
                         DecrementMonthProjectStatsByStackIds(results, notFoundIds);
                 }
 
                 if (!includeFixed) {
-                    // Remove stats from not found doc ids.
+                    // remove stats from not found doc ids.
                     var fixedIds = _errorStackRepository.GetFixedIds(projectId);
                     if (fixedIds.Length > 0)
                         DecrementMonthProjectStatsByStackIds(results, fixedIds);
                 }
             }
 
-            if (retentionStartDate.HasValue)
-                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromDays(1));
-
-            // Use finer grained minute blocks if the range is less than 5 days.
+            // use finer grained minute blocks if the range is less than 5 days
             if (localEndDate.Value.Subtract(localStartDate.Value).TotalDays < 5)
                 return GetProjectErrorStatsByMinuteBlock(projectId, utcOffset, localStartDate, localEndDate, retentionStartDate, includeHidden, includeFixed, includeNotFound);
 
@@ -118,13 +133,13 @@ namespace Exceptionless.Core.Utility {
                 currentDay = currentDay.AddMonths(1);
             }
 
-            // Add missing month documents.
+            // add missing month documents
             foreach (var monthDocId in monthDocIds) {
                 if (!results.Exists(d => d.Id == GetMonthProjectStatsId(monthDocId.Item1, monthDocId.Item2, utcOffset, projectId)))
                     results.Add(CreateBlankMonthProjectStats(utcOffset, new DateTime(monthDocId.Item1, monthDocId.Item2, 1), projectId));
             }
 
-            // Fill out missing days with blank stats.
+            // fill out missing days with blank stats
             foreach (MonthProjectStats r in results) {
                 DateTime date = r.GetDateFromDayStatKey("1");
                 int daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
@@ -147,7 +162,7 @@ namespace Exceptionless.Core.Utility {
             if (totalLimitedByPlan > 0)
                 days = days.Where(kvp => kvp.Key >= retentionStartDate).ToList();
 
-            // Group data points by a time span to limit the number of returned data points.
+            // group data points by a time span to limit the number of returned data points
             TimeSpan groupTimeSpan = TimeSpan.FromDays(1);
             if (days.Count > 50) {
                 DateTime first = days.Min(m => m.Key);
@@ -180,13 +195,23 @@ namespace Exceptionless.Core.Utility {
         }
 
         public ProjectErrorStatsResult GetProjectErrorStatsByMinuteBlock(string projectId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            // Round date range to blocks of 15 minutes since stats are per 15 minute block.
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromMinutes(15));
-            if (range.Item1 == range.Item2)
-                return new ProjectErrorStatsResult();
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
 
-            DateTime utcStartDate = new DateTimeOffset(range.Item1.Ticks, utcOffset).UtcDateTime;
-            DateTime utcEndDate = new DateTimeOffset(range.Item2.Ticks, utcOffset).UtcDateTime;
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            // round date range to blocks of 15 minutes since stats are per 15 minute block
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromMinutes(15));
+            if (retentionStartDate.HasValue)
+                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
+
+            DateTime utcStartDate = new DateTimeOffset(localStartDate.Value.Ticks, utcOffset).UtcDateTime;
+            DateTime utcEndDate = new DateTimeOffset(localEndDate.Value.Ticks, utcOffset).UtcDateTime;
 
             List<DayProjectStats> results = _dayProjectStats.Collection.Find(
                 Query.And(
@@ -248,9 +273,6 @@ namespace Exceptionless.Core.Utility {
                 }
             }
 
-            if (retentionStartDate.HasValue)
-                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
-
             var minuteBlocks = new List<KeyValuePair<DateTime, ErrorStatsWithStackIds>>();
             minuteBlocks = results.Aggregate(minuteBlocks, (current, result) => current.Concat(result.MinuteStats.ToDictionary(kvp => result.GetDateFromMinuteStatKey(kvp.Key), kvp => kvp.Value)).ToList())
                 .Where(kvp => kvp.Key >= utcStartDate && kvp.Key <= utcEndDate).OrderBy(kvp => kvp.Key).ToList();
@@ -299,31 +321,44 @@ namespace Exceptionless.Core.Utility {
         }
 
         public StackStatsResult GetErrorStackStats(string errorStackId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null) {
-            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
+
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            // round date range to blocks of 15 minutes since stats are per 15 minute block
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromMinutes(15));
             if (retentionStartDate.HasValue)
                 retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
 
-            // Round date range to blocks of 15 minutes since stats are per 15 minute block.
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromMinutes(15));
-            if (range.Item1 == range.Item2)
-                return new StackStatsResult();
-           
-            // Use finer grained minute blocks if the range is less than 5 days.
-            return range.Item2.Subtract(range.Item1).TotalDays < 5
-                ? GetErrorStackStatsByMinuteBlock(errorStackId, utcOffset, range.Item1, range.Item2, retentionStartDate)
-                : GetErrorStackStatsByDay(errorStackId, utcOffset, range.Item1, range.Item2, retentionStartDate);
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
+
+            // TODO: Check to see if we have day stats available for the project, if not, then use minute stats and queue new project offset to be created in a job
+
+            // use finer grained minute blocks if the range is less than 5 days
+            if (localEndDate.Value.Subtract(localStartDate.Value).TotalDays < 5)
+                return GetErrorStackStatsByMinuteBlock(errorStackId, utcOffset, localStartDate, localEndDate, retentionStartDate);
+
+            return GetErrorStackStatsByDay(errorStackId, utcOffset, localStartDate, localEndDate, retentionStartDate);
         }
 
         public StackStatsResult GetErrorStackStatsByDay(string errorStackId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null) {
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
+
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromDays(1));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromDays(1));
             if (retentionStartDate.HasValue)
                 retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromDays(1));
 
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromDays(1));
-            if (range.Item1 == range.Item2)
-                return new StackStatsResult();
-
-            localStartDate = range.Item1;
-            localEndDate = range.Item2;
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
 
             var results = _monthStackStats.Collection.Find(
                 Query.And(
@@ -386,13 +421,22 @@ namespace Exceptionless.Core.Utility {
         }
 
         public StackStatsResult GetErrorStackStatsByMinuteBlock(string errorStackId, TimeSpan utcOffset, DateTime? localStartDate = null, DateTime? localEndDate = null, DateTime? retentionStartDate = null) {
-            // Round date range to blocks of 15 minutes since stats are per 15 minute block.
-            var range = GetDateRange(localStartDate, localEndDate, utcOffset, TimeSpan.FromMinutes(15));
-            if (range.Item1 == range.Item2)
-                return new StackStatsResult();
+            if (localStartDate == null)
+                localStartDate = new DateTime(2012, 1, 1);
 
-            DateTime utcStartDate = new DateTimeOffset(range.Item1.Ticks, utcOffset).UtcDateTime;
-            DateTime utcEndDate = new DateTimeOffset(range.Item2.Ticks, utcOffset).UtcDateTime;
+            if (localEndDate == null)
+                localEndDate = DateTime.UtcNow.Add(utcOffset);
+
+            localStartDate = localStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+            localEndDate = localEndDate.Value.Ceiling(TimeSpan.FromMinutes(15));
+            if (retentionStartDate.HasValue)
+                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
+
+            if (localEndDate.Value <= localStartDate.Value)
+                throw new ArgumentException("End date must be greater than start date.", "localEndDate");
+
+            DateTime utcStartDate = new DateTimeOffset(localStartDate.Value.Ticks, utcOffset).UtcDateTime;
+            DateTime utcEndDate = new DateTimeOffset(localEndDate.Value.Ticks, utcOffset).UtcDateTime;
 
             List<DayStackStats> results = _dayStackStats.Collection.Find(
                 Query.And(
@@ -432,9 +476,6 @@ namespace Exceptionless.Core.Utility {
                         r.MinuteStats.Add(minuteBlock.ToString("0000"), 0);
                 }
             }
-
-            if (retentionStartDate.HasValue)
-                retentionStartDate = retentionStartDate.Value.Floor(TimeSpan.FromMinutes(15));
 
             var minuteBlocks = new List<KeyValuePair<DateTime, int>>();
             minuteBlocks = results.Aggregate(minuteBlocks, (current, result) => current.Concat(result.MinuteStats.ToDictionary(kvp => result.GetDateFromMinuteStatKey(kvp.Key), kvp => kvp.Value)).ToList())
@@ -956,20 +997,6 @@ namespace Exceptionless.Core.Utility {
                     cm2.GetMemberMap(c => c.NewTotal).SetElementName("new");
                 });
             }
-        }
-
-        private Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime, TimeSpan utcOffset, TimeSpan roundingInterval) {
-            if (starTime == null)
-                starTime = new DateTime(2012, 1, 1);
-
-            if (endTime == null)
-                endTime = DateTime.UtcNow.Add(utcOffset);
-
-            // Round date range to blocks of X (minutes/hours) since stats are per X (minutes/hours) block.
-            starTime = starTime.Value.Floor(roundingInterval);
-            endTime = endTime.Value.Ceiling(roundingInterval);
-
-            return starTime < endTime ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
         }
     }
 }

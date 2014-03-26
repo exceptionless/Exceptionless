@@ -230,24 +230,32 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        public IHttpActionResult New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public PlanPagedResult<ErrorStackResult> New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                return NotFound();
+                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                return NotFound();
+                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
+            start = start ?? DateTime.MinValue;
+            end = end ?? DateTime.MaxValue;
+
+            if (end.Value <= start.Value)
+                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
 
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
+            int skip = (page - 1) * pageSize;
+            if (skip < 0)
+                skip = 0;
+
+            if (pageSize < 1)
+                pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<ErrorStack> query = _repository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -260,7 +268,7 @@ namespace Exceptionless.App.Controllers.API {
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return Ok(result);
+            return result;
         }
 
         [HttpGet]

@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Pipeline {
                         LastOccurrence = ctx.Error.OccurrenceDate.UtcDateTime
                     };
 
-                    _stackRepository.Add(stack, true);
+                    _stackRepository.Add(stack);
                     ctx.StackInfo = new ErrorStackInfo {
                         Id = stack.Id,
                         DateFixed = stack.DateFixed,
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Pipeline {
                 Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.StackInfo.Id).Write();
                 ctx.Error.ErrorStackId = ctx.StackInfo.Id;
             } else {
-                var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId, true);
+                var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId);
 
                 // TODO: Update unit tests to work with this check.
                 //if (stack == null || stack.ProjectId != error.ProjectId)
