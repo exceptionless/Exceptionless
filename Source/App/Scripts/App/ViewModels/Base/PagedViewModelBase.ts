@@ -3,7 +3,7 @@
 module exceptionless {
     export class PagedViewModelBase<T> extends ViewModelBase {
         action = '';
-        totalLimitedByPlan = ko.observable<boolean>(false);
+        totalLimitedByPlan = ko.observable<number>(0);
         items = ko.observableArray<T>([]);
         pager: PagerViewModel;
         newItem: any;
@@ -59,7 +59,7 @@ module exceptionless {
             if (!data)
                 return;
 
-            this.totalLimitedByPlan(data.IsLimitedByPlan);
+			this.totalLimitedByPlan(data.TotalLimitedByPlan && data.TotalLimitedByPlan != null ? data.TotalLimitedByPlan : 0);
 
             var results = data.Results ? data.Results : data;
             this.pager.totalCount(data.TotalCount);

@@ -26,10 +26,14 @@
             </tr>
             <tr style="display: none" data-bind="visible: items().length === 0 && !loading() && totalLimitedByPlan() === 0">
                 <td colspan="4">
+                    <!-- ko if: pager.currentPage() === 1 -->
                     <strong>Congratulations!</strong> You are <strong>exceptionless!</strong>
+                    <!-- /ko -->
+                    <!-- ko if: pager.currentPage() > 1 -->
+                    No additional results were found. Please go to the previous page.
+                    <!-- /ko -->
                 </td>
             </tr>
-        </tbody>
     </table>
     @Html.Partial("_Pager")
 </div>

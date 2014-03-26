@@ -1,4 +1,4 @@
-﻿<div class="pagination pagination-right" style="display: none;" data-bind="visible: pager.totalCount() === null || pager.totalCount() > pager.pageSize()">
+﻿<div class="pagination pagination-right" style="display: none;" data-bind="visible: (pager.totalCount() === null && pager.lastItemIndex() >= pager.pageSize()) || (pager.totalCount() !== null && pager.totalCount() > pager.pageSize())">
     <div class="pager-stats pull-left">
         <span data-bind="formatNumber: pager.firstItemIndex"></span>
         -
