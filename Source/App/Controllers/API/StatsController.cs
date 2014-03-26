@@ -52,10 +52,6 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
@@ -73,10 +69,6 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
             return Ok(RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound));
         }
 
@@ -88,13 +80,24 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException();
 
-            var range = GetDateRange(start, end);
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
+            start = start ?? DateTime.MinValue;
+            end = end ?? DateTime.MaxValue;
+
+            if (end.Value <= start.Value)
+                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
+
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
+            int skip = (page - 1) * pageSize;
+            if (skip < 0)
+                skip = 0;
+
+            if (pageSize < 1)
+                pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             long count;
             List<ErrorStack> query = _errorStackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -128,18 +131,20 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
             ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
         }
 
         private PlanPagedResult<ErrorStackResult> Frequent(List<ErrorStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
+            int skip = (page - 1) * pageSize;
+            if (skip < 0)
+                skip = 0;
+
+            if (pageSize < 1)
+                pageSize = 10;
+            else if (pageSize > 100)
+                pageSize = 100;
 
             var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList());
             IQueryable<ErrorStack> errorStacks = _errorStackRepository.GetByIds(ers.Results.Select(s => s.Id));
@@ -171,16 +176,9 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpGet]
         public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
-            if (String.IsNullOrEmpty(stackId))
-                return NotFound();
-
             ErrorStack errorStack = _errorStackRepository.GetById(stackId);
             if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
+                throw new ArgumentException("Invalid error stack id.", "stackId"); // TODO: These should probably throw http Response exceptions.
 
             Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();

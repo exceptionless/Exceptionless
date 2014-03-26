@@ -41,11 +41,26 @@ namespace Exceptionless.Utility {
                 IsolatedStorage.CreateDirectory(SubDirectory);
         }
 
-        public void Dispose() {
+        private bool _disposed;
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
 #if !SILVERLIGHT
-            IsolatedStorage.Close();
+                IsolatedStorage.Close();
 #endif
-            IsolatedStorage.Dispose();
+                IsolatedStorage.Dispose();
+            }
+            _disposed = true;
         }
 
         public string GetFullPath(string filename) {

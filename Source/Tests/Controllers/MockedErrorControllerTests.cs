@@ -131,15 +131,15 @@ namespace Exceptionless.Tests.Controllers {
 
             _repository.Setup(r => r.All()).Returns(_data.AsQueryable);
             _repository.Setup(r => r.GetByOrganizationIds(It.IsAny<IEnumerable<String>>())).Returns((IEnumerable<string> ids) => _data.Where(d => ids.Contains(d.OrganizationId)).AsQueryable());
-            _repository.Setup(r => r.GetById(It.IsAny<String>(), It.IsAny<bool>())).Returns<string, bool>((id, usePrimary) => _data.FirstOrDefault(d => String.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)));
+            _repository.Setup(r => r.GetById(It.IsAny<String>())).Returns<string>(id => _data.FirstOrDefault(d => String.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)));
             _repository.Setup(r => r.FirstOrDefault(It.IsAny<Expression<Func<Error, bool>>>())).Returns<Error>(e => _data.FirstOrDefault(d => String.Equals(d.Id, e.Id, StringComparison.OrdinalIgnoreCase)));
             _repository.Setup(r => r.Where(It.IsAny<Expression<Func<Error, bool>>>())).Returns(_data.AsQueryable());
             _repository.Setup(r => r.Where(It.IsAny<IMongoQuery>())).Returns(_data.AsQueryable());
             _repository.Setup(r => r.Delete(It.IsAny<IMongoQuery>())).Callback<IMongoQuery>(id => _data.RemoveAll(d => String.Equals(d.Id, TestConstants.ErrorId2, StringComparison.OrdinalIgnoreCase)));
             _repository.Setup(r => r.Delete(It.IsAny<String>())).Callback<string>(id => _data.RemoveAll(d => String.Equals(d.Id, id, StringComparison.OrdinalIgnoreCase)));
-            _repository.Setup(r => r.Add(It.IsAny<Error>(), It.IsAny<bool>())).Callback<Error, bool>((e, addToCache) => _data.Add(e));
+            _repository.Setup(r => r.Add(It.IsAny<Error>())).Callback<Error>(e => _data.Add(e));
             _repository.Setup(r => r.Count()).Returns<int>(e => _data.Count);
-            _repository.Setup(r => r.Update(It.IsAny<Error>(), It.IsAny<bool>())).Callback<Error, bool>((e, addToCache) => {
+            _repository.Setup(r => r.Update(It.IsAny<Error>())).Callback<Error>(e => {
                 _data.RemoveAll(er => er.Id == e.Id);
                 _data.Add(e);
             });

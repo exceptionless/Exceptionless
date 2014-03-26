@@ -59,16 +59,16 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
         }
 
-        public override Project Add(Project entity, bool addToCache = false) {
+        public override Project Add(Project entity) {
             foreach (string key in entity.ApiKeys)
                 InvalidateCache(key);
 
-            return base.Add(entity, addToCache);
+            return base.Add(entity);
         }
 
-        public override Project Update(Project entity, bool addToCache = false) {
+        public override Project Update(Project entity) {
             entity.Configuration.Version++;
-            entity = base.Update(entity, addToCache);
+            entity = base.Update(entity);
 
             return GetById(entity.Id);
         }

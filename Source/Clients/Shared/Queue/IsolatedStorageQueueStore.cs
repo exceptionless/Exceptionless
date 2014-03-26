@@ -65,7 +65,7 @@ namespace Exceptionless.Queue {
                     dir.WriteFile(errorFilename, error);
                 }
             } catch (Exception ex) {
-                LogAccessor.Log.FormattedError(typeof(FolderQueueStore), ex, "Problem enqueuing error '{0}' to isolated storage", error.Id);
+                LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), ex, "Problem enqueuing error '{0}' to isolated storage", error.Id);
                 throw;
             }
         }
@@ -79,7 +79,7 @@ namespace Exceptionless.Queue {
                 using (IsolatedStorageDirectory dir = GetStorageDirectory())
                     dir.WriteFile(manifestFilename, manifest);
             } catch (Exception ex) {
-                LogAccessor.Log.FormattedError(typeof(FolderQueueStore), ex, "Problem updating manifest '{0}' in isolated storage", manifest.Id);
+                LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), ex, "Problem updating manifest '{0}' in isolated storage", manifest.Id);
                 throw;
             }
         }
@@ -96,7 +96,7 @@ namespace Exceptionless.Queue {
 
                     return;
                 } catch (IOException ex) {
-                    LogAccessor.Log.FormattedError(typeof(FolderQueueStore), ex, "Problem deleting id '{0}' from isolated storage", id);
+                    LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), ex, "Problem deleting id '{0}' from isolated storage", id);
                     Thread.Sleep(50);
                 }
             }
@@ -116,7 +116,7 @@ namespace Exceptionless.Queue {
                         return;
                     }
                 } catch (IOException ex) {
-                    LogAccessor.Log.FormattedError(typeof(FolderQueueStore), ex, "Problem deleting id '{0}' from isolated storage", id, id);
+                    LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), ex, "Problem deleting id '{0}' from isolated storage", id, id);
                     Thread.Sleep(50);
                 }
             }
@@ -172,7 +172,7 @@ namespace Exceptionless.Queue {
                 try {
                     error = dir.ReadFile<Error>(errorFilename);
                 } catch (Exception ex) {
-                    LogAccessor.Log.FormattedError(typeof(FolderQueueStore), ex, "Problem deserializing error '{0}' from isolated storage", errorFilename);
+                    LogAccessor.Log.FormattedError(typeof(IsolatedStorageQueueStore), ex, "Problem deserializing error '{0}' from isolated storage", errorFilename);
                 }
             }
 

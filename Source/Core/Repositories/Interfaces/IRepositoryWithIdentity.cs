@@ -20,17 +20,15 @@ namespace Exceptionless.Core {
         /// Returns the T by its given id.
         /// </summary>
         /// <param name="id">The string representing the ObjectId of the entity to retrieve.</param>
-        /// <param name="usePrimary">Force the document to be read from the primary.</param>
         /// <returns>The Entity T.</returns>
-        T GetById(string id, bool usePrimary = false);
+        T GetById(string id);
 
         /// <summary>
-        /// Returns the T by its given id using a cache entry if it exists.
+        /// Returns the T by its given id using a cache.
         /// </summary>
         /// <param name="id">The string representing the ObjectId of the entity to retrieve.</param>
-        /// <param name="usePrimary">Force the document to be read from the primary.</param>
         /// <returns>The Entity T.</returns>
-        T GetByIdCached(string id, bool usePrimary = false);
+        T GetByIdCached(string id);
 
         /// <summary>
         /// Returns the IQueryable<see cref="T" />> by its given ids.
