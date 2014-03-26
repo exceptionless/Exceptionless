@@ -105,9 +105,14 @@ namespace Exceptionless.Core.Pipeline {
                     Id = stack.Id,
                     DateFixed = stack.DateFixed,
                     OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                    SignatureHash = stack.SignatureHash
+                    SignatureHash = stack.SignatureHash,
+                    IsHidden = stack.IsHidden
                 };
             }
+
+            // sync the fixed and hidden flags to the error occurrence
+            ctx.Error.IsFixed = ctx.StackInfo.DateFixed.HasValue;
+            ctx.Error.IsHidden = ctx.StackInfo.IsHidden;
         }
     }
 }
