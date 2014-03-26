@@ -37,6 +37,7 @@ namespace Exceptionless.App.Hubs {
     public class NotificationSender {
         private readonly ICacheClient _cacheClient;
         private readonly IRedisClientsManager _redisClientsManager;
+        private const int THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS = 5;
 
         public NotificationSender(ICacheClient cacheClient, IRedisClientsManager redisClientsManager) {
             _cacheClient = cacheClient;
@@ -107,9 +108,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).planChanged(organizationId);
@@ -127,9 +128,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).organizationUpdated(organizationId);
@@ -147,9 +148,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).projectUpdated(projectId);
@@ -167,9 +168,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).stackUpdated(projectId, stackId);
@@ -188,9 +189,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).newError(projectId);
