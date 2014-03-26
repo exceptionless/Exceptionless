@@ -84,12 +84,12 @@ module exceptionless {
             });
 
             App.onStackUpdated.subscribe(() => {
-                if (this.canRetrieve)
+                if (this.pager.currentPage() === 1 && this.canRetrieve)
                     this.refreshViewModelData();
             });
 
             App.onErrorOccurred.subscribe(() => {
-                if (this.canRetrieve)
+                if (this.pager.currentPage() === 1 && this.canRetrieve)
                     this.refreshViewModelData();
             });
 
