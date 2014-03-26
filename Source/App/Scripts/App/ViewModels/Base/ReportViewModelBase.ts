@@ -29,13 +29,13 @@ module exceptionless {
         }
 
         public onStackUpdated(stack) {
-            if (stack.isHidden && !this.filterViewModel.showHidden)
+            if (stack.isHidden && !this.filterViewModel.showHidden())
                 return;
 
-            if (stack.isFixed && !this.filterViewModel.showFixed)
+            if (stack.isFixed && !this.filterViewModel.showFixed())
                 return;
 
-            if (stack.is404 && !this.filterViewModel.showNotFound)
+            if (stack.is404 && !this.filterViewModel.showNotFound())
                 return;
 
             if (this.canRetrieve)
@@ -43,13 +43,13 @@ module exceptionless {
         }
 
         public onNewError(error) {
-            if (error.isHidden && !this.filterViewModel.showHidden)
+            if (error.isHidden && !this.filterViewModel.showHidden())
                 return;
 
-            if (error.isFixed && !this.filterViewModel.showFixed)
+            if (error.isFixed && !this.filterViewModel.showFixed())
                 return;
 
-            if (error.is404 && !this.filterViewModel.showNotFound)
+            if (error.is404 && !this.filterViewModel.showNotFound())
                 return;
 
             if (this.canRetrieve)

@@ -96,14 +96,16 @@ module exceptionless.stack {
             if (stack.id !== this._errorStackId)
                 return;
 
-            super.onStackUpdated(stack);
+            if (this.canRetrieve)
+                this.refreshViewModelData();
         }
 
         public onNewError(error) {
             if (error.stackId !== this._errorStackId)
                 return;
 
-	        super.onNewError(error);
+            if (this.canRetrieve)
+                this.refreshViewModelData();
         }
 
         public populateViewModel(data?: any) {
