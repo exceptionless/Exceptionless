@@ -101,7 +101,7 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/knockout.mapping-latest.debug.js")
                 .Include("~/Scripts/knockout.validation.debug.js")
                 .Include("~/Scripts/jstz.js")
-                .Include("~/Scripts/d3.v3.js")
+                .Include("~/Scripts/d3.js")
                 .Include("~/Scripts/rickshaw.js")
                 .Include("~/Scripts/rickshaw.custom.js")
                 .Include("~/Scripts/spin.js")

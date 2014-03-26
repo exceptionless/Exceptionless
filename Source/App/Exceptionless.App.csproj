@@ -116,15 +116,16 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\GravatarHelper.3.2.3\lib\Net40\GravatarHelper.dll</HintPath>
     </Reference>
-    <Reference Include="JavaScriptEngineSwitcher.Core, Version=1.1.0.0, Culture=neutral, PublicKeyToken=c608b2a8cc9e4472, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Core.1.1.0\lib\net40\JavaScriptEngineSwitcher.Core.dll</HintPath>
+    <Reference Include="JavaScriptEngineSwitcher.Core">
+      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Core.1.1.3\lib\net40\JavaScriptEngineSwitcher.Core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="JavaScriptEngineSwitcher.Jurassic">
-      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.0\lib\net40\JavaScriptEngineSwitcher.Jurassic.dll</HintPath>
+      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.3\lib\net40\JavaScriptEngineSwitcher.Jurassic.dll</HintPath>
     </Reference>
-    <Reference Include="Jurassic">
-      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.0\lib\net40\Jurassic.dll</HintPath>
+    <Reference Include="Jurassic, Version=2.1.0.0, Culture=neutral, PublicKeyToken=67039d2c577b4c08, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\JavaScriptEngineSwitcher.Jurassic.1.1.3\lib\net40\Jurassic.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.0.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -241,9 +242,8 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=1.7.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.1.7.6\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net">
+      <HintPath>..\..\packages\Stripe.net.1.7.7\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -336,8 +336,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\WebActivator.1.5.3\lib\net40\WebActivator.dll</HintPath>
     </Reference>
-    <Reference Include="WebActivatorEx">
-      <HintPath>..\..\packages\WebActivatorEx.2.0.4\lib\net40\WebActivatorEx.dll</HintPath>
+    <Reference Include="WebActivatorEx, Version=2.0.0.0, Culture=neutral, PublicKeyToken=7b26dc2a43f6a0d4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\WebActivatorEx.2.0.5\lib\net40\WebActivatorEx.dll</HintPath>
     </Reference>
     <Reference Include="WebGrease, Version=1.6.5135.21930, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -454,6 +455,8 @@
       <DependentUpon>toastr.css</DependentUpon>
     </Content>
     <None Include="Scripts\jquery-2.1.0.intellisense.js" />
+    <Content Include="Scripts\d3.js" />
+    <Content Include="Scripts\d3.min.js" />
     <Content Include="Scripts\handlebars.amd.js" />
     <Content Include="Scripts\handlebars.amd.min.js" />
     <Content Include="Scripts\handlebars.js" />
@@ -543,11 +546,15 @@
     <None Include="Scripts\typings\rickshaw\rickshaw.d.ts" />
     <None Include="Scripts\typings\underscore\underscore-typed-1.4.3.d.ts" />
     <Content Include="Scripts\twix.js" />
+    <Content Include="Scripts\typings\d3\d3.d.ts" />
+    <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
     <Content Include="Scripts\typings\jquery.scrollTo\jquery.scrollTo.d.ts" />
     <Content Include="Scripts\typings\jquery.validation\jquery.validation.d.ts" />
+    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
     <Content Include="Scripts\typings\knockout.mapping\knockout.mapping.d.ts" />
     <Content Include="Scripts\typings\knockout\knockout.d.ts" />
     <Content Include="Scripts\typings\kolite\kolite.d.ts" />
+    <Content Include="Scripts\typings\moment\moment.d.ts" />
     <Content Include="Scripts\typings\numeraljs\numeraljs.d.ts" />
     <Content Include="Scripts\typings\spin\spin.d.ts" />
     <Content Include="Scripts\typings\toastr\toastr.d.ts" />
@@ -591,8 +598,6 @@
     <Content Include="Views\Error\RetentionLimitReached.cshtml" />
     <Content Include="Scripts\App\Utility\DateUtil.ts" />
     <Content Include="Scripts\App\Models\Project.ts" />
-    <Content Include="Scripts\d3.v3.js" />
-    <Content Include="Scripts\d3.v3.min.js" />
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Organization\Suspended.cshtml" />
     <Content Include="Scripts\underscore-min.map" />
@@ -784,12 +789,8 @@
     <Content Include="Scripts\typings\bootbox\bootbox.d.ts" />
     <Content Include="Scripts\typings\zeroclipboard\zeroclipboard.d.ts" />
     <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
-    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
     <Content Include="Scripts\typings\jquery.livestampjs\jquery.livestampjs.d.ts" />
     <Content Include="Scripts\typings\bootstrap\bootstrap.d.ts" />
-    <Content Include="Scripts\typings\d3\d3.d.ts" />
-    <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
-    <Content Include="Scripts\typings\moment\moment.d.ts" />
     <Content Include="Scripts\typings\signalr\signalr.d.ts" />
     <Content Include="Scripts\typings\underscore\underscore.d.ts" />
   </ItemGroup>
