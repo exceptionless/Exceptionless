@@ -83,7 +83,6 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/jquery.validate.unobtrusive-custom-for-bootstrap.js")
                 .Include("~/Scripts/mvcfoolproof.unobtrusive.js")
                 .Include("~/Scripts/jquery.payment.js")
-                .Include("~/Scripts/jquery.scrollTo.js")
                 .Include("~/Scripts/jquery.signalR-{version}.js")
                 .Include("~/Scripts/moment.js")
                 .Include("~/Scripts/twix.js")

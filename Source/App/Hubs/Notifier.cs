@@ -69,7 +69,7 @@ namespace Exceptionless.App.Hubs {
         private static DateTime _lastListenerCheck;
 
         public void EnsureListening() {
-            // check if the notifier listener is listening every 10 seconds
+            // Check if the notifier listener is listening every 10 seconds.
             if (!(DateTime.Now.Subtract(_lastListenerCheck).TotalSeconds > 10))
                 return;
 

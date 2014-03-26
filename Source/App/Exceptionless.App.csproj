@@ -467,7 +467,6 @@
     <Content Include="Scripts\handlebars.runtime.min.js" />
     <Content Include="Scripts\jquery-2.1.0.js" />
     <Content Include="Scripts\jquery-2.1.0.min.js" />
-    <Content Include="Scripts\jquery.scrollTo.js" />
     <Content Include="Scripts\jquery.signalR-2.0.2.js" />
     <Content Include="Scripts\jquery.signalR-2.0.2.min.js" />
     <Content Include="Scripts\jquery.unobtrusive-ajax.js" />
@@ -548,7 +547,6 @@
     <Content Include="Scripts\twix.js" />
     <Content Include="Scripts\typings\d3\d3.d.ts" />
     <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
-    <Content Include="Scripts\typings\jquery.scrollTo\jquery.scrollTo.d.ts" />
     <Content Include="Scripts\typings\jquery.validation\jquery.validation.d.ts" />
     <Content Include="Scripts\typings\jquery\jquery.d.ts" />
     <Content Include="Scripts\typings\knockout.mapping\knockout.mapping.d.ts" />

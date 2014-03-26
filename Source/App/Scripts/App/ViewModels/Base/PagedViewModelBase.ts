@@ -18,10 +18,7 @@ module exceptionless {
             this.registerNewItemRules();
 
             this.pager = new PagerViewModel(elementId + '-page', 0, pageSize, null, this.items);
-            this.pager.currentPage.subscribe(() => {
-                $.scrollTo('#' + elementId, { offset: { top: -110 } });
-                this.refreshViewModelData();
-            });
+            this.pager.currentPage.subscribe(() => this.refreshViewModelData());
 
             if (data) {
                 data.subscribe((data: any) => {
