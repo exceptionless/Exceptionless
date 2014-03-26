@@ -281,13 +281,13 @@
     <Compile Include="Models\StackingInfo.cs" />
     <Compile Include="Pipeline\010_AssignToStackAction.cs" />
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
-    <Compile Include="Pipeline\040_CheckForRegressionAction.cs" />
+    <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
     <Compile Include="Pipeline\050_EnforceRetentionLimitsAction.cs" />
     <Compile Include="Pipeline\ErrorPipeline.cs" />
     <Compile Include="Pipeline\ErrorPipelineAction.cs" />
     <Compile Include="Pipeline\ErrorPipelineContext.cs" />
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
-    <Compile Include="Pipeline\030_SaveErrorAction.cs" />
+    <Compile Include="Pipeline\040_SaveErrorAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
     <Compile Include="Queues\ErrorNotification.cs" />
     <Compile Include="Queues\ExceptionlessMqServer.cs" />
@@ -452,7 +452,7 @@
     <None Include="Mail\Templates\_Layout.html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Migrations\v1.0.26.cs" />
+    <Compile Include="Migrations\v1.0.28.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup />

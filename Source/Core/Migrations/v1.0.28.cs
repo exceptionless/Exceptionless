@@ -18,7 +18,7 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class UpdateFixedAndHiddenMigration : CollectionMigration {
         public UpdateFixedAndHiddenMigration()
-            : base("1.0.26", ErrorStackRepository.CollectionName) {
+            : base("1.0.28", ErrorStackRepository.CollectionName) {
             Description = "Update fixed and hidden flags on error docs.";
         }
 
