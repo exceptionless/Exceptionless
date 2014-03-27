@@ -280,7 +280,7 @@ namespace Exceptionless.Core {
 
         #endregion
 
-        public override Error Add(Error error) {
+        public override Error Add(Error error, bool addToCache = false) {
             if (error == null)
                 throw new ArgumentNullException("error");
             if (String.IsNullOrEmpty(error.OrganizationId))
@@ -288,12 +288,12 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(error.ProjectId))
                 throw new ArgumentException("ProjectId must be set.", "error");
 
-            return base.Add(error);
+            return base.Add(error, addToCache);
         }
 
-        public override void Add(IEnumerable<Error> errors) {
+        public override void Add(IEnumerable<Error> errors, bool addToCache = false) {
             foreach (Error error in errors)
-                Add(error);
+                Add(error, addToCache);
         }
 
         public void UpdateFixedByStackId(string stackId, bool value) {
@@ -308,7 +308,7 @@ namespace Exceptionless.Core {
             else
                 update.Unset(FieldNames.IsFixed);
 
-            Collection.Update(query, update);
+            Collection.Update(query, update, UpdateFlags.Multi);
         }
 
         public void UpdateHiddenByStackId(string stackId, bool value) {
@@ -323,7 +323,7 @@ namespace Exceptionless.Core {
             else
                 update.Unset(FieldNames.IsHidden);
 
-            Collection.Update(query, update);
+            Collection.Update(query, update, UpdateFlags.Multi);
         }
 
         public void RemoveAllByProjectId(string projectId) {

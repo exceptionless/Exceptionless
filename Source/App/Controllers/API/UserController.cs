@@ -52,18 +52,12 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpGet]
         [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
-        public PagedResult<UserModel> GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
+        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
-                throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
 
@@ -76,7 +70,7 @@ namespace Exceptionless.App.Controllers.API {
                 PageSize = pageSize >= 1 ? pageSize : 10
             };
 
-            return result;
+            return Ok(result);
         }
     }
 }

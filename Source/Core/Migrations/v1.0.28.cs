@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Migrations {
                 update.Set(ErrorRepository.FieldNames.IsFixed, true);
 
             if (isHidden || dateFixed.HasValue)
-                errorCollection.Update(query, update);
+                errorCollection.Update(query, update, UpdateFlags.Multi);
         }
     }
 }
