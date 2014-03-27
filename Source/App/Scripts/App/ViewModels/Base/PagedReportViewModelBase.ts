@@ -94,6 +94,9 @@ module exceptionless {
         }
 
         public onStackUpdated(stack) {
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
             if (stack.isHidden && !this.filterViewModel.showHidden())
                 return;
 
@@ -108,6 +111,9 @@ module exceptionless {
         }
 
         public onNewError(error) {
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
             if (error.isHidden && !this.filterViewModel.showHidden())
                 return;
 
@@ -117,7 +123,6 @@ module exceptionless {
             if (error.is404 && !this.filterViewModel.showNotFound())
                 return;
 
-            console.log(error);
             if (this.pager.currentPage() === 1 && this.canRetrieve)
                 this.refreshViewModelData();
         }

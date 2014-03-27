@@ -92,12 +92,18 @@ module exceptionless.stack {
             if (stack.id !== this._errorStackId)
                 return;
 
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
             if (this.canRetrieve)
                 this.refreshViewModelData();
         }
 
         public onNewError(error) {
             if (error.stackId !== this._errorStackId)
+                return;
+
+            if (this.filterViewModel.selectedDateRange().end())
                 return;
 
             if (this.canRetrieve)
