@@ -21,9 +21,8 @@ module exceptionless.stack {
         url = ko.observable<string>('').extend({ required: true, url: true });
         saveReferencesCommand: KoliteCommand;
 
-
         constructor(elementId: string, navigationElementId: string, projectsElementId: string, dateRangeElementId: string, chartElementId: string, recentElementId: string, dateFixedElementId: string, errorStackId: string, defaultProjectId?: string, pageSize?: number, autoUpdate?: boolean, data?: any) {
-            super(elementId, navigationElementId, chartElementId, '/stats/stack/' + errorStackId, projectsElementId, dateRangeElementId, defaultProjectId, autoUpdate);
+            super(elementId, navigationElementId, chartElementId, '/stats/stack/' + errorStackId, projectsElementId, dateRangeElementId, false, defaultProjectId, autoUpdate);
 
             this._errorStackId = errorStackId;
 
@@ -84,9 +83,6 @@ module exceptionless.stack {
             });
 
             this.filterViewModel.selectedDateRange.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showHidden.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showFixed.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showNotFound.subscribe(() => this.refreshViewModelData());
 
             this.refreshViewModelData();
             this._pagedErrorsByErrorStackIdViewModel = new error.PagedErrorsByErrorStackIdViewModel(recentElementId, errorStackId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
@@ -383,15 +379,6 @@ module exceptionless.stack {
 
             if (range.end())
                 url = DataUtil.updateQueryStringParameter(url, 'end', DateUtil.formatISOString(range.end()));
-
-            if (this.filterViewModel.showHidden())
-                url = DataUtil.updateQueryStringParameter(url, 'hidden', 'true');
-
-            if (this.filterViewModel.showFixed())
-                url = DataUtil.updateQueryStringParameter(url, 'fixed', 'true');
-
-            if (!this.filterViewModel.showNotFound())
-                url = DataUtil.updateQueryStringParameter(url, 'notfound', 'false');
 
             return url;
         }

@@ -6,14 +6,14 @@ module exceptionless {
         projectListViewModel: ProjectListViewModel;
         filterViewModel: FilterViewModel;
 
-        constructor (elementId: string, navigationElementId: string, chartElementId: string, url: string, projectsElementId: string, dateRangeElementId: string, defaultProjectId?: string, autoUpdate?: boolean) {
+        constructor (elementId: string, navigationElementId: string, chartElementId: string, url: string, projectsElementId: string, dateRangeElementId: string, showFilterToggleControls: boolean, defaultProjectId?: string, autoUpdate?: boolean) {
             super(elementId, chartElementId, url, autoUpdate);
 
             if (projectsElementId)
                 this.projectListViewModel = new exceptionless.ProjectListViewModel(projectsElementId, defaultProjectId);
             
             if (dateRangeElementId)
-                this.filterViewModel = new exceptionless.FilterViewModel(dateRangeElementId);
+                this.filterViewModel = new exceptionless.FilterViewModel(dateRangeElementId, showFilterToggleControls);
             
             if (navigationElementId && projectsElementId)
                 this._navigationViewModel = new NavigationViewModel(navigationElementId, this.projectListViewModel);
