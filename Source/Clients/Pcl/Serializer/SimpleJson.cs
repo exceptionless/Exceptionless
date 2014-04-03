@@ -1495,6 +1495,9 @@ namespace SimpleJson {
             }
 
             public static Type[] GetGenericTypeArguments(Type type) {
+                if (!IsTypeGeneric(type))
+                    type = type.BaseType;
+
 #if SIMPLE_JSON_TYPEINFO
                 return type.GetTypeInfo().GenericTypeArguments;
 #else
