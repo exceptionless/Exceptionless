@@ -26,7 +26,7 @@
     <RestorePackages>true</RestorePackages>
     <CodeAnalysisAdditionalOptions>/assemblyCompareMode:StrongNameIgnoringVersion</CodeAnalysisAdditionalOptions>
     <TargetFrameworkProfile />
-    <TypeScriptToolsVersion>0.9</TypeScriptToolsVersion>
+    <TypeScriptToolsVersion>1.0</TypeScriptToolsVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -780,8 +780,6 @@
     <Content Include="Scripts\App\Enumerations\BillingStatus.ts" />
     <Content Include="Scripts\App\Admin\AdminSearchablePagedOrganizationViewModel.ts" />
     <Content Include="Scripts\typings\knockout.validation\knockout.validation.d.ts" />
-  </ItemGroup>
-  <ItemGroup>
     <Content Include="Scripts\typings\bootbox\bootbox.d.ts" />
     <Content Include="Scripts\typings\zeroclipboard\zeroclipboard.d.ts" />
     <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
@@ -789,11 +787,9 @@
     <Content Include="Scripts\typings\bootstrap\bootstrap.d.ts" />
     <Content Include="Scripts\typings\signalr\signalr.d.ts" />
     <Content Include="Scripts\typings\underscore\underscore.d.ts" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="Scripts\typings\d3\d3.d.ts" />
-    <TypeScriptCompile Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
-    <TypeScriptCompile Include="Scripts\typings\jquery\jquery.d.ts" />
+    <Content Include="Scripts\typings\d3\d3.d.ts" />
+    <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
+    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
