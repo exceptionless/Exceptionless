@@ -146,3 +146,8 @@ interface KnockoutSubscribableFunctions<T> {
     rules: KnockoutObservableArray<KnockoutValidationRule>;
 }
 
+declare module "knockout.validation" {
+	export = validation;
+}
+
+declare var validation: KnockoutValidationStatic 
