@@ -78,8 +78,12 @@ namespace Exceptionless.App.Controllers {
 
                 if (!String.IsNullOrWhiteSpace(organizationId) && !organizations.Any(o => String.Equals(o.Id, organizationId))) {
                     Organization organization = _organizationRepository.GetById(organizationId);
-                    if (organization != null)
+                    if (organization != null) {
                         organizations.Add(organization);
+
+                        if (!projects.Any(p => String.Equals(p.OrganizationId, organizationId)))
+                            projects.AddRange(_projectRepository.GetByOrganizationId(organizationId));
+                    }
                 }
             }
 

@@ -156,7 +156,12 @@ module exceptionless {
             App.projects.sort((a: models.ProjectInfo, b: models.ProjectInfo) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
             if (StringUtil.isNullOrEmpty(App.selectedProject().id)) {
-                var project = ko.utils.arrayFirst(App.projects(), (project: models.Project)=> project.id === DataUtil.getProjectId());
+                var project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.id === DataUtil.getProjectId());
+
+                var organizationId = DataUtil.getOrganizationId();
+                if (!StringUtil.isNullOrEmpty(organizationId) && (!project || project.organizationId !== organizationId))
+                    project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.organizationId === organizationId);
+
                 if (!project && App.projects().length > 0)
                     project = App.projects()[0];
 
