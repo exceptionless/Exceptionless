@@ -1,7 +1,7 @@
 /* jquery.signalR.core.js */
 /*global window:false */
 /*!
- * ASP.NET SignalR JavaScript Library v2.0.2
+ * ASP.NET SignalR JavaScript Library v2.0.3
  * http://signalr.net/
  *
  * Copyright (C) Microsoft Corporation. All rights reserved.
@@ -203,7 +203,7 @@
                     $(connection).triggerHandler(events.onError, [error]);
                 };
 
-            if (!connection._.pingIntervalId && config.pingInterval) {
+            if (config && !connection._.pingIntervalId && config.pingInterval) {
                 connection._.pingIntervalId = window.setInterval(function () {
                     signalR.transports._logic.pingServer(connection).fail(onFail);
                 }, config.pingInterval);
@@ -331,7 +331,8 @@
                 lastMessageAt: new Date().getTime(),
                 lastActiveAt: new Date().getTime(),
                 beatInterval: 5000, // Default value, will only be overridden if keep alive is enabled,
-                beatHandle: null
+                beatHandle: null,
+                totalTransportConnectTimeout: 0 // This will be the sum of the TransportConnectTimeout sent in response to negotiate and connection.transportConnectTimeout
             };
             if (typeof (logging) === "boolean") {
                 this.logging = logging;
@@ -389,7 +390,7 @@
 
         reconnectDelay: 2000,
 
-        transportConnectTimeout: 0, // This will be modified by the server in respone to the negotiate request.  It will add any value sent down from the server to the client value.
+        transportConnectTimeout: 0,
 
         disconnectTimeout: 30000, // This should be set by the server in response to the negotiate request (30s default)
 
@@ -498,9 +499,8 @@
                 connection.log("Auto detected cross domain url.");
 
                 if (config.transport === "auto") {
-                    // Try webSockets and longPolling since SSE doesn't support CORS
                     // TODO: Support XDM with foreverFrame
-                    config.transport = ["webSockets", "longPolling"];
+                    config.transport = ["webSockets", "serverSentEvents", "longPolling"];
                 }
 
                 if (typeof (config.withCredentials) === "undefined") {
@@ -569,7 +569,7 @@
                     connection._.onFailedTimeoutHandle = window.setTimeout(function () {
                         connection.log(transport.name + " timed out when trying to connect.");
                         onFailed();
-                    }, connection.transportConnectTimeout);
+                    }, connection._.totalTransportConnectTimeout);
 
                     transport.start(connection, function () { // success
                         // Firefox 11+ doesn't allow sync XHR withCredentials: https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#withCredentials
@@ -696,8 +696,8 @@
                         // after res.DisconnectTimeout seconds.
                         connection.disconnectTimeout = res.DisconnectTimeout * 1000; // in ms
 
-                        // If the connection already has a transportConnectTimeout set then keep it, otherwise use the servers value.
-                        connection.transportConnectTimeout = connection.transportConnectTimeout + res.TransportConnectTimeout * 1000;
+                        // Add the TransportConnectTimeout from the response to the transportConnectTimeout from the client to calculate the total timeout
+                        connection._.totalTransportConnectTimeout = connection.transportConnectTimeout + res.TransportConnectTimeout * 1000;
 
                         // If we have a keep alive
                         if (res.KeepAliveTimeout) {
@@ -1026,11 +1026,6 @@
                 keepAliveData.userNotified = false;
             }
         }
-    }
-
-    function isConnectedOrReconnecting(connection) {
-        return connection.state === signalR.connectionState.connected ||
-               connection.state === signalR.connectionState.reconnecting;
     }
 
     function addConnectionData(url, connectionData) {
@@ -1387,6 +1382,7 @@
         },
 
         startHeartbeat: function (connection) {
+            connection._.lastActiveAt = new Date().getTime();
             beat(connection);
         },
 
@@ -1401,6 +1397,11 @@
             }
 
             return false;
+        },
+
+        isConnectedOrReconnecting: function (connection) {
+            return connection.state === signalR.connectionState.connected ||
+                   connection.state === signalR.connectionState.reconnecting;
         },
 
         ensureReconnectingState: function (connection) {
@@ -1434,7 +1435,7 @@
 
             // We should only set a reconnectTimeout if we are currently connected
             // and a reconnectTimeout isn't already set.
-            if (isConnectedOrReconnecting(connection) && !connection._.reconnectTimeout) {
+            if (transportLogic.isConnectedOrReconnecting(connection) && !connection._.reconnectTimeout) {
                 // Need to verify before the setTimeout occurs because an application sleep could occur during the setTimeout duration.
                 if (!transportLogic.verifyLastActive(connection)) {
                     return;
@@ -1676,7 +1677,7 @@
 
             try {
                 connection.log("Attempting to connect to SSE endpoint '" + url + "'.");
-                connection.eventSource = new window.EventSource(url);
+                connection.eventSource = new window.EventSource(url, { withCredentials: connection.withCredentials });
             }
             catch (e) {
                 connection.log("EventSource failed trying to connect with error " + e.Message + ".");
@@ -1855,7 +1856,7 @@
                         attachedTo++;
                     }
                 },
-                cancel: function () {                   
+                cancel: function () {
                     // Only clear the interval if there's only one more object that the loadPreventer is attachedTo
                     if (attachedTo === 1) {
                         window.clearInterval(loadingFixIntervalId);
@@ -1882,7 +1883,7 @@
                 url,
                 frame = createFrame(),
                 frameLoadHandler = function () {
-                    connection.log("Forever frame iframe finished loading and is no longer receiving messages, reconnecting.");
+                    connection.log("Forever frame iframe finished loading and is no longer receiving messages.");
                     that.reconnect(connection);
                 };
 
@@ -1933,24 +1934,22 @@
         reconnect: function (connection) {
             var that = this;
 
-            // Need to verify before the setTimeout occurs because an application sleep could occur during the setTimeout duration.
-            if (!transportLogic.verifyLastActive(connection)) {
-                return;
+            // Need to verify connection state and verify before the setTimeout occurs because an application sleep could occur during the setTimeout duration.
+            if (transportLogic.isConnectedOrReconnecting(connection) && transportLogic.verifyLastActive(connection)) {
+                window.setTimeout(function () {
+                    // Verify that we're ok to reconnect.
+                    if (!transportLogic.verifyLastActive(connection)) {
+                        return;
+                    }
+
+                    if (connection.frame && transportLogic.ensureReconnectingState(connection)) {
+                        var frame = connection.frame,
+                            src = transportLogic.getUrl(connection, that.name, true) + "&frameId=" + connection.frameId;
+                        connection.log("Updating iframe src to '" + src + "'.");
+                        frame.src = src;
+                    }
+                }, connection.reconnectDelay);
             }
-
-            window.setTimeout(function () {
-                // Verify that we're ok to reconnect.
-                if (!transportLogic.verifyLastActive(connection)) {
-                    return;
-                }
-
-                if (connection.frame && transportLogic.ensureReconnectingState(connection)) {
-                    var frame = connection.frame,
-                        src = transportLogic.getUrl(connection, that.name, true) + "&frameId=" + connection.frameId;
-                    connection.log("Updating iframe src to '" + src + "'.");
-                    frame.src = src;
-                }
-            }, connection.reconnectDelay);
         },
 
         lostConnection: function (connection) {
@@ -2690,5 +2689,5 @@
 /*global window:false */
 /// <reference path="jquery.signalR.core.js" />
 (function ($, undefined) {
-    $.signalR.version = "2.0.2";
+    $.signalR.version = "2.0.3";
 }(window.jQuery));
