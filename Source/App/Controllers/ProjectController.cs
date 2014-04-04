@@ -187,7 +187,7 @@ namespace Exceptionless.App.Controllers {
                 }
 
                 _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, User.UserEntity);
-                organization = _organizationRepository.Add(organization);
+                organization = _organizationRepository.Add(organization, true);
 
                 User user = _userRepository.GetById(User.UserEntity.Id);
                 user.OrganizationIds.Add(organization.Id);
