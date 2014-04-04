@@ -430,6 +430,9 @@ namespace Exceptionless.App.Controllers {
         public ActionResult ExternalLoginCallback(string returnUrl, string token) {
             AuthenticationResult result = _membershipProvider.VerifyOAuthAuthentication(Url.Action("ExternalLoginCallback", new { ReturnUrl = returnUrl, Token = token }));
             if (!result.IsSuccessful) {
+                if (result.Error != null)
+                    result.Error.ToExceptionless().AddObject(result).AddTags("Login").SetUserDescription("An error occurred while trying to login.").Submit();
+
                 SetErrorAlert(result.Error != null ? result.Error.Message : "An error occurred while trying to login.");
                 return RedirectToAction("ExternalLoginFailure");
             }
