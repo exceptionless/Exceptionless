@@ -7,7 +7,7 @@ module exceptionless.project {
         apiKey = ko.observable<string>('Loading');
 
         constructor(elementId: string, navigationElementId: string, chartElementId: string, projectsElementId: string, dateRangeElementId: string, copyApiKeyButtonElementId: string, autoUpdate?: boolean) {
-            super(elementId, navigationElementId, chartElementId, '/project', projectsElementId, dateRangeElementId, null, autoUpdate);
+            super(elementId, navigationElementId, chartElementId, '/project', projectsElementId, dateRangeElementId, false, null, autoUpdate);
 
             var clip = new ZeroClipboard();
             clip.on('noflash wrongflash', () => $(copyApiKeyButtonElementId).hide());
@@ -26,9 +26,9 @@ module exceptionless.project {
                 });
             });
 
-            exceptionless.App.onErrorOccurred.subscribe(() => {
+            exceptionless.App.onNewError.subscribe((error) => {
                 if (App.selectedProject().totalErrorCount === 0) {
-                    window.location.href = '/project/' + App.selectedProject().id;
+                    window.location.href = '/project/' + error.projectId;
                 }
             });
 

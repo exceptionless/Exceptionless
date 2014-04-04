@@ -21,20 +21,19 @@ module exceptionless.stack {
         url = ko.observable<string>('').extend({ required: true, url: true });
         saveReferencesCommand: KoliteCommand;
 
-
         constructor(elementId: string, navigationElementId: string, projectsElementId: string, dateRangeElementId: string, chartElementId: string, recentElementId: string, dateFixedElementId: string, errorStackId: string, defaultProjectId?: string, pageSize?: number, autoUpdate?: boolean, data?: any) {
-            super(elementId, navigationElementId, chartElementId, '/stats/stack/' + errorStackId, projectsElementId, dateRangeElementId, defaultProjectId, autoUpdate);
+            super(elementId, navigationElementId, chartElementId, '/stats/stack/' + errorStackId, projectsElementId, dateRangeElementId, false, defaultProjectId, autoUpdate);
 
             this._errorStackId = errorStackId;
 
             this._stats.subscribe(() => this.tryUpdateChart());
             this.fixedOn.subscribe((date: Date) => this.isFixed(date != null));
 
-            var notificiation = DataUtil.getQueryStringValue('notification');
-            if (!StringUtil.isNullOrEmpty(notificiation)) {
-                if (notificiation === 'mark-fixed') {
+            var notification = DataUtil.getQueryStringValue('notification');
+            if (!StringUtil.isNullOrEmpty(notification)) {
+                if (notification === 'mark-fixed') {
                     App.showSuccessNotification('Successfully marked the error stack as fixed.', null, { fadeOut: 10000, extendedTimeOut: 1000 });
-                } else if (notificiation === 'stop-notifications') {
+                } else if (notification === 'stop-notifications') {
                     App.showSuccessNotification('Successfully updated the error stack notification settings.', null, { fadeOut: 10000, extendedTimeOut: 1000 });
                 }
 
@@ -78,18 +77,37 @@ module exceptionless.stack {
             this.populateViewModel(data);
             this.applyBindings();
 
-            exceptionless.App.onStackUpdated.subscribe((value: any) => {
-                if (value.stackId === this._errorStackId && this.canRetrieve)
+            exceptionless.App.onStackUpdated.subscribe((stack) => {
+                if (stack.id === this._errorStackId && this.canRetrieve)
                     this.refreshViewModelData();
             });
 
             this.filterViewModel.selectedDateRange.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showHidden.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showFixed.subscribe(() => this.refreshViewModelData());
-            this.filterViewModel.showNotFound.subscribe(() => this.refreshViewModelData());
 
             this.refreshViewModelData();
             this._pagedErrorsByErrorStackIdViewModel = new error.PagedErrorsByErrorStackIdViewModel(recentElementId, errorStackId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
+        }
+
+        public onStackUpdated(stack) {
+            if (stack.id !== this._errorStackId)
+                return;
+
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
+            if (this.canRetrieve)
+                this.refreshViewModelData();
+        }
+
+        public onNewError(error) {
+            if (error.stackId !== this._errorStackId)
+                return;
+
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
+            if (this.canRetrieve)
+                this.refreshViewModelData();
         }
 
         public populateViewModel(data?: any) {
@@ -367,15 +385,6 @@ module exceptionless.stack {
 
             if (range.end())
                 url = DataUtil.updateQueryStringParameter(url, 'end', DateUtil.formatISOString(range.end()));
-
-            if (this.filterViewModel.showHidden())
-                url = DataUtil.updateQueryStringParameter(url, 'hidden', 'true');
-
-            if (this.filterViewModel.showFixed())
-                url = DataUtil.updateQueryStringParameter(url, 'fixed', 'true');
-
-            if (!this.filterViewModel.showNotFound())
-                url = DataUtil.updateQueryStringParameter(url, 'notfound', 'false');
 
             return url;
         }

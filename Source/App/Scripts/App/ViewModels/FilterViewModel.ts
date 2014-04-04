@@ -4,19 +4,21 @@ module exceptionless {
     export class FilterViewModel extends ViewModelBase {
         dateRanges = ko.observableArray<models.DateRange>([]);
         selectedDateRange = ko.observable<models.DateRange>();
+        showToggleControls = ko.observable<boolean>(false);
         showHidden = ko.observable<boolean>(false);
         showFixed = ko.observable<boolean>(false);
         showNotFound = ko.observable<boolean>(true);
         
-        constructor (elementId: string) {
+        constructor (elementId: string, showToggleControls: boolean) {
             super(elementId);
-            
+
             this.selectedDateRange.subscribe((value: models.DateRange) => {
                 localStorage.setItem(Constants.FILTER, value.id());
                 localStorage.setItem(Constants.START, value.start() ? value.start().format() : null);
                 localStorage.setItem(Constants.END, value.end() ? value.end().format() : null);
             });
 
+            this.showToggleControls(showToggleControls);
             this.showHidden.subscribe((value: boolean) => localStorage.setItem(Constants.SHOW_HIDDEN, value ? 'true' : 'false' ));
             this.showFixed.subscribe((value: boolean) => localStorage.setItem(Constants.SHOW_FIXED, value ? 'true' : 'false'));
             this.showNotFound.subscribe((value: boolean) => localStorage.setItem(Constants.SHOW_NOTFOUND, value ? 'true' : 'false'));

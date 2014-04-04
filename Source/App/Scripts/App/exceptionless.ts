@@ -4,7 +4,6 @@
 /// <reference path="../typings/d3/d3.d.ts" />
 /// <reference path="../typings/handlebars/handlebars.d.ts" />
 /// <reference path="../typings/jquery/jquery.d.ts" />
-/// <reference path="../typings/jquery.scrollTo/jquery.scrollTo.d.ts" />
 /// <reference path="../typings/jquery.validation/jquery.validation.d.ts" />
 /// <reference path="../typings/jquery.livestampjs/jquery.livestampjs.d.ts" />
 /// <reference path="../typings/knockout/knockout.d.ts" />

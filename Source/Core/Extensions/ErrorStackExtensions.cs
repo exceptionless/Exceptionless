@@ -33,5 +33,19 @@ namespace Exceptionless.Core.Extensions {
 
             return errorStack.ToProjectLocalTime(repository.GetByIdCached(errorStack.ProjectId));
         }
+
+        public static bool IsFixed(this ErrorStack errorStack) {
+            if (errorStack == null)
+                return false;
+
+            return errorStack.DateFixed.HasValue && !errorStack.IsRegressed;
+        }
+
+        public static bool Is404(this ErrorStack errorStack) {
+            if (errorStack == null || errorStack.SignatureInfo == null)
+                return false;
+
+            return errorStack.SignatureInfo.ContainsKey("HttpMethod") && errorStack.SignatureInfo.ContainsKey("Path");
+        }
     }
 }

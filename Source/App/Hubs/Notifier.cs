@@ -37,6 +37,7 @@ namespace Exceptionless.App.Hubs {
     public class NotificationSender {
         private readonly ICacheClient _cacheClient;
         private readonly IRedisClientsManager _redisClientsManager;
+        private const int THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS = 5;
 
         public NotificationSender(ICacheClient cacheClient, IRedisClientsManager redisClientsManager) {
             _cacheClient = cacheClient;
@@ -54,10 +55,19 @@ namespace Exceptionless.App.Hubs {
                                 Ping(this, EventArgs.Empty);
 
                             string[] parts = msg.Split(':');
-                            if (parts.Length != 2)
+                            if (parts.Length != 6)
                                 return;
 
-                            NewError(parts[0], parts[1]);
+                            bool isHidden;
+                            Boolean.TryParse(parts[3], out isHidden);
+
+                            bool isFixed;
+                            Boolean.TryParse(parts[4], out isFixed);
+
+                            bool is404;
+                            Boolean.TryParse(parts[5], out is404);
+
+                            NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
                         };
                         RetryUtil.Retry(() => subscription.SubscribeToChannels(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY));
                     }
@@ -68,7 +78,7 @@ namespace Exceptionless.App.Hubs {
         private static DateTime _lastListenerCheck;
 
         public void EnsureListening() {
-            // check if the notifier listener is listening every 10 seconds
+            // Check if the notifier listener is listening every 10 seconds.
             if (!(DateTime.Now.Subtract(_lastListenerCheck).TotalSeconds > 10))
                 return;
 
@@ -107,9 +117,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).planChanged(organizationId);
@@ -127,9 +137,9 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).organizationUpdated(organizationId);
@@ -147,16 +157,16 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
             context.Clients.Group(organizationId).projectUpdated(projectId);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
 
-        public void StackUpdated(string organizationId, string projectId, string stackId) {
+        public void StackUpdated(string organizationId, string projectId, string stackId, bool isHidden, bool isFixed, bool is404) {
             if (!Settings.Current.EnableSignalR)
                 return;
 
@@ -167,16 +177,16 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
-            context.Clients.Group(organizationId).stackUpdated(projectId, stackId);
+            context.Clients.Group(organizationId).stackUpdated(projectId, stackId, isHidden, isFixed, is404);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
 
-        public void NewError(string organizationId, string projectId) {
+        public void NewError(string organizationId, string projectId, string stackId, bool isHidden, bool isFixed, bool is404) {
             if (!Settings.Current.EnableSignalR)
                 return;
 
@@ -188,12 +198,12 @@ namespace Exceptionless.App.Hubs {
             if (context == null)
                 return;
 
-            // throttle notifications to one every 2 seconds.
+            // Throttle notifications to one every x seconds.
             var lastNotification = _cacheClient.Get<DateTime>(String.Concat("SignalR.Org.", organizationId));
-            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= 2))
+            if (!(DateTime.Now.Subtract(lastNotification).TotalSeconds >= THROTTLE_NOTIFICATIONS_DELAY_IN_SECONDS))
                 return;
 
-            context.Clients.Group(organizationId).newError(projectId);
+            context.Clients.Group(organizationId).newError(projectId, stackId, isHidden, isFixed, is404);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
         }
     }

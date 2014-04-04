@@ -30,14 +30,18 @@
         <th>Process Memory</th>
         <td>@Model.EnvironmentInfo.ProcessMemorySize.ToFileSizeDisplay()</td>
     </tr>
-    <tr>
-        <th>OS Name</th>
-        <td><span class="t8-default">@Model.EnvironmentInfo.OSName</span></td>
-    </tr>
-    <tr>
-        <th>OS Version</th>
-        <td>@Model.EnvironmentInfo.OSVersion</td>
-    </tr>
+    @if (!String.IsNullOrEmpty(Model.EnvironmentInfo.OSName)) {
+        <tr>
+            <th>OS Name</th>
+            <td><span class="t8-default">@Model.EnvironmentInfo.OSName</span></td>
+        </tr>
+    }
+    @if (!String.IsNullOrEmpty(Model.EnvironmentInfo.OSVersion)) {
+        <tr>
+            <th>OS Version</th>
+            <td>@Model.EnvironmentInfo.OSVersion</td>
+        </tr>
+    }
     <tr>
         <th>Architecture</th>
         <td>@Model.EnvironmentInfo.Architecture</td>

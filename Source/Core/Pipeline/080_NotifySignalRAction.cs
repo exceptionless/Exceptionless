@@ -11,6 +11,7 @@
 
 using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Extensions;
 using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Pipeline {
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override void Process(ErrorPipelineContext ctx) {
             using (IRedisClient client = _clientsManager.GetClient())
-                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Error.OrganizationId, ":", ctx.Error.ProjectId));
+                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Error.OrganizationId, ":", ctx.Error.ProjectId, ":", ctx.Error.ErrorStackId, ":", ctx.Error.IsHidden, ":", ctx.Error.IsFixed, ":", ctx.Error.Is404()));
         }
     }
 }

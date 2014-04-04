@@ -15,7 +15,7 @@ using MongoDB.Driver;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
-    [Priority(30)]
+    [Priority(40)]
     public class SaveErrorAction : ErrorPipelineActionBase {
         private readonly IErrorRepository _errorRepository;
 

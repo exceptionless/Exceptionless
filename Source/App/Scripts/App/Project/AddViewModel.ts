@@ -55,7 +55,7 @@ module exceptionless.project {
                 return false;
             } else if (this._organizationsDropDown.val() != null && this._organizationsDropDown.val() !== '__neworg__') {
                 var org: models.Organization = ko.utils.arrayFirst(App.organizations(), (o: models.Organization) => o.id === this._organizationsDropDown.val());
-                var projects = ko.utils.arrayFilter(App.projects(), (project: models.Project) => project.organizationId === org.id);
+                var projects = ko.utils.arrayFilter(App.projects(), (project: models.ProjectInfo) => project.organizationId === org.id);
 
                 if (org.selectedPlan.maxProjects != -1 && projects.length >= org.selectedPlan.maxProjects) {
                     var message = 'You have exceeded your project limit of ' + org.selectedPlan.maxProjects + ' project';

@@ -118,6 +118,7 @@ namespace Exceptionless.App.Controllers.API {
                     //original.FixedInVersion = "TODO";
                     original.IsRegressed = false;
                 } else {
+                    //original.DateFixed = null;
                     //original.FixedInVersion = null;
                 }
             }
@@ -131,7 +132,7 @@ namespace Exceptionless.App.Controllers.API {
                 _repository.InvalidateFixedIdsCache(original.ProjectId);
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return stack;
         }
@@ -181,6 +182,7 @@ namespace Exceptionless.App.Controllers.API {
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
+            // TODO: Implement Fixed in version.
             stack.DateFixed = DateTime.UtcNow;
             //stack.FixedInVersion = "TODO";
             stack.IsRegressed = false;
@@ -191,7 +193,7 @@ namespace Exceptionless.App.Controllers.API {
             _repository.InvalidateFixedIdsCache(stack.ProjectId);
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -224,52 +226,43 @@ namespace Exceptionless.App.Controllers.API {
             }
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
 
         [HttpGet]
-        public PlanPagedResult<ErrorStackResult> New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException("Invalid project id.", "projectId"); // TODO: These should probably throw http Response exceptions.
+                return NotFound();
 
-            start = start ?? DateTime.MinValue;
-            end = end ?? DateTime.MaxValue;
-
-            if (end.Value <= start.Value)
-                throw new ArgumentException("End date must be greater than start date.", "end"); // TODO: These should probably throw http Response exceptions.
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, start.Value);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, end.Value);
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
 
-            int skip = (page - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             long count;
             List<ErrorStack> query = _repository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
             List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<ErrorStack, ErrorStackResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan) {
+            var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
                 Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10,
-                TotalCount = count
+                PageSize = pageSize >= 1 ? pageSize : 10
             };
 
             // TODO: Only return the populated fields (currently all properties are being returned).
-            return result;
+            return Ok(result);
         }
 
         [HttpGet]
@@ -282,7 +275,7 @@ namespace Exceptionless.App.Controllers.API {
                 return;
 
             _dataHelper.ResetStackData(id);
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id);
+            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
         }
     }
 }

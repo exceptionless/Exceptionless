@@ -78,8 +78,12 @@ namespace Exceptionless.App.Controllers {
 
                 if (!String.IsNullOrWhiteSpace(organizationId) && !organizations.Any(o => String.Equals(o.Id, organizationId))) {
                     Organization organization = _organizationRepository.GetById(organizationId);
-                    if (organization != null)
+                    if (organization != null) {
                         organizations.Add(organization);
+
+                        if (!projects.Any(p => String.Equals(p.OrganizationId, organizationId)))
+                            projects.AddRange(_projectRepository.GetByOrganizationId(organizationId));
+                    }
                 }
             }
 
@@ -208,26 +212,30 @@ namespace Exceptionless.App.Controllers {
         }
 
         private void AddInvitedUserToOrganization(string token, User user) {
+            if (user == null)
+                return;
+
             Invite invite;
             Organization organization = _organizationRepository.GetByInviteToken(token, out invite);
-            if (organization != null) {
-                if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                    user.IsEmailAddressVerified = true;
-                    _userRepository.Update(user);
-                }
+            if (organization == null)
+                return;
 
-                if (!_billingManager.CanAddUser(organization)) {
-                    ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
-                    return;
-                }
-
-                user.OrganizationIds.Add(organization.Id);
+            if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
+                user.IsEmailAddressVerified = true;
                 _userRepository.Update(user);
-
-                organization.Invites.Remove(invite);
-                _organizationRepository.Update(organization);
-                _notificationSender.OrganizationUpdated(organization.Id);
             }
+
+            if (!_billingManager.CanAddUser(organization)) {
+                ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
+                return;
+            }
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Update(user);
+
+            organization.Invites.Remove(invite);
+            _organizationRepository.Update(organization);
+            _notificationSender.OrganizationUpdated(organization.Id);
         }
 
         [HttpPost]
@@ -426,6 +434,9 @@ namespace Exceptionless.App.Controllers {
         public ActionResult ExternalLoginCallback(string returnUrl, string token) {
             AuthenticationResult result = _membershipProvider.VerifyOAuthAuthentication(Url.Action("ExternalLoginCallback", new { ReturnUrl = returnUrl, Token = token }));
             if (!result.IsSuccessful) {
+                if (result.Error != null)
+                    result.Error.ToExceptionless().AddObject(result).AddTags("Login").SetUserDescription("An error occurred while trying to login.").Submit();
+
                 SetErrorAlert(result.Error != null ? result.Error.Message : "An error occurred while trying to login.");
                 return RedirectToAction("ExternalLoginFailure");
             }
@@ -433,8 +444,19 @@ namespace Exceptionless.App.Controllers {
             // TODO: Need to check to see if we have a user with the specified email address already.
             OAuthAccount account = result.ToOAuthAccount();
             if (_membershipProvider.OAuthLogin(account, remember: true)) {
-                if (!String.IsNullOrEmpty(token))
-                    AddInvitedUserToOrganization(token, _membershipProvider.GetUserByEmailAddress(account.EmailAddress() ?? account.Username));
+                if (!String.IsNullOrEmpty(token)) {
+                    User user = null;
+                    if (!String.IsNullOrEmpty(account.EmailAddress()))
+                        user = _membershipProvider.GetUserByEmailAddress(account.EmailAddress());
+
+                    if (user == null && !String.IsNullOrEmpty(account.Username))
+                        user = _membershipProvider.GetUserByEmailAddress(account.Username);
+
+                    if (user != null)
+                        AddInvitedUserToOrganization(token, user);
+
+                    // TODO: should we notify the user that they couldn't be invited to the organization?
+                }
 
                 return RedirectToLocal(returnUrl);
             }

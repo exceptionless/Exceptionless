@@ -91,16 +91,19 @@ namespace Exceptionless.Core {
 
         public override void InvalidateCache(ErrorStack entity) {
             var originalStack = GetByIdCached(entity.Id);
-            if (originalStack.DateFixed != entity.DateFixed) {
-                _errorRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
-                InvalidateFixedIdsCache(entity.ProjectId);
-            }
-            if (originalStack.IsHidden != entity.IsHidden) {
-                _errorRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
-                InvalidateHiddenIdsCache(entity.ProjectId);
-            }
+            if (originalStack != null) {
+                if (originalStack.DateFixed != entity.DateFixed) {
+                    _errorRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
+                    InvalidateFixedIdsCache(entity.ProjectId);
+                }
 
-            InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+                if (originalStack.IsHidden != entity.IsHidden) {
+                    _errorRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
+                    InvalidateHiddenIdsCache(entity.ProjectId);
+                }
+
+                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+            }
 
             base.InvalidateCache(entity);
         }
@@ -195,21 +198,22 @@ namespace Exceptionless.Core {
         #region Queries
 
         public ErrorStackInfo GetErrorStackInfoBySignatureHash(string projectId, string signatureHash) {
-            var result = Cache != null ? Cache.Get<ErrorStackInfo>(GetScopedCacheKey(String.Concat(projectId, signatureHash))) : null;
+            var result = Cache != null ? Cache.Get<ErrorStackInfo>(GetScopedCacheKey(String.Concat(projectId, signatureHash, "v2"))) : null;
             if (result == null) {
                 result = Collection
                     .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.EQ(FieldNames.SignatureHash, signatureHash)))
                     .SetLimit(1)
-                    .SetFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical)
+                    .SetFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
                     .Select(es => new ErrorStackInfo {
                         Id = es.Id,
                         DateFixed = es.DateFixed,
-                        OccurrencesAreCritical = es.OccurrencesAreCritical
+                        OccurrencesAreCritical = es.OccurrencesAreCritical,
+                        IsHidden = es.IsHidden
                     })
                     .FirstOrDefault();
 
                 if (Cache != null && result != null)
-                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, signatureHash)), result, TimeSpan.FromMinutes(5));
+                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, signatureHash, "v2")), result, TimeSpan.FromMinutes(5));
             }
 
             // add extra info to object that's not stored in the cache memory

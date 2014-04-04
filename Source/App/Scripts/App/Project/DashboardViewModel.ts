@@ -16,7 +16,7 @@ module exceptionless.project {
         perHourAverage = ko.observable<number>(0);
 
         constructor(elementId: string, navigationElementId: string, projectsElementId: string, dateRangeElementId: string, chartElementId: string, frequentErrorStackElementId: string, recentErrorStackElementId: string, pageSize?: number, autoUpdate?: boolean) {
-            super(elementId, navigationElementId, chartElementId, '/stats/project', projectsElementId, dateRangeElementId, null, autoUpdate);
+            super(elementId, navigationElementId, chartElementId, '/stats/project', projectsElementId, dateRangeElementId, true, null, autoUpdate);
             this.applyBindings();
             this._stats.subscribe(() => this.tryUpdateChart());
 

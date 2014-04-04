@@ -54,7 +54,7 @@ namespace Exceptionless.Models {
         }
 
         public string EmailAddress() {
-            if (Username.Contains("@"))
+            if (!String.IsNullOrEmpty(Username) && Username.Contains("@"))
                 return Username;
 
             foreach (var kvp in ExtraData) {
@@ -69,7 +69,7 @@ namespace Exceptionless.Models {
             foreach (var kvp in ExtraData.Where(kvp => String.Equals(kvp.Key, "name") && !String.IsNullOrEmpty(kvp.Value)))
                 return kvp.Value;
 
-            return Username.Contains(" ") ? Username : null;
+            return !String.IsNullOrEmpty(Username) && Username.Contains(" ") ? Username : null;
         }
     }
 }

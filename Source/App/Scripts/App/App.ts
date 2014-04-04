@@ -11,8 +11,8 @@ module exceptionless {
         public static onPlanChanged = ko.observable<{ organizationId: string; }>();
         public static onOrganizationUpdated = ko.observable<{ organizationId: string; }>();
         public static onProjectUpdated = ko.observable<{ projectId: string; }>();
-        public static onStackUpdated = ko.observable<{ stackId: string; }>();
-        public static onErrorOccurred = ko.observable<{ projectId: string; }>();
+        public static onStackUpdated = ko.observable<{ projectId: string; id: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
+        public static onNewError = ko.observable<{ projectId: string; stackId: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
 
         public static organizations = ko.observableArray<models.Organization>([]);
         private static _previousOrganization: models.Organization;
@@ -156,7 +156,12 @@ module exceptionless {
             App.projects.sort((a: models.ProjectInfo, b: models.ProjectInfo) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
             if (StringUtil.isNullOrEmpty(App.selectedProject().id)) {
-                var project = ko.utils.arrayFirst(App.projects(), (project: models.Project)=> project.id === DataUtil.getProjectId());
+                var project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.id === DataUtil.getProjectId());
+
+                var organizationId = DataUtil.getOrganizationId();
+                if (!StringUtil.isNullOrEmpty(organizationId) && (!project || project.organizationId !== organizationId))
+                    project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.organizationId === organizationId);
+
                 if (!project && App.projects().length > 0)
                     project = App.projects()[0];
 
@@ -264,7 +269,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.format(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDate'] = true;
@@ -276,7 +281,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDayYear(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithMonthDayYear'] = true;
@@ -288,7 +293,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDay(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithMonthDay'] = true;
@@ -300,7 +305,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFullDateAndTime(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithFullDateAndTime'] = true;
@@ -329,7 +334,7 @@ module exceptionless {
                             $(element).text(date.fromNow()).livestamp(date);
                         }
                     } else {
-                        $(element).text(value).livestamp('destroy');
+                        $(element).text(<any>value).livestamp('destroy');
                     }
                 }
             };
@@ -342,7 +347,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyFullDate(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyFullDate'] = true;
@@ -354,7 +359,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyMonthDayYear(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyMonthDayYear'] = true;
@@ -370,7 +375,7 @@ module exceptionless {
                             $(element).text((<any>value.start()).twix(value.end()).format());
                         }
                     } else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['customDateRangeFriendlyName'] = true;
@@ -509,14 +514,14 @@ module exceptionless {
                 App.onProjectUpdated({ projectId: projectId });
             };
 
-            notifier.client.stackUpdated = (projectId: string, stackId: string) => {
+            notifier.client.stackUpdated = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onStackUpdated({ stackId: stackId });
+                    App.onStackUpdated({ projectId: projectId, id: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
             };
 
-            notifier.client.newError = (projectId: string) => {
+            notifier.client.newError = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onErrorOccurred({ projectId: App.selectedProject().id });
+                    App.onNewError({ projectId: projectId, stackId: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
             };
 
             $.connection.hub.start();

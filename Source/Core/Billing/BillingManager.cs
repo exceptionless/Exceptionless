@@ -45,7 +45,10 @@ namespace Exceptionless.Core.Billing {
             if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
                 return false;
 
-            var organization = _organizationRepository.GetById(project.OrganizationId);
+            var organization = _organizationRepository.GetByIdCached(project.OrganizationId, true);
+            if (organization == null)
+                return false;
+
             return organization.MaxProjects == -1 || organization.ProjectCount < organization.MaxProjects;
         }
 
@@ -57,7 +60,10 @@ namespace Exceptionless.Core.Billing {
         }
 
         public bool HasPremiumFeatures(string organizationId) {
-            var organization = _organizationRepository.GetByIdCached(organizationId);
+            var organization = _organizationRepository.GetByIdCached(organizationId, true);
+            if (organization == null)
+                return false;
+
             return organization.HasPremiumFeatures;
         }
 

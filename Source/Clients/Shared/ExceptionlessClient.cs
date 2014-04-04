@@ -125,6 +125,20 @@ namespace Exceptionless {
                 SendingError(this, e);
         }
 
+        /// <summary>
+        /// Occurs when a request is about to be sent to the server. Can be used to customize the request object and proxy settings.
+        /// </summary>
+        public event EventHandler<RequestSendingEventArgs> RequestSending;
+
+        /// <summary>
+        /// Raises the <see cref="RequestSending" /> event.
+        /// </summary>
+        /// <param name="e">The <see cref="RequestSendingEventArgs" /> instance containing the event data.</param>
+        protected void OnRequestSending(RequestSendingEventArgs e) {
+            if (RequestSending != null)
+                RequestSending(this, e);
+        }
+
         #endregion
 
         /// <summary>
@@ -132,7 +146,7 @@ namespace Exceptionless {
         /// </summary>
         internal ExceptionlessClient(IQueueStore store = null, IExceptionlessLog log = null) {
             _queueTimer = new Timer(OnQueueTimer, null, Timeout.Infinite, Timeout.Infinite);
-            _log = log ?? new NullExceptionlessLog();
+            _log = log ?? _nullLogger;
 
             try {
                 _configuration = Config.ClientConfiguration.Create(this);
@@ -258,6 +272,7 @@ namespace Exceptionless {
                     Scheme = ExceptionlessHeaders.Basic,
                     ParameterText = Convert.ToBase64String(Encoding.ASCII.GetBytes(String.Format("{0}:{1}", "client", Configuration.ApiKey)))
                 },
+                RequestSendingCallback = request => OnRequestSending(new RequestSendingEventArgs(request))
             };
 
             // TODO: auto detect blocked call at some point.
