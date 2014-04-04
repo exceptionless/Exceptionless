@@ -3,7 +3,7 @@
 module exceptionless {
     export class PagedViewModelBase<T> extends ViewModelBase {
         action = '';
-        totalLimitedByPlan = ko.observable<boolean>(false);
+        totalLimitedByPlan = ko.observable<number>(0);
         items = ko.observableArray<T>([]);
         pager: PagerViewModel;
         newItem: any;
@@ -17,11 +17,8 @@ module exceptionless {
 
             this.registerNewItemRules();
 
-            this.pager = new PagerViewModel(elementId + '-page', 0, pageSize);
-            this.pager.currentPage.subscribe(() => {
-                $.scrollTo('#' + elementId, { offset: { top: -110 } });
-                this.refreshViewModelData();
-            });
+            this.pager = new PagerViewModel(elementId + '-page', 0, pageSize, null, this.items);
+            this.pager.currentPage.subscribe(() => this.refreshViewModelData());
 
             if (data) {
                 data.subscribe((data: any) => {
@@ -59,10 +56,10 @@ module exceptionless {
             if (!data)
                 return;
 
-            this.totalLimitedByPlan(data.TotalLimitedByPlan);
+			this.totalLimitedByPlan(data.TotalLimitedByPlan && data.TotalLimitedByPlan != null ? data.TotalLimitedByPlan : 0);
 
             var results = data.Results ? data.Results : data;
-            this.pager.totalCount(data.TotalCount ? data.TotalCount : data.length);
+            this.pager.totalCount(data.TotalCount);
 
             // HACK: We can remove this once ODATA supports paging.
             if (data.PageSize)

@@ -5,7 +5,7 @@ module exceptionless.project {
         private _pagedFrequentErrorStackStatsViewModel: stats.PagedFrequentErrorStackStatsViewModel;
 
         constructor(elementId: string, navigationElementId: string, chartElementId: string, projectsElementId: string, dateRangeElementId: string, frequentElementId: string, pageSize?: number, autoUpdate?: boolean) {
-            super(elementId, navigationElementId, chartElementId, null, projectsElementId, dateRangeElementId, null, autoUpdate);
+            super(elementId, navigationElementId, chartElementId, null, projectsElementId, dateRangeElementId, true, null, autoUpdate);
 
             this._pagedFrequentErrorStackStatsViewModel = new stats.PagedFrequentErrorStackStatsViewModel(frequentElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
         }

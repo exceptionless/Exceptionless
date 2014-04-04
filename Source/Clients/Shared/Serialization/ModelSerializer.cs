@@ -30,7 +30,7 @@ namespace Exceptionless.Serialization {
 
         private static readonly Lazy<ModelSerializer> _serializer = new Lazy<ModelSerializer>(() => new ModelSerializer());
 
-        public JsonSerializerSettings GetSettings() {
+        private static JsonSerializerSettings GetSettings() {
             var settings = new JsonSerializerSettings {
                 ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
                 NullValueHandling = NullValueHandling.Ignore,
@@ -169,7 +169,7 @@ namespace Exceptionless.Serialization {
             return serializesAsObject ? jw.CurrentDepth < maxDepth : jw.CurrentDepth <= maxDepth;
         }
 
-        private bool IsIntrinsicType(Type t) {
+        private static bool IsIntrinsicType(Type t) {
             if (t == typeof(string))
                 return true;
 

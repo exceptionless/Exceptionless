@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Pipeline {
                 var signature = _signatureFactory.GetSignature(ctx.Error);
                 ctx.StackingInfo = ctx.Error.GetStackingInfo();
                 // Set Path to be the only thing we stack on for 404 errors
-                if (ctx.Error.Code == "404" && ctx.Error.RequestInfo != null) {
+                if (ctx.Error.Is404() && ctx.Error.RequestInfo != null) {
                     Log.Trace().Message("Updating SignatureInfo for 404 error.").Write();
                     signature.SignatureInfo.Clear();
                     signature.SignatureInfo.Add("HttpMethod", ctx.Error.RequestInfo.HttpMethod);
@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Pipeline {
                         LastOccurrence = ctx.Error.OccurrenceDate.UtcDateTime
                     };
 
-                    _stackRepository.Add(stack);
+                    _stackRepository.Add(stack, true);
                     ctx.StackInfo = new ErrorStackInfo {
                         Id = stack.Id,
                         DateFixed = stack.DateFixed,
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Pipeline {
                 Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.StackInfo.Id).Write();
                 ctx.Error.ErrorStackId = ctx.StackInfo.Id;
             } else {
-                var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId);
+                var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId, true);
 
                 // TODO: Update unit tests to work with this check.
                 //if (stack == null || stack.ProjectId != error.ProjectId)
@@ -105,9 +105,14 @@ namespace Exceptionless.Core.Pipeline {
                     Id = stack.Id,
                     DateFixed = stack.DateFixed,
                     OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                    SignatureHash = stack.SignatureHash
+                    SignatureHash = stack.SignatureHash,
+                    IsHidden = stack.IsHidden
                 };
             }
+
+            // sync the fixed and hidden flags to the error occurrence
+            ctx.Error.IsFixed = ctx.StackInfo.DateFixed.HasValue;
+            ctx.Error.IsHidden = ctx.StackInfo.IsHidden;
         }
     }
 }

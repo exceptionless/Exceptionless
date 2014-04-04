@@ -187,12 +187,13 @@ namespace Exceptionless.App.Controllers {
                 }
 
                 _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, User.UserEntity);
-                organization = _organizationRepository.Add(organization);
-                _notificationSender.OrganizationUpdated(organization.Id);
+                organization = _organizationRepository.Add(organization, true);
 
                 User user = _userRepository.GetById(User.UserEntity.Id);
                 user.OrganizationIds.Add(organization.Id);
                 _userRepository.Update(user);
+
+                _notificationSender.OrganizationUpdated(organization.Id);
             }
 
             var project = new Project { Name = model.Name, TimeZone = model.TimeZone, OrganizationId = organization.Id };

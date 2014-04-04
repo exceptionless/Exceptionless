@@ -13,6 +13,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Net;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Exceptionless.Extensions;
@@ -72,7 +73,7 @@ namespace Exceptionless.Net {
 
         public AuthorizationHeader AuthorizationHeader { get; set; }
         public Action<AuthorizationState> AuthorizationCallback { get; set; }
-
+        public Action<HttpWebRequest> RequestSendingCallback { get; set; }
         public Uri BaseUri { get; set; }
         public string RequestContentType { get; set; }
         public string ResponseContentType { get; set; }
@@ -287,8 +288,10 @@ namespace Exceptionless.Net {
             if (Proxy != null)
                 webRequest.Proxy = Proxy;
 #endif
+            if (RequestSendingCallback != null)
+                RequestSendingCallback(webRequest);
             state.Request = webRequest;
-
+            
             if (state.IsGet())
                 BeginGetResponse(state);
             else

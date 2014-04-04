@@ -1,5 +1,4 @@
-﻿@using System.Web.Optimization
-@{
+﻿@{
     Layout = "~/Views/Shared/_AppLayout.cshtml";
 }
 
@@ -15,7 +14,7 @@
 <div class="well well-small">
     <div class="btn-toolbar" style="margin-top: 0; margin-bottom: 0;">
         <div id="daterange" class="pull-right">
-            <div class="btn-group">
+            <div class="btn-group" style="display: none;" data-bind="visible: showToggleControls">
                 <button type="button" class="btn" data-bind="click: function () { showHidden(!showHidden()) }, css: { active: showHidden }, attr: { title: showHidden() ? 'Hide Hidden Errors' : 'Show Hidden Errors'}">
                     <i class="fa fa-eye"></i>
                 </button>
@@ -26,6 +25,7 @@
                     <i class="fa fa-bookmark"></i>
                 </button>
             </div>
+
             <div class="btn-group">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">
                     <!-- ko if: selectedDateRange().id() !== exceptionless.Constants.CUSTOM -->

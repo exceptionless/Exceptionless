@@ -21,39 +21,39 @@ namespace Exceptionless.Web.Controllers {
         protected new ExceptionlessPrincipal User { get { return base.User as ExceptionlessPrincipal; } }
 
         public void SetAttentionAlert(string message) {
-            TempData.Add(Alerts.ATTENTION, message);
+            TempData[Alerts.ATTENTION] = message;
         }
 
         public void SetAttentionAlert(string title, string message) {
-            TempData.Add(String.Concat(Alerts.ATTENTION, "-", Alerts.TITLE), title);
-            TempData.Add(Alerts.ATTENTION, message);
+            TempData[String.Concat(Alerts.ATTENTION, "-", Alerts.TITLE)] = title;
+            TempData[Alerts.ATTENTION] = message;
         }
 
         public void SetSuccessAlert(string message) {
-            TempData.Add(Alerts.SUCCESS, message);
+            TempData[Alerts.SUCCESS] = message;
         }
 
         public void SetSuccessAlert(string title, string message) {
-            TempData.Add(String.Concat(Alerts.SUCCESS, "-", Alerts.TITLE), title);
-            TempData.Add(Alerts.SUCCESS, message);
+            TempData[String.Concat(Alerts.SUCCESS, "-", Alerts.TITLE)] = title;
+            TempData[Alerts.SUCCESS] = message;
         }
 
         public void SetInformationAlert(string message) {
-            TempData.Add(Alerts.INFORMATION, message);
+            TempData[Alerts.INFORMATION] = message;
         }
 
         public void SetInformationAlert(string title, string message) {
-            TempData.Add(String.Concat(Alerts.INFORMATION, "-", Alerts.TITLE), title);
-            TempData.Add(Alerts.INFORMATION, message);
+            TempData[String.Concat(Alerts.INFORMATION, "-", Alerts.TITLE)] = title;
+            TempData[Alerts.INFORMATION] = message;
         }
 
         public void SetErrorAlert(string message) {
-            TempData.Add(Alerts.ERROR, message);
+            TempData[Alerts.ERROR] = message;
         }
 
         public void SetErrorAlert(string title, string message) {
-            TempData.Add(String.Concat(Alerts.ERROR, "-", Alerts.TITLE), title);
-            TempData.Add(Alerts.ERROR, message);
+            TempData[String.Concat(Alerts.ERROR, "-", Alerts.TITLE)] = title;
+            TempData[Alerts.ERROR] = message;
         }
     }
 

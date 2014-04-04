@@ -6,33 +6,60 @@ module exceptionless {
         projectListViewModel: ProjectListViewModel;
         filterViewModel: FilterViewModel;
 
-        constructor (elementId: string, navigationElementId: string, chartElementId: string, url: string, projectsElementId: string, dateRangeElementId: string, defaultProjectId?: string, autoUpdate?: boolean) {
+        constructor (elementId: string, navigationElementId: string, chartElementId: string, url: string, projectsElementId: string, dateRangeElementId: string, showFilterToggleControls: boolean, defaultProjectId?: string, autoUpdate?: boolean) {
             super(elementId, chartElementId, url, autoUpdate);
 
             if (projectsElementId)
                 this.projectListViewModel = new exceptionless.ProjectListViewModel(projectsElementId, defaultProjectId);
             
             if (dateRangeElementId)
-                this.filterViewModel = new exceptionless.FilterViewModel(dateRangeElementId);
+                this.filterViewModel = new exceptionless.FilterViewModel(dateRangeElementId, showFilterToggleControls);
             
             if (navigationElementId && projectsElementId)
                 this._navigationViewModel = new NavigationViewModel(navigationElementId, this.projectListViewModel);
 
-            App.onStackUpdated.subscribe(() => {
-                if (this.canRetrieve)
-                    this.refreshViewModelData();
-            });
-
-            App.onErrorOccurred.subscribe(() => {
-                if (this.canRetrieve)
-                    this.refreshViewModelData();
-            });
+            App.onStackUpdated.subscribe((stack) => this.onStackUpdated(stack));
+            App.onNewError.subscribe((error) => this.onNewError(error));
 
             App.selectedPlan.subscribe((plan: account.BillingPlan) => {
                 $('#free-plan-notification').hide();
                 if (plan.id === Constants.FREE_PLAN_ID)
                     $('#free-plan-notification').show();
             });
+        }
+
+        public onStackUpdated(stack) {
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
+            if (stack.isHidden && !this.filterViewModel.showHidden())
+                return;
+
+            if (stack.isFixed && !this.filterViewModel.showFixed())
+                return;
+
+            if (stack.is404 && !this.filterViewModel.showNotFound())
+                return;
+
+            if (this.canRetrieve)
+                this.refreshViewModelData();
+        }
+
+        public onNewError(error) {
+            if (this.filterViewModel.selectedDateRange().end())
+                return;
+
+            if (error.isHidden && !this.filterViewModel.showHidden())
+                return;
+
+            if (error.isFixed && !this.filterViewModel.showFixed())
+                return;
+
+            if (error.is404 && !this.filterViewModel.showNotFound())
+                return;
+
+            if (this.canRetrieve)
+                this.refreshViewModelData();
         }
 
         public tryUpdateChart() {

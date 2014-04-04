@@ -16,12 +16,14 @@ using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
-    [Priority(40)]
+    [Priority(30)]
     public class CheckForRegressionAction : ErrorPipelineActionBase {
         private readonly ErrorStackRepository _errorStackRepository;
+        private readonly ErrorRepository _errorRepository;
 
-        public CheckForRegressionAction(ErrorStackRepository errorStackRepository) {
+        public CheckForRegressionAction(ErrorStackRepository errorStackRepository, ErrorRepository errorRepository) {
             _errorStackRepository = errorStackRepository;
+            _errorRepository = errorRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
@@ -37,7 +39,14 @@ namespace Exceptionless.Core.Pipeline {
                     .Unset(ErrorStackRepository.FieldNames.DateFixed)
                     .Set(ErrorStackRepository.FieldNames.IsRegressed, true));
 
+            _errorRepository.Collection.Update(
+                Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
+                Update
+                    .Unset(ErrorRepository.FieldNames.IsFixed));
+
             _errorStackRepository.InvalidateCache(ctx.Error.ErrorStackId, ctx.StackInfo.SignatureHash, ctx.Error.ProjectId);
+
+            ctx.Error.IsFixed = false;
             ctx.IsRegression = true;
         }
     }
