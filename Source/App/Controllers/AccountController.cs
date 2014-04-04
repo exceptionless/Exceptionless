@@ -212,26 +212,30 @@ namespace Exceptionless.App.Controllers {
         }
 
         private void AddInvitedUserToOrganization(string token, User user) {
+            if (user == null)
+                return;
+
             Invite invite;
             Organization organization = _organizationRepository.GetByInviteToken(token, out invite);
-            if (organization != null) {
-                if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                    user.IsEmailAddressVerified = true;
-                    _userRepository.Update(user);
-                }
+            if (organization == null)
+                return;
 
-                if (!_billingManager.CanAddUser(organization)) {
-                    ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
-                    return;
-                }
-
-                user.OrganizationIds.Add(organization.Id);
+            if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
+                user.IsEmailAddressVerified = true;
                 _userRepository.Update(user);
-
-                organization.Invites.Remove(invite);
-                _organizationRepository.Update(organization);
-                _notificationSender.OrganizationUpdated(organization.Id);
             }
+
+            if (!_billingManager.CanAddUser(organization)) {
+                ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
+                return;
+            }
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Update(user);
+
+            organization.Invites.Remove(invite);
+            _organizationRepository.Update(organization);
+            _notificationSender.OrganizationUpdated(organization.Id);
         }
 
         [HttpPost]
@@ -440,8 +444,19 @@ namespace Exceptionless.App.Controllers {
             // TODO: Need to check to see if we have a user with the specified email address already.
             OAuthAccount account = result.ToOAuthAccount();
             if (_membershipProvider.OAuthLogin(account, remember: true)) {
-                if (!String.IsNullOrEmpty(token))
-                    AddInvitedUserToOrganization(token, _membershipProvider.GetUserByEmailAddress(account.EmailAddress() ?? account.Username));
+                if (!String.IsNullOrEmpty(token)) {
+                    User user = null;
+                    if (!String.IsNullOrEmpty(account.EmailAddress()))
+                        user = _membershipProvider.GetUserByEmailAddress(account.EmailAddress());
+
+                    if (user == null && !String.IsNullOrEmpty(account.Username))
+                        user = _membershipProvider.GetUserByEmailAddress(account.Username);
+
+                    if (user != null)
+                        AddInvitedUserToOrganization(token, user);
+
+                    // TODO: should we notify the user that they couldn't be invited to the organization?
+                }
 
                 return RedirectToLocal(returnUrl);
             }
