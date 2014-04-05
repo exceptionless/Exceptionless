@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Mail {
             return Task.Run(() => SendAddedToOrganization(sender, organization, user));
         }
 
-        public void SendNotice(string emailAddress, ErrorNotificationModel notification) {
+        public void SendNotice(string emailAddress, EventNotificationModel notification) {
             string notificationType = String.Concat(notification.TypeName, " Occurrence");
             if (notification.IsNew)
                 notificationType = String.Concat("New ", notification.TypeName);
@@ -121,7 +121,7 @@ namespace Exceptionless.Core.Mail {
             SendMessage(msg);
         }
 
-        public Task SendNoticeAsync(string emailAddress, ErrorNotificationModel notification) {
+        public Task SendNoticeAsync(string emailAddress, EventNotificationModel notification) {
             return Task.Run(() => SendNotice(emailAddress, notification));
         }
 

@@ -9,10 +9,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace Exceptionless.Models {
+namespace Exceptionless.Models.Data {
     public class RequestInfo {
         public RequestInfo() {
             ExtendedData = new DataDictionary();
@@ -51,26 +49,6 @@ namespace Exceptionless.Models {
         public string Path { get; set; }
 
         /// <summary>
-        /// The full path for the request including host, path and query String.
-        /// </summary>
-        public string GetFullPath(bool includeHttpMethod = false, bool includeQueryString = true) {
-            var sb = new StringBuilder();
-            if (includeHttpMethod)
-                sb.Append(HttpMethod).Append(" ");
-            sb.Append(IsSecure ? "https://" : "http://");
-            sb.Append(Host);
-            if (Port != 80 && Port != 443)
-                sb.Append(":").Append(Port);
-            if (!Path.StartsWith("/"))
-                sb.Append("/");
-            sb.Append(Path);
-            if (includeQueryString && QueryString.Count > 0)
-                sb.Append("?").Append(CreateQueryString(QueryString));
-
-            return sb.ToString();
-        }
-
-        /// <summary>
         /// The referring url for the request.
         /// </summary>
         public string Referrer { get; set; }
@@ -99,40 +77,5 @@ namespace Exceptionless.Models {
         /// Extended data entries for this error.
         /// </summary>
         public DataDictionary ExtendedData { get; set; }
-
-        private static string CreateQueryString(IEnumerable<KeyValuePair<string, string>> args) {
-            if (args == null)
-                return String.Empty;
-
-            if (!args.Any())
-                return String.Empty;
-
-            var sb = new StringBuilder(args.Count() * 10);
-
-            foreach (var p in args) {
-                if (String.IsNullOrEmpty(p.Key) && p.Value == null)
-                    continue;
-
-                if (!String.IsNullOrEmpty(p.Key)) {
-                    sb.Append(Uri.EscapeDataString(p.Key));
-                    sb.Append('=');
-                }
-                if (p.Value != null)
-                    sb.Append(EscapeUriDataStringRfc3986(p.Value));
-                sb.Append('&');
-            }
-            sb.Length--; // remove trailing &
-
-            return sb.ToString();
-        }
-
-        private static readonly char[] _uriRfc3986CharsToEscape = { '!', '*', '\'', '(', ')' };
-
-        private static string EscapeUriDataStringRfc3986(string value) {
-            if (value == null)
-                throw new ArgumentNullException("value");
-
-            return value; //.HexEscape(_uriRfc3986CharsToEscape);
-        }
     }
 }

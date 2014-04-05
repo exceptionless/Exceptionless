@@ -26,8 +26,8 @@ namespace Exceptionless.Core.Jobs {
         private readonly OrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IErrorRepository _errorRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly DayStackStatsRepository _dayStackStats;
         private readonly MonthStackStatsRepository _monthStackStats;
         private readonly DayProjectStatsRepository _dayProjectStats;
@@ -36,8 +36,8 @@ namespace Exceptionless.Core.Jobs {
         public RemoveStaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
-            IErrorRepository errorRepository,
-            IErrorStackRepository errorStackRepository,
+            IEventRepository eventRepository,
+            IStackRepository stackRepository,
             DayStackStatsRepository dayStackStats,
             MonthStackStatsRepository monthStackStats,
             DayProjectStatsRepository dayProjectStats,
@@ -45,8 +45,8 @@ namespace Exceptionless.Core.Jobs {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _errorRepository = errorRepository;
-            _errorStackRepository = errorStackRepository;
+            _eventRepository = eventRepository;
+            _stackRepository = stackRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
@@ -116,8 +116,8 @@ namespace Exceptionless.Core.Jobs {
 
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _errorStackRepository.RemoveAllByProjectId(project.Id);
-                    _errorRepository.RemoveAllByProjectId(project.Id);
+                    _stackRepository.RemoveAllByProjectId(project.Id);
+                    _eventRepository.RemoveAllByProjectId(project.Id);
                     _dayStackStats.RemoveAllByProjectId(project.Id);
                     _monthStackStats.RemoveAllByProjectId(project.Id);
                     _dayProjectStats.RemoveAllByProjectId(project.Id);

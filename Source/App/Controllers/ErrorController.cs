@@ -25,13 +25,13 @@ namespace Exceptionless.App.Controllers {
     public class ErrorController : ExceptionlessController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
-        private readonly IErrorRepository _repository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _repository;
 
-        public ErrorController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IErrorStackRepository errorStackRepository, IErrorRepository repository) {
+        public ErrorController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, IEventRepository repository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _errorStackRepository = errorStackRepository;
+            _stackRepository = stackRepository;
             _repository = repository;
         }
 
@@ -49,8 +49,8 @@ namespace Exceptionless.App.Controllers {
             Project project = _projectRepository.GetByIdCached(error.ProjectId);
             ErrorModel model = Mapper.Map<Error, ErrorModel>(error);
             model.OccurrenceDate = TimeZoneInfo.ConvertTime(error.OccurrenceDate, project.DefaultTimeZone());
-            model.PreviousErrorId = _repository.GetPreviousErrorOccurrenceId(error.Id);
-            model.NextErrorId = _repository.GetNextErrorOccurrenceId(error.Id);
+            model.PreviousErrorId = _repository.GetPreviousEventIdInStack(error.Id);
+            model.NextErrorId = _repository.GetNextEventIdInStack(error.Id);
             model.PromotedTabs = project.PromotedTabs;
             model.CustomContent = project.CustomContent;
 
@@ -69,7 +69,7 @@ namespace Exceptionless.App.Controllers {
             if (error != null)
                 return RedirectToAction("Index", new { id = errorId });
 
-            ErrorStack stack = _errorStackRepository.GetByIdCached(stackId);
+            Stack stack = _stackRepository.GetByIdCached(stackId);
             if (stack != null && User.CanAccessOrganization(stack.OrganizationId))
                 return View("OccurrenceNotFound", stack);
 

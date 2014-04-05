@@ -42,9 +42,9 @@ namespace Exceptionless.Core {
             public const string PromotedTabs = "PromotedTabs";
             public const string CustomContent = "CustomContent";
             public const string StackCount = "StackCount";
-            public const string ErrorCount = "ErrorCount";
-            public const string TotalErrorCount = "TotalErrorCount";
-            public const string LastErrorDate = "LastErrorDate";
+            public const string EventCount = "EventCount";
+            public const string TotalEventCount = "TotalEventCount";
+            public const string LastEventDate = "LastEventDate";
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
 
@@ -122,18 +122,18 @@ namespace Exceptionless.Core {
             return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
         }
 
-        public void IncrementStats(string projectId, long? errorCount = null, long? stackCount = null) {
+        public void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException("projectId");
 
             IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(projectId)));
 
             var update = new UpdateBuilder();
-            if (errorCount.HasValue && errorCount.Value != 0) {
-                update.Inc(FieldNames.ErrorCount, errorCount.Value);
-                if (errorCount.Value > 0) {
-                    update.Inc(FieldNames.TotalErrorCount, errorCount.Value);
-                    update.Set(FieldNames.LastErrorDate, new BsonDateTime(DateTime.UtcNow));
+            if (eventCount.HasValue && eventCount.Value != 0) {
+                update.Inc(FieldNames.EventCount, eventCount.Value);
+                if (eventCount.Value > 0) {
+                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
+                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
                 }
             }
             if (stackCount.HasValue && stackCount.Value != 0)
@@ -143,15 +143,15 @@ namespace Exceptionless.Core {
             InvalidateCache(projectId);
         }
 
-        public void SetStats(string projectId, long? errorCount = null, long? stackCount = null) {
+        public void SetStats(string projectId, long? eventCount = null, long? stackCount = null) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException("projectId");
 
             IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(projectId)));
 
             var update = new UpdateBuilder();
-            if (errorCount.HasValue)
-                update.Set(FieldNames.ErrorCount, errorCount.Value);
+            if (eventCount.HasValue)
+                update.Set(FieldNames.EventCount, eventCount.Value);
             if (stackCount.HasValue)
                 update.Set(FieldNames.StackCount, stackCount.Value);
 

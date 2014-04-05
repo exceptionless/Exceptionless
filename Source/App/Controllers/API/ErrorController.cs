@@ -35,14 +35,14 @@ using ServiceStack.Messaging;
 
 namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
-    public class ErrorController : RepositoryOwnedByOrganizationApiController<Error, IErrorRepository> {
+    public class ErrorController : RepositoryOwnedByOrganizationApiController<Error, IEventRepository> {
         private readonly ICacheClient _cacheClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IMessageFactory _messageFactory;
         private readonly IAppStatsClient _stats;
 
-        public ErrorController(IErrorRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMessageFactory messageFactory, IAppStatsClient stats) : base(repository) {
+        public ErrorController(IEventRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMessageFactory messageFactory, IAppStatsClient stats) : base(repository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _cacheClient = cacheClient;
@@ -51,7 +51,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [Inject]
-        public IErrorStackRepository ErrorStackRepository { get; set; }
+        public IStackRepository StackRepository { get; set; }
 
         public override IEnumerable<Error> Get() {
             return base.Get().Select(e => e.ToProjectLocalTime(_projectRepository));
@@ -168,24 +168,24 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            ErrorStack errorStack = ErrorStackRepository.GetByIdCached(stackId);
-            if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
+            Stack stack = StackRepository.GetByIdCached(stackId);
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(errorStack.ProjectId, range.Item2);
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(stack.ProjectId, range.Item1);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(stack.ProjectId, range.Item2);
 
-            Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
+            Project project = _projectRepository.GetByIdCached(stack.ProjectId);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            List<Error> query = _repository.GetByErrorStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize).ToList();
+            List<Error> query = _repository.GetByStackIdOccurrenceDate(stackId, utcStart, utcEnd, skip, pageSize).ToList();
 
             List<ErrorResult> models = query.Where(m => m.OccurrenceDate.UtcDateTime >= retentionUtcCutoff).Select(e => e.ToProjectLocalTime(_projectRepository)).Select(Mapper.Map<Error, ErrorResult>).ToList();
 

@@ -13,7 +13,7 @@ using System;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {
-    public class WebHookErrorStack {
+    public class WebHookStack {
         public string Id { get; set; }
         public string Url { get { return String.Concat(Settings.Current.BaseURL, "/stack/", Id); } }
         public string Title { get; set; }
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Models {
         public bool IsRegression { get; set; }
         public bool IsCritical { get; set; }
 
-        public static WebHookErrorStack FromErrorStack(ErrorStack stack, IProjectRepository projectRepository, IOrganizationRepository organizationRepository) {
+        public static WebHookStack FromStack(Stack stack, IProjectRepository projectRepository, IOrganizationRepository organizationRepository) {
             if (stack == null)
                 throw new ArgumentNullException("stack");
 
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Models {
             if (organization == null)
                 throw new ArgumentException("OrganizationId not found.");
 
-            return new WebHookErrorStack {
+            return new WebHookStack {
                 Id = stack.Id,
                 Title = stack.Title,
                 Description = stack.Description,

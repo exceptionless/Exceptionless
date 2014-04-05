@@ -18,26 +18,26 @@ using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(5)]
-    public class ThrottleBotsAction : ErrorPipelineActionBase {
+    public class ThrottleBotsAction : EventPipelineActionBase {
         private readonly ICacheClient _cacheClient;
-        private readonly ErrorRepository _errorRepository;
+        private readonly EventRepository _eventRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsAction(ICacheClient cacheClient, ErrorRepository errorRepository) {
+        public ThrottleBotsAction(ICacheClient cacheClient, EventRepository eventRepository) {
             _cacheClient = cacheClient;
-            _errorRepository = errorRepository;
+            _eventRepository = eventRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
+        public override void Process(EventPipelineContext ctx) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 return;
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
             string clientIp = null;
-            if (ctx.Error.RequestInfo != null && !String.IsNullOrEmpty(ctx.Error.RequestInfo.ClientIpAddress))
-                clientIp = ctx.Error.RequestInfo.ClientIpAddress;
+            if (ctx.Event.RequestInfo != null && !String.IsNullOrEmpty(ctx.Event.RequestInfo.ClientIpAddress))
+                clientIp = ctx.Event.RequestInfo.ClientIpAddress;
 
             if (String.IsNullOrEmpty(clientIp))
                 return;
@@ -55,9 +55,9 @@ namespace Exceptionless.Core.Pipeline {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
 
-            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIp, DateTime.Now.Floor(_throttlingPeriod), ctx.Error.ProjectId).Project(ctx.Error.ProjectId).Write();
+            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIp, DateTime.Now.Floor(_throttlingPeriod), ctx.Event.ProjectId).Project(ctx.Event.ProjectId).Write();
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-            Task.Run(() => _errorRepository.RemoveAllByClientIpAndDateAsync(clientIp, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));
+            Task.Run(() => _eventRepository.RemoveAllByClientIpAndDateAsync(clientIp, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));
             ctx.IsCancelled = true;
         }
     }

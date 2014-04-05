@@ -12,8 +12,8 @@
 using System;
 
 namespace Exceptionless.Models.Stats {
-    public class ProjectErrorStatsResult : DateRangeResult<DateProjectStatsResult> {
-        public ProjectErrorStatsResult(long totalLimitedByPlan = 0) {
+    public class ProjectEventStatsResult : DateRangeResult<DateProjectStatsResult> {
+        public ProjectEventStatsResult(long totalLimitedByPlan = 0) {
             MostFrequent = new PlanPagedResult<ErrorStackResult>();
             MostRecent = new PlanPagedResult<ErrorStackResult>();
 

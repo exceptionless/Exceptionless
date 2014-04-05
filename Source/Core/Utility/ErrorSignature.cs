@@ -16,6 +16,7 @@ using System.Text;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignature {
@@ -24,7 +25,7 @@ namespace Exceptionless.Core.Utility {
         private static readonly string[] _defaultNonUserNamespaces = new[] { "System", "Microsoft" };
         // TODO: Add support for user public key token on signed assemblies
 
-        public ErrorSignature(ErrorInfo error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
+        public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
             if (error == null)
                 throw new ArgumentNullException("error");
 
@@ -50,7 +51,7 @@ namespace Exceptionless.Core.Utility {
 
         public string[] UserCommonMethods { get { return _userCommonMethods.ToArray(); } }
 
-        public ErrorInfo Error { get; private set; }
+        public Error Error { get; private set; }
 
         public bool EmptyNamespaceIsUserMethod { get; private set; }
 
@@ -65,8 +66,8 @@ namespace Exceptionless.Core.Utility {
             SignatureInfo.Clear();
 
             // start at the inner most exception and work our way out until we find a user method
-            ErrorInfo current = Error;
-            var errorStack = new List<ErrorInfo> { current };
+            Error current = Error;
+            var errorStack = new List<Error> { current };
             while (current.Inner != null) {
                 current = current.Inner;
                 errorStack.Add(current);
@@ -78,7 +79,7 @@ namespace Exceptionless.Core.Utility {
             if (ShouldFlagSignatureTarget)
                 errorStack.ForEach(es => es.StackTrace.ForEach(st => st.IsSignatureTarget = false));
 
-            foreach (ErrorInfo e in errorStack) {
+            foreach (Error e in errorStack) {
                 StackFrameCollection stackTrace = e.StackTrace;
                 if (stackTrace == null)
                     continue;
@@ -95,7 +96,7 @@ namespace Exceptionless.Core.Utility {
             }
 
             // We haven't found a user method yet, try some alternatives with the inner most error.
-            ErrorInfo innerMostError = errorStack[0];
+            Error innerMostError = errorStack[0];
 
             if (innerMostError.TargetMethod != null) {
                 // Use the target method if it exists.
@@ -140,7 +141,7 @@ namespace Exceptionless.Core.Utility {
             if (method == null)
                 return builder.ToString();
 
-            builder.Append(method.Signature);
+            builder.Append(method.GetSignature());
 
             return builder.ToString();
         }
@@ -160,7 +161,7 @@ namespace Exceptionless.Core.Utility {
                     return false;
             }
 
-            return !UserCommonMethods.Any(frame.Signature.Contains);
+            return !UserCommonMethods.Any(frame.GetSignature().Contains);
         }
 
         private bool IsUserNamespace(string fullName) {
@@ -171,7 +172,7 @@ namespace Exceptionless.Core.Utility {
             return UserNamespaces.Any(fullName.StartsWith);
         }
 
-        private void AddSpecialCaseDetails(ErrorInfo error) {
+        private void AddSpecialCaseDetails(Error error) {
             if (!error.ExtendedData.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY))
                 return;
 

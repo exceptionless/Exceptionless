@@ -14,12 +14,12 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core {
-    public interface IErrorStackRepository : IRepositoryOwnedByOrganization<ErrorStack> {
-        ErrorStackInfo GetErrorStackInfoBySignatureHash(string projectId, string signatureHash);
+    public interface IStackRepository : IRepositoryOwnedByOrganization<Stack> {
+        StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash);
 
-        IEnumerable<ErrorStack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
 
-        IEnumerable<ErrorStack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
 
         void InvalidateHiddenIdsCache(string projectId);
 
@@ -34,7 +34,7 @@ namespace Exceptionless.Core {
         void RemoveAllByProjectId(string projectId);
     }
 
-    public class ErrorStackInfo {
+    public class StackInfo {
         public string Id { get; set; }
         public DateTime? DateFixed { get; set; }
         public bool OccurrencesAreCritical { get; set; }

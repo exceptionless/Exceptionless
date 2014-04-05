@@ -9,7 +9,7 @@
 
 using System;
 
-namespace Exceptionless.Models {
+namespace Exceptionless.Models.Data {
     public class Parameter {
         public Parameter() {
             ExtendedData = new DataDictionary();

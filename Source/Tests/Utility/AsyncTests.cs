@@ -19,8 +19,8 @@ using Xunit;
 
 namespace Exceptionless.Tests.Utility {
     public class AsyncTests {
-        private readonly ErrorRepository _errorRepository = IoC.GetInstance<ErrorRepository>();
-        private readonly ErrorStackRepository _errorStackRepository = IoC.GetInstance<ErrorStackRepository>();
+        private readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();
+        private readonly StackRepository _stackRepository = IoC.GetInstance<StackRepository>();
         private readonly DayStackStatsRepository _dayStackStats = IoC.GetInstance<DayStackStatsRepository>();
         private readonly MonthStackStatsRepository _monthStackStats = IoC.GetInstance<MonthStackStatsRepository>();
         private readonly DayProjectStatsRepository _dayProjectStats = IoC.GetInstance<DayProjectStatsRepository>();
@@ -33,8 +33,8 @@ namespace Exceptionless.Tests.Utility {
 
             string id = "51cf1b597841550f1c44b539";
             var tasks = new[] {
-                _errorStackRepository.RemoveAllByProjectIdAsync(id),
-                _errorRepository.RemoveAllByProjectIdAsync(id),
+                _stackRepository.RemoveAllByProjectIdAsync(id),
+                _eventRepository.RemoveAllByProjectIdAsync(id),
                 _dayStackStats.RemoveAllByProjectIdAsync(id),
                 _monthStackStats.RemoveAllByProjectIdAsync(id),
                 _dayProjectStats.RemoveAllByProjectIdAsync(id),

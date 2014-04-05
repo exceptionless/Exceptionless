@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignatureFactory {

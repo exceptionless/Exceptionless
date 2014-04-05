@@ -1,3 +1,3 @@
 ﻿@using CodeSmith.Core.Extensions
-@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.ErrorNotificationModel>
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 [@Model.ProjectName] @Model.NotificationType: @Model.Message.Truncate(120)

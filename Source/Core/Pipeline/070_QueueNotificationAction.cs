@@ -20,60 +20,60 @@ using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
-    public class QueueNotificationAction : ErrorPipelineActionBase {
+    public class QueueNotificationAction : EventPipelineActionBase {
         private readonly IMessageFactory _messageFactory;
         private readonly IProjectHookRepository _projectHookRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
 
         public QueueNotificationAction(IMessageFactory messageFactory, IProjectHookRepository projectHookRepository,
-            IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IErrorStackRepository errorStackRepository) {
+            IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
             _messageFactory = messageFactory;
             _projectHookRepository = projectHookRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _errorStackRepository = errorStackRepository;
+            _stackRepository = stackRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            var organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
+        public override void Process(EventPipelineContext ctx) {
+            var organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
 
             // if they don't have premium features, then we don't need to queue notifications
             if (organization != null && !organization.HasPremiumFeatures)
                 return;
 
             using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
-                messageProducer.Publish(new ErrorNotification {
-                    ErrorId = ctx.Error.Id,
-                    ErrorStackId = ctx.Error.ErrorStackId,
+                messageProducer.Publish(new EventNotification {
+                    EventId = ctx.Event.Id,
+                    StackId = ctx.Event.StackId,
                     FullTypeName = ctx.StackingInfo.FullTypeName,
                     IsNew = ctx.IsNew,
-                    IsCritical = ctx.Error.Tags != null && ctx.Error.Tags.Contains("Critical"),
+                    IsCritical = ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical"),
                     IsRegression = ctx.IsRegression,
                     Message = ctx.StackingInfo.Message,
-                    ProjectId = ctx.Error.ProjectId,
-                    Code = ctx.Error.Code,
-                    UserAgent = ctx.Error.RequestInfo != null ? ctx.Error.RequestInfo.UserAgent : null,
-                    Url = ctx.Error.RequestInfo != null ? ctx.Error.RequestInfo.GetFullPath(true, true) : null
+                    ProjectId = ctx.Event.ProjectId,
+                    Code = ctx.Event.Code,
+                    UserAgent = ctx.Event.RequestInfo != null ? ctx.Event.RequestInfo.UserAgent : null,
+                    Url = ctx.Event.RequestInfo != null ? ctx.Event.RequestInfo.GetFullPath(true, true) : null
                 });
 
-                foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Error.ProjectId)) {
+                foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Event.ProjectId)) {
                     bool shouldCall = hook.EventTypes.Contains(ProjectHookRepository.EventTypes.NewError) && ctx.IsNew
                                       || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
-                                      || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.CriticalError) && ctx.Error.Tags != null && ctx.Error.Tags.Contains("Critical");
+                                      || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
 
                     if (!shouldCall)
                         continue;
 
-                    Log.Trace().Project(ctx.Error.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Error.ProjectId, hook.Url).Write();
+                    Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
 
                     messageProducer.Publish(new WebHookNotification {
-                        ProjectId = ctx.Error.ProjectId,
+                        ProjectId = ctx.Event.ProjectId,
                         Url = hook.Url,
-                        Data = WebHookError.FromError(ctx, _projectRepository, _errorStackRepository, _organizationRepository)
+                        Data = WebHookEvent.FromEvent(ctx, _projectRepository, _stackRepository, _organizationRepository)
                     });
                 }
             }

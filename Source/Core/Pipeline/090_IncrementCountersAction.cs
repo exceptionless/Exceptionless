@@ -16,7 +16,7 @@ using Exceptionless.Core.Billing;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
-    public class IncrementCountersAction : ErrorPipelineActionBase {
+    public class IncrementCountersAction : EventPipelineActionBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IAppStatsClient _stats;
 
@@ -27,8 +27,8 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            var organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
+        public override void Process(EventPipelineContext ctx) {
+            var organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
 
             if (organization == null)
                 return;

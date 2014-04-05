@@ -26,7 +26,7 @@ using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers {
-    public class MockedErrorControllerTests : MockedApiControllerBase<ErrorController, IErrorRepository, Error> {
+    public class MockedErrorControllerTests : MockedApiControllerBase<ErrorController, IEventRepository, Error> {
         private Mock<IProjectRepository> _mockedProjectRepository;
 
         private Mock<IOrganizationRepository> _mockedOrganizationRepository;

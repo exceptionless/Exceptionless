@@ -45,9 +45,9 @@ namespace Exceptionless.Tests.Utility {
             return Task.Delay(0);
         }
 
-        public void SendNotice(string emailAddress, ErrorNotificationModel notification) {}
+        public void SendNotice(string emailAddress, EventNotificationModel notification) {}
 
-        public Task SendNoticeAsync(string emailAddress, ErrorNotificationModel notification) {
+        public Task SendNoticeAsync(string emailAddress, EventNotificationModel notification) {
             return Task.Delay(0);
         }
 

@@ -14,38 +14,38 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class ErrorStackExtensions {
-        public static ErrorStack ToProjectLocalTime(this ErrorStack errorStack, Project project) {
-            if (errorStack == null)
+        public static Stack ToProjectLocalTime(this Stack stack, Project project) {
+            if (stack == null)
                 return null;
 
-            if (errorStack.DateFixed.HasValue)
-                errorStack.DateFixed = TimeZoneInfo.ConvertTime(errorStack.DateFixed.Value, project.DefaultTimeZone());
+            if (stack.DateFixed.HasValue)
+                stack.DateFixed = TimeZoneInfo.ConvertTime(stack.DateFixed.Value, project.DefaultTimeZone());
 
-            errorStack.FirstOccurrence = TimeZoneInfo.ConvertTime(errorStack.FirstOccurrence, project.DefaultTimeZone());
-            errorStack.LastOccurrence = TimeZoneInfo.ConvertTime(errorStack.LastOccurrence, project.DefaultTimeZone());
+            stack.FirstOccurrence = TimeZoneInfo.ConvertTime(stack.FirstOccurrence, project.DefaultTimeZone());
+            stack.LastOccurrence = TimeZoneInfo.ConvertTime(stack.LastOccurrence, project.DefaultTimeZone());
 
-            return errorStack;
+            return stack;
         }
 
-        public static ErrorStack ToProjectLocalTime(this ErrorStack errorStack, IProjectRepository repository) {
-            if (errorStack == null)
+        public static Stack ToProjectLocalTime(this Stack stack, IProjectRepository repository) {
+            if (stack == null)
                 return null;
 
-            return errorStack.ToProjectLocalTime(repository.GetByIdCached(errorStack.ProjectId));
+            return stack.ToProjectLocalTime(repository.GetByIdCached(stack.ProjectId));
         }
 
-        public static bool IsFixed(this ErrorStack errorStack) {
-            if (errorStack == null)
+        public static bool IsFixed(this Stack stack) {
+            if (stack == null)
                 return false;
 
-            return errorStack.DateFixed.HasValue && !errorStack.IsRegressed;
+            return stack.DateFixed.HasValue && !stack.IsRegressed;
         }
 
-        public static bool Is404(this ErrorStack errorStack) {
-            if (errorStack == null || errorStack.SignatureInfo == null)
+        public static bool Is404(this Stack stack) {
+            if (stack == null || stack.SignatureInfo == null)
                 return false;
 
-            return errorStack.SignatureInfo.ContainsKey("HttpMethod") && errorStack.SignatureInfo.ContainsKey("Path");
+            return stack.SignatureInfo.ContainsKey("HttpMethod") && stack.SignatureInfo.ContainsKey("Path");
         }
     }
 }

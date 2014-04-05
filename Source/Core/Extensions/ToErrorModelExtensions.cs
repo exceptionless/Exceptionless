@@ -21,7 +21,8 @@ using System.Security;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Models.Collections;
-using Module = Exceptionless.Models.Module;
+using Exceptionless.Models.Data;
+using Module = Exceptionless.Models.Data.Module;
 using StackFrame = System.Diagnostics.StackFrame;
 #if !EMBEDDED
 using CodeSmith.Core.Extensions;
@@ -199,7 +200,7 @@ namespace Exceptionless.Extensions {
             return modules;
         }
 
-        private static void PopulateStackTrace(this ErrorInfo error, Error root, Exception exception) {
+        private static void PopulateStackTrace(this Error error, Error root, Exception exception) {
             StackFrame[] frames = null;
             try {
                 var st = new StackTrace(exception, true);
@@ -210,7 +211,7 @@ namespace Exceptionless.Extensions {
                 return;
 
             foreach (StackFrame frame in frames) {
-                var stackFrame = new Exceptionless.Models.StackFrame {
+                var stackFrame = new Exceptionless.Models.Data.StackFrame {
                     LineNumber = frame.GetFileLineNumber(),
                     Column = frame.GetFileColumnNumber(),
                     FileName = frame.GetFileName()

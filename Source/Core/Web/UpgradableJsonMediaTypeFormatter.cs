@@ -23,7 +23,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.Core.Web {
     public class UpgradableJsonMediaTypeFormatter : JsonMediaTypeFormatter {
         public UpgradableJsonMediaTypeFormatter() {
-            ErrorDocumentUpgrader.RegisterUpgrades();
+            LegacyErrorDocumentUpgrader.RegisterUpgrades();
         }
 
         public override Task<object> ReadFromStreamAsync(Type type, Stream readStream, HttpContent content, IFormatterLogger formatterLogger) {

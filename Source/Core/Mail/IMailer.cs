@@ -36,9 +36,9 @@ namespace Exceptionless.Core.Mail {
 
         Task SendAddedToOrganizationAsync(User sender, Organization organization, User user);
 
-        void SendNotice(string emailAddress, ErrorNotificationModel notification);
+        void SendNotice(string emailAddress, EventNotificationModel notification);
 
-        Task SendNoticeAsync(string emailAddress, ErrorNotificationModel notification);
+        Task SendNoticeAsync(string emailAddress, EventNotificationModel notification);
 
         void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification);
 

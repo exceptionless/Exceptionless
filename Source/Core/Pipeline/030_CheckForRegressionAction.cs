@@ -17,36 +17,36 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
-    public class CheckForRegressionAction : ErrorPipelineActionBase {
-        private readonly ErrorStackRepository _errorStackRepository;
-        private readonly ErrorRepository _errorRepository;
+    public class CheckForRegressionAction : EventPipelineActionBase {
+        private readonly StackRepository _stackRepository;
+        private readonly EventRepository _eventRepository;
 
-        public CheckForRegressionAction(ErrorStackRepository errorStackRepository, ErrorRepository errorRepository) {
-            _errorStackRepository = errorStackRepository;
-            _errorRepository = errorRepository;
+        public CheckForRegressionAction(StackRepository stackRepository, EventRepository eventRepository) {
+            _stackRepository = stackRepository;
+            _eventRepository = eventRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Error.OccurrenceDate.UtcDateTime)
+        public override void Process(EventPipelineContext ctx) {
+            if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
                 return;
 
             Log.Trace().Message("Marking error as an regression.").Write();
-            _errorStackRepository.Collection.Update(
-                Query.EQ(ErrorStackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
+            _stackRepository.Collection.Update(
+                Query.EQ(StackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
                 Update
-                    .Unset(ErrorStackRepository.FieldNames.DateFixed)
-                    .Set(ErrorStackRepository.FieldNames.IsRegressed, true));
+                    .Unset(StackRepository.FieldNames.DateFixed)
+                    .Set(StackRepository.FieldNames.IsRegressed, true));
 
-            _errorRepository.Collection.Update(
-                Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
+            _eventRepository.Collection.Update(
+                Query.EQ(EventRepository.FieldNames.StackId, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
                 Update
-                    .Unset(ErrorRepository.FieldNames.IsFixed));
+                    .Unset(EventRepository.FieldNames.IsFixed));
 
-            _errorStackRepository.InvalidateCache(ctx.Error.ErrorStackId, ctx.StackInfo.SignatureHash, ctx.Error.ProjectId);
+            _stackRepository.InvalidateCache(ctx.Event.StackId, ctx.StackInfo.SignatureHash, ctx.Event.ProjectId);
 
-            ctx.Error.IsFixed = false;
+            ctx.Event.IsFixed = false;
             ctx.IsRegression = true;
         }
     }

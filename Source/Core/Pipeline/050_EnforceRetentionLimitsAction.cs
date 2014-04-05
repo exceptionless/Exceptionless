@@ -18,43 +18,43 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(50)]
-    public class EnforceRetentionLimitsAction : ErrorPipelineActionBase {
-        private readonly ErrorRepository _errorRepository;
+    public class EnforceRetentionLimitsAction : EventPipelineActionBase {
+        private readonly EventRepository _eventRepository;
         private readonly OrganizationRepository _organizationRepository;
 
-        public EnforceRetentionLimitsAction(ErrorRepository errorRepository, OrganizationRepository organizationRepository) {
-            _errorRepository = errorRepository;
+        public EnforceRetentionLimitsAction(EventRepository eventRepository, OrganizationRepository organizationRepository) {
+            _eventRepository = eventRepository;
             _organizationRepository = organizationRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
+        public override void Process(EventPipelineContext ctx) {
             if (ctx.IsNew)
                 return;
 
             int maxErrorsPerStack = 50;
-            Organization organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
+            Organization organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
             if (organization != null)
                 maxErrorsPerStack = organization.MaxErrorsPerDay > 0 ? organization.MaxErrorsPerDay + Math.Min(50, organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
 
             // Get a list of oldest ids that exceed our desired max errors.
-            var errors = _errorRepository.Collection.Find(
-                Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.Error.ErrorStackId))))
-                .SetSortOrder(SortBy.Descending(ErrorRepository.FieldNames.OccurrenceDate_UTC))
-                .SetFields(ErrorRepository.FieldNames.Id)
+            var errors = _eventRepository.Collection.Find(
+                Query.EQ(EventRepository.FieldNames.StackId, new BsonObjectId(new ObjectId(ctx.Event.StackId))))
+                .SetSortOrder(SortBy.Descending(EventRepository.FieldNames.Date_UTC))
+                .SetFields(EventRepository.FieldNames.Id)
                 .SetSkip(maxErrorsPerStack)
                 .SetLimit(150)
-                .Select(e => new Error {
+                .Select(e => new Event {
                     Id = e.Id,
-                    OrganizationId = ctx.Error.OrganizationId,
-                    ProjectId = ctx.Error.ProjectId,
-                    ErrorStackId = ctx.Error.ErrorStackId
+                    OrganizationId = ctx.Event.OrganizationId,
+                    ProjectId = ctx.Event.ProjectId,
+                    StackId = ctx.Event.StackId
                 })
                 .ToArray();
 
             if (errors.Length > 0)
-                _errorRepository.Delete(errors);
+                _eventRepository.Delete(errors);
         }
     }
 }

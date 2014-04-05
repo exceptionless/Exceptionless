@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Repositories {
             public const string ProjectId = "pid";
             public const string Total = "tot";
             public const string NewTotal = "new";
-            public const string NewErrorStackIds = "newids";
+            public const string NewStackIds = "newids";
             public const string MinuteStats = "mn";
             public const string MinuteStats_Format = "mn.{0}";
             public const string MinuteStats_Total = "tot";
@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
 
-            ErrorStatsHelper.MapStatsClasses();
+            EventStatsHelper.MapStatsClasses();
         }
 
         public void RemoveAllByProjectId(string projectId) {

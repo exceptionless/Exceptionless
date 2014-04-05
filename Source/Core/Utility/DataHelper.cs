@@ -22,13 +22,13 @@ namespace Exceptionless.Core.Utility {
         private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
         private readonly UserRepository _userRepository;
-        private readonly ErrorRepository _errorRepository;
-        private readonly ErrorStackRepository _errorStackRepository;
+        private readonly EventRepository _eventRepository;
+        private readonly StackRepository _stackRepository;
         private readonly DayStackStatsRepository _dayStackStats;
         private readonly MonthStackStatsRepository _monthStackStats;
         private readonly DayProjectStatsRepository _dayProjectStats;
         private readonly MonthProjectStatsRepository _monthProjectStats;
-        private readonly ErrorStatsHelper _statsHelper;
+        private readonly EventStatsHelper _statsHelper;
         private readonly BillingManager _billingManager;
 
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
@@ -36,24 +36,24 @@ namespace Exceptionless.Core.Utility {
         public DataHelper(OrganizationRepository organizationRepository,
             ProjectRepository projectRepository,
             UserRepository userRepository,
-            ErrorRepository errorRepository,
-            ErrorStackRepository errorStackRepository,
+            EventRepository eventRepository,
+            StackRepository stackRepository,
             DayStackStatsRepository dayStackStats,
             MonthStackStatsRepository monthStackStats,
             DayProjectStatsRepository dayProjectStats,
             MonthProjectStatsRepository monthProjectStats,
-            ErrorStatsHelper errorStatsHelper,
+            EventStatsHelper eventStatsHelper,
             BillingManager billingManager) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _errorRepository = errorRepository;
-            _errorStackRepository = errorStackRepository;
+            _eventRepository = eventRepository;
+            _stackRepository = stackRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
             _monthProjectStats = monthProjectStats;
-            _statsHelper = errorStatsHelper;
+            _statsHelper = eventStatsHelper;
             _billingManager = billingManager;
         }
 
@@ -66,8 +66,8 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             try {
-                _errorStackRepository.RemoveAllByProjectId(projectId);
-                _errorRepository.RemoveAllByProjectId(projectId);
+                _stackRepository.RemoveAllByProjectId(projectId);
+                _eventRepository.RemoveAllByProjectId(projectId);
                 _dayStackStats.RemoveAllByProjectId(projectId);
                 _monthStackStats.RemoveAllByProjectId(projectId);
                 _dayProjectStats.RemoveAllByProjectId(projectId);
@@ -93,7 +93,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(errorStackId))
                 return;
 
-            ErrorStack stack = _errorStackRepository.GetById(errorStackId);
+            Stack stack = _stackRepository.GetById(errorStackId);
             if (stack == null)
                 return;
 
@@ -101,12 +101,12 @@ namespace Exceptionless.Core.Utility {
                 stack.TotalOccurrences = 0;
                 stack.LastOccurrence = DateTime.MinValue.ToUniversalTime();
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
-                _errorStackRepository.Update(stack);
+                _stackRepository.Update(stack);
 
                 _statsHelper.DecrementDayProjectStatsByStackId(stack.ProjectId, errorStackId);
                 _statsHelper.DecrementMonthProjectStatsByStackId(stack.ProjectId, errorStackId);
 
-                _errorRepository.RemoveAllByErrorStackId(errorStackId);
+                _eventRepository.RemoveAllByStackId(errorStackId);
                 _dayStackStats.RemoveAllByErrorStackId(errorStackId);
                 _monthStackStats.RemoveAllByErrorStackId(errorStackId);
             } catch (Exception e) {

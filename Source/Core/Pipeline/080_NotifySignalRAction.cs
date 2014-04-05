@@ -16,7 +16,7 @@ using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(80)]
-    public class NotifySignalRAction : ErrorPipelineActionBase {
+    public class NotifySignalRAction : EventPipelineActionBase {
         public const string NOTIFICATION_CHANNEL_KEY = "notifications:signalr";
 
         private readonly IRedisClientsManager _clientsManager;
@@ -27,9 +27,9 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
+        public override void Process(EventPipelineContext ctx) {
             using (IRedisClient client = _clientsManager.GetClient())
-                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Error.OrganizationId, ":", ctx.Error.ProjectId, ":", ctx.Error.ErrorStackId, ":", ctx.Error.IsHidden, ":", ctx.Error.IsFixed, ":", ctx.Error.Is404()));
+                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Event.OrganizationId, ":", ctx.Event.ProjectId, ":", ctx.Event.StackId, ":", ctx.Event.IsHidden, ":", ctx.Event.IsFixed, ":", ctx.Event.Is404()));
         }
     }
 }

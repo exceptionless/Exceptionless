@@ -29,17 +29,17 @@ using ServiceStack.CacheAccess;
 namespace Exceptionless.App.Controllers.API {
     [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
-        private readonly ErrorStatsHelper _statsHelper;
+        private readonly EventStatsHelper _statsHelper;
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly ICacheClient _cacheClient;
 
-        public StatsController(ErrorStatsHelper statsHelper, IOrganizationRepository organizationRepository, IErrorStackRepository errorStackRepository, IProjectRepository projectRepository, ICacheClient cacheClient) {
+        public StatsController(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository, ICacheClient cacheClient) {
             _cacheClient = cacheClient;
             _statsHelper = statsHelper;
             _organizationRepository = organizationRepository;
-            _errorStackRepository = errorStackRepository;
+            _stackRepository = stackRepository;
             _projectRepository = projectRepository;
         }
 
@@ -57,7 +57,7 @@ namespace Exceptionless.App.Controllers.API {
                 return BadRequest("End date must be greater than start date.");
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
+            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
             result.MostRecent = RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
 
@@ -97,8 +97,8 @@ namespace Exceptionless.App.Controllers.API {
             int skip = GetSkip(page, pageSize);
 
             long count;
-            List<ErrorStack> query = _errorStackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorStack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
+            List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
+            List<Stack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
             var result = new PlanPagedResult<ErrorStackResult>(null, totalLimitedByPlan: query.Count - errorStacks.Count, totalCount: count);
             result.Results.AddRange(errorStacks.Select(s => new ErrorStackResult {
@@ -133,7 +133,7 @@ namespace Exceptionless.App.Controllers.API {
                 return BadRequest("End date must be greater than start date.");
 
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            ProjectErrorStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
+            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
         }
 
@@ -142,9 +142,9 @@ namespace Exceptionless.App.Controllers.API {
             int skip = GetSkip(page, pageSize);
 
             var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList());
-            IQueryable<ErrorStack> errorStacks = _errorStackRepository.GetByIds(ers.Results.Select(s => s.Id));
+            IQueryable<Stack> errorStacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id));
             foreach (ErrorStackResult stats in ers.Results.ToList()) {
-                ErrorStack stack = errorStacks.SingleOrDefault(s => s.Id == stats.Id);
+                Stack stack = errorStacks.SingleOrDefault(s => s.Id == stats.Id);
                 if (stack == null) {
                     ers.Results.RemoveAll(r => r.Id == stats.Id);
                     continue;
@@ -174,17 +174,17 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            ErrorStack errorStack = _errorStackRepository.GetById(stackId);
-            if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
+            Stack stack = _stackRepository.GetById(stackId);
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            Project project = _projectRepository.GetByIdCached(errorStack.ProjectId);
+            Project project = _projectRepository.GetByIdCached(stack.ProjectId);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            return Ok(_statsHelper.GetErrorStackStats(stackId, _projectRepository.GetDefaultTimeOffset(errorStack.ProjectId), start, end, retentionUtcCutoff));
+            return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
         }
 
         [HttpGet]

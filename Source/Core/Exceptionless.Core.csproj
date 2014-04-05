@@ -213,6 +213,7 @@
     <Compile Include="Extensions\CacheClientExtensions.cs" />
     <Compile Include="Extensions\ContainerExtensions.cs" />
     <Compile Include="Extensions\LogBuilderExtensions.cs" />
+    <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\OrganizationExtensions.cs" />
     <Compile Include="Extensions\ErrorStackExtensions.cs" />
     <Compile Include="Extensions\ErrorExtensions.cs" />
@@ -220,6 +221,9 @@
     <Compile Include="Extensions\ModelStateExtensions.cs" />
     <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />
     <Compile Include="Extensions\ProjectExtensions.cs" />
+    <Compile Include="Extensions\RequestInfoExtensions.cs" />
+    <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
+    <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
@@ -241,11 +245,11 @@
     <Compile Include="Migrations\v1.0.15.cs" />
     <Compile Include="Migrations\v1.0.20.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
-    <Compile Include="Models\WebHookErrorStack.cs" />
+    <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Models\IntercomModel.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
     <Compile Include="Mail\Models\SummaryNotificationModel.cs" />
-    <Compile Include="Models\WebHookError.cs" />
+    <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\005_ThrottleBotsAction.cs" />
     <Compile Include="Pipeline\080_NotifySignalRAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
@@ -266,7 +270,7 @@
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
     <Compile Include="Migrations\Documents\DocumentUpgrader.cs" />
-    <Compile Include="Migrations\Documents\ErrorDocumentUpgrader.cs" />
+    <Compile Include="Migrations\Documents\LegacyErrorDocumentUpgrader.cs" />
     <Compile Include="Migrations\v1.0.1-v1.0.8_Migration.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Migrations\v1.0.10_Migration.cs" />
@@ -282,13 +286,13 @@
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
     <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
     <Compile Include="Pipeline\050_EnforceRetentionLimitsAction.cs" />
-    <Compile Include="Pipeline\ErrorPipeline.cs" />
-    <Compile Include="Pipeline\ErrorPipelineAction.cs" />
-    <Compile Include="Pipeline\ErrorPipelineContext.cs" />
+    <Compile Include="Pipeline\EventPipeline.cs" />
+    <Compile Include="Pipeline\EventPipelineActionBase.cs" />
+    <Compile Include="Pipeline\EventPipelineContext.cs" />
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
-    <Compile Include="Pipeline\040_SaveErrorAction.cs" />
+    <Compile Include="Pipeline\040_SaveEventAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
-    <Compile Include="Queues\ErrorNotification.cs" />
+    <Compile Include="Queues\EventNotification.cs" />
     <Compile Include="Queues\ExceptionlessMqServer.cs" />
     <Compile Include="Repositories\Interfaces\IJobHistoryRepository.cs" />
     <Compile Include="Repositories\JobHistoryRepository.cs" />
@@ -296,7 +300,7 @@
     <Compile Include="Repositories\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Interfaces\IJobLockInfoRepository.cs" />
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IErrorRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Web\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ErrorSignatureFactory.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
@@ -316,7 +320,7 @@
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Extensions\ToErrorModelExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
-    <Compile Include="Repositories\Interfaces\IErrorStackRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IStackRepository.cs" />
     <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
     <Compile Include="Repositories\Interfaces\IMongoRepositoryManager.cs" />
     <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
@@ -334,7 +338,7 @@
     <Compile Include="Jobs\JobLockInfo.cs" />
     <Compile Include="Jobs\MongoJobLockProvider.cs" />
     <Compile Include="Jobs\MongoMachineJobLockProvider.cs" />
-    <Compile Include="Utility\ErrorStatsHelper.cs" />
+    <Compile Include="Utility\EventStatsHelper.cs" />
     <Compile Include="Repositories\DayProjectStatsRepository.cs" />
     <Compile Include="Repositories\MonthProjectStatsRepository.cs" />
     <Compile Include="Repositories\MonthStackStatsRepository.cs" />
@@ -346,8 +350,8 @@
     <Compile Include="Repositories\Interfaces\IRepository.cs" />
     <Compile Include="Repositories\MongoRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repositories\ErrorRepository.cs" />
-    <Compile Include="Repositories\ErrorStackRepository.cs" />
+    <Compile Include="Repositories\EventRepository.cs" />
+    <Compile Include="Repositories\StackRepository.cs" />
     <Compile Include="Repositories\OrganizationRepository.cs" />
     <Compile Include="Repositories\JobLockRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />

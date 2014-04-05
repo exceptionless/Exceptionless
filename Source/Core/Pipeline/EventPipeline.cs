@@ -16,17 +16,17 @@ using CodeSmith.Core.Dependency;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
-    public class ErrorPipeline : PipelineBase<ErrorPipelineContext, ErrorPipelineActionBase> {
-        public ErrorPipeline(IDependencyResolver dependencyResolver) : base(dependencyResolver) {}
+    public class EventPipeline : PipelineBase<EventPipelineContext, EventPipelineActionBase> {
+        public EventPipeline(IDependencyResolver dependencyResolver) : base(dependencyResolver) {}
 
-        public void Run(Error error) {
-            var ctx = new ErrorPipelineContext(error);
+        public void Run(Event data) {
+            var ctx = new EventPipelineContext(data);
             Run(ctx);
         }
 
-        public void Run(IEnumerable<Error> errors) {
-            foreach (Error error in errors)
-                Run(error);
+        public void Run(IEnumerable<Event> events) {
+            foreach (Event e in events)
+                Run(e);
         }
     }
 }
