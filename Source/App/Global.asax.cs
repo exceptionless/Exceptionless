@@ -240,8 +240,17 @@ namespace Exceptionless.App {
 
         protected void Application_Error(Object sender, EventArgs e) {
             Exception error = Server.GetLastError();
-            if (error != null)
-                Log.Error().Exception(error).Message("Application error.").Write();
+            if (error == null)
+                return;
+
+            if (error is HttpAntiForgeryException) {
+                Server.ClearError();
+                Response.Redirect("~/account/logoff", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
+            }
+
+            Log.Error().Exception(error).Message("Application error.").Write();
         }
     }
 }
