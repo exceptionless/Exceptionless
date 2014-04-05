@@ -40,7 +40,7 @@ namespace Exceptionless.Tests.Migrations {
         [Theory]
         [PropertyData("Errors")]
         public void CheckForExpectedResults(string errorFilePath) {
-            ErrorDocumentUpgrader.RegisterUpgrades();
+            LegacyErrorDocumentUpgrader.RegisterUpgrades();
 
             string expected = Regex.Replace(File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json")), @"\s", "");
             JObject jObject = JObject.Parse(File.ReadAllText(errorFilePath));

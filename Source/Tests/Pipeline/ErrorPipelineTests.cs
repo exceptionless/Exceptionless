@@ -25,14 +25,14 @@ using Xunit;
 using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Pipeline {
-    public class ErrorPipelineTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, ErrorRepository> {
+    public class ErrorPipelineTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, EventRepository> {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
-        private readonly IErrorStackRepository _errorStackRepository = IoC.GetInstance<IErrorStackRepository>();
+        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
         private readonly BillingManager _billingManager = IoC.GetInstance<BillingManager>();
 
-        public ErrorPipelineTests() : base(IoC.GetInstance<ErrorRepository>(), true) {}
+        public ErrorPipelineTests() : base(IoC.GetInstance<EventRepository>(), true) {}
 
         [Fact]
         public void VerifyOrganizationAndProjectStatistics() {
@@ -49,7 +49,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(0, project.ErrorCount);
             Assert.Equal(0, project.TotalErrorCount);
 
-            var pipeline = IoC.GetInstance<ErrorPipeline>();
+            var pipeline = IoC.GetInstance<EventPipeline>();
             Exception exception = Record.Exception(() => pipeline.Run(error));
             Assert.Null(exception);
 
@@ -102,7 +102,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(3, project.ErrorCount);
             Assert.Equal(3, project.TotalErrorCount);
 
-            Repository.RemoveAllByErrorStackIdAsync(error.ErrorStackId).Wait();
+            Repository.RemoveAllByStackId(error.ErrorStackId).Wait();
             organization = _organizationRepository.GetById(TestConstants.OrganizationId);
             Assert.Equal(2, organization.StackCount);
             Assert.Equal(1, organization.ErrorCount);
@@ -123,28 +123,28 @@ namespace Exceptionless.Tests.Pipeline {
             Error error = ErrorData.GenerateError(id: TestConstants.ErrorId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
             error.Tags = new TagSet { Tag1 };
 
-            var pipeline = IoC.GetInstance<ErrorPipeline>();
+            var pipeline = IoC.GetInstance<EventPipeline>();
             Assert.DoesNotThrow(() => pipeline.Run(error));
 
             error = Repository.GetById(error.Id);
             Assert.NotNull(error);
             Assert.NotNull(error.ErrorStackId);
 
-            var stack = _errorStackRepository.GetById(error.ErrorStackId);
+            var stack = _stackRepository.GetById(error.ErrorStackId);
             Assert.Equal(new TagSet { Tag1 }, stack.Tags);
 
             error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
             error.Tags = new TagSet { Tag2 };
 
             Assert.DoesNotThrow(() => pipeline.Run(error));
-            stack = _errorStackRepository.GetById(error.ErrorStackId);
+            stack = _stackRepository.GetById(error.ErrorStackId);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
             error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
             error.Tags = new TagSet { Tag2_Lowercase };
 
             Assert.DoesNotThrow(() => pipeline.Run(error));
-            stack = _errorStackRepository.GetById(error.ErrorStackId);
+            stack = _stackRepository.GetById(error.ErrorStackId);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
@@ -155,7 +155,7 @@ namespace Exceptionless.Tests.Pipeline {
             if (errorFilePath.Contains("881")) 
                 return;
 
-            var pipeline = IoC.GetInstance<ErrorPipeline>();
+            var pipeline = IoC.GetInstance<EventPipeline>();
             var error = JsonConvert.DeserializeObject<Error>(File.ReadAllText(errorFilePath));
             Assert.NotNull(error);
             error.ProjectId = TestConstants.ProjectId;
@@ -206,7 +206,7 @@ namespace Exceptionless.Tests.Pipeline {
         protected override void RemoveData() {
             base.RemoveData();
 
-            _errorStackRepository.DeleteAll();
+            _stackRepository.DeleteAll();
             _userRepository.DeleteAll();
             _projectRepository.DeleteAll();
             _organizationRepository.DeleteAll();

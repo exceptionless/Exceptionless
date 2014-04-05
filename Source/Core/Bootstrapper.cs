@@ -59,10 +59,10 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.Register<ErrorStatsHelper>();
+            container.Register<EventStatsHelper>();
 
-            container.RegisterSingle<IErrorStackRepository, ErrorStackRepository>();
-            container.RegisterSingle<IErrorRepository, ErrorRepository>();
+            container.RegisterSingle<IStackRepository, StackRepository>();
+            container.RegisterSingle<IEventRepository, EventRepository>();
             container.RegisterSingle<IOrganizationRepository, OrganizationRepository>();
             container.RegisterSingle<IJobLockInfoRepository, JobLockRepository>();
             container.RegisterSingle<IJobHistoryRepository, JobHistoryRepository>();

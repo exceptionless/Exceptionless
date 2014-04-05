@@ -20,10 +20,10 @@ using MongoDB.Bson;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories {
-    public class ErrorRepositoryTests : MongoRepositoryTestBaseWithIdentity<Error, IErrorRepository> {
-        private readonly IErrorStackRepository _errorStackRepository = IoC.GetInstance<IErrorStackRepository>();
+    public class ErrorRepositoryTests : MongoRepositoryTestBaseWithIdentity<Error, IEventRepository> {
+        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
 
-        public ErrorRepositoryTests() : base(IoC.GetInstance<IErrorRepository>(), true) {}
+        public ErrorRepositoryTests() : base(IoC.GetInstance<IEventRepository>(), true) {}
 
         [Fact]
         public void GetPreviousErrorOccurrenceIdTest() {
@@ -43,9 +43,9 @@ namespace Exceptionless.Tests.Repositories {
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
                 if (i == 0)
-                    Assert.Null(Repository.GetPreviousErrorOccurrenceId(sortedIds[i].Item1));
+                    Assert.Null(Repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
                 else
-                    Assert.Equal(sortedIds[i - 1].Item1, Repository.GetPreviousErrorOccurrenceId(sortedIds[i].Item1));
+                    Assert.Equal(sortedIds[i - 1].Item1, Repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
             }
         }
 
@@ -67,9 +67,9 @@ namespace Exceptionless.Tests.Repositories {
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
                 if (i == sortedIds.Count - 1)
-                    Assert.Null(Repository.GetNextErrorOccurrenceId(sortedIds[i].Item1));
+                    Assert.Null(Repository.GetNextEventIdInStack(sortedIds[i].Item1));
                 else
-                    Assert.Equal(sortedIds[i + 1].Item1, Repository.GetNextErrorOccurrenceId(sortedIds[i].Item1));
+                    Assert.Equal(sortedIds[i + 1].Item1, Repository.GetNextEventIdInStack(sortedIds[i].Item1));
             }
         }
 
@@ -81,7 +81,7 @@ namespace Exceptionless.Tests.Repositories {
             var occurrenceDateMid = baseDate;
             var occurrenceDateEnd = baseDate.AddMinutes(30);
 
-            _errorStackRepository.Add(ErrorStackData.GenerateErrorStack(id: TestConstants.ErrorStackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
+            _stackRepository.Add(ErrorStackData.GenerateErrorStack(id: TestConstants.ErrorStackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
 
             _ids.Add(Tuple.Create(ObjectId.GenerateNewId().ToString(), occurrenceDateStart));
             Repository.Add(ErrorData.GenerateError(id: _ids.Last().Item1, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, errorStackId: TestConstants.ErrorStackId, occurrenceDate: _ids.Last().Item2, nestingLevel: 5, minimiumNestingLevel: 1));
@@ -122,7 +122,7 @@ namespace Exceptionless.Tests.Repositories {
 
         protected override void RemoveData() {
             base.RemoveData();
-            _errorStackRepository.DeleteAll();
+            _stackRepository.DeleteAll();
         }
     }
 }

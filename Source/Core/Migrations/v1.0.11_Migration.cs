@@ -19,12 +19,12 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class AddSignatureInfoToErrorMigration : CollectionMigration {
         public AddSignatureInfoToErrorMigration()
-            : base("1.0.13", ErrorRepository.CollectionName) {
+            : base("1.0.13", EventRepository.CollectionName) {
             Description = "Add signature info to error.";
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            var errorRepository = new ErrorRepository(collection.Database, null, null, null);
+            var errorRepository = new EventRepository(collection.Database, null, null, null);
             BsonValue id = document.GetDocumentId();
             if (id == null || !id.IsObjectId)
                 return;
@@ -45,15 +45,15 @@ namespace Exceptionless.Core.Migrations {
 
     public class ChangeAppPathToPathMigration : CollectionMigration {
         public ChangeAppPathToPathMigration()
-            : base("1.0.12", ErrorStackRepository.CollectionName) {
+            : base("1.0.12", StackRepository.CollectionName) {
             Description = "Change AppPath to Path.";
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(ErrorStackRepository.FieldNames.SignatureInfo))
+            if (!document.Contains(StackRepository.FieldNames.SignatureInfo))
                 return;
 
-            var signatureInfo = document.GetElement(ErrorStackRepository.FieldNames.SignatureInfo).Value.AsBsonDocument;
+            var signatureInfo = document.GetElement(StackRepository.FieldNames.SignatureInfo).Value.AsBsonDocument;
             bool renamed = signatureInfo.ChangeName("AppPath", "Path");
 
             if (renamed)

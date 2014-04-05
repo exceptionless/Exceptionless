@@ -14,6 +14,7 @@ using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Models {
     public class StackingInfo {
@@ -21,12 +22,12 @@ namespace Exceptionless.Core.Models {
             if (error == null)
                 throw new ArgumentNullException("error");
 
-            ErrorInfo innerMostError = error.GetInnermostError();
+            Error innerMostError = error.GetInnermostError();
             Method defaultMethod = innerMostError.StackTrace != null ? innerMostError.StackTrace.FirstOrDefault() : null;
             if (defaultMethod == null && error.StackTrace != null)
                 defaultMethod = error.StackTrace.FirstOrDefault();
 
-            Tuple<ErrorInfo, Method> st = error.GetStackingTarget();
+            Tuple<Error, Method> st = error.GetStackingTarget();
 
             // If we can't find the info, try doing a new signature to mark the target.
             if (st == null) {
@@ -45,10 +46,10 @@ namespace Exceptionless.Core.Models {
 
         public string Message { get { return Error != null && !String.IsNullOrWhiteSpace(Error.Message) ? Error.Message : "(None)"; } }
         public string FullTypeName { get { return Error != null && !String.IsNullOrWhiteSpace(Error.Type) ? Error.Type : "(None)"; } }
-        public string MethodName { get { return Method != null && !String.IsNullOrWhiteSpace(Method.FullName) ? Method.FullName : "(None)"; } }
+        public string MethodName { get { return Method != null && !String.IsNullOrWhiteSpace(Method.GetFullName()) ? Method.GetFullName() : "(None)"; } }
         public bool Is404 { get; private set; }
         public string Path { get; private set; }
-        public ErrorInfo Error { get; private set; }
+        public Error Error { get; private set; }
         public Method Method { get; private set; }
     }
 }

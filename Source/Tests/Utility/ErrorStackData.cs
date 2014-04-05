@@ -18,25 +18,25 @@ using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ErrorStackData {
-        public static IEnumerable<ErrorStack> GenerateErrorStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
+        public static IEnumerable<Stack> GenerateErrorStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
             for (int i = 0; i < count; i++)
                 yield return GenerateErrorStack(generateId, id, organizationId, projectId);
         }
 
-        public static List<ErrorStack> GenerateSampleErrors() {
-            return new List<ErrorStack> {
+        public static List<Stack> GenerateSampleErrors() {
+            return new List<Stack> {
                 GenerateSampleErrorStack(),
                 GenerateErrorStack(id: TestConstants.ErrorStackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles),
                 GenerateErrorStack(id: TestConstants.InvalidErrorStackId)
             };
         }
 
-        public static ErrorStack GenerateSampleErrorStack(string id = TestConstants.ErrorStackId) {
+        public static Stack GenerateSampleErrorStack(string id = TestConstants.ErrorStackId) {
             return GenerateErrorStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
         }
 
-        public static ErrorStack GenerateErrorStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
-            var stack = new ErrorStack {
+        public static Stack GenerateErrorStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
+            var stack = new Stack {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,

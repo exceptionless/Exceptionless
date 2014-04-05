@@ -16,15 +16,15 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
-    public class ErrorPipelineContext : ExtensibleObject, IPipelineContext {
-        public ErrorPipelineContext(Error error) {
-            Error = error;
+    public class EventPipelineContext : ExtensibleObject, IPipelineContext {
+        public EventPipelineContext(Event data) {
+            Event = data;
         }
 
-        public Error Error { get; set; }
+        public Event Event { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
-        public ErrorStackInfo StackInfo { get; set; }
+        public StackInfo StackInfo { get; set; }
         public StackingInfo StackingInfo { get; set; }
 
         public bool IsCancelled { get; set; }

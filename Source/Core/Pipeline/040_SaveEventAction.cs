@@ -16,22 +16,22 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
-    public class SaveErrorAction : ErrorPipelineActionBase {
-        private readonly IErrorRepository _errorRepository;
+    public class SaveEventAction : EventPipelineActionBase {
+        private readonly IEventRepository _eventRepository;
 
-        public SaveErrorAction(IErrorRepository errorRepository) {
-            _errorRepository = errorRepository;
+        public SaveEventAction(IEventRepository eventRepository) {
+            _eventRepository = eventRepository;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
+        public override void Process(EventPipelineContext ctx) {
             try {
-                ctx.Error = _errorRepository.Add(ctx.Error);
+                ctx.Event = _eventRepository.Add(ctx.Event);
             } catch (WriteConcernException ex) {
                 // ignore errors being submitted multiple times
                 if (ex.Message.Contains("E11000")) {
-                    Log.Info().Project(ctx.Error.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Error.Id).Write();
+                    Log.Info().Project(ctx.Event.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Event.Id).Write();
                     ctx.IsCancelled = true;
                 } else
                     throw;

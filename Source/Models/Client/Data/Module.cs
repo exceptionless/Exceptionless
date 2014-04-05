@@ -10,7 +10,7 @@
 using System;
 using System.Text;
 
-namespace Exceptionless.Models {
+namespace Exceptionless.Models.Data {
     public class Module {
         public Module() {
             ExtendedData = new DataDictionary();

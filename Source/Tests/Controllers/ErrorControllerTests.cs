@@ -30,14 +30,14 @@ using Xunit;
 using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Controllers {
-    public class ErrorControllerTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, IErrorRepository> {
+    public class ErrorControllerTests : AuthenticatedMongoApiControllerBase<Error, HttpResponseMessage, IEventRepository> {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
         private readonly BillingManager _billingManager = IoC.GetInstance<BillingManager>();
         private ExceptionlessMqServer _mqServer;
 
-        public ErrorControllerTests() : base(IoC.GetInstance<IErrorRepository>(), true) {}
+        public ErrorControllerTests() : base(IoC.GetInstance<IEventRepository>(), true) {}
 
         [Fact]
         public void GetAll() {

@@ -13,10 +13,11 @@ using System;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Models.Legacy;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Migrations.Documents {
-    public static class ErrorDocumentUpgrader {
+    public static class LegacyErrorDocumentUpgrader {
         public static void RegisterUpgrades() {
             // TODO We don't know the specific revision number as team city doesn't go back that far. But revision 529 was on the 2/13/2013.
             DocumentUpgrader.Current.Add<Error>(500, document => {

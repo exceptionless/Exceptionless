@@ -9,6 +9,7 @@
 
 using System;
 using Exceptionless.Models;
+using Exceptionless.Models.Legacy;
 
 namespace Exceptionless.ExtendedData {
     public static class ExceptionlessClientInfoCollector {

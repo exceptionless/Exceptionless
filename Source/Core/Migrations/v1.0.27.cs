@@ -18,19 +18,19 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class ErrorOccurrenceDateLocalToUtcMigration : CollectionMigration {
         public ErrorOccurrenceDateLocalToUtcMigration()
-            : base("1.0.27", ErrorRepository.CollectionName) {
+            : base("1.0.27", EventRepository.CollectionName) {
             Description = "Change occurrence date ticks to be stored in utc ticks.";
         }
 
         public override IMongoQuery Filter() {
-            return Query.GT(ErrorRepository.FieldNames.Id, new ObjectId("8000000088e20d1ee801b3c2"));
+            return Query.GT(EventRepository.FieldNames.Id, new ObjectId("8000000088e20d1ee801b3c2"));
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(ErrorRepository.FieldNames.OccurrenceDate))
+            if (!document.Contains(EventRepository.FieldNames.OccurrenceDate))
                 return;
 
-            var occurrenceDateArray = document.GetValue(ErrorRepository.FieldNames.OccurrenceDate).AsBsonArray;
+            var occurrenceDateArray = document.GetValue(EventRepository.FieldNames.OccurrenceDate).AsBsonArray;
             var localTicks = occurrenceDateArray[0].AsInt64;
             var date = new DateTime(localTicks);
             if (date > new DateTime(2014, 3, 14, 12, 30, 0))
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Migrations {
             var offset = TimeSpan.FromMinutes(occurrenceDateArray[1].AsInt32);
             occurrenceDateArray[0] = localTicks + -offset.Ticks;
 
-            document.Set(ErrorRepository.FieldNames.OccurrenceDate, occurrenceDateArray);
+            document.Set(EventRepository.FieldNames.OccurrenceDate, occurrenceDateArray);
 
             collection.Save(document);
         }

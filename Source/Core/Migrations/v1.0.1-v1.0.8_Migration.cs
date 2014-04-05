@@ -32,11 +32,11 @@ namespace Exceptionless.Core.Migrations {
                 return;
 
             string errorStackId = parts[0];
-            var stackCollection = Database.GetCollection(ErrorStackRepository.CollectionName);
-            var errorStack = stackCollection.FindOne(Query.EQ(ErrorStackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))));
+            var stackCollection = Database.GetCollection(StackRepository.CollectionName);
+            var errorStack = stackCollection.FindOne(Query.EQ(StackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))));
 
             if (errorStack != null) {
-                var projectId = errorStack.GetElement(ErrorStackRepository.FieldNames.ProjectId).Value;
+                var projectId = errorStack.GetElement(StackRepository.FieldNames.ProjectId).Value;
                 document.Set(DayStackStatsRepository.FieldNames.ProjectId, projectId);
             }
 
@@ -70,11 +70,11 @@ namespace Exceptionless.Core.Migrations {
                 return;
 
             string errorStackId = parts[0];
-            var stackCollection = Database.GetCollection(ErrorStackRepository.CollectionName);
-            var errorStack = stackCollection.FindOne(Query.EQ(ErrorStackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))));
+            var stackCollection = Database.GetCollection(StackRepository.CollectionName);
+            var errorStack = stackCollection.FindOne(Query.EQ(StackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))));
 
             if (errorStack != null) {
-                var projectId = errorStack.GetElement(ErrorStackRepository.FieldNames.ProjectId).Value;
+                var projectId = errorStack.GetElement(StackRepository.FieldNames.ProjectId).Value;
                 document.Set(MonthStackStatsRepository.FieldNames.ProjectId, projectId);
             }
 

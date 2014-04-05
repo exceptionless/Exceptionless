@@ -12,27 +12,29 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {
     public static class ErrorExtensions {
-        public static Error ToProjectLocalTime(this Error error, Project project) {
-            if (error == null)
+        public static Event ToProjectLocalTime(this Event data, Project project) {
+            if (data == null)
                 return null;
 
-            error.OccurrenceDate = TimeZoneInfo.ConvertTime(error.OccurrenceDate, project.DefaultTimeZone());
-            return error;
+            data.Date = TimeZoneInfo.ConvertTime(data.Date, project.DefaultTimeZone());
+            return data;
         }
 
-        public static Error ToProjectLocalTime(this Error error, IProjectRepository repository) {
-            if (error == null)
+        public static Event ToProjectLocalTime(this Event data, IProjectRepository repository) {
+            if (data == null)
                 return null;
 
-            return error.ToProjectLocalTime(repository.GetByIdCached(error.ProjectId));
+            return data.ToProjectLocalTime(repository.GetByIdCached(data.ProjectId));
         }
 
         public static T GetValue<T>(this DataDictionary extendedData, string key) {
@@ -56,8 +58,8 @@ namespace Exceptionless.Core.Extensions {
             return default(T);
         }
 
-        public static Tuple<ErrorInfo, Method> GetStackingTarget(this Error error) {
-            ErrorInfo targetError = error;
+        public static Tuple<Error, Method> GetStackingTarget(this Error error) {
+            Error targetError = error;
             while (targetError != null) {
                 StackFrame m = targetError.StackTrace.FirstOrDefault(st => st.IsSignatureTarget);
                 if (m != null)
@@ -72,11 +74,11 @@ namespace Exceptionless.Core.Extensions {
             return null;
         }
 
-        public static ErrorInfo GetInnermostError(this Error error) {
+        public static Error GetInnermostError(this Error error) {
             if (error == null)
                 throw new ArgumentNullException("error");
 
-            ErrorInfo current = error;
+            Error current = error;
             while (current.Inner != null)
                 current = current.Inner;
 
@@ -95,6 +97,65 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             return error.Code == "404";
+        }
+
+        public static string ToExceptionStackString(this Error error) {
+            var sb = new StringBuilder(2048);
+            AppendError(error, sb);
+            return sb.ToString().Trim();
+        }
+
+        public static string ToHtmlExceptionStackString(this Error error) {
+            var sb = new StringBuilder(4096);
+            AppendError(error, sb, true, traceIndentValue: " ");
+            return sb.ToString().Trim();
+        }
+
+        internal static void AppendError(Error error, StringBuilder sb, bool html = false, string traceIndentValue = "   ") {
+            var exList = new List<Error>();
+            Error currentEx = error;
+            if (html)
+                sb.Append("<span class=\"ex-header\">");
+            while (currentEx != null) {
+                if (html)
+                    sb.Append("<span class=\"ex-type\">");
+                sb.Append(html ? currentEx.Type.HtmlEntityEncode() : currentEx.Type);
+                if (html)
+                    sb.Append("</span>");
+
+                if (!String.IsNullOrEmpty(currentEx.Message)) {
+                    if (html)
+                        sb.Append("<span class=\"ex-message\">");
+                    sb.Append(": ").Append(html ? currentEx.Message.HtmlEntityEncode() : currentEx.Message);
+                    if (html)
+                        sb.Append("</span>");
+                }
+
+                if (currentEx.Inner != null) {
+                    if (html)
+                        sb.Append("</span><span class=\"ex-header\"><span class=\"ex-innersep\">");
+                    sb.Append(" ---> ");
+                    if (html)
+                        sb.Append("</span>");
+                }
+
+                exList.Add(currentEx);
+                currentEx = currentEx.Inner;
+            }
+            if (html)
+                sb.Append("</span>");
+            else
+                sb.AppendLine();
+
+            exList.Reverse();
+            foreach (Error ex in exList) {
+                if (ex.StackTrace != null && ex.StackTrace.Count > 0) {
+                    StackFrameCollectionExtensions.AppendStackFrames(ex.StackTrace, sb, true, linkFilePath: html, traceIndentValue: traceIndentValue);
+
+                    if (exList.Count > 1)
+                        sb.Append(traceIndentValue).AppendLine("--- End of inner exception stack trace ---");
+                }
+            }
         }
     }
 }

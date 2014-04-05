@@ -36,7 +36,7 @@ using ServiceStack.Messaging;
 namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
     [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
-    public class StackController : RepositoryOwnedByOrganizationApiController<ErrorStack, IErrorStackRepository> {
+    public class StackController : RepositoryOwnedByOrganizationApiController<Stack, IStackRepository> {
         private readonly IMessageFactory _messageFactory;
         private readonly BillingManager _billingManager;
         private readonly IOrganizationRepository _organizationRepository;
@@ -45,7 +45,7 @@ namespace Exceptionless.App.Controllers.API {
         private readonly NotificationSender _notificationSender;
         private readonly DataHelper _dataHelper;
 
-        public StackController(IErrorStackRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
+        public StackController(IStackRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
             IProjectHookRepository projectHookRepository, IMessageFactory messageFactory, BillingManager billingManager, NotificationSender notificationSender, DataHelper dataHelper)
             : base(repository) {
             _organizationRepository = organizationRepository;
@@ -57,21 +57,21 @@ namespace Exceptionless.App.Controllers.API {
             _dataHelper = dataHelper;
         }
 
-        public override IEnumerable<ErrorStack> Get() {
+        public override IEnumerable<Stack> Get() {
             return base.Get().Select(e => e.ToProjectLocalTime(_projectRepository));
         }
 
-        public override ErrorStack Get(string id) {
+        public override Stack Get(string id) {
             return base.Get(id).ToProjectLocalTime(_projectRepository);
         }
 
         [NonAction]
-        public override HttpResponseMessage Put(string id, Delta<ErrorStack> value) {
+        public override HttpResponseMessage Put(string id, Delta<Stack> value) {
             return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
         }
 
         [NonAction]
-        public override HttpResponseMessage Post(ErrorStack value) {
+        public override HttpResponseMessage Post(Stack value) {
             return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
         }
 
@@ -80,9 +80,9 @@ namespace Exceptionless.App.Controllers.API {
             return new HttpResponseMessage(HttpStatusCode.MethodNotAllowed);
         }
 
-        protected override bool CanUpdateEntity(ErrorStack original, Delta<ErrorStack> value) {
+        protected override bool CanUpdateEntity(Stack original, Delta<Stack> value) {
             // TODO: Only let the client patch certain things.
-            ErrorStack entity = value.GetEntity();
+            Stack entity = value.GetEntity();
             if (value.ContainsChangedProperty(t => t.FirstOccurrence) && original.FirstOccurrence != entity.FirstOccurrence)
                 return false;
 
@@ -101,8 +101,8 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanUpdateEntity(original, value);
         }
 
-        protected override ErrorStack UpdateEntity(ErrorStack original, Delta<ErrorStack> value) {
-            ErrorStack entity = value.GetEntity();
+        protected override Stack UpdateEntity(Stack original, Delta<Stack> value) {
+            Stack entity = value.GetEntity();
 
             bool updateFixedInformation = (value.ContainsChangedProperty(t => t.DateFixed) && original.DateFixed != entity.DateFixed)
                                           || (value.ContainsChangedProperty(t => t.FixedInVersion) && original.FixedInVersion != entity.FixedInVersion);
@@ -123,7 +123,7 @@ namespace Exceptionless.App.Controllers.API {
                 }
             }
 
-            ErrorStack stack = _repository.Update(original);
+            Stack stack = _repository.Update(original);
 
             if (visibilityChanged)
                 _repository.InvalidateHiddenIdsCache(original.ProjectId);
@@ -139,7 +139,7 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpPost]
         public void Promote(string id) {
-            ErrorStack entity = GetEntity(id);
+            Stack entity = GetEntity(id);
             if (entity == null)
                 throw new HttpResponseException(base.NotFoundErrorResponseMessage(id));
 
@@ -158,7 +158,7 @@ namespace Exceptionless.App.Controllers.API {
                     messageProducer.Publish(new WebHookNotification {
                         ProjectId = hook.ProjectId,
                         Url = hook.Url,
-                        Data = WebHookErrorStack.FromErrorStack(entity, _projectRepository, _organizationRepository)
+                        Data = WebHookStack.FromStack(entity, _projectRepository, _organizationRepository)
                     });
                 }
             }
@@ -178,7 +178,7 @@ namespace Exceptionless.App.Controllers.API {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            ErrorStack stack = _repository.GetById(id);
+            Stack stack = _repository.GetById(id);
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
@@ -212,7 +212,7 @@ namespace Exceptionless.App.Controllers.API {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            ErrorStack stack = _repository.GetById(id);
+            Stack stack = _repository.GetById(id);
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
@@ -252,8 +252,8 @@ namespace Exceptionless.App.Controllers.API {
             int skip = GetSkip(page, pageSize);
 
             long count;
-            List<ErrorStack> query = _repository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<ErrorStack, ErrorStackResult>).ToList();
+            List<Stack> query = _repository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
+            List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, ErrorStackResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
             var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
@@ -270,7 +270,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(id))
                 return;
 
-            ErrorStack stack = _repository.GetByIdCached(id);
+            Stack stack = _repository.GetByIdCached(id);
             if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return;
 

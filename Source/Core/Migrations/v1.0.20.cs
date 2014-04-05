@@ -17,19 +17,19 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class ChangeRequestInfoFormToPostData : CollectionMigration {
         public ChangeRequestInfoFormToPostData()
-            : base("1.0.20", ErrorRepository.CollectionName) {
+            : base("1.0.20", EventRepository.CollectionName) {
             Description = "Change RequestInfo.Form to RequestInfo.PostData.";
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(ErrorRepository.FieldNames.RequestInfo))
+            if (!document.Contains(EventRepository.FieldNames.RequestInfo))
                 return;
 
-            BsonDocument requestInfo = document.GetElement(ErrorRepository.FieldNames.RequestInfo).Value.AsBsonDocument;
+            BsonDocument requestInfo = document.GetElement(EventRepository.FieldNames.RequestInfo).Value.AsBsonDocument;
             if (!requestInfo.Contains("frm"))
                 return;
 
-            requestInfo.Add(ErrorRepository.FieldNames.PostData, new BsonString(requestInfo.GetElement("frm").Value.ToJson()));
+            requestInfo.Add(EventRepository.FieldNames.PostData, new BsonString(requestInfo.GetElement("frm").Value.ToJson()));
             requestInfo.Remove("frm");
 
             collection.Save(document);

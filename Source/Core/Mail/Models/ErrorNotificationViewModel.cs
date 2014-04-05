@@ -13,12 +13,12 @@ using System;
 using Exceptionless.Core.Queues;
 
 namespace Exceptionless.Core.Mail.Models {
-    public class ErrorNotificationModel : ErrorNotification, IMailModel {
-        public ErrorNotificationModel() {}
+    public class EventNotificationModel : EventNotification, IMailModel {
+        public EventNotificationModel() {}
 
-        public ErrorNotificationModel(ErrorNotification notification) {
-            ErrorId = notification.ErrorId;
-            ErrorStackId = notification.ErrorStackId;
+        public EventNotificationModel(EventNotification notification) {
+            EventId = notification.EventId;
+            StackId = notification.StackId;
             FullTypeName = notification.FullTypeName;
             IsNew = notification.IsNew;
             IsCritical = notification.IsCritical;

@@ -38,7 +38,7 @@ namespace Exceptionless.App {
                     er.Message = info.Message;
                 });
 
-            Mapper.CreateMap<ErrorStack, ErrorStackResult>()
+            Mapper.CreateMap<Stack, ErrorStackResult>()
                 .ForMember(esr => esr.First, opt => opt.MapFrom(es => es.FirstOccurrence))
                 .ForMember(esr => esr.Last, opt => opt.MapFrom(es => es.LastOccurrence))
                 .ForMember(esr => esr.Total, opt => opt.MapFrom(es => es.TotalOccurrences))

@@ -12,7 +12,6 @@ module exceptionless.project {
             var clip = new ZeroClipboard();
             clip.on('noflash wrongflash', () => $(copyApiKeyButtonElementId).hide());
             clip.on('load', (client, text) => {
-                clip.forceHandCursor(true);
                 clip.clip($(copyApiKeyButtonElementId));
             });
             clip.on('complete', (client, text) => App.showSuccessNotification('Copied!'));

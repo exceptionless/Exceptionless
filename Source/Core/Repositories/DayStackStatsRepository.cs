@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.ErrorStackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
+            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }

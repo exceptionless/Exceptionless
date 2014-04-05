@@ -18,12 +18,12 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class UpdateFixedAndHiddenMigration : CollectionMigration {
         public UpdateFixedAndHiddenMigration()
-            : base("1.0.28", ErrorStackRepository.CollectionName) {
+            : base("1.0.28", StackRepository.CollectionName) {
             Description = "Update fixed and hidden flags on error docs.";
         }
 
         public override void Update() {
-            var errorCollection = Database.GetCollection(ErrorRepository.CollectionName);
+            var errorCollection = Database.GetCollection(EventRepository.CollectionName);
 
             if (errorCollection.IndexExistsByName("pid_-1_dt.0_-1"))
                 errorCollection.DropIndexByName("pid_-1_dt.0_-1");
@@ -32,29 +32,29 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            var errorCollection = Database.GetCollection(ErrorRepository.CollectionName);
+            var errorCollection = Database.GetCollection(EventRepository.CollectionName);
 
-            ObjectId stackId = document.GetValue(ErrorStackRepository.FieldNames.Id).AsObjectId;
+            ObjectId stackId = document.GetValue(StackRepository.FieldNames.Id).AsObjectId;
             if (stackId == ObjectId.Empty)
                 return;
 
             BsonValue value;
             bool isHidden = false;
-            if (document.TryGetValue(ErrorStackRepository.FieldNames.IsHidden, out value))
+            if (document.TryGetValue(StackRepository.FieldNames.IsHidden, out value))
                 isHidden = value.AsBoolean;
 
             DateTime? dateFixed = null;
 
-            if (document.TryGetValue(ErrorStackRepository.FieldNames.DateFixed, out value))
+            if (document.TryGetValue(StackRepository.FieldNames.DateFixed, out value))
                 dateFixed = value.ToNullableUniversalTime();
 
-            IMongoQuery query = Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(stackId));
+            IMongoQuery query = Query.EQ(EventRepository.FieldNames.ErrorStackId, new BsonObjectId(stackId));
 
             var update = new UpdateBuilder();
             if (isHidden)
-                update.Set(ErrorRepository.FieldNames.IsHidden, true);
+                update.Set(EventRepository.FieldNames.IsHidden, true);
             if (dateFixed.HasValue)
-                update.Set(ErrorRepository.FieldNames.IsFixed, true);
+                update.Set(EventRepository.FieldNames.IsFixed, true);
 
             if (isHidden || dateFixed.HasValue)
                 errorCollection.Update(query, update, UpdateFlags.Multi);

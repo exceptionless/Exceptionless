@@ -21,11 +21,11 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Jobs {
     public class EnforceRetentionLimitsJob : JobBase {
         private readonly OrganizationRepository _organizationRepository;
-        private readonly ErrorRepository _errorRepository;
+        private readonly EventRepository _eventRepository;
 
-        public EnforceRetentionLimitsJob(OrganizationRepository organizationRepository, ErrorRepository errorRepository) {
+        public EnforceRetentionLimitsJob(OrganizationRepository organizationRepository, EventRepository eventRepository) {
             _organizationRepository = organizationRepository;
-            _errorRepository = errorRepository;
+            _eventRepository = eventRepository;
         }
 
         public override JobResult Run(JobContext context) {
@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Jobs {
                     retentionDays = nextPlan.RetentionDays;
 
                 DateTime cutoff = DateTime.UtcNow.Date.AddDays(-retentionDays);
-                _errorRepository.RemoveAllByDate(organization.Id, cutoff);
+                _eventRepository.RemoveAllByDate(organization.Id, cutoff);
             } catch (Exception ex) {
                 ex.ToExceptionless().MarkAsCritical().AddTags("Enforce Limits").AddObject(organization).Submit();
             }

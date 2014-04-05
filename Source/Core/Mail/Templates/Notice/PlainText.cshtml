@@ -1,5 +1,5 @@
 ﻿@using CodeSmith.Core.Extensions
-@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.ErrorNotificationModel>
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @if (Model.IsNew) {
 <text>
 A new @if (Model.IsCritical) { <text>critical </text> }error has occurred in the "@Model.ProjectName" project.
@@ -28,4 +28,4 @@ Source:
 }
 
 View the error:
-@Model.BaseUrl/error/@Model.ErrorStackId/@Model.ErrorId
+@Model.BaseUrl/error/@Model.StackId/@Model.EventId

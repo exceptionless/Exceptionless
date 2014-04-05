@@ -16,8 +16,8 @@ using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories {
-    public class RepositoryTests : MongoRepositoryTestBaseWithIdentity<Error, IErrorRepository> {
-        public RepositoryTests() : base(IoC.GetInstance<IErrorRepository>(), true) {}
+    public class RepositoryTests : MongoRepositoryTestBaseWithIdentity<Error, IEventRepository> {
+        public RepositoryTests() : base(IoC.GetInstance<IEventRepository>(), true) {}
 
         [Fact]
         public void CreateUpdateRemove() {

@@ -1,5 +1,5 @@
 ﻿@using CodeSmith.Core.Extensions
-@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.ErrorNotificationModel>
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @{ Layout = "_Layout.html.cshtml"; }
 
 <!-- BODY -->
@@ -49,14 +49,14 @@
 
                             <!-- Button -->
                             <p class="center" style="margin: 10px auto 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
-                                <a class="btn" href="@Model.BaseUrl/error/@Model.ErrorStackId/@Model.ErrorId" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">View Error Details</a>
+                                <a class="btn" href="@Model.BaseUrl/error/@Model.StackId/@Model.EventId" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">View Error Details</a>
                             </p>
 
                             <div class="other" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                                 <h5 style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 5px; color: #939393; font-weight: 900; font-size: 17px;">Other Actions</h5>
                                 <ul style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 20px; font-weight: normal; font-size: 14px; line-height: 1.6;">
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.ErrorStackId/mark-fixed" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Mark error as fixed</a></li>
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.ErrorStackId/stop-notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Stop sending notifications for this error</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.StackId/mark-fixed" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Mark error as fixed</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.StackId/stop-notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Stop sending notifications for this error</a></li>
                                     <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/project/@Model.ProjectId/manage#notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Change your notification settings for this project</a></li>
                                 </ul>
                             </div>

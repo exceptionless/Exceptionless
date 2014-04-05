@@ -13,17 +13,17 @@ using System;
 using System.Collections.Generic;
 
 namespace Exceptionless.Models {
-    public class ErrorStatsWithStackIds : ErrorStats {
-        public ErrorStatsWithStackIds() {
-            ErrorStackIds = new Dictionary<string, int>();
-            NewErrorStackIds = new List<string>();
+    public class EventStatsWithStackIds : ErrorStats {
+        public EventStatsWithStackIds() {
+            StackIds = new Dictionary<string, int>();
+            NewStackIds = new List<string>();
         }
 
-        public Dictionary<string, int> ErrorStackIds { get; set; }
-        public List<string> NewErrorStackIds { get; set; }
+        public Dictionary<string, int> StackIds { get; set; }
+        public List<string> NewStackIds { get; set; }
 
         public override string ToString() {
-            return String.Format("Total: {0} New: {1} Unique: {2}", Total, NewTotal, ErrorStackIds.Count);
+            return String.Format("Total: {0} New: {1} Unique: {2}", Total, NewTotal, StackIds.Count);
         }
     }
 }

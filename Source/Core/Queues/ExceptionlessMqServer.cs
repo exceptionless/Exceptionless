@@ -34,33 +34,33 @@ namespace Exceptionless.Core.Queues {
     public class ExceptionlessMqServer : RedisMqServer {
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectHookRepository _projectHookRepository;
-        private readonly IErrorStackRepository _stackRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly ErrorPipeline _errorPipeline;
+        private readonly EventPipeline _eventPipeline;
         private readonly IUserRepository _userRepository;
-        private readonly ErrorStatsHelper _errorStatsHelper;
+        private readonly EventStatsHelper _eventStatsHelper;
         private readonly ICacheClient _cacheClient;
         private readonly IMailer _mailer;
         private readonly IAppStatsClient _stats;
 
         public ExceptionlessMqServer(IRedisClientsManager clientsManager, IProjectRepository projectRepository, IUserRepository userRepository,
-            IErrorStackRepository stackRepository, IOrganizationRepository organizationRepository, ErrorPipeline errorPipeline,
-            ErrorStatsHelper errorStatsHelper, IProjectHookRepository projectHookRepository, ICacheClient cacheClient, IMailer mailer, IAppStatsClient stats)
+            IStackRepository stackRepository, IOrganizationRepository organizationRepository, EventPipeline eventPipeline,
+            EventStatsHelper eventStatsHelper, IProjectHookRepository projectHookRepository, ICacheClient cacheClient, IMailer mailer, IAppStatsClient stats)
             : base(clientsManager) {
             _projectRepository = projectRepository;
             _projectHookRepository = projectHookRepository;
             _userRepository = userRepository;
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
-            _errorPipeline = errorPipeline;
-            _errorStatsHelper = errorStatsHelper;
+            _eventPipeline = eventPipeline;
+            _eventStatsHelper = eventStatsHelper;
             _cacheClient = cacheClient;
             _mailer = mailer;
             _stats = stats;
 
             RegisterHandler<SummaryNotification>(ProcessSummaryNotification, ProcessSummaryNotificationException);
-            RegisterHandler<ErrorNotification>(ProcessNotification, ProcessNotificationException);
-            RegisterHandler<Error>(ProcessError, ProcessErrorException);
+            RegisterHandler<EventNotification>(ProcessNotification, ProcessNotificationException);
+            RegisterHandler<Event>(ProcessEvent, ProcessEventException);
             RegisterHandler<WebHookNotification>(ProcessWebHookNotification, ProcessWebHookNotificationException);
         }
 
@@ -102,11 +102,11 @@ namespace Exceptionless.Core.Queues {
                 return null;
 
             long count;
-            List<ErrorStack> newest = _stackRepository.GetNew(project.Id, message.GetBody().UtcStartTime, message.GetBody().UtcEndTime, 0, 5, out count).ToList();
+            List<Stack> newest = _stackRepository.GetNew(project.Id, message.GetBody().UtcStartTime, message.GetBody().UtcEndTime, 0, 5, out count).ToList();
 
             DateTime start = _projectRepository.UtcToDefaultProjectLocalTime(project.Id, message.GetBody().UtcStartTime);
             DateTime end = _projectRepository.UtcToDefaultProjectLocalTime(project.Id, message.GetBody().UtcEndTime);
-            var result = _errorStatsHelper.GetProjectErrorStats(project.Id, _projectRepository.GetDefaultTimeOffset(project.Id), start, end);
+            var result = _eventStatsHelper.GetProjectErrorStats(project.Id, _projectRepository.GetDefaultTimeOffset(project.Id), start, end);
             var mostFrequent = result.MostFrequent.Results.Take(5).ToList();
             var errorStacks = _stackRepository.GetByIds(mostFrequent.Select(s => s.Id));
 
@@ -149,37 +149,37 @@ namespace Exceptionless.Core.Queues {
             return null;
         }
 
-        private void ProcessErrorException(IMessage<Error> message, Exception exception) {
+        private void ProcessEventException(IMessage<Event> message, Exception exception) {
             exception.ToExceptionless().AddDefaultInformation().MarkAsCritical().AddObject(message.GetBody()).AddTags("ErrorMQ").Submit();
             Log.Error().Project(message.GetBody().ProjectId).Exception(exception).Message("Error processing error.").Write();
             _stats.Counter(StatNames.ErrorsProcessingFailed);
         }
 
-        private object ProcessError(IMessage<Error> message) {
-            Error value = message.GetBody();
+        private object ProcessEvent(IMessage<Event> message) {
+            Event value = message.GetBody();
             if (value == null)
                 return null;
 
             _stats.Counter(StatNames.ErrorsDequeued);
             using (_stats.StartTimer(StatNames.ErrorsProcessingTime))
-                _errorPipeline.Run(value);
+                _eventPipeline.Run(value);
 
             return null;
         }
 
-        private void ProcessNotificationException(IMessage<ErrorNotification> message, Exception exception) {
+        private void ProcessNotificationException(IMessage<EventNotification> message, Exception exception) {
             exception.ToExceptionless().AddDefaultInformation().MarkAsCritical().AddObject(message.GetBody()).AddTags("NotificationMQ").Submit();
             Log.Error().Project(message.GetBody().ProjectId).Exception(exception).Message("Error sending notification.").Write();
         }
 
-        private object ProcessNotification(IMessage<ErrorNotification> message) {
+        private object ProcessNotification(IMessage<EventNotification> message) {
             int emailsSent = 0;
-            ErrorNotification errorNotification = message.GetBody();
-            Log.Trace().Message("Process notification: project={0} error={1} stack={2}", errorNotification.ProjectId, errorNotification.ErrorId, errorNotification.ErrorStackId).Write();
+            EventNotification eventNotification = message.GetBody();
+            Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.ProjectId, eventNotification.EventId, eventNotification.StackId).Write();
 
-            var project = _projectRepository.GetByIdCached(errorNotification.ProjectId);
+            var project = _projectRepository.GetByIdCached(eventNotification.ProjectId);
             if (project == null) {
-                Log.Error().Message("Could not load project {0}.", errorNotification.ProjectId).Write();
+                Log.Error().Message("Could not load project {0}.", eventNotification.ProjectId).Write();
                 return null;
             }
             Log.Trace().Message("Loaded project: name={0}", project.Name).Write();
@@ -191,9 +191,9 @@ namespace Exceptionless.Core.Queues {
             }
             Log.Trace().Message("Loaded organization: name={0}", organization.Name).Write();
 
-            var stack = _stackRepository.GetById(errorNotification.ErrorStackId);
+            var stack = _stackRepository.GetById(eventNotification.StackId);
             if (stack == null) {
-                Log.Error().Message("Could not load stack {0}.", errorNotification.ErrorStackId).Write();
+                Log.Error().Message("Could not load stack {0}.", eventNotification.StackId).Write();
                 return null;
             }
 
@@ -211,8 +211,8 @@ namespace Exceptionless.Core.Queues {
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 5 occurrences, don't send a notification for the same stack more then once every 15 minutes
-            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", errorNotification.ErrorStackId));
-            if (totalOccurrences > 5 && !errorNotification.IsRegression && lastTimeSent != DateTime.MinValue &&
+            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", eventNotification.StackId));
+            if (totalOccurrences > 5 && !eventNotification.IsRegression && lastTimeSent != DateTime.MinValue &&
                 lastTimeSent > DateTime.Now.AddMinutes(-15)) {
                 Log.Info().Message("Skipping message because of throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
                 return null;
@@ -240,16 +240,16 @@ namespace Exceptionless.Core.Queues {
 
                 if (!user.OrganizationIds.Contains(project.OrganizationId)) {
                     // TODO: Should this notification setting be deleted?
-                    Log.Error().Message("Unauthorized user: project={0} user={1} organization={2} error={3}", project.Id, kv.Key,
-                        project.OrganizationId, errorNotification.ErrorId).Write();
+                    Log.Error().Message("Unauthorized user: project={0} user={1} organization={2} event={3}", project.Id, kv.Key,
+                        project.OrganizationId, eventNotification.EventId).Write();
                     continue;
                 }
 
                 Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).Write();
 
                 bool shouldReportOccurrence = settings.Mode != NotificationMode.None;
-                bool shouldReportCriticalError = settings.ReportCriticalErrors && errorNotification.IsCritical;
-                bool shouldReportRegression = settings.ReportRegressions && errorNotification.IsRegression;
+                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical;
+                bool shouldReportRegression = settings.ReportRegressions && eventNotification.IsRegression;
 
                 Log.Trace().Message("Settings: mode={0} critical={1} regression={2} 404={3} bots={4}",
                     settings.Mode, settings.ReportCriticalErrors,
@@ -259,26 +259,26 @@ namespace Exceptionless.Core.Queues {
                     shouldReportOccurrence, shouldReportCriticalError,
                     shouldReportRegression).Write();
 
-                if (settings.Mode == NotificationMode.New && !errorNotification.IsNew) {
+                if (settings.Mode == NotificationMode.New && !eventNotification.IsNew) {
                     shouldReportOccurrence = false;
                     Log.Trace().Message("Skipping because message is not new.").Write();
                 }
 
                 // check for 404s if the user has elected to not report them
-                if (shouldReportOccurrence && settings.Report404Errors == false && errorNotification.Code == "404") {
+                if (shouldReportOccurrence && settings.Report404Errors == false && eventNotification.Code == "404") {
                     shouldReportOccurrence = false;
                     Log.Trace().Message("Skipping because message is 404.").Write();
                 }
 
                 // check for known bots if the user has elected to not report them
                 if (shouldReportOccurrence && settings.ReportKnownBotErrors == false &&
-                    !String.IsNullOrEmpty(errorNotification.UserAgent)) {
+                    !String.IsNullOrEmpty(eventNotification.UserAgent)) {
                     ClientInfo info = null;
                     try {
-                        info = Parser.GetDefault().Parse(errorNotification.UserAgent);
+                        info = Parser.GetDefault().Parse(eventNotification.UserAgent);
                     } catch (Exception ex) {
-                        Log.Warn().Project(errorNotification.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}",
-                            errorNotification.UserAgent, ex.Message).Write();
+                        Log.Warn().Project(eventNotification.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}",
+                            eventNotification.UserAgent, ex.Message).Write();
                     }
 
                     if (info != null && info.Device.IsSpider) {
@@ -291,7 +291,7 @@ namespace Exceptionless.Core.Queues {
                 if (!shouldReportOccurrence && !shouldReportCriticalError && !shouldReportRegression)
                     continue;
 
-                var model = new ErrorNotificationModel(errorNotification) {
+                var model = new EventNotificationModel(eventNotification) {
                     ProjectName = project.Name,
                     TotalOccurrences = totalOccurrences
                 };
@@ -311,7 +311,7 @@ namespace Exceptionless.Core.Queues {
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0)
-                _cacheClient.Set(String.Concat("NOTIFICATION_THROTTLE_", errorNotification.ErrorStackId), DateTime.Now, DateTime.Now.AddMinutes(15));
+                _cacheClient.Set(String.Concat("NOTIFICATION_THROTTLE_", eventNotification.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
 
             return null;
         }

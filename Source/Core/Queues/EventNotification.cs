@@ -12,9 +12,9 @@
 using System;
 
 namespace Exceptionless.Core.Queues {
-    public class ErrorNotification {
-        public string ErrorStackId { get; set; }
-        public string ErrorId { get; set; }
+    public class EventNotification {
+        public string StackId { get; set; }
+        public string EventId { get; set; }
         public string ProjectId { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }

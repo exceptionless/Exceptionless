@@ -18,6 +18,7 @@ using Exceptionless.ExtendedData;
 using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Plugins;
 using Exceptionless.Serialization;
 using ClientConfiguration = Exceptionless.Configuration.ClientConfiguration;

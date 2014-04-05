@@ -14,19 +14,19 @@ using CodeSmith.Core.Component;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
-    public abstract class ErrorPipelineActionBase : PipelineActionBase<ErrorPipelineContext> {
+    public abstract class EventPipelineActionBase : PipelineActionBase<EventPipelineContext> {
         protected virtual bool IsCritical { get { return false; } }
         protected virtual string[] ErrorTags { get { return new string[0]; } }
         protected virtual string ErrorMessage { get { return null; } }
 
-        public override bool HandleError(Exception ex, ErrorPipelineContext ctx) {
+        public override bool HandleError(Exception ex, EventPipelineContext ctx) {
             string message = ErrorMessage ?? String.Format("Error processing action: {0}", GetType().Name);
-            Log.Error().Project(ctx.Error.ProjectId).Message(message).Exception(ex).Write();
+            Log.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Write();
 
-            if (!ctx.Error.Tags.Contains("Internal")) {
+            if (!ctx.Event.Tags.Contains("Internal")) {
                 ErrorBuilder b = ex.ToExceptionless()
                     .AddDefaultInformation()
-                    .AddObject(ctx.Error)
+                    .AddObject(ctx.Event)
                     .AddTags("Internal")
                     .SetUserDescription(message);
 

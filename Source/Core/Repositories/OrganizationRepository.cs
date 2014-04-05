@@ -96,7 +96,7 @@ namespace Exceptionless.Core {
             return String.IsNullOrEmpty(customerId) ? null : Where(Query.EQ(FieldNames.StripeCustomerId, new BsonString(customerId))).FirstOrDefault();
         }
 
-        public void IncrementStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null) {
+        public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException("organizationId");
 
@@ -105,10 +105,10 @@ namespace Exceptionless.Core {
             var update = new UpdateBuilder();
             if (projectCount.HasValue && projectCount.Value != 0)
                 update.Inc(FieldNames.ProjectCount, projectCount.Value);
-            if (errorCount.HasValue && errorCount.Value != 0) {
-                update.Inc(FieldNames.ErrorCount, errorCount.Value);
-                if (errorCount.Value > 0) {
-                    update.Inc(FieldNames.TotalErrorCount, errorCount.Value);
+            if (eventCount.HasValue && eventCount.Value != 0) {
+                update.Inc(FieldNames.ErrorCount, eventCount.Value);
+                if (eventCount.Value > 0) {
+                    update.Inc(FieldNames.TotalErrorCount, eventCount.Value);
                     update.Set(FieldNames.LastErrorDate, new BsonDateTime(DateTime.UtcNow));
                 }
             }

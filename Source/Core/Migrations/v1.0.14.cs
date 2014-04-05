@@ -19,7 +19,7 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class ChangeExtendedDataKeysMigration : CollectionMigration {
         public ChangeExtendedDataKeysMigration()
-            : base("1.0.14", ErrorRepository.CollectionName) {
+            : base("1.0.14", EventRepository.CollectionName) {
             Description = "Change extended data keys.";
         }
 
@@ -27,11 +27,11 @@ namespace Exceptionless.Core.Migrations {
             bool renamed = false;
             BsonDocument currentDoc = document;
             while (currentDoc != null) {
-                if (currentDoc.Contains(ErrorRepository.FieldNames.ExtendedData)) {
-                    BsonValue extendedData = currentDoc.GetElement(ErrorRepository.FieldNames.ExtendedData).Value;
+                if (currentDoc.Contains(EventRepository.FieldNames.ExtendedData)) {
+                    BsonValue extendedData = currentDoc.GetElement(EventRepository.FieldNames.ExtendedData).Value;
                     if (extendedData.IsBsonArray) {
                         var newDoc = new BsonDocument(extendedData.AsBsonArray.Where(a => a.AsBsonArray.Count == 2).Select(a => new BsonElement(a.AsBsonArray[0].AsString.Replace('.', '_'), a.AsBsonArray[1])));
-                        currentDoc.Set(ErrorRepository.FieldNames.ExtendedData, newDoc);
+                        currentDoc.Set(EventRepository.FieldNames.ExtendedData, newDoc);
                         extendedData = newDoc;
                     }
 
@@ -40,8 +40,8 @@ namespace Exceptionless.Core.Migrations {
                     renamed |= extendedData.AsBsonDocument.ChangeName("TraceInfo", DataDictionary.TRACE_LOG_KEY);
                 }
 
-                if (currentDoc.Contains(ErrorRepository.FieldNames.Inner)) {
-                    BsonValue v = currentDoc.GetElement(ErrorRepository.FieldNames.Inner).Value;
+                if (currentDoc.Contains(EventRepository.FieldNames.Inner)) {
+                    BsonValue v = currentDoc.GetElement(EventRepository.FieldNames.Inner).Value;
                     currentDoc = !v.IsBsonNull ? v.AsBsonDocument : null;
                 } else
                     currentDoc = null;

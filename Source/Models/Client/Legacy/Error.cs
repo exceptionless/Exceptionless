@@ -11,12 +11,10 @@
 
 using System;
 using Exceptionless.Models.Collections;
+using Exceptionless.Models.Data;
 
-namespace Exceptionless.Models {
-    public class Error : ErrorInfo
-#if !EMBEDDED
-        , IOwnedByOrganization
-#endif
+namespace Exceptionless.Models.Legacy {
+    public class Error : ErrorInfo, IOwnedByOrganization
     {
         public Error() {
             Tags = new TagSet();
@@ -27,7 +25,6 @@ namespace Exceptionless.Models {
         /// </summary>
         public string Id { get; set; }
 
-#if !EMBEDDED
         /// <summary>
         /// The organization that the error belongs to.
         /// </summary>
@@ -42,7 +39,6 @@ namespace Exceptionless.Models {
         /// The error stack that the error belongs to.
         /// </summary>
         public string ErrorStackId { get; set; }
-#endif
 
         /// <summary>
         /// The date that the error occurred on.
@@ -89,7 +85,6 @@ namespace Exceptionless.Models {
         /// </summary>
         public EnvironmentInfo EnvironmentInfo { get; set; }
 
-#if !EMBEDDED
         /// <summary>
         /// Wether the error has been marked as fixed or not.
         /// </summary>
@@ -99,16 +94,5 @@ namespace Exceptionless.Models {
         /// Wether the error has been marked as hidden or not.
         /// </summary>
         public bool IsHidden { get; set; }
-#endif
-
-        /// <summary>
-        /// Marks the error as being a critical occurrence.
-        /// </summary>
-        public void MarkAsCritical() {
-            if (Tags == null)
-                Tags = new TagSet();
-
-            Tags.Add("Critical");
-        }
     }
 }

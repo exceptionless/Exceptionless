@@ -26,12 +26,12 @@ namespace Exceptionless.Core.Migrations {
             BsonValue organizationId = document.GetValue(ProjectRepository.FieldNames.OrganizationId);
             BsonValue projectId = document.GetValue(ProjectRepository.FieldNames.Id);
 
-            var stackCount = Database.GetCollection(ErrorStackRepository.CollectionName).FindAs<ErrorStack>(Query.EQ(ErrorStackRepository.FieldNames.ProjectId, projectId)).Count();
-            long errorCount = Database.GetCollection(ErrorRepository.CollectionName).FindAs<Error>(Query.EQ(ErrorRepository.FieldNames.ProjectId, projectId)).Count();
+            var stackCount = Database.GetCollection(StackRepository.CollectionName).FindAs<Stack>(Query.EQ(StackRepository.FieldNames.ProjectId, projectId)).Count();
+            long errorCount = Database.GetCollection(EventRepository.CollectionName).FindAs<Error>(Query.EQ(EventRepository.FieldNames.ProjectId, projectId)).Count();
 
             document.Add(ProjectRepository.FieldNames.StackCount, new BsonInt64(stackCount));
-            document.Add(ProjectRepository.FieldNames.ErrorCount, new BsonInt64(errorCount));
-            document.Add(ProjectRepository.FieldNames.TotalErrorCount, new BsonInt64(errorCount));
+            document.Add(ProjectRepository.FieldNames.EventCount, new BsonInt64(errorCount));
+            document.Add(ProjectRepository.FieldNames.TotalEventCount, new BsonInt64(errorCount));
             collection.Save(document);
 
             // Update the organization.

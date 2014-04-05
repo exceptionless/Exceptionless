@@ -21,7 +21,7 @@ namespace Exceptionless.Models {
 
         public string Id { get; set; }
         public string ProjectId { get; set; }
-        public string ErrorStackId { get; set; }
+        public string StackId { get; set; }
         public int Total { get; set; }
         public Dictionary<string, int> DayStats { get; set; }
 
