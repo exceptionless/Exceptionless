@@ -47,6 +47,7 @@
     <Compile Include="ExceptionlessClient.cs" />
     <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\ErrorExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\WebResponseExtensions.cs" />
     <Compile Include="Extensions\JsonSerializerExtensions.cs" />

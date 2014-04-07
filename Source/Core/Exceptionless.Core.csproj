@@ -235,17 +235,6 @@
     </None>
     <Compile Include="Migrations\v1.0.29.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
-    <Compile Include="Migrations\v1.0.25.cs" />
-    <Compile Include="Migrations\v1.0.24.cs" />
-    <Compile Include="Migrations\v1.0.23.cs" />
-    <Compile Include="Migrations\v1.0.22.cs" />
-    <Compile Include="Migrations\v1.0.21.cs" />
-    <Compile Include="Migrations\v1.0.19.cs" />
-    <Compile Include="Migrations\v1.0.18.cs" />
-    <Compile Include="Migrations\v1.0.17.cs" />
-    <Compile Include="Migrations\v1.0.16.cs" />
-    <Compile Include="Migrations\v1.0.15.cs" />
-    <Compile Include="Migrations\v1.0.20.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
     <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Models\IntercomModel.cs" />
@@ -277,11 +266,7 @@
     <Compile Include="Mail\Mailer.cs" />
     <Compile Include="Migrations\Documents\DocumentUpgrader.cs" />
     <Compile Include="Migrations\Documents\LegacyErrorDocumentUpgrader.cs" />
-    <Compile Include="Migrations\v1.0.1-v1.0.8_Migration.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
-    <Compile Include="Migrations\v1.0.10_Migration.cs" />
-    <Compile Include="Migrations\v1.0.11_Migration.cs" />
-    <Compile Include="Migrations\v1.0.14.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
     <Compile Include="Mail\Models\ErrorNotificationViewModel.cs" />
     <Compile Include="Mail\Models\InviteModel.cs" />
