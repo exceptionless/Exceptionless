@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void Update() {
-            var errorCollection = Database.GetCollection(EventRepository.CollectionName);
+            var errorCollection = Database.GetCollection("error");
 
             if (errorCollection.IndexExistsByName("pid_-1_dt.0_-1"))
                 errorCollection.DropIndexByName("pid_-1_dt.0_-1");
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            var errorCollection = Database.GetCollection(EventRepository.CollectionName);
+            var errorCollection = Database.GetCollection("error");
 
             ObjectId stackId = document.GetValue(StackRepository.FieldNames.Id).AsObjectId;
             if (stackId == ObjectId.Empty)
