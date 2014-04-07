@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Pipeline {
             Log.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Write();
 
             if (!ctx.Event.Tags.Contains("Internal")) {
-                ErrorBuilder b = ex.ToExceptionless()
+                EventBuilder b = ex.ToExceptionless()
                     .AddDefaultInformation()
                     .AddObject(ctx.Event)
                     .AddTags("Internal")

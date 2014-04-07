@@ -382,7 +382,7 @@ namespace Exceptionless {
         /// Creates an error to be reported to the Exceptionless server.
         /// </summary>
         /// <param name="ex">The exception to submit.</param>
-        public static ErrorBuilder Create(Exception ex) {
+        public static EventBuilder Create(Exception ex) {
             return null; //ex.ToExceptionless();
         }
 

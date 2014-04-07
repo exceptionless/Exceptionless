@@ -264,6 +264,7 @@
     <Compile Include="Settings.cs" />
     <Compile Include="Stacking\DefaultEventStacker.cs" />
     <Compile Include="Stacking\ErrorEventStacker.cs" />
+    <Compile Include="Stacking\EventStacker.cs" />
     <Compile Include="Stacking\IEventStacker.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />

@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Migrations {
             BsonValue projectId = document.GetValue(ProjectRepository.FieldNames.Id);
 
             var stackCount = Database.GetCollection(StackRepository.CollectionName).FindAs<Stack>(Query.EQ(StackRepository.FieldNames.ProjectId, projectId)).Count();
-            long errorCount = Database.GetCollection(EventRepository.CollectionName).FindAs<Error>(Query.EQ(EventRepository.FieldNames.ProjectId, projectId)).Count();
+            long errorCount = Database.GetCollection(EventRepository.CollectionName).FindAs<Event>(Query.EQ(EventRepository.FieldNames.ProjectId, projectId)).Count();
 
             document.Add(ProjectRepository.FieldNames.StackCount, new BsonInt64(stackCount));
             document.Add(ProjectRepository.FieldNames.EventCount, new BsonInt64(errorCount));
