@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Dependency;
 using Exceptionless.Logging;
 using Exceptionless.Models;
@@ -30,7 +31,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="data">The error data.</param>
         public void SubmitEvent(Event data) {
-            _log.FormattedInfo(typeof(ExceptionlessClient), "Submitting error: id={0} type={1}", data != null ? data.Id : "null", data != null ? data.Type : "null");
+            _log.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: id={0} type={1}", data != null ? data.ClientId : "null", data != null ? data.Type : "null");
 
             if (CheckForDuplicateError(data))
                 return;
@@ -45,12 +46,12 @@ namespace Exceptionless {
 
             //if (data.ExceptionlessClientInfo == null)
             //    data.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(this, Configuration.IncludePrivateInformation);
-            //if (String.IsNullOrEmpty(data.Id))
-            //    data.Id = ObjectId.GenerateNewId().ToString();
+            if (String.IsNullOrEmpty(data.ClientId))
+                data.ClientId = Guid.NewGuid().ToString("N");
             //_queue.Enqueue(data);
 
-            //_log.FormattedInfo(typeof(ExceptionlessClient), "Setting last error id '{0}'", data.Id);
-            //LastErrorIdManager.SetLast(data.Id);
+            _log.FormattedInfo(typeof(ExceptionlessClient), "Setting last event id '{0}'", data.ClientId);
+            //LastErrorIdManager.SetLast(data.ClientId);
 
             //QuickTimer();
             //SaveEmailAddress(data.UserEmail, false);
@@ -160,7 +161,8 @@ namespace Exceptionless {
         /// <summary>
         /// Start processing the queue asynchronously.
         /// </summary>
-        public void ProcessQueueAsync(double delay = 100) {
+        public Task ProcessQueueAsync(double delay = 100) {
+            return Task.Factory.StartNew(ProcessQueue);
         }
 
         /// <summary>
