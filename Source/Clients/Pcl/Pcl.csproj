@@ -39,7 +39,7 @@
     <Compile Include="Dependency\DependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />
-    <Compile Include="ErrorBuilder.cs" />
+    <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventModelEventArgs.cs" />
     <Compile Include="Events\SendEventCompletedEventArgs.cs" />

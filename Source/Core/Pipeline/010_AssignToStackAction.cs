@@ -14,8 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Utility;
+using Exceptionless.Core.Stacking;
 using Exceptionless.Models;
 using NLog.Fluent;
 
@@ -23,43 +22,32 @@ namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
         private readonly StackRepository _stackRepository;
-        private readonly ErrorSignatureFactory _signatureFactory;
+        private readonly EventStacker _eventStacker;
 
-        public AssignToStackAction(StackRepository stackRepository, ErrorSignatureFactory signatureFactory) {
+        public AssignToStackAction(StackRepository stackRepository, EventStacker eventStacker) {
             _stackRepository = stackRepository;
-            _signatureFactory = signatureFactory;
+            _eventStacker = eventStacker;
         }
 
         protected override bool IsCritical { get { return true; } }
 
         public override void Process(EventPipelineContext ctx) {
-            // TODO: Change this to go through a list of plugins that examine the event data and determine if they are able to provide stacking info
-            ctx.StackingInfo = ctx.Event.GetStackingInfo(_signatureFactory);
-            if (String.IsNullOrEmpty(ctx.Event.ErrorStackId)) {
+            if (String.IsNullOrEmpty(ctx.Event.StackId)) {
                 if (_stackRepository == null)
                     throw new InvalidOperationException("You must pass a non-null stackRepository parameter to the constructor.");
 
-                Log.Trace().Message("Error did not specify an ErrorStackId.").Write();
-                var signature = _signatureFactory.GetSignature(ctx.Event);
-                ctx.StackingInfo = ctx.Event.GetStackingInfo();
-                // Set Path to be the only thing we stack on for 404 errors
-                if (ctx.Event.Is404() && ctx.Event.RequestInfo != null) {
-                    Log.Trace().Message("Updating SignatureInfo for 404 error.").Write();
-                    signature.SignatureInfo.Clear();
-                    signature.SignatureInfo.Add("HttpMethod", ctx.Event.RequestInfo.HttpMethod);
-                    signature.SignatureInfo.Add("Path", ctx.Event.RequestInfo.Path);
-                    signature.RecalculateHash();
-                }
+                var signatureInfo = _eventStacker.GetSignatureInfo(ctx.Event);
+                string signatureHash = signatureInfo.Values.Any(v => v != null) ? signatureInfo.Values.ToSHA1() : null;
 
-                ctx.StackInfo = _stackRepository.GetStackInfoBySignatureHash(ctx.Event.ProjectId, signature.SignatureHash);
+                ctx.StackInfo = _stackRepository.GetStackInfoBySignatureHash(ctx.Event.ProjectId, signatureHash);
                 if (ctx.StackInfo == null) {
                     Log.Trace().Message("Creating new error stack.").Write();
                     ctx.IsNew = true;
                     var stack = new Stack {
                         OrganizationId = ctx.Event.OrganizationId,
                         ProjectId = ctx.Event.ProjectId,
-                        SignatureInfo = signature.SignatureInfo,
-                        SignatureHash = signature.SignatureHash,
+                        SignatureInfo = new SettingsDictionary(signatureInfo),
+                        SignatureHash = signatureHash,
                         Title = ctx.StackingInfo.Message,
                         Tags = ctx.Event.Tags ?? new TagSet(),
                         TotalOccurrences = 1,
@@ -76,7 +64,7 @@ namespace Exceptionless.Core.Pipeline {
                     };
 
                     // new 404 stack id added, invalidate 404 id cache
-                    if (signature.SignatureInfo.ContainsKey("Path"))
+                    if (ctx.Event.Type == "404")
                         _stackRepository.InvalidateNotFoundIdsCache(ctx.Event.ProjectId);
                 }
 

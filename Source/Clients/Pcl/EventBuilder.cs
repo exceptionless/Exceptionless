@@ -13,10 +13,10 @@ using Exceptionless.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless {
-    public class ErrorBuilder {
-        public ErrorBuilder(Event data, ExceptionlessClient client = null) {
+    public class EventBuilder {
+        public EventBuilder(Event ev, ExceptionlessClient client = null) {
             Client = client ?? ExceptionlessClient.Current;
-            Target = data;
+            Target = ev;
         }
 
         public ExceptionlessClient Client { get; set; }
@@ -27,7 +27,7 @@ namespace Exceptionless {
         ///     values, application configuration, and any registered plugins.
         /// </summary>
         /// <param name="contextData">Any contextual data objects to be used in gathering the default information.</param>
-        public ErrorBuilder AddDefaultInformation(IDictionary<string, object> contextData = null) {
+        public EventBuilder AddDefaultInformation(IDictionary<string, object> contextData = null) {
             //Target.AddDefaultInformation(contextData);
             return this;
         }
@@ -36,7 +36,7 @@ namespace Exceptionless {
         ///     Sets the user's email address that the error happened to.
         /// </summary>
         /// <param name="emailAddress">The user's email adddress that the error happened to.</param>
-        public ErrorBuilder SetUserEmail(string emailAddress) {
+        public EventBuilder SetUserEmail(string emailAddress) {
             //Target.UserEmail = emailAddress;
             return this;
         }
@@ -45,7 +45,7 @@ namespace Exceptionless {
         ///     Sets the user's name that the error happened to.
         /// </summary>
         /// <param name="userName">The user's name that the error happened to.</param>
-        public ErrorBuilder SetUserName(string userName) {
+        public EventBuilder SetUserName(string userName) {
             //Target.UserName = userName;
             return this;
         }
@@ -54,7 +54,7 @@ namespace Exceptionless {
         ///     Sets the user's description of the error.
         /// </summary>
         /// <param name="description">The user's name description of the error.</param>
-        public ErrorBuilder SetUserDescription(string description) {
+        public EventBuilder SetUserDescription(string description) {
             //Target.UserDescription = description;
             return this;
         }
@@ -63,7 +63,7 @@ namespace Exceptionless {
         ///     Adds one or more tags to the error.
         /// </summary>
         /// <param name="tags">The tags to be added to the error.</param>
-        public ErrorBuilder AddTags(params string[] tags) {
+        public EventBuilder AddTags(params string[] tags) {
             if (tags == null)
                 return this;
 
@@ -80,7 +80,7 @@ namespace Exceptionless {
         /// <param name="maxDepth">The max depth of the object to include.</param>
         /// <param name="excludedPropertyNames">Any property names that should be excluded.</param>
         /// <param name="ignoreSerializationErrors">Specifies if properties that throw serialization errors should be ignored.</param>
-        public ErrorBuilder AddObject(object data, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false) {
+        public EventBuilder AddObject(object data, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false) {
             //Target.AddObject(data, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
             return this;
         }
@@ -88,7 +88,7 @@ namespace Exceptionless {
         /// <summary>
         ///     Marks the error as being a critical occurrence.
         /// </summary>
-        public ErrorBuilder MarkAsCritical() {
+        public EventBuilder MarkAsCritical() {
             //Target.MarkAsCritical();
             return this;
         }

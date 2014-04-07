@@ -74,7 +74,7 @@ namespace Exceptionless.Models.Data {
         public Dictionary<string, string> QueryString { get; set; }
 
         /// <summary>
-        /// Extended data entries for this error.
+        /// Extended data entries for this request.
         /// </summary>
         public DataDictionary ExtendedData { get; set; }
     }
