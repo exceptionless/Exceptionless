@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Repositories;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
@@ -27,10 +28,10 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(EventRepository.FieldNames.OccurrenceDate))
+            if (!document.Contains(CommonFieldNames.Date))
                 return;
 
-            var occurrenceDateArray = document.GetValue(EventRepository.FieldNames.OccurrenceDate).AsBsonArray;
+            var occurrenceDateArray = document.GetValue(CommonFieldNames.Date).AsBsonArray;
             var localTicks = occurrenceDateArray[0].AsInt64;
             var date = new DateTime(localTicks);
             if (date > new DateTime(2014, 3, 14, 12, 30, 0))
@@ -39,7 +40,7 @@ namespace Exceptionless.Core.Migrations {
             var offset = TimeSpan.FromMinutes(occurrenceDateArray[1].AsInt32);
             occurrenceDateArray[0] = localTicks + -offset.Ticks;
 
-            document.Set(EventRepository.FieldNames.OccurrenceDate, occurrenceDateArray);
+            document.Set(CommonFieldNames.Date, occurrenceDateArray);
 
             collection.Save(document);
         }

@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Repositories;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
@@ -48,7 +49,7 @@ namespace Exceptionless.Core.Migrations {
             if (document.TryGetValue(StackRepository.FieldNames.DateFixed, out value))
                 dateFixed = value.ToNullableUniversalTime();
 
-            IMongoQuery query = Query.EQ(EventRepository.FieldNames.ErrorStackId, new BsonObjectId(stackId));
+            IMongoQuery query = Query.EQ(CommonFieldNames.StackId, new BsonObjectId(stackId));
 
             var update = new UpdateBuilder();
             if (isHidden)

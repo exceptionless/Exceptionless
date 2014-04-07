@@ -22,14 +22,14 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(EventRepository.FieldNames.RequestInfo))
+            if (!document.Contains("req"))
                 return;
 
-            BsonDocument requestInfo = document.GetElement(EventRepository.FieldNames.RequestInfo).Value.AsBsonDocument;
+            BsonDocument requestInfo = document.GetElement("req").Value.AsBsonDocument;
             if (!requestInfo.Contains("frm"))
                 return;
 
-            requestInfo.Add(EventRepository.FieldNames.PostData, new BsonString(requestInfo.GetElement("frm").Value.ToJson()));
+            requestInfo.Add("pst", new BsonString(requestInfo.GetElement("frm").Value.ToJson()));
             requestInfo.Remove("frm");
 
             collection.Save(document);

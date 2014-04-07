@@ -22,21 +22,21 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (!document.Contains(EventRepository.FieldNames.ExceptionlessClientInfo))
+            if (!document.Contains("cli"))
                 return;
 
-            BsonDocument clientInfo = document.GetElement(EventRepository.FieldNames.ExceptionlessClientInfo).Value.AsBsonDocument;
+            BsonDocument clientInfo = document.GetElement("cli").Value.AsBsonDocument;
 
             if (clientInfo.Contains("SubmissionMethod"))
-                clientInfo.ChangeName("SubmissionMethod", EventRepository.FieldNames.SubmissionMethod);
+                clientInfo.ChangeName("SubmissionMethod", "sm");
 
-            if (clientInfo.Contains(EventRepository.FieldNames.InstallDate)) {
-                BsonValue installDateValue = clientInfo.GetElement(EventRepository.FieldNames.InstallDate).Value;
+            if (clientInfo.Contains("idt")) {
+                BsonValue installDateValue = clientInfo.GetElement("idt").Value;
                 if (installDateValue.IsBsonArray)
                     return;
 
                 DateTime installDate = installDateValue.ToUniversalTime();
-                clientInfo.AsBsonDocument.Set(EventRepository.FieldNames.InstallDate, new BsonArray(new BsonValue[] { new BsonInt64(installDate.Ticks), new BsonInt32(-360) }));
+                clientInfo.AsBsonDocument.Set("idt", new BsonArray(new BsonValue[] { new BsonInt64(installDate.Ticks), new BsonInt32(-360) }));
             }
 
             collection.Save(document);

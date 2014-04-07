@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -27,11 +28,11 @@ namespace Exceptionless.Core.Migrations {
             bool renamed = false;
             BsonDocument currentDoc = document;
             while (currentDoc != null) {
-                if (currentDoc.Contains(EventRepository.FieldNames.ExtendedData)) {
-                    BsonValue extendedData = currentDoc.GetElement(EventRepository.FieldNames.ExtendedData).Value;
+                if (currentDoc.Contains(CommonFieldNames.ExtendedData)) {
+                    BsonValue extendedData = currentDoc.GetElement(CommonFieldNames.ExtendedData).Value;
                     if (extendedData.IsBsonArray) {
                         var newDoc = new BsonDocument(extendedData.AsBsonArray.Where(a => a.AsBsonArray.Count == 2).Select(a => new BsonElement(a.AsBsonArray[0].AsString.Replace('.', '_'), a.AsBsonArray[1])));
-                        currentDoc.Set(EventRepository.FieldNames.ExtendedData, newDoc);
+                        currentDoc.Set(CommonFieldNames.ExtendedData, newDoc);
                         extendedData = newDoc;
                     }
 
@@ -40,8 +41,8 @@ namespace Exceptionless.Core.Migrations {
                     renamed |= extendedData.AsBsonDocument.ChangeName("TraceInfo", DataDictionary.TRACE_LOG_KEY);
                 }
 
-                if (currentDoc.Contains(EventRepository.FieldNames.Inner)) {
-                    BsonValue v = currentDoc.GetElement(EventRepository.FieldNames.Inner).Value;
+                if (currentDoc.Contains("inr")) {
+                    BsonValue v = currentDoc.GetElement("inr").Value;
                     currentDoc = !v.IsBsonNull ? v.AsBsonDocument : null;
                 } else
                     currentDoc = null;

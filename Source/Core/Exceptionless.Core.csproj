@@ -256,6 +256,7 @@
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
     <Compile Include="Queues\ProjectHookNotification.cs" />
     <Compile Include="Queues\SummaryNotification.cs" />
+    <Compile Include="Repositories\CommonFieldNames.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
