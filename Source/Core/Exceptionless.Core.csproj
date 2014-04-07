@@ -233,6 +233,7 @@
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <Compile Include="Migrations\v1.0.29.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Migrations\v1.0.25.cs" />
     <Compile Include="Migrations\v1.0.24.cs" />
@@ -261,6 +262,9 @@
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="Stacking\DefaultEventStacker.cs" />
+    <Compile Include="Stacking\ErrorEventStacker.cs" />
+    <Compile Include="Stacking\IEventStacker.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
@@ -363,9 +367,9 @@
     <Compile Include="Web\RequireHttpsExceptLocalAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
-      <Name>Exceptionless</Name>
+    <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
+      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
+      <Name>Pcl</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
       <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>

@@ -173,18 +173,6 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Mvc\Exceptionless.Mvc.csproj">
-      <Project>{811bc612-86aa-4039-bd8f-4adc27d3eed9}</Project>
-      <Name>Exceptionless.Mvc</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Clients\WebApi\Exceptionless.WebApi.csproj">
-      <Project>{d6e6ee87-5869-4a62-8f67-7a685205bcad}</Project>
-      <Name>Exceptionless.WebApi</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>

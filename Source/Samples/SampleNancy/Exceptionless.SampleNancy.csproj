@@ -71,14 +71,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Nancy\Exceptionless.Nancy.csproj">
-      <Project>{47b49e88-42ec-44ff-b1c2-981699a354e3}</Project>
-      <Name>Exceptionless.Nancy</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
       <Name>Exceptionless.Models</Name>

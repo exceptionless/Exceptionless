@@ -79,10 +79,6 @@
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Shared\Exceptionless.csproj">
-      <Project>{E2087C42-6C65-49B7-9E64-B5E69A684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="NuGet\readme.txt" />

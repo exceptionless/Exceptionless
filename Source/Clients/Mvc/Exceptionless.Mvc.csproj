@@ -78,10 +78,6 @@
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Exceptionless.snk">

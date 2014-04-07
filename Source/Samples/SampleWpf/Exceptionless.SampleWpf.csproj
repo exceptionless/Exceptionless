@@ -94,14 +94,6 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{E2087C42-6C65-49B7-9E64-B5E69A684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Clients\Wpf\Exceptionless.Wpf.csproj">
-      <Project>{0F4730E7-953F-4F20-A337-9FB43A9AFBEA}</Project>
-      <Name>Exceptionless.Wpf</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>

@@ -108,14 +108,6 @@
     <Content Include="Configuration.aspx" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{E2087C42-6C65-49B7-9E64-B5E69A684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\Clients\Web\Exceptionless.Web.csproj">
-      <Project>{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}</Project>
-      <Name>Exceptionless.Web</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
