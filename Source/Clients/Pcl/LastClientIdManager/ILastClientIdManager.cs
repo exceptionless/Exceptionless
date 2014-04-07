@@ -10,28 +10,22 @@
 using System;
 
 namespace Exceptionless {
-    internal class DefaultLastErrorIdManager : ILastErrorIdManager {
-        internal static ILastErrorIdManager Instance = new DefaultLastErrorIdManager();
-
-        private string _lastErrorId;
-
+    public interface ILastClientIdManager {
         /// <summary>
         ///     Gets the last error id that was submitted to the server.
         /// </summary>
         /// <returns>The error id</returns>
-        public string GetLast() {
-            return _lastErrorId;
-        }
+        string GetLast();
 
         /// <summary>
         ///     Clears the last error id.
         /// </summary>
-        public void ClearLast() {
-            _lastErrorId = String.Empty;
-        }
+        void ClearLast();
 
-        public void SetLast(string errorId) {
-            _lastErrorId = errorId;
-        }
+        /// <summary>
+        ///     Sets the last error id.
+        /// </summary>
+        /// <param name="errorId"></param>
+        void SetLast(string errorId);
     }
 }

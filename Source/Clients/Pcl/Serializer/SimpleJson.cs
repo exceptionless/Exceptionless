@@ -937,7 +937,7 @@ namespace SimpleJson {
         }
 
         static bool SerializeObject(IJsonSerializerStrategy jsonSerializerStrategy, IEnumerable keys, IEnumerable values, StringBuilder builder) {
-            _currentDepth++;
+            //_currentDepth++;
             builder.Append("{");
             IEnumerator ke = keys.GetEnumerator();
             IEnumerator ve = values.GetEnumerator();

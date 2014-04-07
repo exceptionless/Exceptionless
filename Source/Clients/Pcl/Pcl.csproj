@@ -34,57 +34,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
-      <Link>Models\ClientConfiguration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\EnvironmentInfo.cs">
-      <Link>Models\Data\EnvironmentInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Error.cs">
-      <Link>Models\Data\Error.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Method.cs">
-      <Link>Models\Data\Method.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Module.cs">
-      <Link>Models\Data\Module.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Parameter.cs">
-      <Link>Models\Data\Parameter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\RequestInfo.cs">
-      <Link>Models\Data\RequestInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\StackFrame.cs">
-      <Link>Models\Data\StackFrame.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Event.cs">
-      <Link>Models\Event.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\SessionInfo.cs">
-      <Link>Models\SessionInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\DataDictionary.cs">
-      <Link>Collections\DataDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\GenericArguments.cs">
-      <Link>Collections\GenericArguments.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ModuleCollection.cs">
-      <Link>Collections\ModuleCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
-      <Link>Collections\ParameterCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\SettingsDictionary.cs">
-      <Link>Collections\SettingsDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
-      <Link>Collections\StackFrameCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\TagSet.cs">
-      <Link>Collections\TagSet.cs</Link>
-    </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
@@ -105,8 +54,8 @@
     <Compile Include="Extensions\WebRequestExtensions.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LastErrorIdManager\DefaultLastErrorIdManager.cs" />
-    <Compile Include="LastErrorIdManager\ILastErrorIdManager.cs" />
+    <Compile Include="LastClientIdManager\DefaultLastClientIdManager.cs" />
+    <Compile Include="LastClientIdManager\ILastClientIdManager.cs" />
     <Compile Include="Plugins\ExceptionlessPlugin.cs" />
     <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
     <Compile Include="Plugins\IExceptionlessPlugin.cs" />
@@ -135,6 +84,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
+      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
+      <Name>Exceptionless.Models</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

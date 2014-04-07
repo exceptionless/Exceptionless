@@ -46,116 +46,13 @@ namespace Exceptionless.Models {
         public string GetString(string name, string @default) {
             object value;
 
-            if (TryGetValue(name, out value)) {
-                if (value is string)
-                    return (string)value;
+            if (!TryGetValue(name, out value))
+                return @default;
+
+            if (value is string)
+                return (string)value;
                 
-            }
-
-            return @default;
-        }
-
-        public bool GetBoolean(string name) {
-            return GetBoolean(name, false);
-        }
-
-        public bool GetBoolean(string name, bool @default) {
-            bool value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = bool.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public int GetInt32(string name) {
-            return GetInt32(name, 0);
-        }
-
-        public int GetInt32(string name, int @default) {
-            int value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = int.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public long GetInt64(string name) {
-            return GetInt64(name, 0L);
-        }
-
-        public long GetInt64(string name, long @default) {
-            long value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = long.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public double GetDouble(string name, double @default = 0d) {
-            double value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = double.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public DateTime GetDateTime(string name) {
-            return GetDateTime(name, DateTime.MinValue);
-        }
-
-        public DateTime GetDateTime(string name, DateTime @default) {
-            DateTime value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = DateTime.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public DateTimeOffset GetDateTimeOffset(string name) {
-            return GetDateTimeOffset(name, DateTimeOffset.MinValue);
-        }
-
-        public DateTimeOffset GetDateTimeOffset(string name, DateTimeOffset @default) {
-            DateTimeOffset value;
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            if (!result)
-                return @default;
-
-            result = DateTimeOffset.TryParse(temp, out value);
-            return result ? value : @default;
-        }
-
-        public Guid GetGuid(string name) {
-            return GetGuid(name, Guid.Empty);
-        }
-
-        public Guid GetGuid(string name, Guid @default) {
-            string temp;
-
-            bool result = TryGetValue(name, out temp);
-            return result ? new Guid(temp) : @default;
+            return String.Empty;
         }
     }
 }
