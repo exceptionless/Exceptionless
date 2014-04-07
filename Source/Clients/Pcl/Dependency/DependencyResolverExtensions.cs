@@ -57,8 +57,8 @@ namespace Exceptionless.Dependency {
             return resolver.Resolve<IEnvironmentInfoCollector>() ?? DefaultEnvironmentInfoCollector.Instance;
         }
 
-        internal static ILastErrorIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
-            return resolver.Resolve<ILastErrorIdManager>() ?? DefaultLastErrorIdManager.Instance;
+        internal static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
+            return resolver.Resolve<ILastClientIdManager>() ?? DefaultLastClientIdManager.Instance;
         }
 
         internal static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
