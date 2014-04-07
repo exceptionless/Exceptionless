@@ -19,12 +19,8 @@ using MongoMigrations;
 namespace Exceptionless.Core.Migrations {
     public class ErrorOccurrenceDateLocalToUtcMigration : CollectionMigration {
         public ErrorOccurrenceDateLocalToUtcMigration()
-            : base("1.0.27", EventRepository.CollectionName) {
+            : base("1.0.27", "error") {
             Description = "Change occurrence date ticks to be stored in utc ticks.";
-        }
-
-        public override IMongoQuery Filter() {
-            return Query.GT(EventRepository.FieldNames.Id, new ObjectId("8000000088e20d1ee801b3c2"));
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {

@@ -1,104 +1,194 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
+using System.IO;
+using System.Reflection;
 using Exceptionless.Extensions;
-using SimpleJson;
+using Exceptionless.Json;
+using Exceptionless.Json.Converters;
+using Exceptionless.Json.Linq;
+using Exceptionless.Json.Serialization;
+using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Serializer {
     public class DefaultJsonSerializer : IJsonSerializer {
         internal static IJsonSerializer Instance = new DefaultJsonSerializer();
 
-        public string Serialize(object model, string[] exclusions = null, int maxDepth = 5) {
-            var serializerStrategy = new JsonSerializerWithExclusionsStrategy(exclusions, maxDepth: maxDepth);
-            return SimpleJson.SimpleJson.SerializeObject(model, serializerStrategy);
+        protected readonly JsonSerializerSettings _serializerSettings;
+
+        public DefaultJsonSerializer() {
+            _serializerSettings = new JsonSerializerSettings {
+                ReferenceLoopHandling = ReferenceLoopHandling.Ignore,
+                NullValueHandling = NullValueHandling.Ignore,
+                DefaultValueHandling = DefaultValueHandling.Ignore,
+                PreserveReferencesHandling = PreserveReferencesHandling.None
+            };
+
+            _serializerSettings.Converters.Add(new StringEnumConverter());
+            _serializerSettings.Converters.Add(new DataDictionaryConverter());
+            _serializerSettings.Converters.Add(new RequestInfoConverter());
         }
 
-        public object Deserialize(string json, Type type) {
-            return SimpleJson.SimpleJson.DeserializeObject(json, type);
-        }
-
-        internal class JsonSerializerWithExclusionsStrategy : PocoJsonSerializerStrategy {
-            private readonly string[] _exclusions;
-            private readonly bool _excludeDefaultValues = true;
-            private readonly bool _excludeEmptyCollections = true;
-            private readonly int _maxDepth = -1;
-            private int _currentDepth;
-
-            internal JsonSerializerWithExclusionsStrategy(string[] exclusions, bool excludeDefaultValues = true, bool excludeEmptyCollections = true, int maxDepth = -1) {
-                _exclusions = exclusions;
-                _excludeDefaultValues = excludeDefaultValues;
-                _excludeEmptyCollections = excludeEmptyCollections;
-                _maxDepth = maxDepth;
-            }
-
-            public override bool TrySerializeNonPrimitiveObject(object input, out object output) {
-                _currentDepth++;
-                if (_currentDepth > _maxDepth && !input.GetType().IsValueType) {
-                    output = null;
-                    return true;
-                }
-
-                bool success = base.TrySerializeNonPrimitiveObject(input, out output);
-
-                if (!success)
-                    return false;
-
-                var dict = output as IDictionary<string, object>;
-                if (dict == null)
-                    return true;
-
-                RemoveExclusions(dict);
-
-                return true;
-            }
-
-            private void RemoveExclusions(IDictionary<string, object> values) {
-                var keysToRemove = new List<string>();
-
-                foreach (string key in values.Keys.ToList()) {
-                    object value = values[key];
-                    // don't serialize null values
-                    if (value == null) {
-                        keysToRemove.Add(key);
-                        continue;
-                    }
-
-                    if (key.AnyWildcardMatches(_exclusions, true)) {
-                        // remove any items that are in the exclusions list
-                        keysToRemove.Add(key);
-                    } else if (_excludeEmptyCollections && value is ICollection && ((ICollection)value).Count == 0) {
-                        // don't serialize empty collections
-                        keysToRemove.Add(key);
-                    } else if (_excludeEmptyCollections && ShouldCheckTypeForCount(value.GetType())) {
-                        // don't serialize empty generic collections
-                        int count = (int)value.GetType().GetProperty("Count").GetValue(value, null);
-                        if (count == 0)
-                            keysToRemove.Add(key);
-                    } else if (_excludeDefaultValues && Equals(value, GetDefaultValue(value.GetType()))) {
-                        // don't serialize default values
-                        keysToRemove.Add(key);
-                    }
-                }
-
-                foreach (string key in keysToRemove)
-                    values.Remove(key);
-            }
-
-            private object GetDefaultValue(Type t) {
-                if (t.IsValueType)
-                    return Activator.CreateInstance(t);
-
+        public virtual string Serialize(object model, string[] exclusions = null, int maxDepth = 5, bool continueOnSerializationError = true) {
+            if (model == null)
                 return null;
+
+            JsonSerializer serializer = JsonSerializer.Create(_serializerSettings);
+            if (maxDepth < 1)
+                maxDepth = Int32.MaxValue;
+
+            using (var sw = new StringWriter()) {
+                using (var jw = new JsonTextWriterWithDepth(sw)) {
+                    jw.Formatting = Formatting.None;
+                    Func<JsonProperty, bool> include = p => ShouldSerialize(jw, p, maxDepth, exclusions);
+                    var resolver = new ConditionalContractResolver(include);
+                    serializer.ContractResolver = resolver;
+                    if (continueOnSerializationError)
+                        serializer.Error += (sender, args) => { args.ErrorContext.Handled = true; };
+
+                    serializer.Serialize(jw, model);
+                }
+
+                return sw.ToString();
+            }
+        }
+
+        public virtual object Deserialize(string json, Type type) {
+            if (String.IsNullOrWhiteSpace(json))
+                return null;
+
+            return JsonConvert.DeserializeObject(json, type, _serializerSettings);
+        }
+
+        private bool ShouldSerialize(JsonTextWriterWithDepth jw, JsonProperty property, int maxDepth, IEnumerable<string> excludedPropertyNames) {
+            if (excludedPropertyNames != null && property.PropertyName.AnyWildcardMatches(excludedPropertyNames, true))
+                return false;
+
+            bool serializesAsObject = !IsIntrinsicType(property.PropertyType);
+            return serializesAsObject ? jw.CurrentDepth < maxDepth : jw.CurrentDepth <= maxDepth;
+        }
+
+        private static bool IsIntrinsicType(Type t) {
+            if (t == typeof(string))
+                return true;
+
+            if (!t.IsValueType)
+                return false;
+
+            if (t == typeof(bool))
+                return true;
+            if (t == typeof(DateTime))
+                return true;
+            if (t == typeof(DateTimeOffset))
+                return true;
+            if (t == typeof(Int16))
+                return true;
+            if (t == typeof(Int32))
+                return true;
+            if (t == typeof(Int64))
+                return true;
+            if (t == typeof(UInt16))
+                return true;
+            if (t == typeof(UInt32))
+                return true;
+            if (t == typeof(UInt64))
+                return true;
+            if (t == typeof(float))
+                return true;
+            if (t == typeof(double))
+                return true;
+            if (t == typeof(char))
+                return true;
+            if (t == typeof(byte))
+                return true;
+            if (t == typeof(byte[]))
+                return true;
+            if (t == typeof(sbyte))
+                return true;
+            if (t == typeof(decimal))
+                return true;
+            if (t == typeof(Guid))
+                return true;
+            if (t == typeof(TimeSpan))
+                return true;
+            if (t == typeof(Uri))
+                return true;
+
+            return false;
+        }
+
+        private class JsonTextWriterWithDepth : JsonTextWriter {
+            public JsonTextWriterWithDepth(TextWriter textWriter) : base(textWriter) {}
+
+            public int CurrentDepth { get; private set; }
+
+            public override void WriteStartObject() {
+                CurrentDepth++;
+                base.WriteStartObject();
             }
 
-            private bool ShouldCheckTypeForCount(Type type) {
-                if (type == typeof(string))
-                    return false;
-                if (type.IsValueType)
-                    return false;
+            public override void WriteEndObject() {
+                CurrentDepth--;
+                base.WriteEndObject();
+            }
+        }
 
-                return type.GetInterfaces().FirstOrDefault(i => (i.IsGenericType) && (i.GetGenericTypeDefinition() == typeof(ICollection<>))) != null;
+        private class ConditionalContractResolver : DefaultContractResolver {
+            private readonly Func<JsonProperty, bool> _includeProperty;
+
+            public ConditionalContractResolver(Func<JsonProperty, bool> includeProperty) {
+                _includeProperty = includeProperty;
+            }
+
+            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
+                JsonProperty property = base.CreateProperty(member, memberSerialization);
+                Predicate<object> shouldSerialize = property.ShouldSerialize;
+                property.ShouldSerialize = obj => _includeProperty(property) && (shouldSerialize == null || shouldSerialize(obj));
+                return property;
+            }
+        }
+
+        private class DataDictionaryConverter : CustomCreationConverter<DataDictionary> {
+            public override DataDictionary Create(Type objectType) {
+                return new DataDictionary();
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
+                object obj = base.ReadJson(reader, objectType, existingValue, serializer);
+                var result = obj as DataDictionary;
+                if (result == null)
+                    return obj;
+
+                var dictionary = new DataDictionary();
+                foreach (string key in result.Keys) {
+                    object value = result[key];
+                    if (value is JObject)
+                        dictionary[key] = value.ToString();
+                    else if (value is JArray)
+                        dictionary[key] = value.ToString();
+                    else
+                        dictionary[key] = value;
+                }
+
+                return dictionary;
+            }
+        }
+
+        private class RequestInfoConverter : CustomCreationConverter<RequestInfo> {
+            public override RequestInfo Create(Type objectType) {
+                return new RequestInfo();
+            }
+
+            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
+                object obj = base.ReadJson(reader, objectType, existingValue, serializer);
+                var result = obj as RequestInfo;
+                if (result == null)
+                    return obj;
+
+                if (result.PostData is JObject)
+                    result.PostData = result.PostData.ToString();
+
+                return result;
             }
         }
     }
