@@ -10,10 +10,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace Exceptionless.Models.Data {
-    public class RequestInfo : IData {
+namespace Exceptionless.Models.Legacy {
+    public class RequestInfo {
         public RequestInfo() {
-            Data = new DataDictionary();
+            ExtendedData = new DataDictionary();
             Cookies = new Dictionary<string, string>();
             QueryString = new Dictionary<string, string>();
         }
@@ -76,6 +76,6 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this request.
         /// </summary>
-        public DataDictionary Data { get; set; }
+        public DataDictionary ExtendedData { get; set; }
     }
 }

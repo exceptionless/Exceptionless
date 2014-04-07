@@ -9,10 +9,10 @@
 
 using System;
 
-namespace Exceptionless.Models.Data {
-    public class Method : IData {
+namespace Exceptionless.Models.Legacy {
+    public class Method {
         public Method() {
-            Data = new DataDictionary();
+            ExtendedData = new DataDictionary();
             GenericArguments = new GenericArguments();
             Parameters = new ParameterCollection();
         }
@@ -36,7 +36,7 @@ namespace Exceptionless.Models.Data {
         public string Name { get; set; }
 
         public int ModuleId { get; set; }
-        public DataDictionary Data { get; set; }
+        public DataDictionary ExtendedData { get; set; }
         public GenericArguments GenericArguments { get; set; }
         public ParameterCollection Parameters { get; set; }
     }

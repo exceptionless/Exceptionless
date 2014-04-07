@@ -10,9 +10,9 @@
 using System;
 
 namespace Exceptionless.Models {
-    public class Event 
+    public class Event : IData
 #if !EMBEDDED
-        : IOwnedByOrganization
+        , IOwnedByOrganization
 #endif
     {
         public Event() {

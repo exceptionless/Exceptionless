@@ -18,10 +18,9 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless;
-using Exceptionless.Logging;
-using Exceptionless.Models;
-using Exceptionless.Serialization;
+using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Models;
 
 namespace SampleConsole {
     internal class Program {
@@ -29,8 +28,8 @@ namespace SampleConsole {
         private static bool _sendingContinuous = false;
 
         private static void Main() {
-            ExceptionlessClient.Current.Startup();
-            ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
+            //ExceptionlessClient.Current.Startup();
+            //ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
@@ -108,7 +107,7 @@ namespace SampleConsole {
             try {
                 throw new MyException(errorCode.Value, Guid.NewGuid().ToString());
             } catch (Exception ex) {
-                ErrorBuilder err = ex.ToExceptionless()
+                var builder = ex.ToExceptionless()
                     .AddObject(new {
                         myApplicationVersion = new Version(1, 0),
                         Date = DateTime.Now,
@@ -116,12 +115,12 @@ namespace SampleConsole {
                         SomeField10 = "testing"
                     }, "Object From Code");
                 if (randomizeDates)
-                    err.Target.OccurrenceDate = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
+                    builder.Target.Date = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
                 if (critical)
-                    err.MarkAsCritical();
-                if (ExceptionlessClient.Current.Configuration.GetBoolean("IncludeConditionalData"))
-                    err.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
-                err.Submit();
+                    builder.MarkAsCritical();
+                if (ExceptionlessClient.Current.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+                    builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
+                builder.Submit();
             }
 
             if (writeToConsole) {
@@ -137,8 +136,9 @@ namespace SampleConsole {
                 return;
 
             foreach (string file in Directory.GetFiles(path)) {
-                var error = ModelSerializer.Current.Deserialize<Error>(file);
-                ExceptionlessClient.Current.SubmitError(error);
+                var serializer = DependencyResolver.Current.GetJsonSerializer();
+                var e = serializer.Deserialize<Event>(file);
+                ExceptionlessClient.Current.SubmitEvent(e);
             }
         }
 

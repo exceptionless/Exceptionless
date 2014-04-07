@@ -17,6 +17,7 @@ using Exceptionless.App.Models.Project;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Stripe;
 
 namespace Exceptionless.App {

@@ -26,7 +26,7 @@ using Exceptionless.App.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Utility;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
 using MongoDB.Driver;
@@ -57,8 +57,8 @@ namespace Exceptionless.App {
 
             Trace.Listeners.Add(new NLogTraceListener());
             if (ExceptionlessClient.Current.Configuration.Enabled) {
-                ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
-                ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
+                //ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
+                //ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
                 ExceptionlessClient.Current.UnhandledExceptionReporting += CurrentOnUnhandledExceptionReporting;
             }
 
@@ -82,10 +82,10 @@ namespace Exceptionless.App {
                 return;
 
             if (p.Project != null)
-                args.Error.AddObject(p.Project, "Project");
+                args.Event.AddObject(p.Project, "Project");
 
             if (p.UserEntity != null)
-                args.Error.AddObject(p.UserEntity, "User");
+                args.Event.AddObject(p.UserEntity, "User");
         }
 
         private static bool? _dbIsUpToDate;

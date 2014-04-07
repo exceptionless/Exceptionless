@@ -12,9 +12,9 @@
 using System;
 
 namespace Exceptionless.Models.Data {
-    public class Error {
+    public class Error : IData {
         public Error() {
-            ExtendedData = new DataDictionary();
+            Data = new DataDictionary();
             StackTrace = new StackFrameCollection();
         }
 
@@ -36,7 +36,7 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this error.
         /// </summary>
-        public DataDictionary ExtendedData { get; set; }
+        public DataDictionary Data { get; set; }
 
         /// <summary>
         /// An inner (nested) error.

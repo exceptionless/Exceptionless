@@ -14,8 +14,8 @@ namespace SchedulerService {
         public static void Main() {
             System.Diagnostics.Trace.Listeners.Add(new NLogTraceListener());
             if (ExceptionlessClient.Current.Configuration.Enabled) {
-                ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
-                ExceptionlessClient.Current.Startup();
+               // ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
+               // ExceptionlessClient.Current.Startup();
             }
 
             var container = new Container();

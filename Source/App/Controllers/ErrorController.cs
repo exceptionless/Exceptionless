@@ -40,38 +40,38 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(id))
                 return RedirectToAction("Index", "Project");
 
-            Error error = _repository.GetByIdCached(id);
-            if (error == null || !User.CanAccessOrganization(error.OrganizationId))
-                return HttpNotFound("An error with this id was not found.");
+            //Error error = _repository.GetByIdCached(id);
+            //if (error == null || !User.CanAccessOrganization(error.OrganizationId))
+            //    return HttpNotFound("An error with this id was not found.");
 
-            RouteData.SetOrganizationId(error.OrganizationId);
+            //RouteData.SetOrganizationId(error.OrganizationId);
 
-            Project project = _projectRepository.GetByIdCached(error.ProjectId);
-            ErrorModel model = Mapper.Map<Error, ErrorModel>(error);
-            model.OccurrenceDate = TimeZoneInfo.ConvertTime(error.OccurrenceDate, project.DefaultTimeZone());
-            model.PreviousErrorId = _repository.GetPreviousEventIdInStack(error.Id);
-            model.NextErrorId = _repository.GetNextEventIdInStack(error.Id);
-            model.PromotedTabs = project.PromotedTabs;
-            model.CustomContent = project.CustomContent;
+            //Project project = _projectRepository.GetByIdCached(error.ProjectId);
+            //ErrorModel model = Mapper.Map<Error, ErrorModel>(error);
+            //model.OccurrenceDate = TimeZoneInfo.ConvertTime(error.OccurrenceDate, project.DefaultTimeZone());
+            //model.PreviousErrorId = _repository.GetPreviousEventIdInStack(error.Id);
+            //model.NextErrorId = _repository.GetNextEventIdInStack(error.Id);
+            //model.PromotedTabs = project.PromotedTabs;
+            //model.CustomContent = project.CustomContent;
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
-            if (model.OccurrenceDate.UtcDateTime <= retentionUtcCutoff)
-                return View("RetentionLimitReached", model);
+            //DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            //if (model.OccurrenceDate.UtcDateTime <= retentionUtcCutoff)
+            //    return View("RetentionLimitReached", model);
 
-            return View("ErrorOccurrence", model);
+            return View("ErrorOccurrence", null);
         }
 
         public ActionResult Notification(string stackId, string errorId) {
             if (String.IsNullOrEmpty(stackId) || String.IsNullOrEmpty(errorId))
                 return RedirectToAction("Index", "Project");
 
-            Error error = _repository.GetByIdCached(errorId);
-            if (error != null)
-                return RedirectToAction("Index", new { id = errorId });
+            //Error error = _repository.GetByIdCached(errorId);
+            //if (error != null)
+            //    return RedirectToAction("Index", new { id = errorId });
 
-            Stack stack = _stackRepository.GetByIdCached(stackId);
-            if (stack != null && User.CanAccessOrganization(stack.OrganizationId))
-                return View("OccurrenceNotFound", stack);
+            //Stack stack = _stackRepository.GetByIdCached(stackId);
+            //if (stack != null && User.CanAccessOrganization(stack.OrganizationId))
+            //    return View("OccurrenceNotFound", stack);
 
             return HttpNotFound("An error with this id was not found.");
         }

@@ -7,6 +7,6 @@
     </tr>
 </table>
 
-@foreach (var item in Model.ExtendedData.Where(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
+@foreach (var item in Model.Data.Where(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
     @Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = item, IsPromoted = false })
 }

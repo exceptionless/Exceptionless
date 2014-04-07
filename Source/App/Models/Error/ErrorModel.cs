@@ -17,7 +17,7 @@ using Exceptionless.Models;
 using UAParser;
 
 namespace Exceptionless.App.Models.Error {
-    public class ErrorModel : Exceptionless.Models.Error {
+    public class ErrorModel : Exceptionless.Models.Data.Error {
         public virtual void PopulateExtraInfo() {
             if (RequestInfo != null && RequestInfo.UserAgent != null) {
                 Parser parser = Parser.GetDefault();
@@ -28,7 +28,7 @@ namespace Exceptionless.App.Models.Error {
             StackingType = st.FullTypeName;
             StackingMethod = st.MethodName;
             StackingMessage = st.Message;
-            StackingExtendedData = st.Error.ExtendedData;
+            StackingExtendedData = st.Error.Data;
         }
 
         public DateTimeOffset ClientTime { get; set; }

@@ -9,8 +9,7 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public class ErrorBuilder {

@@ -28,8 +28,8 @@ namespace Exceptionless.Core.Extensions {
 
             MethodExtensions.AppendMethod(frame, sb);
 
-            if (includeOffsets && (frame.ExtendedData.ContainsKey("ILOffset") || frame.ExtendedData.ContainsKey("NativeOffset")))
-                sb.AppendFormat(" at offset {0}", frame.ExtendedData["ILOffset"] ?? frame.ExtendedData["NativeOffset"]);
+            if (includeOffsets && (frame.Data.ContainsKey("ILOffset") || frame.Data.ContainsKey("NativeOffset")))
+                sb.AppendFormat(" at offset {0}", frame.Data["ILOffset"] ?? frame.Data["NativeOffset"]);
 
             if (!String.IsNullOrEmpty(frame.FileName)) {
                 sb.Append(" in ");

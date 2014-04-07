@@ -34,10 +34,10 @@
 @if (Model.EnvironmentInfo != null) {
                 <li><a data-toggle="tab" href="#environment">Environment</a></li>
 }
-@foreach (var ex in Model.ExtendedData.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
+@foreach (var ex in Model.Data.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
                 <li><a data-toggle="tab" href="#ex-@ex.Key.ToHtmlIdentifier().ToLower()">@ex.Key.ToSpacedWords()</a></li>
 }
-@if (Model.ExtendedData.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
+@if (Model.Data.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
                 <li><a data-toggle="tab" href="#extended">Extended Data</a></li>
 }
             </ul>
@@ -60,7 +60,7 @@
                     @Html.Partial("_EnvironmentInfo", Model)
                 </div>
 }
-@foreach (var ex in Model.ExtendedData.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
+@foreach (var ex in Model.Data.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
                 <div id="ex-@ex.Key.ToHtmlIdentifier().ToLower()" class="tab-pane">
                     <table class="table table-bordered table-striped table-fixed keyvalue" style="margin-bottom: 15px;">
                         <tr>
@@ -71,7 +71,7 @@
                     @Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = ex, IsPromoted = true })
                 </div>
 }
-@if (Model.ExtendedData.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
+@if (Model.Data.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
                 <div class="tab-pane" id="extended">
                     @Html.Partial("_ExtendedData", Model)
                 </div>

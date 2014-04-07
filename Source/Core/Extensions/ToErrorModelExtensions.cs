@@ -94,7 +94,7 @@ namespace Exceptionless.Extensions {
 
                 extraProperties = extraProperties.Where(kvp => !ValueIsEmpty(kvp.Value)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-                if (extraProperties.Count > 0 && !error.ExtendedData.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY)) {
+                if (extraProperties.Count > 0 && !error.Data.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY)) {
                     error.AddObject(new ExtendedDataInfo {
                         Data = extraProperties,
                         Name = DataDictionary.EXCEPTION_INFO_KEY,
@@ -304,16 +304,16 @@ namespace Exceptionless.Extensions {
                     mod.Version = name.Version.ToString();
                     byte[] pkt = name.GetPublicKeyToken();
                     if (pkt.Length > 0)
-                        mod.ExtendedData["PublicKeyToken"] = pkt.ToHex();
+                        mod.Data["PublicKeyToken"] = pkt.ToHex();
                 }
 
                 string infoVersion = assembly.GetInformationalVersion();
                 if (!String.IsNullOrEmpty(infoVersion) && infoVersion != mod.Version)
-                    mod.ExtendedData["ProductVersion"] = infoVersion;
+                    mod.Data["ProductVersion"] = infoVersion;
 
                 string fileVersion = assembly.GetFileVersion();
                 if (!String.IsNullOrEmpty(fileVersion) && fileVersion != mod.Version)
-                    mod.ExtendedData["FileVersion"] = fileVersion;
+                    mod.Data["FileVersion"] = fileVersion;
 
                 DateTime? creationTime = assembly.GetCreationTime();
                 if (creationTime.HasValue)

@@ -217,7 +217,7 @@
     <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\OrganizationExtensions.cs" />
     <Compile Include="Extensions\ErrorStackExtensions.cs" />
-    <Compile Include="Extensions\ErrorExtensions.cs" />
+    <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Extensions\ModelStateExtensions.cs" />
     <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />

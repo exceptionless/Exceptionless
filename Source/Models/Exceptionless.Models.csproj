@@ -55,6 +55,12 @@
     <Compile Include="Admin\Stats\Results\PlanPagedResult.cs" />
     <Compile Include="Client\Data\Error.cs" />
     <Compile Include="Client\Event.cs" />
+    <Compile Include="Client\Legacy\EnvironmentInfo.cs" />
+    <Compile Include="Client\Legacy\Method.cs" />
+    <Compile Include="Client\Legacy\Module.cs" />
+    <Compile Include="Client\Legacy\Parameter.cs" />
+    <Compile Include="Client\Legacy\RequestInfo.cs" />
+    <Compile Include="Client\Legacy\StackFrame.cs" />
     <Compile Include="Client\SessionInfo.cs" />
     <Compile Include="Client\StringUtilities.cs" />
     <Compile Include="Enums\NotificationMode.cs" />
@@ -80,6 +86,7 @@
     <Compile Include="Client\Legacy\ErrorInfo.cs" />
     <Compile Include="Client\Legacy\Error.cs" />
     <Compile Include="Admin\Stack.cs" />
+    <Compile Include="Interfaces\IData.cs" />
     <Compile Include="Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Interfaces\IIdentity.cs" />
     <Compile Include="Admin\Organization.cs" />

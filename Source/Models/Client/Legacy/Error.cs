@@ -11,7 +11,6 @@
 
 using System;
 using Exceptionless.Models.Collections;
-using Exceptionless.Models.Data;
 
 namespace Exceptionless.Models.Legacy {
     public class Error : ErrorInfo, IOwnedByOrganization

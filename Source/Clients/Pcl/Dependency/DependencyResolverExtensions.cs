@@ -61,7 +61,7 @@ namespace Exceptionless.Dependency {
             return resolver.Resolve<ILastClientIdManager>() ?? DefaultLastClientIdManager.Instance;
         }
 
-        internal static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
+        public static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
             return resolver.Resolve<IJsonSerializer>() ?? DefaultJsonSerializer.Instance;
         }
     }

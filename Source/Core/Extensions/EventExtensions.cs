@@ -21,7 +21,7 @@ using Exceptionless.Models.Data;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {
-    public static class ErrorExtensions {
+    public static class EventExtensions {
         public static Event ToProjectLocalTime(this Event data, Project project) {
             if (data == null)
                 return null;
@@ -90,13 +90,6 @@ namespace Exceptionless.Core.Extensions {
                 errorSignatureFactory = new ErrorSignatureFactory();
 
             return error == null ? null : new StackingInfo(error, errorSignatureFactory);
-        }
-
-        public static bool Is404(this Error error) {
-            if (error == null)
-                return false;
-
-            return error.Code == "404";
         }
 
         public static string ToExceptionStackString(this Error error) {

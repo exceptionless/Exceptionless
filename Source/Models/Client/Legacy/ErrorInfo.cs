@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using Exceptionless.Models.Data;
 
 namespace Exceptionless.Models.Legacy {
     public class ErrorInfo {

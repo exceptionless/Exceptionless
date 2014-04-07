@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Stacking;
 using Exceptionless.Models;
 using NLog.Fluent;
@@ -64,7 +65,7 @@ namespace Exceptionless.Core.Pipeline {
                     };
 
                     // new 404 stack id added, invalidate 404 id cache
-                    if (ctx.Event.Type == "404")
+                    if (ctx.Event.Is404())
                         _stackRepository.InvalidateNotFoundIdsCache(ctx.Event.ProjectId);
                 }
 

@@ -173,10 +173,10 @@ namespace Exceptionless.Core.Utility {
         }
 
         private void AddSpecialCaseDetails(Error error) {
-            if (!error.ExtendedData.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY))
+            if (!error.Data.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY))
                 return;
 
-            var extraProperties = error.ExtendedData.GetValue<Dictionary<string, object>>(DataDictionary.EXCEPTION_INFO_KEY);
+            var extraProperties = error.Data.GetValue<Dictionary<string, object>>(DataDictionary.EXCEPTION_INFO_KEY);
             if (extraProperties == null)
                 return;
 
