@@ -181,9 +181,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NLog.2.1.0\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="NLog.Mongo, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\NLog.Mongo.1.1.0.15\lib\net45\NLog.Mongo.dll</HintPath>
+    <Reference Include="NLog.Mongo">
+      <HintPath>..\..\packages\NLog.Mongo.1.1.0.16\lib\net45\NLog.Mongo.dll</HintPath>
     </Reference>
     <Reference Include="NLog.Xml, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -241,8 +240,10 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net">
-      <HintPath>..\..\packages\Stripe.net.1.7.7\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Stripe.net.2.0.0\lib\net40\Stripe.net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -471,6 +472,9 @@
     <Content Include="Scripts\jquery.signalR-2.0.3.js" />
     <Content Include="Scripts\jquery.signalR-2.0.3.min.js" />
     <Content Include="Scripts\jquery.unobtrusive-ajax.js" />
+    <None Include="Scripts\jquery.validate-vsdoc.js" />
+    <Content Include="Scripts\jquery.validate.js" />
+    <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\jquery.validate.unobtrusive.js" />
     <Content Include="Scripts\jstz.js" />
     <Content Include="Scripts\knockout-3.1.0.debug.js" />
@@ -531,10 +535,7 @@
     <Content Include="Jobs.config" />
     <Content Include="Scripts\bootbox.js" />
     <Content Include="Scripts\history.iegte8.js" />
-    <None Include="Scripts\jquery.validate-vsdoc.js" />
     <Content Include="Scripts\jquery.payment.js" />
-    <Content Include="Scripts\jquery.validate.js" />
-    <Content Include="Scripts\jquery.validate.min.js" />
     <Content Include="Scripts\knockout-es5.js" />
     <Content Include="Scripts\knockout-es5.min.js" />
     <Content Include="Scripts\knockout.activity.js" />
