@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Exceptionless.Models {
+namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
         public static string HexEscape(this string text, params char[] anyCharOf) {
             if (string.IsNullOrEmpty(text)) return text;

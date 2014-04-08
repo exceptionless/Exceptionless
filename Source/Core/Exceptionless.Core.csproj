@@ -213,10 +213,12 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Extensions\CacheClientExtensions.cs" />
     <Compile Include="Extensions\ContainerExtensions.cs" />
+    <Compile Include="Extensions\ErrorExtensions.cs" />
+    <Compile Include="Extensions\DataDictionaryExtensions.cs" />
     <Compile Include="Extensions\LogBuilderExtensions.cs" />
     <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\OrganizationExtensions.cs" />
-    <Compile Include="Extensions\ErrorStackExtensions.cs" />
+    <Compile Include="Extensions\StackExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Extensions\ModelStateExtensions.cs" />
@@ -225,6 +227,7 @@
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
     <Compile Include="Extensions\StackFrameExtensions.cs" />
+    <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />

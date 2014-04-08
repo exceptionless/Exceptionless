@@ -230,8 +230,8 @@ namespace Exceptionless {
             //}
         }
 
-        /// <summary>Creates a new instance of <see cref="Error" />.</summary>
-        /// <param name="ex">An <see cref="Exception" /> to initialize the <see cref="Error" /> with.</param>
+        /// <summary>Creates a new instance of <see cref="Event" />.</summary>
+        /// <param name="ex">An <see cref="Exception" /> to initialize the <see cref="Event" /> with.</param>
         /// <param name="isCritical">Mark this error occurrence as a critical error.</param>
         /// <param name="addDefaultInformation">
         /// Whether to add the default information like request info and machine info to the
@@ -244,7 +244,7 @@ namespace Exceptionless {
         /// <param name="tags">A list of tags to add to the error.</param>
         /// <param name="submissionMethod">The method that was used to collect the error.</param>
         /// <param name="contextData">Any additional contextual data that should be used during creation of the error information.</param>
-        /// <returns>A new instance of <see cref="Error" />.</returns>
+        /// <returns>A new instance of <see cref="Event" />.</returns>
         public Event CreateEvent(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
             Event data = ToEvent(this, ex, submissionMethod, contextData);
 

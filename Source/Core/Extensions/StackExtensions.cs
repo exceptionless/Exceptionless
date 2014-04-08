@@ -13,7 +13,7 @@ using System;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
-    public static class ErrorStackExtensions {
+    public static class StackExtensions {
         public static Stack ToProjectLocalTime(this Stack stack, Project project) {
             if (stack == null)
                 return null;

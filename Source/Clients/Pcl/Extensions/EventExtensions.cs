@@ -9,13 +9,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Exceptionless.Dependency;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public static class EventExtensions {
+        private const string ERROR_KEY = "__Error";
+        private const string REQUEST_INFO_KEY = "__RequestInfo";
+
         /// <summary>
         /// Creates a builder object for constructing error reports in a fluent api.
         /// </summary>
@@ -132,11 +133,11 @@ namespace Exceptionless {
         }
 
         public static Error GetError(this Event ev, IJsonSerializer serializer = null) {
-            if (ev == null || !ev.Data.ContainsKey("Error"))
+            if (ev == null || !ev.Data.ContainsKey(ERROR_KEY))
                 return null;
 
             try {
-                return ev.Data.GetValue<Error>("Error", serializer);
+                return ev.Data.GetValue<Error>(ERROR_KEY, serializer);
             } catch (Exception) {}
 
             return null;
@@ -144,7 +145,23 @@ namespace Exceptionless {
 
         public static void SetError(this Event ev, Error error) {
             if (ev != null)
-                ev.Data["Error"] = error;
+                ev.Data[ERROR_KEY] = error;
+        }
+
+        public static RequestInfo GetRequestInfo(this Event ev, IJsonSerializer serializer = null) {
+            if (ev == null || !ev.Data.ContainsKey(REQUEST_INFO_KEY))
+                return null;
+
+            try {
+                return ev.Data.GetValue<RequestInfo>(REQUEST_INFO_KEY, serializer);
+            } catch (Exception) {}
+
+            return null;
+        }
+
+        public static void SetError(this Event ev, RequestInfo requestInfo) {
+            if (ev != null)
+                ev.Data[REQUEST_INFO_KEY] = requestInfo;
         }
     }
 

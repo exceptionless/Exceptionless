@@ -12,6 +12,7 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models.Admin;
@@ -45,6 +46,7 @@ namespace Exceptionless.Core.Pipeline {
             if (organization != null && !organization.HasPremiumFeatures)
                 return;
 
+            var ri = ctx.Event.GetRequestInfo();
             using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
                 messageProducer.Publish(new EventNotification {
                     EventId = ctx.Event.Id,
@@ -56,8 +58,8 @@ namespace Exceptionless.Core.Pipeline {
                     Message = ctx.StackingInfo.Message,
                     ProjectId = ctx.Event.ProjectId,
                     Code = ctx.Event.Code,
-                    UserAgent = ctx.Event.RequestInfo != null ? ctx.Event.RequestInfo.UserAgent : null,
-                    Url = ctx.Event.RequestInfo != null ? ctx.Event.RequestInfo.GetFullPath(true, true) : null
+                    UserAgent = ri != null ? ri.UserAgent : null,
+                    Url = ri != null ? ri.GetFullPath(true, true) : null
                 });
 
                 foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Event.ProjectId)) {

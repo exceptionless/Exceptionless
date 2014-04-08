@@ -217,8 +217,8 @@ namespace Exceptionless.Extensions {
                     FileName = frame.GetFileName()
                 };
 
-                //stackFrame.ExtendedData["ILOffset"] = frame.GetILOffset();
-                //stackFrame.ExtendedData["NativeOffset"] = frame.GetNativeOffset();
+                stackFrame.Data["ILOffset"] = frame.GetILOffset();
+                stackFrame.Data["NativeOffset"] = frame.GetNativeOffset();
 
                 stackFrame.PopulateMethod(root, frame.GetMethod());
 
@@ -253,10 +253,10 @@ namespace Exceptionless.Extensions {
                 };
 
 #if !SILVERLIGHT
-                //parm.ExtendedData["IsIn"] = parameter.IsIn;
+                parm.Data["IsIn"] = parameter.IsIn;
 #endif
-                //parm.ExtendedData["IsOut"] = parameter.IsOut;
-                //parm.ExtendedData["IsOptional"] = parameter.IsOptional;
+                parm.Data["IsOut"] = parameter.IsOut;
+                parm.Data["IsOptional"] = parameter.IsOptional;
 
                 if (parameter.ParameterType.IsGenericParameter) {
                     foreach (Type type in parameter.ParameterType.GetGenericArguments())

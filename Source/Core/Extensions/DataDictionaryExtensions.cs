@@ -16,22 +16,7 @@ using Exceptionless.Models;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {
-    public static class EventExtensions {
-        public static Event ToProjectLocalTime(this Event data, Project project) {
-            if (data == null)
-                return null;
-
-            data.Date = TimeZoneInfo.ConvertTime(data.Date, project.DefaultTimeZone());
-            return data;
-        }
-
-        public static Event ToProjectLocalTime(this Event data, IProjectRepository repository) {
-            if (data == null)
-                return null;
-
-            return data.ToProjectLocalTime(repository.GetByIdCached(data.ProjectId));
-        }
-
+    public static class DataDictionaryExtensions {
         public static T GetValue<T>(this DataDictionary extendedData, string key) {
             if (!extendedData.ContainsKey(key))
                 throw new KeyNotFoundException(String.Format("Key \"{0}\" not found in the dictionary.", key));

@@ -18,9 +18,21 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Models {
     public class StackingInfo {
-        public StackingInfo(Error error, ErrorSignatureFactory errorSignatureFactory) {
-            if (error == null)
-                throw new ArgumentNullException("error");
+        public StackingInfo(Event ev, ErrorSignatureFactory errorSignatureFactory) {
+            if (ev == null)
+                throw new ArgumentNullException("ev");
+
+            if (ev.Is404()) {
+                Is404 = true;
+                Path = ev.Source;
+
+                return;
+            }
+
+            // TODO: This should be run through a plugin..
+            var error = ev.GetError();
+            if (ev == null)
+                throw new InvalidOperationException("This event does not contain any errors");
 
             Error innerMostError = error.GetInnermostError();
             Method defaultMethod = innerMostError.StackTrace != null ? innerMostError.StackTrace.FirstOrDefault() : null;
@@ -37,11 +49,6 @@ namespace Exceptionless.Core.Models {
 
             Error = st != null ? st.Item1 ?? error : error.GetInnermostError();
             Method = st != null ? st.Item2 : defaultMethod;
-
-            if (error.Code == "404" && error.RequestInfo != null && !String.IsNullOrEmpty(error.RequestInfo.Path)) {
-                Is404 = true;
-                Path = error.RequestInfo.Path;
-            }
         }
 
         public string Message { get { return Error != null && !String.IsNullOrWhiteSpace(Error.Message) ? Error.Message : "(None)"; } }

@@ -35,14 +35,11 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
-            string clientIp = null;
-            if (ctx.Event.RequestInfo != null && !String.IsNullOrEmpty(ctx.Event.RequestInfo.ClientIpAddress))
-                clientIp = ctx.Event.RequestInfo.ClientIpAddress;
-
-            if (String.IsNullOrEmpty(clientIp))
+            var ri = ctx.Event.GetRequestInfo();
+            if (ri == null || String.IsNullOrEmpty(ri.ClientIpAddress))
                 return;
 
-            string throttleCacheKey = String.Concat("bot:", clientIp, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
+            string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
             var requestCount = _cacheClient.Get<int?>(throttleCacheKey);
             if (requestCount != null) {
                 _cacheClient.Increment(throttleCacheKey, 1);
@@ -55,9 +52,9 @@ namespace Exceptionless.Core.Pipeline {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
 
-            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIp, DateTime.Now.Floor(_throttlingPeriod), ctx.Event.ProjectId).Project(ctx.Event.ProjectId).Write();
+            Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), ctx.Event.ProjectId).Project(ctx.Event.ProjectId).Write();
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-            Task.Run(() => _eventRepository.RemoveAllByClientIpAndDateAsync(clientIp, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));
+            Task.Run(() => _eventRepository.RemoveAllByClientIpAndDateAsync(ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));
             ctx.IsCancelled = true;
         }
     }

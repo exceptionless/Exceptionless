@@ -1,24 +1,15 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
-using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Stacking {
     [Priority(10)]
     public class ErrorEventStacker : IEventStacker {
         public void AddSignatureInfo(Event ev, IDictionary<string, string> signatureInfo) {
-            if (!ev.Data.ContainsKey("Error"))
-                return;
-
-            Error error = null;
-            try {
-                error = JsonConvert.DeserializeObject<Error>(ev.Data.GetString("Error"));
-            } catch {}
-
+            Error error = ev.GetError();
             if (error == null)
                 return;
 
