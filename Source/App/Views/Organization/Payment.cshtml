@@ -61,9 +61,9 @@
                             @foreach (var line in Model.Invoice.StripeInvoiceLines.StripeInvoiceItems)
                             {
                                 <tr>
-                                    <td>Exceptionless - @line.Plan.Name Plan ($@((line.Plan.AmountInCents / 100).ToString())/@line.Plan.Interval)</td>
+                                    <td>Exceptionless - @line.Plan.Name Plan ($@((line.Plan.Amount / 100).ToString())/@line.Plan.Interval)</td>
                                     <td>@line.Period.Start.Value.ToShortDateString() - @line.Period.End.Value.ToShortDateString()</td>
-                                    <td>$@((line.AmountInCents / 100).ToString())</td>
+                                    <td>$@((line.Amount / 100).ToString())</td>
                                 </tr>
                             }
 
@@ -72,13 +72,13 @@
                                 <tr>
                                     <td>@Model.Invoice.StripeDiscount.StripeCoupon.Id (@Model.Invoice.StripeDiscount.StripeCoupon.PercentOff%)</td>
                                     <td>&nbsp;</td>
-                                    <td>-$@(Model.Invoice.TotalInCents * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff / 100))</td>
+                                    <td>-$@(Model.Invoice.Total * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff / 100))</td>
                                 </tr>
                             }
                             <tr>
                                 <td>&nbsp;</td>
                                 <td><strong>Total</strong></td>
-                                <td><strong>$@((Model.Invoice.TotalInCents / 100).ToString())</strong></td>
+                                <td><strong>$@((Model.Invoice.Total / 100).ToString())</strong></td>
                             </tr>
                         </tbody>
                     </table>
