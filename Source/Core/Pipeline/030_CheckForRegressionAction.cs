@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Pipeline {
                 Update
                     .Unset(EventRepository.FieldNames.IsFixed));
 
-            string signatureHash = ctx.GetProperty<string>("SignatureHash");
+            string signatureHash = ctx.GetProperty<string>("__SignatureHash");
             _stackRepository.InvalidateCache(ctx.Event.StackId, signatureHash, ctx.Event.ProjectId);
 
             ctx.Event.IsFixed = false;

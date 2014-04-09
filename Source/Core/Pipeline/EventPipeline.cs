@@ -18,10 +18,39 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-        public EventPipeline(IDependencyResolver dependencyResolver) : base(dependencyResolver) {}
+        private readonly OrganizationRepository _organizationRepository;
+        private readonly ProjectRepository _projectRepository;
 
-        public void Run(Event data) {
-            var ctx = new EventContext(data);
+        public EventPipeline(IDependencyResolver dependencyResolver, OrganizationRepository organizationRepository, ProjectRepository projectRepository) : base(dependencyResolver) {
+            _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
+        }
+
+        public void Run(Event ev) {
+            if (String.IsNullOrEmpty(ev.OrganizationId))
+                throw new ArgumentException("OrganizationId must be populated on the Event.");
+            if (String.IsNullOrEmpty(ev.ProjectId))
+                throw new ArgumentException("ProjectId must be populated on the Event.");
+
+            var ctx = new EventContext(ev) {
+                Organization = _organizationRepository.GetByIdCached(ev.OrganizationId),
+                Project = _projectRepository.GetByIdCached(ev.ProjectId)
+            };
+
+            if (ctx.Organization == null)
+                throw new InvalidOperationException(String.Format("Unabled to load organization \"{0}\"", ev.OrganizationId));
+
+            if (ctx.Project == null)
+                throw new InvalidOperationException(String.Format("Unabled to load project \"{0}\"", ev.ProjectId));
+
+            // load organization settings into the context
+            foreach (var key in ctx.Organization.Data.Keys)
+                ctx.SetProperty(key, ctx.Organization.Data[key]);
+
+            // load project settings into the context, overriding any organization settings with the same name
+            foreach (var key in ctx.Project.Data.Keys)
+                ctx.SetProperty(key, ctx.Project.Data[key]);
+
             Run(ctx);
         }
 

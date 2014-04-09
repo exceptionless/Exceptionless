@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Utility {
     public class ErrorSignature {
         private readonly HashSet<string> _userNamespaces = new HashSet<string>();
         private readonly HashSet<string> _userCommonMethods = new HashSet<string>();
-        private static readonly string[] _defaultNonUserNamespaces = new[] { "System", "Microsoft" };
+        private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
         // TODO: Add support for user public key token on signed assemblies
 
         public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
@@ -66,8 +66,8 @@ namespace Exceptionless.Core.Utility {
             SignatureInfo.Clear();
 
             // start at the inner most exception and work our way out until we find a user method
-            Error current = Error;
-            var errorStack = new List<Error> { current };
+            InnerError current = Error;
+            var errorStack = new List<InnerError> { current };
             while (current.Inner != null) {
                 current = current.Inner;
                 errorStack.Add(current);
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Utility {
             if (ShouldFlagSignatureTarget)
                 errorStack.ForEach(es => es.StackTrace.ForEach(st => st.IsSignatureTarget = false));
 
-            foreach (Error e in errorStack) {
+            foreach (InnerError e in errorStack) {
                 StackFrameCollection stackTrace = e.StackTrace;
                 if (stackTrace == null)
                     continue;
@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Utility {
             }
 
             // We haven't found a user method yet, try some alternatives with the inner most error.
-            Error innerMostError = errorStack[0];
+            InnerError innerMostError = errorStack[0];
 
             if (innerMostError.TargetMethod != null) {
                 // Use the target method if it exists.
@@ -172,7 +172,7 @@ namespace Exceptionless.Core.Utility {
             return UserNamespaces.Any(fullName.StartsWith);
         }
 
-        private void AddSpecialCaseDetails(Error error) {
+        private void AddSpecialCaseDetails(InnerError error) {
             if (!error.Data.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY))
                 return;
 

@@ -125,7 +125,7 @@ namespace Exceptionless {
         //}
         //#endif
 
-        public static bool Is404(this Event ev) {
+        public static bool IsNotFound(this Event ev) {
             if (ev == null)
                 return false;
 

@@ -14,6 +14,8 @@ using System.Configuration;
 using CodeSmith.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Queues;
@@ -83,10 +85,11 @@ namespace Exceptionless.Core {
             container.Register<MongoJobLockProvider>();
             container.Register<MongoMachineJobLockProvider>();
             container.Register<StartMqJob>();
-            container.Register<ErrorSignatureFactory>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();
+            container.RegisterSingle<EventPluginManager>();
+            container.RegisterSingle<FormattingPluginManager>();
         }
     }
 }

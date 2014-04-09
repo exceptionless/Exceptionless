@@ -12,6 +12,7 @@
 using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Mail {
@@ -36,9 +37,9 @@ namespace Exceptionless.Core.Mail {
 
         Task SendAddedToOrganizationAsync(User sender, Organization organization, User user);
 
-        void SendNotice(string emailAddress, EventNotificationModel notification);
+        void SendNotice(string emailAddress, EventNotification model);
 
-        Task SendNoticeAsync(string emailAddress, EventNotificationModel notification);
+        Task SendNoticeAsync(string emailAddress, EventNotification notification);
 
         void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification);
 

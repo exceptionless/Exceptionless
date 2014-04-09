@@ -13,45 +13,52 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
-using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
     public static class ErrorExtensions {
-        public static Tuple<Error, Method> GetStackingTarget(this Error error) {
-            Error targetError = error;
+        public static StackingTarget GetStackingTarget(this Error error) {
+            InnerError targetError = error;
             while (targetError != null) {
                 StackFrame m = targetError.StackTrace.FirstOrDefault(st => st.IsSignatureTarget);
                 if (m != null)
-                    return Tuple.Create(targetError, m as Method);
+                    return new StackingTarget {
+                        Error = targetError,
+                        Method = m
+                    };
 
                 if (targetError.TargetMethod != null && targetError.TargetMethod.IsSignatureTarget)
-                    return Tuple.Create(targetError, targetError.TargetMethod);
+                    return new StackingTarget {
+                        Error = targetError,
+                        Method = targetError.TargetMethod
+                    };
 
                 targetError = targetError.Inner;
             }
 
-            return null;
+            // fallback to default
+            InnerError defaultError = error.GetInnermostError();
+            Method defaultMethod = defaultError.StackTrace != null ? defaultError.StackTrace.FirstOrDefault() : null;
+            if (defaultMethod == null && error.StackTrace != null) {
+                defaultMethod = error.StackTrace.FirstOrDefault();
+                defaultError = error;
+            }
+
+            return new StackingTarget {
+                Error = defaultError,
+                Method = defaultMethod
+            };
         }
 
-        public static Error GetInnermostError(this Error error) {
+        public static InnerError GetInnermostError(this InnerError error) {
             if (error == null)
                 throw new ArgumentNullException("error");
 
-            Error current = error;
+            InnerError current = error;
             while (current.Inner != null)
                 current = current.Inner;
 
             return current;
-        }
-
-        public static StackingInfo GetStackingInfo(this Event ev, ErrorSignatureFactory errorSignatureFactory = null) {
-            if (errorSignatureFactory == null)
-                errorSignatureFactory = new ErrorSignatureFactory();
-
-            return ev != null ? new StackingInfo(ev, errorSignatureFactory) : null;
         }
 
         public static string ToExceptionStackString(this Error error) {
@@ -67,8 +74,8 @@ namespace Exceptionless.Core.Extensions {
         }
 
         internal static void AppendError(Error error, StringBuilder sb, bool html = false, string traceIndentValue = "   ") {
-            var exList = new List<Error>();
-            Error currentEx = error;
+            var exList = new List<InnerError>();
+            InnerError currentEx = error;
             if (html)
                 sb.Append("<span class=\"ex-header\">");
             while (currentEx != null) {
@@ -103,7 +110,7 @@ namespace Exceptionless.Core.Extensions {
                 sb.AppendLine();
 
             exList.Reverse();
-            foreach (Error ex in exList) {
+            foreach (InnerError ex in exList) {
                 if (ex.StackTrace != null && ex.StackTrace.Count > 0) {
                     StackFrameCollectionExtensions.AppendStackFrames(ex.StackTrace, sb, true, linkFilePath: html, traceIndentValue: traceIndentValue);
 
@@ -112,5 +119,10 @@ namespace Exceptionless.Core.Extensions {
                 }
             }
         }
+    }
+
+    public class StackingTarget {
+        public Method Method { get; set; }
+        public InnerError Error { get; set; }
     }
 }

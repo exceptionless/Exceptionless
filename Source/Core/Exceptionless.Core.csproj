@@ -211,6 +211,8 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />
+    <Compile Include="FormattingPlugins\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginManager.cs" />
     <Compile Include="FormattingPlugins\IFormattingPlugin.cs" />
@@ -231,7 +233,6 @@
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="FormattingPlugins\MailContent.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
@@ -279,11 +280,10 @@
     <Compile Include="Migrations\Documents\LegacyErrorDocumentUpgrader.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
-    <Compile Include="Mail\Models\ErrorNotificationViewModel.cs" />
+    <Compile Include="Mail\Models\ErrorNotificationModel.cs" />
     <Compile Include="Mail\Models\InviteModel.cs" />
     <Compile Include="Mail\Models\MailModelBase.cs" />
     <Compile Include="Mail\Models\UserModel.cs" />
-    <Compile Include="Models\StackingInfo.cs" />
     <Compile Include="Pipeline\010_AssignToStackAction.cs" />
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
     <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
@@ -303,7 +303,6 @@
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Web\EncodingDelegatingHandler.cs" />
-    <Compile Include="Utility\ErrorSignatureFactory.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
     <Compile Include="Utility\NLogExceptionlessLog.cs" />
     <Compile Include="Web\JsonContentNegotiator.cs" />
@@ -459,9 +458,7 @@
     <Compile Include="Migrations\v1.0.28.cs" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="FormattingPlugins\Default\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureBclBuildImported" BeforeTargets="BeforeBuild" Condition="'$(BclBuildImported)' == ''">

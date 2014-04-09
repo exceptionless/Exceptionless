@@ -62,6 +62,8 @@ namespace Exceptionless.Core {
             public const string SessionId = "xid";
             public const string IsFixed = "fix";
             public const string IsHidden = "hid";
+            public const string RequestInfo = "req";
+            public const string RequestInfo_ClientIpAddress = RequestInfo + ".ip";
         }
 
         protected override void InitializeCollection(MongoCollection<Event> collection) {

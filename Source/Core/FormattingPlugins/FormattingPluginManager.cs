@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Mail;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Core.EventPlugins;
-using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using NLog.Fluent;
 
@@ -17,6 +17,23 @@ namespace Exceptionless.Core.FormattingPlugins {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
             Plugins = new SortedList<int, IFormattingPlugin>();
             LoadDefaultFormattingPlugins();
+        }
+
+        /// <summary>
+        /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
+        /// </summary>
+        public string GetStackSummaryHtml(Event ev) {
+            foreach (var plugin in Plugins.Values.ToList()) {
+                try {
+                    string result = plugin.GetStackSummaryHtml(ev);
+                    if (!String.IsNullOrEmpty(result))
+                        return result;
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -56,14 +73,14 @@ namespace Exceptionless.Core.FormattingPlugins {
         /// <summary>
         /// Runs through the formatting plugins to get notification mail content for an event.
         /// </summary>
-        public MailContent GetEventMailContent(EventNotificationModel model) {
+        public MailMessage GetEventMailContent(EventNotification model) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    MailContent result = plugin.GetEventMailNotificationContent(model);
+                    MailMessage result = plugin.GetEventNotificationMailMessage(model);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventMailNotificationContent in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                 }
             }
 

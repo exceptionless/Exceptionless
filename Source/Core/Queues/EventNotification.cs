@@ -10,14 +10,16 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Queues {
-    public class EventNotification {
+    public class EventNotification : ExtensibleObject {
         public Event Event { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }
         public bool IsRegression { get; set; }
-        public string Url { get; set; }
+        public int TotalOccurrences { get; set; }
+        public string ProjectName { get; set; }
     }
 }

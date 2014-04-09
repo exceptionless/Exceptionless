@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using NLog.Fluent;
 using RazorSharpEmail;
@@ -104,29 +105,15 @@ namespace Exceptionless.Core.Mail {
             return Task.Run(() => SendAddedToOrganization(sender, organization, user));
         }
 
-        public void SendNotice(string emailAddress, EventNotificationModel notification) {
-            var content = _pluginManager.GetEventMailContent(notification);
-
-            string notificationType = String.Concat(notification.TypeName, " Occurrence");
-            if (notification.IsNew)
-                notificationType = String.Concat("New ", notification.TypeName);
-            else if (notification.IsRegression)
-                notificationType = String.Concat(notification.TypeName, " Regression");
-
-            if (notification.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType);
-
-            notification.BaseUrl = Settings.Current.BaseURL;
-            notification.NotificationType = notificationType;
-
-            MailMessage msg = _emailGenerator.GenerateMessage(notification, "Notice");
+        public void SendNotice(string emailAddress, EventNotification model) {
+            var msg = _pluginManager.GetEventMailContent(model);
             msg.To.Add(emailAddress);
             msg.Headers.Add("X-Mailer-Machine", Environment.MachineName);
             msg.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());
             SendMessage(msg);
         }
 
-        public Task SendNoticeAsync(string emailAddress, EventNotificationModel notification) {
+        public Task SendNoticeAsync(string emailAddress, EventNotification notification) {
             return Task.Run(() => SendNotice(emailAddress, notification));
         }
 

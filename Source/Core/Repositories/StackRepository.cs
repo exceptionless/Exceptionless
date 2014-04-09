@@ -216,10 +216,6 @@ namespace Exceptionless.Core {
                     Cache.Set(GetScopedCacheKey(String.Concat(projectId, signatureHash, "v2")), result, TimeSpan.FromMinutes(5));
             }
 
-            // add extra info to object that's not stored in the cache memory
-            if (result != null)
-                result.SignatureHash = signatureHash;
-
             return result;
         }
 

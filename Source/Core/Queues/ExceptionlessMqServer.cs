@@ -169,7 +169,7 @@ namespace Exceptionless.Core.Queues {
 
         private void ProcessNotificationException(IMessage<EventNotification> message, Exception exception) {
             exception.ToExceptionless().AddDefaultInformation().MarkAsCritical().AddObject(message.GetBody()).AddTags("NotificationMQ").Submit();
-            Log.Error().Project(message.GetBody().ProjectId).Exception(exception).Message("Error sending notification.").Write();
+            Log.Error().Project(message.GetBody().Event.ProjectId).Exception(exception).Message("Error sending notification.").Write();
         }
 
         private object ProcessNotification(IMessage<EventNotification> message) {
@@ -211,7 +211,7 @@ namespace Exceptionless.Core.Queues {
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 5 occurrences, don't send a notification for the same stack more then once every 15 minutes
-            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", data.StackId));
+            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", data.Event.StackId));
             if (totalOccurrences > 5 && !data.IsRegression && lastTimeSent != DateTime.MinValue &&
                 lastTimeSent > DateTime.Now.AddMinutes(-15)) {
                 Log.Info().Message("Skipping message because of throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
@@ -265,20 +265,21 @@ namespace Exceptionless.Core.Queues {
                 }
 
                 // check for 404s if the user has elected to not report them
-                if (shouldReportOccurrence && settings.Report404Errors == false && data.Code == "404") {
+                if (shouldReportOccurrence && settings.Report404Errors == false && data.Event.IsNotFound()) {
                     shouldReportOccurrence = false;
                     Log.Trace().Message("Skipping because message is 404.").Write();
                 }
 
+                var requestInfo = data.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
                 if (shouldReportOccurrence && settings.ReportKnownBotErrors == false &&
-                    !String.IsNullOrEmpty(data.UserAgent)) {
+                    requestInfo != null && !String.IsNullOrEmpty(requestInfo.UserAgent)) {
                     ClientInfo info = null;
                     try {
-                        info = Parser.GetDefault().Parse(data.UserAgent);
+                        info = Parser.GetDefault().Parse(requestInfo.UserAgent);
                     } catch (Exception ex) {
-                        Log.Warn().Project(data.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}",
-                            data.UserAgent, ex.Message).Write();
+                        Log.Warn().Project(data.Event.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}",
+                            requestInfo.UserAgent, ex.Message).Write();
                     }
 
                     if (info != null && info.Device.IsSpider) {
@@ -291,11 +292,6 @@ namespace Exceptionless.Core.Queues {
                 if (!shouldReportOccurrence && !shouldReportCriticalError && !shouldReportRegression)
                     continue;
 
-                var model = new EventNotificationModel(data) {
-                    ProjectName = project.Name,
-                    TotalOccurrences = totalOccurrences
-                };
-
                 // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
                 if (Settings.Current.WebsiteMode != WebsiteMode.Production
                     && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
@@ -304,14 +300,14 @@ namespace Exceptionless.Core.Queues {
                 }
 
                 Log.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
-                _mailer.SendNotice(user.EmailAddress, model);
+                _mailer.SendNotice(user.EmailAddress, data);
                 emailsSent++;
                 Log.Trace().Message("Done sending email.").Write();
             }
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0)
-                _cacheClient.Set(String.Concat("NOTIFICATION_THROTTLE_", data.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
+                _cacheClient.Set(String.Concat("NOTIFICATION_THROTTLE_", data.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
 
             return null;
         }

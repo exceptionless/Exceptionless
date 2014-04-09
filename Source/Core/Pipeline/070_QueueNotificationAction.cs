@@ -42,20 +42,18 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            var organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
-
             // if they don't have premium features, then we don't need to queue notifications
-            if (organization != null && !organization.HasPremiumFeatures)
+            if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            var ri = ctx.Event.GetRequestInfo();
             using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
                 messageProducer.Publish(new EventNotification {
                     Event = ctx.Event,
                     IsNew = ctx.IsNew,
-                    IsCritical = ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical"),
+                    IsCritical = ctx.Event.IsCritical,
                     IsRegression = ctx.IsRegression,
-                    Url = ri != null ? ri.GetFullPath(true, true) : null
+                    TotalOccurrences = ctx.Stack.TotalOccurrences,
+                    ProjectName = ctx.Project.Name
                 });
 
                 foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Event.ProjectId)) {

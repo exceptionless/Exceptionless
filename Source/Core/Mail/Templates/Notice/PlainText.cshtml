@@ -18,7 +18,7 @@ Type:
 @Model.FullTypeName
 
 Message:
-@Model.Message
+@Model.Error.Message
 
 @if (!String.IsNullOrEmpty(Model.Url)) {
 <text>
@@ -28,4 +28,4 @@ Source:
 }
 
 View the error:
-@Model.BaseUrl/error/@Model.StackId/@Model.EventId
+@Model.BaseUrl/error/@Model.Event.StackId/@Model.Event.StackId

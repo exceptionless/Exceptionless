@@ -21,11 +21,9 @@ namespace Exceptionless.Core.Pipeline {
     [Priority(50)]
     public class EnforceRetentionLimitsAction : EventPipelineActionBase {
         private readonly EventRepository _eventRepository;
-        private readonly OrganizationRepository _organizationRepository;
 
-        public EnforceRetentionLimitsAction(EventRepository eventRepository, OrganizationRepository organizationRepository) {
+        public EnforceRetentionLimitsAction(EventRepository eventRepository) {
             _eventRepository = eventRepository;
-            _organizationRepository = organizationRepository;
         }
 
         protected override bool ContinueOnError { get { return true; } }
@@ -35,9 +33,7 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             int maxErrorsPerStack = 50;
-            Organization organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
-            if (organization != null)
-                maxErrorsPerStack = organization.MaxErrorsPerDay > 0 ? organization.MaxErrorsPerDay + Math.Min(50, organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
+            maxErrorsPerStack = ctx.Organization.MaxErrorsPerDay > 0 ? ctx.Organization.MaxErrorsPerDay + Math.Min(50, ctx.Organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
 
             // Get a list of oldest ids that exceed our desired max errors.
             var errors = _eventRepository.Collection.Find(

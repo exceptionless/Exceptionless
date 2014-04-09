@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Models {
-    public class Organization : IIdentity {
+    public class Organization : IIdentity, IData {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
@@ -155,6 +155,11 @@ namespace Exceptionless.Models {
         /// Days over daily error limit.
         /// </summary>
         public ICollection<OverageInfo> OverageDays { get; set; }
+
+        /// <summary>
+        /// Optional data entries that contain additional configuration information for this organization.
+        /// </summary>
+        public DataDictionary Data { get; set; }
     }
 
     public class OverageInfo {
