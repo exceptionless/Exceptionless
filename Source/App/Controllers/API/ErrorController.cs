@@ -125,6 +125,12 @@ namespace Exceptionless.App.Controllers.API {
             if (value.ContainsChangedProperty(t => t.ErrorStackId) && !String.Equals(original.ErrorStackId, entity.ErrorStackId, StringComparison.OrdinalIgnoreCase))
                 return false;
 
+            if (value.ContainsChangedProperty(t => t.IsFixed) && original.IsFixed != entity.IsFixed)
+                return false;
+
+            if (value.ContainsChangedProperty(t => t.IsHidden) && original.IsHidden != entity.IsHidden)
+                return false;
+
             return base.CanUpdateEntity(original, value);
         }
 
