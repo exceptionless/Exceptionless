@@ -211,6 +211,9 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />
+    <Compile Include="FormattingPlugins\FormattingPluginManager.cs" />
+    <Compile Include="FormattingPlugins\IFormattingPlugin.cs" />
     <Compile Include="Extensions\CacheClientExtensions.cs" />
     <Compile Include="Extensions\ContainerExtensions.cs" />
     <Compile Include="Extensions\ErrorExtensions.cs" />
@@ -228,6 +231,7 @@
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
+    <Compile Include="FormattingPlugins\MailContent.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
@@ -244,9 +248,13 @@
     <Compile Include="Mail\Models\PaymentModel.cs" />
     <Compile Include="Mail\Models\SummaryNotificationModel.cs" />
     <Compile Include="Models\WebHookEvent.cs" />
-    <Compile Include="Pipeline\005_ThrottleBotsAction.cs" />
+    <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
+    <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
     <Compile Include="Pipeline\080_NotifySignalRAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
+    <Compile Include="EventPlugins\Default\ThrottleBotsPlugin.cs" />
+    <Compile Include="EventPlugins\EventContext.cs" />
+    <Compile Include="EventPlugins\EventPluginBase.cs" />
     <Compile Include="Queues\ProjectHookNotification.cs" />
     <Compile Include="Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\CommonFieldNames.cs" />
@@ -254,10 +262,9 @@
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Stacking\DefaultEventStacker.cs" />
-    <Compile Include="Stacking\ErrorEventStacker.cs" />
-    <Compile Include="Stacking\EventStacker.cs" />
-    <Compile Include="Stacking\IEventStacker.cs" />
+    <Compile Include="EventPlugins\Default\ErrorEventStackerPlugin.cs" />
+    <Compile Include="EventPlugins\EventPluginManager.cs" />
+    <Compile Include="EventPlugins\IEventPlugin.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
@@ -283,7 +290,6 @@
     <Compile Include="Pipeline\050_EnforceRetentionLimitsAction.cs" />
     <Compile Include="Pipeline\EventPipeline.cs" />
     <Compile Include="Pipeline\EventPipelineActionBase.cs" />
-    <Compile Include="Pipeline\EventPipelineContext.cs" />
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
     <Compile Include="Pipeline\040_SaveEventAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
@@ -453,7 +459,9 @@
     <Compile Include="Migrations\v1.0.28.cs" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="FormattingPlugins\Default\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureBclBuildImported" BeforeTargets="BeforeBuild" Condition="'$(BclBuildImported)' == ''">

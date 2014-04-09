@@ -12,19 +12,20 @@
 using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.EventPlugins;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
-    [Priority(20)]
-    public class MarkAsCriticalAction : EventPipelineActionBase {
+    [Priority(100)]
+    public class RunEventProcessedPluginsAction : EventPipelineActionBase {
+        private readonly EventPluginManager _pluginManager;
+
+        public RunEventProcessedPluginsAction(EventPluginManager pluginManager) {
+            _pluginManager = pluginManager;
+        }
+
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            if (ctx.StackInfo == null || !ctx.StackInfo.OccurrencesAreCritical)
-                return;
-
-            Log.Trace().Message("Marking error as critical.").Write();
-            ctx.Event.MarkAsCritical();
+            _pluginManager.EventProcessed(ctx);
         }
     }
 }

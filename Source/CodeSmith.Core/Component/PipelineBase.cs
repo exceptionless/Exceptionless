@@ -108,7 +108,7 @@ namespace CodeSmith.Core.Component
         /// <returns>An enumerable list of action types in priority order to run for the pipeline.</returns>
         protected virtual IList<Type> GetActionTypes()
         {
-            return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetPrioritizedDerivedTypes<TAction>().ToList());
+            return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().ToList());
         }
     }
 }

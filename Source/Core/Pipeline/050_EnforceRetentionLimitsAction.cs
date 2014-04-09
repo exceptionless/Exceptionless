@@ -12,6 +12,7 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.EventPlugins;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;
@@ -29,7 +30,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             if (ctx.IsNew)
                 return;
 

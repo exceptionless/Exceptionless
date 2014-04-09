@@ -10,22 +10,26 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Pipeline {
-    public class EventPipelineContext : ExtensibleObject, IPipelineContext {
-        public EventPipelineContext(Event data) {
+namespace Exceptionless.Core.EventPlugins {
+    public class EventContext : ExtensibleObject, IPipelineContext {
+        public EventContext(Event data) {
             Event = data;
+            StackSignatureData = new Dictionary<string, string>();
         }
 
         public Event Event { get; set; }
+        public Stack Stack { get; set; }
+        public Project Project { get; set; }
+        public Organization Organization { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
         public StackInfo StackInfo { get; set; }
-        public StackingInfo StackingInfo { get; set; }
+        public IDictionary<string, string> StackSignatureData { get; private set; }
 
         public bool IsCancelled { get; set; }
         public bool IsProcessed { get; set; }

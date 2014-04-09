@@ -1,15 +1,16 @@
 ﻿using System;
-using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
-namespace Exceptionless.Core.Stacking {
+namespace Exceptionless.Core.EventPlugins.Default {
     [Priority(10)]
-    public class ErrorEventStacker : IEventStacker {
-        public void AddSignatureInfo(Event ev, IDictionary<string, string> signatureInfo) {
-            Error error = ev.GetError();
+    public class ErrorEventStackerPlugin : EventPluginBase {
+        public override void EventProcessing(EventContext context) {
+            if (!context.Event.IsError())
+                return;
+
+            Error error = context.Event.GetError();
             if (error == null)
                 return;
 
@@ -18,7 +19,7 @@ namespace Exceptionless.Core.Stacking {
                 return;
 
             foreach (var key in signature.SignatureInfo.Keys)
-                signatureInfo.Add(key, signature.SignatureInfo[key]);
+                context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
         }
     }
 }

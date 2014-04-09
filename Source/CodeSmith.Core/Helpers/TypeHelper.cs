@@ -39,20 +39,14 @@ namespace CodeSmith.Core.Helpers
             return Convert.ToBoolean(value);
         }
 
-        public static IList<Type> GetPrioritizedDerivedTypes<TAction>(IEnumerable<Assembly> assemblies = null) {
+        public static IEnumerable<Type> GetDerivedTypes<TAction>(IEnumerable<Assembly> assemblies = null) {
             if (assemblies == null)
                 assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
-            var derivedTypes = new List<Tuple<Type, PriorityAttribute>>();
-            var targetType = typeof(TAction);
-            foreach (var assembly in assemblies) {
-                derivedTypes.AddRange(
-                    from type in assembly.GetTypes()
-                    where (type.IsClass && !type.IsNotPublic) && !type.IsAbstract && type.IsSubclassOf(targetType)
-                    select Tuple.Create(type, type.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute));
-            }
-            
-            return derivedTypes.OrderBy(i => i.Item2 != null ? i.Item2.Priority : 0).Select(i => i.Item1).ToList();
+            return assemblies.SelectMany(assembly => (
+                from type in assembly.GetTypes()
+                where (type.IsClass && !type.IsNotPublic) && !type.IsAbstract && type.IsSubclassOf(typeof(TAction))
+                select type));
         }
     }
 }

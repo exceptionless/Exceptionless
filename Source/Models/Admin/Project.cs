@@ -15,12 +15,13 @@ using System.Diagnostics;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganization {
+    public class Project : IOwnedByOrganization, IData {
         public Project() {
             ApiKeys = new HashSet<string>();
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
+            Data = new DataDictionary();
         }
 
         /// <summary>
@@ -39,6 +40,11 @@ namespace Exceptionless.Models {
         public ClientConfiguration Configuration { get; set; }
 
         public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }
+
+        /// <summary>
+        /// Optional data entries that contain additional configuration information for this project.
+        /// </summary>
+        public DataDictionary Data { get; set; }
 
         public HashSet<string> PromotedTabs { get; set; }
 

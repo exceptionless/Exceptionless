@@ -11,6 +11,7 @@
 
 using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.EventPlugins;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;
 using NLog.Fluent;
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
                 return;
 
@@ -44,7 +45,8 @@ namespace Exceptionless.Core.Pipeline {
                 Update
                     .Unset(EventRepository.FieldNames.IsFixed));
 
-            _stackRepository.InvalidateCache(ctx.Event.StackId, ctx.StackInfo.SignatureHash, ctx.Event.ProjectId);
+            string signatureHash = ctx.GetProperty<string>("SignatureHash");
+            _stackRepository.InvalidateCache(ctx.Event.StackId, signatureHash, ctx.Event.ProjectId);
 
             ctx.Event.IsFixed = false;
             ctx.IsRegression = true;

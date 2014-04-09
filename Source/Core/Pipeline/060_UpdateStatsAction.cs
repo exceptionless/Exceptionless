@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.EventPlugins;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Pipeline {
@@ -31,7 +32,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             _organizationRepository.IncrementStats(ctx.Event.OrganizationId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
             _projectRepository.IncrementStats(ctx.Event.ProjectId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
             if (!ctx.IsNew)

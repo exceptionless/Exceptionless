@@ -132,6 +132,13 @@ namespace Exceptionless {
             return ev.Type == "404";
         }
 
+        public static bool IsError(this Event ev) {
+            if (ev == null)
+                return false;
+
+            return ev.Type == "error";
+        }
+
         public static Error GetError(this Event ev, IJsonSerializer serializer = null) {
             if (ev == null || !ev.Data.ContainsKey(ERROR_KEY))
                 return null;
