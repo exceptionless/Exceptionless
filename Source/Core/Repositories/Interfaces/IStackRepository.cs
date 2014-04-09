@@ -38,7 +38,6 @@ namespace Exceptionless.Core {
         public string Id { get; set; }
         public DateTime? DateFixed { get; set; }
         public bool OccurrencesAreCritical { get; set; }
-        public string SignatureHash { get; set; }
         public bool IsHidden { get; set; }
     }
 }

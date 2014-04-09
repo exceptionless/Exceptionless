@@ -13,14 +13,15 @@ using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
+using Exceptionless.Core.EventPlugins;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
-    public class EventPipeline : PipelineBase<EventPipelineContext, EventPipelineActionBase> {
+    public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
         public EventPipeline(IDependencyResolver dependencyResolver) : base(dependencyResolver) {}
 
         public void Run(Event data) {
-            var ctx = new EventPipelineContext(data);
+            var ctx = new EventContext(data);
             Run(ctx);
         }
 

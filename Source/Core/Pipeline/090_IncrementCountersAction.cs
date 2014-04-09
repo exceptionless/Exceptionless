@@ -13,6 +13,7 @@ using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.EventPlugins;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
@@ -27,7 +28,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             var organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
 
             if (organization == null)

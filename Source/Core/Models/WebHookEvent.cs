@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.EventPlugins;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Models {
         public bool IsRegression { get; set; }
         public bool IsCritical { get { return Tags != null && Tags.Contains("Critical"); } }
 
-        public static WebHookEvent FromEvent(EventPipelineContext ctx, IProjectRepository projectRepository, IStackRepository stackRepository, IOrganizationRepository organizationRepository) {
+        public static WebHookEvent FromEvent(EventContext ctx, IProjectRepository projectRepository, IStackRepository stackRepository, IOrganizationRepository organizationRepository) {
             if (ctx == null || ctx.Event == null)
                 throw new ArgumentNullException("ctx");
 

@@ -40,6 +40,11 @@ namespace Exceptionless.Models {
         /// The stack that the event belongs to.
         /// </summary>
         public string StackId { get; set; }
+
+        /// <summary>
+        /// The event summary html.
+        /// </summary>
+        public string SummaryHtml { get; set; }
 #endif
 
         /// <summary>
@@ -81,6 +86,13 @@ namespace Exceptionless.Models {
         /// A unique id that identifies a usage session that this event belongs to.
         /// </summary>
         public string SessionId { get; set; }
+
+        /// <summary>
+        /// Indicates wether the event has been marked as critical.
+        /// </summary>
+        public bool IsCritical {
+            get { return Tags != null && Tags.Contains("Critical"); }
+        }
 
         /// <summary>
         /// Marks the event as being a critical occurrence.

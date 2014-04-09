@@ -14,8 +14,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Stacking;
+using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Models;
 using NLog.Fluent;
 
@@ -23,22 +23,30 @@ namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
         private readonly StackRepository _stackRepository;
-        private readonly EventStacker _eventStacker;
+        private readonly FormattingPluginManager _pluginManager;
 
-        public AssignToStackAction(StackRepository stackRepository, EventStacker eventStacker) {
+        public AssignToStackAction(StackRepository stackRepository, FormattingPluginManager pluginManager) {
             _stackRepository = stackRepository;
-            _eventStacker = eventStacker;
+            _pluginManager = pluginManager;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             if (String.IsNullOrEmpty(ctx.Event.StackId)) {
                 if (_stackRepository == null)
                     throw new InvalidOperationException("You must pass a non-null stackRepository parameter to the constructor.");
 
-                var signatureInfo = _eventStacker.GetSignatureInfo(ctx.Event);
-                string signatureHash = signatureInfo.Values.Any(v => v != null) ? signatureInfo.Values.ToSHA1() : null;
+                // only add default signature info if no other signature info has been added
+                if (ctx.StackSignatureData.Count == 0) {
+                    ctx.StackSignatureData.Add("Type", ctx.Event.Type);
+                    if (!String.IsNullOrEmpty(ctx.Event.Source))
+                        ctx.StackSignatureData.Add("Source", ctx.Event.Source);
+                }
+
+                string signatureHash = ctx.StackSignatureData.Values.Any(v => v != null) ? ctx.StackSignatureData.Values.ToSHA1() : null;
+                ctx.SetProperty("SignatureHash", signatureHash);
+                ctx.Event.SummaryHtml = _pluginManager.GetEventSummaryHtml(ctx.Event);
 
                 ctx.StackInfo = _stackRepository.GetStackInfoBySignatureHash(ctx.Event.ProjectId, signatureHash);
                 if (ctx.StackInfo == null) {
@@ -47,9 +55,10 @@ namespace Exceptionless.Core.Pipeline {
                     var stack = new Stack {
                         OrganizationId = ctx.Event.OrganizationId,
                         ProjectId = ctx.Event.ProjectId,
-                        SignatureInfo = new SettingsDictionary(signatureInfo),
+                        SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                         SignatureHash = signatureHash,
-                        Title = ctx.StackingInfo.Message,
+                        Title = _pluginManager.GetStackTitle(ctx.Event),
+                        SummaryHtml = ctx.Event.SummaryHtml,
                         Tags = ctx.Event.Tags ?? new TagSet(),
                         TotalOccurrences = 1,
                         FirstOccurrence = ctx.Event.Date.UtcDateTime,
@@ -60,8 +69,7 @@ namespace Exceptionless.Core.Pipeline {
                     ctx.StackInfo = new StackInfo {
                         Id = stack.Id,
                         DateFixed = stack.DateFixed,
-                        OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                        SignatureHash = stack.SignatureHash
+                        OccurrencesAreCritical = stack.OccurrencesAreCritical
                     };
 
                     // new 404 stack id added, invalidate 404 id cache
@@ -95,7 +103,6 @@ namespace Exceptionless.Core.Pipeline {
                     Id = stack.Id,
                     DateFixed = stack.DateFixed,
                     OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                    SignatureHash = stack.SignatureHash,
                     IsHidden = stack.IsHidden
                 };
             }

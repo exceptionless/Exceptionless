@@ -13,7 +13,9 @@ using System;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.EventPlugins;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models.Admin;
 using NLog.Fluent;
@@ -39,7 +41,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             var organization = _organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
 
             // if they don't have premium features, then we don't need to queue notifications
@@ -49,16 +51,10 @@ namespace Exceptionless.Core.Pipeline {
             var ri = ctx.Event.GetRequestInfo();
             using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
                 messageProducer.Publish(new EventNotification {
-                    EventId = ctx.Event.Id,
-                    StackId = ctx.Event.StackId,
-                    FullTypeName = ctx.StackingInfo.FullTypeName,
+                    Event = ctx.Event,
                     IsNew = ctx.IsNew,
                     IsCritical = ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical"),
                     IsRegression = ctx.IsRegression,
-                    Message = ctx.StackingInfo.Message,
-                    ProjectId = ctx.Event.ProjectId,
-                    Code = ctx.Event.Code,
-                    UserAgent = ri != null ? ri.UserAgent : null,
                     Url = ri != null ? ri.GetFullPath(true, true) : null
                 });
 

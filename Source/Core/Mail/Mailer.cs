@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
@@ -23,9 +24,11 @@ using RazorSharpEmail;
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
         private readonly IEmailGenerator _emailGenerator;
+        private readonly FormattingPluginManager _pluginManager;
 
-        public Mailer(IEmailGenerator emailGenerator) {
+        public Mailer(IEmailGenerator emailGenerator, FormattingPluginManager pluginManager) {
             _emailGenerator = emailGenerator;
+            _pluginManager = pluginManager;
         }
 
         public void SendPasswordReset(User user) {
@@ -102,6 +105,8 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendNotice(string emailAddress, EventNotificationModel notification) {
+            var content = _pluginManager.GetEventMailContent(notification);
+
             string notificationType = String.Concat(notification.TypeName, " Occurrence");
             if (notification.IsNew)
                 notificationType = String.Concat("New ", notification.TypeName);

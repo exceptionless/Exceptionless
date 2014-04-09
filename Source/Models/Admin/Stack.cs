@@ -21,22 +21,22 @@ namespace Exceptionless.Models {
         }
 
         /// <summary>
-        /// Unique id that identifies an error stack.
+        /// Unique id that identifies a stack.
         /// </summary>
         public string Id { get; set; }
 
         /// <summary>
-        /// The organization that the error stack belongs to.
+        /// The organization that the stack belongs to.
         /// </summary>
         public string OrganizationId { get; set; }
 
         /// <summary>
-        /// The project that the error stack belongs to.
+        /// The project that the stack belongs to.
         /// </summary>
         public string ProjectId { get; set; }
 
         /// <summary>
-        /// The error signature used for stacking future occurrences.
+        /// The signature used for stacking future occurrences.
         /// </summary>
         public string SignatureHash { get; set; }
 
@@ -46,34 +46,42 @@ namespace Exceptionless.Models {
         public SettingsDictionary SignatureInfo { get; set; }
 
         /// <summary>
-        /// The version the error was fixed in.
+        /// The version the stack was fixed in.
         /// </summary>
         public string FixedInVersion { get; set; }
 
         /// <summary>
-        /// The date the error was fixed.
+        /// The date the stack was fixed.
         /// </summary>
         public DateTime? DateFixed { get; set; }
 
         /// <summary>
-        /// The error title.
+        /// The stack title.
         /// </summary>
         public string Title { get; set; }
 
+        /// <summary>
+        /// The stack summary html.
+        /// </summary>
+        public string SummaryHtml { get; set; }
+
+        /// <summary>
+        /// The total number of occurrences in the stack.
+        /// </summary>
         public int TotalOccurrences { get; set; }
 
         /// <summary>
-        /// The date of the 1st occurrence of this error in UTC time.
+        /// The date of the 1st occurrence of this stack in UTC time.
         /// </summary>
         public DateTime FirstOccurrence { get; set; }
 
         /// <summary>
-        /// The date of the last occurrence of this error in UTC time.
+        /// The date of the last occurrence of this stack in UTC time.
         /// </summary>
         public DateTime LastOccurrence { get; set; }
 
         /// <summary>
-        /// The error description.
+        /// The stack description.
         /// </summary>
         public string Description { get; set; }
 
@@ -83,12 +91,12 @@ namespace Exceptionless.Models {
         public bool DisableNotifications { get; set; }
 
         /// <summary>
-        /// Controls whether error occurrences are hidden from reports.
+        /// Controls whether occurrences are hidden from reports.
         /// </summary>
         public bool IsHidden { get; set; }
 
         /// <summary>
-        /// If true, the stack was previously marked as fixed and a new error came in.
+        /// If true, the stack was previously marked as fixed and a new occurrence came in.
         /// </summary>
         public bool IsRegressed { get; set; }
 
@@ -103,7 +111,7 @@ namespace Exceptionless.Models {
         public ICollection<string> References { get; set; }
 
         /// <summary>
-        /// A list of tags used to categorize this error.
+        /// A list of tags used to categorize this stack.
         /// </summary>
         public TagSet Tags { get; set; }
     }

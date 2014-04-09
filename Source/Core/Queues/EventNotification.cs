@@ -10,30 +10,14 @@
 #endregion
 
 using System;
+using Exceptionless.Models;
 
 namespace Exceptionless.Core.Queues {
     public class EventNotification {
-        public string StackId { get; set; }
-        public string EventId { get; set; }
-        public string ProjectId { get; set; }
+        public Event Event { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }
         public bool IsRegression { get; set; }
-        public string FullTypeName { get; set; }
-
-        public string TypeName {
-            get {
-                if (String.IsNullOrEmpty(FullTypeName))
-                    return String.Empty;
-
-                string[] parts = FullTypeName.Split('.');
-                return parts[parts.Length - 1];
-            }
-        }
-
-        public string Message { get; set; }
         public string Url { get; set; }
-        public string Code { get; set; }
-        public string UserAgent { get; set; }
     }
 }

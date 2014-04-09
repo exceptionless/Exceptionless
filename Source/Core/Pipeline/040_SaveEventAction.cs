@@ -11,6 +11,7 @@
 
 using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.EventPlugins;
 using MongoDB.Driver;
 using NLog.Fluent;
 
@@ -25,7 +26,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             try {
                 ctx.Event = _eventRepository.Add(ctx.Event);
             } catch (WriteConcernException ex) {
