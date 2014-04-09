@@ -45,7 +45,6 @@
     <Compile Include="Events\SendEventCompletedEventArgs.cs" />
     <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
-    <Compile Include="Extensions\DateTimeExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\DataDictionaryExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
