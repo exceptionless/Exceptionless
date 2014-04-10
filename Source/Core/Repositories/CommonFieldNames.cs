@@ -7,6 +7,6 @@ namespace Exceptionless.Core.Repositories {
         public const string StackId = "sid";
         public const string Date = "dt";
         public const string Date_UTC = "dt.0";
-        public const string ExtendedData = "ext";
+        public const string Data = "ext";
     }
 }

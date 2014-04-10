@@ -14,8 +14,8 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public static class EventExtensions {
-        private const string ERROR_KEY = "__Error";
-        private const string REQUEST_INFO_KEY = "__RequestInfo";
+        private const string ERROR_KEY = "err";
+        private const string REQUEST_INFO_KEY = "req";
 
         /// <summary>
         /// Creates a builder object for constructing error reports in a fluent api.

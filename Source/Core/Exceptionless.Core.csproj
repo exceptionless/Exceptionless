@@ -211,6 +211,7 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="EventPlugins\Default\RequestInfoPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />
@@ -263,7 +264,7 @@
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="EventPlugins\Default\ErrorEventStackerPlugin.cs" />
+    <Compile Include="EventPlugins\Default\ErrorPlugin.cs" />
     <Compile Include="EventPlugins\EventPluginManager.cs" />
     <Compile Include="EventPlugins\IEventPlugin.cs" />
     <Compile Include="Utility\CompareObjects.cs" />

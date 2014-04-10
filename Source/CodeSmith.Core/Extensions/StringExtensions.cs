@@ -197,7 +197,27 @@ namespace Exceptionless.Extensions {
         /// <param name="value"></param>
         /// <returns></returns>
         public static bool IsJson(this string value) {
-            return !String.IsNullOrEmpty(value) && ((value.StartsWith("{") || value.EndsWith("}")) || (value.StartsWith("[") && value.EndsWith("]")));
+            return value.GetJsonType() != JsonType.None;
+        }
+
+        public static JsonType GetJsonType(this string value) {
+            if (String.IsNullOrEmpty(value))
+                return JsonType.None;
+
+            for (int i = 0; i < value.Length; i++) {
+                if (Char.IsWhiteSpace(value[i]))
+                    continue;
+
+                if (value[i] == '{')
+                    return JsonType.Object;
+
+                if (value[i] == '[')
+                    return JsonType.Array;
+
+                break;
+            }
+
+            return JsonType.None;
         }
 
         /// <summary>
@@ -1335,4 +1355,10 @@ namespace Exceptionless.Extensions {
         }
     }
 #endif
+
+    public enum JsonType : byte {
+        None,
+        Object,
+        Array
+    }
 }

@@ -12,8 +12,6 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.EventPlugins;
 using Exceptionless.Core.Queues;
