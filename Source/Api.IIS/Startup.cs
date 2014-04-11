@@ -16,7 +16,7 @@ using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
 
-namespace Exceptionless.Api {
+namespace Exceptionless.Api.IIS {
     public class Startup {
         public void Configuration(IAppBuilder builder) {
             var config = new HttpConfiguration();

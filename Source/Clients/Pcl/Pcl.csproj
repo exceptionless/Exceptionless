@@ -34,6 +34,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\GlobalAssemblyInfo.cs">
+      <Link>Properties\GlobalAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
