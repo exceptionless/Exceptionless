@@ -15,12 +15,14 @@ namespace Exceptionless.Api.Controllers {
             _eventRepository = repository;
         }
 
+        [Authorize(Roles = "ApiUser")]
         [Route]
         public IEnumerable<string> Get() {
             var results = _eventRepository.All();
             return new string[] { "value1", "value2" };
         }
 
+        [Authorize(Roles = "User")]
         [Route("{id}")]
         public string Get(int id) {
             return "value";

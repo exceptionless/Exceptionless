@@ -370,10 +370,6 @@
       <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
       <Name>CodeSmith.Core</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Membership\Exceptionless.Membership.csproj">
-      <Project>{9c987907-bd64-4100-89d4-f4bcfb77768b}</Project>
-      <Name>Exceptionless.Membership</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
       <Name>Exceptionless.Models</Name>

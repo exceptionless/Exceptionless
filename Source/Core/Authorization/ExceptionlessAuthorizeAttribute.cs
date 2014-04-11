@@ -17,7 +17,7 @@ using System.Web.Http.Controllers;
 using CodeSmith.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using Exceptionless.Membership;
+//using Exceptionless.Membership;
 using Exceptionless.Models;
 using NLog.Fluent;
 
@@ -101,13 +101,13 @@ namespace Exceptionless.Core.Authorization {
                 return false;
             }
 
-            var membershipSecurity = Resolver.GetService<IMembershipSecurity>();
-            if (membershipSecurity == null) {
-                Log.Error().Message("Unable to resolve IMembershipSecurity").Write();
-                return false;
-            }
+            //var membershipSecurity = Resolver.GetService<IMembershipSecurity>();
+            //if (membershipSecurity == null) {
+            //    Log.Error().Message("Unable to resolve IMembershipSecurity").Write();
+            //    return false;
+            //}
 
-            if (!String.Equals(user.Password, membershipSecurity.GetSaltedHash(password, user.Salt))) {
+            if (!String.Equals(user.Password, password)) { //membershipSecurity.GetSaltedHash(password, user.Salt))) {
                 Log.Error().Message("Invalid password").Write();
                 return false;
             }
