@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Web.Http;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Models;
 using MongoDB.Bson;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix("api/v1/event")]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : ApiController {
         private readonly IEventRepository _eventRepository;
 
@@ -15,21 +18,21 @@ namespace Exceptionless.Api.Controllers {
             _eventRepository = repository;
         }
 
-        [Authorize(Roles = "ApiUser")]
         [Route]
         public IEnumerable<string> Get() {
             var results = _eventRepository.All();
             return new string[] { "value1", "value2" };
         }
 
-        [Authorize(Roles = "User")]
         [Route("{id}")]
         public string Get(int id) {
             return "value";
         }
 
         [Route]
-        public async void Post() {
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        public async Task<IHttpActionResult> Post() {
             string result = await Request.Content.ReadAsStringAsync();
             switch (result.GetJsonType()) {
                 case JsonType.None:
@@ -46,6 +49,8 @@ namespace Exceptionless.Api.Controllers {
                 case JsonType.Array:
                     break;
             }
+
+            return Ok();
         }
     }
 }
