@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace System.Collections.Concurrent
 {
-    public interface IProducerConsumerCollection<T> : IEnumerable<T>, ICollection, IEnumerable
+    internal interface IProducerConsumerCollection<T> : IEnumerable<T>, ICollection, IEnumerable
     {
         bool TryAdd(T item);
         bool TryTake(out T item);
@@ -13,7 +13,7 @@ namespace System.Collections.Concurrent
     }
 
     [System.Diagnostics.DebuggerDisplay ("Count={Count}")]
-    public class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
+    internal class ConcurrentQueue<T> : IProducerConsumerCollection<T>, IEnumerable<T>, ICollection, IEnumerable
     {
         class Node
         {

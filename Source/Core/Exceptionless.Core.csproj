@@ -51,9 +51,15 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.ServiceBus, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.2.1.1\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <Private>True</Private>
       <HintPath>..\..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Configuration, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.2.0.2.0\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
     </Reference>
     <Reference Include="MongoDB.Bson, Version=1.9.0.200, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -245,6 +251,7 @@
     <Compile Include="Migrations\v1.0.29.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
+    <Compile Include="Models\EventPost.cs" />
     <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Models\IntercomModel.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
@@ -257,7 +264,11 @@
     <Compile Include="EventPlugins\Default\ThrottleBotsPlugin.cs" />
     <Compile Include="EventPlugins\EventContext.cs" />
     <Compile Include="EventPlugins\EventPluginBase.cs" />
+    <Compile Include="Queues\InMemoryQueue.cs" />
+    <Compile Include="Queues\IQueue.cs" />
+    <Compile Include="Queues\IMessageBus.cs" />
     <Compile Include="Queues\ProjectHookNotification.cs" />
+    <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\CommonFieldNames.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />

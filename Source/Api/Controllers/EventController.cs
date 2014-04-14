@@ -1,21 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Web.Http;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Models;
-using MongoDB.Bson;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix("api/v1/event")]
+    [RoutePrefix(API_PREFIX + "event")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : ApiController {
+        private const string API_PREFIX = "api/v1/";
         private readonly IEventRepository _eventRepository;
+        private readonly IQueue<EventPost> _eventPostQueue;
 
-        public EventController(IEventRepository repository) {
+        public EventController(IEventRepository repository, IQueue<EventPost> eventPostQueue) {
             _eventRepository = repository;
+            _eventPostQueue = eventPostQueue;
         }
 
         [Route]
@@ -33,22 +36,28 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public async Task<IHttpActionResult> Post() {
-            string result = await Request.Content.ReadAsStringAsync();
-            switch (result.GetJsonType()) {
-                case JsonType.None:
-                    _eventRepository.Add(new Event {
-                        ProjectId = ObjectId.GenerateNewId().ToString(),
-                        OrganizationId = ObjectId.GenerateNewId().ToString(),
-                        Date = DateTimeOffset.Now,
-                        Type = "log",
-                        Message = result
-                    });
-                    break;
-                case JsonType.Object:
-                    break;
-                case JsonType.Array:
-                    break;
-            }
+            byte[] data = await Request.Content.ReadAsByteArrayAsync();
+            await _eventPostQueue.EnqueueAsync(new EventPost {
+                ContentType = Request.Content.Headers.ContentType.ToString(),
+                ProjectId = ((ClaimsIdentity)User.Identity).FindFirst(ClaimTypes.NameIdentifier).Value,
+                Data = data
+            });
+            //switch (data.GetJsonType()) {
+            //    case JsonType.None:
+            //    _serviceBus.Publish(EventPost);
+            //        _eventRepository.Add(new Event {
+            //            ProjectId = ObjectId.GenerateNewId().ToString(),
+            //            OrganizationId = ObjectId.GenerateNewId().ToString(),
+            //            Date = DateTimeOffset.Now,
+            //            Type = "log",
+            //            Message = data
+            //        });
+            //        break;
+            //    case JsonType.Object:
+            //        break;
+            //    case JsonType.Array:
+            //        break;
+            //}
 
             return Ok();
         }

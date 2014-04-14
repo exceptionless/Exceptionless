@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues;
 using Exceptionless.Core.Utility;
-using Microsoft.AspNet.Identity;
-using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
-using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.OAuth;
 using MongoDB.Bson;
 using Owin;
@@ -71,6 +71,35 @@ namespace Exceptionless.Api {
             app.UseCors(CorsOptions.AllowAll);
             app.MapSignalR();
             app.UseWebApi(config);
+
+            Task.Factory.StartNew(() => {
+                var queue = container.GetInstance<IQueue<EventPost>>();
+                while (true) {
+                    try {
+                        queue.DequeueAsync().ContinueWith(data => {
+                            if (data.IsFaulted)
+                                Debug.WriteLine("faultblake");
+                            if (data.Result != null) {
+                                Debug.WriteLine("completed one");
+                                data.Result.CompleteAsync().Wait();
+                            }
+                        }).Wait();
+                    } catch (Exception ex) {
+                        Debug.WriteLine(ex.ToString());
+                    }
+                }
+            });
+
+            //Task.Factory.StartNew(() => {
+            //    var queue = container.GetInstance<IQueue<EventPost>>();
+            //    while (true) {
+            //        queue.DequeueAsync().ContinueWith(data => {
+            //            Debug.WriteLine("abandoned one");
+            //            data.Result.AbandonAsync();
+            //        });
+            //        Thread.Sleep(1000);
+            //    }
+            //});
         }
 
         private static Container CreateContainer(HttpConfiguration config) {

@@ -18,6 +18,7 @@ using Exceptionless.Core.EventPlugins;
 using Exceptionless.Core.FormattingPlugins;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -60,6 +61,9 @@ namespace Exceptionless.Core {
                 MongoServer server = new MongoClient(url).GetServer();
                 return server.GetDatabase(databaseName);
             });
+
+            string serviceBusConnectionString = "";
+            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
 
             container.Register<EventStatsHelper>();
 
