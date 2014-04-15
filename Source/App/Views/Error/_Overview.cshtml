@@ -17,33 +17,33 @@
             <td>@Html.DisplayFor(m => m.Tags)</td>
         </tr>
     }
-    <tr>
+    <tr class="hidden-print">
         <th>Error Type</th>
         <td><span class="t8-default">@Model.StackingType</span></td>
     </tr>
-    <tr>
+    <tr class="hidden-print">
         <th>Message</th>
         <td><span class="t8-lines2">@Model.StackingMessage</span></td>
     </tr>
     @if(!String.IsNullOrEmpty(Model.Code)) {
-        <tr>
+        <tr class="hidden-print">
             <th>Code</th>
             <td>@Model.Code</td>
         </tr>
     }
 
     @if(Model.ExceptionlessClientInfo != null && !String.IsNullOrEmpty(Model.ExceptionlessClientInfo.Platform)) {
-        <tr>
+        <tr class="hidden-print">
             <th>Platform</th>
             <td>@Model.ExceptionlessClientInfo.Platform</td>
         </tr>
     }
     @if (Model.RequestInfo != null) {
-        <tr>
+        <tr class="hidden-print">
             <th>URL</th>
             <td><a href="@Model.RequestInfo.GetFullPath()" target="_blank" class="t8-default">@Model.RequestInfo.GetFullPath()</a></td>
         </tr>
-        <tr>
+        <tr class="hidden-print">
             <th>Referrer</th>
             @if (!String.IsNullOrEmpty(Model.RequestInfo.Referrer)) {
                 <td><a href="@Model.RequestInfo.Referrer" target="_blank" class="t8-default">@Model.RequestInfo.Referrer</a></td>
@@ -53,11 +53,11 @@
         </tr>
     }
     @if (Model.UserAgentInfo != null && !Model.UserAgentInfo.UserAgent.Family.Contains("Other")) {
-        <tr>
+        <tr class="hidden-print">
             <th>Browser</th>
             <td><span class="t8-default">@Model.UserAgentInfo.UserAgent.ToString()</span></td>
         </tr>
-        <tr>
+        <tr class="hidden-print">
             <th>Browser OS</th>
             <td>@Model.UserAgentInfo.OS.ToString()</td>
         </tr>
@@ -90,5 +90,5 @@
     </table>
 }
 
-<h4>Stack Trace</h4>
-<pre class="stacktrace stacktrace-mini">@Html.Raw(Model.ToHtmlString())</pre>
+<h4 class="hidden-print">Stack Trace</h4>
+<pre class="stacktrace stacktrace-mini hidden-print">@Html.Raw(Model.ToHtmlString())</pre>

@@ -1,7 +1,8 @@
 ﻿@using CodeSmith.Core.Extensions
 @model Exceptionless.App.Models.Error.ExtendedDataItemModel
+
 <h4 class="pull-left">@(Model.Title ?? Model.Data.Key.ToSpacedWords())</h4>
-<div class="pull-right" style="margin-top: 1.2em;">
+<div class="pull-right hidden-print" style="margin-top: 1.2em;">
     <button class="btn btn-gray btn-mini clipboard" title="Copy to Clipboard" data-clipboard-target="raw-@Model.Data.Key.ToHtmlIdentifier()-data"><i class="fa fa-copy"></i></button>
     <div class="btn-group">
         <button class="btn btn-gray btn-mini" onclick="$('#table-@Model.Data.Key.ToHtmlIdentifier(), #raw-@Model.Data.Key.ToHtmlIdentifier()').toggle();">Toggle View</button>

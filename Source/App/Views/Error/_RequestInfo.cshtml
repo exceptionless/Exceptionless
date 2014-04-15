@@ -1,8 +1,9 @@
 ﻿@using Exceptionless.App.Models.Error
 @model ErrorModel
 
+<h3 class="visible-print">Request</h3>
 <table class="table table-bordered table-striped table-fixed keyvalue">
-    <tr>
+    <tr class="hidden-print">
         <th>Occurred On</th>
         <td>@Model.OccurrenceDate.ToString("MMMM d, yyyy h:mm:ss tt") (<span data-bind="livestamp: occurrence, hideTitle: true"></span>)</td>
     </tr>
@@ -75,4 +76,3 @@ if (!String.IsNullOrEmpty(Model.UserAgentInfo.Device.Family)) {
         </tbody>
     </table>
 }
-
