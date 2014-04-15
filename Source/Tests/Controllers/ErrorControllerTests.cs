@@ -123,7 +123,7 @@ namespace Exceptionless.Tests.Controllers {
         public void Post() {
             SetValidApiKey();
 
-            HttpResponseMessage response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
+            HttpResponseMessage response = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId3));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
@@ -141,7 +141,7 @@ namespace Exceptionless.Tests.Controllers {
         public void PostExtremelyLargeError() {
             SetValidApiKey();
 
-            var error = ErrorData.GenerateError(id: TestConstants.ErrorId3);
+            var error = EventData.GenerateEvent(id: TestConstants.ErrorId3);
             for (int i = 0; i < 4; i++)
                 error.ExtendedData.Add(Guid.NewGuid().ToString(), new string('x', 512 * 1024));
 
@@ -163,11 +163,11 @@ namespace Exceptionless.Tests.Controllers {
         public void PostDuplicate() {
             SetValidApiKey();
 
-            HttpResponseMessage response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId4));
+            HttpResponseMessage response = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId4));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId4));
+            response = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId4));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         }
@@ -194,7 +194,7 @@ namespace Exceptionless.Tests.Controllers {
         public void PostWithInvalidApiKey() {
             SetInvalidApiKey();
 
-            HttpResponseMessage response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
+            HttpResponseMessage response = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId3));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -203,7 +203,7 @@ namespace Exceptionless.Tests.Controllers {
         public void PostWithSuspendedApiKey() {
             SetSuspendedApiKey();
 
-            HttpResponseMessage response = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
+            HttpResponseMessage response = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId3));
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
@@ -227,7 +227,7 @@ namespace Exceptionless.Tests.Controllers {
         public void PutNonExistentError() {
             SetUserWithAllRoles();
 
-            Error error = ErrorData.GenerateSampleError(TestConstants.InvalidErrorId);
+            Error error = EventData.GenerateSampleEvent(TestConstants.InvalidErrorId);
             error.UserDescription = "Desktop";
 
             HttpResponseMessage response = PutResponse(TestConstants.InvalidErrorId, error);
@@ -256,7 +256,7 @@ namespace Exceptionless.Tests.Controllers {
         public void PutWithClientApiKey() {
             SetValidApiKey();
 
-            Error error = ErrorData.GenerateSampleError(TestConstants.ErrorId7);
+            Error error = EventData.GenerateSampleEvent(TestConstants.ErrorId7);
             HttpResponseMessage response = PutResponse(TestConstants.ErrorId7, error);
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -278,7 +278,7 @@ namespace Exceptionless.Tests.Controllers {
 
             if (response.StatusCode != HttpStatusCode.OK) {
                 Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-                HttpResponseMessage post = PostResponse(ErrorData.GenerateSampleError(TestConstants.ErrorId3));
+                HttpResponseMessage post = PostResponse(EventData.GenerateSampleEvent(TestConstants.ErrorId3));
                 Assert.Equal(HttpStatusCode.Created, post.StatusCode);
 
                 Thread.Sleep(500);
@@ -373,7 +373,7 @@ namespace Exceptionless.Tests.Controllers {
         public static IEnumerable<object[]> Errors {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                foreach (var file in Directory.GetFiles(@"..\..\EventData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
                     result.Add(new object[] { file });
 
                 return result.ToArray();
@@ -433,7 +433,7 @@ namespace Exceptionless.Tests.Controllers {
                 membershipProvider.CreateAccount(user);
             }
 
-            Repository.Add(ErrorData.GenerateSampleErrors());
+            Repository.Add(EventData.GenerateSampleEvents());
         }
 
         protected override void RemoveData() {

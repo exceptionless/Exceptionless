@@ -94,10 +94,10 @@ namespace Exceptionless.Extensions {
 
                 extraProperties = extraProperties.Where(kvp => !ValueIsEmpty(kvp.Value)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-                if (extraProperties.Count > 0 && !error.Data.ContainsKey(DataDictionary.EXCEPTION_INFO_KEY)) {
+                if (extraProperties.Count > 0 && !error.Data.ContainsKey(Error.KnownDataKeys.ExtraProperties)) {
                     error.AddObject(new ExtendedDataInfo {
                         Data = extraProperties,
-                        Name = DataDictionary.EXCEPTION_INFO_KEY,
+                        Name = Error.KnownDataKeys.ExtraProperties,
                         IgnoreSerializationErrors = true,
                         MaxDepthToSerialize = 5
                     });

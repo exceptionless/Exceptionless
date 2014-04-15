@@ -54,6 +54,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api.IIS", "So
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api", "Source\Api\Exceptionless.Api.csproj", "{6819B8D7-2364-426B-A944-1B4CBAF4BC32}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api.Tests", "Source\Api.Tests\Exceptionless.Api.Tests.csproj", "{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -224,6 +226,16 @@ Global
 		{6819B8D7-2364-426B-A944-1B4CBAF4BC32}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{6819B8D7-2364-426B-A944-1B4CBAF4BC32}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{6819B8D7-2364-426B-A944-1B4CBAF4BC32}.Release|x86.ActiveCfg = Release|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -236,5 +248,6 @@ Global
 		{14DFD206-B445-4D52-9C3C-8B2F69B22B91} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
 		{D8F22775-3DB8-4BAD-AFCF-9CC8DAF7A807} = {295DE1D5-5F38-43C5-BAC0-6F48F6A52A0E}
 		{E2087C42-6C65-49B7-9E64-B5E69A684220} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
+		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C} = {295DE1D5-5F38-43C5-BAC0-6F48F6A52A0E}
 	EndGlobalSection
 EndGlobal

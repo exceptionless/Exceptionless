@@ -48,7 +48,7 @@ namespace Exceptionless.Models {
 #endif
 
         /// <summary>
-        /// The event type (ie. error, log message, feature usage).
+        /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
         /// </summary>
         public string Type { get; set; }
 
@@ -91,7 +91,7 @@ namespace Exceptionless.Models {
         /// Indicates wether the event has been marked as critical.
         /// </summary>
         public bool IsCritical {
-            get { return Tags != null && Tags.Contains("Critical"); }
+            get { return Tags != null && Tags.Contains(KnownTags.Critical); }
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace Exceptionless.Models {
             if (Tags == null)
                 Tags = new TagSet();
 
-            Tags.Add("Critical");
+            Tags.Add(KnownTags.Critical);
         }
 
 #if !EMBEDDED
@@ -115,5 +115,26 @@ namespace Exceptionless.Models {
         /// </summary>
         public bool IsHidden { get; set; }
 #endif
+
+        public static class KnownTypes {
+            public const string Error = "error";
+            public const string NotFound = "404";
+            public const string Log = "log";
+            public const string FeatureUsage = "usage";
+            public const string SessionStart = "start";
+            public const string SessionEnd = "end";
+        }
+
+        public static class KnownTags {
+            public const string Critical = "Critical";
+        }
+
+        public static class KnownDataKeys {
+            public const string Error = "err";
+            public const string SimpleError = "serr";
+            public const string RequestInfo = "req";
+            public const string TraceLog = "trace";
+            //public const string ExceptionInfo = "__ExceptionInfo";
+        }
     }
 }

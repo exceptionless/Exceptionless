@@ -11,5 +11,9 @@ namespace Exceptionless.Models.Data {
         /// Any modules that were loaded / referenced when the error occurred.
         /// </summary>
         public ModuleCollection Modules { get; set; }
+
+        public static class KnownDataKeys {
+            public const string ExtraProperties = "ext";
+        }
     }
 }

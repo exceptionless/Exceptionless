@@ -14,9 +14,6 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public static class EventExtensions {
-        private const string ERROR_KEY = "err";
-        private const string REQUEST_INFO_KEY = "req";
-
         /// <summary>
         /// Creates a builder object for constructing error reports in a fluent api.
         /// </summary>
@@ -129,22 +126,22 @@ namespace Exceptionless {
             if (ev == null)
                 return false;
 
-            return ev.Type == "404";
+            return ev.Type == Event.KnownTypes.NotFound;
         }
 
         public static bool IsError(this Event ev) {
             if (ev == null)
                 return false;
 
-            return ev.Type == "error";
+            return ev.Type == Event.KnownTypes.Error;
         }
 
         public static Error GetError(this Event ev, IJsonSerializer serializer = null) {
-            if (ev == null || !ev.Data.ContainsKey(ERROR_KEY))
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.Error))
                 return null;
 
             try {
-                return ev.Data.GetValue<Error>(ERROR_KEY, serializer);
+                return ev.Data.GetValue<Error>(Event.KnownDataKeys.Error, serializer);
             } catch (Exception) {}
 
             return null;
@@ -152,23 +149,23 @@ namespace Exceptionless {
 
         public static void SetError(this Event ev, Error error) {
             if (ev != null)
-                ev.Data[ERROR_KEY] = error;
+                ev.Data[Event.KnownDataKeys.Error] = error;
         }
 
         public static RequestInfo GetRequestInfo(this Event ev, IJsonSerializer serializer = null) {
-            if (ev == null || !ev.Data.ContainsKey(REQUEST_INFO_KEY))
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
                 return null;
 
             try {
-                return ev.Data.GetValue<RequestInfo>(REQUEST_INFO_KEY, serializer);
+                return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, serializer);
             } catch (Exception) {}
 
             return null;
         }
 
-        public static void SetError(this Event ev, RequestInfo requestInfo) {
+        public static void SetRequestInfo(this Event ev, RequestInfo requestInfo) {
             if (ev != null)
-                ev.Data[REQUEST_INFO_KEY] = requestInfo;
+                ev.Data[Event.KnownDataKeys.RequestInfo] = requestInfo;
         }
     }
 

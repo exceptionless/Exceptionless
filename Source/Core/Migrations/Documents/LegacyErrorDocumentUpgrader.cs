@@ -79,13 +79,13 @@ namespace Exceptionless.Core.Migrations.Documents {
                     var extendedData = document["ExtendedData"] as JObject;
                     if (extendedData != null) {
                         if (extendedData["ExtraExceptionProperties"] != null)
-                            extendedData.Rename("ExtraExceptionProperties", DataDictionary.EXCEPTION_INFO_KEY);
+                            extendedData.Rename("ExtraExceptionProperties", Exceptionless.Models.Data.Error.KnownDataKeys.ExtraProperties);
 
                         if (extendedData["ExceptionInfo"] != null)
-                            extendedData.Rename("ExceptionInfo", DataDictionary.EXCEPTION_INFO_KEY);
+                            extendedData.Rename("ExceptionInfo", Exceptionless.Models.Data.Error.KnownDataKeys.ExtraProperties);
 
                         if (extendedData["TraceInfo"] != null)
-                            extendedData.Rename("TraceInfo", DataDictionary.TRACE_LOG_KEY);
+                            extendedData.Rename("TraceInfo", Event.KnownDataKeys.TraceLog);
                     }
 
                     current = current["Inner"] as JObject;

@@ -14,9 +14,6 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Models {
     public class DataDictionary : Dictionary<string, object> {
-        public const string EXCEPTION_INFO_KEY = "__ExceptionInfo";
-        public const string TRACE_LOG_KEY = "TraceLog";
-
         public DataDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
 
         public DataDictionary(IEnumerable<KeyValuePair<string, object>> values) : base(StringComparer.OrdinalIgnoreCase) {

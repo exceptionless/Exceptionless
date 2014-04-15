@@ -16,14 +16,14 @@ using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories {
-    public class RepositoryTests : MongoRepositoryTestBaseWithIdentity<Error, IEventRepository> {
+    public class RepositoryTests : MongoRepositoryTestBaseWithIdentity<Event, IEventRepository> {
         public RepositoryTests() : base(IoC.GetInstance<IEventRepository>(), true) {}
 
         [Fact]
         public void CreateUpdateRemove() {
             Assert.Equal(0, Repository.Count());
 
-            Error entity = ErrorData.GenerateError();
+            Event entity = EventData.GenerateEvent();
             Assert.Null(entity.Id);
 
             // Insert a document
@@ -41,13 +41,13 @@ namespace Exceptionless.Tests.Repositories {
             Assert.Equal(id, error.Id);
 
             // Save a changed document
-            error.UserDescription = "Unit Test 2";
+            error.Message = "New message";
             Repository.Update(error);
 
             // Update an existing document
             var errors = Repository.Where(e => e.Id == id);
             foreach (var er in errors)
-                er.UserDescription = "Unit Test";
+                er.Message = "Updated Message";
 
             Repository.Update(errors);
 
