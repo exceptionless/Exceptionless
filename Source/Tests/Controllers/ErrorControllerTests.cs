@@ -22,6 +22,7 @@ using Exceptionless.Core.Migrations.Documents;
 using Exceptionless.Core.Queues;
 using Exceptionless.Membership;
 using Exceptionless.Models;
+using Exceptionless.Models.Legacy;
 using Exceptionless.Tests.Controllers.Base;
 using Exceptionless.Tests.Utility;
 using Newtonsoft.Json;

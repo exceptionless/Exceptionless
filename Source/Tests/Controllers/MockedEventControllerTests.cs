@@ -16,7 +16,6 @@ using System.Linq.Expressions;
 using System.Net;
 using System.Net.Http;
 using Exceptionless.Api.Controllers;
-using Exceptionless.App.Controllers.API;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Models;
@@ -27,12 +26,12 @@ using Moq;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers {
-    public class MockedErrorControllerTests : MockedApiControllerBase<EventController, IEventRepository, Event> {
+    public class MockedEventControllerTests : MockedApiControllerBase<EventController, IEventRepository, Event> {
         private Mock<IProjectRepository> _mockedProjectRepository;
 
         private Mock<IOrganizationRepository> _mockedOrganizationRepository;
 
-        public MockedErrorControllerTests() : base(true) {}
+        public MockedEventControllerTests() : base(true) {}
 
         [Fact]
         public void Get() {

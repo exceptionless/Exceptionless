@@ -7,6 +7,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "event")]
@@ -22,14 +23,13 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [Route]
-        public IEnumerable<string> Get() {
-            var results = _eventRepository.All();
-            return new string[] { "value1", "value2" };
+        public IEnumerable<Event> Get() {
+            return _eventRepository.All();
         }
 
         [Route("{id}")]
-        public string Get(int id) {
-            return "value";
+        public Event Get(string id) {
+            return _eventRepository.GetByIdCached(id);
         }
 
         [Route]
