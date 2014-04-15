@@ -15,18 +15,24 @@ namespace Exceptionless.Core.Queues {
             return Task.FromResult(0);
         }
 
-        public async Task<WorkItem<T>> DequeueAsync() {
-            QueueInfo<T> info = null;
-            if (_queue.Count == 0 && !_autoEvent.WaitOne(TimeSpan.FromSeconds(30)))
-                throw new TimeoutException();
+        public Task<WorkItem<T>> DequeueAsync() {
+            try {
+                if (_queue.Count == 0 && !_autoEvent.WaitOne(TimeSpan.FromSeconds(30)))
+                    throw new TimeoutException();
 
-            if (!_queue.TryDequeue(out info) || info == null)
-                throw new TimeoutException();
+                QueueInfo<T> info;
+                if (!_queue.TryDequeue(out info) || info == null)
+                    throw new TimeoutException();
 
-            if (!_dequeued.TryAdd(info.Id, info))
-                throw new ApplicationException("Unable to add item to the dequeued list.");
+                if (!_dequeued.TryAdd(info.Id, info))
+                    throw new ApplicationException("Unable to add item to the dequeued list.");
 
-            return new WorkItem<T>(info.Id, info.Data, this);
+                return Task.FromResult(new WorkItem<T>(info.Id, info.Data, this));
+            } catch (Exception ex) {
+                var completionSource = new TaskCompletionSource<WorkItem<T>>();
+                completionSource.SetException(ex);
+                return completionSource.Task;
+            }
         }
 
         public Task CompleteAsync(string id) {

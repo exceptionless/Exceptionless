@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Security.Claims;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
@@ -75,18 +74,14 @@ namespace Exceptionless.Api {
             Task.Factory.StartNew(() => {
                 var queue = container.GetInstance<IQueue<EventPost>>();
                 while (true) {
-                    try {
-                        queue.DequeueAsync().ContinueWith(data => {
-                            if (data.IsFaulted)
-                                Debug.WriteLine("faultblake");
-                            if (data.Result != null) {
-                                Debug.WriteLine("completed one");
-                                data.Result.CompleteAsync().Wait();
-                            }
-                        }).Wait();
-                    } catch (Exception ex) {
-                        Debug.WriteLine(ex.ToString());
-                    }
+                    queue.DequeueAsync().ContinueWith(data => {
+                        if (data.IsFaulted) {
+                            Debug.WriteLine("faultblake");
+                        } else if (data.Result != null) {
+                            Debug.WriteLine("completed one");
+                            data.Result.CompleteAsync().Wait();
+                        }
+                    }).Wait();
                 }
             });
 
