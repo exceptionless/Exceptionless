@@ -120,6 +120,9 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
+    <Reference Include="StackExchange.Redis">
+      <HintPath>..\..\packages\StackExchange.Redis.1.0.270\lib\net45\StackExchange.Redis.dll</HintPath>
+    </Reference>
     <Reference Include="StatsdClient, Version=1.2.1.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\StatsdCsharpClient.1.2.1.0\lib\net45\StatsdClient.dll</HintPath>
@@ -272,6 +275,7 @@
     <Compile Include="Queues\ProjectHookNotification.cs" />
     <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\SummaryNotification.cs" />
+    <Compile Include="Queues\WorkItem.cs" />
     <Compile Include="Repositories\CommonFieldNames.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />

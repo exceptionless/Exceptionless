@@ -24,21 +24,20 @@ namespace Exceptionless.Core.Queues {
         }
 
         public async Task<WorkItem<T>> DequeueAsync() {
-            var msg = await _queueClient.ReceiveAsync();
-            if (msg == null)
-                return null;
+            using (var msg = await _queueClient.ReceiveAsync()) {
+                if (msg == null)
+                    return null;
 
-            var data = msg.GetBody<T>();
-            return new WorkItem<T>(msg.LockToken.ToString(), data, this);
+                var data = msg.GetBody<T>();
+                return new WorkItem<T>(msg.LockToken.ToString(), data, this);
+            }
         }
 
         public Task CompleteAsync(string id) {
-            Debug.WriteLine(id);
             return _queueClient.CompleteAsync(new Guid(id));
         }
 
         public Task AbandonAsync(string id) {
-            Debug.WriteLine(id);
             return _queueClient.AbandonAsync(new Guid(id));
         }
     }
