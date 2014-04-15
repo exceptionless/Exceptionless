@@ -70,31 +70,6 @@ namespace Exceptionless.Api {
             app.UseCors(CorsOptions.AllowAll);
             app.MapSignalR();
             app.UseWebApi(config);
-
-            Task.Factory.StartNew(() => {
-                var queue = container.GetInstance<IQueue<EventPost>>();
-                while (true) {
-                    queue.DequeueAsync().ContinueWith(data => {
-                        if (data.IsFaulted) {
-                            Debug.WriteLine("faultblake");
-                        } else if (data.Result != null) {
-                            Debug.WriteLine("completed one");
-                            data.Result.CompleteAsync().Wait();
-                        }
-                    }).Wait();
-                }
-            });
-
-            //Task.Factory.StartNew(() => {
-            //    var queue = container.GetInstance<IQueue<EventPost>>();
-            //    while (true) {
-            //        queue.DequeueAsync().ContinueWith(data => {
-            //            Debug.WriteLine("abandoned one");
-            //            data.Result.AbandonAsync();
-            //        });
-            //        Thread.Sleep(1000);
-            //    }
-            //});
         }
 
         private static Container CreateContainer(HttpConfiguration config) {

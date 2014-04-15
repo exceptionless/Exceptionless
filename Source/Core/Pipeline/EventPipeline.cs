@@ -38,10 +38,10 @@ namespace Exceptionless.Core.Pipeline {
             };
 
             if (ctx.Organization == null)
-                throw new InvalidOperationException(String.Format("Unabled to load organization \"{0}\"", ev.OrganizationId));
+                throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", ev.OrganizationId));
 
             if (ctx.Project == null)
-                throw new InvalidOperationException(String.Format("Unabled to load project \"{0}\"", ev.ProjectId));
+                throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
 
             // load organization settings into the context
             foreach (var key in ctx.Organization.Data.Keys)

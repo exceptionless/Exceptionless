@@ -39,25 +39,10 @@ namespace Exceptionless.Api.Controllers {
             byte[] data = await Request.Content.ReadAsByteArrayAsync();
             await _eventPostQueue.EnqueueAsync(new EventPost {
                 ContentType = Request.Content.Headers.ContentType.ToString(),
+                ContentEncoding = Request.Content.Headers.ContentEncoding.ToString(),
                 ProjectId = ((ClaimsIdentity)User.Identity).FindFirst(ClaimTypes.NameIdentifier).Value,
                 Data = data
             });
-            //switch (data.GetJsonType()) {
-            //    case JsonType.None:
-            //    _serviceBus.Publish(EventPost);
-            //        _eventRepository.Add(new Event {
-            //            ProjectId = ObjectId.GenerateNewId().ToString(),
-            //            OrganizationId = ObjectId.GenerateNewId().ToString(),
-            //            Date = DateTimeOffset.Now,
-            //            Type = "log",
-            //            Message = data
-            //        });
-            //        break;
-            //    case JsonType.Object:
-            //        break;
-            //    case JsonType.Array:
-            //        break;
-            //}
 
             return Ok();
         }

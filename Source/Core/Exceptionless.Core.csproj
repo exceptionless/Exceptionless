@@ -218,6 +218,7 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="EventPlugins\Default\RequestInfoPlugin.cs" />
+    <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />
@@ -241,6 +242,7 @@
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
+    <Compile Include="Jobs\ProcessEventsJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />

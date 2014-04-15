@@ -72,7 +72,7 @@ namespace Exceptionless.Core.EventPlugins {
                 try {
                     AddPlugin(type);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unabled to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
                 }
             }
         }
