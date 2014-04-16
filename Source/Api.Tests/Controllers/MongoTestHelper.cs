@@ -28,7 +28,11 @@ namespace Exceptionless.Api.Tests.Controllers {
             if (collection != null)
                 collection.RemoveAll();
 
-            _sampleProjectsAdded = false;
+            if (String.Equals(ProjectRepository.CollectionName, collectionName))
+                _sampleProjectsAdded = false;
+
+            if (String.Equals(OrganizationRepository.CollectionName, collectionName))
+                _sampleOrganizationsAdded = false;
         }
 
         public long Count(string collectionName) {
@@ -38,6 +42,10 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         public long ProjectCount() {
             return Count(ProjectRepository.CollectionName);
+        }
+
+        public void RemoveAllOrganizations() {
+            RemoveAll(OrganizationRepository.CollectionName);
         }
 
         public void RemoveAllProjects() {

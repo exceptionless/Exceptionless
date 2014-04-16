@@ -87,27 +87,35 @@ namespace Exceptionless.Core.Jobs {
             if (!String.IsNullOrEmpty(ep.CharSet))
                 encoding = Encoding.GetEncoding(ep.CharSet);
 
-            var events = new List<Event>();
             string result = encoding.GetString(data);
-
-            switch (result.GetJsonType()) {
-                case JsonType.None:
-                    foreach (var entry in result.SplitAndTrim(new[] { Environment.NewLine }))
-                        events.Add(new Event { Date = DateTimeOffset.Now, Type = "log", Message = entry });
-
-                    break;
-                case JsonType.Object:
-                    events.Add(JsonConvert.DeserializeObject<Event>(result));
-                    break;
-                case JsonType.Array:
-                    events.AddRange(JsonConvert.DeserializeObject<Event[]>(result));
-                    break;
-            }
+            List<Event> events = GetEventsFromString(result);
 
             // set the project id on all events
             events.ForEach(e => e.ProjectId = ep.ProjectId);
 
             return events;
-        } 
+        }
+
+        public static List<Event> GetEventsFromString(string input) {
+            var events = new List<Event>();
+            switch (input.GetJsonType()) {
+                case JsonType.None:
+                    foreach (var entry in input.SplitAndTrim(new[] { Environment.NewLine })) {
+                        events.Add(new Event {
+                            Date = DateTimeOffset.Now,
+                            Type = "log",
+                            Message = entry
+                        });
+                    }
+
+                    break;
+                case JsonType.Object:
+                    events.Add(JsonConvert.DeserializeObject<Event>(input));
+                    break;
+                case JsonType.Array:
+                    events.AddRange(JsonConvert.DeserializeObject<Event[]>(input));
+                    break;
+            }
+        }
     }
 }

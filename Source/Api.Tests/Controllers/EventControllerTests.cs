@@ -29,6 +29,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Tests.Utility;
 using Microsoft.Owin;
 using Xunit;
+using Xunit.Extensions;
 
 namespace Exceptionless.Tests.Controllers {
     public class EventControllerTests : MongoTestHelper {
@@ -40,31 +41,52 @@ namespace Exceptionless.Tests.Controllers {
             AddSamples();
         }
 
-        [Fact]
-        public void CanPostSimpleString() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), false, false);
-            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
-            Assert.IsType<OkResult>(actionResult);
-            Assert.Equal(1, _eventQueue.Count);
-
-            var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
-            var result = processEventsJob.Run();
-            Assert.Equal(0, _eventQueue.Count);
-            Assert.Equal(1, EventCount());
-            RemoveAllEvents();
+        public static IEnumerable<object[]> PostStringData {
+            get {
+                return new[] {
+                    new object[] { "simple string", 1 }, 
+                    new object[] { " \r\nsimple string", 1 }, 
+                    new object[] { "{simple string", 1 },
+                    new object[] { "simple string\r\nsimple string", 2 }, 
+                };
+            }
         }
 
-        [Fact]
-        public void CanPostCompressedSimpleString() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
-            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
-            Assert.IsType<OkResult>(actionResult);
-            Assert.Equal(1, _eventQueue.Count);
+        [Theory]
+        [PropertyData("PostStringData")]
+        public void CanPostString(string input, int expected) {
+            try {
+                _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), false, false);
+                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes(input)).Result;
+                Assert.IsType<OkResult>(actionResult);
+                Assert.Equal(1, _eventQueue.Count);
 
-            var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
-            var result = processEventsJob.Run();
-            Assert.Equal(0, _eventQueue.Count);
-            RemoveAllEvents();
+                var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
+                var result = processEventsJob.Run();
+                Assert.True(result.IsSuccess, result.Message);
+                Assert.Equal(0, _eventQueue.Count);
+                Assert.Equal(expected, EventCount());
+            } finally {
+                RemoveAllEvents();
+            }
+        }
+
+        [Theory, PropertyData("PostStringData")]
+        public void CanPostCompressedString(string input, int expected) {
+            try {
+                _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
+                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes(input).Compress()).Result;
+                Assert.IsType<OkResult>(actionResult);
+                Assert.Equal(1, _eventQueue.Count);
+
+                var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
+                var result = processEventsJob.Run();
+                Assert.True(result.IsSuccess, result.Message);
+                Assert.Equal(0, _eventQueue.Count);
+                Assert.Equal(expected, EventCount());
+            } finally {
+                RemoveAllEvents();
+            }
         }
 
         [Fact]
@@ -79,6 +101,8 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(0, _eventQueue.Count);
             RemoveAllEvents();
         }
+
+        #region Helpers
 
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
             var request = new HttpRequestMessage {
@@ -99,7 +123,7 @@ namespace Exceptionless.Tests.Controllers {
             return request;
         }
 
-        public static IEnumerable<object[]> Events {
+        private static IEnumerable<object[]> Events {
             get {
                 var result = new List<object[]>();
                 foreach (var file in Directory.GetFiles(@"..\..\EventData\", "*.txt", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
@@ -108,5 +132,7 @@ namespace Exceptionless.Tests.Controllers {
                 return result.ToArray();
             }
         }
+
+        #endregion
     }
 }
