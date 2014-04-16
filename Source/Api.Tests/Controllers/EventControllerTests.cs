@@ -34,9 +34,9 @@ namespace Exceptionless.Tests.Controllers {
         private readonly InMemoryQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
 
         [Fact]
-        public async void CanPostSimpleString() {
+        public void CanPostSimpleString() {
             _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), false, false);
-            var actionResult = await _eventController.Post(Encoding.UTF8.GetBytes("simple string"));
+            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
 
@@ -46,9 +46,9 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         [Fact]
-        public async void CanPostCompressedSimpleString() {
+        public void CanPostCompressedSimpleString() {
             _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), true, false);
-            var actionResult = await _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress());
+            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
 
@@ -58,9 +58,9 @@ namespace Exceptionless.Tests.Controllers {
         }
 
         [Fact]
-        public async void CanPostSingleEvent() {
+        public void CanPostSingleEvent() {
             _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), true, false);
-            var actionResult = await _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress());
+            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
 

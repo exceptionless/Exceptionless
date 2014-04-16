@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Jobs {
                 workItem = await _queue.DequeueAsync();
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
-                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost.").Write();
+                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost: {0}", ex.Message).Write();
                     return JobResult.FromException(ex);
                 }
             }
@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Jobs {
                 workItem.AbandonAsync().Wait();
 
                 // TODO: Add the EventPost to the logged exception.
-                Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}'.", workItem.Id).Write();
+                Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", workItem.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }
 
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Jobs {
                 try {
                     _eventPipeline.Run(ev);
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("An error occurred while processing the EventPipeline.").Write();
+                    Log.Error().Exception(ex).Message("An error occurred while processing the EventPipeline: {0}", ex.Message).Write();
 
                     if (!isSingleEvent) {
                         // Put this single event back into the queue so we can retry it separately.
