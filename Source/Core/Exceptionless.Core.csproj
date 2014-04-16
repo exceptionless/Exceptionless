@@ -223,10 +223,11 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="EventParserPlugins\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="EventPlugins\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="Extensions\PrincipalUtility.cs" />
-    <Compile Include="EventParserPlugins\Default\DefaultEventParserPlugin.cs" />
+    <Compile Include="EventParserPlugins\Default\JsonEventParserPlugin.cs" />
     <Compile Include="EventParserPlugins\EventParserPluginManager.cs" />
     <Compile Include="EventParserPlugins\IEventParserPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />

@@ -248,10 +248,14 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Base\AuthenticatedMongoApiControllerBase.cs" />
+    <Compile Include="Controllers\ErrorControllerTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Controllers\MockedEventControllerTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Controllers\OrganizationControllerTests.cs" />
     <Compile Include="Controllers\ProjectControllerTests.cs" />
-    <Compile Include="Controllers\ErrorControllerTests.cs" />
-    <Compile Include="Controllers\MockedEventControllerTests.cs" />
     <Compile Include="Base\MockedControllerBase.cs" />
     <Compile Include="Base\DatabaseTestBase.cs" />
     <Compile Include="Base\DataTestBase.cs" />

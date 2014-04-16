@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.EventParserPlugins;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
@@ -16,10 +17,12 @@ using Encoding = System.Text.Encoding;
 namespace Exceptionless.Core.Jobs {
     public class ProcessEventsJob : Job {
         private readonly IQueue<EventPost> _queue;
+        private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
 
-        public ProcessEventsJob(IQueue<EventPost> queue, EventPipeline eventPipeline) {
+        public ProcessEventsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline) {
             _queue = queue;
+            _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
         }
 
@@ -88,62 +91,12 @@ namespace Exceptionless.Core.Jobs {
             if (!String.IsNullOrEmpty(ep.CharSet))
                 encoding = Encoding.GetEncoding(ep.CharSet);
 
-            string result = encoding.GetString(data);
-            List<Event> events = GetEventsFromString(result);
-
+            string input = encoding.GetString(data);
+            List<Event> events = _eventParserPluginManager.ParseEvents(input);
             events.ForEach(e => {
                 // set the project id on all events
                 e.ProjectId = ep.ProjectId;
             });
-
-            return events;
-        }
-
-        public static List<Event> GetEventsFromString(string input) {
-            var events = new List<Event>();
-            switch (input.GetJsonType()) {
-                case JsonType.None: {
-                    events.AddRange(GetLogEvents(input));
-                    break;
-                }
-                case JsonType.Object: {
-                    Event ev;
-                    if (input.TryFromJson(out ev, new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Error }))
-                        events.Add(ev);
-                    else
-                        events.AddRange(GetLogEvents(input));
-                    break;
-                }
-                case JsonType.Array: {
-                    Event[] parsedEvents;
-                    if (input.TryFromJson(out parsedEvents, new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Error }))
-                        events.AddRange(parsedEvents);
-                    else
-                        events.AddRange(GetLogEvents(input));
-                    break;
-                }
-            }
-
-            // set defaults for empty values
-            events.ForEach(e => {
-                if (e.Date == DateTimeOffset.MinValue)
-                    e.Date = DateTimeOffset.Now;
-                if (String.IsNullOrWhiteSpace(e.Type))
-                    e.Type = e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
-            });
-
-            return events;
-        }
-
-        private static IEnumerable<Event> GetLogEvents(string input) {
-            var events = new List<Event>();
-            foreach (var entry in input.SplitAndTrim(new[] { Environment.NewLine }).Where(line => !String.IsNullOrWhiteSpace(line))) {
-                events.Add(new Event {
-                    Date = DateTimeOffset.Now,
-                    Type = "log",
-                    Message = entry
-                });
-            }
 
             return events;
         }

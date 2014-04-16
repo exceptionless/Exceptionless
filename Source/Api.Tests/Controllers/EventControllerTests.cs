@@ -20,7 +20,6 @@ using System.Web.Http;
 using System.Web.Http.Hosting;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
-using Exceptionless.Api.Tests.Controllers;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -29,9 +28,8 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Tests.Utility;
 using Microsoft.Owin;
 using Xunit;
-using Xunit.Extensions;
 
-namespace Exceptionless.Tests.Controllers {
+namespace Exceptionless.Api.Tests.Controllers {
     public class EventControllerTests : MongoTestHelper {
         private readonly EventController _eventController = IoC.GetInstance<EventController>();
         private readonly InMemoryQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
@@ -41,26 +39,11 @@ namespace Exceptionless.Tests.Controllers {
             AddSamples();
         }
 
-        public static IEnumerable<object[]> PostStringData {
-            get {
-                return new[] {
-                    new object[] { "simple string", 1 }, 
-                    new object[] { " \r\nsimple string", 1 }, 
-                    new object[] { "{simple string,simple string}", 1 },
-                    new object[] { "[simple string,simple string]", 1 },
-                    new object[] { "{ \"name\": \"value\" }", 1 },
-                    new object[] { "{ \"message\": \"simple string\" }", 1 },
-                    new object[] { "simple string\r\nsimple string", 2 }, 
-                };
-            }
-        }
-
-        [Theory]
-        [PropertyData("PostStringData")]
-        public void CanPostString(string input, int expected) {
+        [Fact]
+        public void CanPostString() {
             try {
                 _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), false, false);
-                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes(input)).Result;
+                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
@@ -68,17 +51,17 @@ namespace Exceptionless.Tests.Controllers {
                 var result = processEventsJob.Run();
                 Assert.True(result.IsSuccess, result.Message);
                 Assert.Equal(0, _eventQueue.Count);
-                Assert.Equal(expected, EventCount());
+                Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();
             }
         }
 
-        [Theory, PropertyData("PostStringData")]
-        public void CanPostCompressedString(string input, int expected) {
+        [Fact]
+        public void CanPostCompressedString() {
             try {
                 _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
-                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes(input).Compress()).Result;
+                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
@@ -86,7 +69,7 @@ namespace Exceptionless.Tests.Controllers {
                 var result = processEventsJob.Run();
                 Assert.True(result.IsSuccess, result.Message);
                 Assert.Equal(0, _eventQueue.Count);
-                Assert.Equal(expected, EventCount());
+                Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();
             }
