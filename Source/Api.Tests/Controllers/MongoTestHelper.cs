@@ -19,6 +19,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             _database.Drop();
             _manager.InitializeRepositories();
             _sampleProjectsAdded = false;
+            _sampleOrganizationsAdded = false;
 
             _databaseReset = true;
         }

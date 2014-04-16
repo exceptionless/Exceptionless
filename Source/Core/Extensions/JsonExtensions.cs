@@ -46,6 +46,16 @@ namespace Exceptionless.Core.Extensions {
                     return serializer.Deserialize<T>(sr);
         }
 
+        public static bool TryFromJson<T>(this string data, out T value, JsonSerializerSettings settings = null) {
+            try {
+                value = data.FromJson<T>(settings);
+                return true;
+            } catch (Exception ex) {
+                value = default(T);
+                return false;
+            }
+        }
+
         public static byte[] ToBson<T>(this T data, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             using (var ms = new MemoryStream()) {
@@ -63,6 +73,16 @@ namespace Exceptionless.Core.Extensions {
                 using (var sr = new BsonReader(sw))
                     return serializer.Deserialize<T>(sr);
         
+        }
+
+        public static bool TryFromBson<T>(this byte[] data, out T value, JsonSerializerSettings settings = null) {
+            try {
+                value = data.FromBson<T>(settings);
+                return true;
+            } catch (Exception ex) {
+                value = default(T);
+                return false;
+            }
         }
     }
 }

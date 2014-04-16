@@ -226,6 +226,9 @@
     <Compile Include="EventPlugins\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="Extensions\PrincipalUtility.cs" />
+    <Compile Include="EventParserPlugins\Default\DefaultEventParserPlugin.cs" />
+    <Compile Include="EventParserPlugins\EventParserPluginManager.cs" />
+    <Compile Include="EventParserPlugins\IEventParserPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />

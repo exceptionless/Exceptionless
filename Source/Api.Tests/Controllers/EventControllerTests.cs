@@ -46,7 +46,10 @@ namespace Exceptionless.Tests.Controllers {
                 return new[] {
                     new object[] { "simple string", 1 }, 
                     new object[] { " \r\nsimple string", 1 }, 
-                    new object[] { "{simple string", 1 },
+                    new object[] { "{simple string,simple string}", 1 },
+                    new object[] { "[simple string,simple string]", 1 },
+                    new object[] { "{ \"name\": \"value\" }", 1 },
+                    new object[] { "{ \"message\": \"simple string\" }", 1 },
                     new object[] { "simple string\r\nsimple string", 2 }, 
                 };
             }
