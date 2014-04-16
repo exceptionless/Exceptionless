@@ -51,8 +51,8 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.ServiceBus, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.2.1.1\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
+    <Reference Include="Microsoft.ServiceBus, Version=2.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.3.1.0\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <Private>True</Private>
@@ -71,7 +71,7 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Newtonsoft.Json.6.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="NLog, Version=2.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -127,23 +127,25 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\StatsdCsharpClient.1.2.1.0\lib\net45\StatsdClient.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=1.7.7.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Stripe.net, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.1.7.7\lib\net40\Stripe.net.dll</HintPath>
+      <HintPath>..\..\packages\Stripe.net.2.0.1\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
-    <Reference Include="System.Net.Http.Extensions">
-      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.19\lib\net45\System.Net.Http.Extensions.dll</HintPath>
+    <Reference Include="System.Net.Http.Extensions, Version=2.2.19.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.20\lib\net45\System.Net.Http.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http.Formatting, Version=5.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.1.2\lib\net45\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
-    <Reference Include="System.Net.Http.Primitives">
-      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.19\lib\net45\System.Net.Http.Primitives.dll</HintPath>
+    <Reference Include="System.Net.Http.Primitives, Version=4.2.19.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.20\lib\net45\System.Net.Http.Primitives.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Serialization" />
@@ -197,8 +199,9 @@
     <Reference Include="UAParser">
       <HintPath>..\..\packages\UAParser.1.0.2.0\lib\net40\UAParser.dll</HintPath>
     </Reference>
-    <Reference Include="YamlDotNet">
-      <HintPath>..\..\packages\YamlDotNet.3.0.0\lib\net35\YamlDotNet.dll</HintPath>
+    <Reference Include="YamlDotNet, Version=2.0.1.20271, Culture=neutral, PublicKeyToken=2b53052c5884d7a1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\YamlDotNet.3.1.1\lib\net35\YamlDotNet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -379,6 +382,7 @@
     <Compile Include="Web\InvalidModelStateFilterAttribute.cs" />
     <Compile Include="Web\RequireHttpsAttribute.cs" />
     <Compile Include="Web\RequireHttpsExceptLocalAttribute.cs" />
+    <None Include="Performance\Microsoft.ServiceBus.MessagingPerformanceCounters.man" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
