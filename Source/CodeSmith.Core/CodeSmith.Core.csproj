@@ -283,12 +283,12 @@
     <Compile Include="Scheduler\DefaultJobLockProvider.cs" />
     <Compile Include="Scheduler\IJob.cs" />
     <Compile Include="Scheduler\IJobConfiguration.cs" />
-    <Compile Include="Scheduler\Job.cs" />
+    <Compile Include="Scheduler\JobRunner.cs" />
     <Compile Include="Scheduler\JobAction.cs" />
-    <Compile Include="Scheduler\JobBase.cs" />
+    <Compile Include="Scheduler\Job.cs" />
     <Compile Include="Scheduler\JobCollection.cs" />
     <Compile Include="Scheduler\JobConfiguration.cs" />
-    <Compile Include="Scheduler\JobContext.cs" />
+    <Compile Include="Scheduler\JobRunContext.cs" />
     <Compile Include="Scheduler\JobEventArgs.cs" />
     <Compile Include="Scheduler\JobHistoryProvider.cs" />
     <Compile Include="Scheduler\JobLockProviderCollection.cs" />

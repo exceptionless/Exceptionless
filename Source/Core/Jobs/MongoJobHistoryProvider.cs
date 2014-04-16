@@ -22,24 +22,24 @@ namespace Exceptionless.Core.Jobs {
             _jobHistoryRepository = repository;
         }
 
-        public override void RestoreHistory(Job job) {
-            var history = _jobHistoryRepository.Where(h => h.Name == job.Name).OrderByDescending(j => j.StartTime).FirstOrDefault();
+        public override void RestoreHistory(JobRunner jobRunner) {
+            var history = _jobHistoryRepository.Where(h => h.Name == jobRunner.Name).OrderByDescending(j => j.StartTime).FirstOrDefault();
             if (history == null)
                 return;
 
-            job.LastResult = history.Result;
-            job.LastRunStartTime = history.StartTime;
-            job.LastRunFinishTime = history.FinishTime;
-            job.LastStatus = (JobStatus)history.Status;
+            jobRunner.LastResult = history.Result;
+            jobRunner.LastRunStartTime = history.StartTime;
+            jobRunner.LastRunFinishTime = history.FinishTime;
+            jobRunner.LastStatus = (JobStatus)history.Status;
         }
 
-        public override void SaveHistory(Job job) {
+        public override void SaveHistory(JobRunner jobRunner) {
             var history = new JobHistory {
-                Name = job.Name,
-                StartTime = job.LastRunStartTime,
-                FinishTime = job.LastRunFinishTime,
-                Status = (int)job.LastStatus,
-                Result = job.LastResult
+                Name = jobRunner.Name,
+                StartTime = jobRunner.LastRunStartTime,
+                FinishTime = jobRunner.LastRunFinishTime,
+                Status = (int)jobRunner.LastStatus,
+                Result = jobRunner.LastResult
             };
 
             _jobHistoryRepository.Add(history);

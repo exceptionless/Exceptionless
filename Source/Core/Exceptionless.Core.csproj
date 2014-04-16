@@ -222,6 +222,7 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="EventPlugins\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
+    <Compile Include="Extensions\PrincipalUtility.cs" />
     <Compile Include="FormattingPlugins\Default\ErrorFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="FormattingPlugins\FormattingPluginBase.cs" />
@@ -324,6 +325,7 @@
     <Compile Include="Utility\ExtensibleObject.cs" />
     <Compile Include="Utility\NLogExceptionlessLog.cs" />
     <Compile Include="Web\JsonContentNegotiator.cs" />
+    <Compile Include="Web\NakedParameterBinding.cs" />
     <Compile Include="Web\NotSuspendedAttribute.cs" />
     <Compile Include="Web\ThrottlingHandler.cs" />
     <Compile Include="Web\UpgradableJsonMediaTypeFormatter.cs" />

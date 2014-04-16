@@ -27,21 +27,23 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public void Run(Event ev) {
-            if (String.IsNullOrEmpty(ev.OrganizationId))
-                throw new ArgumentException("OrganizationId must be populated on the Event.");
             if (String.IsNullOrEmpty(ev.ProjectId))
                 throw new ArgumentException("ProjectId must be populated on the Event.");
 
+            var project = _projectRepository.GetByIdCached(ev.ProjectId);
+            if (project == null)
+                throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
+
+            if (String.IsNullOrEmpty(ev.OrganizationId))
+                ev.OrganizationId = project.OrganizationId;
+
             var ctx = new EventContext(ev) {
                 Organization = _organizationRepository.GetByIdCached(ev.OrganizationId),
-                Project = _projectRepository.GetByIdCached(ev.ProjectId)
+                Project = project
             };
 
             if (ctx.Organization == null)
                 throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", ev.OrganizationId));
-
-            if (ctx.Project == null)
-                throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
 
             // load organization settings into the context
             foreach (var key in ctx.Organization.Data.Keys)

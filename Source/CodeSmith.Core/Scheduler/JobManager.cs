@@ -273,7 +273,7 @@ namespace CodeSmith.Core.Scheduler {
                     }
 
                     //remove jobs
-                    foreach (Job job in providerJobs) {
+                    foreach (JobRunner job in providerJobs) {
                         job.Stop(true);
                         _jobs.Remove(job);
                     }
@@ -283,7 +283,7 @@ namespace CodeSmith.Core.Scheduler {
                     AddJobs(provider.GetJobs(), provider);
                     wasReloaded = true;
 
-                    foreach (Job job in providerJobs)
+                    foreach (JobRunner job in providerJobs)
                         job.Start();
                 }
             }
@@ -335,7 +335,7 @@ namespace CodeSmith.Core.Scheduler {
                     jobHistoryProvider = _dependencyResolver.GetService<JobHistoryProvider>();
                 }
 
-                var j = new Job(jobConfiguration, jobType, jobLockProvider, jobHistoryProvider, _dependencyResolver);
+                var j = new JobRunner(jobConfiguration, jobType, jobLockProvider, jobHistoryProvider, _dependencyResolver);
                 _jobs.Add(j);
 
                 // keep track of jobs for providers so they can be sync'd later
@@ -362,7 +362,7 @@ namespace CodeSmith.Core.Scheduler {
             Initialize();
 
             lock (_initLock) {
-                foreach (Job j in _jobs)
+                foreach (JobRunner j in _jobs)
                     j.Start();
             }
 
@@ -378,7 +378,7 @@ namespace CodeSmith.Core.Scheduler {
 
             lock (_initLock) {
                 if (_jobs != null) {
-                    foreach (Job j in _jobs) {
+                    foreach (JobRunner j in _jobs) {
                         if (j != null)
                             j.Stop(true);
                     }
@@ -486,7 +486,7 @@ namespace CodeSmith.Core.Scheduler {
         /// </summary>
         public void Dispose() {
             if (_jobs != null) {
-                foreach (Job j in _jobs) {
+                foreach (JobRunner j in _jobs) {
                     if (j != null)
                         j.Stop(true);
                 }

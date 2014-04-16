@@ -10,24 +10,25 @@
 #endregion
 
 using System;
+using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
 using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Jobs {
-    public class StartMqJob : JobBase {
+    public class StartMqJob : Job {
         private readonly IMessageService _messageService;
 
         public StartMqJob(IMessageService messageService) {
             _messageService = messageService;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             if (!String.Equals(_messageService.GetStatus(), "Disposed"))
                 _messageService.Start();
 
-            return new JobResult {
-                Result = "Successfully started the message service."
-            };
+            return Task.FromResult(new JobResult {
+                Message = "Successfully started the message service."
+            });
         }
     }
 }

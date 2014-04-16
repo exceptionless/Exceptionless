@@ -12,6 +12,7 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
@@ -23,7 +24,7 @@ using NLog.Fluent;
 using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Jobs {
-    public class DailyNotificationJob : JobBase {
+    public class DailyNotificationJob : Job {
         private readonly ProjectRepository _projectRepository;
         private readonly IMessageFactory _messageFactory;
 
@@ -32,14 +33,14 @@ namespace Exceptionless.Core.Jobs {
             _messageFactory = messageFactory;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Daily Notification job starting").Write();
 
             if (!Settings.Current.EnableSummaryNotifications) {
-                return new JobResult {
-                    Result = "Summary Notifications are disabled.",
-                    Cancelled = true
-                };
+                return Task.FromResult(new JobResult {
+                    Message = "Summary Notifications are disabled.",
+                    IsCancelled = true
+                });
             }
 
             const int BATCH_SIZE = 25;
@@ -86,9 +87,9 @@ namespace Exceptionless.Core.Jobs {
                     .SetLimit(BATCH_SIZE).ToList();
             }
 
-            return new JobResult {
-                Result = "Successfully enforced all retention limits."
-            };
+            return Task.FromResult(new JobResult {
+                Message = "Successfully enforced all retention limits."
+            });
         }
     }
 }

@@ -10,6 +10,9 @@
 #endregion
 
 using System;
+using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Extensions {
@@ -23,6 +26,43 @@ namespace Exceptionless.Core.Extensions {
             target.Add(newName, p.Value);
 
             return true;
+        }
+
+        public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            serializer.Formatting = formatting;
+
+            using (var sw = new StringWriter()) {
+                serializer.Serialize(sw, data, typeof(T));
+                return sw.ToString();
+            }
+        }
+
+        public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+
+            using (var sw = new StringReader(data))
+                using (var sr = new JsonTextReader(sw))
+                    return serializer.Deserialize<T>(sr);
+        }
+
+        public static byte[] ToBson<T>(this T data, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            using (var ms = new MemoryStream()) {
+                using (var writer = new BsonWriter(ms))
+                    serializer.Serialize(writer, data, typeof(T));
+
+                return ms.ToArray();
+            }
+        }
+
+        public static T FromBson<T>(this byte[] data, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+
+            using (var sw = new MemoryStream(data))
+                using (var sr = new BsonReader(sw))
+                    return serializer.Deserialize<T>(sr);
+        
         }
     }
 }

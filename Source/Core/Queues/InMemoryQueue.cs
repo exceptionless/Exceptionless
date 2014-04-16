@@ -35,6 +35,8 @@ namespace Exceptionless.Core.Queues {
             }
         }
 
+        public int Count { get { return _queue.Count; } }
+
         public Task CompleteAsync(string id) {
             QueueInfo<T> info = null;
             if (!_dequeued.TryRemove(id, out info) || info == null)

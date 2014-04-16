@@ -11,7 +11,6 @@
 
 using System;
 using SimpleInjector;
-using SimpleInjector.Integration.WebApi;
 
 namespace Exceptionless.Api.Tests.Utility {
     public static class IoC {
@@ -31,7 +30,7 @@ namespace Exceptionless.Api.Tests.Utility {
             return result as TService;
         }
 
-        private static Container GetContainer() {
+        public static Container GetContainer() {
             if (!_initialized)
                 Initialize();
 
@@ -39,12 +38,10 @@ namespace Exceptionless.Api.Tests.Utility {
         }
 
         private static void Initialize() {
-            _container = SimpleInjectorInitializer.CreateContainer();
+            _container = AppBuilder.CreateContainer();
             _initialized = true;
 
             RegisterServices(_container);
-
-            GlobalConfiguration.Configuration.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(_container);
         }
 
         #endregion

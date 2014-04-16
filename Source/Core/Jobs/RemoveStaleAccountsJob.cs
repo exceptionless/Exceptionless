@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Billing;
@@ -22,7 +23,7 @@ using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class RemoveStaleAccountsJob : JobBase {
+    public class RemoveStaleAccountsJob : Job {
         private readonly OrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Jobs {
             _monthProjectStats = monthProjectStats;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
             int skip = 0;
@@ -77,9 +78,9 @@ namespace Exceptionless.Core.Jobs {
                     .SetLimit(20).SetSkip(skip).ToList();
             }
 
-            return new JobResult {
-                Result = "Successfully removed all stale accounts."
-            };
+            return Task.FromResult(new JobResult {
+                Message = "Successfully removed all stale accounts."
+            });
         }
 
         private void TryDeleteOrganization(Organization organization) {

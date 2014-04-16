@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+﻿using System.Threading.Tasks;
 
 namespace CodeSmith.Core.Scheduler
 {
@@ -14,12 +14,11 @@ namespace CodeSmith.Core.Scheduler
         /// <returns>
         /// A <see cref="JobResult"/> instance indicating the results of the job.
         /// </returns>
-        JobResult Run(JobContext context);
+        Task<JobResult> RunAsync(JobRunContext context);
 
         /// <summary>
         /// Cancels this job.
         /// </summary>
         void Cancel();
-
     }
 }

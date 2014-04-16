@@ -24,7 +24,8 @@ namespace Exceptionless.Api {
             config.Formatters.Remove(config.Formatters.XmlFormatter);
             config.MapHttpAttributeRoutes();
 
-            var container = CreateContainer(config);
+            var container = CreateContainer();
+            container.RegisterWebApiFilterProvider(config);
             try {
                 container.Verify();
             } catch (Exception ex) {
@@ -49,17 +50,7 @@ namespace Exceptionless.Api {
                 if (token != "12345")
                     return next.Invoke();
 
-                var claims = new List<Claim> {
-                    new Claim(ClaimTypes.Name, "ApiUser"),
-                    new Claim(ClaimTypes.Role, AuthorizationRoles.Client),
-                    new Claim(ClaimTypes.Role, AuthorizationRoles.User),
-                    new Claim(ClaimTypes.NameIdentifier, ObjectId.GenerateNewId().ToString()) // the project id
-                };
-
-                var identity = new ClaimsIdentity(claims, "ApiKey");
-                var principal = new ClaimsPrincipal(identity);
-
-                context.Request.User = principal;
+                context.Request.User = PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N"));
                 return next.Invoke();
             });
             app.UseStageMarker(PipelineStage.Authenticate);
@@ -69,13 +60,12 @@ namespace Exceptionless.Api {
             app.UseWebApi(config);
         }
 
-        private static Container CreateContainer(HttpConfiguration config) {
+        public static Container CreateContainer() {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
             container.RegisterPackage<Bootstrapper>();
-            container.RegisterWebApiFilterProvider(config);
 
             return container;
         }

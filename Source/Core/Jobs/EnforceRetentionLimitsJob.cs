@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models.Billing;
@@ -19,7 +20,7 @@ using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class EnforceRetentionLimitsJob : JobBase {
+    public class EnforceRetentionLimitsJob : Job {
         private readonly OrganizationRepository _organizationRepository;
         private readonly EventRepository _eventRepository;
 
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Enforce retention limits job starting").Write();
 
             int skip = 0;
@@ -47,9 +48,9 @@ namespace Exceptionless.Core.Jobs {
                     .SetLimit(100).SetSkip(skip).ToList();
             }
 
-            return new JobResult {
-                Result = "Successfully enforced all retention limits."
-            };
+            return Task.FromResult(new JobResult {
+                Message = "Successfully enforced all retention limits."
+            });
         }
 
         private void EnforceErrorCountLimits(Organization organization) {

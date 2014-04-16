@@ -45,20 +45,20 @@ namespace Exceptionless.Tests.Jobs {
             Repository.Add(project2);
 
             var job = new DailyNotificationJob(Repository as ProjectRepository, _messageFactoryMock.Object);
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(1, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
             Assert.Equal(project2.NextSummaryEndOfDayTicks, Repository.GetById(project2.Id).NextSummaryEndOfDayTicks);
 
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(1, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
             Assert.Equal(project2.NextSummaryEndOfDayTicks, Repository.GetById(project2.Id).NextSummaryEndOfDayTicks);
 
             Thread.Sleep(250);
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(2, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
@@ -79,7 +79,7 @@ namespace Exceptionless.Tests.Jobs {
             // TODO: We need to have some kind of lock to where we can unit test this.
             Parallel.For(0, 5, (i) => {
                 var job = new DailyNotificationJob(Repository as ProjectRepository, _messageFactoryMock.Object);
-                job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+                job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
             });
 
             Assert.Equal(numberOfProjects, _messages.Count);

@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Security.Claims;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Web;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
@@ -35,12 +38,25 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public async Task<IHttpActionResult> Post() {
-            byte[] data = await Request.Content.ReadAsByteArrayAsync();
+        public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null) {
+            if (projectId == null) {
+                var ctx = Request.GetOwinContext();
+                if (ctx != null && ctx.Request != null && ctx.Request.User != null)
+                    projectId = ctx.Request.User.GetApiKeyProjectId();
+            }
+
+            // must have a project id
+            if (String.IsNullOrEmpty(projectId))
+                return StatusCode(HttpStatusCode.Unauthorized);
+
+            bool isCompressed = Request.Content.Headers.ContentEncoding.Contains("gzip");
+            if (!isCompressed)
+                data = data.Compress();
+
             await _eventPostQueue.EnqueueAsync(new EventPost {
-                ContentType = Request.Content.Headers.ContentType.ToString(),
-                ContentEncoding = Request.Content.Headers.ContentEncoding.ToString(),
-                ProjectId = ((ClaimsIdentity)User.Identity).FindFirst(ClaimTypes.NameIdentifier).Value,
+                MediaType = Request.Content.Headers.ContentType.MediaType,
+                CharSet = Request.Content.Headers.ContentType.CharSet,
+                ProjectId = projectId,
                 Data = data
             });
 
