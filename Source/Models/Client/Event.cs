@@ -8,6 +8,7 @@
 #endregion
 
 using System;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Models {
     public class Event : IData
@@ -102,6 +103,22 @@ namespace Exceptionless.Models {
                 Tags = new TagSet();
 
             Tags.Add(KnownTags.Critical);
+        }
+
+        public bool IsNotFound {
+            get { return Type == KnownTypes.NotFound; }
+        }
+
+        public bool IsError {
+            get { return Type == KnownTypes.Error; }
+        }
+
+        public void SetError(Error error) {
+            Data[KnownDataKeys.Error] = error;
+        }
+
+        public void SetRequestInfo(RequestInfo requestInfo) {
+            Data[KnownDataKeys.RequestInfo] = requestInfo;
         }
 
 #if !EMBEDDED

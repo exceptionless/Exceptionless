@@ -33,6 +33,14 @@
     <Reference Include="Microsoft.Owin">
       <HintPath>..\..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
+    <Reference Include="MongoDB.Bson, Version=1.9.0.200, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.9.0\lib\net35\MongoDB.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="MongoDB.Driver, Version=1.9.0.200, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\mongocsharpdriver.1.9.0\lib\net35\MongoDB.Driver.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
@@ -112,8 +120,15 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Controllers\EventControllerTests.cs" />
+    <Compile Include="Controllers\MongoTestHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Utility\StackData.cs" />
+    <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />
+    <Compile Include="Utility\OrganizationData.cs" />
+    <Compile Include="Utility\ProjectData.cs" />
+    <Compile Include="Utility\TestConstants.cs" />
+    <Compile Include="Utility\UserData.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Api\Exceptionless.Api.csproj">

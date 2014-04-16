@@ -1,17 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http.Headers;
-using System.Security.Claims;
 using System.Web.Http;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
-using MongoDB.Bson;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;

@@ -48,9 +48,9 @@ namespace Exceptionless.Core {
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
 
-        protected override void InitializeCollection(MongoCollection<Project> collection) {
-            base.InitializeCollection(collection);
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
             // TODO: Should we set an index on project and configuration key name.
         }
 

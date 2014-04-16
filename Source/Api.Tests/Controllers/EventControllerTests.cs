@@ -20,22 +20,29 @@ using System.Web.Http;
 using System.Web.Http.Hosting;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
+using Exceptionless.Api.Tests.Controllers;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Tests.Utility;
 using Microsoft.Owin;
 using Xunit;
 
 namespace Exceptionless.Tests.Controllers {
-    public class EventControllerTests {
+    public class EventControllerTests : MongoTestHelper {
         private readonly EventController _eventController = IoC.GetInstance<EventController>();
         private readonly InMemoryQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
 
+        public EventControllerTests() {
+            ResetDatabase();
+            AddSamples();
+        }
+
         [Fact]
         public void CanPostSimpleString() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), false, false);
+            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), false, false);
             var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
@@ -43,11 +50,13 @@ namespace Exceptionless.Tests.Controllers {
             var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
             var result = processEventsJob.Run();
             Assert.Equal(0, _eventQueue.Count);
+            Assert.Equal(1, EventCount());
+            RemoveAllEvents();
         }
 
         [Fact]
         public void CanPostCompressedSimpleString() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), true, false);
+            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
             var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
@@ -55,11 +64,12 @@ namespace Exceptionless.Tests.Controllers {
             var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
             var result = processEventsJob.Run();
             Assert.Equal(0, _eventQueue.Count);
+            RemoveAllEvents();
         }
 
         [Fact]
         public void CanPostSingleEvent() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N")), true, false);
+            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
             var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
@@ -67,6 +77,7 @@ namespace Exceptionless.Tests.Controllers {
             var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
             var result = processEventsJob.Run();
             Assert.Equal(0, _eventQueue.Count);
+            RemoveAllEvents();
         }
 
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {

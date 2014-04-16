@@ -9,7 +9,6 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues;
 using Newtonsoft.Json;
 using Exceptionless.Models;
-using MongoDB.Bson;
 using NLog.Fluent;
 using Encoding = System.Text.Encoding;
 

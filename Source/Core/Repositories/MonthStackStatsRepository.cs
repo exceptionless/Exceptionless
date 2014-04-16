@@ -43,11 +43,11 @@ namespace Exceptionless.Core.Repositories {
             return entity.Id;
         }
 
-        protected override void InitializeCollection(MongoCollection<MonthStackStats> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<MonthStackStats> cm) {

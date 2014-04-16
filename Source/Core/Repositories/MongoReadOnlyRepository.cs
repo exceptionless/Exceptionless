@@ -23,14 +23,11 @@ namespace Exceptionless.Core {
     /// Deals with entities in MongoDb.
     /// </summary>
     /// <typeparam name="T">The type contained in the repository.</typeparam>
-    public abstract class MongoReadOnlyRepository<T> : IReadOnlyRepository<T>, IMongoRepositoryManager<T> where T : class, new() {
-        private static readonly object _locker = new object();
-        private static bool _intialized;
-
+    public abstract class MongoReadOnlyRepository<T> : IReadOnlyRepository<T>, IMongoRepositoryManagement where T : class, new() {
         /// <summary>
         /// MongoCollection field.
         /// </summary>
-        protected readonly MongoCollection<T> _collection;
+        protected MongoCollection<T> _collection;
 
         /// <summary>
         /// Initializes a new instance of the MongoRepository class.
@@ -38,19 +35,7 @@ namespace Exceptionless.Core {
         /// </summary>
         protected MongoReadOnlyRepository(MongoDatabase database, ICacheClient cacheClient = null) {
             Cache = cacheClient;
-            if (!database.CollectionExists(GetCollectionName()))
-                CreateCollection(database);
-
-            _collection = database.GetCollection<T>(GetCollectionName());
-
-            lock (_locker) {
-                if (_intialized)
-                    return;
-
-                _intialized = true;
-
-                InitializeCollection(_collection);
-            }
+            InitializeCollection(database);
         }
 
         protected virtual void CreateCollection(MongoDatabase database) {
@@ -67,11 +52,28 @@ namespace Exceptionless.Core {
 
         protected abstract string GetId(T entity);
 
-        void IMongoRepositoryManager<T>.InitializeCollection(MongoCollection<T> collection) {
-            InitializeCollection(collection);
+        void IMongoRepositoryManagement.InitializeCollection(MongoDatabase database) {
+            InitializeCollection(database);
         }
 
-        protected virtual void InitializeCollection(MongoCollection<T> collection) {
+        MongoCollection IMongoRepositoryManagement.GetCollection() {
+            return _collection;
+        }
+
+        string IMongoRepositoryManagement.GetCollectionName() {
+            return GetCollectionName();
+        }
+
+        Type IMongoRepositoryManagement.GetEntityType() {
+            return typeof(T);
+        }
+
+        protected virtual void InitializeCollection(MongoDatabase database) {
+            if (!database.CollectionExists(GetCollectionName()))
+                CreateCollection(database);
+
+            _collection = database.GetCollection<T>(GetCollectionName());
+
             if (!BsonClassMap.IsClassMapRegistered(typeof(T)))
                 BsonClassMap.RegisterClassMap<T>(ConfigureClassMap);
         }

@@ -13,15 +13,10 @@ using System;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core {
-    /// <summary>
-    /// IMongoRepositoryManager definition.
-    /// </summary>
-    /// <typeparam name="T">The type contained in the repository.</typeparam>
-    public interface IMongoRepositoryManager<T> {
-        /// <summary>
-        /// Initializes a collection.
-        /// </summary>
-        /// <param name="collection">The collection.</param>
-        void InitializeCollection(MongoCollection<T> collection);
+    public interface IMongoRepositoryManagement {
+        void InitializeCollection(MongoDatabase database);
+        MongoCollection GetCollection();
+        string GetCollectionName();
+        Type GetEntityType();
     }
 }

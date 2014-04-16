@@ -61,12 +61,12 @@ namespace Exceptionless.Core {
             public const string Tags = "tag";
         }
 
-        protected override void InitializeCollection(MongoCollection<Stack> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true).SetBackground(true));
-            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), M.IndexOptions.SetBackground(true));
-            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), M.IndexOptions.SetBackground(true));
+            _collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true).SetBackground(true));
+            _collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), M.IndexOptions.SetBackground(true));
+            _collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), M.IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Stack> cm) {

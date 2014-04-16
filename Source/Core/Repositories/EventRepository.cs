@@ -66,14 +66,14 @@ namespace Exceptionless.Core {
             public const string RequestInfo_ClientIpAddress = RequestInfo + ".ip";
         }
 
-        protected override void InitializeCollection(MongoCollection<Event> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.Date_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Type), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Descending(FieldNames.StackId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.Date_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Type), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Descending(FieldNames.StackId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Event> cm) {

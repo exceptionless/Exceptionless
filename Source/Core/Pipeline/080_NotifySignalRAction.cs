@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override void Process(EventContext ctx) {
             using (IRedisClient client = _clientsManager.GetClient())
-                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Event.OrganizationId, ":", ctx.Event.ProjectId, ":", ctx.Event.StackId, ":", ctx.Event.IsHidden, ":", ctx.Event.IsFixed, ":", ctx.Event.IsNotFound()));
+                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Event.OrganizationId, ":", ctx.Event.ProjectId, ":", ctx.Event.StackId, ":", ctx.Event.IsHidden, ":", ctx.Event.IsFixed, ":", ctx.Event.IsNotFound));
         }
     }
 }

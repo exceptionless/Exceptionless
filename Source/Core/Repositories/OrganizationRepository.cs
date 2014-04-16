@@ -61,12 +61,12 @@ namespace Exceptionless.Core {
             public const string OverageDays = "OverageDays";
         }
 
-        protected override void InitializeCollection(MongoCollection<Organization> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_Token), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_EmailAddress), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.StripeCustomerId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_Token), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_EmailAddress), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StripeCustomerId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Organization> cm) {

@@ -43,11 +43,11 @@ namespace Exceptionless.Core {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override void InitializeCollection(MongoCollection<ProjectHook> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<ProjectHook> cm) {

@@ -32,10 +32,10 @@ namespace Exceptionless.Core {
             database.CreateCollection(GetCollectionName(), options);
         }
 
-        protected override void InitializeCollection(MongoCollection<JobHistory> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.Name, FieldNames.StartTime), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Name, FieldNames.StartTime), IndexOptions.SetBackground(true));
         }
 
         public const string CollectionName = "jobhistory";

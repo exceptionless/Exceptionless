@@ -39,13 +39,13 @@ namespace Exceptionless.Core {
             public const string OAuthAccounts_ProviderUserId = "OAuthAccounts.ProviderUserId";
         }
 
-        protected override void InitializeCollection(MongoCollection<User> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
-            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
-            collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
-            collection.CreateIndex(IndexKeys<User>.Ascending(u => u.Roles), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.Roles), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<User> cm) {

@@ -282,6 +282,7 @@
     <Compile Include="Queues\WorkItem.cs" />
     <Compile Include="Repositories\CommonFieldNames.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
+    <Compile Include="Repositories\MongoRepositoryManager.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
     <Compile Include="Settings.cs" />
@@ -345,7 +346,7 @@
     <Compile Include="Extensions\HttpExtensions.cs" />
     <Compile Include="Repositories\Interfaces\IStackRepository.cs" />
     <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IMongoRepositoryManager.cs" />
+    <Compile Include="Repositories\Interfaces\IMongoRepositoryManagement.cs" />
     <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
     <Compile Include="Utility\ErrorSignature.cs" />
     <Compile Include="Web\XHttpMethodOverrideMessageHandler.cs" />

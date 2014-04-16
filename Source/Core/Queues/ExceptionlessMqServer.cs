@@ -265,7 +265,7 @@ namespace Exceptionless.Core.Queues {
                 }
 
                 // check for 404s if the user has elected to not report them
-                if (shouldReportOccurrence && settings.Report404Errors == false && data.Event.IsNotFound()) {
+                if (shouldReportOccurrence && settings.Report404Errors == false && data.Event.IsNotFound) {
                     shouldReportOccurrence = false;
                     Log.Trace().Message("Skipping because message is 404.").Write();
                 }

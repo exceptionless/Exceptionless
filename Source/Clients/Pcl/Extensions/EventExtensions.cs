@@ -122,20 +122,6 @@ namespace Exceptionless {
         //}
         //#endif
 
-        public static bool IsNotFound(this Event ev) {
-            if (ev == null)
-                return false;
-
-            return ev.Type == Event.KnownTypes.NotFound;
-        }
-
-        public static bool IsError(this Event ev) {
-            if (ev == null)
-                return false;
-
-            return ev.Type == Event.KnownTypes.Error;
-        }
-
         public static Error GetError(this Event ev, IJsonSerializer serializer = null) {
             if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.Error))
                 return null;
@@ -147,11 +133,6 @@ namespace Exceptionless {
             return null;
         }
 
-        public static void SetError(this Event ev, Error error) {
-            if (ev != null)
-                ev.Data[Event.KnownDataKeys.Error] = error;
-        }
-
         public static RequestInfo GetRequestInfo(this Event ev, IJsonSerializer serializer = null) {
             if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
                 return null;
@@ -161,11 +142,6 @@ namespace Exceptionless {
             } catch (Exception) {}
 
             return null;
-        }
-
-        public static void SetRequestInfo(this Event ev, RequestInfo requestInfo) {
-            if (ev != null)
-                ev.Data[Event.KnownDataKeys.RequestInfo] = requestInfo;
         }
     }
 

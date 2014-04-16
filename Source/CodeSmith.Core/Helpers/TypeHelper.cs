@@ -45,7 +45,7 @@ namespace CodeSmith.Core.Helpers
 
             return assemblies.SelectMany(assembly => (
                 from type in assembly.GetTypes()
-                where (type.IsClass && !type.IsNotPublic) && !type.IsAbstract && type.IsSubclassOf(typeof(TAction))
+                where (type.IsClass && !type.IsNotPublic) && !type.IsAbstract && typeof(TAction).IsAssignableFrom(type)
                 select type));
         }
     }

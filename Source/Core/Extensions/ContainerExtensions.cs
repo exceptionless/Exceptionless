@@ -25,5 +25,12 @@ namespace Exceptionless.Core.Extensions {
 
             package.RegisterServices(container);
         }
+
+        public static void RegisterSingleImplementation<TImplementation>(this Container container, params Type[] serviceTypesToRegisterFor) {
+            var implementationType = typeof(TImplementation);
+            var registration = Lifestyle.Singleton.CreateRegistration(implementationType, implementationType, container);
+            foreach (var serviceType in serviceTypesToRegisterFor)
+                container.AddRegistration(serviceType, registration);
+        }
     }
 }

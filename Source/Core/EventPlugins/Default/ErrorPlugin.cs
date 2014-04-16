@@ -49,7 +49,7 @@ namespace Exceptionless.Core.EventPlugins.Default {
         }
 
         public override void EventProcessing(EventContext context) {
-            if (!context.Event.IsError())
+            if (!context.Event.IsError)
                 return;
 
             Error error = context.Event.GetError();

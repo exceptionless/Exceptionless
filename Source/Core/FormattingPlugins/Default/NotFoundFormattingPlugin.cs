@@ -5,10 +5,10 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.FormattingPlugins.Default {
-    [Priority(10)]
+    [Priority(20)]
     public class NotFoundFormattingPlugin : IFormattingPlugin {
         private bool ShouldHandle(Event ev) {
-            return ev.IsNotFound();
+            return ev.IsNotFound;
         }
 
         public string GetStackSummaryHtml(Event ev) {
