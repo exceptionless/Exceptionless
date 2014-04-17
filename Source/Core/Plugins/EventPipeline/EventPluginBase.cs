@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Core.EventPlugins {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     public abstract class EventPluginBase : IEventPlugin {
         public virtual void Startup() {}
 

@@ -3,7 +3,7 @@ using System.Net.Mail;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.FormattingPlugins {
+namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : IFormattingPlugin {
         public virtual string GetStackSummaryHtml(Event ev) {
             return null;

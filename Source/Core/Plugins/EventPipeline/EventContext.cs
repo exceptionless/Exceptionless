@@ -15,7 +15,7 @@ using CodeSmith.Core.Component;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.EventPlugins {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     public class EventContext : ExtensibleObject, IPipelineContext {
         public EventContext(Event data) {
             Event = data;

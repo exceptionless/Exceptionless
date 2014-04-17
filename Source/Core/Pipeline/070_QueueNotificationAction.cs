@@ -13,7 +13,7 @@ using System;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models.Admin;
 using NLog.Fluent;

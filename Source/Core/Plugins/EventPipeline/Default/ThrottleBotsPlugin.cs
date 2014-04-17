@@ -5,7 +5,7 @@ using CodeSmith.Core.Extensions;
 using NLog.Fluent;
 using ServiceStack.CacheAccess;
 
-namespace Exceptionless.Core.EventPlugins.Default {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     [Priority(10)]
     public class ThrottleBotsPlugin : EventPluginBase {
         private readonly ICacheClient _cacheClient;

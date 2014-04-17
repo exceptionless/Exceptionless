@@ -15,7 +15,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.FormattingPlugins;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models;
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendNotice(string emailAddress, EventNotification model) {
-            var msg = _pluginManager.GetEventMailContent(model);
+            var msg = _pluginManager.GetEventNotificationMailMessage(model);
             msg.To.Add(emailAddress);
             msg.Headers.Add("X-Mailer-Machine", Environment.MachineName);
             msg.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());

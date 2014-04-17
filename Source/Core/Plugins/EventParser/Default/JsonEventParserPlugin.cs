@@ -6,7 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using Newtonsoft.Json;
 
-namespace Exceptionless.Core.EventParserPlugins.Default {
+namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(0)]
     public class JsonEventParserPlugin : IEventParserPlugin {
         public List<Event> ParseEvents(string input) {

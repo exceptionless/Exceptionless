@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core.EventParserPlugins;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues;
-using Newtonsoft.Json;
 using Exceptionless.Models;
 using NLog.Fluent;
-using Encoding = System.Text.Encoding;
 
 namespace Exceptionless.Core.Jobs {
     public class ProcessEventsJob : Job {

@@ -7,7 +7,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using RazorSharpEmail;
 
-namespace Exceptionless.Core.FormattingPlugins.Default {
+namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]
     public class ErrorFormattingPlugin : IFormattingPlugin {
         private readonly IEmailGenerator _emailGenerator;

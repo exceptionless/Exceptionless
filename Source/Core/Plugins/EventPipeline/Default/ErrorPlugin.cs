@@ -7,7 +7,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using MongoDB.Bson.Serialization;
 
-namespace Exceptionless.Core.EventPlugins.Default {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     [Priority(15)]
     public class ErrorPlugin : EventPluginBase {
         public override void Startup() {

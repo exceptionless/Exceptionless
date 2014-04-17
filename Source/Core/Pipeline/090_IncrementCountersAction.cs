@@ -13,7 +13,7 @@ using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]

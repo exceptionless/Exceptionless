@@ -1,23 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mail;
-using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Plugins;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using NLog.Fluent;
 
-namespace Exceptionless.Core.FormattingPlugins {
-    public class FormattingPluginManager {
-        private readonly IDependencyResolver _dependencyResolver;
-
-        public FormattingPluginManager(IDependencyResolver dependencyResolver = null) {
-            _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
-            Plugins = new SortedList<int, IFormattingPlugin>();
-            LoadDefaultFormattingPlugins();
-        }
+namespace Exceptionless.Core.Plugins.Formatting {
+    public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
+        public FormattingPluginManager(IDependencyResolver dependencyResolver = null) : base(dependencyResolver) { }
 
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
@@ -73,7 +65,7 @@ namespace Exceptionless.Core.FormattingPlugins {
         /// <summary>
         /// Runs through the formatting plugins to get notification mail content for an event.
         /// </summary>
-        public MailMessage GetEventMailContent(EventNotification model) {
+        public MailMessage GetEventNotificationMailMessage(EventNotification model) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     MailMessage result = plugin.GetEventNotificationMailMessage(model);
@@ -102,28 +94,6 @@ namespace Exceptionless.Core.FormattingPlugins {
             }
 
             return null;
-        }
-
-        public SortedList<int, IFormattingPlugin> Plugins { get; private set; }
-
-        public void AddPlugin(Type pluginType) {
-            var attr = pluginType.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
-            int priority = attr != null ? attr.Priority : 0;
-
-            var plugin = _dependencyResolver.GetService(pluginType) as IFormattingPlugin;
-            Plugins.Add(priority, plugin);
-        }
-
-        private void LoadDefaultFormattingPlugins() {
-            var pluginTypes = TypeHelper.GetDerivedTypes<IFormattingPlugin>();
-
-            foreach (var type in pluginTypes) {
-                try {
-                    AddPlugin(type);
-                } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unable to instantiate plugin of type \"{0}\": {1}", type.FullName, ex.Message).Write();
-                }
-            }
         }
     }
 }

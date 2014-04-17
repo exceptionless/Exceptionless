@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {

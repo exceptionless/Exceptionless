@@ -114,6 +114,7 @@ namespace Exceptionless.Models {
         }
 
         public void SetError(Error error) {
+            Type = KnownTypes.Error;
             Data[KnownDataKeys.Error] = error;
         }
 

@@ -14,8 +14,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.EventPlugins;
-using Exceptionless.Core.FormattingPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Models;
 using NLog.Fluent;
 

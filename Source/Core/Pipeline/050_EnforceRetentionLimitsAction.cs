@@ -12,7 +12,7 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;

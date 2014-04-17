@@ -6,7 +6,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Models.Data;
 using MongoDB.Bson.Serialization;
 
-namespace Exceptionless.Core.EventPlugins.Default {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     [Priority(0)]
     public class RequestInfoPlugin : EventPluginBase {
         public override void Startup() {

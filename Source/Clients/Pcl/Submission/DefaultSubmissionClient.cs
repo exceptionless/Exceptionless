@@ -20,7 +20,7 @@ using Exceptionless.Submission.Net;
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
         public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.ServerUrl, "error"));
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.ServerUrl, "event"));
             client.AddAuthorizationHeader(configuration);
 
             // TODO: We only support one error right now..

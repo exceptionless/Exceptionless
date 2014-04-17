@@ -5,7 +5,7 @@ using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.EventParserPlugins.Default {
+namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
     public class FallbackEventParserPlugin : IEventParserPlugin {
         public List<Event> ParseEvents(string input) {

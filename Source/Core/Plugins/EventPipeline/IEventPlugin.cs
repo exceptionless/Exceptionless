@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Core.EventPlugins {
+namespace Exceptionless.Core.Plugins.EventPipeline {
     public interface IEventPlugin {
         void Startup();
         void EventProcessing(EventContext context);

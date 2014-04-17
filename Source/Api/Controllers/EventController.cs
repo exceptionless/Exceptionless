@@ -49,6 +49,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return StatusCode(HttpStatusCode.Unauthorized);
 
+            // TODO: Add a check to see if the project id is over it's project limits. If it is, then turn off the client.
+
             bool isCompressed = Request.Content.Headers.ContentEncoding.Contains("gzip");
             if (!isCompressed)
                 data = data.Compress();

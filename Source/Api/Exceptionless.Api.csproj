@@ -124,6 +124,7 @@
     </Compile>
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

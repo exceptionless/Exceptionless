@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Pipeline {

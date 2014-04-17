@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {

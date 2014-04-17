@@ -11,7 +11,7 @@
 
 using System;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.EventPlugins;
+using Exceptionless.Core.Plugins.EventPipeline;
 using MongoDB.Driver;
 using NLog.Fluent;
 
