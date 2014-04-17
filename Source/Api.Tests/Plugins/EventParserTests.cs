@@ -20,6 +20,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                     new object[] { "{simple string,simple string}", 1, Event.KnownTypes.Log },
                     new object[] { "{ \"name\": \"value\" }", 1, Event.KnownTypes.Log },
                     new object[] { "{ \"message\": \"simple string\" }", 1, Event.KnownTypes.Log },
+                    new object[] { "{ \"message\": \"simple string\", { \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, Event.KnownTypes.Error },
                     new object[] { "[simple string", 1, Event.KnownTypes.Log },
                     new object[] { "[simple string,simple string]", 1, Event.KnownTypes.Log },
                     new object[] { "simple string\r\nsimple string", 2, Event.KnownTypes.Log }, 
