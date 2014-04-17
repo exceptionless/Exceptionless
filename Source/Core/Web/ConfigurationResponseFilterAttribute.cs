@@ -10,26 +10,39 @@
 #endregion
 
 using System;
+using System.Net;
 using System.Net.Http;
 using System.Web.Http.Filters;
-using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Web {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ConfigurationResponseFilterAttribute : ActionFilterAttribute {
+        [Inject]
+        public IProjectRepository ProjectRepository { get; set; }
+
         public override void OnActionExecuted(HttpActionExecutedContext context) {
             if (context == null)
                 throw new ArgumentNullException("context");
 
-            if (context.Response == null)
+            if (context.Response == null || context.Response.StatusCode != HttpStatusCode.OK)
                 return;
 
-            var principal = context.Request.GetRequestContext().Principal as ExceptionlessPrincipal;
-            if (principal == null || principal.Project == null)
+            var ctx = context.Request.GetOwinContext();
+            if (ctx == null || ctx.Request == null || ctx.Request.User == null)
+                return;
+            
+            string projectId = ctx.Request.User.GetApiKeyProjectId();
+            if (String.IsNullOrEmpty(projectId))
+                return;
+
+            var project = ProjectRepository.GetByIdCached(projectId);
+            if (project == null)
                 return;
 
             // add the current configuration version to the response headers so the client will know if it should update its config.
-            context.Response.Headers.Add(ExceptionlessHeaders.ConfigurationVersion, principal.Project.Configuration.Version.ToString());
+            context.Response.Headers.Add(ExceptionlessHeaders.ConfigurationVersion, project.Configuration.Version.ToString());
         }
     }
 }

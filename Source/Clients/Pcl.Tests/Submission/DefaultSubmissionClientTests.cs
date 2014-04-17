@@ -32,7 +32,7 @@ namespace Pcl.Tests.Submission {
 
                 var client = new DefaultSubmissionClient();
                 var response = client.SubmitAsync(events, configuration).Result;
-                Assert.True(response.Success);
+                Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.Null(response.Message);
             }
@@ -48,7 +48,7 @@ namespace Pcl.Tests.Submission {
 
                 var client = new DefaultSubmissionClient();
                 var response = client.GetSettingsAsync(configuration).Result;
-                Assert.True(response.Success);
+                Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.NotNull(response.Settings);
                 Assert.Null(response.Message);

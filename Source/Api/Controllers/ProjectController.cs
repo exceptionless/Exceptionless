@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Net.Http;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Models;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "project")]
@@ -17,18 +18,23 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("config")]
-        //[Route("config/{projectId}")]
+        [Route("config/{projectId}")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Config(string projectId = null) {
             // TODO: Only the client should be using this..
-           // if (User.Identity.AuthenticationType.Equals("ApiKey"))
-           //     return Ok(User.Project.Configuration);
 
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
+            if (String.IsNullOrEmpty(projectId)) {
+                var ctx = Request.GetOwinContext();
+                if (ctx == null || ctx.Request == null || ctx.Request.User == null)
+                    return NotFound();
 
-            Project project = _repository.GetById(projectId);
+                projectId = ctx.Request.User.GetApiKeyProjectId();
+                if (String.IsNullOrEmpty(projectId))
+                    return NotFound();
+            }
+
+            var project = _repository.GetByIdCached(projectId);
             if (project == null) // || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
