@@ -7,17 +7,21 @@ using Exceptionless.Dependency;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Plugins;
+using Exceptionless.Queue;
 
 namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
         private readonly IExceptionlessLog _log;
+        private readonly IEventQueue _queue;
 
         public ExceptionlessClient(Configuration configuration) {
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
 
             Configuration = configuration;
-            _log = configuration.Resolver.Resolve<IExceptionlessLog>(NullExceptionlessLog.Instance);
+            _log = configuration.Resolver.GetLog();
+            _queue = configuration.Resolver.Resolve<IEventQueue>();
+            _queue.Configuration = Configuration;
         }
 
         public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }) {}
@@ -161,73 +165,15 @@ namespace Exceptionless {
         /// <summary>
         /// Start processing the queue asynchronously.
         /// </summary>
-        public Task ProcessQueueAsync(double delay = 100) {
-            return Task.Factory.StartNew(ProcessQueue);
+        public Task ProcessQueueAsync() {
+            return _queue.ProcessAsync();
         }
 
         /// <summary>
         /// Process the queue.
         /// </summary>
         public void ProcessQueue() {
-            _log.Info(typeof(ExceptionlessClient), "Processing queue...");
-            if (!Configuration.Enabled) {
-                _log.Info(typeof(ExceptionlessClient), "Configuration is disabled. The queue will not be processed.");
-                //TODO: Should we call StopTimer here?
-                return;
-            }
-
-            //if (_processingQueue)
-            //    return;
-
-            //lock (_queueLock) {
-            //    _processingQueue = true;
-            //    _isProcessQueueScheduled = false;
-            //    bool useSlowTimer = false;
-            //    StopTimer();
-
-            //    try {
-            //        using (new SingleGlobalInstance(Configuration.ApiKey, 500)) {
-            //            try {
-            //                // discard older cases and make sure the queue isn't filling up
-            //                int count = _queue.Cleanup(DateTime.UtcNow.AddDays(-3));
-            //                if (count > 0)
-            //                    _log.FormattedInfo(typeof(ExceptionlessClient), "Cleaning {0} old items from the queue.", count);
-
-            //                DateTime processReportsOlderThan = DateTime.Now;
-
-            //                // loop through reports getting 20 at a time until there are no more reports to be sent
-            //                List<Manifest> manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
-            //                while (manifests.Count > 0) {
-            //                    _log.FormattedInfo(typeof(ExceptionlessClient), "Begin processing queue batch of {0} items...", manifests.Count);
-            //                    foreach (Manifest manifest in manifests) {
-            //                        SendManifest(manifest);
-            //                        if (!manifest.BreakProcessing)
-            //                            continue;
-
-            //                        useSlowTimer = true;
-            //                        break;
-            //                    }
-
-            //                    manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
-            //                }
-            //            } catch (SecurityException se) {
-            //                useSlowTimer = true;
-            //                _log.FormattedError(typeof(ExceptionlessClient), "Security exception while processing queue: {0}", se.Message);
-            //            } catch (Exception ex) {
-            //                _log.FormattedError(typeof(ExceptionlessClient), "Queue error: {0}", ex.Message);
-            //            }
-            //        }
-            //    } catch (TimeoutException) { } catch (Exception ex) {
-            //        _log.FormattedError(typeof(ExceptionlessClient), ex, "Error trying to obtain instance lock: {0}", ex.Message);
-            //    } finally {
-            //        _processingQueue = false;
-
-            //        if (useSlowTimer)
-            //            SlowTimer();
-            //        else
-            //            PollTimer();
-            //    }
-            //}
+            ProcessQueueAsync().Wait();
         }
 
         /// <summary>Creates a new instance of <see cref="Event" />.</summary>

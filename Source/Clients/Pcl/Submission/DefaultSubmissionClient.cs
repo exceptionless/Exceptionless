@@ -24,7 +24,7 @@ namespace Exceptionless.Submission {
             client.AddAuthorizationHeader(configuration);
 
             // TODO: We only support one error right now..
-            var serializer = DependencyResolver.Current.GetJsonSerializer();
+            var serializer = configuration.Resolver.GetJsonSerializer();
             var data = serializer.Serialize(events.FirstOrDefault());
 
             return client.PostJsonAsync(data).ContinueWith(t => {

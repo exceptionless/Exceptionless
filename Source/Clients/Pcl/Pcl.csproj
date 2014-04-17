@@ -262,6 +262,8 @@
     <Compile Include="Plugins\IExceptionlessPlugin.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Polyfill\ObjectPool.cs" />
+    <Compile Include="Queue\IEventQueue.cs" />
+    <Compile Include="Queue\InMemoryEventQueue.cs" />
     <Compile Include="Serializer\DefaultJsonSerializer.cs" />
     <Compile Include="Serializer\IJsonSerializer.cs" />
     <Compile Include="Logging\ExceptionlessLogExtensions.cs" />
