@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using Exceptionless.Extensions;
 using Exceptionless.Json;
 using Exceptionless.Json.Converters;
-using Exceptionless.Json.Linq;
 using Exceptionless.Json.Serialization;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
 
 namespace Exceptionless.Serializer {
     public class DefaultJsonSerializer : IJsonSerializer {
@@ -64,132 +60,8 @@ namespace Exceptionless.Serializer {
             if (excludedPropertyNames != null && property.PropertyName.AnyWildcardMatches(excludedPropertyNames, true))
                 return false;
 
-            bool serializesAsObject = !IsIntrinsicType(property.PropertyType);
+            bool serializesAsObject = !DefaultContractResolver.IsJsonPrimitiveType(property.PropertyType);
             return serializesAsObject ? jw.CurrentDepth < maxDepth : jw.CurrentDepth <= maxDepth;
-        }
-
-        private static bool IsIntrinsicType(Type t) {
-            if (t == typeof(string))
-                return true;
-
-            if (!t.IsValueType)
-                return false;
-
-            if (t == typeof(bool))
-                return true;
-            if (t == typeof(DateTime))
-                return true;
-            if (t == typeof(DateTimeOffset))
-                return true;
-            if (t == typeof(Int16))
-                return true;
-            if (t == typeof(Int32))
-                return true;
-            if (t == typeof(Int64))
-                return true;
-            if (t == typeof(UInt16))
-                return true;
-            if (t == typeof(UInt32))
-                return true;
-            if (t == typeof(UInt64))
-                return true;
-            if (t == typeof(float))
-                return true;
-            if (t == typeof(double))
-                return true;
-            if (t == typeof(char))
-                return true;
-            if (t == typeof(byte))
-                return true;
-            if (t == typeof(byte[]))
-                return true;
-            if (t == typeof(sbyte))
-                return true;
-            if (t == typeof(decimal))
-                return true;
-            if (t == typeof(Guid))
-                return true;
-            if (t == typeof(TimeSpan))
-                return true;
-            if (t == typeof(Uri))
-                return true;
-
-            return false;
-        }
-
-        private class JsonTextWriterWithDepth : JsonTextWriter {
-            public JsonTextWriterWithDepth(TextWriter textWriter) : base(textWriter) {}
-
-            public int CurrentDepth { get; private set; }
-
-            public override void WriteStartObject() {
-                CurrentDepth++;
-                base.WriteStartObject();
-            }
-
-            public override void WriteEndObject() {
-                CurrentDepth--;
-                base.WriteEndObject();
-            }
-        }
-
-        private class ConditionalContractResolver : DefaultContractResolver {
-            private readonly Func<JsonProperty, bool> _includeProperty;
-
-            public ConditionalContractResolver(Func<JsonProperty, bool> includeProperty) {
-                _includeProperty = includeProperty;
-            }
-
-            protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-                JsonProperty property = base.CreateProperty(member, memberSerialization);
-                Predicate<object> shouldSerialize = property.ShouldSerialize;
-                property.ShouldSerialize = obj => _includeProperty(property) && (shouldSerialize == null || shouldSerialize(obj));
-                return property;
-            }
-        }
-
-        private class DataDictionaryConverter : CustomCreationConverter<DataDictionary> {
-            public override DataDictionary Create(Type objectType) {
-                return new DataDictionary();
-            }
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
-                object obj = base.ReadJson(reader, objectType, existingValue, serializer);
-                var result = obj as DataDictionary;
-                if (result == null)
-                    return obj;
-
-                var dictionary = new DataDictionary();
-                foreach (string key in result.Keys) {
-                    object value = result[key];
-                    if (value is JObject)
-                        dictionary[key] = value.ToString();
-                    else if (value is JArray)
-                        dictionary[key] = value.ToString();
-                    else
-                        dictionary[key] = value;
-                }
-
-                return dictionary;
-            }
-        }
-
-        private class RequestInfoConverter : CustomCreationConverter<RequestInfo> {
-            public override RequestInfo Create(Type objectType) {
-                return new RequestInfo();
-            }
-
-            public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
-                object obj = base.ReadJson(reader, objectType, existingValue, serializer);
-                var result = obj as RequestInfo;
-                if (result == null)
-                    return obj;
-
-                if (result.PostData is JObject)
-                    result.PostData = result.PostData.ToString();
-
-                return result;
-            }
         }
     }
 }

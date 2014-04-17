@@ -34,6 +34,18 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="..\..\Core\Serialization\ConditionalContractResolver.cs">
+      <Link>Serializer\ConditionalContractResolver.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Serialization\DataDictionaryConverter.cs">
+      <Link>Serializer\DataDictionaryConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Serialization\JsonTextWriterWithDepth.cs">
+      <Link>Serializer\JsonTextWriterWithDepth.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Serialization\RequestInfoConverter.cs">
+      <Link>Serializer\RequestInfoConverter.cs</Link>
+    </Compile>
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>

@@ -289,6 +289,10 @@
     <Compile Include="Repositories\MongoRepositoryManager.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />
     <Compile Include="AppStats\NullAppStatsClient.cs" />
+    <Compile Include="Serialization\ConditionalContractResolver.cs" />
+    <Compile Include="Serialization\DataDictionaryConverter.cs" />
+    <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
+    <Compile Include="Serialization\RequestInfoConverter.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="EventPlugins\Default\ErrorPlugin.cs" />
     <Compile Include="EventPlugins\EventPluginManager.cs" />
