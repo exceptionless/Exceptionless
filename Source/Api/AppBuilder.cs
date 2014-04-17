@@ -39,14 +39,15 @@ namespace Exceptionless.Api {
                     var authHeader = context.Request.Headers.Get("Authorization");
                     if (!String.IsNullOrEmpty(authHeader)) {
                         var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
-                        if (authHeaderVal.Scheme.Equals("token", StringComparison.OrdinalIgnoreCase))
+                        if (authHeaderVal.Scheme.Equals("token", StringComparison.OrdinalIgnoreCase)
+                            || authHeaderVal.Scheme.Equals("bearer", StringComparison.OrdinalIgnoreCase))
                             token = authHeaderVal.Parameter;
                     }
                 }
-                if (token != "12345")
+                if (token != "1ccd0826e447ad1e78877ab1")
                     return next.Invoke();
 
-                context.Request.User = PrincipalUtility.CreateClientUser(Guid.NewGuid().ToString("N"));
+                context.Request.User = PrincipalUtility.CreateClientUser("1ecd0826e447ad1e78877ab2");
                 return next.Invoke();
             });
             app.UseStageMarker(PipelineStage.Authenticate);
