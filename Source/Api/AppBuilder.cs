@@ -44,7 +44,7 @@ namespace Exceptionless.Api {
                             token = authHeaderVal.Parameter;
                     }
                 }
-                if (token != "1ccd0826e447ad1e78877ab1")
+                if (token != "e3d51ea621464280bbcb79c11fd6483e")
                     return next.Invoke();
 
                 context.Request.User = PrincipalUtility.CreateClientUser("1ecd0826e447ad1e78877ab2");

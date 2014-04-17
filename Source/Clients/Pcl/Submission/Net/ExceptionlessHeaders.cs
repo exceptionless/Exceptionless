@@ -13,5 +13,6 @@ namespace Exceptionless.Submission.Net {
     public static class ExceptionlessHeaders {
         public const string Basic = "Basic";
         public const string ConfigurationVersion = "v";
+        public const string Token = "token";
     }
 }

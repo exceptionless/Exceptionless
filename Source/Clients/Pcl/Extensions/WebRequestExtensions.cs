@@ -28,8 +28,8 @@ namespace Exceptionless.Extensions {
 
         public static void AddAuthorizationHeader(this WebRequest request, Configuration configuration) {
             var authorizationHeader = new AuthorizationHeader {
-                Scheme = ExceptionlessHeaders.Basic,
-                ParameterText = Convert.ToBase64String(Encoding.UTF8.GetBytes(String.Format("{0}:{1}", "client", configuration.ApiKey)))
+                Scheme = ExceptionlessHeaders.Token,
+                ParameterText = configuration.ApiKey
             };
 
             request.Headers[HttpRequestHeader.Authorization] = authorizationHeader.ToString();

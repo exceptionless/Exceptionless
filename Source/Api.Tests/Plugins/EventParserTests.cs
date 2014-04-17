@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.EventParserPlugins;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Models;
 using Xunit;
 using Xunit.Extensions;
