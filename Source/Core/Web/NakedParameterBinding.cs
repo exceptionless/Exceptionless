@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +13,8 @@ namespace Exceptionless.Core.Web {
 
         public override Task ExecuteBindingAsync(ModelMetadataProvider metadataProvider, HttpActionContext actionContext, CancellationToken cancellationToken) {
             var binding = actionContext.ActionDescriptor.ActionBinding;
-
-            if (binding.ParameterBindings.Length > 1 || actionContext.Request.Method == HttpMethod.Get)
+            
+            if (actionContext.Request.Method == HttpMethod.Get || binding.ParameterBindings.Count(b => b.Descriptor.ParameterBinderAttribute is NakedBodyAttribute) > 1)
                 return EmptyTask.Start();
 
             var type = binding.ParameterBindings[0].Descriptor.ParameterType;

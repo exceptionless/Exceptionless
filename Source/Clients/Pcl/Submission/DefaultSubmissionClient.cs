@@ -30,7 +30,7 @@ namespace Exceptionless.Submission {
             return client.PostJsonAsync(data).ContinueWith(t => {
                 // TODO: We need to break down the aggregate exceptions error message into something usable.
                 if (t.IsFaulted || t.IsCanceled || t.Exception != null)
-                    return new SubmissionResponse(false, errorMessage: t.Exception != null ? t.Exception.Message : null);
+                    return new SubmissionResponse(false, exception: t.Exception, message: t.Exception.GetMessage());
 
                 var response = (HttpWebResponse)t.Result;
 
@@ -40,8 +40,8 @@ namespace Exceptionless.Submission {
 
                 // TODO: Add support for sending errors later (e.g., Suspended Account. Invalid API Key).
 
-                if (!response.IsSuccessStatusCode() || response.StatusCode != HttpStatusCode.Created)
-                    return new SubmissionResponse(false, settingsVersion, response.GetResponseText());
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return new SubmissionResponse(false, settingsVersion, message: response.GetResponseText());
 
                 return new SubmissionResponse(true, settingsVersion);
             });
@@ -53,15 +53,15 @@ namespace Exceptionless.Submission {
             
             return client.GetJsonAsync().ContinueWith(t => {
                 if (t.IsFaulted || t.IsCanceled || t.Exception != null)
-                    return new SettingsResponse(false, errorMessage: t.Exception != null ? t.Exception.Message : null);
+                    return new SettingsResponse(false, exception: t.Exception, message: t.Exception.GetMessage());
 
                 var response = (HttpWebResponse)t.Result;
-                if (!response.IsSuccessStatusCode())
-                    return new SettingsResponse(false, errorMessage: "Unable to retrieve configuration settings.");
+                if (response.StatusCode != HttpStatusCode.OK)
+                    return new SettingsResponse(false, message: "Unable to retrieve configuration settings.");
 
                 var json = response.GetResponseText();
                 if (String.IsNullOrWhiteSpace(json))
-                    return new SettingsResponse(false, errorMessage: "Invalid configuration settings.");
+                    return new SettingsResponse(false, message: "Invalid configuration settings.");
 
                 var serializer = DependencyResolver.Current.GetJsonSerializer();
                 try {
@@ -69,7 +69,7 @@ namespace Exceptionless.Submission {
                     return new SettingsResponse(true, settings.Settings, settings.Version);
                 } catch (Exception ex) {
                     var message = String.Format("Unable to deserialize configuration settings. Exception: {0}", ex.Message);
-                    return new SettingsResponse(false, errorMessage: message);
+                    return new SettingsResponse(false, message: message);
                 }
             });
         }

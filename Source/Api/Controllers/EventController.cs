@@ -14,7 +14,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "event")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.UserOrClient)]
     public class EventController : ApiController {
         private const string API_PREFIX = "api/v1/";
         private readonly IEventRepository _eventRepository;
@@ -36,8 +36,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [Route]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Route("{projectId}")]
+        //[OverrideAuthorization]
+        //[Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null) {
             if (projectId == null) {
                 var ctx = Request.GetOwinContext();

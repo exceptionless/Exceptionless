@@ -11,14 +11,16 @@ using System;
 
 namespace Exceptionless.Submission {
     public class SubmissionResponse {
-        public SubmissionResponse(bool success, int settingsVersion = -1, string errorMessage = null) {
+        public SubmissionResponse(bool success, int settingsVersion = -1, Exception exception = null, string message = null) {
             Success = success;
             SettingsVersion = settingsVersion;
-            ErrorMessage = errorMessage;
+            Exception = exception;
+            Message = message;
         }
 
         public bool Success { get; private set; }
         public int SettingsVersion { get; private set; }
-        public string ErrorMessage { get; private set; }
+        public string Message { get; private set; }
+        public Exception Exception { get; private set; }
     }
 }

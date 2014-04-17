@@ -139,6 +139,10 @@
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Identity\MongoDB.AspNet.Identity.csproj">
+      <Project>{0ff87680-235f-4231-8302-9bf6fcac7476}</Project>
+      <Name>MongoDB.AspNet.Identity</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
