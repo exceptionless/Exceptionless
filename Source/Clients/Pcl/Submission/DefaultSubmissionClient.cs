@@ -19,8 +19,10 @@ using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
+        internal static readonly ISubmissionClient Instance = new DefaultSubmissionClient();
+
         public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.ServerUrl, "event"));
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "event"));
             client.AddAuthorizationHeader(configuration);
 
             // TODO: We only support one error right now..
@@ -48,7 +50,7 @@ namespace Exceptionless.Submission {
         }
 
         public Task<SettingsResponse> GetSettingsAsync(Configuration configuration) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.ServerUrl, "project/config"));
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "project/config"));
             client.AddAuthorizationHeader(configuration);
             
             return client.GetJsonAsync().ContinueWith(t => {

@@ -36,7 +36,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [Route]
-        [Route("{projectId}")]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null) {
             if (projectId == null) {

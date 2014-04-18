@@ -13,6 +13,7 @@ namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
         private readonly IExceptionlessLog _log;
         private readonly IEventQueue _queue;
+        private readonly ILastClientIdManager _lastErrorIdManager;
 
         public ExceptionlessClient(Configuration configuration) {
             if (configuration == null)
@@ -20,8 +21,9 @@ namespace Exceptionless {
 
             Configuration = configuration;
             _log = configuration.Resolver.GetLog();
-            _queue = configuration.Resolver.Resolve<IEventQueue>();
+            _queue = configuration.Resolver.GetEventQueue();
             _queue.Configuration = Configuration;
+            _lastErrorIdManager = configuration.Resolver.GetLastErrorIdManager();
         }
 
         public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }) {}
@@ -52,10 +54,11 @@ namespace Exceptionless {
             //    data.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(this, Configuration.IncludePrivateInformation);
             if (String.IsNullOrEmpty(data.ClientId))
                 data.ClientId = Guid.NewGuid().ToString("N");
-            //_queue.Enqueue(data);
+            
+            _queue.Enqueue(data);
 
             _log.FormattedInfo(typeof(ExceptionlessClient), "Setting last event id '{0}'", data.ClientId);
-            //LastErrorIdManager.SetLast(data.ClientId);
+            _lastErrorIdManager.SetLast(data.ClientId);
 
             //QuickTimer();
             //SaveEmailAddress(data.UserEmail, false);

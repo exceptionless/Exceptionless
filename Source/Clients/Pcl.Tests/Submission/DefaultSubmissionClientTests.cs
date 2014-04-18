@@ -26,7 +26,7 @@ namespace Pcl.Tests.Submission {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
                 var configuration = new Configuration {
-                    ServerUrl = String.Concat(Settings.Current.BaseURL, "/api/v1/"),
+                    ServerUrl = Settings.Current.BaseURL,
                     ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
                 };
 
@@ -42,7 +42,7 @@ namespace Pcl.Tests.Submission {
         public void GetSettingsAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var configuration = new Configuration {
-                    ServerUrl = String.Concat(Settings.Current.BaseURL, "/api/v1/"),
+                    ServerUrl = Settings.Current.BaseURL,
                     ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
                 };
 

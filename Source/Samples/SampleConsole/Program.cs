@@ -26,8 +26,14 @@ namespace SampleConsole {
     internal class Program {
         private static readonly Random _random = new Random();
         private static bool _sendingContinuous = false;
+        private static ExceptionlessClient _client;
 
         private static void Main() {
+            _client = new ExceptionlessClient(new Configuration {
+                ApiKey = "2617dd7daef34c548c8fc314968393f8",
+                ServerUrl = "http://localhost:50000/"
+            });
+
             //ExceptionlessClient.Current.Startup();
             //ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
             var tokenSource = new CancellationTokenSource();
@@ -54,7 +60,7 @@ namespace SampleConsole {
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D6)
-                    ExceptionlessClient.Current.ProcessQueue();
+                    _client.ProcessQueue();
                 else if (keyInfo.Key == ConsoleKey.D7)
                     SendAllCapturedErrorsFromDisk();
                 else if (keyInfo.Key == ConsoleKey.Q)
@@ -118,7 +124,7 @@ namespace SampleConsole {
                     builder.Target.Date = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
                 if (critical)
                     builder.MarkAsCritical();
-                if (ExceptionlessClient.Current.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+                if (_client.Configuration.Settings.GetBoolean("IncludeConditionalData"))
                     builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
                 builder.Submit();
             }
@@ -138,7 +144,7 @@ namespace SampleConsole {
             foreach (string file in Directory.GetFiles(path)) {
                 var serializer = DependencyResolver.Current.GetJsonSerializer();
                 var e = serializer.Deserialize<Event>(file);
-                ExceptionlessClient.Current.SubmitEvent(e);
+                _client.SubmitEvent(e);
             }
         }
 

@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Logging;
+using Exceptionless.Queue;
 using Exceptionless.Serializer;
 using Exceptionless.Services;
+using Exceptionless.Submission;
 
 namespace Exceptionless.Dependency {
     public static class DependencyResolverExtensions {
@@ -49,20 +51,28 @@ namespace Exceptionless.Dependency {
             resolver.Register(typeof(TService), () => implementation);
         }
 
-        internal static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
+        public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
+            return resolver.Resolve<IEventQueue>() ?? InMemoryEventQueue.Instance;
+        }
+
+        public static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
             return resolver.Resolve<IExceptionlessLog>() ?? NullExceptionlessLog.Instance;
         }
 
-        internal static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
+        public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
             return resolver.Resolve<IEnvironmentInfoCollector>() ?? DefaultEnvironmentInfoCollector.Instance;
         }
 
-        internal static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
+        public static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
             return resolver.Resolve<ILastClientIdManager>() ?? DefaultLastClientIdManager.Instance;
         }
 
         public static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
             return resolver.Resolve<IJsonSerializer>() ?? DefaultJsonSerializer.Instance;
+        }
+
+        public static ISubmissionClient GetSubmissionClient(this IDependencyResolver resolver) {
+            return resolver.Resolve<ISubmissionClient>() ?? DefaultSubmissionClient.Instance;
         }
     }
 }

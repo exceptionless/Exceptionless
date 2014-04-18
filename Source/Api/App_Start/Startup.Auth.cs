@@ -6,9 +6,9 @@ using Microsoft.Owin.Security.OAuth;
 using Owin;
 
 namespace Exceptionless.Api {
-    public partial class Startup {
+    public partial class Startup2 {
         // Enable the application to use OAuthAuthorization. You can then secure your Web APIs
-        static Startup() {
+        static Startup2() {
             PublicClientId = "web";
 
             OAuthOptions = new OAuthAuthorizationServerOptions {
