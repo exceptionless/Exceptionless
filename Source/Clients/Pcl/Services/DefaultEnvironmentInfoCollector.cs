@@ -3,7 +3,6 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless.Services {
     internal class DefaultEnvironmentInfoCollector : IEnvironmentInfoCollector {
-        internal static IEnvironmentInfoCollector Instance = new DefaultEnvironmentInfoCollector();
         private static EnvironmentInfo _environmentInfo;
 
         public EnvironmentInfo GetEnvironmentInfo() {

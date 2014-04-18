@@ -8,8 +8,6 @@ using Exceptionless.Json.Serialization;
 
 namespace Exceptionless.Serializer {
     public class DefaultJsonSerializer : IJsonSerializer {
-        internal static IJsonSerializer Instance = new DefaultJsonSerializer();
-
         protected readonly JsonSerializerSettings _serializerSettings;
 
         public DefaultJsonSerializer() {

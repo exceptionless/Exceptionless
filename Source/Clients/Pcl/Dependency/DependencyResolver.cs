@@ -1,5 +1,10 @@
 ﻿using System;
 using Exceptionless.Logging;
+using Exceptionless.Queue;
+using Exceptionless.Serializer;
+using Exceptionless.Services;
+using Exceptionless.Storage;
+using Exceptionless.Submission;
 
 namespace Exceptionless.Dependency {
     public class DependencyResolver {
@@ -21,7 +26,26 @@ namespace Exceptionless.Dependency {
         }
 
         public static void RegisterDefaultServices(IDependencyResolver resolver) {
-            resolver.Register(typeof(IExceptionlessLog), () => NullExceptionlessLog.Instance);
+            var exceptionlessLog = new Lazy<IExceptionlessLog>(() => new NullExceptionlessLog());
+            resolver.Register(typeof(IExceptionlessLog), () => exceptionlessLog.Value);
+
+            var jsonSerializer = new Lazy<IJsonSerializer>(() => new DefaultJsonSerializer());
+            resolver.Register(typeof(IJsonSerializer), () => jsonSerializer.Value);
+
+            var eventQueue = new Lazy<IEventQueue>(() => new DefaultEventQueue());
+            resolver.Register(typeof(IEventQueue), () => eventQueue.Value);
+
+            var submissionClient = new Lazy<ISubmissionClient>(() => new DefaultSubmissionClient());
+            resolver.Register(typeof(ISubmissionClient), () => submissionClient.Value);
+
+            var keyValueStorage = new Lazy<IKeyValueStorage>(() => new InMemoryKeyValueStorage());
+            resolver.Register(typeof(IKeyValueStorage), () => keyValueStorage.Value);
+
+            var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => new DefaultEnvironmentInfoCollector());
+            resolver.Register(typeof(IEnvironmentInfoCollector), () => environmentInfoCollector.Value);
+
+            var lastClientIdManager = new Lazy<ILastClientIdManager>(() => new DefaultLastClientIdManager());
+            resolver.Register(typeof(ILastClientIdManager), () => lastClientIdManager.Value);
 
             //var serverIdManager = new ServerIdManager();
             //resolver.Register(typeof(IServerIdManager), () => serverIdManager);

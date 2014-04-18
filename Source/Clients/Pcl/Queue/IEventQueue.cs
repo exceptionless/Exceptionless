@@ -4,7 +4,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Queue {
     public interface IEventQueue {
-        void Enqueue(Event ev);
+        Task EnqueueAsync(Event ev);
         Task ProcessAsync();
         Configuration Configuration { get; set; }
     }

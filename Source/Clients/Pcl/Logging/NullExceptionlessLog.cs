@@ -11,8 +11,6 @@ using System;
 
 namespace Exceptionless.Logging {
     public class NullExceptionlessLog : IExceptionlessLog {
-        public static readonly IExceptionlessLog Instance = new NullExceptionlessLog();
-
         public void Error(string message, string source = null, Exception exception = null) {}
 
         public void Info(string message, string source = null) {}

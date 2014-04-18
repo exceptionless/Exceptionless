@@ -5,6 +5,7 @@ using Exceptionless.Logging;
 using Exceptionless.Queue;
 using Exceptionless.Serializer;
 using Exceptionless.Services;
+using Exceptionless.Storage;
 using Exceptionless.Submission;
 
 namespace Exceptionless.Dependency {
@@ -51,28 +52,31 @@ namespace Exceptionless.Dependency {
             resolver.Register(typeof(TService), () => implementation);
         }
 
-        public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
-            return resolver.Resolve<IEventQueue>() ?? InMemoryEventQueue.Instance;
-        }
-
         public static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
-            return resolver.Resolve<IExceptionlessLog>() ?? NullExceptionlessLog.Instance;
-        }
-
-        public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
-            return resolver.Resolve<IEnvironmentInfoCollector>() ?? DefaultEnvironmentInfoCollector.Instance;
-        }
-
-        public static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
-            return resolver.Resolve<ILastClientIdManager>() ?? DefaultLastClientIdManager.Instance;
+            return resolver.Resolve<IExceptionlessLog>() ?? new NullExceptionlessLog();
         }
 
         public static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
-            return resolver.Resolve<IJsonSerializer>() ?? DefaultJsonSerializer.Instance;
+            return resolver.Resolve<IJsonSerializer>() ?? new DefaultJsonSerializer();
         }
 
+        public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
+            return resolver.Resolve<IEventQueue>() ?? new DefaultEventQueue();
+        }
         public static ISubmissionClient GetSubmissionClient(this IDependencyResolver resolver) {
-            return resolver.Resolve<ISubmissionClient>() ?? DefaultSubmissionClient.Instance;
+            return resolver.Resolve<ISubmissionClient>() ?? new DefaultSubmissionClient();
+        }
+
+        public static IKeyValueStorage GetKeyValueStorage(this IDependencyResolver resolver) {
+            return resolver.Resolve<IKeyValueStorage>() ?? new InMemoryKeyValueStorage();
+        }
+
+        public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
+            return resolver.Resolve<IEnvironmentInfoCollector>() ?? new DefaultEnvironmentInfoCollector();
+        }
+
+        public static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
+            return resolver.Resolve<ILastClientIdManager>() ?? new DefaultLastClientIdManager();
         }
     }
 }

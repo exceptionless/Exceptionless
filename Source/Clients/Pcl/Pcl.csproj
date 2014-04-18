@@ -265,7 +265,7 @@
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Polyfill\ObjectPool.cs" />
     <Compile Include="Queue\IEventQueue.cs" />
-    <Compile Include="Queue\InMemoryEventQueue.cs" />
+    <Compile Include="Queue\DefaultEventQueue.cs" />
     <Compile Include="Serializer\DefaultJsonSerializer.cs" />
     <Compile Include="Serializer\IJsonSerializer.cs" />
     <Compile Include="Logging\ExceptionlessLogExtensions.cs" />
@@ -276,7 +276,7 @@
     <Compile Include="Services\DefaultEnvironmentInfoCollector.cs" />
     <Compile Include="Services\IEnvironmentInfoCollector.cs" />
     <Compile Include="Storage\DefaultFileStorage.cs" />
-    <Compile Include="Storage\DefaultKeyValueStorage.cs" />
+    <Compile Include="Storage\InMemoryKeyValueStorage.cs" />
     <Compile Include="Storage\IFileStorage.cs" />
     <Compile Include="Storage\IKeyValueStorage.cs" />
     <Compile Include="Submission\DefaultSubmissionClient.cs" />

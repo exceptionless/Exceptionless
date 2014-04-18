@@ -19,8 +19,6 @@ using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        internal static readonly ISubmissionClient Instance = new DefaultSubmissionClient();
-
         public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "event"));
             client.AddAuthorizationHeader(configuration);

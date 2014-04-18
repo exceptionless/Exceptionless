@@ -11,8 +11,6 @@ using System;
 
 namespace Exceptionless {
     internal class DefaultLastClientIdManager : ILastClientIdManager {
-        internal static ILastClientIdManager Instance = new DefaultLastClientIdManager();
-
         private string _lastErrorId;
 
         /// <summary>

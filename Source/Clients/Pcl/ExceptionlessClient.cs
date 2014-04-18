@@ -58,7 +58,7 @@ namespace Exceptionless {
             if (String.IsNullOrEmpty(data.ClientId))
                 data.ClientId = Guid.NewGuid().ToString("N");
             
-            _queue.Enqueue(data);
+            _queue.EnqueueAsync(data).Wait();
 
             _log.FormattedInfo(typeof(ExceptionlessClient), "Setting last event id '{0}'", data.ClientId);
             _lastErrorIdManager.SetLast(data.ClientId);
