@@ -258,6 +258,7 @@
     <Compile Include="Newtonsoft.Json\Utilities\TypeExtensions.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ValidationUtils.cs" />
     <Compile Include="Newtonsoft.Json\WriteState.cs" />
+    <Compile Include="Plugins\ExceptionlessPluginManager.cs" />
     <Compile Include="Plugins\ExceptionlessPlugin.cs" />
     <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
     <Compile Include="Plugins\IExceptionlessPlugin.cs" />

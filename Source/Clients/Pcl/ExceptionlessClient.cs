@@ -76,11 +76,10 @@ namespace Exceptionless {
         /// Process an unhandled exception.
         /// </summary>
         /// <param name="ex">The exception</param>
-        /// <param name="submissionMethod">The method that was used to collect the error.</param>
         /// <param name="includeDefaultInformation">Whether to add the default information to the case or not</param>
         /// <param name="contextData">Any additional contextual data that should be used during creation of the error information.</param>
-        public void ProcessUnhandledException(Exception ex, string submissionMethod, bool includeDefaultInformation = true, IDictionary<string, object> contextData = null) {
-            Event data = CreateEvent(ex, addDefaultInformation: includeDefaultInformation, submissionMethod: submissionMethod, contextData: contextData);
+        public void ProcessUnhandledException(Exception ex, bool includeDefaultInformation = true, IDictionary<string, object> contextData = null) {
+            Event data = CreateEvent(ex, addDefaultInformation: includeDefaultInformation, contextData: contextData);
             _log.FormattedInfo(typeof(ExceptionlessClient), "Processing unhandled exception of type '{0}'...", ex.GetType().FullName);
 
             var args = new UnhandledExceptionReportingEventArgs(ex, data);
@@ -194,46 +193,23 @@ namespace Exceptionless {
         /// <see cref="ExtendedDataInfo">ExtendedDataInfo</see>, the settings from that will be used to add the ExtendedData.
         /// </param>
         /// <param name="tags">A list of tags to add to the error.</param>
-        /// <param name="submissionMethod">The method that was used to collect the error.</param>
         /// <param name="contextData">Any additional contextual data that should be used during creation of the error information.</param>
         /// <returns>A new instance of <see cref="Event" />.</returns>
-        public Event CreateEvent(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
-            Event data = ToEvent(this, ex, submissionMethod, contextData);
+        public Event CreateEvent(Exception ex, bool isCritical = false, bool addDefaultInformation = true, IEnumerable<object> extendedData = null, IEnumerable<string> tags = null, IDictionary<string, object> contextData = null) {
+            var builder = ex.ToExceptionless(addDefaultInformation, contextData, this);
 
-            //if (extendedData != null) {
-            //    foreach (object o in extendedData)
-            //        error.AddObject(o);
-            //}
+            if (extendedData != null) {
+                foreach (object o in extendedData)
+                    builder.AddObject(o);
+            }
 
-            //if (tags != null)
-            //    error.Tags.AddRange(tags);
+            if (tags != null)
+                builder.AddTags(tags.ToArray());
 
-            //if (isCritical)
-            //    error.MarkAsCritical();
+            if (isCritical)
+                builder.MarkAsCritical();
 
-            //if (addDefaultInformation)
-            //    error.AddDefaultInformation(contextData);
-
-            return data;
-        }
-
-        internal static Event ToEvent(ExceptionlessClient client, Exception exception, string submissionMethod = "Manual", IDictionary<string, object> contextData = null) {
-            //Error error = exception.ToErrorModel();
-            //error.Id = ObjectId.GenerateNewId().ToString();
-            //error.OccurrenceDate = DateTimeOffset.Now;
-            //error.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
-            //error.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
-
-            //foreach (IExceptionlessPlugin plugin in client.Configuration.Plugins) {
-            //    try {
-            //        var ctx = new ExceptionlessPluginContext(client, contextData);
-            //        plugin.AfterCreated(ctx, error, exception);
-            //    } catch (Exception ex) {
-            //        client._log.FormattedError(typeof(ErrorExtensions), ex, "Error creating error model information: {0}", ex.Message);
-            //    }
-            //}
-
-            return new Event();
+            return builder.Target;
         }
 
         #region Events
@@ -287,7 +263,7 @@ namespace Exceptionless {
         /// <param name="e">The <see cref="SendEventCompletedEventArgs" /> instance containing the event data.</param>
         protected void OnSendEventCompleted(SendEventCompletedEventArgs e) {
             if (e.Error != null)
-                _log.FormattedError(typeof(ExceptionlessClient), "Sending error report failed: {0}", e.Error.Message);
+                _log.FormattedError(typeof(ExceptionlessClient), "Sending event failed: {0}", e.Error.Message);
             else
                 _log.FormattedDebug(typeof(ExceptionlessClient), "Report completed for {0}.", e.ErrorId);
 
@@ -296,8 +272,7 @@ namespace Exceptionless {
         }
 
         private void OnSendingEvent(Event data) {
-            var args = new EventModelEventArgs(data);
-            OnSendingEvent(args);
+            OnSendingEvent(new EventModelEventArgs(data));
         }
 
         /// <summary>
@@ -311,8 +286,7 @@ namespace Exceptionless {
 
         #endregion
 
-        public void Dispose() {
-        }
+        public void Dispose() { }
 
         /// <summary>
         /// Submit an error to be reported to the Exceptionless server.
@@ -337,7 +311,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="ex">The exception to submit.</param>
         public static EventBuilder Create(Exception ex) {
-            return null; //ex.ToExceptionless();
+            return ex.ToExceptionless();
         }
 
         #region Current

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Models;
+using Exceptionless.Plugins;
 
 namespace Exceptionless {
     public static class ExceptionExtensions {
@@ -43,7 +45,20 @@ namespace Exceptionless {
             if (client == null)
                 client = ExceptionlessClient.Current;
 
-            var builder = new EventBuilder(ExceptionlessClient.ToEvent(client, exception));
+            var ev = new Event {
+                Id = null, //ObjectId.GenerateNewId().ToString();
+                Date = DateTimeOffset.Now
+            };
+
+            //ev.SetError(exception.ToErrorModel());
+
+            //ev.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
+            //ev.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
+
+            var context = new ExceptionlessPluginContext(client, pluginContextData);
+            ExceptionlessPluginManager.AfterCreated(context, ev, exception);
+
+            var builder = new EventBuilder(ev, client);
             return addDefaultInformation ? builder.AddDefaultInformation(pluginContextData) : builder;
         }
     }
