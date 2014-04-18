@@ -24,6 +24,9 @@ namespace Exceptionless {
             _queue = configuration.Resolver.GetEventQueue();
             _queue.Configuration = Configuration;
             _lastErrorIdManager = configuration.Resolver.GetLastErrorIdManager();
+
+            if (_currentClient == null)
+                _currentClient = this;
         }
 
         public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }) {}
@@ -339,10 +342,15 @@ namespace Exceptionless {
 
         #region Current
 
-        private static ExceptionlessClient _currentClient = new ExceptionlessClient();
+        private static ExceptionlessClient _currentClient;
 
         public static ExceptionlessClient Current {
-            get { return _currentClient; }
+            get {
+                if (_currentClient == null)
+                    _currentClient = new ExceptionlessClient();
+                
+                return _currentClient;
+            }
             set {
                 if (value == null)
                     throw new ArgumentNullException("value");

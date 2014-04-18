@@ -284,6 +284,7 @@
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />
     <Compile Include="Submission\SettingsResponse.cs" />
     <Compile Include="Submission\SubmissionResponse.cs" />
+    <Compile Include="Utility\TaskHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
