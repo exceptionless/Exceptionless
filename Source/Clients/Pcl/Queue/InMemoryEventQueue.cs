@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Dependency;
 using Exceptionless.Logging;
 using Exceptionless.Models;
-using TaskExtensions = Exceptionless.Extensions.TaskExtensions;
+using Exceptionless.Utility;
 
 namespace Exceptionless.Queue {
     public class InMemoryEventQueue : IEventQueue, IDisposable {
@@ -17,7 +17,8 @@ namespace Exceptionless.Queue {
         private bool _processingQueue;
 
         public InMemoryEventQueue() {
-            _queueTimer = new Timer(OnProcessQueue, null, TimeSpan.FromSeconds(5), TimeSpan.Zero);
+            // Wait 10 seconds to start processing to keep the startup resource demand low.
+            _queueTimer = new Timer(OnProcessQueue, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(5));
         }
 
         public void Enqueue(Event ev) {
@@ -28,7 +29,17 @@ namespace Exceptionless.Queue {
             Log.Info(typeof(InMemoryEventQueue), "Processing queue...");
             if (!Configuration.Enabled) {
                 Log.Info(typeof(InMemoryEventQueue), "Configuration is disabled. The queue will not be processed.");
-                // return canceled task.
+                return TaskHelper.Canceled<object>();
+            }
+
+            if (_queue.Count == 0) {
+                Log.Info(typeof(InMemoryEventQueue), "There are no events in the queue to process.");
+                return TaskHelper.FromResult(0);
+            }
+
+            if (_processingQueue) {
+                Log.Info(typeof(InMemoryEventQueue), "The queue is already being processed.");
+                return TaskHelper.Canceled<object>();
             }
 
             _processingQueue = true;
@@ -41,11 +52,6 @@ namespace Exceptionless.Queue {
                     break;
 
                 events.Add(ev);
-            }
-
-            if (events.Count == 0) {
-                _processingQueue = false;
-                return TaskExtensions.FromResult(0);
             }
 
             var client = Configuration.Resolver.GetSubmissionClient();
