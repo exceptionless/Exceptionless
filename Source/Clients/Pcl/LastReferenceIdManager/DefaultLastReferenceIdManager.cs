@@ -10,7 +10,7 @@
 using System;
 
 namespace Exceptionless {
-    internal class DefaultLastClientIdManager : ILastClientIdManager {
+    internal class DefaultLastReferenceIdManager : ILastReferenceIdManager {
         private string _lastErrorId;
 
         /// <summary>

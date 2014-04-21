@@ -32,7 +32,7 @@ namespace Exceptionless {
 
             var json = data as string;
             if (json != null) {
-                serializer = serializer ?? DependencyResolver.Current.GetJsonSerializer();
+                serializer = serializer ?? DependencyResolver.Default.GetJsonSerializer();
                 return serializer.Deserialize<T>(json);
             }
 
@@ -50,11 +50,11 @@ namespace Exceptionless {
         /// <param name="ignoreSerializationErrors">Specifies wether properties that throw errors while serializing be ignored</param>
         /// <param name="client">
         /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
-        /// ExceptionlessClient.Current.
+        /// ExceptionlessClient.Default.
         /// </param>
         public static void AddObject(this IData data, object value, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false, ExceptionlessClient client = null) {
             if (client == null)
-                client = ExceptionlessClient.Current;
+                client = ExceptionlessClient.Default;
 
             if (value == null)
                 return;
@@ -82,11 +82,11 @@ namespace Exceptionless {
         /// <param name="info">The data object to add.</param>
         /// <param name="client">
         /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
-        /// ExceptionlessClient.Current.
+        /// ExceptionlessClient.Default.
         /// </param>
         public static void AddObject(this IData data, ExtendedDataInfo info, ExceptionlessClient client = null) {
             if (client == null)
-                client = ExceptionlessClient.Current;
+                client = ExceptionlessClient.Default;
 
             if (info == null || info.Data == null)
                 return;
@@ -101,7 +101,7 @@ namespace Exceptionless {
             string[] excludedPropertyNames = info.ExcludedPropertyNames != null ? client.Configuration.DataExclusions.Union(info.ExcludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray();
 
             try {
-                var serializer = DependencyResolver.Current.GetJsonSerializer();
+                var serializer = DependencyResolver.Default.GetJsonSerializer();
                 json = serializer.Serialize(info.Data, excludedPropertyNames, info.MaxDepthToSerialize.HasValue ? info.MaxDepthToSerialize.Value : 5, info.IgnoreSerializationErrors);
             } catch (Exception ex) {
                 json = ex.ToString();

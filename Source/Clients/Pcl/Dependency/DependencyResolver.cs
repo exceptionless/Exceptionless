@@ -16,7 +16,7 @@ namespace Exceptionless.Dependency {
 
         private static IDependencyResolver _resolver;
 
-        public static IDependencyResolver Current {
+        public static IDependencyResolver Default {
             get {
                 return _resolver ?? _defaultResolver.Value;
             }
@@ -44,8 +44,8 @@ namespace Exceptionless.Dependency {
             var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => new DefaultEnvironmentInfoCollector());
             resolver.Register(typeof(IEnvironmentInfoCollector), () => environmentInfoCollector.Value);
 
-            var lastClientIdManager = new Lazy<ILastClientIdManager>(() => new DefaultLastClientIdManager());
-            resolver.Register(typeof(ILastClientIdManager), () => lastClientIdManager.Value);
+            var lastClientIdManager = new Lazy<ILastReferenceIdManager>(() => new DefaultLastReferenceIdManager());
+            resolver.Register(typeof(ILastReferenceIdManager), () => lastClientIdManager.Value);
 
             //var serverIdManager = new ServerIdManager();
             //resolver.Register(typeof(IServerIdManager), () => serverIdManager);

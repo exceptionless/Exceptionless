@@ -14,12 +14,12 @@ namespace Exceptionless {
     /// <summary>
     /// EventArgs derived type which holds the custom event fields
     /// </summary>
-    public class EventModelEventArgs : EventArgs {
+    public class EventSubmittingEventArgs : EventArgs {
         /// <summary>
-        /// Initializes a new instance of the <see cref="EventModelEventArgs" /> class.
+        /// Initializes a new instance of the <see cref="EventSubmittingEventArgs" /> class.
         /// </summary>
         /// <param name="data">The event.</param>
-        public EventModelEventArgs(Event data) {
+        public EventSubmittingEventArgs(Event data) {
             Event = data;
         }
 
@@ -28,5 +28,10 @@ namespace Exceptionless {
         /// </summary>
         /// <value>The event.</value>
         public Event Event { get; private set; }
+
+        /// <summary>
+        /// Wether the event should be canceled.
+        /// </summary>
+        public bool Cancel { get; set; }
     }
 }

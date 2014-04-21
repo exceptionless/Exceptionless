@@ -141,7 +141,7 @@ namespace SampleConsole {
                 return;
 
             foreach (string file in Directory.GetFiles(path)) {
-                var serializer = DependencyResolver.Current.GetJsonSerializer();
+                var serializer = DependencyResolver.Default.GetJsonSerializer();
                 var e = serializer.Deserialize<Event>(file);
                 ExceptionlessClient.Current.SubmitEvent(e);
             }

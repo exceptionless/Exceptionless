@@ -49,22 +49,80 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
+      <Link>Models\ClientConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\EnvironmentInfo.cs">
+      <Link>Models\Data\EnvironmentInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\Error.cs">
+      <Link>Models\Data\Error.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\InnerError.cs">
+      <Link>Models\Data\InnerError.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\Method.cs">
+      <Link>Models\Data\Method.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\Module.cs">
+      <Link>Models\Data\Module.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\Parameter.cs">
+      <Link>Models\Data\Parameter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\RequestInfo.cs">
+      <Link>Models\Data\RequestInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Data\StackFrame.cs">
+      <Link>Models\Data\StackFrame.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\Event.cs">
+      <Link>Models\Event.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Client\SessionInfo.cs">
+      <Link>Models\SessionInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\DataDictionary.cs">
+      <Link>Models\Collections\DataDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\GenericArguments.cs">
+      <Link>Models\Collections\GenericArguments.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ModuleCollection.cs">
+      <Link>Models\Collections\ModuleCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
+      <Link>Models\Collections\ParameterCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\SettingsDictionary.cs">
+      <Link>Models\Collections\SettingsDictionary.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
+      <Link>Models\Collections\StackFrameCollection.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Collections\TagSet.cs">
+      <Link>Models\Collections\TagSet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Models\Interfaces\IData.cs">
+      <Link>Models\Interfaces\IData.cs</Link>
+    </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />
+    <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
+    <Compile Include="Duplicates\IDuplicateChecker.cs" />
     <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
-    <Compile Include="Events\EventModelEventArgs.cs" />
-    <Compile Include="Events\SendEventCompletedEventArgs.cs" />
-    <Compile Include="Events\UnhandledExceptionReportingEventArgs.cs" />
+    <Compile Include="Events\EventSubmittingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
     <Compile Include="Extensions\ConfigurationExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\DataDictionaryExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ExceptionExtensions.cs" />
+    <Compile Include="Extensions\ClientExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\WebResponseExtensions.cs" />
     <Compile Include="Extensions\JsonSerializerExtensions.cs" />
@@ -72,8 +130,8 @@
     <Compile Include="Extensions\WebRequestExtensions.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="LastClientIdManager\DefaultLastClientIdManager.cs" />
-    <Compile Include="LastClientIdManager\ILastClientIdManager.cs" />
+    <Compile Include="LastReferenceIdManager\DefaultLastReferenceIdManager.cs" />
+    <Compile Include="LastReferenceIdManager\ILastReferenceIdManager.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryType.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryWriter.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonObjectId.cs" />
@@ -258,10 +316,9 @@
     <Compile Include="Newtonsoft.Json\Utilities\TypeExtensions.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ValidationUtils.cs" />
     <Compile Include="Newtonsoft.Json\WriteState.cs" />
-    <Compile Include="Plugins\ExceptionlessPluginManager.cs" />
-    <Compile Include="Plugins\ExceptionlessPlugin.cs" />
-    <Compile Include="Plugins\ExceptionlessPluginContext.cs" />
-    <Compile Include="Plugins\IExceptionlessPlugin.cs" />
+    <Compile Include="Enrichments\EventEnrichmentManager.cs" />
+    <Compile Include="Enrichments\EventEnrichmentContext.cs" />
+    <Compile Include="Enrichments\IEventEnrichment.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Polyfill\ObjectPool.cs" />
     <Compile Include="Queue\IEventQueue.cs" />
@@ -275,7 +332,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\DefaultEnvironmentInfoCollector.cs" />
     <Compile Include="Services\IEnvironmentInfoCollector.cs" />
-    <Compile Include="Storage\DefaultFileStorage.cs" />
+    <Compile Include="Storage\InMemoryFileStorage.cs" />
     <Compile Include="Storage\InMemoryKeyValueStorage.cs" />
     <Compile Include="Storage\IFileStorage.cs" />
     <Compile Include="Storage\IKeyValueStorage.cs" />
@@ -291,12 +348,7 @@
     <None Include="app.config" />
     <EmbeddedResource Include="Json.Dynamic.snk" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
-      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
-      <Name>Exceptionless.Models</Name>
-    </ProjectReference>
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

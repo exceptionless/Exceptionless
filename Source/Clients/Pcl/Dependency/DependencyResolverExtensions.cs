@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Duplicates;
 using Exceptionless.Logging;
 using Exceptionless.Queue;
 using Exceptionless.Serializer;
@@ -63,6 +64,7 @@ namespace Exceptionless.Dependency {
         public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
             return resolver.Resolve<IEventQueue>() ?? new DefaultEventQueue();
         }
+
         public static ISubmissionClient GetSubmissionClient(this IDependencyResolver resolver) {
             return resolver.Resolve<ISubmissionClient>() ?? new DefaultSubmissionClient();
         }
@@ -71,12 +73,20 @@ namespace Exceptionless.Dependency {
             return resolver.Resolve<IKeyValueStorage>() ?? new InMemoryKeyValueStorage();
         }
 
+        public static IFileStorage GetFileStorage(this IDependencyResolver resolver) {
+            return resolver.Resolve<IFileStorage>() ?? new InMemoryFileStorage();
+        }
+
         public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
             return resolver.Resolve<IEnvironmentInfoCollector>() ?? new DefaultEnvironmentInfoCollector();
         }
 
-        public static ILastClientIdManager GetLastErrorIdManager(this IDependencyResolver resolver) {
-            return resolver.Resolve<ILastClientIdManager>() ?? new DefaultLastClientIdManager();
+        public static ILastReferenceIdManager GetLastReferenceIdManager(this IDependencyResolver resolver) {
+            return resolver.Resolve<ILastReferenceIdManager>() ?? new DefaultLastReferenceIdManager();
+        }
+
+        public static IDuplicateChecker GetDuplicateChecker(this IDependencyResolver resolver) {
+            return resolver.Resolve<IDuplicateChecker>() ?? new DefaultDuplicateChecker();
         }
     }
 }

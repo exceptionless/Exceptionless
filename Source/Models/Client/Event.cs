@@ -79,9 +79,9 @@ namespace Exceptionless.Models {
         public DataDictionary Data { get; set; }
 
         /// <summary>
-        /// An optional client generated unique identifier to be used for referencing this event instance at a later time.
+        /// An optional identifier to be used for referencing this event instance at a later time.
         /// </summary>
-        public string ClientId { get; set; }
+        public string ReferenceId { get; set; }
 
         /// <summary>
         /// A unique id that identifies a usage session that this event belongs to.

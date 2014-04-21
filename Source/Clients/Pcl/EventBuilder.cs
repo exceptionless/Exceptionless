@@ -14,11 +14,17 @@ using Exceptionless.Models;
 
 namespace Exceptionless {
     public class EventBuilder {
-        public EventBuilder(Event ev, ExceptionlessClient client = null) {
-            Client = client ?? ExceptionlessClient.Current;
+        public EventBuilder(Event ev, ExceptionlessClient client = null, IDictionary<string, object> enrichmentContextData = null) {
+            Client = client ?? ExceptionlessClient.Default;
             Target = ev;
+            EnrichmentContextData = enrichmentContextData;
         }
 
+        /// <summary>
+        ///     Any contextual data objects to be used by Exceptionless plugins to gather default
+        ///     information for inclusion in the event information.
+        /// </summary>
+        public IDictionary<string, object> EnrichmentContextData { get; private set; } 
         public ExceptionlessClient Client { get; set; }
         public Event Target { get; private set; }
 
@@ -97,7 +103,7 @@ namespace Exceptionless {
         ///     Submits the error report.
         /// </summary>
         public void Submit() {
-            Client.SubmitEvent(Target);
+            Client.SubmitEvent(Target, EnrichmentContextData);
         }
     }
 }

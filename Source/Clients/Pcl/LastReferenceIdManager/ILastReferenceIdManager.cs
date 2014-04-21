@@ -10,7 +10,7 @@
 using System;
 
 namespace Exceptionless {
-    public interface ILastClientIdManager {
+    public interface ILastReferenceIdManager {
         /// <summary>
         ///     Gets the last error id that was submitted to the server.
         /// </summary>

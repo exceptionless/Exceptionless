@@ -25,11 +25,11 @@ namespace Exceptionless {
         /// </param>
         /// <param name="client">
         /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
-        /// ExceptionlessClient.Current.
+        /// ExceptionlessClient.Default.
         /// </param>
         public static void AddDefaultInformation(this Event ev, IDictionary<string, object> pluginContextData = null, ExceptionlessClient client = null) {
             if (client == null)
-                client = ExceptionlessClient.Current;
+                client = ExceptionlessClient.Default;
 
             //            Configuration configuration = client.Configuration;
             //            if (configuration.IncludePrivateInformation)

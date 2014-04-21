@@ -63,7 +63,7 @@ namespace Exceptionless.Submission {
                 if (String.IsNullOrWhiteSpace(json))
                     return new SettingsResponse(false, message: "Invalid configuration settings.");
 
-                var serializer = DependencyResolver.Current.GetJsonSerializer();
+                var serializer = DependencyResolver.Default.GetJsonSerializer();
                 try {
                     var settings = serializer.Deserialize<ClientConfiguration>(json);
                     return new SettingsResponse(true, settings.Settings, settings.Version);

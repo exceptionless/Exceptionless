@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Models;
-using Exceptionless.Plugins;
+using Exceptionless.Enrichments;
 
 namespace Exceptionless {
     public static class ExceptionExtensions {
@@ -31,35 +30,32 @@ namespace Exceptionless {
         /// Creates a builder object for constructing error reports in a fluent api.
         /// </summary>
         /// <param name="exception">The exception.</param>
-        /// <param name="addDefaultInformation">Wether the default information should be included in the report.</param>
         /// <param name="pluginContextData">
         /// Any contextual data objects to be used by Exceptionless plugins to gather default
         /// information for inclusion in the report information.
         /// </param>
         /// <param name="client">
         /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
-        /// ExceptionlessClient.Current.
+        /// ExceptionlessClient.Default.
         /// </param>
         /// <returns></returns>
-        public static EventBuilder ToExceptionless(this Exception exception, bool addDefaultInformation = true, IDictionary<string, object> pluginContextData = null, ExceptionlessClient client = null) {
+        public static EventBuilder ToExceptionless(this Exception exception, IDictionary<string, object> pluginContextData = null, ExceptionlessClient client = null) {
             if (client == null)
-                client = ExceptionlessClient.Current;
+                client = ExceptionlessClient.Default;
 
-            var ev = new Event {
-                Id = null, //ObjectId.GenerateNewId().ToString();
-                Date = DateTimeOffset.Now
-            };
+            if (pluginContextData == null)
+                pluginContextData = new Dictionary<string, object>();
 
-            //ev.SetError(exception.ToErrorModel());
+            pluginContextData.Add(EventEnrichmentContext.KnownContextDataKeys.Exception, exception);
 
-            //ev.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(client, client.Configuration.IncludePrivateInformation);
-            //ev.ExceptionlessClientInfo.SubmissionMethod = submissionMethod;
+            var builder = client.CreateEventBuilder(pluginContextData);
 
-            var context = new ExceptionlessPluginContext(client, pluginContextData);
-            ExceptionlessPluginManager.AfterCreated(context, ev, exception);
+            // TODO: If an error object has not been set after running the plugins then add a simple error model.
+            //if (!ev.Data.ContainsKey(Event.KnownDataKeys.Error)
+            //    && !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
+            //ev.SetSimpleError(exception.ToErrorModel());
 
-            var builder = new EventBuilder(ev, client);
-            return addDefaultInformation ? builder.AddDefaultInformation(pluginContextData) : builder;
+            return builder;
         }
     }
 }

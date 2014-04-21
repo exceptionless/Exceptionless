@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using Exceptionless.Dependency;
+using Exceptionless.Enrichments;
 using Exceptionless.Models;
-using Exceptionless.Plugins;
 
 namespace Exceptionless {
     public class Configuration {
@@ -22,7 +22,7 @@ namespace Exceptionless {
             Resolver = resolver;
         }
 
-        public Configuration() : this(DependencyResolver.Current) {}
+        public Configuration() : this(DependencyResolver.Default) {}
 
         /// <summary>
         /// The server url that all reports will be sent to.
@@ -78,7 +78,7 @@ namespace Exceptionless {
         /// The dependency resolver to use for this configuration.
         /// </summary>
         public IDependencyResolver Resolver {
-            get { return _resolver ?? DependencyResolver.Current; }
+            get { return _resolver ?? DependencyResolver.Default; }
             set {_resolver = value; }
         }
 
@@ -107,69 +107,63 @@ namespace Exceptionless {
             };
         }
 
-        #region Plugins
+        #region Enrichments
 
-        private readonly Dictionary<string, IExceptionlessPlugin> _plugins = new Dictionary<string, IExceptionlessPlugin>();
+        private readonly Dictionary<string, IEventEnrichment> _enrichments = new Dictionary<string, IEventEnrichment>();
 
         /// <summary>
         /// The list of plugins that will be used in this configuration.
         /// </summary>
-        public IEnumerable<IExceptionlessPlugin> Plugins { get { return _plugins.Values; } }
+        public IEnumerable<IEventEnrichment> Enrichments { get { return _enrichments.Values; } }
 
         /// <summary>
-        /// Register a plugin to be used in this configuration.
+        /// Register an enrichment to be used in this configuration.
         /// </summary>
-        /// <param name="plugin">The plugin to be used.</param>
-        public void RegisterPlugin(IExceptionlessPlugin plugin) {
-            if (plugin == null)
+        /// <param name="enrichment">The enrichment to be used.</param>
+        public void AddEnrichment(IEventEnrichment enrichment) {
+            if (enrichment == null)
                 return;
 
-            RegisterPlugin(plugin.GetType().FullName, plugin);
+            AddEnrichment(enrichment.GetType().FullName, enrichment);
         }
 
         /// <summary>
-        /// Register a plugin to be used in this configuration.
+        /// Register an enrichment to be used in this configuration.
         /// </summary>
-        /// <param name="key">The key used to identify the plugin.</param>
-        /// <param name="plugin">The plugin to be used.</param>
-        public void RegisterPlugin(string key, IExceptionlessPlugin plugin) {
-            if (_plugins.ContainsKey(key))
-                _plugins[key] = plugin;
+        /// <param name="key">The key used to identify the enrichment.</param>
+        /// <param name="enrichment">The enrichment to be used.</param>
+        public void AddEnrichment(string key, IEventEnrichment enrichment) {
+            if (_enrichments.ContainsKey(key))
+                _enrichments[key] = enrichment;
             else
-                _plugins.Add(key, plugin);
+                _enrichments.Add(key, enrichment);
         }
 
         /// <summary>
-        /// Remove a plugin from this configuration.
+        /// Remove an enrichment from this configuration.
         /// </summary>
-        /// <param name="plugin">The plugin to be removed.</param>
-        public void UnregisterPlugin(IExceptionlessPlugin plugin) {
-            UnregisterPlugin(plugin.GetType().FullName);
+        /// <param name="enrichment">The enrichment to be removed.</param>
+        public void RemoveEnrichment(IEventEnrichment enrichment) {
+            RemoveEnrichment(enrichment.GetType().FullName);
         }
 
         /// <summary>
-        /// Remove a plugin by key from this configuration.
+        /// Remove an enrichment by key from this configuration.
         /// </summary>
-        /// <param name="key">The key for the plugin to be removed.</param>
-        public void UnregisterPlugin(string key) {
-            if (_plugins.ContainsKey(key))
-                _plugins.Remove(key);
+        /// <param name="key">The key for the enrichment to be removed.</param>
+        public void RemoveEnrichment(string key) {
+            if (_enrichments.ContainsKey(key))
+                _enrichments.Remove(key);
         }
 
         #endregion
 
-        #region Current
+        #region Default
 
-        private static Configuration _currentConfiguration = new Configuration();
+        private static readonly Lazy<Configuration> _defaultConfiguration = new Lazy<Configuration>(() => new Configuration());
 
-        public static Configuration Current {
-            get { return _currentConfiguration; }
-            set {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                _currentConfiguration = value;
-            }
+        public static Configuration Default {
+            get { return _defaultConfiguration.Value; }
         }
 
         #endregion
