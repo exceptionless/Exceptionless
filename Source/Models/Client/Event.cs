@@ -111,6 +111,7 @@ namespace Exceptionless.Models {
             public const string SimpleError = "serr";
             public const string RequestInfo = "req";
             public const string TraceLog = "trace";
+            public const string EnvironmentInfo = "env";
             //public const string ExceptionInfo = "__ExceptionInfo";
         }
     }

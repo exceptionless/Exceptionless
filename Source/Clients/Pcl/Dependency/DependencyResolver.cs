@@ -1,4 +1,5 @@
 ﻿using System;
+using Exceptionless.Duplicates;
 using Exceptionless.Logging;
 using Exceptionless.Queue;
 using Exceptionless.Serializer;
@@ -8,11 +9,7 @@ using Exceptionless.Submission;
 
 namespace Exceptionless.Dependency {
     public class DependencyResolver {
-        private static readonly Lazy<IDependencyResolver> _defaultResolver = new Lazy<IDependencyResolver>(() => {
-            var resolver = new DefaultDependencyResolver();
-            RegisterDefaultServices(resolver);
-            return resolver;
-        });
+        private static readonly Lazy<IDependencyResolver> _defaultResolver = new Lazy<IDependencyResolver>(CreateDefault);
 
         private static IDependencyResolver _resolver;
 
@@ -25,8 +22,14 @@ namespace Exceptionless.Dependency {
             }
         }
 
+        public static IDependencyResolver CreateDefault() {
+            var resolver = new DefaultDependencyResolver();
+            RegisterDefaultServices(resolver);
+            return resolver;
+        }
+
         public static void RegisterDefaultServices(IDependencyResolver resolver) {
-            var exceptionlessLog = new Lazy<IExceptionlessLog>(() => new NullExceptionlessLog());
+            var exceptionlessLog = new Lazy<IExceptionlessLog>(() => resolver.Resolve<NullExceptionlessLog>());
             resolver.Register(typeof(IExceptionlessLog), () => exceptionlessLog.Value);
 
             var jsonSerializer = new Lazy<IJsonSerializer>(() => new DefaultJsonSerializer());
@@ -47,11 +50,8 @@ namespace Exceptionless.Dependency {
             var lastClientIdManager = new Lazy<ILastReferenceIdManager>(() => new DefaultLastReferenceIdManager());
             resolver.Register(typeof(ILastReferenceIdManager), () => lastClientIdManager.Value);
 
-            //var serverIdManager = new ServerIdManager();
-            //resolver.Register(typeof(IServerIdManager), () => serverIdManager);
-
-            //var traceManager = new Lazy<TraceManager>(() => new TraceManager());
-            //resolver.Register(typeof(IServerIdManager), () => traceManager.Value);
+            var duplicateChecker = new Lazy<IDuplicateChecker>(() => new DefaultDuplicateChecker(resolver.GetLog()));
+            resolver.Register(typeof(IDuplicateChecker), () => duplicateChecker.Value);
         }
     }
 }

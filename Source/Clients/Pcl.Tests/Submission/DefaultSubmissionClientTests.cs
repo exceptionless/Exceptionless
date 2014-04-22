@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
+using Exceptionless.Dependency;
 using Exceptionless.Models;
 using Exceptionless.Submission;
 using Microsoft.Owin.Hosting;
@@ -25,7 +26,7 @@ namespace Pcl.Tests.Submission {
         public void SubmitAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
-                var configuration = new Configuration {
+                var configuration = new ExceptionlessConfiguration(DependencyResolver.Default) {
                     ServerUrl = Settings.Current.BaseURL,
                     ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
                 };
@@ -41,7 +42,7 @@ namespace Pcl.Tests.Submission {
         [Fact]
         public void GetSettingsAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
-                var configuration = new Configuration {
+                var configuration = new ExceptionlessConfiguration(DependencyResolver.Default) {
                     ServerUrl = Settings.Current.BaseURL,
                     ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
                 };

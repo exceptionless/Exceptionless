@@ -28,7 +28,7 @@ namespace SampleConsole {
         private static bool _sendingContinuous = false;
 
         private static void Main() {
-            var client = new ExceptionlessClient(new Configuration {
+            var client = new ExceptionlessClient(new ExceptionlessConfiguration(DependencyResolver.CreateDefault()) {
                 ApiKey = "e3d51ea621464280bbcb79c11fd6483e",
                 ServerUrl = "http://localhost:50000"
             });

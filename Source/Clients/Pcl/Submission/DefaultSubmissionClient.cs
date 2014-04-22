@@ -19,7 +19,7 @@ using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration) {
+        public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "event"));
             client.AddAuthorizationHeader(configuration);
 
@@ -47,7 +47,7 @@ namespace Exceptionless.Submission {
             });
         }
 
-        public Task<SettingsResponse> GetSettingsAsync(Configuration configuration) {
+        public Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "project/config"));
             client.AddAuthorizationHeader(configuration);
             

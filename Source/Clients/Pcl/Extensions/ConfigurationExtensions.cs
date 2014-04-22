@@ -2,7 +2,7 @@
 
 namespace Exceptionless.Extensions {
     public static class ConfigurationExtensions {
-        public static Uri GetServiceEndPoint(this Configuration config) {
+        public static Uri GetServiceEndPoint(this ExceptionlessConfiguration config) {
             var builder = new UriBuilder(config.ServerUrl) { Path = "/api/v1/" };
 
             // EnableSSL

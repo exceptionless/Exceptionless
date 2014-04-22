@@ -26,7 +26,7 @@ namespace Exceptionless.Extensions {
             return Task.Factory.FromAsync<WebResponse>(request.BeginGetResponse, request.EndGetResponse, null);
         }
 
-        public static void AddAuthorizationHeader(this WebRequest request, Configuration configuration) {
+        public static void AddAuthorizationHeader(this WebRequest request, ExceptionlessConfiguration configuration) {
             var authorizationHeader = new AuthorizationHeader {
                 Scheme = ExceptionlessHeaders.Token,
                 ParameterText = configuration.ApiKey

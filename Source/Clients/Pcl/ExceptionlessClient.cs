@@ -15,22 +15,30 @@ namespace Exceptionless {
         private readonly Lazy<ILastReferenceIdManager> _lastReferenceIdManager;
         private readonly Lazy<IDuplicateChecker> _duplicateChecker;
 
-        public ExceptionlessClient(Configuration configuration) {
+        public ExceptionlessClient() : this(ExceptionlessConfiguration.CreateDefault()) { }
+
+        public ExceptionlessClient(string apiKey) : this() {
+            Configuration.ApiKey = apiKey;
+        }
+
+        public ExceptionlessClient(Action<ExceptionlessConfiguration> configure) : this(new ExceptionlessConfiguration(DependencyResolver.CreateDefault())) {
+            if (configure != null)
+                configure(Configuration);
+        }
+
+        public ExceptionlessClient(ExceptionlessConfiguration configuration) {
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
 
             Configuration = configuration;
+            configuration.Resolver.Register(typeof(ExceptionlessConfiguration), () => Configuration);
             _log = new Lazy<IExceptionlessLog>(() => Configuration.Resolver.GetLog());
             _queue = new Lazy<IEventQueue>(() => Configuration.Resolver.GetEventQueue());
             _lastReferenceIdManager = new Lazy<ILastReferenceIdManager>(() => Configuration.Resolver.GetLastReferenceIdManager());
             _duplicateChecker = new Lazy<IDuplicateChecker>(() => Configuration.Resolver.GetDuplicateChecker());
         }
 
-        public ExceptionlessClient(string apiKey) : this(new Configuration { ApiKey = apiKey }) {}
-
-        public ExceptionlessClient() : this(Configuration.Default) { }
-
-        public Configuration Configuration { get; private set; }
+        public ExceptionlessConfiguration Configuration { get; private set; }
 
         /// <summary>
         /// Updates the user and description of an event for the specified reference id.
@@ -182,14 +190,7 @@ namespace Exceptionless {
         #endregion
 
         public void Dispose() {
-            if (_log.IsValueCreated && _log.Value is IDisposable)
-                ((IDisposable)_log.Value).Dispose();
-            if (_queue.IsValueCreated && _queue.Value is IDisposable)
-                ((IDisposable)_queue.Value).Dispose();
-            if (_lastReferenceIdManager.IsValueCreated && _lastReferenceIdManager.Value is IDisposable)
-                ((IDisposable)_lastReferenceIdManager.Value).Dispose();
-            if (_duplicateChecker.IsValueCreated && _duplicateChecker.Value is IDisposable)
-                ((IDisposable)_duplicateChecker.Value).Dispose();
+            Configuration.Resolver.Dispose();
         }
 
         #region Default

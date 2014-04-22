@@ -7,11 +7,11 @@ using Exceptionless.Enrichments;
 using Exceptionless.Models;
 
 namespace Exceptionless {
-    public class Configuration {
+    public class ExceptionlessConfiguration {
         private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.com";
-        private IDependencyResolver _resolver;
+        private readonly IDependencyResolver _resolver;
 
-        public Configuration(IDependencyResolver resolver) {
+        public ExceptionlessConfiguration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
             Enabled = true;
             SslEnabled = true;
@@ -19,10 +19,10 @@ namespace Exceptionless {
             DefaultData = new DataDictionary();
             Settings = new SettingsDictionary();
             DataExclusions = new Collection<string>();
-            Resolver = resolver;
+            if (resolver == null)
+                throw new ArgumentNullException("resolver");
+            _resolver = resolver;
         }
-
-        public Configuration() : this(DependencyResolver.Default) {}
 
         /// <summary>
         /// The server url that all reports will be sent to.
@@ -78,8 +78,7 @@ namespace Exceptionless {
         /// The dependency resolver to use for this configuration.
         /// </summary>
         public IDependencyResolver Resolver {
-            get { return _resolver ?? DependencyResolver.Default; }
-            set {_resolver = value; }
+            get { return _resolver; }
         }
 
         internal bool HasValidApiKey {
@@ -92,59 +91,55 @@ namespace Exceptionless {
             }
         }
 
-        public Configuration Clone() {
-            return new Configuration(this.Resolver) {
-                ServerUrl = this.ServerUrl,
-                ApiKey = this.ApiKey,
-                Enabled = this.Enabled,
-                SslEnabled = this.SslEnabled,
-                DefaultTags = new TagSet(this.DefaultTags.ToArray()),
-                DefaultData = new DataDictionary(this.DefaultData.ToArray()),
-                Settings = new SettingsDictionary(this.Settings.ToArray()),
-                IncludePrivateInformation = this.IncludePrivateInformation,
-                DataExclusions = new Collection<string>(this.DataExclusions.ToArray()),
-                Resolver = this.Resolver
-            };
+        public void ApplyDefaultConfiguration() {
+            foreach (var configurator in ConfigureDefaults)
+                configurator(this);
+        }
+
+        static ExceptionlessConfiguration() {
+            ConfigureDefaults = new List<Action<ExceptionlessConfiguration>>();
+        }
+
+        public static List<Action<ExceptionlessConfiguration>> ConfigureDefaults { get; private set; }
+
+        public static ExceptionlessConfiguration CreateDefault() {
+            var config = new ExceptionlessConfiguration(DependencyResolver.CreateDefault());
+            config.ApplyDefaultConfiguration();
+            return config;
         }
 
         #region Enrichments
 
-        private readonly Dictionary<string, IEventEnrichment> _enrichments = new Dictionary<string, IEventEnrichment>();
+        private readonly Dictionary<string, Lazy<IEventEnrichment>> _enrichments = new Dictionary<string, Lazy<IEventEnrichment>>();
 
         /// <summary>
         /// The list of plugins that will be used in this configuration.
         /// </summary>
-        public IEnumerable<IEventEnrichment> Enrichments { get { return _enrichments.Values; } }
+        public IEnumerable<IEventEnrichment> Enrichments { get { return _enrichments.Values.Select(e => e.Value); } }
 
         /// <summary>
         /// Register an enrichment to be used in this configuration.
         /// </summary>
-        /// <param name="enrichment">The enrichment to be used.</param>
-        public void AddEnrichment(IEventEnrichment enrichment) {
-            if (enrichment == null)
-                return;
-
-            AddEnrichment(enrichment.GetType().FullName, enrichment);
+        /// <typeparam name="T">The enrichment type to be added.</typeparam>
+        public void AddEnrichment<T>() where T : IEventEnrichment {
+            AddEnrichment(typeof(T).FullName, typeof(T));
         }
 
         /// <summary>
         /// Register an enrichment to be used in this configuration.
         /// </summary>
         /// <param name="key">The key used to identify the enrichment.</param>
-        /// <param name="enrichment">The enrichment to be used.</param>
-        public void AddEnrichment(string key, IEventEnrichment enrichment) {
-            if (_enrichments.ContainsKey(key))
-                _enrichments[key] = enrichment;
-            else
-                _enrichments.Add(key, enrichment);
+        /// <param name="enrichmentType">The enrichment type to be added.</param>
+        public void AddEnrichment(string key, Type enrichmentType) {
+            _enrichments[key] = new Lazy<IEventEnrichment>(() => Resolver.Resolve(enrichmentType) as IEventEnrichment);
         }
 
         /// <summary>
         /// Remove an enrichment from this configuration.
         /// </summary>
-        /// <param name="enrichment">The enrichment to be removed.</param>
-        public void RemoveEnrichment(IEventEnrichment enrichment) {
-            RemoveEnrichment(enrichment.GetType().FullName);
+        /// <typeparam name="T">The enrichment type to be added.</typeparam>
+        public void RemoveEnrichment<T>() where T : IEventEnrichment {
+            RemoveEnrichment(typeof(T).FullName);
         }
 
         /// <summary>
@@ -154,16 +149,6 @@ namespace Exceptionless {
         public void RemoveEnrichment(string key) {
             if (_enrichments.ContainsKey(key))
                 _enrichments.Remove(key);
-        }
-
-        #endregion
-
-        #region Default
-
-        private static readonly Lazy<Configuration> _defaultConfiguration = new Lazy<Configuration>(() => new Configuration());
-
-        public static Configuration Default {
-            get { return _defaultConfiguration.Value; }
         }
 
         #endregion

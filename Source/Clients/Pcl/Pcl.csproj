@@ -52,17 +52,18 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Configuration.cs" />
+    <Compile Include="ExceptionlessConfiguration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />
+    <Compile Include="Dependency\TinyIoC.cs" />
     <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
-    <Compile Include="Enrichments\Default\TagEventEnrichment.cs" />
-    <Compile Include="Enrichments\Default\TraceLogEventEnrichment.cs" />
-    <Compile Include="Enrichments\Default\EnvironmentInfoEventEnrichment.cs" />
-    <Compile Include="Enrichments\Default\PrivateInformationEventEnrichment.cs" />
+    <Compile Include="Enrichments\Default\ConfigurationDefaults.cs" />
+    <Compile Include="Enrichments\Default\TraceLog.cs" />
+    <Compile Include="Enrichments\Default\EnvironmentInfo.cs" />
+    <Compile Include="Enrichments\Default\PrivateInformation.cs" />
     <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventSubmittingEventArgs.cs" />

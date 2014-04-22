@@ -85,7 +85,7 @@ namespace Exceptionless.Queue {
             });
         }
 
-        public Configuration Configuration { get; set; }
+        public ExceptionlessConfiguration Configuration { get; set; }
 
         private IExceptionlessLog Log {
             get { return Configuration.Resolver.GetLog(); }

@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Dependency;
 
 namespace Exceptionless.Enrichments {
     public class EventEnrichmentContext {
@@ -23,6 +24,7 @@ namespace Exceptionless.Enrichments {
         }
 
         public ExceptionlessClient Client { get; private set; }
+        public IDependencyResolver Resolver { get { return Client.Configuration.Resolver; }}
         public IDictionary<string, object> ContextData { get; private set; }
 
         public static class KnownContextDataKeys {

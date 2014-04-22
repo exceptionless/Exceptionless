@@ -16,8 +16,7 @@ namespace Exceptionless.Enrichments {
                 try {
                     plugin.Enrich(context, ev);
                 } catch (Exception ex) {
-                    var log = context.Client.Configuration.Resolver.GetLog();
-                    log.FormattedError(typeof(EventEnrichmentManager), ex, "An error occurred while running {0}.Enrich(): {1}", plugin.GetType().FullName, ex.Message);
+                    context.Resolver.GetLog().FormattedError(typeof(EventEnrichmentManager), ex, "An error occurred while running {0}.Enrich(): {1}", plugin.GetType().FullName, ex.Message);
                 }
             }
         }

@@ -14,8 +14,8 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Submission {
     public interface ISubmissionClient {
-        Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, Configuration configuration);
+        Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration);
 
-        Task<SettingsResponse> GetSettingsAsync(Configuration configuration);
+        Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration);
     }
 }

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Exceptionless.Duplicates;
 using Exceptionless.Logging;
 using Exceptionless.Queue;
@@ -18,32 +16,15 @@ namespace Exceptionless.Dependency {
             if (type == null)
                 throw new ArgumentNullException("type");
 
-            return resolver.GetService(type);
+            return resolver.Resolve(type);
         }
 
         public static TService Resolve<TService>(this IDependencyResolver resolver, TService defaultImplementation = null) where TService : class {
             if (resolver == null)
                 throw new ArgumentNullException("resolver");
             
-            var serviceImpl = resolver.GetService(typeof(TService));
+            var serviceImpl = resolver.Resolve(typeof(TService));
             return serviceImpl as TService ?? defaultImplementation;
-        }
-
-        public static IEnumerable<object> ResolveAll(this IDependencyResolver resolver, Type type) {
-            if (resolver == null)
-                throw new ArgumentNullException("resolver");
-
-            if (type == null)
-                throw new ArgumentNullException("type");
-
-            return resolver.GetServices(type);
-        }
-
-        public static IEnumerable<TService> ResolveAll<TService>(this IDependencyResolver resolver) {
-            if (resolver == null)
-                throw new ArgumentNullException("resolver");
-
-            return resolver.GetServices(typeof(TService)).Cast<TService>();
         }
 
         public static void Register<TService>(this IDependencyResolver resolver, TService implementation) {
@@ -51,6 +32,20 @@ namespace Exceptionless.Dependency {
                 throw new ArgumentNullException("resolver");
 
             resolver.Register(typeof(TService), () => implementation);
+        }
+
+        public static void Register<TService>(this IDependencyResolver resolver) {
+            if (resolver == null)
+                throw new ArgumentNullException("resolver");
+
+            resolver.Register(typeof(TService), typeof(TService));
+        }
+
+        public static void Register<TService, TImplementation>(this IDependencyResolver resolver) {
+            if (resolver == null)
+                throw new ArgumentNullException("resolver");
+
+            resolver.Register(typeof(TService), typeof(TImplementation));
         }
 
         public static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
@@ -86,7 +81,7 @@ namespace Exceptionless.Dependency {
         }
 
         public static IDuplicateChecker GetDuplicateChecker(this IDependencyResolver resolver) {
-            return resolver.Resolve<IDuplicateChecker>() ?? new DefaultDuplicateChecker();
+            return resolver.Resolve<IDuplicateChecker>() ?? new DefaultDuplicateChecker(resolver.GetLog());
         }
     }
 }
