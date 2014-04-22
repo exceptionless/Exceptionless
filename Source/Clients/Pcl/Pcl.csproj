@@ -113,6 +113,10 @@
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
+    <Compile Include="Enrichments\Default\TagEventEnrichment.cs" />
+    <Compile Include="Enrichments\Default\TraceLogEventEnrichment.cs" />
+    <Compile Include="Enrichments\Default\EnvironmentInfoEventEnrichment.cs" />
+    <Compile Include="Enrichments\Default\PrivateInformationEventEnrichment.cs" />
     <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventSubmittingEventArgs.cs" />
