@@ -17,7 +17,7 @@ using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {
     public static class EventExtensions {
-        public static Event ToProjectLocalTime(this Event data, Project project) {
+        public static PersistentEvent ToProjectLocalTime(this PersistentEvent data, Project project) {
             if (data == null)
                 return null;
 
@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Extensions {
             return data;
         }
 
-        public static Event ToProjectLocalTime(this Event data, IProjectRepository repository) {
+        public static PersistentEvent ToProjectLocalTime(this PersistentEvent data, IProjectRepository repository) {
             if (data == null)
                 return null;
 

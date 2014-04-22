@@ -15,7 +15,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Queues {
     public class EventNotification : ExtensibleObject {
-        public Event Event { get; set; }
+        public PersistentEvent Event { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }
         public bool IsRegression { get; set; }

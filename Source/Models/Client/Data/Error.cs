@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Models.Collections;
 
 namespace Exceptionless.Models.Data {
     public class Error : InnerError {

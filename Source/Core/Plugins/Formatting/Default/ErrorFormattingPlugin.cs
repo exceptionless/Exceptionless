@@ -16,25 +16,25 @@ namespace Exceptionless.Core.Plugins.Formatting {
             _emailGenerator = emailGenerator;
         }
 
-        private bool ShouldHandle(Event ev) {
+        private bool ShouldHandle(PersistentEvent ev) {
             return ev.IsError;
         }
 
-        public string GetStackSummaryHtml(Event ev) {
+        public string GetStackSummaryHtml(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
             throw new NotImplementedException();
         }
 
-        public string GetEventSummaryHtml(Event ev) {
+        public string GetEventSummaryHtml(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
             throw new NotImplementedException();
         }
 
-        public string GetStackTitle(Event ev) {
+        public string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return _emailGenerator.GenerateMessage(mailerModel, "Notice");
         }
 
-        public string GetEventViewName(Event ev) {
+        public string GetEventViewName(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 

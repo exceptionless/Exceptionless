@@ -19,13 +19,13 @@ using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<Event> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string errorStackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string errorStackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
             for (int i = 0; i < count; i++)
                 yield return GenerateEvent(generateId, id, organizationId, projectId, errorStackId, startDate, endDate, timeZoneOffset: timeZoneOffset);
         }
 
-        public static List<Event> GenerateSampleEvents() {
-            return new List<Event> {
+        public static List<PersistentEvent> GenerateSampleEvents() {
+            return new List<PersistentEvent> {
                 GenerateSampleEvent(),
                 GenerateSampleEvent(TestConstants.EventId2),
                 GenerateSampleEvent(TestConstants.EventId7),
@@ -33,17 +33,17 @@ namespace Exceptionless.Tests.Utility {
             };
         }
 
-        public static Event GenerateSampleEvent(string id = TestConstants.EventId) {
+        public static PersistentEvent GenerateSampleEvent(string id = TestConstants.EventId) {
             return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
         }
 
-        public static Event GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
             if (!startDate.HasValue)
                 startDate = DateTime.Now.AddDays(-90);
             if (!endDate.HasValue)
                 endDate = DateTime.Now;
 
-            var ev = new Event {
+            var ev = new PersistentEvent {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,

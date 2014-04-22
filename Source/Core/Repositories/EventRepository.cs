@@ -13,20 +13,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Utility;
 using Exceptionless.Models;
-using Exceptionless.Models.Data;
-using Exceptionless.Models.Legacy;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using ServiceStack.CacheAccess;
-using Error = Exceptionless.Models.Data.Error;
 
 namespace Exceptionless.Core {
-    public class EventRepository : MongoRepositoryOwnedByOrganization<Event>, IEventRepository {
+    public class EventRepository : MongoRepositoryOwnedByOrganization<PersistentEvent>, IEventRepository {
         private readonly ProjectRepository _projectRepository;
         private readonly OrganizationRepository _organizationRepository;
         //private readonly ErrorStatsHelper _statsHelper;
@@ -76,7 +72,7 @@ namespace Exceptionless.Core {
             _collection.CreateIndex(IndexKeys.Descending(FieldNames.StackId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
         }
 
-        protected override void ConfigureClassMap(BsonClassMap<Event> cm) {
+        protected override void ConfigureClassMap(BsonClassMap<PersistentEvent> cm) {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.StackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
@@ -88,7 +84,7 @@ namespace Exceptionless.Core {
 
         #endregion
 
-        public override Event Add(Event data, bool addToCache = false) {
+        public override PersistentEvent Add(PersistentEvent data, bool addToCache = false) {
             if (data == null)
                 throw new ArgumentNullException("data");
             if (String.IsNullOrEmpty(data.OrganizationId))
@@ -99,8 +95,8 @@ namespace Exceptionless.Core {
             return base.Add(data, addToCache);
         }
 
-        public override void Add(IEnumerable<Event> events, bool addToCache = false) {
-            foreach (Event eventData in events)
+        public override void Add(IEnumerable<PersistentEvent> events, bool addToCache = false) {
+            foreach (PersistentEvent eventData in events)
                 Add(eventData, addToCache);
         }
 
@@ -140,7 +136,7 @@ namespace Exceptionless.Core {
             var errors = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId)
-                .Select(es => new Event {
+                .Select(es => new PersistentEvent {
                     Id = es.Id,
                     OrganizationId = es.OrganizationId,
                     ProjectId = projectId
@@ -153,7 +149,7 @@ namespace Exceptionless.Core {
                 errors = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
                     .SetLimit(batchSize)
                     .SetFields(FieldNames.Id, FieldNames.OrganizationId)
-                    .Select(es => new Event {
+                    .Select(es => new PersistentEvent {
                         Id = es.Id,
                         OrganizationId = es.OrganizationId,
                         ProjectId = projectId
@@ -172,7 +168,7 @@ namespace Exceptionless.Core {
             var errors = Collection.Find(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new Event {
+                .Select(e => new PersistentEvent {
                     Id = e.Id,
                     OrganizationId = e.OrganizationId,
                     ProjectId = e.ProjectId,
@@ -186,7 +182,7 @@ namespace Exceptionless.Core {
                 errors = Collection.Find(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))))
                     .SetLimit(batchSize)
                     .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new Event {
+                    .Select(e => new PersistentEvent {
                         Id = e.Id,
                         OrganizationId = e.OrganizationId,
                         ProjectId = e.ProjectId,
@@ -208,7 +204,7 @@ namespace Exceptionless.Core {
                 Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks)))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new Event {
+                .Select(e => new PersistentEvent {
                     Id = e.Id,
                     OrganizationId = e.OrganizationId,
                     ProjectId = e.ProjectId,
@@ -224,7 +220,7 @@ namespace Exceptionless.Core {
                     Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks)))
                     .SetLimit(batchSize)
                     .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new Event {
+                    .Select(e => new PersistentEvent {
                         Id = e.Id,
                         OrganizationId = e.OrganizationId,
                         ProjectId = e.ProjectId,
@@ -242,7 +238,7 @@ namespace Exceptionless.Core {
                 Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks)))
                 .SetLimit(batchSize)
                 .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new Event {
+                .Select(e => new PersistentEvent {
                     Id = e.Id,
                     OrganizationId = e.OrganizationId,
                     ProjectId = e.ProjectId,
@@ -272,7 +268,7 @@ namespace Exceptionless.Core {
                     Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks)))
                     .SetLimit(batchSize)
                     .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new Event {
+                    .Select(e => new PersistentEvent {
                         Id = e.Id,
                         OrganizationId = e.OrganizationId,
                         ProjectId = e.ProjectId,
@@ -286,7 +282,7 @@ namespace Exceptionless.Core {
             await Task.Run(() => RemoveAllByClientIpAndDate(clientIp, utcStartDate, utcEndDate));
         }
 
-        public override void Delete(IEnumerable<Event> events) {
+        public override void Delete(IEnumerable<PersistentEvent> events) {
             var groups = events.GroupBy(e => new {
                 e.OrganizationId,
                 e.ProjectId
@@ -301,7 +297,7 @@ namespace Exceptionless.Core {
                 // TODO: Should be updating stack
             }
 
-            foreach (Event entity in events)
+            foreach (PersistentEvent entity in events)
                 InvalidateCache(entity);
         }
 
@@ -312,7 +308,7 @@ namespace Exceptionless.Core {
 
         #region Queries
 
-        public IEnumerable<Event> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+        public IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var conditions = new List<IMongoQuery> {
                 Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId)))
             };
@@ -331,7 +327,7 @@ namespace Exceptionless.Core {
             if (!includeNotFound)
                 conditions.Add(Query.NE(FieldNames.Type, "404"));
 
-            var cursor = _collection.FindAs<Event>(Query.And(conditions));
+            var cursor = _collection.FindAs<PersistentEvent>(Query.And(conditions));
             cursor.SetSortOrder(SortBy.Descending(FieldNames.Date_UTC));
 
             if (skip.HasValue)
@@ -343,8 +339,8 @@ namespace Exceptionless.Core {
             return cursor;
         }
 
-        public IEnumerable<Event> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take) {
-            var cursor = _collection.FindAs<Event>(Query.And(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))), Query.GTE(FieldNames.Date_UTC, utcStart.Ticks), Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks)));
+        public IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take) {
+            var cursor = _collection.FindAs<PersistentEvent>(Query.And(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))), Query.GTE(FieldNames.Date_UTC, utcStart.Ticks), Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks)));
             cursor.SetSortOrder(SortBy.Descending(FieldNames.Date_UTC));
 
             if (skip.HasValue)
@@ -357,11 +353,11 @@ namespace Exceptionless.Core {
         }
 
         public string GetPreviousEventIdInStack(string id) {
-            Event data = GetByIdCached(id);
+            PersistentEvent data = GetByIdCached(id);
             if (data == null)
                 return null;
 
-            var cursor = _collection.FindAs<Event>(
+            var cursor = _collection.FindAs<PersistentEvent>(
                                                    Query.And(
                                                              Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(data.StackId))),
                                                        Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))),
@@ -390,15 +386,14 @@ namespace Exceptionless.Core {
         }
 
         public string GetNextEventIdInStack(string id) {
-            Event data = GetByIdCached(id);
+            PersistentEvent data = GetByIdCached(id);
             if (data == null)
                 return null;
 
-            var cursor = _collection.FindAs<Event>(
-                                                   Query.And(
-                                                             Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(data.StackId))),
-                                                       Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))),
-                                                       Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks)));
+            var cursor = _collection.FindAs<PersistentEvent>(Query.And(
+                    Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(data.StackId))),
+                    Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))),
+                    Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks)));
 
             cursor.SetSortOrder(SortBy.Ascending(FieldNames.Date_UTC));
             cursor.SetLimit(10);

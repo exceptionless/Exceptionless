@@ -15,17 +15,11 @@ using System;
 
 namespace Exceptionless.Core {
 #else
-namespace Exceptionless.Net {
+namespace Exceptionless.Submission.Net {
 #endif
 
     internal static class ExceptionlessHeaders {
-        public const string Basic = "Basic";
-
-        public const string ConfigurationVersion = "v";
-        //public const string Authorization = "Authorization";
-        //public const string MethodOverride = "X-HTTP-Method-Override";
-        //public const string ApiKey = "X-Exceptionless-ApiKey";
-        //public const string ResponseStatus = "X-Exceptionless-Status";
-        //public const string ResponseContentType = "X-Exceptionless-Content-Type";
+        public const string Token = "Token";
+        public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";
     }
 }

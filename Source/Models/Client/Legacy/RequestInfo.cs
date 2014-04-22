@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models.Legacy {
     public class RequestInfo {

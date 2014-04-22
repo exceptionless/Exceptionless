@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Queues {
 
             RegisterHandler<SummaryNotification>(ProcessSummaryNotification, ProcessSummaryNotificationException);
             RegisterHandler<EventNotification>(ProcessNotification, ProcessNotificationException);
-            RegisterHandler<Event>(ProcessEvent, ProcessEventException);
+            RegisterHandler<PersistentEvent>(ProcessEvent, ProcessEventException);
             RegisterHandler<WebHookNotification>(ProcessWebHookNotification, ProcessWebHookNotificationException);
         }
 
@@ -149,14 +149,14 @@ namespace Exceptionless.Core.Queues {
             return null;
         }
 
-        private void ProcessEventException(IMessage<Event> message, Exception exception) {
+        private void ProcessEventException(IMessage<PersistentEvent> message, Exception exception) {
             exception.ToExceptionless().AddDefaultInformation().MarkAsCritical().AddObject(message.GetBody()).AddTags("ErrorMQ").Submit();
             Log.Error().Project(message.GetBody().ProjectId).Exception(exception).Message("Error processing error.").Write();
             _stats.Counter(StatNames.ErrorsProcessingFailed);
         }
 
-        private object ProcessEvent(IMessage<Event> message) {
-            Event value = message.GetBody();
+        private object ProcessEvent(IMessage<PersistentEvent> message) {
+            PersistentEvent value = message.GetBody();
             if (value == null)
                 return null;
 

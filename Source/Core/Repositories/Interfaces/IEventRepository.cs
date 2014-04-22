@@ -14,10 +14,10 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core {
-    public interface IEventRepository : IRepositoryOwnedByOrganization<Event> {
-        IEnumerable<Event> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+    public interface IEventRepository : IRepositoryOwnedByOrganization<PersistentEvent> {
+        IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
 
-        IEnumerable<Event> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take);
+        IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take);
 
         string GetPreviousEventIdInStack(string id);
 

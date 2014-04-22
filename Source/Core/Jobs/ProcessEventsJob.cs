@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
 
             Log.Info().Message("Processing EventPost '{0}'.", workItem.Id).Write();
 
-            List<Event> events;
+            List<PersistentEvent> events;
             try {
                 events = ProcessEventPost(workItem.Value);
             } catch (Exception ex) {
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Jobs {
 
             bool isSingleEvent = events.Count == 1;
             int errorCount = 0;
-            foreach (Event ev in events) {
+            foreach (PersistentEvent ev in events) {
                 try {
                     _eventPipeline.Run(ev);
                 } catch (Exception ex) {
@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private List<Event> ProcessEventPost(EventPost ep) {
+        private List<PersistentEvent> ProcessEventPost(EventPost ep) {
             byte[] data = ep.Data.Decompress();
 
             var encoding = Encoding.UTF8;
@@ -89,7 +89,7 @@ namespace Exceptionless.Core.Jobs {
                 encoding = Encoding.GetEncoding(ep.CharSet);
 
             string input = encoding.GetString(data);
-            List<Event> events = _eventParserPluginManager.ParseEvents(input);
+            List<PersistentEvent> events = _eventParserPluginManager.ParseEvents(input);
             events.ForEach(e => {
                 // set the project id on all events
                 e.ProjectId = ep.ProjectId;

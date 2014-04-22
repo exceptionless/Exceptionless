@@ -8,45 +8,16 @@
 #endregion
 
 using System;
+
 using Exceptionless.Models.Data;
 
 namespace Exceptionless.Models {
     public class Event : IData
-#if !EMBEDDED
-        , IOwnedByOrganization
-#endif
     {
         public Event() {
             Tags = new TagSet();
             Data = new DataDictionary();
         }
-
-#if !EMBEDDED
-        /// <summary>
-        /// Unique id that identifies an event.
-        /// </summary>
-        public string Id { get; set; }
-
-        /// <summary>
-        /// The organization that the event belongs to.
-        /// </summary>
-        public string OrganizationId { get; set; }
-
-        /// <summary>
-        /// The project that the event belongs to.
-        /// </summary>
-        public string ProjectId { get; set; }
-
-        /// <summary>
-        /// The stack that the event belongs to.
-        /// </summary>
-        public string StackId { get; set; }
-
-        /// <summary>
-        /// The event summary html.
-        /// </summary>
-        public string SummaryHtml { get; set; }
-#endif
 
         /// <summary>
         /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
@@ -121,18 +92,6 @@ namespace Exceptionless.Models {
         public void SetRequestInfo(RequestInfo requestInfo) {
             Data[KnownDataKeys.RequestInfo] = requestInfo;
         }
-
-#if !EMBEDDED
-        /// <summary>
-        /// Wether the error has been marked as fixed or not.
-        /// </summary>
-        public bool IsFixed { get; set; }
-
-        /// <summary>
-        /// Wether the error has been marked as hidden or not.
-        /// </summary>
-        public bool IsHidden { get; set; }
-#endif
 
         public static class KnownTypes {
             public const string Error = "error";

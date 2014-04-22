@@ -480,7 +480,7 @@ namespace Exceptionless.Core.Utility {
             return destination;
         }
 
-        public void Process(Event data, bool isNew, IEnumerable<TimeSpan> utcOffsets) {
+        public void Process(PersistentEvent data, bool isNew, IEnumerable<TimeSpan> utcOffsets) {
             var updateActions = new List<Action> {
                 () => IncrementDayStackStats(data),
                 () => IncrementDayProjectStats(data, isNew)
@@ -665,7 +665,7 @@ namespace Exceptionless.Core.Utility {
 
         private static readonly object _dayStackStatsLock = new object();
 
-        private void IncrementDayStackStats(Event data) {
+        private void IncrementDayStackStats(PersistentEvent data) {
             string id = GetDayStackStatsId(data.StackId, data.Date);
 
             IMongoQuery query = Query.EQ(DayStackStatsRepository.FieldNames.Id, id);
@@ -689,7 +689,7 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        private DayStackStats CreateBlankDayStackStats(Event data) {
+        private DayStackStats CreateBlankDayStackStats(PersistentEvent data) {
             return CreateBlankDayStackStats(data.Date.UtcDateTime, data.StackId, data.ProjectId);
         }
 
@@ -720,7 +720,7 @@ namespace Exceptionless.Core.Utility {
 
         private static readonly object _dayProjectStatsLock = new object();
 
-        private void IncrementDayProjectStats(Event data, bool isNew) {
+        private void IncrementDayProjectStats(PersistentEvent data, bool isNew) {
             string id = GetDayProjectStatsId(data.ProjectId, data.Date);
 
             IMongoQuery query = Query.EQ(DayProjectStatsRepository.FieldNames.Id, id);
@@ -761,7 +761,7 @@ namespace Exceptionless.Core.Utility {
             return String.Concat(projectId, "/", utcDate.ToString("yyyyMMdd"));
         }
 
-        private DayProjectStats CreateBlankDayProjectStats(Event data, bool isNew) {
+        private DayProjectStats CreateBlankDayProjectStats(PersistentEvent data, bool isNew) {
             return CreateBlankDayProjectStats(data.Date.UtcDateTime, data.ProjectId, data.StackId, isNew);
         }
 
@@ -800,7 +800,7 @@ namespace Exceptionless.Core.Utility {
 
         private static readonly object _monthStackStatsLock = new object();
 
-        private void IncrementMonthStackStats(Event data, DateTime localDate, TimeSpan utcOffset) {
+        private void IncrementMonthStackStats(PersistentEvent data, DateTime localDate, TimeSpan utcOffset) {
             string id = GetMonthStackStatsId(localDate, utcOffset, data.StackId);
 
             IMongoQuery query = Query.EQ(MonthStackStatsRepository.FieldNames.Id, id);
@@ -854,7 +854,7 @@ namespace Exceptionless.Core.Utility {
 
         private static readonly object _monthProjectStatsLock = new object();
 
-        private void IncrementMonthProjectStats(Event data, bool isNew, DateTime localDate, TimeSpan utcOffset) {
+        private void IncrementMonthProjectStats(PersistentEvent data, bool isNew, DateTime localDate, TimeSpan utcOffset) {
             string id = GetMonthProjectStatsId(localDate, utcOffset, data.ProjectId);
 
             IMongoQuery query = Query.EQ(MonthProjectStatsRepository.FieldNames.Id, id);

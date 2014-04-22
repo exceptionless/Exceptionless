@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Pipeline {
             _projectRepository = projectRepository;
         }
 
-        public void Run(Event ev) {
+        public void Run(PersistentEvent ev) {
             if (String.IsNullOrEmpty(ev.ProjectId))
                 throw new ArgumentException("ProjectId must be populated on the Event.");
 
@@ -56,8 +56,8 @@ namespace Exceptionless.Core.Pipeline {
             Run(ctx);
         }
 
-        public void Run(IEnumerable<Event> events) {
-            foreach (Event e in events)
+        public void Run(IEnumerable<PersistentEvent> events) {
+            foreach (PersistentEvent e in events)
                 Run(e);
         }
     }

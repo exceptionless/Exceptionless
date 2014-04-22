@@ -65,21 +65,21 @@ namespace Exceptionless.Queue {
                     return t;
                 }
 
-                if (Configuration.CurrentConfigurationVersion < t.Result.SettingsVersion) {
-                    t.ContinueWith(ts => client.GetSettingsAsync(Configuration).ContinueWith(r => {
-                        if (r.IsFaulted || r.IsCanceled || r.Exception != null || !r.Result.Success) {
-                            Log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while getting the configuration settings. Exception: ", t.Exception.GetMessage()));
-                        }
+                //if (Configuration.CurrentConfigurationVersion < t.Result.SettingsVersion) {
+                //    t.ContinueWith(ts => client.GetSettingsAsync(Configuration).ContinueWith(r => {
+                //        if (r.IsFaulted || r.IsCanceled || r.Exception != null || !r.Result.Success) {
+                //            Log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while getting the configuration settings. Exception: ", t.Exception.GetMessage()));
+                //        }
 
-                        Configuration.Settings.Clear();
-                        if (r.Result.Settings != null)
-                            foreach (var setting in r.Result.Settings)
-                                Configuration.Settings.Add(setting.Key, setting.Value);
+                //        Configuration.Settings.Clear();
+                //        if (r.Result.Settings != null)
+                //            foreach (var setting in r.Result.Settings)
+                //                Configuration.Settings.Add(setting.Key, setting.Value);
 
-                        _processingQueue = false;
-                        // TODO: Fire event for Configuration Settings Updated.
-                    }));
-                }
+                //        _processingQueue = false;
+                //        // TODO: Fire event for Configuration Settings Updated.
+                //    }));
+                //}
 
                 return t;
             });

@@ -5,10 +5,10 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public interface IFormattingPlugin {
-        string GetStackSummaryHtml(Event ev);
-        string GetEventSummaryHtml(Event ev);
-        string GetStackTitle(Event ev);
+        string GetStackSummaryHtml(PersistentEvent ev);
+        string GetEventSummaryHtml(PersistentEvent ev);
+        string GetStackTitle(PersistentEvent ev);
         MailMessage GetEventNotificationMailMessage(EventNotification model);
-        string GetEventViewName(Event ev);
+        string GetEventViewName(PersistentEvent ev);
     }
 }

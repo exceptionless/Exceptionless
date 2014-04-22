@@ -5,15 +5,15 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : IFormattingPlugin {
-        public virtual string GetStackSummaryHtml(Event ev) {
+        public virtual string GetStackSummaryHtml(PersistentEvent ev) {
             return null;
         }
 
-        public virtual string GetEventSummaryHtml(Event ev) {
+        public virtual string GetEventSummaryHtml(PersistentEvent ev) {
             return null;
         }
 
-        public virtual string GetStackTitle(Event ev) {
+        public virtual string GetStackTitle(PersistentEvent ev) {
             return null;
         }
 
@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return null;
         }
 
-        public virtual string GetEventViewName(Event ev) {
+        public virtual string GetEventViewName(PersistentEvent ev) {
             return null;
         }
     }

@@ -62,6 +62,7 @@
     <Compile Include="Client\Legacy\Parameter.cs" />
     <Compile Include="Client\Legacy\RequestInfo.cs" />
     <Compile Include="Client\Legacy\StackFrame.cs" />
+    <Compile Include="Client\PersistentEvent.cs" />
     <Compile Include="Client\SessionInfo.cs" />
     <Compile Include="Enums\NotificationMode.cs" />
     <Compile Include="Collections\ModuleCollection.cs" />

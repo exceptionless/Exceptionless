@@ -8,10 +8,10 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
     public class FallbackEventParserPlugin : IEventParserPlugin {
-        public List<Event> ParseEvents(string input) {
-            var events = new List<Event>();
+        public List<PersistentEvent> ParseEvents(string input) {
+            var events = new List<PersistentEvent>();
             foreach (var entry in input.SplitAndTrim(new[] { Environment.NewLine }).Where(line => !String.IsNullOrWhiteSpace(line))) {
-                events.Add(new Event {
+                events.Add(new PersistentEvent {
                     Date = DateTimeOffset.Now,
                     Type = "log",
                     Message = entry

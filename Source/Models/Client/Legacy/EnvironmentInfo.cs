@@ -8,6 +8,7 @@
 #endregion
 
 using System;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models.Legacy {
     public class EnvironmentInfo {

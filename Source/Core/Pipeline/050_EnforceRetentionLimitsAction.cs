@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Pipeline {
                 .SetFields(EventRepository.FieldNames.Id)
                 .SetSkip(maxErrorsPerStack)
                 .SetLimit(150)
-                .Select(e => new Event {
+                .Select(e => new PersistentEvent {
                     Id = e.Id,
                     OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId,

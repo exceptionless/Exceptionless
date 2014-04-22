@@ -9,6 +9,7 @@
 
 using System;
 using System.Text;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models.Legacy {
     public class Module {

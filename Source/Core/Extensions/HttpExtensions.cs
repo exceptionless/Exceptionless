@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             AuthenticationHeaderValue auth = request.Headers.Authorization;
-            if (auth == null || String.IsNullOrWhiteSpace(auth.Parameter) || String.IsNullOrWhiteSpace(auth.Scheme) || auth.Scheme != ExceptionlessHeaders.Basic)
+            if (auth == null || String.IsNullOrWhiteSpace(auth.Parameter) || String.IsNullOrWhiteSpace(auth.Scheme) || auth.Scheme != ExceptionlessHeaders.Token)
                 return false;
 
             string[] header = ParseAuthorizationHeader(auth.Parameter);

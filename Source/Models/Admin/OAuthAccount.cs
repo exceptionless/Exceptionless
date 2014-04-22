@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models {
     public class OAuthAccount : IEquatable<OAuthAccount> {

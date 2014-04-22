@@ -46,65 +46,11 @@
     <Compile Include="..\..\Core\Serialization\RequestInfoConverter.cs">
       <Link>Serializer\RequestInfoConverter.cs</Link>
     </Compile>
+    <Compile Include="..\..\Core\Web\ExceptionlessHeaders.cs">
+      <Link>Submission\Net\ExceptionlessHeaders.cs</Link>
+    </Compile>
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\ClientConfiguration.cs">
-      <Link>Models\ClientConfiguration.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\EnvironmentInfo.cs">
-      <Link>Models\Data\EnvironmentInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Error.cs">
-      <Link>Models\Data\Error.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\InnerError.cs">
-      <Link>Models\Data\InnerError.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Method.cs">
-      <Link>Models\Data\Method.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Module.cs">
-      <Link>Models\Data\Module.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\Parameter.cs">
-      <Link>Models\Data\Parameter.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\RequestInfo.cs">
-      <Link>Models\Data\RequestInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Data\StackFrame.cs">
-      <Link>Models\Data\StackFrame.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\Event.cs">
-      <Link>Models\Event.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Client\SessionInfo.cs">
-      <Link>Models\SessionInfo.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\DataDictionary.cs">
-      <Link>Models\Collections\DataDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\GenericArguments.cs">
-      <Link>Models\Collections\GenericArguments.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ModuleCollection.cs">
-      <Link>Models\Collections\ModuleCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\ParameterCollection.cs">
-      <Link>Models\Collections\ParameterCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\SettingsDictionary.cs">
-      <Link>Models\Collections\SettingsDictionary.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\StackFrameCollection.cs">
-      <Link>Models\Collections\StackFrameCollection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Collections\TagSet.cs">
-      <Link>Models\Collections\TagSet.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Models\Interfaces\IData.cs">
-      <Link>Models\Interfaces\IData.cs</Link>
     </Compile>
     <Compile Include="Configuration.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
@@ -341,7 +287,6 @@
     <Compile Include="Storage\IFileStorage.cs" />
     <Compile Include="Storage\IKeyValueStorage.cs" />
     <Compile Include="Submission\DefaultSubmissionClient.cs" />
-    <Compile Include="Submission\Net\ExceptionlessHeaders.cs" />
     <Compile Include="Submission\ISubmissionClient.cs" />
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />
     <Compile Include="Submission\SettingsResponse.cs" />
@@ -352,7 +297,12 @@
     <None Include="app.config" />
     <EmbeddedResource Include="Json.Dynamic.snk" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
+      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
+      <Name>Exceptionless.Models</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

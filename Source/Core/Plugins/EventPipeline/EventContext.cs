@@ -17,12 +17,12 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.EventPipeline {
     public class EventContext : ExtensibleObject, IPipelineContext {
-        public EventContext(Event data) {
-            Event = data;
+        public EventContext(PersistentEvent ev) {
+            Event = ev;
             StackSignatureData = new Dictionary<string, string>();
         }
 
-        public Event Event { get; set; }
+        public PersistentEvent Event { get; set; }
         public Stack Stack { get; set; }
         public Project Project { get; set; }
         public Organization Organization { get; set; }

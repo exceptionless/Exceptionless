@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Net.Mail;
 using CodeSmith.Core.Dependency;
-using Exceptionless.Core.Plugins;
 using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using NLog.Fluent;
@@ -14,7 +13,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public string GetStackSummaryHtml(Event ev) {
+        public string GetStackSummaryHtml(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     string result = plugin.GetStackSummaryHtml(ev);
@@ -31,7 +30,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the event.
         /// </summary>
-        public string GetEventSummaryHtml(Event ev) {
+        public string GetEventSummaryHtml(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     string result = plugin.GetEventSummaryHtml(ev);
@@ -48,7 +47,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate a stack title based on an event.
         /// </summary>
-        public string GetStackTitle(Event ev) {
+        public string GetStackTitle(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     string result = plugin.GetStackTitle(ev);
@@ -82,7 +81,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate a razor view name for an event.
         /// </summary>
-        public string GetEventViewName(Event ev) {
+        public string GetEventViewName(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     string result = plugin.GetStackTitle(ev);

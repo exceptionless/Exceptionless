@@ -20,7 +20,6 @@ using System.Reflection;
 using System.Security;
 using Exceptionless.Logging;
 using Exceptionless.Models;
-using Exceptionless.Models.Collections;
 using Exceptionless.Models.Data;
 using Module = Exceptionless.Models.Data.Module;
 using StackFrame = System.Diagnostics.StackFrame;

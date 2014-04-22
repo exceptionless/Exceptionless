@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models {
     public class Organization : IIdentity, IData {

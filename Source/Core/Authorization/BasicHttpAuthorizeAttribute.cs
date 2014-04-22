@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Authorization {
             if (!String.IsNullOrEmpty(AuthDeniedReason))
                 authDeniedMessage = String.Concat(authDeniedMessage, " (", AuthDeniedReason, ")");
             actionContext.Response = actionContext.ControllerContext.Request.CreateErrorResponse(HttpStatusCode.Unauthorized, authDeniedMessage);
-            actionContext.Response.Headers.Add(HttpResponseHeader.WwwAuthenticate.ToString(), ExceptionlessHeaders.Basic);
+            actionContext.Response.Headers.Add(HttpResponseHeader.WwwAuthenticate.ToString(), ExceptionlessHeaders.Token);
         }
 
         protected abstract bool TryCreatePrincipal(string userName, string password, out IPrincipal principal);
