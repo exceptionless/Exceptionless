@@ -52,7 +52,9 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="ExceptionlessConfiguration.cs" />
+    <Compile Include="Configuration\ExceptionlessAttribute.cs" />
+    <Compile Include="Configuration\ExceptionlessConfiguration.cs" />
+    <Compile Include="Configuration\ExceptionlessSettingAttribute.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
