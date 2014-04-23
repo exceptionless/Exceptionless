@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using Exceptionless.Models;
 
 namespace Exceptionless.Enrichments.Default {
     public class ConfigurationDefaults : IEventEnrichment {
-        public ConfigurationDefaults() {
-            Debug.WriteLine("Here");
-        }
-
         /// <summary>
         /// Enrich the event with additional information.
         /// </summary>
