@@ -108,7 +108,7 @@ namespace Exceptionless {
                 return;
             }
 
-            _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: id={0} type={1}", ev.ReferenceId, ev.Type);
+            _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: type={0}{1}", ev.Type, !String.IsNullOrEmpty(ev.ReferenceId) ? " refid=" + ev.ReferenceId : String.Empty);
             _queue.Value.EnqueueAsync(ev).Wait();
 
             if (!String.IsNullOrEmpty(ev.ReferenceId)) {

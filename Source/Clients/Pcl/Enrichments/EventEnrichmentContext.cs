@@ -13,7 +13,7 @@ using Exceptionless.Dependency;
 
 namespace Exceptionless.Enrichments {
     public class EventEnrichmentContext {
-        internal EventEnrichmentContext(ExceptionlessClient client, IEnumerable<KeyValuePair<string, object>> contextData = null) {
+        public EventEnrichmentContext(ExceptionlessClient client, IEnumerable<KeyValuePair<string, object>> contextData = null) {
             Client = client;
             ContextData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             if (contextData == null)
