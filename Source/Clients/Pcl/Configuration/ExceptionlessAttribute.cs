@@ -19,27 +19,8 @@ namespace Exceptionless.Configuration {
         /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
         /// </summary>
         /// <param name="apiKey">The API key.</param>
-        public ExceptionlessAttribute(string apiKey)
-            : this(null, apiKey) {}
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
-        /// </summary>
-        /// <param name="serverUrl">The server URL.</param>
-        /// <param name="apiKey">The API key.</param>
-        public ExceptionlessAttribute(string serverUrl, string apiKey)
-            : this(serverUrl, apiKey, true) {}
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
-        /// </summary>
-        /// <param name="serverUrl">The server URL.</param>
-        /// <param name="apiKey">The API key.</param>
-        /// <param name="sslEnabled">sslEnabled.</param>
-        public ExceptionlessAttribute(string serverUrl, string apiKey, bool sslEnabled) {
-            ServerUrl = serverUrl;
+        public ExceptionlessAttribute(string apiKey) {
             ApiKey = apiKey;
-            SslEnabled = sslEnabled;
             Enabled = true;
         }
 
