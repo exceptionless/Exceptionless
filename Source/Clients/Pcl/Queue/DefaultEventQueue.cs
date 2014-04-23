@@ -62,7 +62,7 @@ namespace Exceptionless.Queue {
 
             return _client.SubmitAsync(events, _config).ContinueWith(t => {
                 if (t.IsFaulted || t.IsCanceled || t.Exception != null || !t.Result.Success) {
-                    _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting the event. Exception: ", t.Exception.GetMessage()));
+                    _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting the event: ", t.Result != null ? t.Result.Message : t.Exception.GetMessage()));
                     foreach (var ev in events)
                         EnqueueAsync(ev);
 
