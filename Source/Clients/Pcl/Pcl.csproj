@@ -83,6 +83,7 @@
     </Compile>
     <Compile Include="LastReferenceIdManager\DefaultLastReferenceIdManager.cs" />
     <Compile Include="LastReferenceIdManager\ILastReferenceIdManager.cs" />
+    <Compile Include="Logging\TraceExceptionlessLog.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryType.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryWriter.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonObjectId.cs" />

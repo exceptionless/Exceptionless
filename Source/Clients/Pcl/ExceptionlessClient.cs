@@ -164,7 +164,7 @@ namespace Exceptionless {
         private bool OnSubmittingEvent(Event ev) {
             var args = new EventSubmittingEventArgs(ev);
             OnSubmittingEvent(args);
-            return args.Cancel;
+            return !args.Cancel;
         }
 
         /// <summary>
@@ -178,7 +178,7 @@ namespace Exceptionless {
             var handlers = SubmittingEvent.GetInvocationList();
             foreach (var handler in handlers) {
                 try {
-                    handler.DynamicInvoke(e);
+                    handler.DynamicInvoke(this, e);
                     if (e.Cancel)
                         return;
                 } catch (Exception ex) {

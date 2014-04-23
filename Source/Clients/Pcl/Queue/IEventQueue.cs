@@ -6,6 +6,5 @@ namespace Exceptionless.Queue {
     public interface IEventQueue {
         Task EnqueueAsync(Event ev);
         Task ProcessAsync();
-        ExceptionlessConfiguration Configuration { get; set; }
-    }
+   }
 }

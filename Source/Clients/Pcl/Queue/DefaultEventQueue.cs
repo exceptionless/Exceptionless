@@ -3,18 +3,25 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Dependency;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Submission;
 using Exceptionless.Utility;
 
 namespace Exceptionless.Queue {
     public class DefaultEventQueue : IEventQueue, IDisposable {
         private readonly ConcurrentQueue<Event> _queue = new ConcurrentQueue<Event>();
+        private readonly IExceptionlessLog _log;
+        private readonly ExceptionlessConfiguration _config;
+        private readonly ISubmissionClient _client;
         private Timer _queueTimer;
         private bool _processingQueue;
 
-        public DefaultEventQueue() {
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client) {
+            _log = log;
+            _config = config;
+            _client = client;
+
             // Wait 10 seconds to start processing to keep the startup resource demand low.
             _queueTimer = new Timer(OnProcessQueue, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(5));
         }
@@ -25,19 +32,19 @@ namespace Exceptionless.Queue {
         }
 
         public Task ProcessAsync() {
-            Log.Info(typeof(DefaultEventQueue), "Processing queue...");
-            if (!Configuration.Enabled) {
-                Log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
+            _log.Info(typeof(DefaultEventQueue), "Processing queue...");
+            if (!_config.Enabled) {
+                _log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
                 return TaskHelper.FromResult(0);
             }
 
             if (_queue.Count == 0) {
-                Log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
+                _log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
                 return TaskHelper.FromResult(0);
             }
 
             if (_processingQueue) {
-                Log.Info(typeof(DefaultEventQueue), "The queue is already being processed.");
+                _log.Info(typeof(DefaultEventQueue), "The queue is already being processed.");
                 return TaskHelper.FromResult(0);
             }
 
@@ -53,10 +60,9 @@ namespace Exceptionless.Queue {
                 events.Add(ev);
             }
 
-            var client = Configuration.Resolver.GetSubmissionClient();
-            return client.SubmitAsync(events, Configuration).ContinueWith(t => {
+            return _client.SubmitAsync(events, _config).ContinueWith(t => {
                 if (t.IsFaulted || t.IsCanceled || t.Exception != null || !t.Result.Success) {
-                    Log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting the event. Exception: ", t.Exception.GetMessage()));
+                    _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting the event. Exception: ", t.Exception.GetMessage()));
                     foreach (var ev in events)
                         EnqueueAsync(ev);
 
@@ -68,7 +74,7 @@ namespace Exceptionless.Queue {
                 //if (Configuration.CurrentConfigurationVersion < t.Result.SettingsVersion) {
                 //    t.ContinueWith(ts => client.GetSettingsAsync(Configuration).ContinueWith(r => {
                 //        if (r.IsFaulted || r.IsCanceled || r.Exception != null || !r.Result.Success) {
-                //            Log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while getting the configuration settings. Exception: ", t.Exception.GetMessage()));
+                //            _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while getting the configuration settings. Exception: ", t.Exception.GetMessage()));
                 //        }
 
                 //        Configuration.Settings.Clear();
@@ -85,45 +91,40 @@ namespace Exceptionless.Queue {
             });
         }
 
-        public ExceptionlessConfiguration Configuration { get; set; }
-
-        private IExceptionlessLog Log {
-            get { return Configuration.Resolver.GetLog(); }
-        }
-
         private void OnProcessQueue(object state) {
             if (!_processingQueue)
                 ProcessAsync().Wait();
         }
 
         private void StopTimer() {
-            Log.Info(typeof(DefaultEventQueue), "Stopping timer.");
+            _log.Info(typeof(DefaultEventQueue), "Stopping timer.");
             _queueTimer.Change(Timeout.Infinite, Timeout.Infinite);
         }
 
         private void QuickTimer(double milliseconds = 5000) {
-            Log.Info(typeof(DefaultEventQueue), "Triggering quick timer...");
+            _log.Info(typeof(DefaultEventQueue), "Triggering quick timer...");
             if (_processingQueue)
                 return;
 
             _queueTimer.Change(TimeSpan.FromMilliseconds(milliseconds), TimeSpan.Zero);
-            Log.Info(typeof(DefaultEventQueue), "Quick timer scheduled");
+            _log.Info(typeof(DefaultEventQueue), "Quick timer scheduled");
         }
 
         private void SlowTimer() {
-            Log.Info(typeof(DefaultEventQueue), "Triggering slow timer...");
+            _log.Info(typeof(DefaultEventQueue), "Triggering slow timer...");
             if (_processingQueue)
                 return;
 
             _queueTimer.Change(TimeSpan.FromHours(1), TimeSpan.Zero);
-            Log.Info(typeof(DefaultEventQueue), "Slow timer scheduled");
+            _log.Info(typeof(DefaultEventQueue), "Slow timer scheduled");
         }
 
         public void Dispose() {
-            if (_queueTimer != null) {
-                _queueTimer.Dispose();
-                _queueTimer = null;
-            }
+            if (_queueTimer == null)
+                return;
+
+            _queueTimer.Dispose();
+            _queueTimer = null;
         }
     }
 }

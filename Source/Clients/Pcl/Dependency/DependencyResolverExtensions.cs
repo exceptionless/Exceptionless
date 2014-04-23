@@ -57,7 +57,7 @@ namespace Exceptionless.Dependency {
         }
 
         public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
-            return resolver.Resolve<IEventQueue>() ?? new DefaultEventQueue();
+            return resolver.Resolve<IEventQueue>() ?? new DefaultEventQueue(resolver.Resolve<ExceptionlessConfiguration>(), resolver.GetLog(), resolver.GetSubmissionClient());
         }
 
         public static ISubmissionClient GetSubmissionClient(this IDependencyResolver resolver) {
