@@ -28,41 +28,18 @@ namespace Exceptionless.Configuration {
         /// <param name="serverUrl">The server URL.</param>
         /// <param name="apiKey">The API key.</param>
         public ExceptionlessAttribute(string serverUrl, string apiKey)
-            : this(serverUrl, apiKey, null) {}
+            : this(serverUrl, apiKey, true) {}
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
         /// </summary>
         /// <param name="serverUrl">The server URL.</param>
         /// <param name="apiKey">The API key.</param>
-        /// <param name="queuePath">The queue path.</param>
-        public ExceptionlessAttribute(string serverUrl, string apiKey, string queuePath)
-            : this(serverUrl, apiKey, queuePath, true) {}
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
-        /// </summary>
-        /// <param name="serverUrl">The server URL.</param>
-        /// <param name="apiKey">The API key.</param>
-        /// <param name="queuePath">The queue path.</param>
-        /// <param name="enableSSL">EnableSSL.</param>
-        public ExceptionlessAttribute(string serverUrl, string apiKey, string queuePath, bool enableSSL)
-            : this(serverUrl, apiKey, queuePath, enableSSL, true) {}
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="ExceptionlessAttribute" /> class.
-        /// </summary>
-        /// <param name="serverUrl">The server URL.</param>
-        /// <param name="apiKey">The API key.</param>
-        /// <param name="queuePath">The queue path.</param>
-        /// <param name="enableSSL">Enable SSL.</param>
-        /// <param name="enableLogging">Enable trace logging</param>
-        public ExceptionlessAttribute(string serverUrl, string apiKey, string queuePath, bool enableSSL, bool enableLogging) {
+        /// <param name="sslEnabled">sslEnabled.</param>
+        public ExceptionlessAttribute(string serverUrl, string apiKey, bool sslEnabled) {
             ServerUrl = serverUrl;
-            QueuePath = queuePath;
             ApiKey = apiKey;
-            EnableSSL = enableSSL;
-            EnableLogging = enableLogging;
+            SslEnabled = sslEnabled;
             Enabled = true;
         }
 
@@ -71,12 +48,6 @@ namespace Exceptionless.Configuration {
         /// </summary>
         /// <value>The server URL.</value>
         public string ServerUrl { get; set; }
-
-        /// <summary>
-        /// Gets or sets the queue path.
-        /// </summary>
-        /// <value>The queue path.</value>
-        public string QueuePath { get; set; }
 
         /// <summary>
         /// Gets or sets the API key.
@@ -89,21 +60,7 @@ namespace Exceptionless.Configuration {
         /// </summary>
         /// ///
         /// <value><c>true</c> to enable SSL; otherwise, <c>false</c>.</value>
-        public bool EnableSSL { get; set; }
-
-        /// <summary>
-        /// Gets or sets if logging should be used.
-        /// </summary>
-        /// ///
-        /// <value><c>true</c> to enable logging; otherwise, <c>false</c>.</value>
-        public bool EnableLogging { get; set; }
-
-        /// <summary>
-        /// Gets or sets a log path to be used for logging exceptionless client info.
-        /// </summary>
-        /// ///
-        /// <value><c>true</c> to enable logging; otherwise, <c>false</c>.</value>
-        public string LogPath { get; set; }
+        public bool SslEnabled { get; set; }
 
         /// <summary>
         /// Gets or sets if reporting is enabled.

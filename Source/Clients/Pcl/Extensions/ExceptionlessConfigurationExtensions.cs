@@ -11,7 +11,7 @@ namespace Exceptionless {
             var builder = new UriBuilder(config.ServerUrl) { Path = "/api/v1/" };
 
             // EnableSSL
-            if (config.Settings.GetBoolean("EnableSSL", false) && builder.Port == 80 && !builder.Host.Contains("local")) {
+            if (config.SslEnabled && builder.Port == 80 && !builder.Host.Contains("local")) {
                 builder.Port = 443;
                 builder.Scheme = "https";
             }
@@ -25,50 +25,35 @@ namespace Exceptionless {
 
         /// <summary>
         /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
-        /// from the calling assembly.
+        /// from the assembly.
         /// </summary>
         /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
-        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration) {
-            configuration.ReadFromAttributes(Assembly.GetCallingAssembly());
-        }
-
-        /// <summary>
-        /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
-        /// from the entry assembly.
-        /// </summary>
-        /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
-        /// <param name="entryAssembly">The entry assembly that contains the Exceptionless configuration attributes.</param>
-        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration, Assembly entryAssembly) {
+        /// <param name="assembly">The assembly that contains the Exceptionless configuration attributes.</param>
+        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration, Assembly assembly = null) {
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
 
-            if(entryAssembly == null)
-                throw new ArgumentNullException("entryAssembly");
+            if (assembly == null)
+                assembly = Assembly.GetCallingAssembly();
 
-            object[] attributes = entryAssembly.GetCustomAttributes(typeof(ExceptionlessAttribute), false);
+            object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessAttribute), false);
             if (attributes.Length > 0 && attributes[0] is ExceptionlessAttribute) {
                 var attr = attributes[0] as ExceptionlessAttribute;
 
+                configuration.Enabled = attr.Enabled;
+
                 if (attr.ApiKey != null)
                     configuration.ApiKey = attr.ApiKey;
-                if (attr.QueuePath != null)
-                    configuration.QueuePath = attr.QueuePath;
                 if (attr.ServerUrl != null)
                     configuration.ServerUrl = attr.ServerUrl;
                 
-                configuration.EnableSSL = attr.EnableSSL;
-                configuration.EnableLogging = attr.EnableLogging;
-                
-                if (attr.LogPath != null)
-                    configuration.LogPath = attr.LogPath;
-               
-                configuration.Enabled = attr.Enabled;
+                configuration.SslEnabled = attr.SslEnabled;
             }
 
-            attributes = entryAssembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);
+            attributes = assembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);
             foreach (ExceptionlessSettingAttribute attribute in attributes.OfType<ExceptionlessSettingAttribute>()) {
                 if (!String.IsNullOrEmpty(attribute.Name))
-                    configuration[attribute.Name] = attribute.Value;
+                    configuration.Settings[attribute.Name] = attribute.Value;
             }
         }
     }
