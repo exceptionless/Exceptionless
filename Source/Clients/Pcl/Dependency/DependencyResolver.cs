@@ -35,7 +35,7 @@ namespace Exceptionless.Dependency {
             var jsonSerializer = new Lazy<IJsonSerializer>(() => new DefaultJsonSerializer());
             resolver.Register(typeof(IJsonSerializer), () => jsonSerializer.Value);
 
-            var eventQueue = new Lazy<IEventQueue>(() => new DefaultEventQueue());
+            var eventQueue = new Lazy<IEventQueue>(() => new DefaultEventQueue(resolver.GetSubmissionClient(), resolver.GetLog()));
             resolver.Register(typeof(IEventQueue), () => eventQueue.Value);
 
             var submissionClient = new Lazy<ISubmissionClient>(() => new DefaultSubmissionClient());
