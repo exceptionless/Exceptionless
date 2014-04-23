@@ -11,7 +11,7 @@ namespace Exceptionless {
             var builder = new UriBuilder(config.ServerUrl) { Path = "/api/v1/" };
 
             // EnableSSL
-            if (config.SslEnabled && builder.Port == 80 && !builder.Host.Contains("local")) {
+            if (config.EnableSSL && builder.Port == 80 && !builder.Host.Contains("local")) {
                 builder.Port = 443;
                 builder.Scheme = "https";
             }
@@ -47,7 +47,7 @@ namespace Exceptionless {
                 if (attr.ServerUrl != null)
                     configuration.ServerUrl = attr.ServerUrl;
                 
-                configuration.SslEnabled = attr.SslEnabled;
+                configuration.EnableSSL = attr.EnableSSL;
             }
 
             attributes = assembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);

@@ -14,7 +14,7 @@ namespace Exceptionless {
         public ExceptionlessConfiguration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
             Enabled = true;
-            SslEnabled = true;
+            EnableSSL = true;
             DefaultTags = new TagSet();
             DefaultData = new DataDictionary();
             Settings = new SettingsDictionary();
@@ -42,7 +42,7 @@ namespace Exceptionless {
         /// <summary>
         /// Whether or not the client should use SSL when communicating with the server.
         /// </summary>
-        public bool SslEnabled { get; set; }
+        public bool EnableSSL { get; set; }
 
         /// <summary>
         /// A default list of tags that will automatically be added to every report submitted to the server.

@@ -41,7 +41,7 @@ namespace Exceptionless.Configuration {
         /// </summary>
         /// ///
         /// <value><c>true</c> to enable SSL; otherwise, <c>false</c>.</value>
-        public bool SslEnabled { get; set; }
+        public bool EnableSSL { get; set; }
 
         /// <summary>
         /// Gets or sets if reporting is enabled.

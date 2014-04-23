@@ -78,7 +78,7 @@ namespace Exceptionless.Extensions {
             var containsUpper = false;
             var containsLower = false;
 
-            foreach (var c in s) {
+            foreach (char c in s) {
                 if (Char.IsUpper(c))
                     containsUpper = true;
 
