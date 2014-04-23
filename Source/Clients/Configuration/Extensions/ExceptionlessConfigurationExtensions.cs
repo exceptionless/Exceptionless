@@ -2,11 +2,19 @@
 using System.Configuration;
 using System.Linq;
 using Exceptionless.Configuration;
-using Exceptionless.Configuration.Extensions;
-using Exceptionless.Logging;
+using Exceptionless.Extensions;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
+        /// <summary>
+        /// Reads the Exceptionless configuration from the app.config or web.config file.
+        /// </summary>
+        /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
+        public static void UseErrorEnrichment(this ExceptionlessConfiguration configuration) {
+            configuration.RemoveEnrichment<Enrichments.Default.SimpleError>();
+            configuration.AddEnrichment<Enrichments.Error>();
+        }
+
         /// <summary>
         /// Reads the Exceptionless configuration from the app.config or web.config file.
         /// </summary>

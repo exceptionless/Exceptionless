@@ -84,7 +84,7 @@ namespace Exceptionless.Models {
             get { return Type == KnownTypes.Error; }
         }
 
-        public void SetError(Error error) {
+        public void SetError(object error) {
             Type = KnownTypes.Error;
             Data[KnownDataKeys.Error] = error;
         }

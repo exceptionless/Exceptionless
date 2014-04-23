@@ -22,14 +22,20 @@ using Xunit;
 
 namespace Pcl.Tests.Submission {
     public class DefaultSubmissionClientTests {
+        public DefaultSubmissionClientTests() {
+            ExceptionlessConfiguration.ConfigureDefaults.Add(c => {
+                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+                c.ServerUrl = Settings.Current.BaseURL;
+                c.EnableSSL = false;
+                c.UseDebugLogger();
+            });
+        }
+
         [Fact]
         public void SubmitAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
-                var configuration = new ExceptionlessConfiguration(DependencyResolver.Default) {
-                    ServerUrl = Settings.Current.BaseURL,
-                    ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
-                };
+                var configuration = ExceptionlessConfiguration.CreateDefault();
 
                 var client = new DefaultSubmissionClient();
                 var response = client.SubmitAsync(events, configuration).Result;
@@ -42,10 +48,7 @@ namespace Pcl.Tests.Submission {
         [Fact]
         public void GetSettingsAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
-                var configuration = new ExceptionlessConfiguration(DependencyResolver.Default) {
-                    ServerUrl = Settings.Current.BaseURL,
-                    ApiKey = "e3d51ea621464280bbcb79c11fd6483e"
-                };
+                var configuration = ExceptionlessConfiguration.CreateDefault();
 
                 var client = new DefaultSubmissionClient();
                 var response = client.GetSettingsAsync(configuration).Result;

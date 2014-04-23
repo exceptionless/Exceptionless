@@ -9,7 +9,7 @@
 
 using System;
 
-namespace Exceptionless.Configuration.Extensions {
+namespace Exceptionless.Extensions {
     internal static class StringExtensions {
         public static string[] SplitAndTrim(this string input, params char[] separator) {
             if (String.IsNullOrEmpty(input))

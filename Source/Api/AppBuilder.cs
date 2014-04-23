@@ -15,12 +15,18 @@ using SimpleInjector.Integration.WebApi;
 namespace Exceptionless.Api {
     public static class AppBuilder {
         public static void Build(IAppBuilder app) {
+            BuildWithContainer(app, CreateContainer());
+        }
+
+        public static void BuildWithContainer(IAppBuilder app, Container container) {
+            if (container == null)
+                throw new ArgumentNullException("container");
+
             var config = new HttpConfiguration();
             config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
             config.Formatters.Remove(config.Formatters.XmlFormatter);
             config.MapHttpAttributeRoutes();
 
-            var container = CreateContainer();
             container.RegisterWebApiFilterProvider(config);
             try {
                 container.Verify();

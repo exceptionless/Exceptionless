@@ -2,6 +2,9 @@
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues;
 using Exceptionless.Models;
 using Microsoft.Owin.Hosting;
 using Xunit;
@@ -9,27 +12,33 @@ using Xunit;
 namespace Pcl.Tests {
     public class ExceptionlessClientTests {
         public ExceptionlessClientTests() {
-            ExceptionlessConfiguration.ConfigureDefaults.Clear();
-            ExceptionlessConfiguration.ConfigureDefaults.Add(c => c.UseDebugLogger());
+            ExceptionlessConfiguration.ConfigureDefaults.Add(c => {
+                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+                c.ServerUrl = Settings.Current.BaseURL;
+                c.EnableSSL = false;
+                c.UseDebugLogger();
+            });
         }
 
         [Fact]
         public void CanSubmitSimpleEvent() {
-            using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
-                var client = new ExceptionlessClient("e3d51ea621464280bbcb79c11fd6483e");
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
+                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                Assert.NotNull(queue);
+                Assert.Equal(0, queue.Count);
+                
+                var client = new ExceptionlessClient();
                 client.SubmitEvent(new Event { Message = "Test" });
                 client.ProcessQueue();
-            }
-        }
 
-        [Fact]
-        public void CanConfigureClientUsingActionMethod() {
-            var client = new ExceptionlessClient(c => {
-                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
-                c.UseDebugLogger();
-            });
-            client.SubmitEvent(new Event { Message = "Test" });
-            client.ProcessQueue();
+                Assert.Equal(1, queue.Count);
+
+                var processEventsJob = container.GetInstance<ProcessEventsJob>();
+                var result = processEventsJob.Run();
+                Assert.True(result.IsSuccess, result.Message);
+                Assert.Equal(0, queue.Count);
+            }
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Reflection;
 using Exceptionless;
 using Exceptionless.Configuration;
+using Exceptionless.Core;
 using Exceptionless.Dependency;
 using Xunit;
 
@@ -9,6 +9,19 @@ using Xunit;
 [assembly: ExceptionlessSetting("testing", "configuration")]
 namespace Pcl.Tests.Configuration {
     public class ConfigurationTests {
+        [Fact]
+        public void CanConfigureClientUsingActionMethod() {
+            var client = new ExceptionlessClient(c => {
+                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+                c.ServerUrl = Settings.Current.BaseURL;
+                c.EnableSSL = false;
+            });
+
+            Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", client.Configuration.ApiKey);
+            Assert.Equal("http://localhost:45000", client.Configuration.ServerUrl);
+            Assert.False(client.Configuration.EnableSSL);
+        }
+
         [Fact]
         public void CanReadFromAttributes() {
             var config = new ExceptionlessConfiguration(DependencyResolver.CreateDefault());
