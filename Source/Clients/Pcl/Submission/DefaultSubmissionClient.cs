@@ -21,6 +21,7 @@ namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
         public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "event"));
+            client.SetUserAgent(configuration.UserAgent);
             client.AddAuthorizationHeader(configuration);
 
             // TODO: We only support one error right now..

@@ -10,9 +10,9 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Models;
 
@@ -20,45 +20,50 @@ namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
         private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
+        private readonly IAppStatsClient _statsClient;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, OrganizationRepository organizationRepository, ProjectRepository projectRepository) : base(dependencyResolver) {
+        public EventPipeline(IDependencyResolver dependencyResolver, OrganizationRepository organizationRepository, ProjectRepository projectRepository, IAppStatsClient statsClient) : base(dependencyResolver) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _statsClient = statsClient;
         }
 
         public void Run(PersistentEvent ev) {
-            if (String.IsNullOrEmpty(ev.ProjectId))
-                throw new ArgumentException("ProjectId must be populated on the Event.");
+            _statsClient.Counter(StatNames.EventsProcessed);
+            try {
+                _statsClient.Time(() => {
+                    if (String.IsNullOrEmpty(ev.ProjectId))
+                        throw new ArgumentException("ProjectId must be populated on the Event.");
 
-            var project = _projectRepository.GetByIdCached(ev.ProjectId);
-            if (project == null)
-                throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
+                    var project = _projectRepository.GetByIdCached(ev.ProjectId);
+                    if (project == null)
+                        throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
 
-            if (String.IsNullOrEmpty(ev.OrganizationId))
-                ev.OrganizationId = project.OrganizationId;
+                    if (String.IsNullOrEmpty(ev.OrganizationId))
+                        ev.OrganizationId = project.OrganizationId;
 
-            var ctx = new EventContext(ev) {
-                Organization = _organizationRepository.GetByIdCached(ev.OrganizationId),
-                Project = project
-            };
+                    var ctx = new EventContext(ev) {
+                        Organization = _organizationRepository.GetByIdCached(ev.OrganizationId),
+                        Project = project
+                    };
 
-            if (ctx.Organization == null)
-                throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", ev.OrganizationId));
+                    if (ctx.Organization == null)
+                        throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", ev.OrganizationId));
 
-            // load organization settings into the context
-            foreach (var key in ctx.Organization.Data.Keys)
-                ctx.SetProperty(key, ctx.Organization.Data[key]);
+                    // load organization settings into the context
+                    foreach (var key in ctx.Organization.Data.Keys)
+                        ctx.SetProperty(key, ctx.Organization.Data[key]);
 
-            // load project settings into the context, overriding any organization settings with the same name
-            foreach (var key in ctx.Project.Data.Keys)
-                ctx.SetProperty(key, ctx.Project.Data[key]);
+                    // load project settings into the context, overriding any organization settings with the same name
+                    foreach (var key in ctx.Project.Data.Keys)
+                        ctx.SetProperty(key, ctx.Project.Data[key]);
 
-            Run(ctx);
-        }
-
-        public void Run(IEnumerable<PersistentEvent> events) {
-            foreach (PersistentEvent e in events)
-                Run(e);
+                    Run(ctx);
+                }, StatNames.EventsProcessingTime);
+            } catch (Exception ex) {
+                _statsClient.Counter(StatNames.EventsProcessErrors);
+                throw;
+            }
         }
     }
 }

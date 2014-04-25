@@ -10,12 +10,20 @@
 #endregion
 
 using System;
+using ServiceStack.Net30.Collections.Concurrent;
 
 namespace Exceptionless.Core.AppStats {
-    public class NullAppStatsClient : IAppStatsClient {
-        public void Counter(string statName, int value = 1) {}
+    public class InMemoryAppStatsClient : IAppStatsClient {
+        private readonly ConcurrentDictionary<string, long> _counters = new ConcurrentDictionary<string, long>();
+        private readonly ConcurrentDictionary<string, double> _guages = new ConcurrentDictionary<string, double>();
 
-        public void Gauge(string statName, double value) {}
+        public void Counter(string statName, int value = 1) {
+            _counters.AddOrUpdate(statName, value, (key, current) => current + value);
+        }
+
+        public void Gauge(string statName, double value) {
+            _guages.AddOrUpdate(statName, value, (key, current) => value);
+        }
 
         public void Timer(string statName, int milliseconds) {}
 
@@ -23,7 +31,9 @@ namespace Exceptionless.Core.AppStats {
             return new NullDisposable();
         }
 
-        public void Time(Action action, string statName) {}
+        public void Time(Action action, string statName) {
+            action();
+        }
 
         public T Time<T>(Func<T> func, string statName) {
             return func();

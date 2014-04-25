@@ -6,7 +6,7 @@ using NLog.Fluent;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Plugins.EventPipeline {
-    [Priority(10)]
+    [Priority(0)]
     public class ThrottleBotsPlugin : EventPluginBase {
         private readonly ICacheClient _cacheClient;
         private readonly EventRepository _eventRepository;

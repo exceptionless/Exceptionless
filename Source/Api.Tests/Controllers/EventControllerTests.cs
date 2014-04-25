@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
-                var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
+                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 var result = processEventsJob.Run();
                 Assert.True(result.IsSuccess, result.Message);
                 Assert.Equal(0, _eventQueue.Count);
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
-                var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
+                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 var result = processEventsJob.Run();
                 Assert.True(result.IsSuccess, result.Message);
                 Assert.Equal(0, _eventQueue.Count);
@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);
 
-            var processEventsJob = IoC.GetInstance<ProcessEventsJob>();
+            var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
             var result = processEventsJob.Run();
             Assert.Equal(0, _eventQueue.Count);
             RemoveAllEvents();

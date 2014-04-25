@@ -17,6 +17,7 @@ namespace Pcl.Tests {
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
                 c.UseDebugLogger();
+                c.UserAgent = "testclient/1.0.0.0";
             });
         }
 
@@ -34,7 +35,7 @@ namespace Pcl.Tests {
 
                 Assert.Equal(1, queue.Count);
 
-                var processEventsJob = container.GetInstance<ProcessEventsJob>();
+                var processEventsJob = container.GetInstance<ProcessEventPostsJob>();
                 var result = processEventsJob.Run();
                 Assert.True(result.IsSuccess, result.Message);
                 Assert.Equal(0, queue.Count);

@@ -75,12 +75,31 @@ namespace Exceptionless.Core.Extensions {
         
         }
 
+        public static object FromBson(this byte[] data, Type objectType, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+
+            using (var sw = new MemoryStream(data))
+            using (var sr = new BsonReader(sw))
+                return serializer.Deserialize(sr, objectType);
+
+        }
+
         public static bool TryFromBson<T>(this byte[] data, out T value, JsonSerializerSettings settings = null) {
             try {
                 value = data.FromBson<T>(settings);
                 return true;
             } catch (Exception ex) {
                 value = default(T);
+                return false;
+            }
+        }
+
+        public static bool TryFromBson(this byte[] data, out object value, Type objectType, JsonSerializerSettings settings = null) {
+            try {
+                value = data.FromBson(objectType, settings);
+                return true;
+            } catch (Exception ex) {
+                value = null;
                 return false;
             }
         }

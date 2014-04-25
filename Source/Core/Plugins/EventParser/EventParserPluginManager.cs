@@ -12,12 +12,12 @@ namespace Exceptionless.Core.Plugins.EventParser {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public List<PersistentEvent> ParseEvents(string input) {
+        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     // TODO: Ensure that an event isn't to big..
 
-                    var events = plugin.ParseEvents(input);
+                    var events = plugin.ParseEvents(input, apiVersion, userAgent);
                     if (events == null)
                         continue;
 

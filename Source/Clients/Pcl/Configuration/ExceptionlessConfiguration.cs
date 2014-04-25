@@ -9,10 +9,12 @@ using Exceptionless.Models;
 namespace Exceptionless {
     public class ExceptionlessConfiguration {
         private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.com";
+        private const string DEFAULT_USER_AGENT = "exceptionless/" + ThisAssembly.AssemblyFileVersion;
         private readonly IDependencyResolver _resolver;
 
         public ExceptionlessConfiguration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
+            UserAgent = DEFAULT_USER_AGENT;
             Enabled = true;
             EnableSSL = true;
             DefaultTags = new TagSet();
@@ -25,12 +27,17 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        /// The server url that all reports will be sent to.
+        /// The server url that all events will be sent to.
         /// </summary>
         public string ServerUrl { get; set; }
 
         /// <summary>
-        /// The API key that will be used when sending reports to the server.
+        /// Used to identify the client that sent the events to the server.
+        /// </summary>
+        public string UserAgent { get; set; }
+
+        /// <summary>
+        /// The API key that will be used when sending events to the server.
         /// </summary>
         public string ApiKey { get; set; }
 

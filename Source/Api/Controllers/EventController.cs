@@ -16,7 +16,7 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "event")]
     [Authorize(Roles = AuthorizationRoles.UserOrClient)]
     public class EventController : ApiController {
-        private const string API_PREFIX = "api/v1/";
+        private const string API_PREFIX = "api/v{version:int=1}/";
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
 
@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route]
         [ConfigurationResponseFilter]
-        public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null) {
+        public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             if (projectId == null) {
                 var ctx = Request.GetOwinContext();
                 if (ctx != null && ctx.Request != null && ctx.Request.User != null)
@@ -58,6 +58,8 @@ namespace Exceptionless.Api.Controllers {
                 MediaType = Request.Content.Headers.ContentType.MediaType,
                 CharSet = Request.Content.Headers.ContentType.CharSet,
                 ProjectId = projectId,
+                UserAgent = userAgent,
+                ApiVersion = version,
                 Data = data
             });
 

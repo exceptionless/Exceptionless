@@ -19,6 +19,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using NLog.Time;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core {
@@ -54,8 +55,9 @@ namespace Exceptionless.Core {
             public const string Tags = "tag";
             public const string Message = "msg";
             public const string Data = "ext";
-            public const string ClientId = "cid";
+            public const string ReferenceId = "ref";
             public const string SessionId = "xid";
+            public const string SummaryHtml = "html";
             public const string IsFixed = "fix";
             public const string IsHidden = "hid";
             public const string RequestInfo = "req";
@@ -78,10 +80,19 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
+            cm.GetMemberMap(c => c.SummaryHtml).SetElementName(FieldNames.SummaryHtml).SetIgnoreIfDefault(true);
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(Event))) {
                 BsonClassMap.RegisterClassMap<Event>(evcm => {
                     evcm.AutoMap();
+                    evcm.SetIgnoreExtraElements(false);
+                    evcm.SetIgnoreExtraElementsIsInherited(true);
+                    evcm.MapExtraElementsProperty(c => c.Data);
+                    evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any()); ;
+                    evcm.GetMemberMap(c => c.Source).SetElementName(FieldNames.Source).SetIgnoreIfDefault(true);
+                    evcm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfDefault(true);
+                    evcm.GetMemberMap(c => c.ReferenceId).SetElementName(FieldNames.ReferenceId).SetIgnoreIfDefault(true);
+                    evcm.GetMemberMap(c => c.SessionId).SetElementName(FieldNames.SessionId).SetIgnoreIfDefault(true);
                     evcm.GetMemberMap(c => c.Date).SetElementName(FieldNames.Date).SetSerializer(new UtcDateTimeOffsetSerializer());
                     evcm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Tags.Any());
                 });

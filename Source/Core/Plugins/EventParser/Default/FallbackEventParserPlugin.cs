@@ -8,7 +8,7 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(Int32.MaxValue)]
     public class FallbackEventParserPlugin : IEventParserPlugin {
-        public List<PersistentEvent> ParseEvents(string input) {
+        public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             var events = new List<PersistentEvent>();
             foreach (var entry in input.SplitAndTrim(new[] { Environment.NewLine }).Where(line => !String.IsNullOrWhiteSpace(line))) {
                 events.Add(new PersistentEvent {

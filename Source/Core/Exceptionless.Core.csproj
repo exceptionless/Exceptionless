@@ -244,6 +244,10 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Messaging\IMessagePublisher.cs" />
+    <Compile Include="Messaging\IMessageSubscriber.cs" />
+    <Compile Include="Messaging\InMemoryMessageBus.cs" />
+    <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
@@ -274,7 +278,7 @@
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
-    <Compile Include="Jobs\ProcessEventsJob.cs" />
+    <Compile Include="Jobs\ProcessEventPostsJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
@@ -301,7 +305,6 @@
     <Compile Include="Plugins\PluginManagerBase.cs" />
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
-    <Compile Include="Queues\IMessageBus.cs" />
     <Compile Include="Queues\ProjectHookNotification.cs" />
     <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\SummaryNotification.cs" />
@@ -310,7 +313,7 @@
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
     <Compile Include="Repositories\MongoRepositoryManager.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />
-    <Compile Include="AppStats\NullAppStatsClient.cs" />
+    <Compile Include="AppStats\InMemoryAppStatsClient.cs" />
     <Compile Include="Serialization\ConditionalContractResolver.cs" />
     <Compile Include="Serialization\DataDictionaryConverter.cs" />
     <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
@@ -320,6 +323,7 @@
     <Compile Include="Plugins\EventPipeline\EventPluginManager.cs" />
     <Compile Include="Plugins\EventPipeline\IEventPlugin.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
+    <Compile Include="Utility\ExtensionContractResolver.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
@@ -358,6 +362,7 @@
     <Compile Include="Web\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
     <Compile Include="Utility\NLogExceptionlessLog.cs" />
+    <Compile Include="Web\UserAgentParameterBinding.cs" />
     <Compile Include="Web\JsonContentNegotiator.cs" />
     <Compile Include="Web\NakedParameterBinding.cs" />
     <Compile Include="Web\NotSuspendedAttribute.cs" />

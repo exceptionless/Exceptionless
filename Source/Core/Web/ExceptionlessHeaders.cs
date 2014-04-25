@@ -21,5 +21,6 @@ namespace Exceptionless.Submission.Net {
     internal static class ExceptionlessHeaders {
         public const string Token = "Token";
         public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";
+        public const string Client = "X-Exceptionless-Client";
     }
 }

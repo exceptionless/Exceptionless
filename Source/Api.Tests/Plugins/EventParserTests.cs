@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         [Theory]
         [PropertyData("EventData")]
         public void ParseEvents(string input, int expectedEvents, string expectedType) {
-            var events = _eventParserPluginManager.ParseEvents(input);
+            var events = _eventParserPluginManager.ParseEvents(input, 1, "exceptionless/1.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
             foreach (var ev in events) {
                 Assert.Equal(expectedType, ev.Type);

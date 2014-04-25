@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Exceptionless;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Serializer;
@@ -61,6 +62,14 @@ namespace Pcl.Tests.Serializer {
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, maxDepth: 2);
             Assert.Equal(@"{""Message"":""Level 1"",""Nested"":{""Message"":""Level 2""}}", json);
+        }
+
+        [Fact]
+        public void WillIgnoreEmptyCollections() {
+            var data = new SampleModel { Date = DateTime.Now, Message = "Testing", Collection = new Collection<string>() };
+            IJsonSerializer serializer = GetSerializer();
+            string json = serializer.Serialize(data, new[] { "Date" });
+            Assert.Equal(@"{""Message"":""Testing""}", json);
         }
     }
 

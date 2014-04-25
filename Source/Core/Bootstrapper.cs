@@ -42,7 +42,7 @@ namespace Exceptionless.Core {
             if (Settings.Current.EnableAppStats)
                 container.RegisterSingle<IAppStatsClient>(() => new AppStatsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
             else
-                container.RegisterSingle<IAppStatsClient, NullAppStatsClient>();
+                container.RegisterSingle<IAppStatsClient, InMemoryAppStatsClient>();
 
             if (Settings.Current.RedisConnectionInfo == null)
                 throw new ConfigurationErrorsException("RedisConnectionString was not found in the Web.config.");

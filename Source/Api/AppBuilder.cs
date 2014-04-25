@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
@@ -61,6 +63,9 @@ namespace Exceptionless.Api {
             app.UseCors(CorsOptions.AllowAll);
             app.MapSignalR();
             app.UseWebApi(config);
+
+            // TODO: Remove this as it's only for testing.
+            Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());
         }
 
         public static Container CreateContainer() {

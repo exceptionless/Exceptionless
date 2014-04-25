@@ -121,8 +121,12 @@
   <ItemGroup>
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Messaging\Samples.cs" />
+    <Compile Include="Messaging\ServiceBusMessagingTests.cs" />
+    <Compile Include="Messaging\InMemoryMessagingTests.cs" />
     <Compile Include="Plugins\EventParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SerializerTests.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />

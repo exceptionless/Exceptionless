@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
     public class DayStackStatsRepository : MongoRepository<DayStackStats> {
         public DayStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
-        public const string CollectionName = "errorstack.stats.day";
+        public const string CollectionName = "stack.stats.day";
 
         protected override string GetCollectionName() {
             return CollectionName;

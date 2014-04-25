@@ -13,12 +13,16 @@ using System;
 
 namespace Exceptionless.Core.AppStats {
     public static class StatNames {
-        public const string ErrorsSubmitted = "errors.submitted";
-        public const string ErrorsQueued = "errors.queued";
-        public const string ErrorsDequeued = "errors.dequeued";
-        public const string ErrorsProcessed = "errors.processed";
-        public const string ErrorsProcessingTime = "errors.processingtime";
-        public const string ErrorsPaidProcessed = "errors.paid.processed";
-        public const string ErrorsProcessingFailed = "errors.processing.failed";
+        public const string EventsProcessed = "events.processed";
+        public const string EventsProcessingTime = "events.processingtime";
+        public const string EventsPaidProcessed = "events.paid.processed";
+        public const string EventsProcessErrors = "events.processing.errors";
+
+        public const string PostsSubmitted = "posts.submitted";
+        public const string PostsQueued = "posts.queued";
+        public const string PostsDequeued = "posts.dequeued";
+        public const string PostsParsed = "posts.parsed";
+        public const string PostsParseErrors = "posts.parse.errors";
+        public const string PostsParsingTime = "posts.parsingtime";
     }
 }

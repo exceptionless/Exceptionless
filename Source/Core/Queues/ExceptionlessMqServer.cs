@@ -152,7 +152,6 @@ namespace Exceptionless.Core.Queues {
         private void ProcessEventException(IMessage<PersistentEvent> message, Exception exception) {
             exception.ToExceptionless().AddDefaultInformation().MarkAsCritical().AddObject(message.GetBody()).AddTags("ErrorMQ").Submit();
             Log.Error().Project(message.GetBody().ProjectId).Exception(exception).Message("Error processing error.").Write();
-            _stats.Counter(StatNames.ErrorsProcessingFailed);
         }
 
         private object ProcessEvent(IMessage<PersistentEvent> message) {
@@ -160,8 +159,7 @@ namespace Exceptionless.Core.Queues {
             if (value == null)
                 return null;
 
-            _stats.Counter(StatNames.ErrorsDequeued);
-            using (_stats.StartTimer(StatNames.ErrorsProcessingTime))
+            using (_stats.StartTimer(StatNames.EventsProcessingTime))
                 _eventPipeline.Run(value);
 
             return null;

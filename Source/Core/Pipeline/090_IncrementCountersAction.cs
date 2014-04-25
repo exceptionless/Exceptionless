@@ -27,9 +27,9 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _stats.Counter(StatNames.ErrorsProcessed);
+            _stats.Counter(StatNames.EventsProcessed);
             if (ctx.Organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(StatNames.ErrorsPaidProcessed);
+                _stats.Counter(StatNames.EventsPaidProcessed);
         }
     }
 }

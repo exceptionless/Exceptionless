@@ -10,6 +10,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Submission.Net;
@@ -33,6 +34,15 @@ namespace Exceptionless.Extensions {
             };
 
             request.Headers[HttpRequestHeader.Authorization] = authorizationHeader.ToString();
+        }
+
+        private static readonly Lazy<PropertyInfo> _userAgentProperty = new Lazy<PropertyInfo>(() => typeof(HttpWebRequest).GetProperty("UserAgent"));
+
+        public static void SetUserAgent(this HttpWebRequest request, string userAgent) {
+            if (_userAgentProperty.Value != null)
+                _userAgentProperty.Value.SetValue(request, userAgent, null);
+            else
+                request.Headers[ExceptionlessHeaders.Client] = userAgent;
         }
 
         public static Task<WebResponse> PostJsonAsync(this HttpWebRequest request, string data) {
