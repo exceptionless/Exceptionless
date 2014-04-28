@@ -40,6 +40,7 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.SignalR.Core.2.0.3\lib\net45\Microsoft.AspNet.SignalR.Core.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Owin, Version=2.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
@@ -80,6 +81,14 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=2.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NLog.2.1.0\lib\net45\NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="NLog.Xml, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NLog.Xml.2.1.0.24\lib\net45\NLog.Xml.dll</HintPath>
+    </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
@@ -98,6 +107,10 @@
     </Reference>
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    </Reference>
+    <Reference Include="Stripe.net, Version=2.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Stripe.net.2.0.1\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -124,14 +137,22 @@
     </Compile>
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="Controllers\OrganizationController.cs" />
+    <Compile Include="Controllers\AccountController.cs" />
+    <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
+    <Compile Include="Controllers\StripeController.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Name>Pcl</Name>
+    </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
       <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>
       <Name>CodeSmith.Core</Name>
@@ -143,6 +164,10 @@
     <ProjectReference Include="..\Identity\MongoDB.AspNet.Identity.csproj">
       <Project>{0ff87680-235f-4231-8302-9bf6fcac7476}</Project>
       <Name>MongoDB.AspNet.Identity</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Membership\Exceptionless.Membership.csproj">
+      <Project>{9C987907-BD64-4100-89D4-F4BCFB77768B}</Project>
+      <Name>Exceptionless.Membership</Name>
     </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>

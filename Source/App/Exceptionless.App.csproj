@@ -383,12 +383,10 @@
     <Compile Include="Controllers\API\ErrorController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\API\StatsController.cs" />
-    <Compile Include="Controllers\StripeController.cs" />
     <Compile Include="Extensions\HtmlHelperExtentions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Models\Account\ResetPasswordModel.cs" />
     <Compile Include="Models\Account\ExternalLoginModel.cs" />
     <Compile Include="Models\Account\LocalPasswordModel.cs" />
