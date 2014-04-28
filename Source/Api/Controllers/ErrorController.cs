@@ -11,26 +11,22 @@
 
 using System;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
-using Exceptionless.Core.Web.OData;
 using Exceptionless.Extensions;
 using Exceptionless.Models.Legacy;
-using MongoDB.Bson;
-using NLog.Fluent;
 using ServiceStack.CacheAccess;
 using ServiceStack.Messaging;
 
-namespace Exceptionless.App.Controllers.API {
+namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
-    public class ErrorController : ExceptionlessApiController {
+    [RoutePrefix(API_PREFIX + "error")]
+    [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+    public class ErrorController : ApiController {
+        private const string API_PREFIX = "api/v{version:int=1}/";
         private readonly ICacheClient _cacheClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -45,35 +41,26 @@ namespace Exceptionless.App.Controllers.API {
             _stats = stats;
         }
 
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public HttpResponseMessage Post(Error value) {
+        [Route]
+        [HttpPost]
+        public IHttpActionResult Post(Error value) {
             if (value == null)
-                return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid error posted.");
+                return BadRequest("Invalid error posted.");
 
             if (_cacheClient.TryGet<bool>("ApiDisabled", false))
-                return Request.CreateResponse(HttpStatusCode.ServiceUnavailable);
+                return StatusCode(HttpStatusCode.ServiceUnavailable);
 
-            if (Request == null)
-                return CreatedResponseMessage();
+            // TODO: Implement Post
 
-            string id = Guid.NewGuid().ToString("N");
-
-            HttpResponseMessage response = Request.CreateResponse(HttpStatusCode.Created);
-            response.Headers.Location = new Uri(Url.Link("DefaultApi", new { id }));
-            return response;
+            return Ok();
         }
 
-        // TODO: Add Patching.
-        protected bool CanUpdateEntity(Error original, Delta<Error> value) {
-            // TODO: Only let the client patch certain things.
-            Error entity = value.GetEntity();
-            if (value.ContainsChangedProperty(t => t.OccurrenceDate) && original.OccurrenceDate != entity.OccurrenceDate)
-                return false;
+        [Route]
+        [HttpPatch]
+        protected IHttpActionResult Patch(Error original, Error value) {
+            // TODO: Add Patching and only let the client patch certain things.
 
-            if (value.ContainsChangedProperty(t => t.ErrorStackId) && !String.Equals(original.ErrorStackId, entity.ErrorStackId, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return true;
+            return Ok();
         }
     }
 }

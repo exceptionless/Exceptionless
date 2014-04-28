@@ -101,6 +101,22 @@
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
+    <Reference Include="ServiceStack.Common, Version=3.9.71.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\ServiceStack.Common.3.9.71\lib\net35\ServiceStack.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="ServiceStack.Interfaces">
+      <HintPath>..\..\packages\ServiceStack.Common.3.9.71\lib\net35\ServiceStack.Interfaces.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.Redis, Version=3.9.71.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\ServiceStack.Redis.3.9.71\lib\net35\ServiceStack.Redis.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="ServiceStack.Text">
+      <HintPath>..\..\packages\ServiceStack.Text.3.9.71\lib\net35\ServiceStack.Text.dll</HintPath>
+    </Reference>
     <Reference Include="SimpleInjector, Version=2.5.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.2.5.0\lib\net45\SimpleInjector.dll</HintPath>
@@ -147,14 +163,22 @@
     <Compile Include="App_Start\AutoMapperConfig.cs" />
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
+    <Compile Include="Controllers\ProjectHookController.cs" />
+    <Compile Include="Controllers\StackController.cs" />
+    <Compile Include="Controllers\StatsController.cs" />
     <Compile Include="Controllers\StripeController.cs" />
+    <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Hubs\Notifier.cs" />
+    <Compile Include="Models\Organization\InvoiceGridModel.cs" />
+    <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\Project\ProjectInfoModel.cs" />
+    <Compile Include="Models\Stats\BillingPlanStatsModel.cs" />
     <Compile Include="Models\User\UserModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />

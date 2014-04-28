@@ -1,28 +1,18 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Web.Http;
-using Exceptionless.App.Models.User;
+using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Controllers;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Stats;
 
-namespace Exceptionless.App.Controllers.API {
-    public class UserController : ExceptionlessApiController {
+namespace Exceptionless.Api.Controllers {
+    [RoutePrefix(API_PREFIX + "user")]
+    public class UserController : ApiController {
+        private const string API_PREFIX = "api/v{version:int=1}/";
+
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
 
@@ -32,14 +22,15 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpPut]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public HttpResponseMessage UpdateAdminRole(string id) {
+        [Route("update-admin-role")]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult UpdateAdminRole(string id) {
             if (String.IsNullOrEmpty(id))
-                return BadRequestErrorResponseMessage();
+                return BadRequest();
 
             var user = _userRepository.GetByIdCached(id);
-            if(user == null)
-                return NotFoundErrorResponseMessage(id);
+            if (user == null)
+                return NotFound();
 
             if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
@@ -47,19 +38,27 @@ namespace Exceptionless.App.Controllers.API {
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
             _userRepository.Update(user);
-            return new HttpResponseMessage(HttpStatusCode.OK);
+            return Ok();
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Route("organization/{organizationId}")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
                 return NotFound();
 
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
+            pageSize = this.GetPageSize(pageSize);
+            int skip = this.GetSkip(page, pageSize);
 
-            List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => new UserModel { Id = u.Id, FullName = u.FullName, EmailAddress = u.EmailAddress, IsEmailAddressVerified = u.IsEmailAddressVerified, HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin) }).ToList();
+            List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 
+                new UserModel {
+                    Id = u.Id, 
+                    FullName = u.FullName, 
+                    EmailAddress = u.EmailAddress, 
+                    IsEmailAddressVerified = u.IsEmailAddressVerified, 
+                    HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin)
+                }).ToList();
 
             var organization = _organizationRepository.GetByIdCached(organizationId);
             if (organization.Invites.Any())

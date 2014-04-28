@@ -12,7 +12,7 @@
 using System;
 using Stripe;
 
-namespace Exceptionless.App.Models.Organization {
+namespace Exceptionless.Api.Models.Organization {
     public class InvoiceModel {
         public Exceptionless.Models.Organization Organization { get; set; }
         public StripeInvoice Invoice { get; set; }

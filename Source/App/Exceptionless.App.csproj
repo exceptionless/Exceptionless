@@ -371,18 +371,11 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AdminController.cs" />
-    <Compile Include="Controllers\API\ProjectHookController.cs" />
-    <Compile Include="Controllers\API\UserController.cs" />
-    <Compile Include="Controllers\API\OrganizationController.cs" />
-    <Compile Include="Controllers\API\StackController.cs" />
-    <Compile Include="Controllers\API\ProjectController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\StackController.cs" />
-    <Compile Include="Controllers\API\ErrorController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
-    <Compile Include="Controllers\API\StatsController.cs" />
     <Compile Include="Extensions\HtmlHelperExtentions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
@@ -399,9 +392,6 @@
     <Compile Include="Models\Common\EmailAddressModel.cs" />
     <Compile Include="Models\Error\ErrorModel.cs" />
     <Compile Include="Models\Error\ExtendedDataItemModel.cs" />
-    <Compile Include="Models\Stats\BillingPlanStatsModel.cs" />
-    <Compile Include="Models\Organization\InvoiceGridModel.cs" />
-    <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\Project\ProjectModel.cs" />
     <Compile Include="Models\User\UserModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

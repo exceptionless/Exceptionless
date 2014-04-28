@@ -33,6 +33,19 @@ namespace Exceptionless.Core.Extensions {
             return null;
         }
 
+        public static string GetUserId(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return null;
+        }
+
         public static Project GetProject(this HttpRequestMessage request) {
             if (request == null)
                 return null;

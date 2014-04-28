@@ -25,16 +25,21 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [Route]
+        [HttpGet]
         public IEnumerable<Event> Get() {
+            // TODO: Limit by active user.
             return _eventRepository.All();
         }
 
+        [HttpGet]
         [Route("{id}")]
         public Event Get(string id) {
+            // TODO: Limit by active user.
             return _eventRepository.GetByIdCached(id);
         }
 
         [Route]
+        [HttpPost]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             if (projectId == null)
