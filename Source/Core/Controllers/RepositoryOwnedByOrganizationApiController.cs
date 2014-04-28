@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Controllers {
         public RepositoryOwnedByOrganizationApiController(TRepository repository) : base(repository) {}
 
         public override IEnumerable<TModel> Get() {
-            return _repository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).Take(100);
+            return _repository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).Take(100);
         }
 
         protected override TModel GetEntity(string id) {
@@ -35,11 +35,11 @@ namespace Exceptionless.Core.Controllers {
                 return null;
 
             TModel entity = _repository.GetById(id);
-            return entity != null && User.CanAccessOrganization(entity.OrganizationId) ? entity : null;
+            return entity != null && Request.CanAccessOrganization(entity.OrganizationId) ? entity : null;
         }
 
         protected override TModel InsertEntity(TModel value) {
-            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
+            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !Request.IsInOrganization(value.OrganizationId))
                 throw new HttpResponseException(InvalidOrganizationErrorResponseMessage());
 
             return base.InsertEntity(value);
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Controllers {
         }
 
         protected override void DeleteEntity(TModel value) {
-            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.CanAccessOrganization(value.OrganizationId))
+            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !Request.CanAccessOrganization(value.OrganizationId))
                 throw new HttpResponseException(InvalidOrganizationErrorResponseMessage());
 
             _repository.Delete(Query.And(Query.EQ(MongoRepositoryWithIdentity<TModel>.FieldNames.Id, new BsonObjectId(new ObjectId(value.Id))), Query.EQ(MongoRepositoryOwnedByOrganization<TModel>.FieldNames.OrganizationId, new BsonObjectId(new ObjectId(value.OrganizationId)))));

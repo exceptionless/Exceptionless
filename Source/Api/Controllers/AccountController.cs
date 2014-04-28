@@ -2,9 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using AutoMapper;
+using Exceptionless.Api.Models.Project;
+using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Membership;
 using Exceptionless.Models;
@@ -26,9 +30,11 @@ namespace Exceptionless.Api.Controllers {
             _mailer = mailer;
         }
 
+        [HttpGet]
+        [Route("init")]
         public IHttpActionResult Init(string projectId = null, string organizationId = null) {
-            List<Organization> organizations = _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds()).ToList();
-            List<Project> projects = _projectRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
+            List<Organization> organizations = _organizationRepository.GetByIds(Request.GetAssociatedOrganizationIds()).ToList();
+            List<Project> projects = _projectRepository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).ToList();
 
             if (User.IsInRole(AuthorizationRoles.GlobalAdmin)) {
                 if (!String.IsNullOrWhiteSpace(projectId) && !projects.Any(p => String.Equals(p.Id, projectId))) {
@@ -52,12 +58,13 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
+            var user = Request.GetUser();
             return Ok(new {
                 User = new UserModel {
-                    Id = User.UserEntity.Id,
-                    FullName = User.UserEntity.FullName,
-                    EmailAddress = User.UserEntity.EmailAddress,
-                    IsEmailAddressVerified = User.UserEntity.IsEmailAddressVerified,
+                    Id = user.Id,
+                    FullName = user.FullName,
+                    EmailAddress = user.EmailAddress,
+                    IsEmailAddressVerified = user.IsEmailAddressVerified,
                     HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin)
                 },
                 EnableBilling = Settings.Current.EnableBilling,
@@ -69,17 +76,19 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [AllowAnonymous]
-        public IHttpActionResult IsEmailAddressAvaliable(string emailAddress) {
-            User user = _membershipProvider.GetUserByEmailAddress(emailAddress);
-            if (User != null && User.UserEntity != null && String.Equals(User.UserEntity.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase))
+        [Route("is-email-address-available")]
+        public IHttpActionResult IsEmailAddressAvailable(string emailAddress) {
+            var currentUser = Request.GetUser();
+            if (currentUser != null && String.Equals(currentUser.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase))
                 return Ok(true);
 
-            return Ok(user == null);
+            return Ok(_membershipProvider.GetUserByEmailAddress(emailAddress) == null);
         }
 
-        [ActionName("resend-verification-email")]
+        [HttpGet]
+        [Route("resend-verification-email")]
         public IHttpActionResult ResendVerificationEmail() {
-            User user = User.UserEntity;
+            User user = Request.GetUser();
             if (!user.IsEmailAddressVerified) {
                 user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
                 _mailer.SendVerifyEmailAsync(user);

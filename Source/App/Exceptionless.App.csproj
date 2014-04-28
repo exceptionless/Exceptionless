@@ -403,7 +403,6 @@
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\Project\ProjectModel.cs" />
-    <Compile Include="Models\Project\ProjectInfoModel.cs" />
     <Compile Include="Models\User\UserModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />

@@ -12,6 +12,7 @@
 using System;
 
 namespace Exceptionless.App.Models.User {
+    [Obsolete("Please use Exceptionless.Api.Models.User.UserModel")]
     public class UserModel : Common.UserModelBase {
         public string Id { get; set; }
         public bool IsEmailAddressVerified { get; set; }

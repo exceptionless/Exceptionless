@@ -10,9 +10,7 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Web.Mvc;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -24,22 +22,23 @@ namespace Exceptionless.Core.Web {
         public Container Container { get; set; }
 
         public void OnResultExecuting(ResultExecutingContext context) {
-            var user = context.HttpContext.User as ExceptionlessPrincipal;
-            if (user == null || user.UserEntity == null)
-                return;
+            // TODO Implement this.
+            //var user = context.HttpContext.User as ExceptionlessPrincipal;
+            //if (user == null || user.UserEntity == null)
+            //    return;
 
-            context.Controller.ViewBag.User = user.UserEntity;
+            //context.Controller.ViewBag.User = user.UserEntity;
 
-            var organizationRepository = Container.GetInstance<IOrganizationRepository>();
-            if (organizationRepository == null)
-                return;
+            //var organizationRepository = Container.GetInstance<IOrganizationRepository>();
+            //if (organizationRepository == null)
+            //    return;
 
-            if (user.UserEntity.OrganizationIds.Count == 0)
-                return;
+            //if (user.UserEntity.OrganizationIds.Count == 0)
+            //    return;
 
-            // TODO: We need to be using the organization from whichever project they are viewing.
-            Organization organization = organizationRepository.GetByIdCached(user.UserEntity.OrganizationIds.First());
-            context.Controller.ViewBag.IntercomData = new IntercomModel(user.UserEntity, organization);
+            //// TODO: We need to be using the organization from whichever project they are viewing.
+            //Organization organization = organizationRepository.GetByIdCached(user.UserEntity.OrganizationIds.First());
+            //context.Controller.ViewBag.IntercomData = new IntercomModel(user.UserEntity, organization);
         }
 
         public void OnResultExecuted(ResultExecutedContext context) {}

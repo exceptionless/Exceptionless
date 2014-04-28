@@ -16,6 +16,7 @@ namespace Exceptionless.Api.Controllers {
             _stripeEventHandler = stripeEventHandler;
         }
 
+        [Route]
         [HttpPost]
         public async Task<IHttpActionResult> Post() {
             Stream req = await Request.Content.ReadAsStreamAsync();

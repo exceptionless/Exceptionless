@@ -11,23 +11,22 @@
 
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Microsoft.AspNet.SignalR;
 
 namespace Exceptionless.Api.Hubs {
     public class Notifier : Hub {
-        public override Task OnConnected() {
-            var user = Context.User as ExceptionlessPrincipal;
-            if (user == null)
-                return base.OnConnected();
 
-            foreach (string organizationId in user.UserEntity.OrganizationIds)
-                Groups.Add(Context.ConnectionId, organizationId);
+        //public override Task OnConnected() {
+        //    var user = Context.User as ExceptionlessPrincipal;
+        //    if (user == null)
+        //        return base.OnConnected();
 
-            return base.OnConnected();
-        }
+        //    foreach (string organizationId in user.UserEntity.OrganizationIds)
+        //        Groups.Add(Context.ConnectionId, organizationId);
+
+        //    return base.OnConnected();
+        //}
     }
 
     public class NotificationSender {

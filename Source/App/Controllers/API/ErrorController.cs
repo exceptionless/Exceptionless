@@ -12,6 +12,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.Web.Http;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
@@ -44,7 +45,7 @@ namespace Exceptionless.App.Controllers.API {
             _stats = stats;
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public HttpResponseMessage Post(Error value) {
             if (value == null)
                 return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid error posted.");

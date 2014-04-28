@@ -64,6 +64,8 @@ namespace Exceptionless.Api {
             app.MapSignalR();
             app.UseWebApi(config);
 
+            AutoMapperConfig.CreateMappings();
+
             // TODO: Remove this as it's only for testing.
             Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());
         }

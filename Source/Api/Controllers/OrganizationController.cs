@@ -24,10 +24,11 @@ namespace Exceptionless.Api.Controllers {
             _billingManager = billingManager;
             _notificationSender = notificationSender;
         }
-        
+
         [HttpPost]
+        [Route("change-plan")]
         public IHttpActionResult ChangePlan(string organizationId, string planId, string stripeToken, string last4) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
                 throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
 
             if (!Settings.Current.EnableBilling)
@@ -46,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only see if they can downgrade a plan if the plans are different.
             string message;
-            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, User.UserEntity, out message))
+            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, Request.GetUser(), out message))
                 return Ok(new { Success = false, Message = message });
 
             var customerService = new StripeCustomerService();
@@ -93,7 +94,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 }
 
-                _billingManager.ApplyBillingPlan(organization, plan, User.UserEntity);
+                _billingManager.ApplyBillingPlan(organization, plan, Request.GetUser());
                 _organizationRepository.Update(organization);
 
                 _notificationSender.PlanChanged(organization.Id);

@@ -8,6 +8,7 @@ using Exceptionless.Core.Authorization;
 namespace Exceptionless.Core.Extensions {
     public static class PrincipalUtility {
         public const string ApiKeyAuthenticationType = "ApiKey";
+        public const string UserAuthenticationType = "User";
 
         public static ClaimsPrincipal CreateClientUser(string projectId) {
             var claims = new List<Claim> {
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Extensions {
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            var identity = new ClaimsIdentity(claims, "User");
+            var identity = new ClaimsIdentity(claims, UserAuthenticationType);
 
             return new ClaimsPrincipal(identity);
         }
@@ -49,7 +50,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static ClaimsIdentity GetClaimsIdentity(this IPrincipal principal) {
-            var claimsPrincipal = principal as ClaimsPrincipal;
+            var claimsPrincipal = principal.GetClaimsPrincipal();
             if (claimsPrincipal == null)
                 return null;
 

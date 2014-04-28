@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
@@ -38,11 +37,8 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
-            if (projectId == null) {
-                var ctx = Request.GetOwinContext();
-                if (ctx != null && ctx.Request != null && ctx.Request.User != null)
-                    projectId = ctx.Request.User.GetApiKeyProjectId();
-            }
+            if (projectId == null)
+                projectId = User.GetApiKeyProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))

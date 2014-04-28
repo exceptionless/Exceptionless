@@ -28,24 +28,21 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult Config(string projectId = null) {
             // TODO: Only the client should be using this..
 
-            if (String.IsNullOrEmpty(projectId)) {
-                var ctx = Request.GetOwinContext();
-                if (ctx == null || ctx.Request == null || ctx.Request.User == null)
+            if (String.IsNullOrEmpty(projectId))
+                projectId = User.GetApiKeyProjectId();
+            
+            if (String.IsNullOrEmpty(projectId))
                     return NotFound();
 
-                projectId = ctx.Request.User.GetApiKeyProjectId();
-                if (String.IsNullOrEmpty(projectId))
-                    return NotFound();
-            }
-
-            var project = _repository.GetByIdCached(projectId);
-            if (project == null) // || !User.CanAccessOrganization(project.OrganizationId))
+            var project = _projectRepository.GetByIdCached(projectId);
+            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             return Ok(project.Configuration);
         }
 
         [HttpGet]
+        [Route("is-name-available")]
         public IHttpActionResult IsNameAvailable(string id, string name) {
             if (String.IsNullOrEmpty(id) || String.IsNullOrWhiteSpace(name))
                 return Ok(false);
@@ -68,7 +65,7 @@ namespace Exceptionless.Api.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _projectRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
+                    _projects = _projectRepository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }

@@ -13,7 +13,6 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Web;
 
 namespace Exceptionless.Core.Controllers {
@@ -21,8 +20,6 @@ namespace Exceptionless.Core.Controllers {
     public class ExceptionlessApiController : ApiController {
         protected string _recordNotFoundResponseMessage = "Resource not found.";
         protected string _duplicateResponseMessage = "Resource already exists in the collection.";
-
-        protected new ExceptionlessPrincipal User { get { return base.User as ExceptionlessPrincipal; } }
 
         protected virtual HttpResponseMessage DuplicateResponseMessage(string id) {
             return Request != null && !String.IsNullOrEmpty(id) ? Request.CreateErrorResponse(HttpStatusCode.Conflict, String.Format(_duplicateResponseMessage, id)) : new HttpResponseMessage(HttpStatusCode.Conflict);

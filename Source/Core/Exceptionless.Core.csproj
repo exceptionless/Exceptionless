@@ -229,9 +229,6 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Authorization\ExceptionlessAuthorizeAttribute.cs" />
-    <Compile Include="Authorization\BasicHttpAuthorizeAttribute.cs" />
-    <Compile Include="Authorization\ExceptionlessPrincipal.cs" />
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />

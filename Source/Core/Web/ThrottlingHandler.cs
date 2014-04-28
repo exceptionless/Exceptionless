@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Web {
@@ -37,13 +38,14 @@ namespace Exceptionless.Core.Web {
         }
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
-            HttpRequestContext ctx = request.GetRequestContext();
-            if (ctx != null) {
-                // use organization id or user id as the identifier for throttling
-                var principal = request.GetRequestContext().Principal as ExceptionlessPrincipal;
-                if (principal != null)
-                    return principal.Project != null ? principal.Project.OrganizationId : principal.UserEntity.Id;
-            }
+            var project = request.GetProject();
+            if(project != null)
+                return project.OrganizationId;
+
+            var user = request.GetUser();
+            if(user != null)
+                return user.Id;
+
             // fallback to using the IP address
             var ip = request.GetClientIpAddress();
             return Settings.Current.WebsiteMode == WebsiteMode.Dev && String.IsNullOrEmpty(ip) ? "127.0.0.1" : ip;
