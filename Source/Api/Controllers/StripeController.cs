@@ -3,13 +3,13 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using NLog.Fluent;
 using Stripe;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "stripe")]
-    public class StripeController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
 
         public StripeController(StripeEventHandler stripeEventHandler) {

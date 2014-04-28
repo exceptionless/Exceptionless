@@ -17,6 +17,7 @@ using Exceptionless.Api.Models.Stats;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -28,8 +29,7 @@ using ServiceStack.CacheAccess;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class StatsController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class StatsController : ExceptionlessApiController {
         private readonly EventStatsHelper _statsHelper;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IStackRepository _stackRepository;
@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
@@ -91,13 +91,13 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             long count;
             List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
@@ -132,7 +132,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
@@ -142,8 +142,8 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private PlanPagedResult<ErrorStackResult> Frequent(List<ErrorStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList());
             IQueryable<Stack> errorStacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id));
@@ -183,7 +183,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 

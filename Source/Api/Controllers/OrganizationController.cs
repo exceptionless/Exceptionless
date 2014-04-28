@@ -8,6 +8,7 @@ using Exceptionless.Api.Models.Organization;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models.Billing;
@@ -22,8 +23,7 @@ using Stripe;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "organization")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class OrganizationController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class OrganizationController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
@@ -58,8 +58,8 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             // TODO: implement proper paging once it's supported by the api.
             var limit = pageSize * skip;
@@ -276,8 +276,8 @@ namespace Exceptionless.Api.Controllers {
             else
                 sort = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             MongoCursor<Organization> query = queries.Count > 0 
                 ? ((OrganizationRepository)_organizationRepository).Collection.Find(Query.And(queries)) 

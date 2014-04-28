@@ -15,6 +15,7 @@ using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -24,9 +25,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "projecthook")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectHookController : ApiController {
-        private const string API_PREFIX = "api/v1/";
-
+    public class ProjectHookController : ExceptionlessApiController {
         private readonly IProjectHookRepository _projectHookRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;

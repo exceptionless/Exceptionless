@@ -9,6 +9,7 @@ using Exceptionless.Api.Models.Project;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -17,8 +18,7 @@ using Exceptionless.Models.Stats;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "project")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectController : ApiController {
-        private const string API_PREFIX = "api/v1/";
+    public class ProjectController : ExceptionlessApiController {
         private List<Project> _projects;
         private readonly IProjectRepository _projectRepository;
         private readonly DataHelper _dataHelper;
@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Config(string id = null) {
-            // TODO: Only the client should be using this..
+            // TODO: Only the client should be using .
 
             if (String.IsNullOrEmpty(id))
                 id = User.GetApiKeyProjectId();
@@ -167,8 +167,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("list")]
         public IEnumerable<ProjectInfoModel> List(int page = 1, int pageSize = 100) {
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             return Get().Skip(skip).Take(pageSize).Select(p => {
                 ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
@@ -185,8 +185,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
                 return NotFound();
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             List<Project> projects = _projectRepository.GetByOrganizationId(organizationId).ToList();
             List<ProjectInfoModel> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {

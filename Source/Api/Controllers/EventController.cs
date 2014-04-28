@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
@@ -12,10 +13,9 @@ using Exceptionless.Core.Web;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "event")]
+    [RoutePrefix("api/v{version:int=1}/event")]
     [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-    public class EventController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class EventController : ExceptionlessApiController {
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
 

@@ -5,14 +5,13 @@ using System.Web.Http;
 using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "user")]
-    public class UserController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
-
+    public class UserController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
 
@@ -48,8 +47,8 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
                 return NotFound();
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 
                 new UserModel {

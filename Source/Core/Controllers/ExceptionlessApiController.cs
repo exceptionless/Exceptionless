@@ -10,17 +10,13 @@
 #endregion
 
 using System;
-using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 using Exceptionless.Core.Web;
 
 namespace Exceptionless.Core.Controllers {
     [RequireHttpsExceptLocal]
     public class ExceptionlessApiController : ApiController {
-        protected virtual HttpResponseMessage PlanLimitReached(string message = "Your plan limit has been reached. Please upgrade your plan.") {
-            return Request != null ? Request.CreateErrorResponse(HttpStatusCode.UpgradeRequired, message) : new HttpResponseMessage(HttpStatusCode.UpgradeRequired);
-        }
+        protected const string API_PREFIX = "api/v2/";
 
         protected int GetPageSize(int pageSize) {
             if (pageSize < 1)

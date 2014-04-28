@@ -8,6 +8,7 @@ using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Membership;
@@ -16,8 +17,7 @@ using Exceptionless.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "account")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class AccountController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class AccountController : ExceptionlessApiController {
         private readonly IMembershipProvider _membershipProvider;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;

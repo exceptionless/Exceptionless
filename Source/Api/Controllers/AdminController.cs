@@ -4,6 +4,7 @@ using Exceptionless.Api.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
@@ -11,8 +12,7 @@ using Exceptionless.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "admin")]
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-    public class AdminController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class AdminController : ExceptionlessApiController {
         private readonly IOrganizationRepository _repository;
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;

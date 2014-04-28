@@ -15,6 +15,7 @@ using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Web;
 using Exceptionless.Extensions;
 using Exceptionless.Models.Legacy;
@@ -23,10 +24,9 @@ using ServiceStack.Messaging;
 
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
-    [RoutePrefix(API_PREFIX + "error")]
+    [RoutePrefix("api/v1/error")]
     [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-    public class ErrorController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class ErrorController : ExceptionlessApiController {
         private readonly ICacheClient _cacheClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -47,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
             if (value == null)
                 return BadRequest("Invalid error posted.");
 
-            if (_cacheClient.TryGet<bool>("ApiDisabled", false))
+            if (_cacheClient.TryGet("ApiDisabled", false))
                 return StatusCode(HttpStatusCode.ServiceUnavailable);
 
             // TODO: Implement Post

@@ -20,6 +20,7 @@ using Exceptionless.Api.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
@@ -35,8 +36,7 @@ namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
     [RoutePrefix(API_PREFIX + "stack")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class StackController : ApiController {
-        private const string API_PREFIX = "api/v{version:int=1}/";
+    public class StackController : ExceptionlessApiController {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -245,7 +245,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = this.GetDateRange(start, end);
+            var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
@@ -253,8 +253,8 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
 
-            pageSize = this.GetPageSize(pageSize);
-            int skip = this.GetSkip(page, pageSize);
+            pageSize = GetPageSize(pageSize);
+            int skip = GetSkip(page, pageSize);
 
             long count;
             List<Stack> query = _stackRepository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
