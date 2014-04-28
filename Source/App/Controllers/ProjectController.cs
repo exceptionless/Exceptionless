@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using AutoMapper;
-using CodeSmith.Core.Component;
 using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Project;
 using Exceptionless.Core;
@@ -212,23 +211,6 @@ namespace Exceptionless.App.Controllers {
             _notificationSender.ProjectUpdated(organization.Id, project.Id);
 
             return RedirectToAction("Configure", "Project", new { id = project.Id });
-        }
-
-        [HttpGet]
-        public JsonResult IsNameAvailable(string id, string name) {
-            if (String.IsNullOrEmpty(id) || String.IsNullOrWhiteSpace(name))
-                return Json(false, JsonRequestBehavior.AllowGet);
-
-            foreach (Project project in Projects) {
-                if (String.Equals(project.Name, name, StringComparison.OrdinalIgnoreCase)) {
-                    if (String.Equals(project.Id, id, StringComparison.OrdinalIgnoreCase))
-                        break;
-
-                    return Json(false, JsonRequestBehavior.AllowGet);
-                }
-            }
-
-            return Json(true, JsonRequestBehavior.AllowGet);
         }
 
         private ProjectModel PopulateProjectModel(Project project) {

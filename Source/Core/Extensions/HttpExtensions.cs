@@ -10,14 +10,97 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Principal;
 using System.Text;
 using System.Web.Http;
+using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class HttpExtensions {
+        public static User GetUser(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return null;
+        }
+
+        public static string GetUserId(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return null;
+        }
+
+        public static Project GetProject(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return null;
+        }
+
+        public static bool CanAccessOrganization(this HttpRequestMessage request, string organizationId) {
+            if (request == null || String.IsNullOrEmpty(organizationId))
+                return false;
+
+            //var ctx = request.GetOwinContext();
+            //if (ctx != null && ctx.Request != null && ctx.Request.User != null)
+            //    projectId = ctx.Request.User.GetApiKeyProjectId();
+
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return false;
+        }
+
+        public static bool IsInOrganization(this HttpRequestMessage request, string organizationId) {
+            if (request == null || String.IsNullOrEmpty(organizationId))
+                return false;
+
+            //if (Project != null)
+            //    return String.Equals(Project.OrganizationId, organizationId);
+
+            //if (UserEntity != null)
+            //    return UserEntity.OrganizationIds.Contains(organizationId);
+
+            return false;
+        }
+
+        public static IEnumerable<string> GetAssociatedOrganizationIds(this HttpRequestMessage request) {
+            var items = new List<string>();
+
+            //if (UserEntity != null)
+            //    items.AddRange(UserEntity.OrganizationIds);
+            //else if (Project != null)
+            //    items.Add(Project.OrganizationId);
+
+            return items;
+        }
+
         public static bool TryGetLoginInformation(this HttpRequestMessage request, out string userName, out string password) {
             userName = null;
             password = null;

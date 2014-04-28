@@ -10,15 +10,15 @@
 #endregion
 
 using System;
-using System.Web.Mvc;
-using Exceptionless.Core.Authorization;
-using Exceptionless.Web.Controllers;
+using AutoMapper;
+using Exceptionless.Api.Models.Project;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Models;
 
-namespace Exceptionless.App.Controllers {
-    [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-    public class AdminController : ExceptionlessController {
-        public ActionResult Index() {
-            return View();
+namespace Exceptionless.Api {
+    public class AutoMapperConfig {
+        public static void CreateMappings() {
+            Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => { pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds; });
         }
     }
 }

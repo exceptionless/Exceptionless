@@ -16,13 +16,10 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Web.Mvc;
-using AutoMapper;
 using DotNetOpenAuth.AspNet;
 using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Account;
 using Exceptionless.App.Models.Common;
-using Exceptionless.App.Models.Project;
-using Exceptionless.App.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -40,7 +37,6 @@ namespace Exceptionless.App.Controllers {
         private readonly IMembershipProvider _membershipProvider;
         private readonly IMembershipSecurity _encoder = new DefaultMembershipSecurity();
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;
@@ -49,57 +45,14 @@ namespace Exceptionless.App.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer, DataHelper dataHelper) {
+        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer, DataHelper dataHelper) {
             _membershipProvider = membership;
             _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
             _userRepository = userRepository;
             _billingManager = billingManager;
             _notificationSender = notificationSender;
             _mailer = mailer;
             _dataHelper = dataHelper;
-        }
-
-        [Authorize(Roles = AuthorizationRoles.User)]
-        public ActionResult Init(string projectId = null, string organizationId = null) {
-            List<Organization> organizations = _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds()).ToList();
-            List<Project> projects = _projectRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
-
-            if (User.IsInRole(AuthorizationRoles.GlobalAdmin)) {
-                if (!String.IsNullOrWhiteSpace(projectId) && !projects.Any(p => String.Equals(p.Id, projectId))) {
-                    Project project = _projectRepository.GetById(projectId);
-                    if (project != null) {
-                        projects.Add(project);
-
-                        if (!organizations.Any(o => String.Equals(o.Id, project.OrganizationId)))
-                            organizations.Add(_organizationRepository.GetById(project.OrganizationId));
-                    }
-                }
-
-                if (!String.IsNullOrWhiteSpace(organizationId) && !organizations.Any(o => String.Equals(o.Id, organizationId))) {
-                    Organization organization = _organizationRepository.GetById(organizationId);
-                    if (organization != null) {
-                        organizations.Add(organization);
-
-                        if (!projects.Any(p => String.Equals(p.OrganizationId, organizationId)))
-                            projects.AddRange(_projectRepository.GetByOrganizationId(organizationId));
-                    }
-                }
-            }
-
-            return Json(new {
-                User = new UserModel {
-                    Id = User.UserEntity.Id,
-                    FullName = User.UserEntity.FullName,
-                    EmailAddress = User.UserEntity.EmailAddress,
-                    IsEmailAddressVerified = User.UserEntity.IsEmailAddressVerified,
-                    HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin)
-                },
-                EnableBilling = Settings.Current.EnableBilling,
-                BillingInfo = BillingManager.Plans,
-                Organizations = organizations,
-                Projects = projects.Select(Mapper.Map<Project, ProjectInfoModel>),
-            }, JsonRequestBehavior.AllowGet);
         }
 
         [AllowAnonymous]
@@ -586,27 +539,6 @@ namespace Exceptionless.App.Controllers {
             _userRepository.Update(user);
 
             return RedirectToAction("Manage", "Account");
-        }
-
-        [ActionName("resend-verification-email")]
-        public ActionResult ResendVerificationEmail() {
-            User user = User.UserEntity;
-            if (!user.IsEmailAddressVerified) {
-                user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
-                _mailer.SendVerifyEmailAsync(user);
-            }
-
-            return Json(true, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public JsonResult IsEmailAddressAvaliable(string emailAddress) {
-            User user = _membershipProvider.GetUserByEmailAddress(emailAddress);
-            if (User != null && User.UserEntity != null && String.Equals(User.UserEntity.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase))
-                return Json(true, JsonRequestBehavior.AllowGet);
-
-            return Json(user == null, JsonRequestBehavior.AllowGet);
         }
 
         #region Helpers

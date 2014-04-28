@@ -11,16 +11,12 @@
 
 using System;
 
-namespace Exceptionless.App.Models.Project {
-    public class ProjectInfoModel {
+namespace Exceptionless.Api.Models.Organization {
+    public class InvoiceGridModel {
         public string Id { get; set; }
-        public string Name { get; set; }
-        public string OrganizationId { get; set; }
-        public string OrganizationName { get; set; }
-        public double TimeZoneOffset { get; set; }
 
-        public long StackCount { get; set; }
-        public long ErrorCount { get; set; }
-        public long TotalErrorCount { get; set; }
+        public DateTime Date { get; set; }
+
+        public bool Paid { get; set; }
     }
 }

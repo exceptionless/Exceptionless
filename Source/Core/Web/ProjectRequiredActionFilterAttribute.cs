@@ -10,10 +10,9 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Web.Mvc;
 using System.Web.Routing;
-using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;
@@ -25,16 +24,17 @@ namespace Exceptionless.Core.Web {
         public IProjectRepository ProjectRepository { get; set; }
 
         public override void OnActionExecuting(ActionExecutingContext context) {
-            var user = context.HttpContext.User as ExceptionlessPrincipal;
-            if (user != null && user.UserEntity != null) {
-                long projects = ProjectRepository.Count(Query.In(Core.ProjectRepository.FieldNames.OrganizationId, user.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
-                if (projects == 0) {
-                    context.Result = new RedirectToRouteResult(new RouteValueDictionary {
-                        { "Controller", "Project" },
-                        { "Action", "Add" }
-                    });
-                }
-            }
+            // TODO Implement this.
+            //var user = context.HttpContext.User as ExceptionlessPrincipal;
+            //if (user != null && user.UserEntity != null) {
+            //    long projects = ProjectRepository.Count(Query.In(Core.ProjectRepository.FieldNames.OrganizationId, user.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+            //    if (projects == 0) {
+            //        context.Result = new RedirectToRouteResult(new RouteValueDictionary {
+            //            { "Controller", "Project" },
+            //            { "Action", "Add" }
+            //        });
+            //    }
+            //}
 
             base.OnActionExecuting(context);
         }

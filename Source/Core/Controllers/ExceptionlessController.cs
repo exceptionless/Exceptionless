@@ -18,8 +18,6 @@ namespace Exceptionless.Web.Controllers {
     [ViewBagDefaults]
     [Core.Web.RequireHttps]
     public class ExceptionlessController : Controller {
-        protected new ExceptionlessPrincipal User { get { return base.User as ExceptionlessPrincipal; } }
-
         public void SetAttentionAlert(string message) {
             TempData[Alerts.ATTENTION] = message;
         }

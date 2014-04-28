@@ -51,8 +51,6 @@ namespace Exceptionless.App {
             Mapper.CreateMap<Project, ProjectModel>();
 
 //            Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => { igm.Id = si.Id.Substring(3); });
-
-          //  Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => { pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds; });
         }
     }
 }

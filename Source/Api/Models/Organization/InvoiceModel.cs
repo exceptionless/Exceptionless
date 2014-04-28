@@ -10,13 +10,12 @@
 #endregion
 
 using System;
+using Stripe;
 
-namespace Exceptionless.App.Models.Organization {
-    public class InvoiceGridModel {
-        public string Id { get; set; }
-
-        public DateTime Date { get; set; }
-
-        public bool Paid { get; set; }
+namespace Exceptionless.Api.Models.Organization {
+    public class InvoiceModel {
+        public Exceptionless.Models.Organization Organization { get; set; }
+        public StripeInvoice Invoice { get; set; }
+        public string Id { get { return Invoice.Id.Substring(3); } }
     }
 }
