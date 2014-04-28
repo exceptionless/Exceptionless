@@ -30,13 +30,7 @@ namespace Exceptionless.Core.Messaging {
                 _namespaceManager.CreateSubscription(_topicName, _subscriptionName);
 
             _subscriptionClient = SubscriptionClient.CreateFromConnectionString(connectionString, _topicName, _subscriptionName, ReceiveMode.ReceiveAndDelete);
-            var options = new OnMessageOptions { AutoComplete = true };
-            options.ExceptionReceived += OptionsOnExceptionReceived;
             _subscriptionClient.OnMessageAsync(OnMessage);
-        }
-
-        private void OptionsOnExceptionReceived(object sender, ExceptionReceivedEventArgs args) {
-            Log.Error().Exception(args.Exception).Message("Error receiving message: {0}", args.Exception.Message).Write();
         }
 
         private Task OnMessage(BrokeredMessage brokeredMessage) {
