@@ -15,9 +15,9 @@ namespace Exceptionless.Serializer {
     public
 #endif
     class ConditionalContractResolver : DefaultContractResolver {
-        protected Func<JsonProperty, bool> _includeProperty;
+        private readonly Func<JsonProperty, object, bool> _includeProperty;
 
-        public ConditionalContractResolver(Func<JsonProperty, bool> includeProperty) {
+        public ConditionalContractResolver(Func<JsonProperty, object, bool> includeProperty) {
             _includeProperty = includeProperty;
         }
 
@@ -27,7 +27,7 @@ namespace Exceptionless.Serializer {
                 return property;
             
             Predicate<object> shouldSerialize = property.ShouldSerialize;
-            property.ShouldSerialize = obj => _includeProperty(property) && (shouldSerialize == null || shouldSerialize(obj));
+            property.ShouldSerialize = obj => _includeProperty(property, obj) && (shouldSerialize == null || shouldSerialize(obj));
             return property;
         }
     }

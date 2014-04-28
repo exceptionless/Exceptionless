@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -19,10 +20,12 @@ namespace Exceptionless.Api.Controllers {
         private const string API_PREFIX = "api/v{version:int=1}/";
         private readonly IEventRepository _eventRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
+        private readonly IAppStatsClient _statsClient;
 
-        public EventController(IEventRepository repository, IQueue<EventPost> eventPostQueue) {
+        public EventController(IEventRepository repository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) {
             _eventRepository = repository;
             _eventPostQueue = eventPostQueue;
+            _statsClient = statsClient;
         }
 
         [Route]
@@ -38,6 +41,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
+            _statsClient.Counter(StatNames.PostsSubmitted);
             if (projectId == null) {
                 var ctx = Request.GetOwinContext();
                 if (ctx != null && ctx.Request != null && ctx.Request.User != null)
@@ -62,6 +66,7 @@ namespace Exceptionless.Api.Controllers {
                 ApiVersion = version,
                 Data = data
             });
+            _statsClient.Counter(StatNames.PostsQueued);
 
             return Ok();
         }

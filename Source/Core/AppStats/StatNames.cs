@@ -13,6 +13,7 @@ using System;
 
 namespace Exceptionless.Core.AppStats {
     public static class StatNames {
+        public const string EventsSubmitted = "events.submitted";
         public const string EventsProcessed = "events.processed";
         public const string EventsProcessingTime = "events.processingtime";
         public const string EventsPaidProcessed = "events.paid.processed";

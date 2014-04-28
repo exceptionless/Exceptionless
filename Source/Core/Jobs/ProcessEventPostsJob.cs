@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Jobs {
             while (!CancelPending) {
                 WorkItem<EventPost> workItem = null;
                 try {
-                    workItem = await _queue.DequeueAsync();
+                    workItem = await _queue.DequeueAsync(500);
                     _statsClient.Counter(StatNames.PostsDequeued);
                 } catch (Exception ex) {
                     if (!(ex is TimeoutException)) {

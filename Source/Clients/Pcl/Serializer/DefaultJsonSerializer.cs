@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Exceptionless.Extensions;
 using Exceptionless.Json;
 using Exceptionless.Json.Converters;
@@ -34,7 +36,7 @@ namespace Exceptionless.Serializer {
             using (var sw = new StringWriter()) {
                 using (var jw = new JsonTextWriterWithDepth(sw)) {
                     jw.Formatting = Formatting.None;
-                    Func<JsonProperty, bool> include = p => ShouldSerialize(jw, p, maxDepth, exclusions);
+                    Func<JsonProperty, object, bool> include = (property, value) => ShouldSerialize(jw, property, value, maxDepth, exclusions);
                     var resolver = new ConditionalContractResolver(include);
                     serializer.ContractResolver = resolver;
                     if (continueOnSerializationError)
@@ -54,12 +56,36 @@ namespace Exceptionless.Serializer {
             return JsonConvert.DeserializeObject(json, type, _serializerSettings);
         }
 
-        private bool ShouldSerialize(JsonTextWriterWithDepth jw, JsonProperty property, int maxDepth, IEnumerable<string> excludedPropertyNames) {
+        private bool ShouldSerialize(JsonTextWriterWithDepth jw, JsonProperty property, object obj, int maxDepth, IEnumerable<string> excludedPropertyNames) {
             if (excludedPropertyNames != null && property.PropertyName.AnyWildcardMatches(excludedPropertyNames, true))
                 return false;
 
-            bool serializesAsObject = !DefaultContractResolver.IsJsonPrimitiveType(property.PropertyType);
-            return serializesAsObject ? jw.CurrentDepth < maxDepth : jw.CurrentDepth <= maxDepth;
+            bool isPrimitiveType = DefaultContractResolver.IsJsonPrimitiveType(property.PropertyType);
+            bool isPastMaxDepth = !(isPrimitiveType ? jw.CurrentDepth <= maxDepth : jw.CurrentDepth < maxDepth);
+            if (isPastMaxDepth)
+                return false;
+
+            if (isPrimitiveType)
+                return true;
+
+            object value = property.ValueProvider.GetValue(obj);
+            if (value == null)
+                return false;
+
+            if (typeof(ICollection).IsAssignableFrom(property.PropertyType)) {
+                var collection = value as ICollection;
+                if (collection != null && collection.Count == 0)
+                    return false;
+            }
+
+            var collectionType = value.GetType().GetInterfaces().FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICollection<>));
+            if (collectionType != null) {
+                int count = (int)collectionType.GetProperty("Count").GetValue(value, null);
+                if (count == 0)
+                    return false;
+            }
+
+            return true;
         }
     }
 }
