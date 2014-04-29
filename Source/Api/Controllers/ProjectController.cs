@@ -18,26 +18,29 @@ using Exceptionless.Models.Stats;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "project")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectController : ExceptionlessApiController {
+    public class ProjectController : RepositoryApiController<Project, ProjectInfoModel, ProjectRepository> {
         private List<Project> _projects;
-        private readonly IProjectRepository _projectRepository;
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;
 
-        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager, NotificationSender notificationSender) {
-            _projectRepository = projectRepository;
+        public ProjectController(ProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager, NotificationSender notificationSender) : base(projectRepository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
             _notificationSender = notificationSender;
             _dataHelper = dataHelper;
+
+            //Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => {
+            //    pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
+            //    pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
+            //});
         }
 
         [Route]
         [HttpGet]
         public IEnumerable<Project> Get() {
-            var projects = _projectRepository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).Take(100).ToList();
+            var projects = _repository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).Take(100).ToList();
             
             string userId = Request.GetUserId();
             return projects.Select(p => {
@@ -65,7 +68,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                     return NotFound();
 
-            var project = _projectRepository.GetByIdCached(id);
+            var project = _repository.GetByIdCached(id);
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -74,11 +77,11 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id}")]
-        public IHttpActionResult Get(string id) {
+        public override IHttpActionResult Get(string id) {
             if (String.IsNullOrWhiteSpace(id))
                 return BadRequest();
 
-            var project = _projectRepository.GetById(id);
+            var project = _repository.GetById(id);
             if (project == null || Request.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
@@ -109,7 +112,7 @@ namespace Exceptionless.Api.Controllers {
             value.NotificationSettings.Clear();
             value.NotificationSettings.Add(userId, settings);
 
-            List<string> apiKeys = value.ApiKeys.Where(key => _projectRepository.GetByApiKey(key) == null).ToList();
+            List<string> apiKeys = value.ApiKeys.Where(key => _repository.GetByApiKey(key) == null).ToList();
             value.ApiKeys = apiKeys.Any()
                 ? new HashSet<string>(apiKeys)
                 : new HashSet<string> {
@@ -124,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
             value.ErrorCount = 0;
             value.TotalErrorCount = 0;
 
-            Project project = _projectRepository.Add(value, true);
+            Project project = _repository.Add(value, true);
 
             _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
             _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
@@ -145,23 +148,12 @@ namespace Exceptionless.Api.Controllers {
             return BadRequest();
         }
 
-        [HttpDelete]
-        [Route("{id}")]
-        public IHttpActionResult Delete(string id) {
-            if (String.IsNullOrWhiteSpace(id))
-                return BadRequest();
-
-            var value = _projectRepository.GetById(id);
-            if (value == null || Request.CanAccessOrganization(value.OrganizationId))
-                return BadRequest();
-
-            _projectRepository.Delete(value.Id);
+        protected override void DeleteModel(Project value) {
+            base.DeleteModel(value);
 
             // Note: The project may not be deleted at this point..
             _organizationRepository.IncrementStats(value.OrganizationId, projectCount: -1);
             _notificationSender.ProjectUpdated(value.OrganizationId, value.Id);
-
-            return Ok();
         }
 
         [HttpGet]
@@ -188,7 +180,7 @@ namespace Exceptionless.Api.Controllers {
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            List<Project> projects = _projectRepository.GetByOrganizationId(organizationId).ToList();
+            List<Project> projects = _repository.GetByOrganizationId(organizationId).ToList();
             List<ProjectInfoModel> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {
                 ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
                 pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
@@ -211,7 +203,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _repository.GetByIdCached(projectId);
             if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
                 return;
 
@@ -224,7 +216,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(projectId))
                 return BadRequest();
 
-            var project = _projectRepository.GetById(projectId);
+            var project = _repository.GetById(projectId);
             if (project == null || Request.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
@@ -240,14 +232,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(projectId))
                 return BadRequest();
 
-            var project = _projectRepository.GetById(projectId);
+            var project = _repository.GetById(projectId);
             if (project == null || Request.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
             project.ApiKeys.Add(apiKey);
 
-            _projectRepository.Update(project);
+            _repository.Update(project);
 
             return Ok(apiKey);
         }
@@ -258,7 +250,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(projectId) || String.IsNullOrEmpty(apiKey))
                 return BadRequest();
 
-            var project = _projectRepository.GetById(projectId);
+            var project = _repository.GetById(projectId);
             if (project == null || Request.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
@@ -269,7 +261,7 @@ namespace Exceptionless.Api.Controllers {
                 throw new Exception("Invalid organization.");
 
             project.ApiKeys.Remove(apiKey);
-            _projectRepository.Update(project);
+            _repository.Update(project);
 
             return Ok();
         }
@@ -281,12 +273,12 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId) || String.IsNullOrEmpty(userId) || settings == null)
                 return BadRequest();
 
-            Project project = _projectRepository.GetById(projectId);
+            Project project = _repository.GetById(projectId);
             if (project == null || Request.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             project.NotificationSettings[userId] = settings;
-            _projectRepository.Update(project);
+            _repository.Update(project);
 
             _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
 
@@ -307,7 +299,7 @@ namespace Exceptionless.Api.Controllers {
         //        if (entity.ApiKeys.Any(key => !original.ApiKeys.Contains(key)))
         //            return false;
 
-        //        if (entity.ApiKeys.Any(key => _projectRepository.GetByApiKey(key) != null))
+        //        if (entity.ApiKeys.Any(key => _repository.GetByApiKey(key) != null))
         //            return false;
         //    }
 
@@ -327,7 +319,7 @@ namespace Exceptionless.Api.Controllers {
         //    value.Patch(original);
         //    original.Configuration.Version = version;
 
-        //    Project project = _projectRepository.Update(original);
+        //    Project project = _repository.Update(original);
 
         //    _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
 
@@ -358,7 +350,7 @@ namespace Exceptionless.Api.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _projectRepository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).ToList();
+                    _projects = _repository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }

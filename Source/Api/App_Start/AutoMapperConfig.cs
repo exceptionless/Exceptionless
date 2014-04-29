@@ -18,7 +18,9 @@ using Exceptionless.Models;
 namespace Exceptionless.Api {
     public class AutoMapperConfig {
         public static void CreateMappings() {
-            Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => { pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds; });
+            Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => {
+                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
+             });
         }
     }
 }

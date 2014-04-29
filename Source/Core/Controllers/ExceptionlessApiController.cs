@@ -18,6 +18,18 @@ namespace Exceptionless.Core.Controllers {
     public class ExceptionlessApiController : ApiController {
         protected const string API_PREFIX = "api/v2/";
 
+        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
+            if (starTime == null)
+                starTime = DateTime.MinValue;
+
+            if (endTime == null)
+                endTime = DateTime.MaxValue;
+
+            return starTime < endTime 
+                ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) 
+                : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
+        }
+
         protected int GetPageSize(int pageSize) {
             if (pageSize < 1)
                 pageSize = 10;
@@ -33,18 +45,6 @@ namespace Exceptionless.Core.Controllers {
                 skip = 0;
 
             return skip;
-        }
-
-        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
-            if (starTime == null)
-                starTime = DateTime.MinValue;
-
-            if (endTime == null)
-                endTime = DateTime.MaxValue;
-
-            return starTime < endTime 
-                ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) 
-                : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
         }
     }
 }

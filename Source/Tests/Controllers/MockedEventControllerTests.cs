@@ -60,11 +60,11 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public void Put() {
-            HttpResponseMessage result = _controller.Put(TestConstants.ErrorId, new Core.Web.OData.Delta<Event>());
+            HttpResponseMessage result = _controller.Put(TestConstants.ErrorId, new Core.Web.Delta<Event>());
             Assert.NotNull(result);
             Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
 
-            var delta = new Core.Web.OData.Delta<Event>();
+            var delta = new Core.Web.Delta<Event>();
             Assert.True(delta.TrySetPropertyValue("UserName", "Tester"));
 
             result = _controller.Put(TestConstants.ErrorId, delta);
@@ -74,11 +74,11 @@ namespace Exceptionless.Tests.Controllers {
 
         [Fact]
         public void Patch() {
-            HttpResponseMessage result = _controller.Patch(TestConstants.ErrorId, new Core.Web.OData.Delta<Event>());
+            HttpResponseMessage result = _controller.Patch(TestConstants.ErrorId, new Core.Web.Delta<Event>());
             Assert.NotNull(result);
             Assert.Equal(HttpStatusCode.BadRequest, result.StatusCode);
 
-            var delta = new Core.Web.OData.Delta<Event>();
+            var delta = new Core.Web.Delta<Event>();
             Assert.True(delta.TrySetPropertyValue("UserName", "Tester"));
 
             result = _controller.Patch(TestConstants.ErrorId, delta);
