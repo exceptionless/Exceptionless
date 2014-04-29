@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Controllers {
 
         protected override TModel GetModel(string id) {
             var model = base.GetModel(id);
-            if (model == null || !Request.IsInOrganization(model.OrganizationId))
+            if (model == null || !User.IsInOrganization(model.OrganizationId))
                 return null;
 
             return model;

@@ -64,8 +64,9 @@ namespace Exceptionless.Core.Web {
         /// </summary>
         /// <param name="name">The name of the Property</param>
         /// <param name="value">The new value of the Property</param>
+        /// <param name="target">The target entity to set the value on</param>
         /// <returns>True if successful</returns>
-        public bool TrySetPropertyValue(string name, object value) {
+        public bool TrySetPropertyValue(string name, object value, TEntityType target = null) {
             if (name == null)
                 throw new ArgumentNullException("name");
 
@@ -103,7 +104,7 @@ namespace Exceptionless.Core.Web {
             }
 
             //.Setter.Invoke(_entity, new object[] { value });
-            cacheHit.SetValue(_entity, value);
+            cacheHit.SetValue(_entity ?? target, value);
             _changedProperties.Add(name);
             return true;
         }
@@ -117,14 +118,15 @@ namespace Exceptionless.Core.Web {
         /// </summary>
         /// <param name="name">The name of the Property</param>
         /// <param name="value">The value of the Property</param>
+        /// <param name="target">The target entity to get the value from</param>
         /// <returns>True if the Property was found</returns>
-        public bool TryGetPropertyValue(string name, out object value) {
+        public bool TryGetPropertyValue(string name, out object value, TEntityType target = null) {
             if (name == null)
                 throw new ArgumentNullException("name");
 
             if (_propertiesThatExist.ContainsKey(name)) {
                 PropertyAccessor<TEntityType> cacheHit = _propertiesThatExist[name];
-                value = cacheHit.GetValue(_entity);
+                value = cacheHit.GetValue(target ?? _entity);
                 return true;
             } else {
                 value = null;
@@ -193,6 +195,35 @@ namespace Exceptionless.Core.Web {
         /// </summary>
         public IEnumerable<string> GetChangedPropertyNames() {
             return _changedProperties;
+        }
+
+        /// <summary>
+        /// Returns the Properties that have been modified from their original values through this Delta as an
+        /// enumeration of Property Names
+        /// </summary>
+        public IEnumerable<string> GetChangedPropertyNames(TEntityType original) {
+            if (original == null)
+                return _changedProperties;
+
+            var changedPropertyNames = new HashSet<string>();
+
+            foreach (var propertyName in _changedProperties) {
+                object originalValue;
+                if (!TryGetPropertyValue(propertyName, out originalValue, original))
+                    changedPropertyNames.Add(propertyName);
+
+                object newValue;
+                if (!TryGetPropertyValue(propertyName, out newValue))
+                    continue;
+
+                if (originalValue == null && newValue == null)
+                    continue;
+
+                if (newValue == null || !newValue.Equals(originalValue))
+                    changedPropertyNames.Add(propertyName);
+            }
+
+            return changedPropertyNames;
         }
 
         /// <summary>

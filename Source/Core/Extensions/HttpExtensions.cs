@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Extensions {
             return null;
         }
 
-        public static bool CanAccessOrganization(this HttpRequestMessage request, string organizationId) {
+        public static bool CanAccessOrganization(this IPrincipal user, string organizationId) {
             if (request == null || String.IsNullOrEmpty(organizationId))
                 return false;
 
@@ -77,8 +77,8 @@ namespace Exceptionless.Core.Extensions {
             return false;
         }
 
-        public static bool IsInOrganization(this HttpRequestMessage request, string organizationId) {
-            if (request == null || String.IsNullOrEmpty(organizationId))
+        public static bool IsInOrganization(this IPrincipal user, string organizationId) {
+            if (user == null || String.IsNullOrEmpty(organizationId))
                 return false;
 
             //if (Project != null)

@@ -5,13 +5,11 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
@@ -23,6 +21,11 @@ namespace Exceptionless.Core.Controllers {
 
         public RepositoryApiController(TRepository repository) {
             _repository = repository;
+            CreateMaps();
+        }
+
+        protected virtual void CreateMaps() {
+            Mapper.CreateMap<TModel, TViewModel>();
         }
 
         [Route]
@@ -48,13 +51,16 @@ namespace Exceptionless.Core.Controllers {
 
             return cursor.Select(Mapper.Map<TModel, T>).ToList();
         }
- 
+        
         [HttpGet]
         [Route("{id}")]
         public virtual IHttpActionResult Get(string id) {
             TModel model = GetModel(id);
             if (model == null)
                 return NotFound();
+
+            if (typeof(TViewModel) == typeof(TModel))
+                return Ok(model);
 
             return Ok(Mapper.Map<TModel, TViewModel>(model));
         }
@@ -97,31 +103,39 @@ namespace Exceptionless.Core.Controllers {
             return _repository.Add(value);
         }
 
-        [Route]
+        [Route("{id}")]
         [HttpPut]
         [HttpPatch]
         public virtual IHttpActionResult Patch(string id, Delta<TModel> changes) {
-            // TODO: Investigate work around for: http://aspnetwebstack.codeplex.com/workitem/562
+            // if there are no changes in the delta, then ignore the request
             if (changes == null || !changes.GetChangedPropertyNames().Any())
-                return BadRequest();
-
+                return Ok();
+            
             TModel original = GetModel(id);
             if (original == null)
                 return NotFound();
 
-            if (!CanUpdate(original, changes))
-                return Conflict();
+            string message;
+            if (!CanUpdate(original, changes, out message))
+                return BadRequest(message);
 
             UpdateModel(original, changes);
 
             return Ok();
         }
 
-        protected virtual bool CanUpdate(TModel original, Delta<TModel> changes) {
-            if (changes.ContainsChangedProperty(t => t.Id) && !String.Equals(original.Id, changes.GetEntity().Id, StringComparison.OrdinalIgnoreCase))
-                return false;
+        protected virtual string[] GetUpdatablePropertyNames() {
+            return new string[] {};
+        }
 
-            return changes.GetChangedPropertyNames().Any();
+        protected virtual bool CanUpdate(TModel original, Delta<TModel> changes, out string message) {
+            message = "";
+            string[] unauthorizedProperties = changes.GetChangedPropertyNames(original).Where(p => !GetUpdatablePropertyNames().Contains(p)).ToArray();
+            if (unauthorizedProperties.Length == 0)
+                return true;
+
+            message = String.Format("The following properties can't be changed: {0}", String.Join(", ", unauthorizedProperties));
+            return false;
         }
 
         protected virtual TModel UpdateModel(TModel original, Delta<TModel> changes) {
