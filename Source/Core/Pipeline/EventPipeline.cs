@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public void Run(PersistentEvent ev) {
-            _statsClient.Counter(StatNames.EventsProcessed);
+            _statsClient.Counter(StatNames.EventsSubmitted);
             try {
                 _statsClient.Time(() => {
                     if (String.IsNullOrEmpty(ev.ProjectId))

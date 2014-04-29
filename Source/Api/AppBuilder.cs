@@ -52,10 +52,13 @@ namespace Exceptionless.Api {
                             token = authHeaderVal.Parameter;
                     }
                 }
-                if (token != "e3d51ea621464280bbcb79c11fd6483e")
+
+                var projectRepository = container.GetInstance<IProjectRepository>();
+                var project = projectRepository.GetByApiKey(token);
+                if (project == null)
                     return next.Invoke();
 
-                context.Request.User = PrincipalUtility.CreateClientUser("1ecd0826e447ad1e78877ab2");
+                context.Request.User = PrincipalUtility.CreateClientUser(project.Id);
                 return next.Invoke();
             });
             app.UseStageMarker(PipelineStage.Authenticate);
