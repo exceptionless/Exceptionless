@@ -12,6 +12,7 @@
 using System;
 using System.Web.Http;
 using Exceptionless.Core.Web;
+using Exceptionless.Core.Web.Results;
 
 namespace Exceptionless.Core.Controllers {
     [RequireHttpsExceptLocal]
@@ -25,9 +26,7 @@ namespace Exceptionless.Core.Controllers {
             if (endTime == null)
                 endTime = DateTime.MaxValue;
 
-            return starTime < endTime 
-                ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) 
-                : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
+            return starTime < endTime ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
         }
 
         protected int GetPageSize(int pageSize) {
@@ -45,6 +44,14 @@ namespace Exceptionless.Core.Controllers {
                 skip = 0;
 
             return skip;
+        }
+
+        public PlanLimitReachedActionResult PlanLimitReached(string message) {
+            return new PlanLimitReachedActionResult(message, Request);
+        }
+
+        public NotImplementedActionResult NotImplemented(string message) {
+            return new NotImplementedActionResult(message, Request);
         }
     }
 }

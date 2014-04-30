@@ -13,9 +13,10 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
-    public abstract class RepositoryApiController<TModel, TViewModel, TRepository> : ExceptionlessApiController
+    public abstract class RepositoryApiController<TModel, TViewModel, TNewModel, TRepository> : ExceptionlessApiController
         where TModel : class, IIdentity, new()
-        where TViewModel : class, new() 
+        where TViewModel : class, new()
+        where TNewModel : class, new() 
         where TRepository : MongoRepositoryWithIdentity<TModel> {
         protected readonly TRepository _repository;
 
@@ -26,6 +27,7 @@ namespace Exceptionless.Core.Controllers {
 
         protected virtual void CreateMaps() {
             Mapper.CreateMap<TModel, TViewModel>();
+            Mapper.CreateMap<TNewModel, TModel>();
         }
 
         [Route]
@@ -74,31 +76,31 @@ namespace Exceptionless.Core.Controllers {
   
         [Route]
         [HttpPost]
-        public virtual IHttpActionResult Post(TModel value) {
-            if (!CanAdd(value))
-                return NotFound();
-
+        public virtual IHttpActionResult Post(TNewModel value) {
             if (value == null)
                 return BadRequest();
 
+            var mapped = Mapper.Map<TNewModel, TModel>(value);
+            var permission = CanAdd(mapped);
+            if (!permission.Allowed)
+                return permission.HttpActionResult ?? BadRequest();
+
             TModel model;
             try {
-                model = AddModel(value);
+                model = AddModel(mapped);
             } catch (WriteConcernException) {
                 return Conflict();
             }
 
-            return Created(new Uri(Url.Link("DefaultApi", new { id = model.Id })), String.Empty);
+            // TODO: Verify that the link is correct and that it doesn't require a config route.
+            var viewModel = Mapper.Map<TModel, TViewModel>(model);
+            return Created(new Uri(Url.Link("DefaultApi", new { id = model.Id })), viewModel);
         }
 
-        protected virtual bool CanAdd(TModel value) {
-            return value != null && String.IsNullOrEmpty(value.Id);
+        protected virtual PermissionResult CanAdd(TModel value) {
+            return PermissionResult.Allow;
         }
 
-        /// <summary>
-        /// Inserts a document.
-        /// </summary>
-        /// <param name="value">The document.</param>
         protected virtual TModel AddModel(TModel value) {
             return _repository.Add(value);
         }
@@ -115,9 +117,9 @@ namespace Exceptionless.Core.Controllers {
             if (original == null)
                 return NotFound();
 
-            string message;
-            if (!CanUpdate(original, changes, out message))
-                return BadRequest(message);
+            var permission = CanUpdate(original, changes);
+            if (!permission.Allowed)
+                return permission.HttpActionResult ?? BadRequest();
 
             UpdateModel(original, changes);
 
@@ -128,14 +130,15 @@ namespace Exceptionless.Core.Controllers {
             return new string[] {};
         }
 
-        protected virtual bool CanUpdate(TModel original, Delta<TModel> changes, out string message) {
-            message = "";
+        protected virtual PermissionResult CanUpdate(TModel original, Delta<TModel> changes) {
             string[] unauthorizedProperties = changes.GetChangedPropertyNames(original).Where(p => !GetUpdatablePropertyNames().Contains(p)).ToArray();
             if (unauthorizedProperties.Length == 0)
-                return true;
+                return PermissionResult.Allow;
 
-            message = String.Format("The following properties can't be changed: {0}", String.Join(", ", unauthorizedProperties));
-            return false;
+            return new PermissionResult {
+                Allowed = false,
+                HttpActionResult = BadRequest(String.Format("The following properties can't be changed: {0}", String.Join(", ", unauthorizedProperties)))
+            };
         }
 
         protected virtual TModel UpdateModel(TModel original, Delta<TModel> changes) {

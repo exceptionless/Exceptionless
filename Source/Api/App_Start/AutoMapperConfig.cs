@@ -10,17 +10,10 @@
 #endregion
 
 using System;
-using AutoMapper;
-using Exceptionless.Api.Models.Project;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
 
 namespace Exceptionless.Api {
     public class AutoMapperConfig {
         public static void CreateMappings() {
-            Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => {
-                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
-             });
         }
     }
 }

@@ -5,20 +5,23 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Hubs;
-using Exceptionless.Api.Models.Project;
+using Exceptionless.Api.Models;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
+using MongoDB.Bson;
+using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "project")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectController : RepositoryApiController<Project, ProjectInfoModel, ProjectRepository> {
+    public class ProjectController : OwnedByOrganizationRepositoryApiController<Project, ViewProject, NewProject, ProjectRepository> {
         private List<Project> _projects;
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
@@ -30,28 +33,70 @@ namespace Exceptionless.Api.Controllers {
             _billingManager = billingManager;
             _notificationSender = notificationSender;
             _dataHelper = dataHelper;
-
-            //Mapper.CreateMap<Project, ProjectInfoModel>().AfterMap((p, pi) => {
-            //    pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
-            //    pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
-            //});
         }
 
-        [Route]
-        [HttpGet]
-        public IEnumerable<Project> Get() {
-            var projects = _repository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).Take(100).ToList();
-            
-            string userId = Request.GetUserId();
-            return projects.Select(p => {
-                NotificationSettings settings = p.GetNotificationSettings(userId);
-                p.NotificationSettings.Clear();
-
-                if (settings != null)
-                    p.NotificationSettings.Add(userId, settings);
-
-                return p;
+        protected override void CreateMaps() {
+            Mapper.CreateMap<NewProject, Project>();
+            Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
+                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
+                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
             });
+        }
+
+        protected override PermissionResult CanAdd(Project value) {
+            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
+                return PermissionResult.Deny;
+
+            if (!_billingManager.CanAddProject(value))
+                return new PermissionResult {
+                    Allowed = false,
+                    HttpActionResult = PlanLimitReached("Please upgrade your plan to add an additional project.")
+                };
+
+            if (String.IsNullOrEmpty(value.Name))
+                return new PermissionResult {
+                    Allowed = false,
+                    HttpActionResult = BadRequest("Invalid project name")
+                };
+
+            return base.CanAdd(value);
+        }
+
+        protected override Project AddModel(Project value) {
+            if (String.IsNullOrWhiteSpace(value.TimeZone))
+                value.TimeZone = "Central Standard Time";
+
+            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
+            Project project = _repository.Add(value, true);
+
+            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+
+            // TODO: Send a message and have SignalR pick it up later.
+            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
+
+            return project;
+        }
+
+        protected virtual string[] GetUpdatablePropertyNames() {
+            return new string[] { "Name", "CustomContent" };
+        }
+
+        protected override Project UpdateModel(Project original, Delta<Project> changes) {
+            Project project = base.UpdateModel(original, changes);
+
+            // TODO: Send a message and have SignalR pick it up later.
+            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
+            return project;
+        }
+
+        protected override void DeleteModel(Project value) {
+            base.DeleteModel(value);
+
+            // Note: The project may not be deleted at this point..
+            _organizationRepository.IncrementStats(value.OrganizationId, projectCount: -1);
+
+            // TODO: Send a message and have SignalR pick it up later.
+            _notificationSender.ProjectUpdated(value.OrganizationId, value.Id);
         }
 
         [HttpGet]
@@ -75,98 +120,17 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.Configuration);
         }
 
+        [Route]
         [HttpGet]
-        [Route("{id}")]
-        public override IHttpActionResult Get(string id) {
-            if (String.IsNullOrWhiteSpace(id))
-                return BadRequest();
+        public IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
+            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+                return NotFound();
 
-            var project = _repository.GetById(id);
-            if (project == null || User.CanAccessOrganization(project.OrganizationId))
-                return BadRequest();
-
-            string userId = Request.GetUserId();
-            NotificationSettings settings = project.GetNotificationSettings(userId);
-            project.NotificationSettings.Clear();
-
-            if (settings != null)
-                project.NotificationSettings.Add(userId, settings);
-
-            return Ok(project);
-        }
-
-        [Route]
-        [HttpPost]
-        public IHttpActionResult Post(Project value) {
-            if (value == null)
-                return BadRequest();
-
-            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
-                return BadRequest();
-
-            if (!_billingManager.CanAddProject(value))
-                return this.PlanLimitReached("Please upgrade your plan to add an additional project.");
-
-            string userId = Request.GetUserId();
-            NotificationSettings settings = value.GetNotificationSettings(userId);
-            value.NotificationSettings.Clear();
-            value.NotificationSettings.Add(userId, settings);
-
-            List<string> apiKeys = value.ApiKeys.Where(key => _repository.GetByApiKey(key) == null).ToList();
-            value.ApiKeys = apiKeys.Any()
-                ? new HashSet<string>(apiKeys)
-                : new HashSet<string> {
-                    Guid.NewGuid().ToString("N").ToLower()
-                };
-
-            if (String.IsNullOrWhiteSpace(value.TimeZone))
-                value.TimeZone = "Central Standard Time";
-
-            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
-            value.StackCount = 0;
-            value.ErrorCount = 0;
-            value.TotalErrorCount = 0;
-
-            Project project = _repository.Add(value, true);
-
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
-
-            return Ok(project);
-        }
-
-        [Route]
-        [HttpPut]
-        public IHttpActionResult Put(string id, Project value) {
-            return BadRequest();
-        }
-
-        [Route]
-        [HttpPatch]
-        public IHttpActionResult Patch(string id, Project value) {
-            // TODO: We need to add support for array item level patching (E.G., API Keys and Promoted tabs).
-            return BadRequest();
-        }
-
-        protected override void DeleteModel(Project value) {
-            base.DeleteModel(value);
-
-            // Note: The project may not be deleted at this point..
-            _organizationRepository.IncrementStats(value.OrganizationId, projectCount: -1);
-            _notificationSender.ProjectUpdated(value.OrganizationId, value.Id);
-        }
-
-        [HttpGet]
-        [Route("list")]
-        public IEnumerable<ProjectInfoModel> List(int page = 1, int pageSize = 100) {
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            return Get().Skip(skip).Take(pageSize).Select(p => {
-                ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
-                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
-
-                return pi;
+            var query = Query.In("oid", Request.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
+            var results = GetEntities<ViewProject>(query, page: page, pageSize: pageSize);
+            return Ok(new PagedResult<ViewProject>(results) {
+                Page = page > 1 ? page : 1,
+                PageSize = pageSize >= 1 ? pageSize : 10
             });
         }
 
@@ -181,14 +145,14 @@ namespace Exceptionless.Api.Controllers {
             int skip = GetSkip(page, pageSize);
 
             List<Project> projects = _repository.GetByOrganizationId(organizationId).ToList();
-            List<ProjectInfoModel> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {
-                ProjectInfoModel pi = Mapper.Map<Project, ProjectInfoModel>(p);
+            List<ViewProject> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {
+                ViewProject pi = Mapper.Map<Project, ViewProject>(p);
                 pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
 
                 return pi;
             }).ToList();
 
-            var result = new PagedResult<ProjectInfoModel>(projectInfos, projects.Count) {
+            var result = new PagedResult<ViewProject>(projectInfos, projects.Count) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10
             };
@@ -286,62 +250,22 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        //protected override bool CanUpdateEntity(Project original, Delta<Project> value) {
-        //    Project entity = value.GetEntity();
-        //    if (value.ContainsChangedProperty(t => t.Name)
-        //        && !String.IsNullOrEmpty(entity.Name)
-        //        && !String.Equals(original.Name, entity.Name, StringComparison.OrdinalIgnoreCase)
-        //        && base.Get().Count(p => String.Equals(p.Name, entity.Name, StringComparison.OrdinalIgnoreCase)) > 0)
-        //        return false;
-
-        //    if (value.ContainsChangedProperty(t => t.ApiKeys)) {
-        //        // If the new patch value contains any api keys that are not in the original api key list then return false.
-        //        if (entity.ApiKeys.Any(key => !original.ApiKeys.Contains(key)))
-        //            return false;
-
-        //        if (entity.ApiKeys.Any(key => _repository.GetByApiKey(key) != null))
-        //            return false;
-        //    }
-
-        //    if ((value.ContainsChangedProperty(t => t.StackCount) && original.StackCount != entity.StackCount)
-        //        || (value.ContainsChangedProperty(t => t.ErrorCount) && original.ErrorCount != entity.ErrorCount)
-        //        || (value.ContainsChangedProperty(t => t.TotalErrorCount) && original.TotalErrorCount != entity.TotalErrorCount))
-        //        return false;
-
-        //    //if (value.ContainsChangedProperty(t => t.Configuration))
-        //    //    return false;
-
-        //    return base.CanUpdateEntity(original, value);
-        //}
-
-        //protected override Project UpdateEntity(Project original, Delta<Project> value) {
-        //    int version = original.Configuration.Version;
-        //    value.Patch(original);
-        //    original.Configuration.Version = version;
-
-        //    Project project = _repository.Update(original);
-
-        //    _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
-
-        //    return project;
-        //}
-
         [HttpGet]
         [Route("is-name-available")]
         public IHttpActionResult IsNameAvailable(string id, string name) {
             if (String.IsNullOrEmpty(id) || String.IsNullOrWhiteSpace(name))
-                return Ok(false);
+                return NotFound();
 
             foreach (Project project in Projects) {
                 if (String.Equals(project.Name, name, StringComparison.OrdinalIgnoreCase)) {
                     if (String.Equals(project.Id, id, StringComparison.OrdinalIgnoreCase))
                         break;
 
-                    return Ok(false);
+                    return NotFound();
                 }
             }
 
-            return Ok(true);
+            return Ok();
         }
 
         private IEnumerable<Project> Projects {

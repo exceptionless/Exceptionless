@@ -70,7 +70,7 @@ namespace Exceptionless.Api.Controllers {
                 EnableBilling = Settings.Current.EnableBilling,
                 BillingInfo = BillingManager.Plans,
                 Organizations = organizations,
-                Projects = projects.Select(Mapper.Map<Project, ProjectInfoModel>),
+                Projects = projects.Select(Mapper.Map<Project, ViewProject>),
             });
         }
 

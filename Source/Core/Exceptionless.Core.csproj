@@ -242,8 +242,8 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Controllers\OwnedByOrganizationRepositoryApiController.cs" />
+    <Compile Include="Controllers\PermissionResult.cs" />
     <Compile Include="Controllers\RepositoryApiController.cs" />
-    <Compile Include="Extensions\ApiControllerExtensions.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />

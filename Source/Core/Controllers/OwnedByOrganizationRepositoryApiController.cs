@@ -8,9 +8,10 @@ using MongoDB.Bson;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Controllers {
-    public abstract class OwnedByOrganizationRepositoryApiController<TModel, TViewModel, TRepository> : RepositoryApiController<TModel, TViewModel, TRepository> 
-        where TModel : class, IOwnedByOrganization, new() 
-        where TViewModel : class, new() 
+    public abstract class OwnedByOrganizationRepositoryApiController<TModel, TViewModel, TNewModel, TRepository> : RepositoryApiController<TModel, TViewModel, TNewModel, TRepository> 
+        where TModel : class, IOwnedByOrganization, new()
+        where TViewModel : class, new()
+        where TNewModel : class, IOwnedByOrganization, new() 
         where TRepository : MongoRepositoryOwnedByOrganization<TModel> {
 
         public OwnedByOrganizationRepositoryApiController(TRepository repository) : base(repository) {}
@@ -34,18 +35,13 @@ namespace Exceptionless.Core.Controllers {
             return model;
         }
 
-        protected override bool CanAdd(TModel value) {
-            return base.CanAdd(value) 
-                && !String.IsNullOrEmpty(value.OrganizationId)
-                && User.IsInOrganization(value.OrganizationId);
-        }
-
-        protected override TModel AddModel(TModel value) {
-            // TODO: User can currently specify the organization id to insert.
-            //if (String.IsNullOrEmpty(value.OrganizationId))
-            //    value.OrganizationId = Request.GetProject().Id;
-
-            return _repository.Add(value);
+        protected override PermissionResult CanAdd(TNewModel value) {
+            if (base.CanAdd(value).Allowed 
+                && !String.IsNullOrEmpty(value.OrganizationId) 
+                && User.IsInOrganization(value.OrganizationId))
+                return PermissionResult.Allow;
+            
+            return PermissionResult.Deny;
         }
 
         protected override bool CanDelete(TModel value) {
