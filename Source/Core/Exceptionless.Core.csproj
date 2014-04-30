@@ -416,9 +416,6 @@
     <Compile Include="Web\InvalidModelStateFilterAttribute.cs" />
     <Compile Include="Web\RequireHttpsAttribute.cs" />
     <Compile Include="Web\RequireHttpsExceptLocalAttribute.cs" />
-    <None Include="Microsoft.WindowsAzure.Caching\ClientPerfCountersInstaller.exe.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <None Include="Performance\Microsoft.ServiceBus.MessagingPerformanceCounters.man" />
   </ItemGroup>
   <ItemGroup>
@@ -444,14 +441,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Microsoft.WindowsAzure.Caching\ClientPerfCountersInstaller.exe">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Microsoft.WindowsAzure.Caching\PerformanceCounters.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
     <Content Include="Web\Delta\LICENSE.txt" />
-    <None Include="app.config" />
     <Content Include="Mail\Templates\AddedToOrganization\Html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

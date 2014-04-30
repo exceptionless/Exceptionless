@@ -9,8 +9,19 @@ namespace Exceptionless.Core.Caching {
         private DataCache DataCache { get; set; }
         public bool FlushOnDispose { get; set; }
 
-        public AzureCacheClient(string cacheName = null) {
-            CacheFactory = new DataCacheFactory();
+        public AzureCacheClient(string cacheName = null, string endpointUrl = null, string authorizationToken = null, bool useLocalCache = true) {
+            if (!String.IsNullOrEmpty(endpointUrl) && !String.IsNullOrEmpty(authorizationToken)) {
+                var config = new DataCacheFactoryConfiguration {
+                    AutoDiscoverProperty = new DataCacheAutoDiscoverProperty(true, endpointUrl),
+                    SecurityProperties = new DataCacheSecurity(authorizationToken, false)
+                };
+                if (useLocalCache)
+                    config.LocalCacheProperties = new DataCacheLocalCacheProperties(10000, TimeSpan.FromMinutes(5), DataCacheLocalCacheInvalidationPolicy.TimeoutBased);
+                CacheFactory = new DataCacheFactory(config);
+            } else {
+                CacheFactory = new DataCacheFactory();
+            }
+
             if (string.IsNullOrEmpty(cacheName))
                 DataCache = CacheFactory.GetDefaultCache();
             else
@@ -178,15 +189,11 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void SetExpiration(string cacheKey, TimeSpan expiresIn) {
-            SetExpiration(cacheKey, DateTime.Now.Add(expiresIn));
+            DataCache.ResetObjectTimeout(cacheKey, expiresIn);
         }
 
         public void SetExpiration(string cacheKey, DateTime expiresAt) {
-            object value;
-            if (!TryGetValue(cacheKey, out value))
-                throw new ArgumentException();
-
-            CacheReplace(cacheKey, value, expiresAt);
+            SetExpiration(cacheKey, expiresAt.Subtract(DateTime.Now));
         }
     }
 }

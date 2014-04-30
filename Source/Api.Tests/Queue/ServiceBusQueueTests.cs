@@ -3,15 +3,15 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core;
 using Exceptionless.Core.Queues;
 using Microsoft.ServiceBus;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
     public class ServiceBusQueueTests {
-        private const string CONNECTION_STRING = "<ConnectionStringHere>";
         private static readonly Lazy<ServiceBusQueue<SimpleWorkItem>> _queue = new Lazy<ServiceBusQueue<SimpleWorkItem>>(() =>
-            new ServiceBusQueue<SimpleWorkItem>(CONNECTION_STRING, "test-queue",
+            new ServiceBusQueue<SimpleWorkItem>(Settings.Current.AzureServiceBusConnectionString, "test-queue",
                 workItemTimeoutMilliseconds: 1000,
                 retries: 1,
                 shouldRecreate: true,

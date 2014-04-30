@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Threading;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core;
 using Exceptionless.Core.Messaging;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Messaging {
     public class ServiceBusMessagingTests {
-        private const string CONNECTION_STRING = "<ConnectionStringHere>";
-        private static readonly Lazy<ServiceBusMessageBus> _messageBus = new Lazy<ServiceBusMessageBus>(() => new ServiceBusMessageBus(CONNECTION_STRING, "test-messagebus"));
+        private static readonly Lazy<ServiceBusMessageBus> _messageBus = new Lazy<ServiceBusMessageBus>(() => new ServiceBusMessageBus(Settings.Current.AzureServiceBusConnectionString, "test-messagebus"));
 
         [Fact]
         public void CanSendMessage() {
