@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Net.Mail;
 using CodeSmith.Core.Dependency;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
 

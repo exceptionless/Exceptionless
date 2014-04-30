@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using ServiceStack.CacheAccess;
+using Exceptionless.Core.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {

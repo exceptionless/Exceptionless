@@ -13,11 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using ServiceStack.CacheAccess;
 using M = MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core {

@@ -10,10 +10,10 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core {
     public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockInfoRepository {

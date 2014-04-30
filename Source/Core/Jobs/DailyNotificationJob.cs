@@ -16,21 +16,21 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using NLog.Fluent;
-using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Jobs {
     public class DailyNotificationJob : Job {
         private readonly ProjectRepository _projectRepository;
-        private readonly IMessageFactory _messageFactory;
+        private readonly IQueue<SummaryNotification> _summaryNotificationQueue;
 
-        public DailyNotificationJob(ProjectRepository projectRepository, IMessageFactory messageFactory) {
+        public DailyNotificationJob(ProjectRepository projectRepository, IQueue<SummaryNotification> summaryNotificationQueue) {
             _projectRepository = projectRepository;
-            _messageFactory = messageFactory;
+            _summaryNotificationQueue = summaryNotificationQueue;
         }
 
         public override Task<JobResult> RunAsync(JobRunContext context) {
@@ -67,17 +67,15 @@ namespace Exceptionless.Core.Jobs {
                         continue;
                     }
 
-                    if (_messageFactory != null) {
-                        using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
-                            var notification = new SummaryNotification {
-                                Id = project.Id,
-                                UtcStartTime = utcStartTime,
-                                UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
-                            };
+                    if (_summaryNotificationQueue != null) {
+                        var notification = new SummaryNotification {
+                            Id = project.Id,
+                            UtcStartTime = utcStartTime,
+                            UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
+                        };
 
-                            Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
-                            messageProducer.Publish(notification);
-                        }
+                        Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
+                        _summaryNotificationQueue.EnqueueAsync(notification);
                     } else
                         Log.Error().Message("Message Factory is null").Write();
                 }

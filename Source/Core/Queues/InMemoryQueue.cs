@@ -53,11 +53,11 @@ namespace Exceptionless.Core.Queues {
                 if (_workers.Count == 0)
                     return;
 
-                WorkItem<T> workItem = null;
+                QueueEntry<T> queueEntry = null;
                 try {
-                    workItem = DequeueAsync(0).Result;
+                    queueEntry = DequeueAsync(0).Result;
                 } catch (TimeoutException) {}
-                if (workItem == null)
+                if (queueEntry == null)
                     return;
 
                 // get a random worker
@@ -65,22 +65,22 @@ namespace Exceptionless.Core.Queues {
                 if (worker == null)
                     return;
                 try {
-                    worker.Action(workItem);
+                    worker.Action(queueEntry);
                     if (worker.AutoComplete)
-                        workItem.CompleteAsync().Wait();
+                        queueEntry.CompleteAsync().Wait();
                 } catch (Exception ex) {
                     Interlocked.Increment(ref _workerErrorsCounter);
                     Log.Error().Exception(ex).Message("Error sending work item to worker: {0}", ex.Message).Write();
-                    workItem.AbandonAsync().Wait();
+                    queueEntry.AbandonAsync().Wait();
                 }
             });
         }
 
-        public void StartWorking(Action<WorkItem<T>> handler, bool autoComplete = false) {
+        public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
             _workers.Add(new Worker { Action = handler, AutoComplete = autoComplete });
         }
 
-        public Task<WorkItem<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {
+        public Task<QueueEntry<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {
             try {
                 if (_queue.Count == 0 && !_autoEvent.WaitOne(millisecondsTimeout))
                     throw new TimeoutException();
@@ -97,9 +97,9 @@ namespace Exceptionless.Core.Queues {
                 if (!_dequeued.TryAdd(info.Id, info))
                     throw new ApplicationException("Unable to add item to the dequeued list.");
 
-                return Task.FromResult(new WorkItem<T>(info.Id, info.Data, this));
+                return Task.FromResult(new QueueEntry<T>(info.Id, info.Data, this));
             } catch (Exception ex) {
-                var completionSource = new TaskCompletionSource<WorkItem<T>>();
+                var completionSource = new TaskCompletionSource<QueueEntry<T>>();
                 completionSource.SetException(ex);
                 return completionSource.Task;
             }
@@ -151,7 +151,7 @@ namespace Exceptionless.Core.Queues {
 
         private class Worker {
             public bool AutoComplete { get; set; }
-            public Action<WorkItem<T>> Action { get; set; }
+            public Action<QueueEntry<T>> Action { get; set; }
         }
     }
 }

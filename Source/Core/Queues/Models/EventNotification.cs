@@ -13,7 +13,7 @@ using System;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Queues {
+namespace Exceptionless.Core.Queues.Models {
     public class EventNotification : ExtensibleObject {
         public PersistentEvent Event { get; set; }
         public bool IsNew { get; set; }

@@ -11,25 +11,30 @@
 
 using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventPipeline;
-using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(80)]
     public class NotifySignalRAction : EventPipelineActionBase {
-        public const string NOTIFICATION_CHANNEL_KEY = "notifications:signalr";
+        private readonly IMessagePublisher _publisher;
 
-        private readonly IRedisClientsManager _clientsManager;
-
-        public NotifySignalRAction(IRedisClientsManager clientsManager) {
-            _clientsManager = clientsManager;
+        public NotifySignalRAction(IMessagePublisher publisher) {
+            _publisher = publisher;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            using (IRedisClient client = _clientsManager.GetClient())
-                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Event.OrganizationId, ":", ctx.Event.ProjectId, ":", ctx.Event.StackId, ":", ctx.Event.IsHidden, ":", ctx.Event.IsFixed, ":", ctx.Event.IsNotFound));
+            _publisher.PublishAsync(new NewErrorMessage {
+                OrganizationId = ctx.Event.OrganizationId,
+                ProjectId = ctx.Event.ProjectId,
+                StackId = ctx.Event.StackId,
+                IsHidden = ctx.Event.IsHidden,
+                IsFixed = ctx.Event.IsFixed,
+                IsNotFound = ctx.Event.IsNotFound
+            }).Wait();
         }
     }
 }

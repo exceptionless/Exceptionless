@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using ServiceStack.Net30.Collections.Concurrent;
+using System.Collections.Concurrent;
 
 namespace Exceptionless.Core.AppStats {
     public class InMemoryAppStatsClient : IAppStatsClient {

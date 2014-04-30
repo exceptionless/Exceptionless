@@ -12,6 +12,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -19,7 +20,6 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Repositories {
     public class MonthProjectStatsRepository : MongoRepository<MonthProjectStats> {

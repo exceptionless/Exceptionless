@@ -4,6 +4,7 @@ using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using RazorSharpEmail;
 

@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Caching;
 using NLog.Fluent;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Plugins.EventPipeline {
     [Priority(0)]

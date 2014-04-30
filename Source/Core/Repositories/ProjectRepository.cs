@@ -12,13 +12,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {

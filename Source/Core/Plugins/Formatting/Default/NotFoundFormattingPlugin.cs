@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net.Mail;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {

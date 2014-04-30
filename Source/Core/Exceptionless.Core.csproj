@@ -104,22 +104,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\RazorEngine.3.4.1\lib\net45\RazorEngine.dll</HintPath>
     </Reference>
-    <Reference Include="ServiceStack.Common, Version=3.9.71.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\ServiceStack.Common.3.9.71\lib\net35\ServiceStack.Common.dll</HintPath>
-    </Reference>
-    <Reference Include="ServiceStack.Interfaces, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\ServiceStack.Common.3.9.71\lib\net35\ServiceStack.Interfaces.dll</HintPath>
-    </Reference>
-    <Reference Include="ServiceStack.Redis, Version=3.9.71.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\ServiceStack.Redis.3.9.71\lib\net35\ServiceStack.Redis.dll</HintPath>
-    </Reference>
-    <Reference Include="ServiceStack.Text, Version=3.9.71.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\ServiceStack.Text.3.9.71\lib\net35\ServiceStack.Text.dll</HintPath>
-    </Reference>
     <Reference Include="SimpleInjector, Version=2.5.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.2.5.0\lib\net45\SimpleInjector.dll</HintPath>
@@ -224,6 +208,9 @@
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Billing\SuspensionCodes.cs" />
+    <Compile Include="Caching\AzureCacheClient.cs" />
+    <Compile Include="Caching\ICacheClient.cs" />
+    <Compile Include="Caching\InMemoryCacheClient.cs" />
     <Compile Include="Controllers\ExceptionlessController.cs" />
     <Compile Include="Controllers\ExceptionlessApiController.cs" />
     <Compile Include="Controllers\IsControllerActionNameConstraint.cs" />
@@ -239,6 +226,7 @@
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
+    <Compile Include="Messaging\Models\NewErrorMessage.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
@@ -274,7 +262,7 @@
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
-    <Compile Include="Jobs\RedisJobLockProvider.cs" />
+    <Compile Include="Jobs\CacheJobLockProvider.cs" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -297,10 +285,10 @@
     <Compile Include="Plugins\PluginManagerBase.cs" />
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
-    <Compile Include="Queues\ProjectHookNotification.cs" />
+    <Compile Include="Queues\Models\ProjectHookNotification.cs" />
     <Compile Include="Queues\ServiceBusQueue.cs" />
-    <Compile Include="Queues\SummaryNotification.cs" />
-    <Compile Include="Queues\WorkItem.cs" />
+    <Compile Include="Queues\Models\SummaryNotification.cs" />
+    <Compile Include="Queues\QueueEntry.cs" />
     <Compile Include="Repositories\CommonFieldNames.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
     <Compile Include="Repositories\MongoRepositoryManager.cs" />
@@ -322,7 +310,6 @@
     <Compile Include="Utility\DataHelper.cs" />
     <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
     <Compile Include="Jobs\ExceptionlessJobHttpModule.cs" />
-    <Compile Include="Jobs\StartMqJob.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
     <Compile Include="Migrations\Documents\DocumentUpgrader.cs" />
@@ -342,8 +329,7 @@
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
     <Compile Include="Pipeline\040_SaveEventAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
-    <Compile Include="Queues\EventNotification.cs" />
-    <Compile Include="Queues\ExceptionlessMqServer.cs" />
+    <Compile Include="Queues\Models\EventNotification.cs" />
     <Compile Include="Repositories\Interfaces\IJobHistoryRepository.cs" />
     <Compile Include="Repositories\JobHistoryRepository.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganization.cs" />

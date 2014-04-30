@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Queues {
                 return Task.FromResult(0);
             }
 
-            var workItem = new WorkItem<T>(message.LockToken.ToString(), data, this);
+            var workItem = new QueueEntry<T>(message.LockToken.ToString(), data, this);
             try {
                 worker.Action(workItem);
                 if (worker.AutoComplete)
@@ -95,20 +95,20 @@ namespace Exceptionless.Core.Queues {
             return _queueClient.SendAsync(new BrokeredMessage(data));
         }
 
-        public void StartWorking(Action<WorkItem<T>> handler, bool autoComplete = false) {
+        public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
             _workers.Add(new Worker { Action = handler, AutoComplete = autoComplete });
             if (_workers.Count > 0 && !_isListening)
                 _queueClient.OnMessageAsync(OnMessage);
         }
 
-        public async Task<WorkItem<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {
+        public async Task<QueueEntry<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {
             using (var msg = await _queueClient.ReceiveAsync(TimeSpan.FromMilliseconds(millisecondsTimeout))) {
                 if (msg == null)
                     return null;
 
                 Interlocked.Increment(ref _dequeuedCounter);
                 var data = msg.GetBody<T>();
-                return new WorkItem<T>(msg.LockToken.ToString(), data, this);
+                return new QueueEntry<T>(msg.LockToken.ToString(), data, this);
             }
         }
 
@@ -124,7 +124,7 @@ namespace Exceptionless.Core.Queues {
 
         private class Worker {
             public bool AutoComplete { get; set; }
-            public Action<WorkItem<T>> Action { get; set; }
+            public Action<QueueEntry<T>> Action { get; set; }
         }
     }
 }

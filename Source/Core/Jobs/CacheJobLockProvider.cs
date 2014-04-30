@@ -12,14 +12,14 @@
 using System;
 using System.Diagnostics;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Caching;
 using NLog.Fluent;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Jobs {
-    public class RedisJobLockProvider : JobLockProvider {
+    public class CacheJobLockProvider : JobLockProvider {
         private readonly ICacheClient _cacheClient;
 
-        public RedisJobLockProvider(ICacheClient cacheClient) {
+        public CacheJobLockProvider(ICacheClient cacheClient) {
             _cacheClient = cacheClient;
         }
 

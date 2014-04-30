@@ -15,6 +15,7 @@ using System.Diagnostics;
 using CodeSmith.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
@@ -27,10 +28,6 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using MongoDB.Driver;
 using RazorSharpEmail;
-using ServiceStack.CacheAccess;
-using ServiceStack.Common;
-using ServiceStack.Messaging;
-using ServiceStack.Redis;
 using SimpleInjector;
 using SimpleInjector.Packaging;
 
@@ -48,9 +45,7 @@ namespace Exceptionless.Core {
                 throw new ConfigurationErrorsException("RedisConnectionString was not found in the Web.config.");
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-
-            container.RegisterSingle<IRedisClientsManager>(() => new PooledRedisClientManager(Settings.Current.RedisConnectionInfo.ToString()));
-            container.Register<ICacheClient>(() => container.GetInstance<IRedisClientsManager>().GetCacheClient());
+            container.Register<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))
@@ -89,13 +84,9 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
 
-            container.RegisterSingle<IMessageService, ExceptionlessMqServer>();
-            container.Register<IMessageFactory>(() => container.GetInstance<IMessageService>().MessageFactory);
-
             container.Register<MongoJobHistoryProvider>();
             container.Register<MongoJobLockProvider>();
             container.Register<MongoMachineJobLockProvider>();
-            container.Register<StartMqJob>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();

@@ -18,6 +18,7 @@ using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
 using RazorSharpEmail;

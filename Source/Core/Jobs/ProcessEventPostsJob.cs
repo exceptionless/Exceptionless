@@ -30,9 +30,9 @@ namespace Exceptionless.Core.Jobs {
             Log.Info().Message("Process events job starting").Write();
 
             while (!CancelPending) {
-                WorkItem<EventPost> workItem = null;
+                QueueEntry<EventPost> queueEntry = null;
                 try {
-                    workItem = await _queue.DequeueAsync(500);
+                    queueEntry = await _queue.DequeueAsync(500);
                     _statsClient.Counter(StatNames.PostsDequeued);
                 } catch (Exception ex) {
                     if (!(ex is TimeoutException)) {
@@ -40,27 +40,27 @@ namespace Exceptionless.Core.Jobs {
                         return JobResult.FromException(ex);
                     }
                 }
-                if (workItem == null)
+                if (queueEntry == null)
                     continue;
 
-                Log.Info().Message("Processing EventPost '{0}'.", workItem.Id).Write();
+                Log.Info().Message("Processing EventPost '{0}'.", queueEntry.Id).Write();
                 
                 List<PersistentEvent> events = null;
                 try {
                     _statsClient.Time(() => {
-                        events = ParseEventPost(workItem.Value);
+                        events = ParseEventPost(queueEntry.Value);
                     }, StatNames.PostsParsingTime);
                     _statsClient.Counter(StatNames.PostsParsed);
                 } catch (Exception ex) {
                     _statsClient.Counter(StatNames.PostsParseErrors);
-                    workItem.AbandonAsync().Wait();
+                    queueEntry.AbandonAsync().Wait();
 
                     // TODO: Add the EventPost to the logged exception.
-                    Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", workItem.Id, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                     continue;
                 }
                 if (events == null) {
-                    workItem.AbandonAsync().Wait();
+                    queueEntry.AbandonAsync().Wait();
                     continue;
                 }
 
@@ -87,9 +87,9 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 if (isSingleEvent && errorCount > 0)
-                    workItem.AbandonAsync().Wait();
+                    queueEntry.AbandonAsync().Wait();
                 else
-                    workItem.CompleteAsync().Wait();
+                    queueEntry.CompleteAsync().Wait();
             }
 
             return JobResult.Success;

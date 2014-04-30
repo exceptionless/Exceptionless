@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Queues {
-    public class WorkItem<T> : IDisposable where T: class {
+    public class QueueEntry<T> : IDisposable where T: class {
         private readonly IQueue<T> _queue;
         private bool _isCompleted;
 
-        public WorkItem(string id, T value, IQueue<T> queue) {
+        public QueueEntry(string id, T value, IQueue<T> queue) {
             Id = id;
             Value = value;
             _queue = queue;

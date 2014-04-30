@@ -135,7 +135,7 @@ namespace Exceptionless.Api.Tests.Queue {
             Assert.Equal(abandonCount + errorCount, queue.Abandoned);
         }
 
-        private void DoWork(WorkItem<SimpleWorkItem> w, CountDownLatch latch, ref int abandonCount, ref int errorCount) {
+        private void DoWork(QueueEntry<SimpleWorkItem> w, CountDownLatch latch, ref int abandonCount, ref int errorCount) {
             Assert.Equal("Hello", w.Value.Data);
             latch.Signal();
 
