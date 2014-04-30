@@ -15,12 +15,11 @@ using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Web;
 using Exceptionless.Extensions;
 using Exceptionless.Models.Legacy;
-using ServiceStack.CacheAccess;
-using ServiceStack.Messaging;
 
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
@@ -30,14 +29,12 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cacheClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IMessageFactory _messageFactory;
         private readonly IAppStatsClient _stats;
 
-        public ErrorController(IEventRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IMessageFactory messageFactory, IAppStatsClient stats) {
+        public ErrorController(IEventRepository repository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, ICacheClient cacheClient, IAppStatsClient stats) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _cacheClient = cacheClient;
-            _messageFactory = messageFactory;
             _stats = stats;
         }
 

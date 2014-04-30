@@ -17,6 +17,7 @@ using Exceptionless.Api.Models.Stats;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
@@ -24,7 +25,6 @@ using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "stats")]
@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -73,7 +73,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
                 throw new ArgumentNullException();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException();
 
             var range = GetDateRange(start, end);
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -180,7 +180,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Stack stack = _stackRepository.GetById(stackId);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);

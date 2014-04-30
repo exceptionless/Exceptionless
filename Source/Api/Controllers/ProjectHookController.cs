@@ -173,7 +173,7 @@ namespace Exceptionless.App.Controllers.API {
                 return false;
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            return Request.IsInOrganization(project.OrganizationId);
+            return User.IsInOrganization(project.OrganizationId);
         }
     }
 }

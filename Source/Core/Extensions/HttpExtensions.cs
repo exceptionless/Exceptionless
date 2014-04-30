@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool CanAccessOrganization(this IPrincipal user, string organizationId) {
-            if (request == null || String.IsNullOrEmpty(organizationId))
+            if (user == null || String.IsNullOrEmpty(organizationId))
                 return false;
 
             //var ctx = request.GetOwinContext();

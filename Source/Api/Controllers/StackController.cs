@@ -24,13 +24,13 @@ using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Stats;
 using Newtonsoft.Json.Linq;
-using ServiceStack.Messaging;
 
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
@@ -41,18 +41,18 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectHookRepository _projectHookRepository;
-        private readonly IMessageFactory _messageFactory;
+        private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly NotificationSender _notificationSender;
         private readonly DataHelper _dataHelper;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
-            IProjectHookRepository projectHookRepository, IMessageFactory messageFactory, BillingManager billingManager, NotificationSender notificationSender, DataHelper dataHelper) {
+            IProjectHookRepository projectHookRepository, IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, NotificationSender notificationSender, DataHelper dataHelper) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _projectHookRepository = projectHookRepository;
-            _messageFactory = messageFactory;
+            _webHookNotificationQueue = webHookNotificationQueue;
             _billingManager = billingManager;
             _notificationSender = notificationSender;
             _dataHelper = dataHelper;
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             return Ok(stack.ToProjectLocalTime(_projectRepository));
@@ -141,7 +141,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
@@ -151,14 +151,13 @@ namespace Exceptionless.Api.Controllers {
             if (!promotedProjectHooks.Any())
                 return this.NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
-            using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
-                foreach (ProjectHook hook in promotedProjectHooks) {
-                    messageProducer.Publish(new WebHookNotification {
-                        ProjectId = hook.ProjectId,
-                        Url = hook.Url,
-                        Data = WebHookStack.FromStack(stack, _projectRepository, _organizationRepository)
-                    });
-                }
+            
+            foreach (ProjectHook hook in promotedProjectHooks) {
+                _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+                    ProjectId = hook.ProjectId,
+                    Url = hook.Url,
+                    Data = WebHookStack.FromStack(stack, _projectRepository, _organizationRepository)
+                });
             }
 
             return Ok();
@@ -181,7 +180,7 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
             // TODO: Implement Fixed in version.
@@ -217,7 +216,7 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             var url = data.GetValue("Link").Value<string>();
@@ -242,7 +241,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -277,7 +276,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !Request.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
                 return;
 
             _dataHelper.ResetStackData(id);

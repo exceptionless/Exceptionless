@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id}/payments")]
         public IHttpActionResult Payments(string id, int page = 1, int pageSize = 12) {
-            if (String.IsNullOrWhiteSpace(id) || !Request.CanAccessOrganization(id))
+            if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
                 return NotFound();
 
             Organization organization = _organizationRepository.GetByIdCached(id);
@@ -67,7 +67,7 @@ namespace Exceptionless.Api.Controllers {
                 limit = 100;
 
             var invoiceService = new StripeInvoiceService();
-            List<InvoiceGridModel> invoices = invoiceService.List(limit, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
+            List<InvoiceGridModel> invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit }).Select(Mapper.Map<InvoiceGridModel>).ToList();
             return Ok(new PagedResult<InvoiceGridModel>(invoices.Skip(skip).Take(pageSize).ToList()) {
                 Page = page,
                 PageSize = pageSize
@@ -110,7 +110,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id}/change-plan")]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken, string last4) {
-            if (String.IsNullOrEmpty(id) || !Request.CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
 
             if (!Settings.Current.EnableBilling)
@@ -191,7 +191,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id}/invite")]
         public IHttpActionResult Invite(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !Request.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
             Organization organization = _organizationRepository.GetById(id);
@@ -368,7 +368,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}")]
         public IHttpActionResult Delete(string id) {
-            if (String.IsNullOrWhiteSpace(id) || !Request.CanAccessOrganization(id))
+            if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
                 return BadRequest();
 
             Organization value = _organizationRepository.GetById(id);
@@ -426,7 +426,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}/remove-user/{emailAddress}")]
         public IHttpActionResult RemoveUser(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !Request.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
             Organization organization = _organizationRepository.GetById(id);

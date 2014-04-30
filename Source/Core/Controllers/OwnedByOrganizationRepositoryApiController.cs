@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Web.Http;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Bson;
@@ -38,7 +37,7 @@ namespace Exceptionless.Core.Controllers {
         protected override bool CanAdd(TModel value) {
             return base.CanAdd(value) 
                 && !String.IsNullOrEmpty(value.OrganizationId)
-                && Request.IsInOrganization(value.OrganizationId);
+                && User.IsInOrganization(value.OrganizationId);
         }
 
         protected override TModel AddModel(TModel value) {
@@ -49,15 +48,8 @@ namespace Exceptionless.Core.Controllers {
             return _repository.Add(value);
         }
 
-        protected override bool CanUpdate(TModel original, Delta<TModel> changes) {
-            if (changes.ContainsChangedProperty(t => t.OrganizationId) && !String.Equals(original.OrganizationId, changes.GetEntity().OrganizationId, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            return changes.GetChangedPropertyNames().Any();
-        }
-
         protected override bool CanDelete(TModel value) {
-            return !Request.IsInOrganization(value.OrganizationId);
+            return !User.IsInOrganization(value.OrganizationId);
         }
     }
 }

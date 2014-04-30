@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
                     return NotFound();
 
             var project = _repository.GetByIdCached(id);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             return Ok(project.Configuration);
@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(id);
-            if (project == null || Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             string userId = Request.GetUserId();
@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Controllers {
             if (value == null)
                 return BadRequest();
 
-            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !Request.IsInOrganization(value.OrganizationId))
+            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
                 return BadRequest();
 
             if (!_billingManager.CanAddProject(value))
@@ -174,7 +174,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("organization/{organizationId}")]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 return NotFound();
 
             pageSize = GetPageSize(pageSize);
@@ -204,7 +204,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             Project project = _repository.GetByIdCached(projectId);
-            if (project == null || !Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return;
 
             _dataHelper.ResetProjectData(projectId);
@@ -217,7 +217,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(projectId);
-            if (project == null || Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             if (project.ApiKeys.Count > 0)
@@ -233,7 +233,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(projectId);
-            if (project == null || Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
@@ -251,13 +251,13 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(projectId);
-            if (project == null || Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             if (!project.ApiKeys.Contains(apiKey))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            if (!Request.CanAccessOrganization(project.OrganizationId))
+            if (!User.CanAccessOrganization(project.OrganizationId))
                 throw new Exception("Invalid organization.");
 
             project.ApiKeys.Remove(apiKey);
@@ -274,7 +274,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Project project = _repository.GetById(projectId);
-            if (project == null || Request.CanAccessOrganization(project.OrganizationId))
+            if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             project.NotificationSettings[userId] = settings;

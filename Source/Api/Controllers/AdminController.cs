@@ -26,7 +26,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("change-plan")]
         public IHttpActionResult ChangePlan(string organizationId, string planId) {
-            if (String.IsNullOrEmpty(organizationId) || !Request.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             Organization organization = _repository.GetById(organizationId);
