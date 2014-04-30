@@ -16,7 +16,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganization, IData {
+    public class Project : IOwnedByOrganization, IIdentity, IData {
         public Project() {
             ApiKeys = new HashSet<string>();
             Configuration = new ClientConfiguration();

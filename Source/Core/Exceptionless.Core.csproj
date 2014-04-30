@@ -249,6 +249,7 @@
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
     <Compile Include="Messaging\Models\NewErrorMessage.cs" />
+    <Compile Include="Messaging\Models\ProjectChange.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />

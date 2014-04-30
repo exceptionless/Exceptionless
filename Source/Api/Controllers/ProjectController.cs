@@ -4,13 +4,14 @@ using System.Linq;
 using System.Net;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
@@ -26,77 +27,53 @@ namespace Exceptionless.Api.Controllers {
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
+        private readonly IMessagePublisher _messagePublisher;
 
-        public ProjectController(ProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager, NotificationSender notificationSender) : base(projectRepository) {
+        public ProjectController(ProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager, IMessagePublisher messagePublisher)
+            : base(projectRepository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
+            _messagePublisher = messagePublisher;
             _dataHelper = dataHelper;
         }
 
-        protected override void CreateMaps() {
-            Mapper.CreateMap<NewProject, Project>();
-            Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
-                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
-                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
+        [HttpGet]
+        [Route]
+        public IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
+            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+                return NotFound();
+
+            var query = Query.In("oid", Request.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
+            var results = GetEntities<ViewProject>(query, page: page, pageSize: pageSize);
+            return Ok(new PagedResult<ViewProject>(results) {
+                Page = page > 1 ? page : 1,
+                PageSize = pageSize >= 1 ? pageSize : 10
             });
         }
 
-        protected override PermissionResult CanAdd(Project value) {
-            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
-                return PermissionResult.Deny;
-
-            if (!_billingManager.CanAddProject(value))
-                return new PermissionResult {
-                    Allowed = false,
-                    HttpActionResult = PlanLimitReached("Please upgrade your plan to add an additional project.")
-                };
-
-            if (String.IsNullOrEmpty(value.Name))
-                return new PermissionResult {
-                    Allowed = false,
-                    HttpActionResult = BadRequest("Invalid project name")
-                };
-
-            return base.CanAdd(value);
+        [HttpGet]
+        [Route("{id}")]
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
         }
 
-        protected override Project AddModel(Project value) {
-            if (String.IsNullOrWhiteSpace(value.TimeZone))
-                value.TimeZone = "Central Standard Time";
-
-            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
-            Project project = _repository.Add(value, true);
-
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-
-            // TODO: Send a message and have SignalR pick it up later.
-            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
-
-            return project;
+        [HttpPost]
+        [Route]
+        public override IHttpActionResult Post(NewProject value) {
+            return base.Post(value);
         }
 
-        protected virtual string[] GetUpdatablePropertyNames() {
-            return new string[] { "Name", "CustomContent" };
+        [HttpPatch]
+        [HttpPut]
+        [Route("{id}")]
+        public override IHttpActionResult Patch(string id, Delta<Project> changes) {
+            return base.Patch(id, changes);
         }
 
-        protected override Project UpdateModel(Project original, Delta<Project> changes) {
-            Project project = base.UpdateModel(original, changes);
-
-            // TODO: Send a message and have SignalR pick it up later.
-            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
-            return project;
-        }
-
-        protected override void DeleteModel(Project value) {
-            base.DeleteModel(value);
-
-            // Note: The project may not be deleted at this point..
-            _organizationRepository.IncrementStats(value.OrganizationId, projectCount: -1);
-
-            // TODO: Send a message and have SignalR pick it up later.
-            _notificationSender.ProjectUpdated(value.OrganizationId, value.Id);
+        [HttpDelete]
+        [Route("{id}")]
+        public override IHttpActionResult Delete(string id) {
+            return base.Delete(id);
         }
 
         [HttpGet]
@@ -105,8 +82,6 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Config(string id = null) {
-            // TODO: Only the client should be using .
-
             if (String.IsNullOrEmpty(id))
                 id = User.GetApiKeyProjectId();
             
@@ -120,83 +95,44 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.Configuration);
         }
 
-        [Route]
         [HttpGet]
-        public IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
-                return NotFound();
-
-            var query = Query.In("oid", Request.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
-            var results = GetEntities<ViewProject>(query, page: page, pageSize: pageSize);
-            return Ok(new PagedResult<ViewProject>(results) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10
-            });
-        }
-
-        // TODO: Combine this with list method above.
-        [HttpGet]
-        [Route("organization/{organizationId}")]
-        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
-                return NotFound();
-
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            List<Project> projects = _repository.GetByOrganizationId(organizationId).ToList();
-            List<ViewProject> projectInfos = projects.Skip(skip).Take(pageSize).Select(p => {
-                ViewProject pi = Mapper.Map<Project, ViewProject>(p);
-                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
-
-                return pi;
-            }).ToList();
-
-            var result = new PagedResult<ViewProject>(projectInfos, projects.Count) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10
-            };
-
-            // TODO: Only return the populated fields (currently all properties are being returned).
-            return Ok(result);
-        }
-
-        [HttpGet]
-        [Route("{projectId}/reset-data")]
-        public void ResetData(string projectId) {
-            if (String.IsNullOrEmpty(projectId))
-                return;
-
-            Project project = _repository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
-                return;
-
-            _dataHelper.ResetProjectData(projectId);
-        }
-
-        [HttpGet]
-        [Route("{projectId}/get-key")]
-        public IHttpActionResult GetOrAddKey(string projectId) {
-            if (String.IsNullOrWhiteSpace(projectId))
+        [Route("{id}/reset-data")]
+        public IHttpActionResult ResetData(string id) {
+            if (String.IsNullOrEmpty(id))
                 return BadRequest();
 
-            var project = _repository.GetById(projectId);
+            Project project = _repository.GetByIdCached(id);
+            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+                return BadRequest();
+
+            _dataHelper.ResetProjectData(id);
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("{id}/get-key")]
+        public IHttpActionResult GetOrAddKey(string id) {
+            if (String.IsNullOrWhiteSpace(id))
+                return BadRequest();
+
+            var project = _repository.GetById(id);
             if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             if (project.ApiKeys.Count > 0)
                 return Ok(project.ApiKeys.First());
 
-            return ManageApiKeys(projectId);
+            return ManageApiKeys(id);
         }
 
         [HttpPost]
-        [Route("{projectId}/key/")]
-        public IHttpActionResult ManageApiKeys(string projectId) {
-            if (String.IsNullOrWhiteSpace(projectId))
+        [Route("{id}/key/")]
+        public IHttpActionResult ManageApiKeys(string id) {
+            if (String.IsNullOrWhiteSpace(id))
                 return BadRequest();
 
-            var project = _repository.GetById(projectId);
+            var project = _repository.GetById(id);
             if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
@@ -209,12 +145,12 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{projectId}/key/{apiKey:?}")]
-        public IHttpActionResult ManageApiKeys(string projectId, string apiKey) {
-            if (String.IsNullOrWhiteSpace(projectId) || String.IsNullOrEmpty(apiKey))
+        [Route("{id}/key/{apiKey:?}")]
+        public IHttpActionResult ManageApiKeys(string id, string apiKey) {
+            if (String.IsNullOrWhiteSpace(id) || String.IsNullOrEmpty(apiKey))
                 return BadRequest();
 
-            var project = _repository.GetById(projectId);
+            var project = _repository.GetById(id);
             if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
@@ -230,23 +166,25 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        // TODO: Move this to use patch.
         [HttpPut]
-        [Route("{projectId}/notification/{userId}")]
-        public IHttpActionResult Notification(string projectId, string userId, NotificationSettings settings) {
-            if (String.IsNullOrEmpty(projectId) || String.IsNullOrEmpty(userId) || settings == null)
+        [Route("{id}/notification/{userId}")]
+        public IHttpActionResult Notification(string id, string userId, NotificationSettings settings) {
+            if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(userId) || settings == null)
                 return BadRequest();
 
-            Project project = _repository.GetById(projectId);
+            Project project = _repository.GetById(id);
             if (project == null || User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             project.NotificationSettings[userId] = settings;
             _repository.Update(project);
 
-            _notificationSender.ProjectUpdated(project.OrganizationId, project.Id);
+            _messagePublisher.PublishAsync(new ProjectChange {
+                Id = project.Id,
+                OrganizationId = project.OrganizationId,
+                IsNew = false
+            });
 
-            // Acceptable status codes are 200/201/204
             return Ok();
         }
 
@@ -266,6 +204,72 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return Ok();
+        }
+
+        protected override void CreateMaps() {
+            Mapper.CreateMap<NewProject, Project>();
+            Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
+                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
+                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
+            });
+        }
+
+        protected override PermissionResult CanAdd(Project value) {
+            if (String.IsNullOrWhiteSpace(value.OrganizationId) || !User.IsInOrganization(value.OrganizationId))
+                return PermissionResult.Deny;
+
+            if (!_billingManager.CanAddProject(value))
+                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add an additional project."));
+
+            if (String.IsNullOrEmpty(value.Name))
+                return PermissionResult.DenyWithResult(BadRequest("Invalid project name"));
+
+            return base.CanAdd(value);
+        }
+
+        protected override Project AddModel(Project value) {
+            if (String.IsNullOrWhiteSpace(value.TimeZone))
+                value.TimeZone = "Central Standard Time";
+
+            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
+            Project project = _repository.Add(value, true);
+
+            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+            _messagePublisher.PublishAsync(new ProjectChange {
+                Id = project.Id,
+                OrganizationId = project.OrganizationId,
+                IsNew = true
+            });
+
+            return project;
+        }
+
+        protected override IEnumerable<string> GetUpdatablePropertyNames() {
+            return new[] { "Name", "CustomContent" };
+        }
+
+        protected override Project UpdateModel(Project original, Delta<Project> changes) {
+            Project project = base.UpdateModel(original, changes);
+
+            _messagePublisher.PublishAsync(new ProjectChange {
+                Id = project.Id,
+                OrganizationId = project.OrganizationId,
+                IsNew = false
+            });
+            return project;
+        }
+
+        protected override void DeleteModel(Project value) {
+            base.DeleteModel(value);
+
+            // Note: The project may not be deleted at this point..
+            _organizationRepository.IncrementStats(value.OrganizationId, projectCount: -1);
+
+            _messagePublisher.PublishAsync(new ProjectChange {
+                Id = value.Id,
+                OrganizationId = value.OrganizationId,
+                IsNew = true
+            });
         }
 
         private IEnumerable<Project> Projects {

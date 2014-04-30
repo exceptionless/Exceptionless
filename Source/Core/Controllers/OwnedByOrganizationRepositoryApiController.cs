@@ -8,8 +8,8 @@ using MongoDB.Bson;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Controllers {
-    public abstract class OwnedByOrganizationRepositoryApiController<TModel, TViewModel, TNewModel, TRepository> : RepositoryApiController<TModel, TViewModel, TNewModel, TRepository> 
-        where TModel : class, IOwnedByOrganization, new()
+    public abstract class OwnedByOrganizationRepositoryApiController<TModel, TViewModel, TNewModel, TRepository> : RepositoryApiController<TModel, TViewModel, TNewModel, TRepository>
+        where TModel : class, IOwnedByOrganization, IIdentity, new()
         where TViewModel : class, new()
         where TNewModel : class, IOwnedByOrganization, new() 
         where TRepository : MongoRepositoryOwnedByOrganization<TModel> {
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Controllers {
             return model;
         }
 
-        protected override PermissionResult CanAdd(TNewModel value) {
+        protected override PermissionResult CanAdd(TModel value) {
             if (base.CanAdd(value).Allowed 
                 && !String.IsNullOrEmpty(value.OrganizationId) 
                 && User.IsInOrganization(value.OrganizationId))

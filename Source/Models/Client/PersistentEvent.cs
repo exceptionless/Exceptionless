@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Models {
-    public class PersistentEvent : Event, IOwnedByOrganization {
+    public class PersistentEvent : Event, IOwnedByOrganization, IIdentity {
         /// <summary>
         /// Unique id that identifies an event.
         /// </summary>

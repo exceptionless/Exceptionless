@@ -149,7 +149,6 @@
     <Compile Include="App_Start\Startup.Auth.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
-    <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AdminController.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
@@ -185,10 +184,6 @@
     <ProjectReference Include="..\Identity\MongoDB.AspNet.Identity.csproj">
       <Project>{0ff87680-235f-4231-8302-9bf6fcac7476}</Project>
       <Name>MongoDB.AspNet.Identity</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Membership\Exceptionless.Membership.csproj">
-      <Project>{9C987907-BD64-4100-89D4-F4BCFB77768B}</Project>
-      <Name>Exceptionless.Membership</Name>
     </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>

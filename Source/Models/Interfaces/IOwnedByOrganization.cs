@@ -12,7 +12,7 @@
 using System;
 
 namespace Exceptionless.Models {
-    public interface IOwnedByOrganization : IIdentity {
+    public interface IOwnedByOrganization {
         /// <summary>
         /// The organization that the entity belongs to.
         /// </summary>

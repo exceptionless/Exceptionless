@@ -24,7 +24,7 @@ namespace Exceptionless.Core {
     /// Deals with entities in MongoDb.
     /// </summary>
     /// <typeparam name="T">The type contained in the repository.</typeparam>
-    public abstract class MongoRepositoryOwnedByOrganization<T> : MongoRepositoryWithIdentity<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, new() {
+    public abstract class MongoRepositoryOwnedByOrganization<T> : MongoRepositoryWithIdentity<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         protected MongoRepositoryOwnedByOrganization(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
         public new static class FieldNames {

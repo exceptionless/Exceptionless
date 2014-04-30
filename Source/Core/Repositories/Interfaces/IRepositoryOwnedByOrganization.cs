@@ -15,7 +15,7 @@ using System.Linq;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core {
-    public interface IRepositoryOwnedByOrganization<T> : IRepositoryWithIdentity<T> where T : class, IOwnedByOrganization, new() {
+    public interface IRepositoryOwnedByOrganization<T> : IRepositoryWithIdentity<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         /// <summary>
         /// Returns the T by its given id.
         /// </summary>

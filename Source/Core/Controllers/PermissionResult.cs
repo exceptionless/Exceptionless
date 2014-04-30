@@ -10,5 +10,12 @@ namespace Exceptionless.Core.Controllers {
         public static PermissionResult Allow = new PermissionResult { Allowed = true };
 
         public static PermissionResult Deny = new PermissionResult { Allowed = false };
-     }
+
+        public static PermissionResult DenyWithResult(IHttpActionResult result) {
+            return new PermissionResult {
+                Allowed = false,
+                HttpActionResult = result
+            };
+        }
+    }
 }

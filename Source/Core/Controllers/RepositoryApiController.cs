@@ -30,8 +30,8 @@ namespace Exceptionless.Core.Controllers {
             Mapper.CreateMap<TNewModel, TModel>();
         }
 
-        [Route]
-        [HttpGet]
+        #region Get
+
         public virtual IHttpActionResult Get(int page = 1, int pageSize = 10) {
             var results = GetEntities<TViewModel>(page: page, pageSize: pageSize);
             return Ok(new PagedResult<TViewModel>(results) {
@@ -54,9 +54,7 @@ namespace Exceptionless.Core.Controllers {
             return cursor.Select(Mapper.Map<TModel, T>).ToList();
         }
         
-        [HttpGet]
-        [Route("{id}")]
-        public virtual IHttpActionResult Get(string id) {
+        public virtual IHttpActionResult GetById(string id) {
             TModel model = GetModel(id);
             if (model == null)
                 return NotFound();
@@ -73,9 +71,11 @@ namespace Exceptionless.Core.Controllers {
 
             return _repository.GetByIdCached(id);
         }
-  
-        [Route]
-        [HttpPost]
+
+        #endregion
+
+        #region Post
+
         public virtual IHttpActionResult Post(TNewModel value) {
             if (value == null)
                 return BadRequest();
@@ -105,9 +105,10 @@ namespace Exceptionless.Core.Controllers {
             return _repository.Add(value);
         }
 
-        [Route("{id}")]
-        [HttpPut]
-        [HttpPatch]
+        #endregion
+
+        #region Patch
+
         public virtual IHttpActionResult Patch(string id, Delta<TModel> changes) {
             // if there are no changes in the delta, then ignore the request
             if (changes == null || !changes.GetChangedPropertyNames().Any())
@@ -126,7 +127,7 @@ namespace Exceptionless.Core.Controllers {
             return Ok();
         }
 
-        protected virtual string[] GetUpdatablePropertyNames() {
+        protected virtual IEnumerable<string> GetUpdatablePropertyNames() {
             return new string[] {};
         }
 
@@ -146,8 +147,10 @@ namespace Exceptionless.Core.Controllers {
             return _repository.Update(original);
         }
 
-        [HttpDelete]
-        [Route("{id}")]
+        #endregion
+
+        #region Delete
+
         public virtual IHttpActionResult Delete(string id) {
             TModel item = GetModel(id);
             if (item == null)
@@ -167,5 +170,7 @@ namespace Exceptionless.Core.Controllers {
         protected virtual void DeleteModel(TModel value) {
             _repository.Delete(value);
         }
+
+        #endregion
     }
 }

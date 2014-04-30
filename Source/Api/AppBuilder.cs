@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core;
@@ -33,6 +34,19 @@ namespace Exceptionless.Api {
             try {
                 container.Verify();
             } catch (Exception ex) {
+                var tempEx = ex;
+                while (!(tempEx is ReflectionTypeLoadException)) {
+                    if (tempEx.InnerException == null)
+                        break;
+                    tempEx = tempEx.InnerException;
+                }
+
+                var typeLoadException = tempEx as ReflectionTypeLoadException;
+                if (typeLoadException != null) {
+                    foreach (var loaderEx in typeLoadException.LoaderExceptions)
+                        Debug.WriteLine(loaderEx.Message);
+                }
+
                 Debug.WriteLine(ex.Message);
                 throw;
             }
