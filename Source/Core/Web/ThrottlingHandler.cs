@@ -12,6 +12,7 @@
 using System;
 using System.Net;
 using System.Net.Http;
+using System.ServiceModel.Channels;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
@@ -25,10 +26,7 @@ namespace Exceptionless.Core.Web {
         private readonly TimeSpan _period;
         private readonly string _message;
 
-        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period)
-            : this(cacheClient, maxRequestsForUserIdentifier, period, "The allowed number of requests has been exceeded.") { }
-
-        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message) {
+        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message = "The allowed number of requests has been exceeded.") {
             _cacheClient = cacheClient;
             _maxRequestsForUserIdentifier = maxRequestsForUserIdentifier;
             _period = period;
@@ -36,11 +34,11 @@ namespace Exceptionless.Core.Web {
         }
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
-            var project = request.GetProject();
+            var project = request.GetUserPrincipal().GetProject();
             if(project != null)
                 return project.OrganizationId;
 
-            var user = request.GetUser();
+            var user = request.GetUserPrincipal().GetUser();
             if(user != null)
                 return user.Id;
 
@@ -76,11 +74,11 @@ namespace Exceptionless.Core.Web {
                     remaining = 0;
 
                 HttpResponseMessage httpResponse = task.Result;
-                httpResponse.Headers.Add("RateLimit-Limit", maxRequests.ToString());
-                httpResponse.Headers.Add("RateLimit-Remaining", remaining.ToString());
+                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
+                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
 
                 return httpResponse;
-            });
+            }, cancellationToken);
         }
 
         protected Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

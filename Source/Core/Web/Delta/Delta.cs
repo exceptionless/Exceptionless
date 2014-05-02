@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
-using System.Reflection;
+using CodeSmith.Core.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
@@ -19,9 +19,10 @@ namespace Exceptionless.Core.Web {
     [NonValidatingParameterBinding]
     public class Delta<TEntityType> : DynamicObject /*,  IDelta */ where TEntityType : class {
         // cache property accessors for this type and all its derived types.
-        private static ConcurrentDictionary<Type, Dictionary<string, PropertyAccessor<TEntityType>>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, PropertyAccessor<TEntityType>>>();
+        private static ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>> _propertyCache = new ConcurrentDictionary<Type, Dictionary<string, IMemberAccessor>>();
 
-        private Dictionary<string, PropertyAccessor<TEntityType>> _propertiesThatExist;
+        private Dictionary<string, IMemberAccessor> _propertiesThatExist;
+        private readonly Dictionary<string, object> _unknownProperties = new Dictionary<string, object>();
         private HashSet<string> _changedProperties;
         private TEntityType _entity;
         private Type _entityType;
@@ -29,8 +30,7 @@ namespace Exceptionless.Core.Web {
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
         /// </summary>
-        public Delta()
-            : this(typeof(TEntityType)) {}
+        public Delta() : this(typeof(TEntityType)) {}
 
         /// <summary>
         /// Initializes a new instance of <see cref="Delta{TEntityType}" />.
@@ -73,25 +73,25 @@ namespace Exceptionless.Core.Web {
             if (!_propertiesThatExist.ContainsKey(name))
                 return false;
 
-            PropertyAccessor<TEntityType> cacheHit = _propertiesThatExist[name];
+            IMemberAccessor cacheHit = _propertiesThatExist[name];
 
-            if (value == null && !IsNullable(cacheHit.Property.PropertyType))
+            if (value == null && !IsNullable(cacheHit.MemberType))
                 return false;
 
             if (value != null) {
                 if (value is JToken) {
                     try {
-                        value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.Property.PropertyType);
+                        value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                     } catch (Exception ex) {
                         Log.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Report().Write();
                         return false;
                     }
                 } else {
-                    bool isGuid = cacheHit.Property.PropertyType == typeof(Guid) && value is string;
-                    bool isEnum = cacheHit.Property.PropertyType.IsEnum && value is Int64 && (long)value <= int.MaxValue;
-                    bool isInt32 = cacheHit.Property.PropertyType == typeof(int) && value is Int64 && (long)value <= int.MaxValue;
+                    bool isGuid = cacheHit.MemberType == typeof(Guid) && value is string;
+                    bool isEnum = cacheHit.MemberType.IsEnum && value is Int64 && (long)value <= int.MaxValue;
+                    bool isInt32 = cacheHit.MemberType == typeof(int) && value is Int64 && (long)value <= int.MaxValue;
 
-                    if (!cacheHit.Property.PropertyType.IsPrimitive && !isGuid && !isEnum && !cacheHit.Property.PropertyType.IsAssignableFrom(value.GetType()))
+                    if (!cacheHit.MemberType.IsPrimitive && !isGuid && !isEnum && !cacheHit.MemberType.IsInstanceOfType(value))
                         return false;
 
                     if (isGuid)
@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Web {
                     if (isInt32)
                         value = (int)(long)value;
                     if (isEnum)
-                        value = Enum.Parse(cacheHit.Property.PropertyType, value.ToString());
+                        value = Enum.Parse(cacheHit.MemberType, value.ToString());
                 }
             }
 
@@ -125,13 +125,13 @@ namespace Exceptionless.Core.Web {
                 throw new ArgumentNullException("name");
 
             if (_propertiesThatExist.ContainsKey(name)) {
-                PropertyAccessor<TEntityType> cacheHit = _propertiesThatExist[name];
+                IMemberAccessor cacheHit = _propertiesThatExist[name];
                 value = cacheHit.GetValue(target ?? _entity);
                 return true;
-            } else {
-                value = null;
-                return false;
             }
+
+            value = null;
+            return false;
         }
 
         /// <summary>
@@ -148,14 +148,21 @@ namespace Exceptionless.Core.Web {
             if (name == null)
                 throw new ArgumentNullException("name");
 
-            PropertyAccessor<TEntityType> value;
+            IMemberAccessor value;
             if (_propertiesThatExist.TryGetValue(name, out value)) {
-                type = value.Property.PropertyType;
+                type = value.MemberType;
                 return true;
-            } else {
-                type = null;
-                return false;
             }
+
+            type = null;
+            return false;
+        }
+
+        /// <summary>
+        /// A dictionary of values that were set on the delta that don't exist in TEntityType.
+        /// </summary>
+        public IDictionary<string, object> UnknownProperties {
+            get { return _unknownProperties; }
         }
 
         /// <summary>
@@ -165,6 +172,12 @@ namespace Exceptionless.Core.Web {
         public override bool TrySetMember(SetMemberBinder binder, object value) {
             if (binder == null)
                 throw new ArgumentNullException("binder");
+
+            // add properties that don't exist to the unknown properties collect
+            if (!_propertiesThatExist.ContainsKey(binder.Name)) {
+                _unknownProperties[binder.Name] = value;
+                return true;
+            }
 
             return TrySetPropertyValue(binder.Name, value);
         }
@@ -235,56 +248,79 @@ namespace Exceptionless.Core.Web {
         }
 
         /// <summary>
-        /// Copies the changed property values from the underlying entity (accessible via <see cref="GetEntity()" />)
-        /// to the <paramref name="original" /> entity.
+        /// Copies any changed property values that match up from the underlying entity (accessible via <see cref="GetEntity()" />)
+        /// to the <paramref name="target" /> entity.
         /// </summary>
-        /// <param name="original">The entity to be updated.</param>
-        public void CopyChangedValues(TEntityType original) {
-            if (original == null)
-                throw new ArgumentNullException("original");
+        /// <param name="target">The target entity to be updated.</param>
+        public void CopyChangedValues(object target) {
+            if (target == null)
+                throw new ArgumentNullException("target");
 
-            if (!_entityType.IsAssignableFrom(original.GetType()))
-                throw new ArgumentException("Delta type mismatch", "original");
+            Type targetType = target.GetType();
+            if (!_propertyCache.ContainsKey(targetType))
+                CachePropertyAccessors(targetType);
 
-            PropertyAccessor<TEntityType>[] propertiesToCopy = GetChangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
-            foreach (PropertyAccessor<TEntityType> propertyToCopy in propertiesToCopy)
-                propertyToCopy.Copy(_entity, original);
+            IMemberAccessor[] propertiesToCopy = GetChangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
+
+            foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
+                object value = sourceProperty.GetValue(_entity);
+                IMemberAccessor targetAccessor;
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out targetAccessor))
+                    continue;
+
+                if (!targetAccessor.MemberType.IsInstanceOfType(value))
+                    continue;
+                
+                targetAccessor.SetValue(target, value);
+            }
         }
 
         /// <summary>
         /// Copies the unchanged property values from the underlying entity (accessible via <see cref="GetEntity()" />)
-        /// to the <paramref name="original" /> entity.
+        /// to the <paramref name="target" /> entity.
         /// </summary>
-        /// <param name="original">The entity to be updated.</param>
-        public void CopyUnchangedValues(TEntityType original) {
-            if (original == null)
-                throw new ArgumentNullException("original");
+        /// <param name="target">The entity to be updated.</param>
+        public void CopyUnchangedValues(object target) {
+            if (target == null)
+                throw new ArgumentNullException("target");
 
-            if (!_entityType.IsAssignableFrom(original.GetType()))
-                throw new ArgumentException("Delta type mismatch", "original");
 
-            PropertyAccessor<TEntityType>[] propertiesToCopy = GetUnchangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
-            foreach (PropertyAccessor<TEntityType> propertyToCopy in propertiesToCopy)
-                propertyToCopy.Copy(_entity, original);
+            Type targetType = target.GetType();
+            if (!_propertyCache.ContainsKey(targetType))
+                CachePropertyAccessors(targetType);
+
+            IMemberAccessor[] propertiesToCopy = GetUnchangedPropertyNames().Select(s => _propertiesThatExist[s]).ToArray();
+
+            foreach (IMemberAccessor sourceProperty in propertiesToCopy) {
+                object value = sourceProperty.GetValue(_entity);
+                IMemberAccessor targetAccessor;
+                if (!_propertyCache[targetType].TryGetValue(sourceProperty.Name, out targetAccessor))
+                    continue;
+
+                if (!targetAccessor.MemberType.IsInstanceOfType(value))
+                    continue;
+
+                targetAccessor.SetValue(target, value);
+            }
         }
 
         /// <summary>
-        /// Overwrites the <paramref name="original" /> entity with the changes tracked by this Delta.
+        /// Overwrites the <paramref name="target" /> entity with the changes tracked by this Delta.
         /// <remarks>The semantics of this operation are equivalent to a HTTP PATCH operation, hence the name.</remarks>
         /// </summary>
-        /// <param name="original">The entity to be updated.</param>
-        public void Patch(TEntityType original) {
-            CopyChangedValues(original);
+        /// <param name="target">The entity to be updated.</param>
+        public void Patch(object target) {
+            CopyChangedValues(target);
         }
 
         /// <summary>
-        /// Overwrites the <paramref name="original" /> entity with the values stored in this Delta.
+        /// Overwrites the <paramref name="target" /> entity with the values stored in this Delta.
         /// <remarks>The semantics of this operation are equivalent to a HTTP PUT operation, hence the name.</remarks>
         /// </summary>
-        /// <param name="original">The entity to be updated.</param>
-        public void Put(TEntityType original) {
-            CopyChangedValues(original);
-            CopyUnchangedValues(original);
+        /// <param name="target">The entity to be updated.</param>
+        public void Put(object target) {
+            CopyChangedValues(target);
+            CopyUnchangedValues(target);
         }
 
         private void Initialize(Type entityType) {
@@ -297,17 +333,15 @@ namespace Exceptionless.Core.Web {
             _entity = Activator.CreateInstance(entityType) as TEntityType;
             _changedProperties = new HashSet<string>();
             _entityType = entityType;
-            _propertiesThatExist = InitializePropertiesThatExist();
+            CachePropertyAccessors(entityType);
+            _propertiesThatExist = _propertyCache[entityType];
         }
 
-        private Dictionary<string, PropertyAccessor<TEntityType>> InitializePropertiesThatExist() {
-            return _propertyCache.GetOrAdd(
-                                           _entityType,
-                (backingType) => backingType
-                    .GetProperties()
+        private void CachePropertyAccessors(Type type) {
+            _propertyCache.GetOrAdd(type, t => t.GetProperties()
                     .Where(p => p.GetSetMethod() != null && p.GetGetMethod() != null)
-                    .Select<PropertyInfo, PropertyAccessor<TEntityType>>(p => new CompiledPropertyAccessor<TEntityType>(p))
-                    .ToDictionary(p => p.Property.Name));
+                    .Select(LateBinder.GetPropertyAccessor)
+                    .ToDictionary(p => p.Name));
         }
 
         public static bool IsNullable(Type type) {

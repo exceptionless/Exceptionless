@@ -22,5 +22,7 @@ namespace Exceptionless.Submission.Net {
         public const string Token = "Token";
         public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";
         public const string Client = "X-Exceptionless-Client";
+        public const string RateLimit = "X-RateLimit-Limit";
+        public const string RateLimitRemaining = "X-RateLimit-Remaining";
     }
 }

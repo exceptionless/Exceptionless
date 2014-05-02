@@ -22,7 +22,11 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+        private readonly OrganizationRepository _organizationRepository;
+
+        public ProjectRepository(MongoDatabase database, OrganizationRepository organizationRepository, ICacheClient cacheClient = null) : base(database, cacheClient) {
+            _organizationRepository = organizationRepository;
+        }
 
         public const string CollectionName = "project";
 
@@ -63,7 +67,9 @@ namespace Exceptionless.Core {
             foreach (string key in entity.ApiKeys)
                 InvalidateCache(key);
 
-            return base.Add(entity, addToCache);
+            var project =  base.Add(entity, addToCache);
+            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+            return project;
         }
 
         public override Project Update(Project entity, bool addToCache = false) {
@@ -71,6 +77,21 @@ namespace Exceptionless.Core {
             entity = base.Update(entity, addToCache);
 
             return GetById(entity.Id);
+        }
+
+        public override void Delete(IEnumerable<Project> entities) {
+            base.Delete(entities);
+            foreach (var entity in entities)
+                _organizationRepository.IncrementStats(entity.OrganizationId, projectCount: -1);
+        }
+
+        public override void Delete(Project entity) {
+            base.Delete(entity);
+            _organizationRepository.IncrementStats(entity.OrganizationId, projectCount: -1);
+        }
+
+        public override void Delete(string id) {
+            Delete(GetByIdCached(id));
         }
 
         public override void InvalidateCache(Project entity) {

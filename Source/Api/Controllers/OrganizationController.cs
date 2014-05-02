@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [HttpGet]
         public IEnumerable<Organization> Get() {
-            return _organizationRepository.GetByIds(Request.GetAssociatedOrganizationIds());
+            return _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds());
         }
 
         [HttpGet]
@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
             if (!IsNameAvailable(value.Name))
                 return Conflict();
 
-            var user = Request.GetUser();
+            var user = User.GetUser();
             if (!_billingManager.CanAddOrganization(user))
                 return this.PlanLimitReached("Please upgrade your plan to add an additional organization.");
 
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only see if they can downgrade a plan if the plans are different.
             string message;
-            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, Request.GetUser(), out message))
+            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, User.GetUser(), out message))
                 return Ok(new { Success = false, Message = message });
 
             var customerService = new StripeCustomerService();
@@ -176,7 +176,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 }
 
-                _billingManager.ApplyBillingPlan(organization, plan, Request.GetUser());
+                _billingManager.ApplyBillingPlan(organization, plan, User.GetUser());
                 _organizationRepository.Update(organization);
 
                 _notificationSender.PlanChanged(organization.Id);
@@ -201,7 +201,7 @@ namespace Exceptionless.Api.Controllers {
             if (!_billingManager.CanAddUser(organization))
                 return this.PlanLimitReached("Please upgrade your plan to add an additional user.");
 
-            var currentUser = Request.GetUser();
+            var currentUser = User.GetUser();
             User user = _userRepository.GetByEmailAddress(emailAddress);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
@@ -382,7 +382,7 @@ namespace Exceptionless.Api.Controllers {
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return BadRequest("An organization cannot be deleted if it contains any projects.");
 
-            var currentUser = Request.GetUser();
+            var currentUser = User.GetUser();
             Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.ErrorCount).Write();
 
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
@@ -469,7 +469,7 @@ namespace Exceptionless.Api.Controllers {
 
             return _organizationRepository.Count(
                 Query.And(
-                     Query.In(OrganizationRepository.FieldNames.Id, Request.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))),
+                     Query.In(OrganizationRepository.FieldNames.Id, User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))),
                      Query.EQ(OrganizationRepository.FieldNames.Name, name))) == 0;
         }
 

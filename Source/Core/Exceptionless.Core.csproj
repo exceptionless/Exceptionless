@@ -57,11 +57,12 @@
     <Reference Include="Microsoft.ApplicationServer.Caching.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.Core.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.AspNet.Identity.Core">
-      <HintPath>..\..\packages\Microsoft.AspNet.Identity.Core.2.0.0\lib\net45\Microsoft.AspNet.Identity.Core.dll</HintPath>
+    <Reference Include="Microsoft.AspNet.Identity.Core, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.Identity.Core.2.0.1\lib\net45\Microsoft.AspNet.Identity.Core.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.Identity.Owin">
-      <HintPath>..\..\packages\Microsoft.AspNet.Identity.Owin.2.0.0\lib\net45\Microsoft.AspNet.Identity.Owin.dll</HintPath>
+      <HintPath>..\..\packages\Microsoft.AspNet.Identity.Owin.2.0.1\lib\net45\Microsoft.AspNet.Identity.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=2.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -241,15 +242,14 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
-    <Compile Include="Controllers\OwnedByOrganizationRepositoryApiController.cs" />
     <Compile Include="Controllers\PermissionResult.cs" />
     <Compile Include="Controllers\RepositoryApiController.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
-    <Compile Include="Messaging\Models\NewErrorMessage.cs" />
-    <Compile Include="Messaging\Models\ProjectChange.cs" />
+    <Compile Include="Messaging\Models\EventOccurrence.cs" />
+    <Compile Include="Messaging\Models\EntityChange.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
@@ -286,6 +286,7 @@
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
+    <None Include="app.config" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -309,6 +310,7 @@
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\Models\ProjectHookNotification.cs" />
+    <Compile Include="Queues\Models\WorkItem.cs" />
     <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\Models\SummaryNotification.cs" />
     <Compile Include="Queues\QueueEntry.cs" />
@@ -363,11 +365,9 @@
     <Compile Include="Web\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
     <Compile Include="Utility\NLogExceptionlessLog.cs" />
-    <Compile Include="Web\Delta\CompiledPropertyAccessor.cs" />
     <Compile Include="Web\Delta\Delta.cs" />
     <Compile Include="Web\Delta\NonValidatingParameterBindingAttribute.cs" />
     <Compile Include="Web\Delta\PerRequestParameterBinding.cs" />
-    <Compile Include="Web\Delta\PropertyAccessor.cs" />
     <Compile Include="Web\Results\NotImplementedActionResult.cs" />
     <Compile Include="Web\Results\PlanLimitReachedActionResult.cs" />
     <Compile Include="Web\UserAgentParameterBinding.cs" />

@@ -27,14 +27,16 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _publisher.PublishAsync(new NewErrorMessage {
+            _publisher.PublishAsync(new EventOccurrence {
+                Id = ctx.Event.Id,
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,
                 StackId = ctx.Event.StackId,
                 IsHidden = ctx.Event.IsHidden,
                 IsFixed = ctx.Event.IsFixed,
-                IsNotFound = ctx.Event.IsNotFound
-            }).Wait();
+                IsNotFound = ctx.Event.IsNotFound,
+                IsRegression = ctx.IsRegression
+            }).Start();
         }
     }
 }

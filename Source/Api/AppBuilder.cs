@@ -4,6 +4,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
+using AutoMapper;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -81,7 +82,7 @@ namespace Exceptionless.Api {
             app.MapSignalR();
             app.UseWebApi(config);
 
-            AutoMapperConfig.CreateMappings();
+            Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 
             // TODO: Remove this as it's only for testing.
             Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());

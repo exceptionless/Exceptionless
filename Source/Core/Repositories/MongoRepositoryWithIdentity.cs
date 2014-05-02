@@ -93,7 +93,7 @@ namespace Exceptionless.Core {
         /// Deletes an entity from the repository by its id.
         /// </summary>
         /// <param name="id">The string representation of the entity's id.</param>
-        public void Delete(string id) {
+        public virtual void Delete(string id) {
             if (String.IsNullOrWhiteSpace(id))
                 throw new ArgumentNullException("id");
 

@@ -4,25 +4,33 @@ using System.Linq;
 using System.Net;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core.Authorization;
+using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Controllers {
-    [Authorize(Roles = AuthorizationRoles.User)]
-    public abstract class RepositoryApiController<TModel, TViewModel, TNewModel, TRepository> : ExceptionlessApiController
-        where TModel : class, IIdentity, new()
-        where TViewModel : class, new()
-        where TNewModel : class, new() 
-        where TRepository : MongoRepositoryWithIdentity<TModel> {
+    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
+            where TRepository : MongoRepositoryWithIdentity<TModel>
+            where TModel : class, IIdentity, new()
+            where TViewModel : class, new()
+            where TNewModel : class, new()
+            where TUpdateModel : class, new() {
         protected readonly TRepository _repository;
+        protected static readonly bool _isOwnedByOrganization;
+
+        static RepositoryApiController() {
+            _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
+        }
 
         public RepositoryApiController(TRepository repository) {
             _repository = repository;
-            CreateMaps();
+
+            Run.Once(CreateMaps);
         }
 
         protected virtual void CreateMaps() {
@@ -32,8 +40,12 @@ namespace Exceptionless.Core.Controllers {
 
         #region Get
 
-        public virtual IHttpActionResult Get(int page = 1, int pageSize = 10) {
-            var results = GetEntities<TViewModel>(page: page, pageSize: pageSize);
+        public virtual IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
+            IMongoQuery query = null;
+            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organizationId))
+                query = Query.EQ("oid", ObjectId.Parse(organizationId));
+
+            var results = GetEntities<TViewModel>(query, page: page, pageSize: pageSize);
             return Ok(new PagedResult<TViewModel>(results) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10
@@ -43,6 +55,14 @@ namespace Exceptionless.Core.Controllers {
         protected List<T> GetEntities<T>(IMongoQuery query = null, IMongoFields fields = null, int page = 1, int pageSize = 10) {
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
+
+            // filter by the associated organizations
+            if (_isOwnedByOrganization) {
+                if (query != null)
+                    query = Query.And(query, Query.In("oid", User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+                else
+                    query = Query.In("oid", User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
+            }
 
             var cursor = _repository.Collection.Find(query ?? Query.Null).SetSkip(skip).SetLimit(pageSize);
             if (fields != null)
@@ -69,7 +89,11 @@ namespace Exceptionless.Core.Controllers {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            return _repository.GetByIdCached(id);
+            var model = _repository.GetByIdCached(id);
+            if (_isOwnedByOrganization && model != null && !User.IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
+                return null;
+
+            return model;
         }
 
         #endregion
@@ -92,24 +116,38 @@ namespace Exceptionless.Core.Controllers {
                 return Conflict();
             }
 
-            // TODO: Verify that the link is correct and that it doesn't require a config route.
             var viewModel = Mapper.Map<TModel, TViewModel>(model);
-            return Created(new Uri(Url.Link("DefaultApi", new { id = model.Id })), viewModel);
+            return Created(GetEntityLink(model.Id), viewModel);
+        }
+
+        protected virtual Uri GetEntityLink(string id) {
+            return new Uri(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id }));
         }
 
         protected virtual PermissionResult CanAdd(TModel value) {
+            var orgModel = value as IOwnedByOrganization;
+            if (orgModel == null)
+                return PermissionResult.Allow;
+
+            // if no organization id is specified, default to the user's 1st associated org.
+            if (String.IsNullOrEmpty(orgModel.OrganizationId) && User.GetAssociatedOrganizationIds().Any())
+                orgModel.OrganizationId = User.GetDefaultOrganizationId();
+
+            if (!User.IsInOrganization(orgModel.OrganizationId))
+                return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
+
             return PermissionResult.Allow;
         }
 
-        protected virtual TModel AddModel(TModel value) {
-            return _repository.Add(value);
+        protected virtual TModel AddModel(TModel value, bool addToCache = false) {
+            return _repository.Add(value, addToCache);
         }
 
         #endregion
 
         #region Patch
 
-        public virtual IHttpActionResult Patch(string id, Delta<TModel> changes) {
+        public virtual IHttpActionResult Patch(string id, Delta<TUpdateModel> changes) {
             // if there are no changes in the delta, then ignore the request
             if (changes == null || !changes.GetChangedPropertyNames().Any())
                 return Ok();
@@ -127,24 +165,17 @@ namespace Exceptionless.Core.Controllers {
             return Ok();
         }
 
-        protected virtual IEnumerable<string> GetUpdatablePropertyNames() {
-            return new string[] {};
+        protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
+            var orgModel = original as IOwnedByOrganization;
+            if (orgModel != null && !User.IsInOrganization(orgModel.OrganizationId))
+                return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
+
+            return PermissionResult.Allow;
         }
 
-        protected virtual PermissionResult CanUpdate(TModel original, Delta<TModel> changes) {
-            string[] unauthorizedProperties = changes.GetChangedPropertyNames(original).Where(p => !GetUpdatablePropertyNames().Contains(p)).ToArray();
-            if (unauthorizedProperties.Length == 0)
-                return PermissionResult.Allow;
-
-            return new PermissionResult {
-                Allowed = false,
-                HttpActionResult = BadRequest(String.Format("The following properties can't be changed: {0}", String.Join(", ", unauthorizedProperties)))
-            };
-        }
-
-        protected virtual TModel UpdateModel(TModel original, Delta<TModel> changes) {
+        protected virtual TModel UpdateModel(TModel original, Delta<TUpdateModel> changes, bool addToCache = false) {
             changes.Patch(original);
-            return _repository.Update(original);
+            return _repository.Update(original, addToCache);
         }
 
         #endregion
@@ -156,15 +187,20 @@ namespace Exceptionless.Core.Controllers {
             if (item == null)
                 return BadRequest();
 
-            if (!CanDelete(item))
-                return StatusCode(HttpStatusCode.Unauthorized);
+            var permission = CanDelete(item);
+            if (!permission.Allowed)
+                return permission.HttpActionResult ?? NotFound();
 
             DeleteModel(item);
-            return Ok();
+            return StatusCode(HttpStatusCode.NoContent);
         }
 
-        protected virtual bool CanDelete(TModel value) {
-            return true;
+        protected virtual PermissionResult CanDelete(TModel value) {
+            var orgModel = value as IOwnedByOrganization;
+            if (orgModel != null && !User.IsInOrganization(orgModel.OrganizationId))
+                return PermissionResult.DenyWithResult(NotFound());
+
+            return PermissionResult.Allow;
         }
 
         protected virtual void DeleteModel(TModel value) {

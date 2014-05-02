@@ -61,7 +61,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [HttpGet]
         public IEnumerable<Stack> Get() {
-            return _stackRepository.GetByOrganizationIds(Request.GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
+            return _stackRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
         }
 
         [HttpGet]

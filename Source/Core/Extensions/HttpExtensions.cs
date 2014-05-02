@@ -11,6 +11,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Odbc;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Principal;
@@ -20,8 +22,8 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class HttpExtensions {
-        public static User GetUser(this HttpRequestMessage request) {
-            if (request == null)
+        public static User GetUser(this IPrincipal principal) {
+            if (principal == null)
                 return null;
 
             //if (Project != null)
@@ -33,8 +35,8 @@ namespace Exceptionless.Core.Extensions {
             return null;
         }
 
-        public static string GetUserId(this HttpRequestMessage request) {
-            if (request == null)
+        public static string GetUserId(this IPrincipal principal) {
+            if (principal == null)
                 return null;
 
             //if (Project != null)
@@ -46,8 +48,8 @@ namespace Exceptionless.Core.Extensions {
             return null;
         }
 
-        public static Project GetProject(this HttpRequestMessage request) {
-            if (request == null)
+        public static Project GetProject(this IPrincipal principal) {
+            if (principal == null)
                 return null;
 
             //if (Project != null)
@@ -90,7 +92,7 @@ namespace Exceptionless.Core.Extensions {
             return false;
         }
 
-        public static IEnumerable<string> GetAssociatedOrganizationIds(this HttpRequestMessage request) {
+        public static IEnumerable<string> GetAssociatedOrganizationIds(this IPrincipal principal) {
             var items = new List<string>();
 
             //if (UserEntity != null)
@@ -101,34 +103,12 @@ namespace Exceptionless.Core.Extensions {
             return items;
         }
 
-        public static bool TryGetLoginInformation(this HttpRequestMessage request, out string userName, out string password) {
-            userName = null;
-            password = null;
+        public static string GetDefaultOrganizationId(this IPrincipal principal) {
+            if (principal == null)
+                return null;
 
-            if (request == null)
-                return false;
-
-            AuthenticationHeaderValue auth = request.Headers.Authorization;
-            if (auth == null || String.IsNullOrWhiteSpace(auth.Parameter) || String.IsNullOrWhiteSpace(auth.Scheme) || auth.Scheme != ExceptionlessHeaders.Token)
-                return false;
-
-            string[] header = ParseAuthorizationHeader(auth.Parameter);
-            if (header == null || header.Length != 2)
-                return false;
-
-            userName = header[0];
-            password = header[1];
-
-            return true;
-        }
-
-        public static bool SetUserPrincipal(this HttpRequestMessage request, IPrincipal principal) {
-            if (request == null || principal == null)
-                return false;
-
-            request.GetRequestContext().Principal = principal;
-
-            return true;
+            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
+            return GetAssociatedOrganizationIds(principal).FirstOrDefault();
         }
 
         public static string GetAllMessages(this HttpError error, bool includeStackTrace = false) {
@@ -158,15 +138,6 @@ namespace Exceptionless.Core.Extensions {
                 return error.Message;
 
             return String.Format("[{0}] {1}\r\nStack Trace:\r\n{2}{3}", error["ExceptionType"], error["ExceptionMessage"], error["StackTrace"], Environment.NewLine);
-        }
-
-        private static string[] ParseAuthorizationHeader(string authHeader) {
-            string[] credentials = Encoding.ASCII.GetString(Convert.FromBase64String(authHeader)).Split(new[] { ':' });
-
-            if (credentials.Length != 2 || String.IsNullOrEmpty(credentials[0]) || String.IsNullOrEmpty(credentials[1]))
-                return null;
-
-            return credentials;
         }
     }
 }

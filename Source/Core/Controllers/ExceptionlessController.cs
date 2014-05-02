@@ -11,7 +11,6 @@
 
 using System;
 using System.Web.Mvc;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Web;
 
 namespace Exceptionless.Web.Controllers {

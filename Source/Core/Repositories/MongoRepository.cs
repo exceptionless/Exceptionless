@@ -14,6 +14,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
@@ -24,7 +27,15 @@ namespace Exceptionless.Core {
     /// </summary>
     /// <typeparam name="T">The type contained in the repository.</typeparam>
     public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, new() {
-        protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+        protected readonly IMessagePublisher _messagePublisher;
+        protected readonly static string _entityType = typeof(T).Name;
+
+        protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+            _messagePublisher = messagePublisher;
+            EnableNotifications = true;
+        }
+
+        public bool EnableNotifications { get; set; }
 
         private static class FieldNames {
             public const string Id = "_id";
@@ -41,6 +52,16 @@ namespace Exceptionless.Core {
             InvalidateCache(entity);
             if (addToCache && Cache != null)
                 Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
+
+            var orgEntity = entity as IOwnedByOrganization;
+            if (EnableNotifications && _messagePublisher != null)
+                _messagePublisher.PublishAsync(new EntityChange {
+                    ChangeType = EntityChangeType.Added,
+                    Id = GetId(entity),
+                    OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
+                    Type = _entityType
+                }).Start();
+
             return entity;
         }
 
@@ -56,6 +77,15 @@ namespace Exceptionless.Core {
                 InvalidateCache(entity);
                 if (addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
+
+                var orgEntity = entity as IOwnedByOrganization;
+                if (EnableNotifications && _messagePublisher != null)
+                    _messagePublisher.PublishAsync(new EntityChange {
+                        ChangeType = EntityChangeType.Added,
+                        Id = GetId(entity),
+                        OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
+                        Type = _entityType
+                    }).Start();
             }
         }
 
@@ -66,6 +96,15 @@ namespace Exceptionless.Core {
         public virtual void Delete(T entity) {
             _collection.Remove(Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(GetId(entity)))));
             InvalidateCache(entity);
+
+            var orgEntity = entity as IOwnedByOrganization;
+            if (EnableNotifications && _messagePublisher != null)
+                _messagePublisher.PublishAsync(new EntityChange {
+                    ChangeType = EntityChangeType.Deleted,
+                    Id = GetId(entity),
+                    OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
+                    Type = _entityType
+                }).Start();
         }
 
         /// <summary>
@@ -75,8 +114,18 @@ namespace Exceptionless.Core {
         public virtual void Delete(IEnumerable<T> entities) {
             var list = entities.ToList();
             _collection.Remove(Query.In(FieldNames.Id, list.Select(entity => new BsonObjectId(new ObjectId(GetId(entity))))));
-            foreach (var entity in list)
+            foreach (var entity in list) {
                 InvalidateCache(entity);
+
+                var orgEntity = entity as IOwnedByOrganization;
+                if (EnableNotifications && _messagePublisher != null)
+                    _messagePublisher.PublishAsync(new EntityChange {
+                        ChangeType = EntityChangeType.Deleted,
+                        Id = GetId(entity),
+                        OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
+                        Type = _entityType
+                    }).Start();
+            }
         }
 
         /// <summary>
@@ -101,6 +150,11 @@ namespace Exceptionless.Core {
         /// </summary>
         public virtual void DeleteAll() {
             _collection.RemoveAll();
+            if (EnableNotifications && _messagePublisher != null)
+                _messagePublisher.PublishAsync(new EntityChange {
+                    ChangeType = EntityChangeType.DeletedAll,
+                    Type = _entityType
+                }).Start();
         }
 
         /// <summary>
@@ -173,6 +227,15 @@ namespace Exceptionless.Core {
             _collection.Save<T>(entity);
             if (addToCache && Cache != null)
                 Cache.Set(GetScopedCacheKey(GetId(entity)), entity);
+
+            var orgEntity = entity as IOwnedByOrganization;
+            if (EnableNotifications && _messagePublisher != null)
+                _messagePublisher.PublishAsync(new EntityChange {
+                    ChangeType = EntityChangeType.Updated,
+                    Id = GetId(entity),
+                    OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
+                    Type = _entityType
+                }).Start();
 
             return entity;
         }

@@ -124,6 +124,7 @@
     <Compile Include="Caching\InMemoryCachingClientTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Miscelaneous\DeltaTests.cs" />
     <Compile Include="Queue\InMemoryQueueTests.cs" />
     <Compile Include="Queue\Samples.cs" />
     <Compile Include="Queue\ServiceBusQueueTests.cs" />

@@ -18,6 +18,7 @@ using System.Threading;
 
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
+using CodeSmith.Core.Helpers;
 
 namespace CodeSmith.Core.IO
 {
@@ -129,7 +130,7 @@ namespace CodeSmith.Core.IO
         /// </summary>
         /// <param name="path">The path to the lock file.</param>
         protected virtual void RemoveLock(string path) {
-            RetryUtil.Retry(() => {
+            Run.WithRetries(() => {
                 try {
                     if (!File.Exists(path))
                         return;

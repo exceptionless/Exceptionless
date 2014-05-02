@@ -148,7 +148,7 @@
     <Compile Include="Extensions\ILGeneratorExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
     <Compile Include="Extensions\PropertyChangeExtensions.cs" />
-    <Compile Include="Extensions\RetryExtensions.cs" />
+    <Compile Include="Helpers\Run.cs" />
     <Compile Include="Extensions\StringBuilderExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\StringValidationExtensions.cs" />

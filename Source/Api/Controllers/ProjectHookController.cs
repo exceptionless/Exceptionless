@@ -119,7 +119,7 @@ namespace Exceptionless.App.Controllers.API {
             var eventType = data.GetValue("event").Value<string>();
 
             // TODO: Implement Subscribe.
-            var project = Request.GetProject();
+            var project = User.GetProject();
             if (project != null) {
                 _projectHookRepository.Add(new ProjectHook {
                     EventTypes = new[] { eventType },

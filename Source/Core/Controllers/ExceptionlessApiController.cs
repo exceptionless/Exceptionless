@@ -17,6 +17,7 @@ using Exceptionless.Core.Web.Results;
 namespace Exceptionless.Core.Controllers {
     [RequireHttpsExceptLocal]
     public class ExceptionlessApiController : ApiController {
+        protected const int API_CURRENT_VERSION = 2;
         protected const string API_PREFIX = "api/v2/";
 
         protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
