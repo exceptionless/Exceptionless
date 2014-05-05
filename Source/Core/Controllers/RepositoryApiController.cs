@@ -106,6 +106,11 @@ namespace Exceptionless.Core.Controllers {
             if (value == null)
                 return BadRequest();
 
+            var orgModel = value as IOwnedByOrganization;
+            // if no organization id is specified, default to the user's 1st associated org.
+            if (orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && User.GetAssociatedOrganizationIds().Any())
+                orgModel.OrganizationId = User.GetDefaultOrganizationId();
+
             var mapped = Mapper.Map<TNewModel, TModel>(value);
             var permission = CanAdd(mapped);
             if (!permission.Allowed)
@@ -130,10 +135,6 @@ namespace Exceptionless.Core.Controllers {
             var orgModel = value as IOwnedByOrganization;
             if (orgModel == null)
                 return PermissionResult.Allow;
-
-            // if no organization id is specified, default to the user's 1st associated org.
-            if (String.IsNullOrEmpty(orgModel.OrganizationId) && User.GetAssociatedOrganizationIds().Any())
-                orgModel.OrganizationId = User.GetDefaultOrganizationId();
 
             if (!User.IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));

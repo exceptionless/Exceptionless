@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Web {
             if (ctx == null || ctx.Request == null || ctx.Request.User == null)
                 return;
             
-            string projectId = ctx.Request.User.GetApiKeyProjectId();
+            string projectId = ctx.Request.User.GetProjectId();
             if (String.IsNullOrEmpty(projectId))
                 return;
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
@@ -32,7 +33,7 @@ namespace Exceptionless.Core.Jobs {
             while (!CancelPending) {
                 QueueEntry<EventPost> queueEntry = null;
                 try {
-                    queueEntry = await _queue.DequeueAsync(500);
+                    queueEntry = await _queue.DequeueAsync();
                     _statsClient.Counter(StatNames.PostsDequeued);
                 } catch (Exception ex) {
                     if (!(ex is TimeoutException)) {

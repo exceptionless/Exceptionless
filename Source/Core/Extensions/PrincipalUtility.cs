@@ -7,7 +7,7 @@ using Exceptionless.Core.Authorization;
 
 namespace Exceptionless.Core.Extensions {
     public static class PrincipalUtility {
-        public const string ApiKeyAuthenticationType = "ApiKey";
+        public const string ProjectAuthenticationType = "Project";
         public const string UserAuthenticationType = "User";
 
         public static ClaimsPrincipal CreateClientUser(string projectId) {
@@ -16,14 +16,14 @@ namespace Exceptionless.Core.Extensions {
                     new Claim(ClaimTypes.Role, AuthorizationRoles.Client),
                 };
 
-            var identity = new ClaimsIdentity(claims, ApiKeyAuthenticationType);
+            var identity = new ClaimsIdentity(claims, ProjectAuthenticationType);
 
             return new ClaimsPrincipal(identity);
         }
 
-        public static ClaimsPrincipal CreateUser(string name, IEnumerable<string> roles) {
+        public static ClaimsPrincipal CreateUser(string userId, IEnumerable<string> roles) {
             var claims = new List<Claim> {
-                    new Claim(ClaimTypes.Name, name),
+                    new Claim(ClaimTypes.Name, userId),
                     new Claim(ClaimTypes.Role, AuthorizationRoles.User)
                 };
 
@@ -34,12 +34,30 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsPrincipal(identity);
         }
 
-        public static bool IsApiKeyUser(this IPrincipal principal) {
+        public static AuthType GetAuthType(this IPrincipal principal) {
+            if (principal.Identity == null || !principal.Identity.IsAuthenticated)
+                return AuthType.Anonymous;
+
+            return IsProjectAuthType(principal) ? AuthType.Project : AuthType.User;
+        }
+
+        public static bool IsProjectAuthType(this IPrincipal principal) {
             var identity = principal.GetClaimsIdentity();
             if (identity == null)
                 return false;
 
-            if (identity.AuthenticationType != ApiKeyAuthenticationType)
+            if (identity.AuthenticationType != ProjectAuthenticationType)
+                return false;
+
+            return true;
+        }
+
+        public static bool IsUserAuthType(this IPrincipal principal) {
+            var identity = principal.GetClaimsIdentity();
+            if (identity == null)
+                return false;
+
+            if (identity.AuthenticationType != UserAuthenticationType)
                 return false;
 
             return true;
@@ -61,15 +79,32 @@ namespace Exceptionless.Core.Extensions {
             return identity;
         }
 
-        public static string GetApiKeyProjectId(this IPrincipal principal) {
+        public static string GetProjectId(this IPrincipal principal) {
             var identity = principal.GetClaimsIdentity();
             if (identity == null)
                 return null;
 
-            if (identity.AuthenticationType != ApiKeyAuthenticationType)
+            if (identity.AuthenticationType != ProjectAuthenticationType)
                 return null;
 
             return identity.Name;
         }
+
+        public static string GetUserId(this IPrincipal principal) {
+            var identity = principal.GetClaimsIdentity();
+            if (identity == null)
+                return null;
+
+            if (identity.AuthenticationType != UserAuthenticationType)
+                return null;
+
+            return identity.Name;
+        }
+    }
+    
+    public enum AuthType {
+        User,
+        Project,
+        Anonymous
     }
 }

@@ -10,105 +10,33 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Data.Odbc;
-using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Security.Principal;
 using System.Text;
 using System.Web.Http;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class HttpExtensions {
-        public static User GetUser(this IPrincipal principal) {
-            if (principal == null)
+        public static User GetUser(this HttpRequestMessage message) {
+            if (message == null)
                 return null;
 
-            //if (Project != null)
-            //    return String.Equals(Project.OrganizationId, organizationId);
-
-            //if (UserEntity != null)
-            //    return UserEntity.OrganizationIds.Contains(organizationId);
+            var user = message.GetOwinContext().Get<Lazy<User>>("LazyUser");
+            if (user != null)
+                return user.Value;
 
             return null;
         }
 
-        public static string GetUserId(this IPrincipal principal) {
-            if (principal == null)
+        public static Project GetProject(this HttpRequestMessage message) {
+            if (message == null)
                 return null;
 
-            //if (Project != null)
-            //    return String.Equals(Project.OrganizationId, organizationId);
-
-            //if (UserEntity != null)
-            //    return UserEntity.OrganizationIds.Contains(organizationId);
+            var project = message.GetOwinContext().Get<Lazy<Project>>("LazyProject");
+            if (project != null)
+                return project.Value;
 
             return null;
-        }
-
-        public static Project GetProject(this IPrincipal principal) {
-            if (principal == null)
-                return null;
-
-            //if (Project != null)
-            //    return String.Equals(Project.OrganizationId, organizationId);
-
-            //if (UserEntity != null)
-            //    return UserEntity.OrganizationIds.Contains(organizationId);
-
-            return null;
-        }
-
-        public static bool CanAccessOrganization(this IPrincipal user, string organizationId) {
-            if (user == null || String.IsNullOrEmpty(organizationId))
-                return false;
-
-            //var ctx = request.GetOwinContext();
-            //if (ctx != null && ctx.Request != null && ctx.Request.User != null)
-            //    projectId = ctx.Request.User.GetApiKeyProjectId();
-
-
-            //if (Project != null)
-            //    return String.Equals(Project.OrganizationId, organizationId);
-
-            //if (UserEntity != null)
-            //    return UserEntity.OrganizationIds.Contains(organizationId);
-
-            return false;
-        }
-
-        public static bool IsInOrganization(this IPrincipal user, string organizationId) {
-            if (user == null || String.IsNullOrEmpty(organizationId))
-                return false;
-
-            //if (Project != null)
-            //    return String.Equals(Project.OrganizationId, organizationId);
-
-            //if (UserEntity != null)
-            //    return UserEntity.OrganizationIds.Contains(organizationId);
-
-            return false;
-        }
-
-        public static IEnumerable<string> GetAssociatedOrganizationIds(this IPrincipal principal) {
-            var items = new List<string>();
-
-            //if (UserEntity != null)
-            //    items.AddRange(UserEntity.OrganizationIds);
-            //else if (Project != null)
-            //    items.Add(Project.OrganizationId);
-
-            return items;
-        }
-
-        public static string GetDefaultOrganizationId(this IPrincipal principal) {
-            if (principal == null)
-                return null;
-
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
-            return GetAssociatedOrganizationIds(principal).FirstOrDefault();
         }
 
         public static string GetAllMessages(this HttpError error, bool includeStackTrace = false) {

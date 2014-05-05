@@ -2,13 +2,17 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
@@ -52,6 +56,7 @@ namespace Exceptionless.Api {
                 throw;
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
+            config.EnableSystemDiagnosticsTracing();
 
             // sample middleware that would be how we would auth an api token
             // maybe we should be using custom OAuthBearerAuthenticationProvider's
@@ -76,10 +81,36 @@ namespace Exceptionless.Api {
                 if (project == null)
                     return next.Invoke();
 
-                context.Request.User = PrincipalUtility.CreateClientUser(project.Id);
+                context.Request.User = PrincipalUtility.CreateUser(_userId, new[] { AuthorizationRoles.GlobalAdmin });
                 return next.Invoke();
             });
             app.UseStageMarker(PipelineStage.Authenticate);
+
+            app.CreatePerContext<Lazy<User>>("LasyUser", ctx => {
+                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
+                    return null;
+
+                if (!ctx.Request.User.IsUserAuthType())
+                    return null;
+
+                return new Lazy<User>(() => {
+                    var userRepository = container.GetInstance<IUserRepository>();
+                    return userRepository.GetByIdCached(ctx.Request.User.GetUserId());
+                });
+            });
+
+            app.CreatePerContext<Lazy<Project>>("LasyProject", ctx => {
+                if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
+                    return null;
+
+                if (!ctx.Request.User.IsProjectAuthType())
+                    return null;
+
+                return new Lazy<Project>(() => {
+                    var projectRepository = container.GetInstance<IProjectRepository>();
+                    return projectRepository.GetByIdCached(ctx.Request.User.GetProjectId());
+                });
+            });
 
             app.UseCors(CorsOptions.AllowAll);
             //app.MapSignalR();
@@ -88,7 +119,19 @@ namespace Exceptionless.Api {
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 
             // TODO: Remove this as it's only for testing.
+            EnsureSampleData(container);
             Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());
+        }
+
+        private static string _userId;
+        private static void EnsureSampleData(Container container) {
+            var dataHelper = container.GetInstance<DataHelper>();
+            var userRepository = container.GetInstance<IUserRepository>();
+            var user = userRepository.FirstOrDefault(u => u.EmailAddress == "test@exceptionless.com");
+            if (user == null)
+                user = userRepository.Add(new User { EmailAddress = "test@exceptionless.com" });
+            _userId = user.Id;
+            dataHelper.CreateSampleOrganizationAndProject(user.Id);
         }
 
         public static Container CreateContainer() {

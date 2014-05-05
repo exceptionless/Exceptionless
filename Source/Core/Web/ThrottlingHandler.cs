@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Web {
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
             var project = request.GetUserPrincipal().GetProject();
-            if(project != null)
+            if (project != null)
                 return project.OrganizationId;
 
             var user = request.GetUserPrincipal().GetUser();

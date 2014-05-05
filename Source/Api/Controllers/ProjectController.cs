@@ -47,6 +47,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route]
         public override IHttpActionResult Post(NewProject value) {
+            if (String.IsNullOrEmpty(value.OrganizationId))
+                value.OrganizationId = User.GetDefaultOrganizationId();
             return base.Post(value);
         }
 
@@ -72,7 +74,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Config(string id = null) {
             if (String.IsNullOrEmpty(id))
-                id = User.GetApiKeyProjectId();
+                id = User.GetProjectId();
             
             if (String.IsNullOrEmpty(id))
                     return NotFound();
@@ -135,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/key/{apiKey:?}")]
+        [Route("{id}/key/{apiKey}")]
         public IHttpActionResult ManageApiKeys(string id, string apiKey) {
             if (String.IsNullOrWhiteSpace(id) || String.IsNullOrEmpty(apiKey))
                 return BadRequest();

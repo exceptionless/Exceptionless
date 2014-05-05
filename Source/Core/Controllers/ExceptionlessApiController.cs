@@ -10,9 +10,14 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Web.Http;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using Exceptionless.Core.Web.Results;
+using Exceptionless.Models;
 
 namespace Exceptionless.Core.Controllers {
     [RequireHttpsExceptLocal]
@@ -28,6 +33,52 @@ namespace Exceptionless.Core.Controllers {
                 endTime = DateTime.MaxValue;
 
             return starTime < endTime ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
+        }
+
+        public User ExceptionlessUser {
+            get { return Request.GetUser(); }
+        }
+
+        public Project Project {
+            get { return Request.GetProject(); }
+        }
+
+        public AuthType AuthType {
+            get { return User.GetAuthType(); }
+        }
+
+        public bool CanAccessOrganization(string organizationId) {
+            return User.IsInRole(AuthorizationRoles.GlobalAdmin) || IsInOrganization(organizationId);
+        }
+
+        public bool IsInOrganization(string organizationId) {
+            if (String.IsNullOrEmpty(organizationId))
+                return false;
+
+            if (AuthType == AuthType.User)
+                return ExceptionlessUser.OrganizationIds.Contains(organizationId);
+
+            if (AuthType == AuthType.Project)
+                return Project.OrganizationId == organizationId;
+
+            return false;
+        }
+
+        public IEnumerable<string> GetAssociatedOrganizationIds() {
+            var items = new List<string>();
+
+            if (AuthType == AuthType.User)
+                items.AddRange(ExceptionlessUser.OrganizationIds);
+
+            if (AuthType == AuthType.Project)
+                items.Add(Project.OrganizationId);
+
+            return items;
+        }
+
+        public string GetDefaultOrganizationId() {
+            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
+            return GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
         protected int GetPageSize(int pageSize) {
