@@ -34,8 +34,10 @@ namespace Exceptionless.Core.Controllers {
         }
 
         protected virtual void CreateMaps() {
-            Mapper.CreateMap<TModel, TViewModel>();
-            Mapper.CreateMap<TNewModel, TModel>();
+            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
+                Mapper.CreateMap<TModel, TViewModel>();
+            if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
+                Mapper.CreateMap<TNewModel, TModel>();
         }
 
         #region Get
@@ -139,8 +141,8 @@ namespace Exceptionless.Core.Controllers {
             return PermissionResult.Allow;
         }
 
-        protected virtual TModel AddModel(TModel value, bool addToCache = false) {
-            return _repository.Add(value, addToCache);
+        protected virtual TModel AddModel(TModel value) {
+            return _repository.Add(value);
         }
 
         #endregion
@@ -173,9 +175,9 @@ namespace Exceptionless.Core.Controllers {
             return PermissionResult.Allow;
         }
 
-        protected virtual TModel UpdateModel(TModel original, Delta<TUpdateModel> changes, bool addToCache = false) {
+        protected virtual TModel UpdateModel(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
-            return _repository.Update(original, addToCache);
+            return _repository.Update(original);
         }
 
         #endregion

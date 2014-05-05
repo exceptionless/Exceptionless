@@ -94,6 +94,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !User.CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
+            // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
             _dataHelper.ResetProjectData(id);
 
             return Ok();
@@ -190,11 +191,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override void CreateMaps() {
-            base.CreateMaps();
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
                 pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
                 pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
             });
+            base.CreateMaps();
         }
 
         protected override PermissionResult CanAdd(Project value) {
@@ -207,18 +208,14 @@ namespace Exceptionless.Api.Controllers {
             return base.CanAdd(value);
         }
 
-        protected override Project AddModel(Project value, bool addToCache = true) {
+        protected override Project AddModel(Project value) {
             if (String.IsNullOrWhiteSpace(value.TimeZone))
                 value.TimeZone = TimeZone.CurrentTimeZone.IsDaylightSavingTime(DateTime.Now) ? TimeZone.CurrentTimeZone.DaylightName : TimeZone.CurrentTimeZone.StandardName;
 
             value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
-            var project = base.AddModel(value, addToCache);
+            var project = base.AddModel(value);
 
             return project;
-        }
-
-        protected override Project UpdateModel(Project original, Delta<UpdateProject> changes, bool addToCache = true) {
-            return base.UpdateModel(original, changes, addToCache);
         }
 
         private IEnumerable<Project> Projects {
