@@ -54,7 +54,7 @@ namespace Exceptionless.Core.Web {
         }
     }
 
-    public static class RouteDataExtensions {
+    internal static class RouteDataExtensions {
         public static void SetOrganizationId(this RouteData routeData, string organizationId) {
             routeData.Values.Add("OrganizationId", organizationId);
         }
