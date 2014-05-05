@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Api.Models.User {
-    public class UserModel {
+    public class ViewUser {
         public string Id { get; set; }
         public string EmailAddress { get; set; }
         public string FullName { get; set; }

@@ -6,7 +6,6 @@ using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {
@@ -41,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("organization/{organizationId}")]
+        [Route]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
@@ -50,8 +49,8 @@ namespace Exceptionless.Api.Controllers {
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            List<UserModel> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 
-                new UserModel {
+            List<ViewUser> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 
+                new ViewUser {
                     Id = u.Id, 
                     FullName = u.FullName, 
                     EmailAddress = u.EmailAddress, 
@@ -61,9 +60,9 @@ namespace Exceptionless.Api.Controllers {
 
             var organization = _organizationRepository.GetByIdCached(organizationId);
             if (organization.Invites.Any())
-                results.AddRange(organization.Invites.Select(i => new UserModel { EmailAddress = i.EmailAddress, IsInvite = true }));
+                results.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
-            var result = new PagedResult<UserModel>(results.Skip(skip).Take(pageSize).ToList(), results.Count) {
+            var result = new PagedResult<ViewUser>(results.Skip(skip).Take(pageSize).ToList(), results.Count) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10
             };

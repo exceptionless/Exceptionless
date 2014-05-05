@@ -49,6 +49,7 @@ namespace Exceptionless.Api.Controllers {
         public override IHttpActionResult Post(NewProject value) {
             if (String.IsNullOrEmpty(value.OrganizationId))
                 value.OrganizationId = GetDefaultOrganizationId();
+
             return base.Post(value);
         }
 

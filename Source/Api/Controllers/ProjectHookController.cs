@@ -16,7 +16,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using MongoDB.Driver.Builders;
@@ -25,76 +25,43 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "projecthook")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectHookController : ExceptionlessApiController {
-        private readonly IProjectHookRepository _projectHookRepository;
+    public class ProjectHookController : RepositoryApiController<ProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public ProjectHookController(ProjectHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) {
-            _projectHookRepository = repository;
+        public ProjectHookController(ProjectHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }
 
-        [Route]
+        #region CRUD
+
         [HttpGet]
-        public IHttpActionResult Get(string id) {
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
-
-            ProjectHook entity = _projectHookRepository.GetByIdCached(id);
-            if (!IsInProject(entity.ProjectId))
-                return NotFound();
-
-            return Ok(entity);
+        [Route]
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
         }
 
-        [Route]
         [HttpPost]
-        public IHttpActionResult Post(ProjectHook value) {
-            if (!IsInProject(value.ProjectId))
-                return BadRequest();
-
-            Project project = _projectRepository.GetByIdCached(value.ProjectId);
-            if (!_billingManager.CanAddIntegration(project))
-                return this.PlanLimitReached("Please upgrade your plan to add integrations.");
-
-            return Ok(_projectHookRepository.Add(value));
-        }
-
-        //[Route]
-        //[HttpPut]
-        //public IHttpActionResult Put(string id, ProjectHook value) {
-        //    ProjectHook original = GetEntity(id);
-        //    if (original == null || !IsInProject(original.ProjectId))
-        //        return BadRequest();
-
-        //    return base.Put(id, value);
-        //}
-
-        //[Route]
-        //[HttpPatch]
-        //public IHttpActionResult Patch(string id, ProjectHook value) {
-        //    ProjectHook original = GetEntity(id);
-        //    if (original == null || !IsInProject(original.ProjectId))
-        //        return BadRequest();
-
-        //    return base.Patch(id, value);
-        //}
-
         [Route]
-        [HttpDelete]
-        public IHttpActionResult Delete(string id) {
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
-
-            ProjectHook original = _projectHookRepository.GetByIdCached(id);
-            if (original == null || !IsInProject(original.ProjectId))
-                return BadRequest();
-
-            _projectHookRepository.Delete(original);
-            return Ok();
+        public override IHttpActionResult Post(ProjectHook value) {
+            return base.Post(value);
         }
+
+        [HttpPatch]
+        [HttpPut]
+        [Route]
+        public override IHttpActionResult Patch(string id, Delta<ProjectHook> changes) {
+            return base.Patch(id, changes);
+        }
+
+        [HttpDelete]
+        [Route]
+        public override IHttpActionResult Delete(string id) {
+            return base.Delete(id);
+        }
+
+        #endregion
 
         [HttpGet]
         [Route("project/{projectId}")]
@@ -102,7 +69,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!IsInProject(projectId))
                 return NotFound();
 
-            return Ok(_projectHookRepository.GetByProjectId(projectId));
+            return Ok(_repository.GetByProjectId(projectId));
         }
 
         /// <summary>
@@ -121,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
             // TODO: Implement Subscribe.
             var project = Project;
             if (project != null) {
-                _projectHookRepository.Add(new ProjectHook {
+                _repository.Add(new ProjectHook {
                     EventTypes = new[] { eventType },
                     ProjectId = project.Id,
                     Url = targetUrl
@@ -147,7 +114,7 @@ namespace Exceptionless.App.Controllers.API {
                 return NotFound();
 
             // TODO: Validate that a user owns this webhook.
-            _projectHookRepository.Delete(Query.EQ(ProjectHookRepository.FieldNames.Url, targetUrl));
+            _repository.Delete(Query.EQ(ProjectHookRepository.FieldNames.Url, targetUrl));
 
             return Ok();
         }
@@ -168,15 +135,51 @@ namespace Exceptionless.App.Controllers.API {
             });
         }
 
+        protected override ProjectHook GetModel(string id) {
+            var model = base.GetModel(id);
+            return model != null && IsInProject(model.ProjectId) ? model : null;
+        }
+
+        protected override PermissionResult CanAdd(ProjectHook value) {
+            if (String.IsNullOrEmpty(value.ProjectId))
+                return PermissionResult.DenyWithResult(BadRequest());
+
+            Project project = _projectRepository.GetByIdCached(value.ProjectId);
+            if (!IsInProject(project))
+                return PermissionResult.DenyWithResult(BadRequest());
+
+            if (!_billingManager.CanAddIntegration(project))
+                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add integrations."));
+
+            return base.CanAdd(value);
+        }
+
+        protected override PermissionResult CanUpdate(ProjectHook original, Delta<ProjectHook> changes) {
+            if (!IsInProject(original.ProjectId))
+                return PermissionResult.DenyWithResult(BadRequest());
+            
+            return base.CanUpdate(original, changes);
+        }
+
+        protected override PermissionResult CanDelete(ProjectHook value) {
+            if (!IsInProject(value.ProjectId))
+                return PermissionResult.DenyWithResult(BadRequest());
+
+            return base.CanDelete(value);
+        }
+
         private bool IsInProject(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return false;
 
-            Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null)
+            return IsInProject(_projectRepository.GetByIdCached(projectId));
+        }
+
+        private bool IsInProject(Project value) {
+            if (value == null)
                 return false;
 
-            return IsInOrganization(project.OrganizationId);
+            return IsInOrganization(value.OrganizationId);
         }
     }
 }
