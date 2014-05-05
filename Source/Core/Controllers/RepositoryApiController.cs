@@ -5,7 +5,6 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
@@ -61,9 +60,9 @@ namespace Exceptionless.Core.Controllers {
             // filter by the associated organizations
             if (_isOwnedByOrganization) {
                 if (query != null)
-                    query = Query.And(query, Query.In("oid", User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+                    query = Query.And(query, Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
                 else
-                    query = Query.In("oid", User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
+                    query = Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
             }
 
             var cursor = _repository.Collection.Find(query ?? Query.Null).SetSkip(skip).SetLimit(pageSize);
@@ -92,7 +91,7 @@ namespace Exceptionless.Core.Controllers {
                 return null;
 
             var model = _repository.GetByIdCached(id);
-            if (_isOwnedByOrganization && model != null && !User.IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
+            if (_isOwnedByOrganization && model != null && !IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
@@ -108,8 +107,8 @@ namespace Exceptionless.Core.Controllers {
 
             var orgModel = value as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
-            if (orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && User.GetAssociatedOrganizationIds().Any())
-                orgModel.OrganizationId = User.GetDefaultOrganizationId();
+            if (orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
+                orgModel.OrganizationId = GetDefaultOrganizationId();
 
             var mapped = Mapper.Map<TNewModel, TModel>(value);
             var permission = CanAdd(mapped);
@@ -136,7 +135,7 @@ namespace Exceptionless.Core.Controllers {
             if (orgModel == null)
                 return PermissionResult.Allow;
 
-            if (!User.IsInOrganization(orgModel.OrganizationId))
+            if (!IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
 
             return PermissionResult.Allow;
@@ -170,7 +169,7 @@ namespace Exceptionless.Core.Controllers {
 
         protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
-            if (orgModel != null && !User.IsInOrganization(orgModel.OrganizationId))
+            if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
 
             return PermissionResult.Allow;
@@ -200,7 +199,7 @@ namespace Exceptionless.Core.Controllers {
 
         protected virtual PermissionResult CanDelete(TModel value) {
             var orgModel = value as IOwnedByOrganization;
-            if (orgModel != null && !User.IsInOrganization(orgModel.OrganizationId))
+            if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithResult(NotFound());
 
             return PermissionResult.Allow;

@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static AuthType GetAuthType(this IPrincipal principal) {
-            if (principal.Identity == null || !principal.Identity.IsAuthenticated)
+            if (principal == null || principal.Identity == null || !principal.Identity.IsAuthenticated)
                 return AuthType.Anonymous;
 
             return IsProjectAuthType(principal) ? AuthType.Project : AuthType.User;

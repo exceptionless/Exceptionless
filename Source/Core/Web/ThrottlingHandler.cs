@@ -34,13 +34,18 @@ namespace Exceptionless.Core.Web {
         }
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
-            var project = request.GetUserPrincipal().GetProject();
-            if (project != null)
-                return project.OrganizationId;
+            var authType = request.GetAuthType();
+            if (authType == AuthType.Project) {
+                var project = request.GetProject();
+                if (project != null)
+                    return project.OrganizationId;
+            }
 
-            var user = request.GetUserPrincipal().GetUser();
-            if(user != null)
-                return user.Id;
+            if (authType == AuthType.User) {
+                var user = request.GetUser();
+                if (user != null)
+                    return user.Id;
+            }
 
             // fallback to using the IP address
             var ip = request.GetClientIpAddress();

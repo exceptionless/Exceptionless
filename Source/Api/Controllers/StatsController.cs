@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -73,7 +73,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
                 throw new ArgumentNullException();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException();
 
             var range = GetDateRange(start, end);
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -180,7 +180,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Stack stack = _stackRepository.GetById(stackId);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);

@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("organization/{organizationId}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
             pageSize = GetPageSize(pageSize);

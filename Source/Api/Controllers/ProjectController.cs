@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         public override IHttpActionResult Post(NewProject value) {
             if (String.IsNullOrEmpty(value.OrganizationId))
-                value.OrganizationId = User.GetDefaultOrganizationId();
+                value.OrganizationId = GetDefaultOrganizationId();
             return base.Post(value);
         }
 
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Controllers {
                     return NotFound();
 
             var project = _repository.GetByIdCached(id);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             return Ok(project.Configuration);
@@ -93,7 +93,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Project project = _repository.GetByIdCached(id);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
@@ -109,7 +109,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(id);
-            if (project == null || User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             if (project.ApiKeys.Count > 0)
@@ -125,7 +125,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(id);
-            if (project == null || User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
@@ -143,13 +143,13 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             var project = _repository.GetById(id);
-            if (project == null || User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             if (!project.ApiKeys.Contains(apiKey))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            if (!User.CanAccessOrganization(project.OrganizationId))
+            if (!CanAccessOrganization(project.OrganizationId))
                 throw new Exception("Invalid organization.");
 
             project.ApiKeys.Remove(apiKey);
@@ -165,7 +165,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Project project = _repository.GetById(id);
-            if (project == null || User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || CanAccessOrganization(project.OrganizationId))
                 return BadRequest();
 
             project.NotificationSettings[userId] = settings;
@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _repository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
+                    _projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }

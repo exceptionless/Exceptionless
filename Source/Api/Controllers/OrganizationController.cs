@@ -43,13 +43,13 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [HttpGet]
         public IEnumerable<Organization> Get() {
-            return _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds());
+            return _organizationRepository.GetByIds(GetAssociatedOrganizationIds());
         }
 
         [HttpGet]
         [Route("{id}/payments")]
         public IHttpActionResult Payments(string id, int page = 1, int pageSize = 12) {
-            if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
+            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
 
             Organization organization = _organizationRepository.GetByIdCached(id);
@@ -81,11 +81,10 @@ namespace Exceptionless.Api.Controllers {
             if (!IsNameAvailable(value.Name))
                 return Conflict();
 
-            var user = User.GetUser();
-            if (!_billingManager.CanAddOrganization(user))
-                return this.PlanLimitReached("Please upgrade your plan to add an additional organization.");
+            if (!_billingManager.CanAddOrganization(ExceptionlessUser))
+                return PlanLimitReached("Please upgrade your plan to add an additional organization.");
 
-            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
+            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
 
             value.Id = null;
             value.ProjectCount = 0;
@@ -97,8 +96,8 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: Ensure that the owin context contains the most up-to-date version.
             //User user = _userRepository.GetById(User.UserEntity.Id);
-            user.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(user);
+            ExceptionlessUser.OrganizationIds.Add(organization.Id);
+            _userRepository.Update(ExceptionlessUser);
 
             return Ok(organization);
         }
@@ -106,7 +105,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id}/change-plan")]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken, string last4) {
-            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
 
             if (!Settings.Current.EnableBilling)
@@ -125,7 +124,7 @@ namespace Exceptionless.Api.Controllers {
 
             // Only see if they can downgrade a plan if the plans are different.
             string message;
-            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, User.GetUser(), out message))
+            if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, ExceptionlessUser, out message))
                 return Ok(new { Success = false, Message = message });
 
             var customerService = new StripeCustomerService();
@@ -172,7 +171,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 }
 
-                _billingManager.ApplyBillingPlan(organization, plan, User.GetUser());
+                _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
                 _organizationRepository.Update(organization);
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
@@ -185,7 +184,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id}/invite")]
         public IHttpActionResult Invite(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
             Organization organization = _organizationRepository.GetById(id);
@@ -195,7 +194,7 @@ namespace Exceptionless.Api.Controllers {
             if (!_billingManager.CanAddUser(organization))
                 return this.PlanLimitReached("Please upgrade your plan to add an additional user.");
 
-            var currentUser = User.GetUser();
+            var currentUser = ExceptionlessUser;
             User user = _userRepository.GetByEmailAddress(emailAddress);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
@@ -324,7 +323,7 @@ namespace Exceptionless.Api.Controllers {
 
         //protected override Organization UpdateEntity(Organization original, Delta<Organization> value)
         //{
-        //    if (String.IsNullOrWhiteSpace(original.Id) || !User.CanAccessOrganization(original.Id))
+        //    if (String.IsNullOrWhiteSpace(original.Id) || !CanAccessOrganization(original.Id))
         //        return BadRequest();
 
         //    Organization organization = value.GetEntity();
@@ -361,7 +360,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}")]
         public IHttpActionResult Delete(string id) {
-            if (String.IsNullOrWhiteSpace(id) || !User.CanAccessOrganization(id))
+            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return BadRequest();
 
             Organization value = _organizationRepository.GetById(id);
@@ -375,7 +374,7 @@ namespace Exceptionless.Api.Controllers {
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return BadRequest("An organization cannot be deleted if it contains any projects.");
 
-            var currentUser = User.GetUser();
+            var currentUser = ExceptionlessUser;
             Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.ErrorCount).Write();
 
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
@@ -417,7 +416,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}/remove-user/{emailAddress}")]
         public IHttpActionResult RemoveUser(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
             Organization organization = _organizationRepository.GetById(id);
@@ -459,7 +458,7 @@ namespace Exceptionless.Api.Controllers {
 
             return _organizationRepository.Count(
                 Query.And(
-                     Query.In(OrganizationRepository.FieldNames.Id, User.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))),
+                     Query.In(OrganizationRepository.FieldNames.Id, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))),
                      Query.EQ(OrganizationRepository.FieldNames.Name, name))) == 0;
         }
 

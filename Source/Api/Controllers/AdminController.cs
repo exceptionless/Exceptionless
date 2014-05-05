@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("change-plan")]
         public IHttpActionResult ChangePlan(string organizationId, string planId) {
-            if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             Organization organization = _repository.GetById(organizationId);
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            _billingManager.ApplyBillingPlan(organization, plan, User.GetUser(), false);
+            _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
             _repository.Update(organization);
             _messagePublisher.PublishAsync(new PlanChanged {

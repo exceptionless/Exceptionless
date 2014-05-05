@@ -48,37 +48,19 @@ namespace Exceptionless.Core.Controllers {
         }
 
         public bool CanAccessOrganization(string organizationId) {
-            return User.IsInRole(AuthorizationRoles.GlobalAdmin) || IsInOrganization(organizationId);
+            return Request.CanAccessOrganization(organizationId);
         }
 
         public bool IsInOrganization(string organizationId) {
-            if (String.IsNullOrEmpty(organizationId))
-                return false;
-
-            if (AuthType == AuthType.User)
-                return ExceptionlessUser.OrganizationIds.Contains(organizationId);
-
-            if (AuthType == AuthType.Project)
-                return Project.OrganizationId == organizationId;
-
-            return false;
+            return Request.IsInOrganization(organizationId);
         }
 
         public IEnumerable<string> GetAssociatedOrganizationIds() {
-            var items = new List<string>();
-
-            if (AuthType == AuthType.User)
-                items.AddRange(ExceptionlessUser.OrganizationIds);
-
-            if (AuthType == AuthType.Project)
-                items.Add(Project.OrganizationId);
-
-            return items;
+            return Request.GetAssociatedOrganizationIds();
         }
 
         public string GetDefaultOrganizationId() {
-            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
-            return GetAssociatedOrganizationIds().FirstOrDefault();
+            return Request.GetDefaultOrganizationId();
         }
 
         protected int GetPageSize(int pageSize) {

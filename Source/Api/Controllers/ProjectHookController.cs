@@ -119,7 +119,7 @@ namespace Exceptionless.App.Controllers.API {
             var eventType = data.GetValue("event").Value<string>();
 
             // TODO: Implement Subscribe.
-            var project = User.GetProject();
+            var project = Project;
             if (project != null) {
                 _projectHookRepository.Add(new ProjectHook {
                     EventTypes = new[] { eventType },
@@ -173,7 +173,10 @@ namespace Exceptionless.App.Controllers.API {
                 return false;
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            return User.IsInOrganization(project.OrganizationId);
+            if (project == null)
+                return false;
+
+            return IsInOrganization(project.OrganizationId);
         }
     }
 }

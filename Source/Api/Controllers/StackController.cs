@@ -62,7 +62,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         [HttpGet]
         public IEnumerable<Stack> Get() {
-            return _stackRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
+            return _stackRepository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
         }
 
         [HttpGet]
@@ -72,7 +72,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             return Ok(stack.ToProjectLocalTime(_projectRepository));
@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
@@ -181,7 +181,7 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return new HttpResponseMessage(HttpStatusCode.BadRequest);
 
             // TODO: Implement Fixed in version.
@@ -217,7 +217,7 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             var url = data.GetValue("Link").Value<string>();
@@ -242,7 +242,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Project project = _projectRepository.GetByIdCached(projectId);
-            if (project == null || !User.CanAccessOrganization(project.OrganizationId))
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
             var range = GetDateRange(start, end);
@@ -277,7 +277,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             Stack stack = _stackRepository.GetByIdCached(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return;
 
             _dataHelper.ResetStackData(id);

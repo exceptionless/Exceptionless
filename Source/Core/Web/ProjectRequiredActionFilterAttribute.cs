@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Web {
             // TODO Implement this.
             //var user = context.HttpContext.User as ExceptionlessPrincipal;
             //if (user != null && user.UserEntity != null) {
-            //    long projects = ProjectRepository.Count(Query.In(Core.ProjectRepository.FieldNames.OrganizationId, user.GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+            //    long projects = ProjectRepository.Count(Query.In(Core.ProjectRepository.FieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
             //    if (projects == 0) {
             //        context.Result = new RedirectToRouteResult(new RouteValueDictionary {
             //            { "Controller", "Project" },

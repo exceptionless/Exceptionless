@@ -10,9 +10,13 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Text;
 using System.Web.Http;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
@@ -37,6 +41,59 @@ namespace Exceptionless.Core.Extensions {
                 return project.Value;
 
             return null;
+        }
+
+        public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
+            var context = message.GetOwinContext();
+            if (context == null || context.Request == null || context.Request.User == null)
+                return null;
+
+            return context.Request.User.GetClaimsPrincipal();
+        }
+
+        public static AuthType GetAuthType(this HttpRequestMessage message) {
+            var principal = message.GetClaimsPrincipal();
+            return principal == null ? AuthType.Anonymous : principal.GetAuthType();
+        }
+
+        public static bool CanAccessOrganization(this HttpRequestMessage message, string organizationId) {
+            if (message.IsInOrganization(organizationId))
+                return true;
+
+            var principal = message.GetClaimsPrincipal();
+            return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
+        }
+
+        public static bool IsInOrganization(this HttpRequestMessage message, string organizationId) {
+            if (String.IsNullOrEmpty(organizationId))
+                return false;
+
+            var authType = message.GetAuthType();
+            if (authType == AuthType.User)
+                return message.GetUser().OrganizationIds.Contains(organizationId);
+
+            if (authType == AuthType.Project)
+                return message.GetProject().OrganizationId == organizationId;
+
+            return false;
+        }
+
+        public static IEnumerable<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
+            var items = new List<string>();
+
+            var authType = message.GetAuthType();
+            if (authType == AuthType.User)
+                items.AddRange(message.GetUser().OrganizationIds);
+
+            if (authType == AuthType.Project)
+                items.Add(message.GetProject().OrganizationId);
+
+            return items;
+        }
+
+        public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
+            // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
+            return message.GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
         public static string GetAllMessages(this HttpError error, bool includeStackTrace = false) {
