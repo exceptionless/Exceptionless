@@ -16,12 +16,13 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Api.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
@@ -43,19 +44,19 @@ namespace Exceptionless.Api.Controllers {
         private readonly IProjectHookRepository _projectHookRepository;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
         private readonly DataHelper _dataHelper;
+        private readonly IMessagePublisher _messagePublisher;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
-            IProjectHookRepository projectHookRepository, IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, NotificationSender notificationSender, DataHelper dataHelper) {
+            IProjectHookRepository projectHookRepository, IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, DataHelper dataHelper, IMessagePublisher messagePublisher) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _projectHookRepository = projectHookRepository;
             _webHookNotificationQueue = webHookNotificationQueue;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
             _dataHelper = dataHelper;
+            _messagePublisher = messagePublisher;
         }
 
         [Route]
@@ -194,7 +195,7 @@ namespace Exceptionless.Api.Controllers {
             _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
+            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
 
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
@@ -229,7 +230,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             // notify client that the error stack has been updated.
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
+            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
 
             return Ok();
         }
@@ -280,7 +281,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             _dataHelper.ResetStackData(id);
-            _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
+            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
         }
     }
 }

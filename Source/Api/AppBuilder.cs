@@ -69,6 +69,9 @@ namespace Exceptionless.Api {
                 }
 
                 var projectRepository = container.GetInstance<IProjectRepository>();
+                if (String.IsNullOrEmpty(token))
+                    return next.Invoke();
+
                 var project = projectRepository.GetByApiKey(token);
                 if (project == null)
                     return next.Invoke();
@@ -79,7 +82,7 @@ namespace Exceptionless.Api {
             app.UseStageMarker(PipelineStage.Authenticate);
 
             app.UseCors(CorsOptions.AllowAll);
-            app.MapSignalR();
+            //app.MapSignalR();
             app.UseWebApi(config);
 
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));

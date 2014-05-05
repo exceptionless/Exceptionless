@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Models.Organization;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -11,6 +10,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
@@ -28,16 +28,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, NotificationSender notificationSender, ProjectController projectController, IMailer mailer) {
+        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
             _projectController = projectController;
             _mailer = mailer;
         }
@@ -101,8 +99,6 @@ namespace Exceptionless.Api.Controllers {
             //User user = _userRepository.GetById(User.UserEntity.Id);
             user.OrganizationIds.Add(organization.Id);
             _userRepository.Update(user);
-
-            _notificationSender.OrganizationUpdated(organization.Id);
 
             return Ok(organization);
         }
@@ -178,8 +174,6 @@ namespace Exceptionless.Api.Controllers {
 
                 _billingManager.ApplyBillingPlan(organization, plan, User.GetUser());
                 _organizationRepository.Update(organization);
-
-                _notificationSender.PlanChanged(organization.Id);
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
                 return Ok(new { Success = false, Message = e.Message });
@@ -225,7 +219,6 @@ namespace Exceptionless.Api.Controllers {
                 _mailer.SendInviteAsync(currentUser, organization, invite);
             }
 
-            _notificationSender.OrganizationUpdated(organization.Id);
             if (user != null)
                 return Ok(new User { EmailAddress = user.EmailAddress });
 
@@ -418,8 +411,6 @@ namespace Exceptionless.Api.Controllers {
             Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
             _organizationRepository.Delete(value);
 
-            _notificationSender.OrganizationUpdated(value.Id);
-
             return Ok();
         }
 
@@ -459,7 +450,6 @@ namespace Exceptionless.Api.Controllers {
                 _userRepository.Update(user);
             }
 
-            _notificationSender.OrganizationUpdated(organization.Id);
             return Ok();
         }
 

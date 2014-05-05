@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Web.Http;
-using Exceptionless.Api.Hubs;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 
@@ -15,12 +16,12 @@ namespace Exceptionless.Api.Controllers {
     public class AdminController : ExceptionlessApiController {
         private readonly IOrganizationRepository _repository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
+        private readonly IMessagePublisher _messagePublisher;
 
-        public AdminController(IOrganizationRepository repository, BillingManager billingManager, NotificationSender notificationSender) {
+        public AdminController(IOrganizationRepository repository, BillingManager billingManager, IMessagePublisher messagePublisher) {
             _repository = repository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
+            _messagePublisher = messagePublisher;
         }
 
         [HttpPost]
@@ -42,7 +43,9 @@ namespace Exceptionless.Api.Controllers {
             _billingManager.ApplyBillingPlan(organization, plan, User.GetUser(), false);
 
             _repository.Update(organization);
-            _notificationSender.PlanChanged(organization.Id);
+            _messagePublisher.PublishAsync(new PlanChanged {
+                OrganizationId = organization.Id
+            });
 
             return Ok(new { Success = true });
         }
