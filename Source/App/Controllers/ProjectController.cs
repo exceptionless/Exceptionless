@@ -14,14 +14,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using AutoMapper;
-using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Project;
+using Exceptionless.App.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.App.Controllers {
     [Authorize]

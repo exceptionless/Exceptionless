@@ -11,10 +11,9 @@
 
 using System;
 using System.Web.Mvc;
+using Exceptionless.App.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.App.Controllers {
     [Authorize]

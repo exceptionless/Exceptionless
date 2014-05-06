@@ -47,13 +47,13 @@ namespace Exceptionless.Core {
             public const string RetentionDays = "RetentionDays";
             public const string HasPremiumFeatures = "HasPremiumFeatures";
             public const string MaxUsers = "MaxUsers";
-            public const string MaxErrorsPerDay = "MaxErrorsPerDay";
+            public const string MaxEventsPerDay = "MaxEventsPerDay";
             public const string MaxProjects = "MaxProjects";
             public const string ProjectCount = "ProjectCount";
             public const string StackCount = "StackCount";
-            public const string ErrorCount = "ErrorCount";
-            public const string TotalErrorCount = "TotalErrorCount";
-            public const string LastErrorDate = "LastErrorDate";
+            public const string EventCount = "EventCount";
+            public const string TotalEventCount = "TotalEventCount"; // TODO: Add a migration for TotalErrorCount.
+            public const string LastEventDate = "LastEventDate";
             public const string Invites = "Invites";
             public const string Invites_Token = "Invites.Token";
             public const string Invites_EmailAddress = "Invites.EmailAddress";
@@ -106,10 +106,10 @@ namespace Exceptionless.Core {
             if (projectCount.HasValue && projectCount.Value != 0)
                 update.Inc(FieldNames.ProjectCount, projectCount.Value);
             if (eventCount.HasValue && eventCount.Value != 0) {
-                update.Inc(FieldNames.ErrorCount, eventCount.Value);
+                update.Inc(FieldNames.EventCount, eventCount.Value);
                 if (eventCount.Value > 0) {
-                    update.Inc(FieldNames.TotalErrorCount, eventCount.Value);
-                    update.Set(FieldNames.LastErrorDate, new BsonDateTime(DateTime.UtcNow));
+                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
+                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
                 }
             }
             if (stackCount.HasValue && stackCount.Value != 0)
@@ -129,7 +129,7 @@ namespace Exceptionless.Core {
             if (projectCount.HasValue)
                 update.Set(FieldNames.ProjectCount, projectCount.Value);
             if (errorCount.HasValue)
-                update.Set(FieldNames.ErrorCount, errorCount.Value);
+                update.Set(FieldNames.EventCount, errorCount.Value);
             if (stackCount.HasValue)
                 update.Set(FieldNames.StackCount, stackCount.Value);
 

@@ -309,7 +309,7 @@ namespace Exceptionless.Core {
                 if (result.DocumentsAffected <= 0)
                     continue;
 
-                IncrementOrganizationAndProjectErrorCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, result.DocumentsAffected);
+                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, result.DocumentsAffected);
                 // TODO: Should be updating stack
             }
 
@@ -317,7 +317,7 @@ namespace Exceptionless.Core {
                 InvalidateCache(entity);
         }
 
-        private void IncrementOrganizationAndProjectErrorCounts(string organizationId, string projectId, long count) {
+        private void IncrementOrganizationAndProjectEventCounts(string organizationId, string projectId, long count) {
             _organizationRepository.IncrementStats(organizationId, eventCount: -count);
             _projectRepository.IncrementStats(projectId, eventCount: -count);
         }

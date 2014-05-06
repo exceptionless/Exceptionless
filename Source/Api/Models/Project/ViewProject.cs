@@ -6,7 +6,7 @@ namespace Exceptionless.Api.Models {
         public string OrganizationName { get; set; }
         public double TimeZoneOffset { get; set; }
         public long StackCount { get; set; }
-        public long ErrorCount { get; set; }
-        public long TotalErrorCount { get; set; }
+        public long EventCount { get; set; }
+        public long TotalEventCount { get; set; }
     }
 }

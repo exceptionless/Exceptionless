@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Dynamic;
 using System.Linq;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Reflection;
+using Exceptionless.Core.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
@@ -338,10 +340,19 @@ namespace Exceptionless.Core.Web {
         }
 
         private void CachePropertyAccessors(Type type) {
-            _propertyCache.GetOrAdd(type, t => t.GetProperties()
+            _propertyCache.GetOrAdd(type, t => {
+                var properties = t.GetProperties()
                     .Where(p => p.GetSetMethod() != null && p.GetGetMethod() != null)
-                    .Select(LateBinder.GetPropertyAccessor)
-                    .ToDictionary(p => p.Name));
+                    .Select(LateBinder.GetPropertyAccessor).ToList();
+
+                var items = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
+                foreach (var p in properties) {
+                    items[p.Name] = p;
+                    items[p.Name.ToLowerUnderscoredWords()] = p;
+                }
+
+                return items;
+            });
         }
 
         public static bool IsNullable(Type type) {

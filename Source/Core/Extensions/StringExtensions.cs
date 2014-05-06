@@ -6,16 +6,33 @@ using System.Text.RegularExpressions;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
-        public static string HexEscape(this string text, params char[] anyCharOf) {
-            if (string.IsNullOrEmpty(text)) return text;
-            if (anyCharOf == null || anyCharOf.Length == 0) return text;
+        public static string ToLowerUnderscoredWords(this string value) {
+            var builder = new StringBuilder();
+            for (int index = 0; index < value.Length; index++) {
+                char c = value[index];
+                if (Char.IsUpper(c)) {
+                    if (index > 0 && value[index - 1] != '_')
+                        builder.Append('_');
+
+                    builder.Append(Char.ToLower(c));
+                } else {
+                    builder.Append(c);
+                }
+            }
+
+            return builder.ToString();
+        }
+
+        public static string HexEscape(this string value, params char[] anyCharOf) {
+            if (string.IsNullOrEmpty(value)) return value;
+            if (anyCharOf == null || anyCharOf.Length == 0) return value;
 
             var encodeCharMap = new HashSet<char>(anyCharOf);
 
             var sb = new StringBuilder();
-            var textLength = text.Length;
+            var textLength = value.Length;
             for (var i = 0; i < textLength; i++) {
-                var c = text[i];
+                var c = value[i];
                 if (encodeCharMap.Contains(c)) {
                     sb.Append('%' + ((int)c).ToString("x"));
                 } else {

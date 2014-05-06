@@ -87,8 +87,8 @@ namespace Exceptionless.Api.Controllers {
             value.Id = null;
             value.ProjectCount = 0;
             value.StackCount = 0;
-            value.ErrorCount = 0;
-            value.TotalErrorCount = 0;
+            value.EventCount = 0;
+            value.TotalEventCount = 0;
 
             Organization organization = _organizationRepository.Add(value);
 
@@ -262,7 +262,7 @@ namespace Exceptionless.Api.Controllers {
             else if (sortBy == OrganizationSortBy.Subscribed)
                 sort = SortBy.Descending(OrganizationRepository.FieldNames.SubscribeDate);
             else if (sortBy == OrganizationSortBy.MostActive)
-                sort = SortBy.Descending(OrganizationRepository.FieldNames.TotalErrorCount);
+                sort = SortBy.Descending(OrganizationRepository.FieldNames.TotalEventCount);
             else
                 sort = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
 
@@ -373,7 +373,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("An organization cannot be deleted if it contains any projects.");
 
             var currentUser = ExceptionlessUser;
-            Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.ErrorCount).Write();
+            Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.EventCount).Write();
 
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
                 Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();

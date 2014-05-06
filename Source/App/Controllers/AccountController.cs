@@ -17,18 +17,15 @@ using System.Net;
 using System.Threading;
 using System.Web.Mvc;
 using DotNetOpenAuth.AspNet;
-using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Account;
 using Exceptionless.App.Models.Common;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Utility;
 using Exceptionless.Membership;
 using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 using Newtonsoft.Json;
 
 namespace Exceptionless.App.Controllers {

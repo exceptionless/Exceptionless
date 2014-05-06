@@ -11,13 +11,8 @@
 
 using System;
 using System.Web.Mvc;
-using AutoMapper;
-using Exceptionless.App.Models.Error;
+using Exceptionless.App.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
-using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.App.Controllers {
     [Authorize]

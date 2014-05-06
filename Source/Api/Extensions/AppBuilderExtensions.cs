@@ -13,6 +13,10 @@ namespace Exceptionless.Api.Extensions {
             return CreatePerContext(app, key, context => createCallback());
         }
 
+        public static IAppBuilder CreatePerContext<T>(this IAppBuilder app, Func<IOwinContext, T> createCallback) where T : class {
+            return CreatePerContext(app, null, createCallback);
+        }
+
         public static IAppBuilder CreatePerContext<T>(this IAppBuilder app, string key, Func<IOwinContext, T> createCallback) where T : class {
             if (app == null)
                 throw new ArgumentNullException("app");

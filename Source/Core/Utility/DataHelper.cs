@@ -73,14 +73,14 @@ namespace Exceptionless.Core.Utility {
                 _dayProjectStats.RemoveAllByProjectId(projectId);
                 _monthProjectStats.RemoveAllByProjectId(projectId);
 
-                project.ErrorCount = 0;
+                project.EventCount = 0;
                 project.StackCount = 0;
 
                 _projectRepository.Update(project);
 
                 IQueryable<Project> orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
                 Organization organization = _organizationRepository.GetById(project.OrganizationId);
-                organization.ErrorCount = orgProjects.Sum(p => p.ErrorCount);
+                organization.EventCount = orgProjects.Sum(p => p.EventCount);
                 organization.StackCount = orgProjects.Sum(p => p.StackCount);
                 _organizationRepository.Update(organization);
             } catch (Exception e) {

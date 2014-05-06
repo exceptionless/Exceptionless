@@ -11,12 +11,8 @@
 
 using System;
 using AutoMapper;
-using Exceptionless.App.Models.Error;
-using Exceptionless.App.Models.Organization;
 using Exceptionless.App.Models.Project;
 using Exceptionless.Models;
-using Exceptionless.Models.Data;
-using Stripe;
 
 namespace Exceptionless.App {
     public class AutoMapperConfig {

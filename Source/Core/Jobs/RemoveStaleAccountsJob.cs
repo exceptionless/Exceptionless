@@ -60,9 +60,9 @@ namespace Exceptionless.Core.Jobs {
             int skip = 0;
             var organizations = _organizationRepository.Collection.FindAs<Organization>(
                 Query.And(
-                    Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), 
+                    Query.LTE(OrganizationRepository.FieldNames.TotalEventCount, new BsonInt64(0)), 
                     Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
+                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastEventDate)
                 .SetLimit(20).SetSkip(skip).ToList();
 
             while (organizations.Count > 0) {
@@ -72,9 +72,9 @@ namespace Exceptionless.Core.Jobs {
                 skip += 20;
                 organizations = _organizationRepository.Collection.FindAs<Organization>(
                     Query.And(
-                        Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), 
+                        Query.LTE(OrganizationRepository.FieldNames.TotalEventCount, new BsonInt64(0)), 
                         Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
+                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastEventDate)
                     .SetLimit(20).SetSkip(skip).ToList();
             }
 
@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Jobs {
                     return;
                 }
 
-                if (organization.LastErrorDate >= DateTime.Now.SubtractDays(90)) {
+                if (organization.LastEventDate >= DateTime.Now.SubtractDays(90)) {
                     Log.Info().Message("Organization '{0}' with Id: '{1}' has had an exception newer than 90 days.", organization.Name, organization.Id).Write();
                     return;
                 }
@@ -110,7 +110,7 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Info().Message("Removing existing empty projects for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
-                if (projects.Any(project => project.TotalErrorCount > 0)) {
+                if (projects.Any(project => project.TotalEventCount > 0)) {
                     Log.Info().Message("Organization '{0}' with Id: '{1}' has a project with existing data. This organization will not be deleted.", organization.Name, organization.Id).Write();
                     return;
                 }

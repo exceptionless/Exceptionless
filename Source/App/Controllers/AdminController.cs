@@ -12,7 +12,6 @@
 using System;
 using System.Web.Mvc;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.App.Controllers {
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]

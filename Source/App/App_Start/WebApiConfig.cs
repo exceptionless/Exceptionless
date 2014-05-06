@@ -12,11 +12,10 @@
 using System;
 using System.Net.Http.Formatting;
 using System.Web.Http;
+using Exceptionless.App.Controllers;
 using Exceptionless.Core;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
-using ServiceStack.Redis;
 
 namespace Exceptionless.App {
     public static class WebApiConfig {

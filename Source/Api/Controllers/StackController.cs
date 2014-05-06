@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
     [RoutePrefix(API_PREFIX + "stack")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class StackController : ExceptionlessApiController {
+    public class StackController : RepositoryApiController<StackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -46,8 +46,10 @@ namespace Exceptionless.Api.Controllers {
         private readonly DataHelper _dataHelper;
         private readonly IMessagePublisher _messagePublisher;
 
-        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository,
-            IProjectHookRepository projectHookRepository, IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, DataHelper dataHelper, IMessagePublisher messagePublisher) {
+        public StackController(StackRepository stackRepository, IOrganizationRepository organizationRepository, 
+            IProjectRepository projectRepository, IProjectHookRepository projectHookRepository, 
+            IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, 
+            DataHelper dataHelper, IMessagePublisher messagePublisher) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -57,6 +59,8 @@ namespace Exceptionless.Api.Controllers {
             _dataHelper = dataHelper;
             _messagePublisher = messagePublisher;
         }
+
+        // TODO..
 
         [Route]
         [HttpGet]

@@ -615,13 +615,11 @@ namespace Exceptionless.Extensions {
         /// </summary>
         /// <param name="value">The value to convert.</param>
         /// <returns>The string</returns>
-        public static string ToSpacedWords(this string value)
-        {
+        public static string ToSpacedWords(this string value) {
             string[] words = ToWords(value);
 
             var spacedName = new StringBuilder();
-            foreach (string word in words)
-            {
+            foreach (string word in words) {
                 spacedName.Append(word);
                 spacedName.Append(' ');
             }

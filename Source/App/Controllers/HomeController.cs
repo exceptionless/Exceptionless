@@ -13,10 +13,7 @@ using System;
 using System.Linq;
 using System.Net;
 using System.Web.Mvc;
-using Exceptionless.App.Hubs;
 using Exceptionless.Core;
-using ServiceStack.CacheAccess;
-using ServiceStack.Redis;
 
 namespace Exceptionless.App.Controllers {
     public class HomeController : Controller {

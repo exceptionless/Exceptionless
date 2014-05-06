@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Runtime.Remoting.Contexts;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -11,11 +10,13 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
+using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -33,6 +34,8 @@ namespace Exceptionless.Api {
             var config = new HttpConfiguration();
             config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
             config.Formatters.Remove(config.Formatters.XmlFormatter);
+            config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
+            config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
             config.MapHttpAttributeRoutes();
 
             container.RegisterWebApiFilterProvider(config);
@@ -86,7 +89,7 @@ namespace Exceptionless.Api {
             });
             app.UseStageMarker(PipelineStage.Authenticate);
 
-            app.CreatePerContext<Lazy<User>>("LasyUser", ctx => {
+            app.CreatePerContext<Lazy<User>>("LazyUser", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
@@ -99,7 +102,7 @@ namespace Exceptionless.Api {
                 });
             });
 
-            app.CreatePerContext<Lazy<Project>>("LasyProject", ctx => {
+            app.CreatePerContext<Lazy<Project>>("LazyProject", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 

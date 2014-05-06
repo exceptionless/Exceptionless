@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
             while (organizations.Count > 0) {
                 // TODO: Need to add overage days to the org when they went over their limit for the day.
                 foreach (var organization in organizations)
-                    EnforceErrorCountLimits(organization);
+                    EnforceEventCountLimits(organization);
 
                 skip += 100;
                 organizations = _organizationRepository.Collection.FindAs<Organization>(Query.Null)
@@ -53,11 +53,11 @@ namespace Exceptionless.Core.Jobs {
             });
         }
 
-        private void EnforceErrorCountLimits(Organization organization) {
+        private void EnforceEventCountLimits(Organization organization) {
             if (organization.RetentionDays <= 0)
                 return;
 
-            Log.Info().Message("Enforcing error count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
+            Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {
                 // use the next higher plans retention days to enable us to upsell them

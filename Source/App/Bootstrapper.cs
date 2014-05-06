@@ -10,8 +10,7 @@
 #endregion
 
 using System;
-using CodeSmith.Core.Scheduler;
-using Exceptionless.App.Hubs;
+using Exceptionless.App.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Membership;
@@ -27,8 +26,6 @@ namespace Exceptionless.App {
 
             container.RegisterSingle<IMembershipSecurity, DefaultMembershipSecurity>();
             container.RegisterSingle<IMembershipProvider, MembershipProvider>();
-
-            container.RegisterSingle<NotificationSender>();
 
             if (Settings.Current.EnableJobsModule)
                 DynamicModuleUtility.RegisterModule(typeof(ExceptionlessJobHttpModule));

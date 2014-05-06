@@ -174,7 +174,8 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.0.0\lib\net45\System.Web.Razor.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.1.2\lib\net45\System.Web.Razor.dll</HintPath>
     </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -276,6 +277,7 @@
     <Compile Include="Serialization\ConditionalContractResolver.cs" />
     <Compile Include="Serialization\DataDictionaryConverter.cs" />
     <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
+    <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
     <Compile Include="Serialization\RequestInfoConverter.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Plugins\EventPipeline\Default\ErrorPlugin.cs" />

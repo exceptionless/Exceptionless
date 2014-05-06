@@ -51,24 +51,24 @@ namespace Exceptionless.Models {
         public string CustomContent { get; set; }
 
         /// <summary>
-        /// Current number of error stacks in the system.
+        /// Current number of stacks in the system.
         /// </summary>
         public long StackCount { get; set; }
 
         /// <summary>
-        /// Current number of error occurrences in the system.
+        /// Current number of event occurrences in the system.
         /// </summary>
-        public long ErrorCount { get; set; }
+        public long EventCount { get; set; }
 
         /// <summary>
-        /// Total errors logged by our system.
+        /// Total events logged by our system.
         /// </summary>
-        public long TotalErrorCount { get; set; }
+        public long TotalEventCount { get; set; }
 
         /// <summary>
-        /// The date that the latest error occurred.
+        /// The date that the latest event occurred.
         /// </summary>
-        public DateTime LastErrorDate { get; set; }
+        public DateTime LastEventDate { get; set; }
 
         /// <summary>
         /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the
