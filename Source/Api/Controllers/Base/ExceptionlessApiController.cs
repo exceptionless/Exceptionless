@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http.Headers;
 using System.Web.Http;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
@@ -61,13 +62,14 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetDefaultOrganizationId();
         }
 
-        protected int GetPageSize(int pageSize) {
-            if (pageSize < 1)
-                pageSize = 10;
-            else if (pageSize > 100)
-                pageSize = 100;
+        public const int DEFAULT_LIMIT = 10;
+        protected int GetLimit(int limit) {
+            if (limit < 1)
+                limit = DEFAULT_LIMIT;
+            else if (limit > 100)
+                limit = 100;
 
-            return pageSize;
+            return limit;
         }
 
         protected int GetSkip(int currentPage, int pageSize) {
@@ -84,6 +86,14 @@ namespace Exceptionless.Api.Controllers {
 
         public NotImplementedActionResult NotImplemented(string message) {
             return new NotImplementedActionResult(message, Request);
+        }
+
+        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
+            return new OkWithHeadersContentResult<T>(content, this, headers);
+        }
+
+        public OkWithResourceLinks<T> OkWithResourceLinks<T>(T content, bool hasMore) where T : class, IEnumerable<IIdentity> {
+            return new OkWithResourceLinks<T>(content, this, hasMore);
         }
     }
 }

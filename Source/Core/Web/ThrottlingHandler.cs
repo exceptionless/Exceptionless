@@ -12,7 +12,6 @@
 using System;
 using System.Net;
 using System.Net.Http;
-using System.ServiceModel.Channels;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;

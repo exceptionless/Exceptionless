@@ -12,8 +12,10 @@
 using System;
 
 namespace Exceptionless.Models {
-    public class ErrorResult : ErrorResultBase {
-        public string Message { get; set; }
-        public DateTimeOffset Date { get; set; }
+    public class EventStackResult : EventResultBase {
+        public string Title { get; set; }
+        public DateTimeOffset First { get; set; }
+        public DateTimeOffset Last { get; set; }
+        public long Total { get; set; }
     }
 }

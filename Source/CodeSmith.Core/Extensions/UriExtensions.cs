@@ -35,7 +35,7 @@ namespace Exceptionless.Extensions {
             // add (or replace existing) key-value pair
             collection.Set(Uri.EscapeDataString(key), Uri.EscapeDataString(value));
 
-            uri.Query = BuildQueryString(collection);
+            uri.Query = ToQueryString(collection);
 
             return uri;
         }
@@ -63,12 +63,12 @@ namespace Exceptionless.Extensions {
 
             collection.Remove(Uri.EscapeDataString(key));
 
-            uri.Query = BuildQueryString(collection);
+            uri.Query = ToQueryString(collection);
 
             return uri;
         }
 
-        private static string BuildQueryString(NameValueCollection collection) {
+        public static string ToQueryString(this NameValueCollection collection) {
             return collection.AsKeyValuePairs().ToConcatenatedString(pair => pair.Key == null ? pair.Value : String.Format("{0}={1}", pair.Key, pair.Value), "&");
         }
 

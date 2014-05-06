@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound));
         }
 
-        public PlanPagedResult<ErrorStackResult> RecentInternal(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public PlanPagedResult<EventStackResult> RecentInternal(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException();
 
@@ -95,15 +95,15 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
 
-            pageSize = GetPageSize(pageSize);
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
             long count;
             List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
             List<Stack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
-            var result = new PlanPagedResult<ErrorStackResult>(null, totalLimitedByPlan: query.Count - errorStacks.Count, totalCount: count);
-            result.Results.AddRange(errorStacks.Select(s => new ErrorStackResult {
+            var result = new PlanPagedResult<EventStackResult>(null, totalLimitedByPlan: query.Count - errorStacks.Count, totalCount: count);
+            result.Results.AddRange(errorStacks.Select(s => new EventStackResult {
                 Id = s.Id,
                 Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null,
                 Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null,
@@ -140,13 +140,13 @@ namespace Exceptionless.Api.Controllers {
             return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
         }
 
-        private PlanPagedResult<ErrorStackResult> Frequent(List<ErrorStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
-            pageSize = GetPageSize(pageSize);
+        private PlanPagedResult<EventStackResult> Frequent(List<EventStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            var ers = new PlanPagedResult<ErrorStackResult>(result.Skip(skip).Take(pageSize).ToList());
+            var ers = new PlanPagedResult<EventStackResult>(result.Skip(skip).Take(pageSize).ToList());
             IQueryable<Stack> errorStacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id));
-            foreach (ErrorStackResult stats in ers.Results.ToList()) {
+            foreach (EventStackResult stats in ers.Results.ToList()) {
                 Stack stack = errorStacks.SingleOrDefault(s => s.Id == stats.Id);
                 if (stack == null) {
                     ers.Results.RemoveAll(r => r.Id == stats.Id);

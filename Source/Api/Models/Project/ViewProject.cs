@@ -1,7 +1,8 @@
 ﻿using System;
+using Exceptionless.Models;
 
 namespace Exceptionless.Api.Models {
-    public class ViewProject : NewProject {
+    public class ViewProject : NewProject, IIdentity {
         public string Id { get; set; }
         public string OrganizationName { get; set; }
         public double TimeZoneOffset { get; set; }

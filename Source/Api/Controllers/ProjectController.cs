@@ -33,8 +33,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public override IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
-            return base.Get(organizationId, page, pageSize);
+        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
+            return base.Get(organization, before, after, limit);
         }
 
         [HttpGet]

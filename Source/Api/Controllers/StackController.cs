@@ -256,15 +256,15 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
 
-            pageSize = GetPageSize(pageSize);
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
             long count;
             List<Stack> query = _stackRepository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<ErrorStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, ErrorStackResult>).ToList();
+            List<EventStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
 
             long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<ErrorStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
+            var result = new PlanPagedResult<EventStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
                 Page = page > 1 ? page : 1,
                 PageSize = pageSize >= 1 ? pageSize : 10
             };

@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            pageSize = GetPageSize(pageSize);
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
             List<ViewUser> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 

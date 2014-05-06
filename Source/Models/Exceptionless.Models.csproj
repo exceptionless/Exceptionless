@@ -49,9 +49,9 @@
     </Compile>
     <Compile Include="Admin\NotificationSettings.cs" />
     <Compile Include="Admin\ProjectHook.cs" />
-    <Compile Include="Admin\Results\ErrorResultBase.cs" />
-    <Compile Include="Admin\Results\ErrorResult.cs" />
-    <Compile Include="Admin\Results\ErrorStackResult.cs" />
+    <Compile Include="Admin\Results\EventResultBase.cs" />
+    <Compile Include="Admin\Results\EventResult.cs" />
+    <Compile Include="Admin\Results\EventStackResult.cs" />
     <Compile Include="Admin\Stats\Results\PlanPagedResult.cs" />
     <Compile Include="Client\Data\Error.cs" />
     <Compile Include="Client\Data\InnerError.cs" />
@@ -72,7 +72,7 @@
     <Compile Include="Admin\Invite.cs" />
     <Compile Include="Client\Data\EnvironmentInfo.cs" />
     <Compile Include="Client\Data\RequestInfo.cs" />
-    <Compile Include="Admin\Stats\ErrorStats.cs" />
+    <Compile Include="Admin\Stats\EventStats.cs" />
     <Compile Include="Admin\Stats\EventStatsWithStackIds.cs" />
     <Compile Include="Admin\OAuthAccount.cs" />
     <Compile Include="Admin\Stats\MonthProjectStats.cs" />

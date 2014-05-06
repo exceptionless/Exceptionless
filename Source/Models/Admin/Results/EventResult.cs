@@ -12,11 +12,8 @@
 using System;
 
 namespace Exceptionless.Models {
-    public class ErrorResultBase {
-        public string Id { get; set; }
-        public string Type { get; set; }
-        public string Method { get; set; }
-        public string Path { get; set; }
-        public bool Is404 { get; set; }
+    public class EventResult : EventResultBase {
+        public string Message { get; set; }
+        public DateTimeOffset Date { get; set; }
     }
 }

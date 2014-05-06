@@ -30,6 +30,6 @@ namespace Exceptionless.Core.Mail.Models {
         public int NewTotal { get; set; }
         public double PerHourAverage { get; set; }
         public List<Stack> New { get; set; }
-        public List<ErrorStackResult> MostFrequent { get; set; }
+        public List<EventStackResult> MostFrequent { get; set; }
     }
 }

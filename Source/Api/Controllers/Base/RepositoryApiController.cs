@@ -6,9 +6,9 @@ using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using Exceptionless.Models.Stats;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
             where TRepository : MongoRepositoryWithIdentity<TModel>
             where TModel : class, IIdentity, new()
-            where TViewModel : class, new()
+            where TViewModel : class, IIdentity, new()
             where TNewModel : class, new()
             where TUpdateModel : class, new() {
         protected readonly TRepository _repository;
@@ -42,38 +42,40 @@ namespace Exceptionless.Api.Controllers {
 
         #region Get
 
-        public virtual IHttpActionResult Get(string organizationId = null, int page = 1, int pageSize = 10) {
+        public virtual IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
             IMongoQuery query = null;
-            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organizationId))
-                query = Query.EQ("oid", ObjectId.Parse(organizationId));
+            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organization))
+                query = Query.EQ("oid", ObjectId.Parse(organization));
 
-            var results = GetEntities<TViewModel>(query, page: page, pageSize: pageSize);
-            return Ok(new PagedResult<TViewModel>(results) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10
-            });
+            bool hasMore;
+            var results = GetEntities<TViewModel>(out hasMore, query, null, before, after, limit);
+            return OkWithResourceLinks(results, hasMore);
         }
 
-        protected List<T> GetEntities<T>(IMongoQuery query = null, IMongoFields fields = null, int page = 1, int pageSize = 10) {
-            pageSize = GetPageSize(pageSize);
-            int skip = GetSkip(page, pageSize);
+        protected List<T> GetEntities<T>(out bool hasMore, IMongoQuery query = null, IMongoFields fields = null, string before = null, string after = null, int limit = 10) {
+            limit = GetLimit(limit);
 
             // filter by the associated organizations
-            if (_isOwnedByOrganization) {
-                if (query != null)
-                    query = Query.And(query, Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
-                else
-                    query = Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
-            }
+            if (_isOwnedByOrganization)
+                query = query.And(Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
 
-            var cursor = _repository.Collection.Find(query ?? Query.Null).SetSkip(skip).SetLimit(pageSize);
+            if (!String.IsNullOrEmpty(before))
+                query = query.And(Query.LT("_id", ObjectId.Parse(before)));
+
+            if (!String.IsNullOrEmpty(after))
+                query = query.And(Query.GT("_id", ObjectId.Parse(after)));
+
+            var cursor = _repository.Collection.Find(query ?? Query.Null).SetLimit(limit + 1);
             if (fields != null)
                 cursor.SetFields(fields);
 
-            if (typeof(T) == typeof(TModel))
-                return cursor.Cast<T>().ToList();
+            var result = cursor.ToList();
+            hasMore = result.Count > limit;
 
-            return cursor.Select(Mapper.Map<TModel, T>).ToList();
+            if (typeof(T) == typeof(TModel))
+                return result.Take(limit).Cast<T>().ToList();
+
+            return result.Take(limit).Select(Mapper.Map<TModel, T>).ToList();
         }
         
         public virtual IHttpActionResult GetById(string id) {

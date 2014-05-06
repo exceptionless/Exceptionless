@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Net.Http.Formatting;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -8,10 +9,12 @@ using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
@@ -36,6 +39,14 @@ namespace Exceptionless.Api {
             config.Formatters.Remove(config.Formatters.XmlFormatter);
             config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
+
+            config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
+            config.MessageHandlers.Add(new EncodingDelegatingHandler());
+
+            // Throttle api calls to X every 15 minutes by IP address.
+            var cacheClient = container.GetInstance<ICacheClient>();
+            config.MessageHandlers.Add(new ThrottlingHandler(cacheClient, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+
             config.MapHttpAttributeRoutes();
 
             container.RegisterWebApiFilterProvider(config);

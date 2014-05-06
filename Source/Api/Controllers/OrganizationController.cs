@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
 
-            pageSize = GetPageSize(pageSize);
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
             // TODO: implement proper paging once it's supported by the api.
@@ -266,7 +266,7 @@ namespace Exceptionless.Api.Controllers {
             else
                 sort = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
 
-            pageSize = GetPageSize(pageSize);
+            pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
             MongoCursor<Organization> query = queries.Count > 0 

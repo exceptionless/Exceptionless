@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 
 namespace Exceptionless.Models {
-    public class EventStatsWithStackIds : ErrorStats {
+    public class EventStatsWithStackIds : EventStats {
         public EventStatsWithStackIds() {
             StackIds = new Dictionary<string, int>();
             NewStackIds = new List<string>();

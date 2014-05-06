@@ -14,8 +14,8 @@ using System;
 namespace Exceptionless.Models.Stats {
     public class ProjectEventStatsResult : DateRangeResult<DateProjectStatsResult> {
         public ProjectEventStatsResult(long totalLimitedByPlan = 0) {
-            MostFrequent = new PlanPagedResult<ErrorStackResult>();
-            MostRecent = new PlanPagedResult<ErrorStackResult>();
+            MostFrequent = new PlanPagedResult<EventStackResult>();
+            MostRecent = new PlanPagedResult<EventStackResult>();
 
             TotalLimitedByPlan = totalLimitedByPlan;
         }
@@ -23,9 +23,9 @@ namespace Exceptionless.Models.Stats {
         public int UniqueTotal { get; set; }
         public int NewTotal { get; set; }
 
-        public PlanPagedResult<ErrorStackResult> MostFrequent { get; set; }
+        public PlanPagedResult<EventStackResult> MostFrequent { get; set; }
 
-        public PlanPagedResult<ErrorStackResult> MostRecent { get; set; }
+        public PlanPagedResult<EventStackResult> MostRecent { get; set; }
 
         public long TotalLimitedByPlan { get; set; }
 

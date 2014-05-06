@@ -163,8 +163,8 @@ namespace Exceptionless.Core.Utility {
                 Total = days.Sum(kvp => kvp.Value.Total),
                 UniqueTotal = days.SelectMany(kvp => kvp.Value.StackIds.Select(s => s.Key)).Distinct().Count(),
                 NewTotal = days.Sum(kvp => kvp.Value.NewTotal),
-                MostFrequent = new PlanPagedResult<ErrorStackResult>(days.SelectMany(kvp => kvp.Value.StackIds).GroupBy(kvp => kvp.Key)
-                    .Select(v => new ErrorStackResult {
+                MostFrequent = new PlanPagedResult<EventStackResult>(days.SelectMany(kvp => kvp.Value.StackIds).GroupBy(kvp => kvp.Key)
+                    .Select(v => new EventStackResult {
                         Id = v.Key,
                         Total = v.Sum(kvp => kvp.Value)
                     }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan: totalLimitedByPlan, totalCount: days.Count),
@@ -280,8 +280,8 @@ namespace Exceptionless.Core.Utility {
                 Total = minuteBlocks.Sum(kvp => kvp.Value.Total),
                 UniqueTotal = minuteBlocks.SelectMany(kvp => kvp.Value.StackIds.Select(s => s.Key)).Distinct().Count(),
                 NewTotal = minuteBlocks.Sum(kvp => kvp.Value.NewTotal),
-                MostFrequent = new PlanPagedResult<ErrorStackResult>(minuteBlocks.SelectMany(kvp => kvp.Value.StackIds).GroupBy(kvp => kvp.Key)
-                    .Select(v => new ErrorStackResult {
+                MostFrequent = new PlanPagedResult<EventStackResult>(minuteBlocks.SelectMany(kvp => kvp.Value.StackIds).GroupBy(kvp => kvp.Key)
+                    .Select(v => new EventStackResult {
                         Id = v.Key,
                         Total = v.Sum(kvp => kvp.Value),
                     }).OrderByDescending(s => s.Total).ToList(), totalLimitedByPlan: totalLimitedByPlan, totalCount: minuteBlocks.Count),
@@ -949,8 +949,8 @@ namespace Exceptionless.Core.Utility {
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(ErrorStats))) {
-                BsonClassMap.RegisterClassMap<ErrorStats>(cm2 => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(EventStats))) {
+                BsonClassMap.RegisterClassMap<EventStats>(cm2 => {
                     cm2.AutoMap();
                     cm2.GetMemberMap(c => c.Total).SetElementName("tot");
                     cm2.GetMemberMap(c => c.NewTotal).SetElementName("new");
