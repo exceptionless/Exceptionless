@@ -14,7 +14,7 @@ using System.Web.Mvc;
 using System.Web.Routing;
 using Exceptionless.Core.Web;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.App.Extensions {
     /// <summary>
     /// Contains extension methods to map routes to lowercase URLs.
     /// </summary>

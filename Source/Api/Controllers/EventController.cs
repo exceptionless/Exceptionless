@@ -6,7 +6,6 @@ using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;

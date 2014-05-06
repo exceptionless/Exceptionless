@@ -3,7 +3,6 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Controllers;
 using NLog.Fluent;
 using Stripe;
 

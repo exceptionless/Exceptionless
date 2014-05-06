@@ -12,10 +12,10 @@
 using System;
 using System.Net;
 using System.Web.Http;
+using Exceptionless.Api.Controllers;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;

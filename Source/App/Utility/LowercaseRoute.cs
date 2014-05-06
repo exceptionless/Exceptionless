@@ -12,7 +12,7 @@
 using System;
 using System.Web.Routing;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.App.Utility {
     internal class LowercaseRoute : Route {
         public LowercaseRoute(string url, IRouteHandler routeHandler)
             : base(url, routeHandler) {}

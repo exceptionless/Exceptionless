@@ -12,12 +12,12 @@
 using System;
 using System.Web;
 using System.Web.Mvc;
-using IDependencyResolver = CodeSmith.Core.Dependency.IDependencyResolver;
+using CodeSmith.Core.Scheduler;
 
-namespace CodeSmith.Core.Scheduler {
+namespace Exceptionless.App.Utility {
     public class ExceptionlessJobHttpModule : JobHttpModule {
         public override void Init(HttpApplication context) {
-            var resolver = DependencyResolver.Current.GetService<IDependencyResolver>();
+            var resolver = DependencyResolver.Current.GetService<CodeSmith.Core.Dependency.IDependencyResolver>();
             JobManager.Current.SetDependencyResolver(resolver);
             base.Init(context);
         }

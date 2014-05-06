@@ -16,20 +16,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
-using System.Web.Mvc;
 using CodeSmith.Core.Component;
-using IAuthorizationFilter = System.Web.Http.Filters.IAuthorizationFilter;
+using Exceptionless.Core;
 
-namespace Exceptionless.Core.Web {
-    public class RequireHttpsAttribute : System.Web.Mvc.RequireHttpsAttribute, IAuthorizationFilter {
-        public override void OnAuthorization(AuthorizationContext context) {
-            if (context == null)
-                throw new ArgumentNullException("context");
-
-            if (Settings.Current.EnableSSL && !context.HttpContext.Request.IsSecureConnection)
-                HandleNonHttpsRequest(context);
-        }
-
+namespace Exceptionless.Api.Utility {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+    public class RequireHttpsAttribute : FilterAttribute, IAuthorizationFilter {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {
             string url = String.Format("https://{0}{1}", context.Request.RequestUri.Host, context.Request.RequestUri.PathAndQuery);
 

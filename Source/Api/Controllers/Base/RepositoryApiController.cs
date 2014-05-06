@@ -5,6 +5,7 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
+using Exceptionless.Core;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
@@ -12,7 +13,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Controllers {
+namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
             where TRepository : MongoRepositoryWithIdentity<TModel>
             where TModel : class, IIdentity, new()

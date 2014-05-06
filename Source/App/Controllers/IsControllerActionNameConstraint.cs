@@ -23,7 +23,7 @@ using CodeSmith.Core.Extensions;
 using MvcActionNameAttribute = System.Web.Mvc.ActionNameAttribute;
 using HttpActionNameAttribute = System.Web.Http.ActionNameAttribute;
 
-namespace Exceptionless.Core.Controllers {
+namespace Exceptionless.App.Controllers {
     public class IsControllerActionNameConstraint : IRouteConstraint, IHttpRouteConstraint {
         private readonly Dictionary<string, ISet<string>> _controllerActions = new Dictionary<string, ISet<string>>(StringComparer.OrdinalIgnoreCase);
 

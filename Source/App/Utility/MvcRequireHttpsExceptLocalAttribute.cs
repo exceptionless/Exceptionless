@@ -10,21 +10,10 @@
 #endregion
 
 using System;
-using System.Web.Http.Controllers;
 using System.Web.Mvc;
 
-namespace Exceptionless.Core.Web {
-    public class RequireHttpsExceptLocalAttribute : RequireHttpsAttribute {
-        protected override void HandleNonHttpsRequest(HttpActionContext context) {
-            if (context == null)
-                throw new ArgumentNullException("context");
-
-            if (HostIsLocal(context.Request.RequestUri.Host))
-                return;
-
-            base.HandleNonHttpsRequest(context);
-        }
-
+namespace Exceptionless.App.Utility {
+    public class MvcRequireHttpsExceptLocalAttribute : MvcRequireHttpsAttribute {
         protected override void HandleNonHttpsRequest(AuthorizationContext filterContext) {
             if (HostIsLocal(filterContext.HttpContext.Request.ServerVariables["SERVER_NAME"]))
                 return;

@@ -21,7 +21,7 @@ using System.Web.Mvc;
 using System.Web.Routing;
 using CodeSmith.Core.Extensions;
 
-namespace Exceptionless.Core.Controllers {
+namespace Exceptionless.App.Controllers {
     public class IsControllerNameConstraint : IRouteConstraint, IHttpRouteConstraint {
         private readonly HashSet<string> _controllerNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 

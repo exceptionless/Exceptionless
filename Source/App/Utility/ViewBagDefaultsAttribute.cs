@@ -11,13 +11,11 @@
 
 using System;
 using System.Web.Mvc;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
 using SimpleInjector;
 
-namespace Exceptionless.Core.Web {
-    public class ViewBagDefaults : FilterAttribute, IResultFilter {
+namespace Exceptionless.App.Utility {
+    public class ViewBagDefaultsAttribute : FilterAttribute, IResultFilter {
         [Inject]
         public Container Container { get; set; }
 

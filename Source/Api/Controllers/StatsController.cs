@@ -18,7 +18,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;

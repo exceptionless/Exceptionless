@@ -12,10 +12,11 @@
 using System;
 using System.Web.Mvc;
 using System.Web.Routing;
+using Exceptionless.Core;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.App.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class NotSuspendedAttribute : ActionFilterAttribute {
         [Inject]

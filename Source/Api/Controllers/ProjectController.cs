@@ -8,7 +8,6 @@ using Exceptionless.Api.Models;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;

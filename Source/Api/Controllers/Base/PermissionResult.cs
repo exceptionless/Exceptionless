@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Web.Http;
 
-namespace Exceptionless.Core.Controllers {
+namespace Exceptionless.Api.Controllers {
     public class PermissionResult {
         public bool Allowed { get; set; }
 

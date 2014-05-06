@@ -11,17 +11,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Web.Http;
-using Exceptionless.Core.Authorization;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
 using Exceptionless.Core.Web.Results;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Controllers {
+namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
-    public class ExceptionlessApiController : ApiController {
+    public abstract class ExceptionlessApiController : ApiController {
         protected const int API_CURRENT_VERSION = 2;
         protected const string API_PREFIX = "api/v2/";
 

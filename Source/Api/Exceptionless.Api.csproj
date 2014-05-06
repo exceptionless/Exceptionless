@@ -144,11 +144,14 @@
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
+    <Compile Include="Controllers\Base\ExceptionlessApiController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
     <Compile Include="Controllers\AdminController.cs" />
+    <Compile Include="Controllers\Base\PermissionResult.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
     <Compile Include="Controllers\ProjectHookController.cs" />
+    <Compile Include="Controllers\Base\RepositoryApiController.cs" />
     <Compile Include="Controllers\StackController.cs" />
     <Compile Include="Controllers\StatsController.cs" />
     <Compile Include="Controllers\StripeController.cs" />
@@ -165,6 +168,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
+    <Compile Include="Utility\RequireHttpsAttribute.cs" />
+    <Compile Include="Utility\RequireHttpsExceptLocalAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">

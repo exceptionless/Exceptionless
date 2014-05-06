@@ -5,7 +5,6 @@ using System.Web.Http;
 using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Controllers;
 using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {

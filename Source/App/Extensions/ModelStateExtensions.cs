@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.App.Extensions {
     public static class ModelStateExtensions {
         public static Dictionary<string, string[]> ToDictionary(this ModelStateDictionary modelState) {
             return modelState.Where(kvp => kvp.Value.Errors.Count > 0).ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray());

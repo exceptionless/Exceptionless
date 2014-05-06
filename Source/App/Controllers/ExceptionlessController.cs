@@ -13,10 +13,10 @@ using System;
 using System.Web.Mvc;
 using Exceptionless.Core.Web;
 
-namespace Exceptionless.Web.Controllers {
+namespace Exceptionless.App.Controllers {
     [ViewBagDefaults]
     [Core.Web.RequireHttps]
-    public class ExceptionlessController : Controller {
+    public abstract class ExceptionlessController : Controller {
         public void SetAttentionAlert(string message) {
             TempData[Alerts.ATTENTION] = message;
         }

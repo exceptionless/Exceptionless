@@ -14,7 +14,7 @@ using System.Web;
 using System.Web.Helpers;
 using System.Web.Mvc;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.App.Utility {
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class ValidateJsonAntiForgeryTokenAttribute : FilterAttribute, IAuthorizationFilter {
         public void OnAuthorization(AuthorizationContext filterContext) {
