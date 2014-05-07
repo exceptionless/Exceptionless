@@ -368,7 +368,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return BadRequest("An organization cannot be deleted if it has a subscription.");
 
-            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
+            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return BadRequest("An organization cannot be deleted if it contains any projects.");
 
@@ -435,7 +435,7 @@ namespace Exceptionless.Api.Controllers {
                 if (_userRepository.GetByOrganizationId(organization.Id).Count() == 1)
                     return BadRequest("An organization must contain at least one user.");
 
-                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
+                List<Project> projects = _projectRepository.WhereForOrganization(organization.Id).Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
                 if (projects.Count > 0) {
                     foreach (Project project in projects)
                         project.NotificationSettings.Remove(user.Id);

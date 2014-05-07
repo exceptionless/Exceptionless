@@ -156,6 +156,7 @@
     <Compile Include="Controllers\StatsController.cs" />
     <Compile Include="Controllers\StripeController.cs" />
     <Compile Include="Controllers\UserController.cs" />
+    <Compile Include="Controllers\UtilityController.cs" />
     <Compile Include="Extensions\AppBuilderExtensions.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />

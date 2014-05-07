@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http.Headers;
 using System.Web.Http;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
@@ -21,8 +20,8 @@ using Exceptionless.Models;
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
     public abstract class ExceptionlessApiController : ApiController {
-        protected const int API_CURRENT_VERSION = 2;
-        protected const string API_PREFIX = "api/v2/";
+        public const int API_CURRENT_VERSION = 2;
+        public const string API_PREFIX = "api/v2";
 
         protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
             if (starTime == null)

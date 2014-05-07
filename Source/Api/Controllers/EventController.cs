@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -11,42 +11,69 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix("api/v{version:int=1}/event")]
-    [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-    public class EventController : ExceptionlessApiController {
-        private readonly IEventRepository _eventRepository;
+    [RoutePrefix(API_PREFIX + "/event")]
+    [Authorize(Roles = AuthorizationRoles.User)]
+    public class EventController : RepositoryApiController<EventRepository, PersistentEvent, PersistentEvent, Event, Event> {
+        private readonly IProjectRepository _projectRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IAppStatsClient _statsClient;
 
-        public EventController(IEventRepository repository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) {
-            _eventRepository = repository;
+        public EventController(EventRepository repository, IProjectRepository projectRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
+            _projectRepository = projectRepository;
             _eventPostQueue = eventPostQueue;
             _statsClient = statsClient;
         }
 
-        [Route]
+        #region CRUD
+
         [HttpGet]
-        public IEnumerable<Event> Get() {
-            // TODO: Limit by active user.
-            return _eventRepository.All();
+        [Route]
+        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
+            return base.Get(organization, before, after, limit);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
+        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
+            IMongoQuery query = Query.EQ(EventRepository.FieldNames.StackId, ObjectId.Parse(stackId));
+
+            bool hasMore;
+            var results = GetEntities<PersistentEvent>(out hasMore, query, null, SortBy.Descending(EventRepository.FieldNames.Date_UTC), before, after, limit);
+            return OkWithResourceLinks(results, hasMore);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
+        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
+            IMongoQuery query = Query.EQ(EventRepository.FieldNames.ProjectId, ObjectId.Parse(projectId));
+
+            bool hasMore;
+            var results = GetEntities<PersistentEvent>(out hasMore, query, null, SortBy.Descending(EventRepository.FieldNames.Date_UTC), before, after, limit);
+            return OkWithResourceLinks(results, hasMore);
         }
 
         [HttpGet]
         [Route("{id}")]
-        public Event Get(string id) {
-            // TODO: Limit by active user.
-            return _eventRepository.GetByIdCached(id);
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
         }
 
-        [Route]
+        #endregion
+
+        [Route("~/api/v{version:int=1}/event")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [HttpPost]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             _statsClient.Counter(StatNames.PostsSubmitted);
             if (projectId == null)
-                projectId = User.GetProjectId();
+                projectId = GetDefaultProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -69,6 +96,11 @@ namespace Exceptionless.Api.Controllers {
             _statsClient.Counter(StatNames.PostsQueued);
 
             return Ok();
+        }
+
+        private string GetDefaultProjectId() {
+            var project = _projectRepository.GetByOrganizationId(GetDefaultOrganizationId()).FirstOrDefault();
+            return project != null ? project.Id : null;
         }
     }
 }

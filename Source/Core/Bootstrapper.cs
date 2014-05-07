@@ -16,6 +16,7 @@ using CodeSmith.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
@@ -23,6 +24,7 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -63,8 +65,13 @@ namespace Exceptionless.Core {
 
             string serviceBusConnectionString = "";
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
+            container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
+            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
 
             container.Register<EventStatsHelper>();
+            container.RegisterSingle<InMemoryMessageBus>();
+            container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
+            container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
 
             container.RegisterSingleImplementation<StackRepository>(typeof(IStackRepository), typeof(StackRepository));
             container.RegisterSingleImplementation<EventRepository>(typeof(IEventRepository), typeof(EventRepository));

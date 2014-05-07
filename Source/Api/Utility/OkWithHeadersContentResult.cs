@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Api.Controllers;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Utility {
@@ -46,32 +45,34 @@ namespace Exceptionless.Api.Utility {
 
             bool includePrevious = true;
             bool includeNext = hasMore;
-            bool hadBefore = false;
-            bool hadAfter = false;
+            bool hasBefore = false;
+            bool hasAfter = false;
 
             var previousParameters = Request.RequestUri.ParseQueryString();
             if (previousParameters["before"] != null)
-                hadBefore = true;
+                hasBefore = true;
             previousParameters.Remove("before");
             if (previousParameters["after"] != null)
-                hadAfter = true;
+                hasAfter = true;
             previousParameters.Remove("after");
             var nextParameters = new NameValueCollection(previousParameters);
             
             previousParameters.Add("before", firstId);
             nextParameters.Add("after", lastId);
 
-            if (hadBefore && !content.Any()) {
+            if (hasBefore && !content.Any()) {
                 // are we currently before the first page?
                 includePrevious = false;
                 includeNext = true;
                 nextParameters.Remove("after");
-            } else if (!hadBefore && !hadAfter) {
+            } else if (!hasBefore && !hasAfter) {
                 // are we at the first page?
                 includePrevious = false;
             }
 
-            string baseUrl = Request.RequestUri.ToString().Replace(Request.RequestUri.Query, "");
+            string baseUrl = Request.RequestUri.ToString();
+            if (!String.IsNullOrEmpty(Request.RequestUri.Query))
+                baseUrl = baseUrl.Replace(Request.RequestUri.Query, "");
 
             string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
             string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());

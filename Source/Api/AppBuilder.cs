@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Net.Http.Formatting;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -19,6 +20,7 @@ using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
+using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
@@ -129,6 +131,17 @@ namespace Exceptionless.Api {
             app.UseCors(CorsOptions.AllowAll);
             //app.MapSignalR();
             app.UseWebApi(config);
+
+            app.Use((context, next) => {
+                if (!context.Request.Uri.AbsolutePath.StartsWith("/" + ExceptionlessApiController.API_PREFIX))
+                    return next.Invoke();
+
+                context.Response.Write("{\r\n   \"message\": \"not found\"\r\n}");
+                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
+
+                return Task.FromResult(0);
+            });
+            app.UseStageMarker(PipelineStage.PostMapHandler);
 
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 

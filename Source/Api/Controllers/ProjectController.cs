@@ -14,7 +14,7 @@ using Exceptionless.Core.Web;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "project")]
+    [RoutePrefix(API_PREFIX + "/project")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<ProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private List<Project> _projects;
@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds()).ToList();
+                    _projects = _repository.WhereForOrganization(GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }

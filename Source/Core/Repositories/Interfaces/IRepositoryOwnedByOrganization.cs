@@ -17,17 +17,31 @@ using Exceptionless.Models;
 namespace Exceptionless.Core {
     public interface IRepositoryOwnedByOrganization<T> : IRepositoryWithIdentity<T> where T : class, IOwnedByOrganization, IIdentity, new() {
         /// <summary>
-        /// Returns the T by its given id.
+        /// Returns all entities that are within the specified organization.
         /// </summary>
-        /// <param name="id">The string representing the ObjectId of the entity to retrieve.</param>
-        /// <returns>The Entity T.</returns>
-        IQueryable<T> GetByOrganizationId(string id);
+        /// <param name="id">The organization id.</param>
+        /// <returns>A list of entities belonging to the organization.</returns>
+        IEnumerable<T> GetByOrganizationId(string id);
 
         /// <summary>
-        /// Returns the IQueryable<see cref="T" />> by its given ids.
+        /// Returns all entities that are within the specified list of organizations.
         /// </summary>
-        /// <param name="ids">The string representing the ObjectId of the entities to retrieve.</param>
-        /// <returns>An IQueryable<see cref="T" />> with entities that contain one of the passed in ObjectId's.</returns>
-        IQueryable<T> GetByOrganizationIds(IEnumerable<string> ids);
+        /// <param name="ids">The list of organization ids.</param>
+        /// <returns>A list of entities belonging to the specified organizations.</returns>
+        IEnumerable<T> GetByOrganizationId(IEnumerable<string> ids);
+
+        /// <summary>
+        /// Returns a queryable list of entities that are within the specified organization.
+        /// </summary>
+        /// <param name="id">The organization id.</param>
+        /// <returns>A list of entities belonging to the organization.</returns>
+        IQueryable<T> WhereForOrganization(string id);
+
+        /// <summary>
+        /// Returns a queryable list of entities that are within the specified list of organizations.
+        /// </summary>
+        /// <param name="ids">The list of organization ids.</param>
+        /// <returns>A list of entities belonging to the specified organizations.</returns>
+        IQueryable<T> WhereForOrganization(IEnumerable<string> ids);
     }
 }

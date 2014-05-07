@@ -109,7 +109,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 Log.Info().Message("Removing existing empty projects for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
+                List<Project> projects = _projectRepository.WhereForOrganization(organization.Id).ToList();
                 if (projects.Any(project => project.TotalEventCount > 0)) {
                     Log.Info().Message("Organization '{0}' with Id: '{1}' has a project with existing data. This organization will not be deleted.", organization.Name, organization.Id).Write();
                     return;

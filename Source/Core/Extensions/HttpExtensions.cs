@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
+using System.ServiceModel.Channels;
 using System.Text;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;

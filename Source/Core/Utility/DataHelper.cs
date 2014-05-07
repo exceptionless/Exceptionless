@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Utility {
 
                 _projectRepository.Update(project);
 
-                IQueryable<Project> orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
+                IQueryable<Project> orgProjects = _projectRepository.WhereForOrganization(project.OrganizationId);
                 Organization organization = _organizationRepository.GetById(project.OrganizationId);
                 organization.EventCount = orgProjects.Sum(p => p.EventCount);
                 organization.StackCount = orgProjects.Sum(p => p.StackCount);

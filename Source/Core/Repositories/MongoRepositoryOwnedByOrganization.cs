@@ -31,13 +31,39 @@ namespace Exceptionless.Core {
             public const string OrganizationId = "oid";
         }
 
-        public IQueryable<T> GetByOrganizationId(string id) {
-            // TODO: Cache this.
+        public IEnumerable<T> GetByOrganizationId(string id) {
+            if (Cache == null)
+                return Where(Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(id))));
+
+            var result = Cache.Get<IList<T>>(GetScopedCacheKey(String.Concat("org:", id)));
+            if (result != null)
+                return result;
+
+            result = Where(Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(id)))).ToList();
+            Cache.Set(GetScopedCacheKey(String.Concat("org:", id)), result, TimeSpan.FromMinutes(5));
+
+            return result;
+        }
+
+        public IEnumerable<T> GetByOrganizationId(IEnumerable<string> ids) {
+            if (Cache == null)
+                return Where(Query.In(FieldNames.OrganizationId, ids.Select(id => new BsonObjectId(new ObjectId(id)))));
+
+            var result = Cache.Get<IList<T>>(GetScopedCacheKey(String.Concat("org:", ids)));
+            if (result != null)
+                return result;
+
+            result = Where(Query.In(FieldNames.OrganizationId, ids.Select(id => new BsonObjectId(new ObjectId(id))))).ToList();
+            Cache.Set(GetScopedCacheKey(String.Concat("org:", ids)), result, TimeSpan.FromMinutes(5));
+
+            return result;
+        }
+
+        public IQueryable<T> WhereForOrganization(string id) {
             return Where(Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(id))));
         }
 
-        public IQueryable<T> GetByOrganizationIds(IEnumerable<string> ids) {
-            // TODO: Cache this.
+        public IQueryable<T> WhereForOrganization(IEnumerable<string> ids) {
             return Where(Query.In(FieldNames.OrganizationId, ids.Select(id => new BsonObjectId(new ObjectId(id)))));
         }
 

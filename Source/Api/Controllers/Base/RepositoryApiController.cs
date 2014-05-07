@@ -48,11 +48,11 @@ namespace Exceptionless.Api.Controllers {
                 query = Query.EQ("oid", ObjectId.Parse(organization));
 
             bool hasMore;
-            var results = GetEntities<TViewModel>(out hasMore, query, null, before, after, limit);
+            var results = GetEntities<TViewModel>(out hasMore, query, null, null, before, after, limit);
             return OkWithResourceLinks(results, hasMore);
         }
 
-        protected List<T> GetEntities<T>(out bool hasMore, IMongoQuery query = null, IMongoFields fields = null, string before = null, string after = null, int limit = 10) {
+        protected List<T> GetEntities<T>(out bool hasMore, IMongoQuery query = null, IMongoFields fields = null, IMongoSortBy sort = null, string before = null, string after = null, int limit = 10) {
             limit = GetLimit(limit);
 
             // filter by the associated organizations
@@ -68,6 +68,8 @@ namespace Exceptionless.Api.Controllers {
             var cursor = _repository.Collection.Find(query ?? Query.Null).SetLimit(limit + 1);
             if (fields != null)
                 cursor.SetFields(fields);
+            if (sort != null)
+                cursor.SetSortOrder(sort);
 
             var result = cursor.ToList();
             hasMore = result.Count > limit;

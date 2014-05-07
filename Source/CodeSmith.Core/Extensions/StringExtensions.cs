@@ -158,6 +158,10 @@ namespace Exceptionless.Extensions {
             return text;
         }
 
+        public static IEnumerable<string> SplitLines(this string text) {
+            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l));
+        }
+
         /// <summary>
         /// Indicates whether the specified String object is null or an empty string
         /// </summary>
