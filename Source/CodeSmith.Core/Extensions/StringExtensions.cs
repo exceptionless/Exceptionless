@@ -159,7 +159,7 @@ namespace Exceptionless.Extensions {
         }
 
         public static IEnumerable<string> SplitLines(this string text) {
-            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l));
+            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
         }
 
         /// <summary>
