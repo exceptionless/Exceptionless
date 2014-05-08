@@ -33,15 +33,20 @@ namespace Exceptionless.Api.Utility {
         }
     }
 
-    public class OkWithResourceLinks<T> : OkWithHeadersContentResult<T> where T : class, IEnumerable<IIdentity> {
-        public OkWithResourceLinks(T content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
+    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IEnumerable<TEntity>>
+        where TEntity : class, IIdentity {
+        public OkWithResourceLinks(IEnumerable<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(T content, ApiController controller, bool hasMore) : base(content, controller) {
+        public OkWithResourceLinks(IEnumerable<TEntity> content, ApiController controller, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null)
+            : base(content, controller) {
             if (content == null)
                 return;
 
-            string firstId = content.Any() ? content.First().Id : String.Empty;
-            string lastId = content.Any() ? content.Last().Id : String.Empty;
+            if (pagePropertyAccessor == null)
+                pagePropertyAccessor = e => e.Id;
+
+            string firstId = content.Any() ? pagePropertyAccessor(content.First()) : String.Empty;
+            string lastId = content.Any() ? pagePropertyAccessor(content.Last()) : String.Empty;
 
             bool includePrevious = true;
             bool includeNext = hasMore;

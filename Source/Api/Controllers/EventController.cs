@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -9,6 +10,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -34,27 +36,45 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            return base.Get(organization, before, after, limit);
+            var options = GetOptions(before, after, limit);
+
+            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organization))
+                options.Query = Query.And(Query.EQ(CommonFieldNames.OrganizationId, ObjectId.Parse(organization)));
+
+            var results = GetEntities<PersistentEvent>(options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
+        }
+
+        private GetEntitiesOptions GetOptions(string before, string after, int limit) {
+            var options = new GetEntitiesOptions { Limit = limit, SortBy = SortBy.Descending(EventRepository.FieldNames.Date_UTC) };
+
+            DateTime beforeDate, afterDate;
+            if (DateTime.TryParse(before, out beforeDate))
+                options.BeforeQuery = Query.LT(EventRepository.FieldNames.Date_UTC, beforeDate.Ticks);
+            if (DateTime.TryParse(after, out afterDate))
+                options.AfterQuery = Query.GT(EventRepository.FieldNames.Date_UTC, afterDate.Ticks);
+
+            return options;
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
         public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
-            IMongoQuery query = Query.EQ(EventRepository.FieldNames.StackId, ObjectId.Parse(stackId));
+            var options = GetOptions(before, after, limit);
+            options.Query = Query.And(Query.EQ(EventRepository.FieldNames.StackId, ObjectId.Parse(stackId)));
 
-            bool hasMore;
-            var results = GetEntities<PersistentEvent>(out hasMore, query, null, SortBy.Descending(EventRepository.FieldNames.Date_UTC), before, after, limit);
-            return OkWithResourceLinks(results, hasMore);
+            var results = GetEntities<PersistentEvent>(options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
         public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
-            IMongoQuery query = Query.EQ(EventRepository.FieldNames.ProjectId, ObjectId.Parse(projectId));
+            var options = GetOptions(before, after, limit);
+            options.Query = Query.And(Query.EQ(EventRepository.FieldNames.ProjectId, ObjectId.Parse(projectId)));
 
-            bool hasMore;
-            var results = GetEntities<PersistentEvent>(out hasMore, query, null, SortBy.Descending(EventRepository.FieldNames.Date_UTC), before, after, limit);
-            return OkWithResourceLinks(results, hasMore);
+            var results = GetEntities<PersistentEvent>(options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
         }
 
         [HttpGet]

@@ -7,6 +7,7 @@ using AutoMapper;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -47,37 +48,40 @@ namespace Exceptionless.Api.Controllers {
             if (_isOwnedByOrganization && !String.IsNullOrEmpty(organization))
                 query = Query.EQ("oid", ObjectId.Parse(organization));
 
-            bool hasMore;
-            var results = GetEntities<TViewModel>(out hasMore, query, null, null, before, after, limit);
-            return OkWithResourceLinks(results, hasMore);
+            var options = new GetEntitiesOptions { Query = query, AfterValue = after, BeforeValue = before, Limit = limit };
+            var results = GetEntities<TViewModel>(options);
+            return OkWithResourceLinks(results, options.HasMore);
         }
 
-        protected List<T> GetEntities<T>(out bool hasMore, IMongoQuery query = null, IMongoFields fields = null, IMongoSortBy sort = null, string before = null, string after = null, int limit = 10) {
-            limit = GetLimit(limit);
+        protected List<T> GetEntities<T>(GetEntitiesOptions options) {
+            options.Limit = GetLimit(options.Limit);
 
             // filter by the associated organizations
             if (_isOwnedByOrganization)
-                query = query.And(Query.In("oid", GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+                options.Query = options.Query.And(Query.In(CommonFieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
 
-            if (!String.IsNullOrEmpty(before))
-                query = query.And(Query.LT("_id", ObjectId.Parse(before)));
+            if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
+                options.BeforeQuery = Query.LT("_id", ObjectId.Parse(options.BeforeValue));
 
-            if (!String.IsNullOrEmpty(after))
-                query = query.And(Query.GT("_id", ObjectId.Parse(after)));
+            if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
+                options.AfterQuery = Query.LT("_id", ObjectId.Parse(options.AfterValue));
 
-            var cursor = _repository.Collection.Find(query ?? Query.Null).SetLimit(limit + 1);
-            if (fields != null)
-                cursor.SetFields(fields);
-            if (sort != null)
-                cursor.SetSortOrder(sort);
+            options.Query = options.Query.And(options.BeforeQuery);
+            options.Query = options.Query.And(options.AfterQuery);
+
+            var cursor = _repository.Collection.Find(options.Query ?? Query.Null).SetLimit(options.Limit + 1);
+            if (options.Fields != null)
+                cursor.SetFields(options.Fields);
+            if (options.SortBy != null)
+                cursor.SetSortOrder(options.SortBy);
 
             var result = cursor.ToList();
-            hasMore = result.Count > limit;
+            options.HasMore = result.Count > options.Limit;
 
             if (typeof(T) == typeof(TModel))
-                return result.Take(limit).Cast<T>().ToList();
+                return result.Take(options.Limit).Cast<T>().ToList();
 
-            return result.Take(limit).Select(Mapper.Map<TModel, T>).ToList();
+            return result.Take(options.Limit).Select(Mapper.Map<TModel, T>).ToList();
         }
         
         public virtual IHttpActionResult GetById(string id) {
@@ -215,5 +219,17 @@ namespace Exceptionless.Api.Controllers {
         }
 
         #endregion
+    }
+
+    public class GetEntitiesOptions {
+        public bool HasMore { get; set; }
+        public IMongoQuery Query { get; set; }
+        public IMongoFields Fields { get; set; }
+        public IMongoSortBy SortBy { get; set; }
+        public string BeforeValue { get; set; }
+        public IMongoQuery BeforeQuery { get; set; }
+        public string AfterValue { get; set; }
+        public IMongoQuery AfterQuery { get; set; }
+        public int Limit { get; set; }
     }
 }

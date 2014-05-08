@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Web.Http;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
@@ -91,8 +92,8 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<T> OkWithResourceLinks<T>(T content, bool hasMore) where T : class, IEnumerable<IIdentity> {
-            return new OkWithResourceLinks<T>(content, this, hasMore);
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null) where TEntity : class, IIdentity {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, pagePropertyAccessor);
         }
     }
 }
