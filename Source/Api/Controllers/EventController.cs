@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -14,7 +13,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using MongoDB.Bson;
-using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
