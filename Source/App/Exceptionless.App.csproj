@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.Default.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -215,10 +216,9 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Stripe.net, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.0.0\lib\net40\Stripe.net.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\packages\Stripe.net.2.1.0\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -321,8 +321,9 @@
       <HintPath>..\..\packages\Microsoft.AspNet.WebPages.WebData.3.1.2\lib\net45\WebMatrix.WebData.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="YamlDotNet">
-      <HintPath>..\..\packages\YamlDotNet.3.0.0\lib\net35\YamlDotNet.dll</HintPath>
+    <Reference Include="YamlDotNet, Version=2.0.1.20271, Culture=neutral, PublicKeyToken=2b53052c5884d7a1, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\YamlDotNet.3.1.1\lib\net35\YamlDotNet.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -391,10 +392,7 @@
     <Content Include="Content\images\glyphicons-halflings.png" />
     <Content Include="Content\rickshaw.css" />
     <Content Include="Content\rickshaw.min.css" />
-    <Content Include="Content\toastr.css">
-      <DependentUpon>toastr.less</DependentUpon>
-    </Content>
-    <Content Include="Content\toastr.less" />
+    <Content Include="Content\toastr.css" />
     <Content Include="Content\toastr.min.css" />
     <Content Include="Images\cards\amex.png" />
     <Content Include="Images\cards\diners.png" />
@@ -420,9 +418,8 @@
     <Content Include="Content\fonts\FontAwesome.otf" />
     <Content Include="Exceptionless.App.nuspec" />
     <Content Include="PreDeploy.ps1" />
-    <Content Include="Content\toastr.css.map">
-      <DependentUpon>toastr.css</DependentUpon>
-    </Content>
+    <Content Include="Content\toastr.scss" />
+    <Content Include="Content\toastr.less" />
     <None Include="Scripts\jquery-2.1.0.intellisense.js" />
     <Content Include="Scripts\d3.js" />
     <Content Include="Scripts\d3.min.js" />
@@ -454,11 +451,12 @@
     <Content Include="Scripts\numeral.min.js" />
     <Content Include="Scripts\rickshaw.js" />
     <Content Include="Scripts\rickshaw.min.js" />
+    <Content Include="Scripts\spin.min.js" />
+    <Content Include="Scripts\rickshaw.custom.js" />
+    <Content Include="Scripts\jquery-2.1.0.min.map" />
     <Content Include="Scripts\toastr.js" />
     <Content Include="Scripts\toastr.min.js" />
-    <Content Include="Scripts\rickshaw.custom.js" />
     <Content Include="Scripts\toastr.min.js.map" />
-    <Content Include="Scripts\jquery-2.1.0.min.map" />
     <None Include="Scripts\typings\jquery.payment\jquery.payment.d.ts" />
     <None Include="Scripts\typings\stripe\stripe.d.ts" />
     <Content Include="Content\bootstrap-select.css" />
@@ -518,7 +516,6 @@
     <Content Include="Scripts\typings\knockout.mapping\knockout.mapping.d.ts" />
     <Content Include="Scripts\typings\knockout\knockout.d.ts" />
     <Content Include="Scripts\typings\kolite\kolite.d.ts" />
-    <Content Include="Scripts\typings\moment\moment.d.ts" />
     <Content Include="Scripts\typings\numeraljs\numeraljs.d.ts" />
     <Content Include="Scripts\typings\spin\spin.d.ts" />
     <Content Include="Scripts\typings\toastr\toastr.d.ts" />
@@ -746,10 +743,13 @@
     <Content Include="Scripts\typings\jquery.livestampjs\jquery.livestampjs.d.ts" />
     <Content Include="Scripts\typings\bootstrap\bootstrap.d.ts" />
     <Content Include="Scripts\typings\signalr\signalr.d.ts" />
-    <Content Include="Scripts\typings\underscore\underscore.d.ts" />
     <Content Include="Scripts\typings\d3\d3.d.ts" />
     <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
     <Content Include="Scripts\typings\jquery\jquery.d.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="Scripts\typings\moment\moment.d.ts" />
+    <TypeScriptCompile Include="Scripts\typings\underscore\underscore.d.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
@@ -759,6 +759,7 @@
     <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="Exists('$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets')" />
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
   <Target Name="MvcBuildViews" AfterTargets="AfterBuild" Condition="'$(MvcBuildViews)'=='true'">

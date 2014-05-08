@@ -179,7 +179,9 @@
 
   // Return all the elements for which a truth test fails.
   _.reject = function(obj, predicate, context) {
-    return _.filter(obj, _.negate(predicate), context);
+    return _.filter(obj, function(value, index, list) {
+      return !predicate.call(context, value, index, list);
+    }, context);
   };
 
   // Determine whether all of the elements match a truth test.
@@ -247,48 +249,36 @@
   };
 
   // Return the maximum element or (element-based computation).
+  // Can't optimize arrays of integers longer than 65,535 elements.
+  // See [WebKit Bug 80797](https://bugs.webkit.org/show_bug.cgi?id=80797)
   _.max = function(obj, iterator, context) {
-    var result = -Infinity, lastComputed = -Infinity,
-        value, computed;
-    if (!iterator && _.isArray(obj)) {
-      for (var i = 0, length = obj.length; i < length; i++) {
-        value = obj[i];
-        if (value > result) {
-          result = value;
-        }
-      }
-    } else {
-      each(obj, function(value, index, list) {
-        computed = iterator ? iterator.call(context, value, index, list) : value;
-        if (computed > lastComputed) {
-          result = value;
-          lastComputed = computed;
-        }
-      });
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.max.apply(Math, obj);
     }
+    var result = -Infinity, lastComputed = -Infinity;
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      if (computed > lastComputed) {
+        result = value;
+        lastComputed = computed;
+      }
+    });
     return result;
   };
 
   // Return the minimum element (or element-based computation).
   _.min = function(obj, iterator, context) {
-    var result = Infinity, lastComputed = Infinity,
-        value, computed;
-    if (!iterator && _.isArray(obj)) {
-      for (var i = 0, length = obj.length; i < length; i++) {
-        value = obj[i];
-        if (value < result) {
-          result = value;
-        }
-      }
-    } else {
-      each(obj, function(value, index, list) {
-        computed = iterator ? iterator.call(context, value, index, list) : value;
-        if (computed < lastComputed) {
-          result = value;
-          lastComputed = computed;
-        }
-      });
+    if (!iterator && _.isArray(obj) && obj[0] === +obj[0] && obj.length < 65535) {
+      return Math.min.apply(Math, obj);
     }
+    var result = Infinity, lastComputed = Infinity;
+    each(obj, function(value, index, list) {
+      var computed = iterator ? iterator.call(context, value, index, list) : value;
+      if (computed < lastComputed) {
+        result = value;
+        lastComputed = computed;
+      }
+    });
     return result;
   };
 
@@ -446,26 +436,23 @@
   };
 
   // Internal implementation of a recursive `flatten` function.
-  var flatten = function(input, shallow, strict, output) {
+  var flatten = function(input, shallow, output) {
     if (shallow && _.every(input, _.isArray)) {
       return concat.apply(output, input);
     }
-    for (var i = 0, length = input.length; i < length; i++) {
-      var value = input[i];
-      if (!_.isArray(value) && !_.isArguments(value)) {
-        if (!strict) output.push(value);
-      } else if (shallow) {
-        push.apply(output, value);
+    each(input, function(value) {
+      if (_.isArray(value) || _.isArguments(value)) {
+        shallow ? push.apply(output, value) : flatten(value, shallow, output);
       } else {
-        flatten(value, shallow, strict, output);
+        output.push(value);
       }
-    }
+    });
     return output;
   };
 
   // Flatten out an array, either recursively (by default), or just one level.
   _.flatten = function(array, shallow) {
-    return flatten(array, shallow, false, []);
+    return flatten(array, shallow, []);
   };
 
   // Return a version of the array that does not contain the specified value(s).
@@ -475,11 +462,10 @@
 
   // Split an array into two arrays: one whose elements all satisfy the given
   // predicate, and one whose elements all do not satisfy the predicate.
-  _.partition = function(obj, predicate, context) {
-    predicate = lookupIterator(predicate);
+  _.partition = function(array, predicate) {
     var pass = [], fail = [];
-    each(obj, function(elem) {
-      (predicate.call(context, elem) ? pass : fail).push(elem);
+    each(array, function(elem) {
+      (predicate(elem) ? pass : fail).push(elem);
     });
     return [pass, fail];
   };
@@ -488,30 +474,27 @@
   // been sorted, you have the option of using a faster algorithm.
   // Aliased as `unique`.
   _.uniq = _.unique = function(array, isSorted, iterator, context) {
-    if (array == null) return [];
     if (_.isFunction(isSorted)) {
       context = iterator;
       iterator = isSorted;
       isSorted = false;
     }
-    var result = [];
+    var initial = iterator ? _.map(array, iterator, context) : array;
+    var results = [];
     var seen = [];
-    for (var i = 0, length = array.length; i < length; i++) {
-      var value = array[i];
-      if (iterator) value = iterator.call(context, value, i, array);
-      if (isSorted ? (!i || seen !== value) : !_.contains(seen, value)) {
-        if (isSorted) seen = value;
-        else seen.push(value);
-        result.push(array[i]);
+    each(initial, function(value, index) {
+      if (isSorted ? (!index || seen[seen.length - 1] !== value) : !_.contains(seen, value)) {
+        seen.push(value);
+        results.push(array[index]);
       }
-    }
-    return result;
+    });
+    return results;
   };
 
   // Produce an array that contains the union: each distinct element from all of
   // the passed-in arrays.
   _.union = function() {
-    return _.uniq(flatten(arguments, true, true, []));
+    return _.uniq(_.flatten(arguments, true));
   };
 
   // Produce an array that contains every item shared between all the
@@ -528,7 +511,7 @@
   // Take the difference between one array and a number of other arrays.
   // Only the elements present in just the first array will remain.
   _.difference = function(array) {
-    var rest = flatten(slice.call(arguments, 1), true, true, []);
+    var rest = concat.apply(ArrayProto, slice.call(arguments, 1));
     return _.filter(array, function(value){ return !_.contains(rest, value); });
   };
 
@@ -711,7 +694,7 @@
       var remaining = wait - (now - previous);
       context = this;
       args = arguments;
-      if (remaining <= 0 || remaining > wait) {
+      if (remaining <= 0) {
         clearTimeout(timeout);
         timeout = null;
         previous = now;
@@ -733,8 +716,7 @@
 
     var later = function() {
       var last = _.now() - timestamp;
-
-      if (last < wait && last > 0) {
+      if (last < wait) {
         timeout = setTimeout(later, wait - last);
       } else {
         timeout = null;
@@ -780,13 +762,6 @@
   // conditionally execute the original function.
   _.wrap = function(func, wrapper) {
     return _.partial(wrapper, func);
-  };
-
-  // Returns a negated version of the passed-in predicate.
-  _.negate = function(predicate) {
-    return function() {
-      return !predicate.apply(this, arguments);
-    };
   };
 
   // Returns a function that is the composition of a list of functions, each
@@ -879,33 +854,23 @@
   };
 
   // Return a copy of the object only containing the whitelisted properties.
-  _.pick = function(obj, iterator, context) {
-    var result = {};
-    if (_.isFunction(iterator)) {
-      for (var key in obj) {
-        var value = obj[key];
-        if (iterator.call(context, value, key, obj)) result[key] = value;
-      }
-    } else {
-      var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-      for (var i = 0, length = keys.length; i < length; i++) {
-        var key = keys[i];
-        if (key in obj) result[key] = obj[key];
-      }
-    }
-    return result;
+  _.pick = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    each(keys, function(key) {
+      if (key in obj) copy[key] = obj[key];
+    });
+    return copy;
   };
 
    // Return a copy of the object without the blacklisted properties.
-  _.omit = function(obj, iterator, context) {
-    var keys;
-    if (_.isFunction(iterator)) {
-      iterator = _.negate(iterator);
-    } else {
-      keys = concat.apply(ArrayProto, slice.call(arguments, 1));
-      iterator = function(value, key) { return !_.contains(keys, key); };
+  _.omit = function(obj) {
+    var copy = {};
+    var keys = concat.apply(ArrayProto, slice.call(arguments, 1));
+    for (var key in obj) {
+      if (!_.contains(keys, key)) copy[key] = obj[key];
     }
-    return _.pick(obj, iterator, context);
+    return copy;
   };
 
   // Fill in a given object with default properties.
@@ -1125,12 +1090,10 @@
   };
 
   _.constant = function(value) {
-    return function() {
+    return function () {
       return value;
     };
   };
-
-  _.noop = function(){};
 
   _.property = function(key) {
     return function(obj) {
@@ -1141,7 +1104,7 @@
   // Returns a predicate for checking whether an object has a given set of `key:value` pairs.
   _.matches = function(attrs) {
     return function(obj) {
-      if (obj === attrs) return true;
+      if (obj === attrs) return true; //avoid comparing an object to itself.
       for (var key in attrs) {
         if (attrs[key] !== obj[key])
           return false;
