@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Billing {
             if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled) {
                 org.IsSuspended = true;
                 org.SuspensionDate = DateTime.Now;
-                org.SuspensionCode = SuspensionCodes.Billing;
+                org.SuspensionCode = SuspensionCode.Billing;
                 org.SuspensionNotes = String.Format("Stripe subscription status changed to \"{0}\".", status.Value);
                 org.SuspendedByUserId = "Stripe";
             } else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing) {
@@ -119,7 +119,7 @@ namespace Exceptionless.Core.Billing {
             org.BillingStatus = BillingStatus.Canceled;
             org.IsSuspended = true;
             org.SuspensionDate = DateTime.Now;
-            org.SuspensionCode = SuspensionCodes.Billing;
+            org.SuspensionCode = SuspensionCode.Billing;
             org.SuspensionNotes = String.Format("Stripe subscription deleted.");
             org.SuspendedByUserId = "Stripe";
 

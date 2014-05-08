@@ -23,9 +23,11 @@ namespace Exceptionless.Api.Controllers {
             where TUpdateModel : class, new() {
         protected readonly TRepository _repository;
         protected static readonly bool _isOwnedByOrganization;
+        protected static readonly bool _isOrganization;
 
         static RepositoryApiController() {
             _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
+            _isOrganization = typeof(TModel) == typeof(Organization);
         }
 
         public RepositoryApiController(TRepository repository) {
@@ -52,11 +54,12 @@ namespace Exceptionless.Api.Controllers {
         protected List<T> GetEntities<T>(GetEntitiesOptions options) {
             options.Limit = GetLimit(options.Limit);
 
+            string orgIdField = _isOrganization ? CommonFieldNames.Id : CommonFieldNames.OrganizationId;
             // filter by organization
             if (GetAssociatedOrganizationIds().Contains(options.OrganizationId))
-                options.Query = options.Query.And(Query.EQ(CommonFieldNames.OrganizationId, ObjectId.Parse(options.OrganizationId)));
+                options.Query = options.Query.And(Query.EQ(orgIdField, ObjectId.Parse(options.OrganizationId)));
             else if (_isOwnedByOrganization)
-                options.Query = options.Query.And(Query.In(CommonFieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+                options.Query = options.Query.And(Query.In(orgIdField, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
             
             if (!String.IsNullOrEmpty(options.ProjectId))
                 options.Query = options.Query.And(Query.EQ(CommonFieldNames.ProjectId, ObjectId.Parse(options.ProjectId)));
@@ -64,16 +67,20 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(options.StackId))
                 options.Query = options.Query.And(Query.EQ(CommonFieldNames.StackId, ObjectId.Parse(options.StackId)));
 
-            if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
-                options.BeforeQuery = Query.LT("_id", ObjectId.Parse(options.BeforeValue));
+            if (!options.Page.HasValue) {
+                if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
+                    options.BeforeQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.BeforeValue));
 
-            if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
-                options.AfterQuery = Query.LT("_id", ObjectId.Parse(options.AfterValue));
+                if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
+                    options.AfterQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.AfterValue));
 
-            options.Query = options.Query.And(options.BeforeQuery);
-            options.Query = options.Query.And(options.AfterQuery);
+                options.Query = options.Query.And(options.BeforeQuery);
+                options.Query = options.Query.And(options.AfterQuery);
+            }
 
             var cursor = _repository.Collection.Find(options.Query ?? Query.Null).SetLimit(options.Limit + 1);
+            if (options.Page.HasValue)
+                cursor.SetSkip(GetSkip(options.Page.Value, options.Limit));
             if (options.Fields != null)
                 cursor.SetFields(options.Fields);
             if (options.SortBy != null)
@@ -99,11 +106,15 @@ namespace Exceptionless.Api.Controllers {
             return Ok(Mapper.Map<TModel, TViewModel>(model));
         }
 
-        protected virtual TModel GetModel(string id) {
+        protected virtual TModel GetModel(string id, bool useCache = true) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            var model = _repository.GetByIdCached(id);
+            TModel model;
+            if (useCache)
+                model = _repository.GetByIdCached(id);
+            else
+                model = _repository.GetById(id, true);
             if (_isOwnedByOrganization && model != null && !IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
@@ -120,7 +131,7 @@ namespace Exceptionless.Api.Controllers {
 
             var orgModel = value as IOwnedByOrganization;
             // if no organization id is specified, default to the user's 1st associated org.
-            if (orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
+            if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = GetDefaultOrganizationId();
 
             var mapped = Mapper.Map<TNewModel, TModel>(value);
@@ -145,7 +156,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual PermissionResult CanAdd(TModel value) {
             var orgModel = value as IOwnedByOrganization;
-            if (orgModel == null)
+            if (_isOrganization || orgModel == null)
                 return PermissionResult.Allow;
 
             if (!IsInOrganization(orgModel.OrganizationId))
@@ -167,7 +178,7 @@ namespace Exceptionless.Api.Controllers {
             if (changes == null || !changes.GetChangedPropertyNames().Any())
                 return Ok();
             
-            TModel original = GetModel(id);
+            TModel original = GetModel(id, false);
             if (original == null)
                 return NotFound();
 
@@ -238,5 +249,6 @@ namespace Exceptionless.Api.Controllers {
         public string AfterValue { get; set; }
         public IMongoQuery AfterQuery { get; set; }
         public int Limit { get; set; }
+        public int? Page { get; set; }
     }
 }

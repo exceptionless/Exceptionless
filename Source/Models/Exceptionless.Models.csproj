@@ -87,6 +87,7 @@
     <Compile Include="Client\Legacy\ErrorInfo.cs" />
     <Compile Include="Client\Legacy\Error.cs" />
     <Compile Include="Admin\Stack.cs" />
+    <Compile Include="Enums\SuspensionCode.cs" />
     <Compile Include="Interfaces\IData.cs" />
     <Compile Include="Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Interfaces\IIdentity.cs" />

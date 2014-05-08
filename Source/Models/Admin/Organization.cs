@@ -12,10 +12,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Exceptionless.Models;
 
 namespace Exceptionless.Models {
-    public class Organization : IIdentity, IData {
+    public class Organization : IIdentity, IData, IOwnedByOrganization {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
@@ -91,7 +90,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// The code indicating why the account was suspended.
         /// </summary>
-        public string SuspensionCode { get; set; }
+        public SuspensionCode? SuspensionCode { get; set; }
 
         /// <summary>
         /// Any notes on why the account was suspended.
@@ -162,6 +161,8 @@ namespace Exceptionless.Models {
         /// Optional data entries that contain additional configuration information for this organization.
         /// </summary>
         public DataDictionary Data { get; set; }
+
+        string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }
 
     public class OverageInfo {

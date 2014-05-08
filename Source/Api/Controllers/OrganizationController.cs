@@ -11,18 +11,15 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models.Billing;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using Exceptionless.Models.Stats;
 using MongoDB.Bson;
-using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using NLog.Fluent;
 using Stripe;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "organization")]
+    [RoutePrefix(API_PREFIX + "/organization")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class OrganizationController : RepositoryApiController<OrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly IUserRepository _userRepository;
@@ -43,11 +40,64 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            var query = Query.In(CommonFieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
-            var options = new GetEntitiesOptions { Query = query, AfterValue = after, BeforeValue = before, Limit = limit };
+        public IHttpActionResult Get(int page = 1, int limit = 10) {
+            var options = new GetEntitiesOptions { Page = page, Limit = limit };
             var results = GetEntities<ViewOrganization>(options);
             return OkWithResourceLinks(results, options.HasMore);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/admin/organization")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, OrganizationSortBy sort = OrganizationSortBy.Newest, int page = 1, int limit = 10) {
+            var options = new GetEntitiesOptions { Page = page, Limit = limit };
+            
+            if (!String.IsNullOrWhiteSpace(criteria))
+                options.Query = options.Query.And(Query.Matches(OrganizationRepository.FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
+
+            if (paid.HasValue) {
+                if (paid.Value)
+                    options.Query = options.Query.And(Query.NE(OrganizationRepository.FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                else
+                    options.Query = options.Query.And(Query.EQ(OrganizationRepository.FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+            }
+
+            if (suspended.HasValue) {
+                if (suspended.Value)
+                    options.Query = options.Query.And(
+                        Query.Or(
+                            Query.And(
+                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)),
+                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
+                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))),
+                            Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(true))));
+                else
+                    options.Query = options.Query.And(
+                            Query.Or(
+                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)),
+                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
+                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))),
+                            Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(false)));
+            }
+
+            switch (sort) {
+                case OrganizationSortBy.Newest:
+                    options.SortBy = SortBy.Descending(OrganizationRepository.FieldNames.Id);
+                    break;
+                case OrganizationSortBy.Subscribed:
+                    options.SortBy = SortBy.Descending(OrganizationRepository.FieldNames.SubscribeDate);
+                    break;
+                case OrganizationSortBy.MostActive:
+                    options.SortBy = SortBy.Descending(OrganizationRepository.FieldNames.TotalEventCount);
+                    break;
+                default:
+                    options.SortBy = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
+                    break;
+            }
+
+            var results = GetEntities<Organization>(options);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]
@@ -78,8 +128,8 @@ namespace Exceptionless.Api.Controllers {
         #endregion
 
         [HttpGet]
-        [Route("{id}/payments")]
-        public IHttpActionResult Payments(string id, int page = 1, int pageSize = 12) {
+        [Route("{id}/invoice")]
+        public IHttpActionResult GetInvoices(string id, int limit = 12, string before = null, string after = null) {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
 
@@ -87,22 +137,11 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
 
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            // TODO: implement proper paging once it's supported by the api.
-            var limit = pageSize * skip;
-            if (limit > 100)
-                limit = 100;
-
             var invoiceService = new StripeInvoiceService();
-            List<InvoiceGridModel> invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit }).Select(Mapper.Map<InvoiceGridModel>).ToList();
-            return Ok(new PagedResult<InvoiceGridModel>(invoices.Skip(skip).Take(pageSize).ToList()) {
-                Page = page,
-                PageSize = pageSize
-            });
-        }
+            var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after }).Select(Mapper.Map<InvoiceGridModel>).ToList();
 
+            return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
+        }
 
         [HttpPost]
         [Route("{id}/change-plan")]
@@ -184,9 +223,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/invite")]
-        public IHttpActionResult Invite(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+        [Route("{id}/user/{email}")]
+        public IHttpActionResult AddUser(string id, string email) {
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
 
             Organization organization = _repository.GetById(id);
@@ -194,10 +233,10 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             if (!_billingManager.CanAddUser(organization))
-                return this.PlanLimitReached("Please upgrade your plan to add an additional user.");
+                return PlanLimitReached("Please upgrade your plan to add an additional user.");
 
             var currentUser = ExceptionlessUser;
-            User user = _userRepository.GetByEmailAddress(emailAddress);
+            User user = _userRepository.GetByEmailAddress(email);
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
@@ -206,11 +245,11 @@ namespace Exceptionless.Api.Controllers {
 
                 _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
             } else {
-                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
+                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
                     invite = new Invite {
                         Token = Guid.NewGuid().ToString("N").ToLower(),
-                        EmailAddress = emailAddress,
+                        EmailAddress = email,
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
@@ -226,117 +265,24 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpGet]
-        [Route("list")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public PagedResult<Organization> List(string criteria = null, bool? isPaidPlan = null, bool? isSuspended = null, OrganizationSortBy sortBy = OrganizationSortBy.Newest, int page = 1, int pageSize = 10) {
-            var queries = new List<IMongoQuery>();
-            if (!String.IsNullOrWhiteSpace(criteria))
-                queries.Add(Query.Matches(OrganizationRepository.FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
-
-            if (isPaidPlan.HasValue) {
-                if (isPaidPlan.Value)
-                    queries.Add(Query.NE(OrganizationRepository.FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
-                else
-                    queries.Add(Query.EQ(OrganizationRepository.FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
-            }
-
-            if (isSuspended.HasValue) {
-                if (isSuspended.Value)
-                    queries.Add(
-                        Query.Or(
-                            Query.And(
-                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)),
-                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
-                                Query.NE(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))),
-                            Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(true))));
-                else
-                    queries.Add(Query.And(
-                            Query.Or(
-                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)),
-                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)),
-                                Query.EQ(OrganizationRepository.FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))),
-                            Query.EQ(OrganizationRepository.FieldNames.IsSuspended, new BsonBoolean(false))));
-            }
-
-            SortByBuilder sort;
-            if (sortBy == OrganizationSortBy.Newest)
-                sort = SortBy.Descending(OrganizationRepository.FieldNames.Id);
-            else if (sortBy == OrganizationSortBy.Subscribed)
-                sort = SortBy.Descending(OrganizationRepository.FieldNames.SubscribeDate);
-            else if (sortBy == OrganizationSortBy.MostActive)
-                sort = SortBy.Descending(OrganizationRepository.FieldNames.TotalEventCount);
-            else
-                sort = SortBy.Ascending(OrganizationRepository.FieldNames.Name);
-
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            MongoCursor<Organization> query = queries.Count > 0
-                ? _repository.Collection.Find(Query.And(queries))
-                : _repository.Collection.FindAll();
-            
-            List<Organization> results = query.SetSortOrder(sort).SetSkip(skip).SetLimit(pageSize).ToList();
-            return new PagedResult<Organization>(results, query.Count()) {
-                Page = page,
-                PageSize = pageSize
-            };
-        }
-
-        //protected override Organization UpdateEntity(Organization original, Delta<Organization> value)
-        //{
-        //    if (String.IsNullOrWhiteSpace(original.Id) || !CanAccessOrganization(original.Id))
-        //        return BadRequest();
-
-        //    Organization organization = value.GetEntity();
-        //    bool suspendedStateChanged = (value.ContainsChangedProperty(t => t.IsSuspended) && original.IsSuspended != organization.IsSuspended)
-        //                                 || (value.ContainsChangedProperty(t => t.SuspensionCode) && original.SuspensionCode != organization.SuspensionCode)
-        //                                 || (value.ContainsChangedProperty(t => t.SuspensionNotes) && original.SuspensionNotes != organization.SuspensionNotes);
-
-        //    value.Patch(original);
-
-        //    if (suspendedStateChanged)
-        //    {
-        //        if (original.IsSuspended)
-        //        {
-        //            original.SuspensionDate = DateTime.Now;
-        //            original.SuspendedByUserId = User.UserEntity != null ? User.UserEntity.Id : null;
-        //            if (!String.Equals(original.SuspensionCode, SuspensionCodes.Abuse) && !String.Equals(original.SuspensionCode, SuspensionCodes.Billing) && !String.Equals(original.SuspensionCode, SuspensionCodes.Overage))
-        //                original.SuspensionCode = SuspensionCodes.Other;
-        //        }
-        //        else
-        //        {
-        //            original.SuspensionDate = null;
-        //            original.SuspensionCode = null;
-        //            original.SuspensionNotes = null;
-        //            original.SuspendedByUserId = null;
-        //        }
-        //    }
-
-        //    organization = _organizationRepository.Update(original);
-        //    _notificationSender.OrganizationUpdated(organization.Id);
-
-        //    return organization;
-        //}
-
         [HttpDelete]
-        [Route("{id}/remove-user/{emailAddress}")]
-        public IHttpActionResult RemoveUser(string id, string emailAddress) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
+        [Route("{id}/user/{email}")]
+        public IHttpActionResult RemoveUser(string id, string email) {
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
 
             Organization organization = _repository.GetById(id);
             if (organization == null)
                 return BadRequest();
 
-            User user = _userRepository.GetByEmailAddress(emailAddress); // TODO This should be by email address.
+            User user = _userRepository.GetByEmailAddress(email);
             if (user == null || !user.OrganizationIds.Contains(id)) {
-                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
-                if (invite != null) {
-                    organization.Invites.Remove(invite);
-                    _repository.Update(organization);
-                }
+                Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
+                if (invite == null)
+                    return Ok();
+
+                organization.Invites.Remove(invite);
+                _repository.Update(organization);
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
@@ -359,15 +305,68 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        protected override Organization GetModel(string id) {
-            if (String.IsNullOrEmpty(id))
-                return null;
+        [HttpPost]
+        [Route("{id}/suspend")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult Suspend(string id, SuspensionCode code, string notes = null) {
+            var organization = GetModel(id, false);
+            if (organization == null)
+                return BadRequest();
 
-            var model = _repository.GetByIdCached(id);
-            if (model != null && !IsInOrganization(model.Id))
-                return null;
+            organization.IsSuspended = true;
+            organization.SuspensionDate = DateTime.Now;
+            organization.SuspendedByUserId = ExceptionlessUser.Id;
+            organization.SuspensionCode = code;
+            organization.SuspensionNotes = notes;
+            _repository.Update(organization);
 
-            return model;
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/suspend")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult Unsuspend(string id) {
+            var organization = GetModel(id, false);
+            if (organization == null)
+                return BadRequest();
+
+            organization.IsSuspended = false;
+            organization.SuspensionDate = null;
+            organization.SuspendedByUserId = null;
+            organization.SuspensionCode = null;
+            organization.SuspensionNotes = null;
+            _repository.Update(organization);
+
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("{id}/data/{key}")]
+        public IHttpActionResult PostData(string id, string key, string value) {
+            var organization = GetModel(id, false);
+            if (organization == null)
+                return BadRequest();
+
+            organization.Data[key] = value;
+            _repository.Update(organization);
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/data/{key}")]
+        public IHttpActionResult DeleteData(string id, string key) {
+            var organization = GetModel(id, false);
+            if (organization == null)
+                return BadRequest();
+
+            organization.Data.Remove(key);
+            _repository.Update(organization);
+
+            return Ok();
         }
 
         protected override PermissionResult CanAdd(Organization value) {
@@ -385,8 +384,6 @@ namespace Exceptionless.Api.Controllers {
 
             var organization = base.AddModel(value);
 
-            // TODO: Ensure that the owin context contains the most up-to-date version.
-            //User user = _userRepository.GetById(User.UserEntity.Id);
             ExceptionlessUser.OrganizationIds.Add(organization.Id);
             _userRepository.Update(ExceptionlessUser);
 

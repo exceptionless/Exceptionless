@@ -92,8 +92,12 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IEnumerable<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null) where TEntity : class, IIdentity {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, pagePropertyAccessor);
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IList<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor);
+        }
+
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IList<TEntity> content, bool hasMore, int page) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page);
         }
     }
 }

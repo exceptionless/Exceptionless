@@ -135,7 +135,7 @@ namespace Exceptionless.App.Controllers.API {
             });
         }
 
-        protected override ProjectHook GetModel(string id) {
+        protected override ProjectHook GetModel(string id, bool useCache = true) {
             var model = base.GetModel(id);
             return model != null && IsInProject(model.ProjectId) ? model : null;
         }

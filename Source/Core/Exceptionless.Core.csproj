@@ -190,7 +190,6 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
-    <Compile Include="Billing\SuspensionCodes.cs" />
     <Compile Include="Caching\AzureCacheClient.cs" />
     <Compile Include="Caching\ICacheClient.cs" />
     <Compile Include="Caching\InMemoryCacheClient.cs" />

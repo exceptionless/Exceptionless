@@ -46,9 +46,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route]
         public override IHttpActionResult Post(NewProject value) {
-            if (String.IsNullOrEmpty(value.OrganizationId))
-                value.OrganizationId = GetDefaultOrganizationId();
-
             return base.Post(value);
         }
 
@@ -188,6 +185,32 @@ namespace Exceptionless.Api.Controllers {
                     return NotFound();
                 }
             }
+
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("{id}/data/{key}")]
+        public IHttpActionResult PostData(string id, string key, string value) {
+            var project = GetModel(id, false);
+            if (project == null)
+                return BadRequest();
+
+            project.Data[key] = value;
+            _repository.Update(project);
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/data/{key}")]
+        public IHttpActionResult DeleteData(string id, string key) {
+            var project = GetModel(id, false);
+            if (project == null)
+                return BadRequest();
+
+            project.Data.Remove(key);
+            _repository.Update(project);
 
             return Ok();
         }

@@ -11,11 +11,11 @@
 
 using System;
 
-namespace Exceptionless.Core.Billing {
-    public static class SuspensionCodes {
-        public const string Billing = "Billing";
-        public const string Overage = "Overage";
-        public const string Abuse = "Abuse";
-        public const string Other = "Other";
+namespace Exceptionless.Models {
+    public enum SuspensionCode {
+        Billing,
+        Overage,
+        Abuse,
+        Other = 100
     }
 }
