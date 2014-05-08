@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Models;
 using Exceptionless.Api.Models.Organization;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -10,6 +11,8 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
 using MongoDB.Bson;
@@ -21,16 +24,14 @@ using Stripe;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "organization")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class OrganizationController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _organizationRepository;
+    public class OrganizationController : RepositoryApiController<OrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) {
-            _organizationRepository = organizationRepository;
+        public OrganizationController(OrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) : base(organizationRepository) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
@@ -38,11 +39,43 @@ namespace Exceptionless.Api.Controllers {
             _mailer = mailer;
         }
 
-        [Route]
+        #region CRUD
+
         [HttpGet]
-        public IEnumerable<Organization> Get() {
-            return _organizationRepository.GetByIds(GetAssociatedOrganizationIds());
+        [Route]
+        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
+            var query = Query.In(CommonFieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id))));
+            var options = new GetEntitiesOptions { Query = query, AfterValue = after, BeforeValue = before, Limit = limit };
+            var results = GetEntities<ViewOrganization>(options);
+            return OkWithResourceLinks(results, options.HasMore);
         }
+
+        [HttpGet]
+        [Route("{id}", Name = "GetOrganizationById")]
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
+        }
+
+        [HttpPost]
+        [Route]
+        public override IHttpActionResult Post(NewOrganization value) {
+            return base.Post(value);
+        }
+
+        [HttpPatch]
+        [HttpPut]
+        [Route("{id}")]
+        public override IHttpActionResult Patch(string id, Delta<NewOrganization> changes) {
+            return base.Patch(id, changes);
+        }
+
+        [HttpDelete]
+        [Route("{id}")]
+        public override IHttpActionResult Delete(string id) {
+            return base.Delete(id);
+        }
+
+        #endregion
 
         [HttpGet]
         [Route("{id}/payments")]
@@ -50,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
 
-            Organization organization = _organizationRepository.GetByIdCached(id);
+            Organization organization = _repository.GetByIdCached(id);
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
 
@@ -70,35 +103,6 @@ namespace Exceptionless.Api.Controllers {
             });
         }
 
-        [Route]
-        [HttpPost]
-        protected IHttpActionResult Post(Organization value) {
-            if (value == null || String.IsNullOrEmpty(value.Name))
-                return BadRequest();
-
-            if (!IsNameAvailable(value.Name))
-                return Conflict();
-
-            if (!_billingManager.CanAddOrganization(ExceptionlessUser))
-                return PlanLimitReached("Please upgrade your plan to add an additional organization.");
-
-            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
-
-            value.Id = null;
-            value.ProjectCount = 0;
-            value.StackCount = 0;
-            value.EventCount = 0;
-            value.TotalEventCount = 0;
-
-            Organization organization = _organizationRepository.Add(value);
-
-            // TODO: Ensure that the owin context contains the most up-to-date version.
-            //User user = _userRepository.GetById(User.UserEntity.Id);
-            ExceptionlessUser.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(ExceptionlessUser);
-
-            return Ok(organization);
-        }
 
         [HttpPost]
         [Route("{id}/change-plan")]
@@ -109,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableBilling)
                 return Ok(new { Success = false, Message = "Plans cannot be changed while billing is disabled." });
 
-            Organization organization = _organizationRepository.GetById(id);
+            Organization organization = _repository.GetById(id);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid OrganizationId." });
 
@@ -170,7 +174,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
-                _organizationRepository.Update(organization);
+                _repository.Update(organization);
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
                 return Ok(new { Success = false, Message = e.Message });
@@ -185,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
-            Organization organization = _organizationRepository.GetById(id);
+            Organization organization = _repository.GetById(id);
             if (organization == null)
                 return BadRequest();
 
@@ -210,7 +214,7 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    _organizationRepository.Update(organization);
+                    _repository.Update(organization);
                 }
 
                 _mailer.SendInviteAsync(currentUser, organization, invite);
@@ -269,9 +273,9 @@ namespace Exceptionless.Api.Controllers {
             pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            MongoCursor<Organization> query = queries.Count > 0 
-                ? ((OrganizationRepository)_organizationRepository).Collection.Find(Query.And(queries)) 
-                : ((OrganizationRepository)_organizationRepository).Collection.FindAll();
+            MongoCursor<Organization> query = queries.Count > 0
+                ? _repository.Collection.Find(Query.And(queries))
+                : _repository.Collection.FindAll();
             
             List<Organization> results = query.SetSortOrder(sort).SetSkip(skip).SetLimit(pageSize).ToList();
             return new PagedResult<Organization>(results, query.Count()) {
@@ -279,45 +283,6 @@ namespace Exceptionless.Api.Controllers {
                 PageSize = pageSize
             };
         }
-
-        //protected override bool CanUpdateEntity(Organization original, Delta<Organization> value)
-        //{
-        //    Organization organization = value.GetEntity();
-        //    if (value.ContainsChangedProperty(t => t.Id)
-        //        && !String.Equals(original.Id, organization.Id, StringComparison.OrdinalIgnoreCase))
-        //        return false;
-
-        //    if (value.ContainsChangedProperty(t => t.Name)
-        //        && !String.Equals(original.Name, organization.Name, StringComparison.OrdinalIgnoreCase)
-        //        && !IsNameAvailable(organization.Name))
-        //        return false;
-
-        //    if ((value.ContainsChangedProperty(t => t.MaxErrorsPerDay) && original.MaxErrorsPerDay != organization.MaxErrorsPerDay)
-        //        || (value.ContainsChangedProperty(t => t.LastErrorDate) && original.LastErrorDate != organization.LastErrorDate)
-        //        || (value.ContainsChangedProperty(t => t.StripeCustomerId) && original.StripeCustomerId != organization.StripeCustomerId)
-        //        || (value.ContainsChangedProperty(t => t.PlanId) && original.PlanId != organization.PlanId)
-        //        || (value.ContainsChangedProperty(t => t.CardLast4) && original.CardLast4 != organization.CardLast4)
-        //        || (value.ContainsChangedProperty(t => t.SubscribeDate) && original.SubscribeDate != organization.SubscribeDate)
-        //        || (value.ContainsChangedProperty(t => t.BillingChangeDate) && original.BillingChangeDate != organization.BillingChangeDate)
-        //        || (value.ContainsChangedProperty(t => t.RetentionDays) && original.RetentionDays != organization.RetentionDays)
-        //        || (value.ContainsChangedProperty(t => t.MaxErrorsPerDay) && original.MaxErrorsPerDay != organization.MaxErrorsPerDay)
-        //        || (value.ContainsChangedProperty(t => t.MaxProjects) && original.MaxProjects != organization.MaxProjects)
-        //        || (value.ContainsChangedProperty(t => t.ProjectCount) && original.ProjectCount != organization.ProjectCount)
-        //        || (value.ContainsChangedProperty(t => t.StackCount) && original.StackCount != organization.StackCount)
-        //        || (value.ContainsChangedProperty(t => t.ErrorCount) && original.ErrorCount != organization.ErrorCount)
-        //        || (value.ContainsChangedProperty(t => t.TotalErrorCount) && original.TotalErrorCount != organization.TotalErrorCount)
-        //        || (value.ContainsChangedProperty(t => t.SuspensionDate) && original.SuspensionDate != organization.SuspensionDate)
-        //        || (value.ContainsChangedProperty(t => t.SuspendedByUserId) && original.SuspendedByUserId != organization.SuspendedByUserId))
-        //        return false;
-
-        //    if (!User.IsInRole(AuthorizationRoles.GlobalAdmin)
-        //        && ((value.ContainsChangedProperty(t => t.IsSuspended) && original.IsSuspended != organization.IsSuspended)
-        //            || (value.ContainsChangedProperty(t => t.SuspensionCode) && original.SuspensionCode != organization.SuspensionCode)
-        //            || (value.ContainsChangedProperty(t => t.SuspensionNotes) && original.SuspensionNotes != organization.SuspensionNotes)))
-        //        return false;
-
-        //    return base.CanUpdateEntity(original, value);
-        //}
 
         //protected override Organization UpdateEntity(Organization original, Delta<Organization> value)
         //{
@@ -356,68 +321,12 @@ namespace Exceptionless.Api.Controllers {
         //}
 
         [HttpDelete]
-        [Route("{id}")]
-        public IHttpActionResult Delete(string id) {
-            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
-                return BadRequest();
-
-            Organization value = _organizationRepository.GetById(id);
-            if (value == null)
-                return BadRequest();
-
-            if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
-                return BadRequest("An organization cannot be deleted if it has a subscription.");
-
-            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
-            if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
-                return BadRequest("An organization cannot be deleted if it contains any projects.");
-
-            var currentUser = ExceptionlessUser;
-            Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.EventCount).Write();
-
-            if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
-                Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-
-                var customerService = new StripeCustomerService();
-                customerService.CancelSubscription(value.StripeCustomerId);
-            }
-
-            List<User> users = _userRepository.GetByOrganizationId(value.Id).ToList();
-            foreach (User user in users) {
-                // delete the user if they are not associated to any other organizations and they are not the current user
-                if (user.OrganizationIds.All(oid => String.Equals(oid, value.Id)) && !String.Equals(user.Id, currentUser.Id)) {
-                    Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, value.Name, value.Id).Write();
-                    _userRepository.Delete(user.Id);
-                } else {
-                    Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, value.Name, value.Id).Write();
-                    user.OrganizationIds.Remove(value.Id);
-                    _userRepository.Update(user);
-                }
-            }
-
-            if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
-                foreach (Project project in projects) {
-                    Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _projectController.ResetData(project.Id);
-                }
-
-                Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-                _projectRepository.Delete(projects);
-            }
-
-            Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-            _organizationRepository.Delete(value);
-
-            return Ok();
-        }
-
-        [HttpDelete]
         [Route("{id}/remove-user/{emailAddress}")]
         public IHttpActionResult RemoveUser(string id, string emailAddress) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(emailAddress))
                 return BadRequest();
 
-            Organization organization = _organizationRepository.GetById(id);
+            Organization organization = _repository.GetById(id);
             if (organization == null)
                 return BadRequest();
 
@@ -426,7 +335,7 @@ namespace Exceptionless.Api.Controllers {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase));
                 if (invite != null) {
                     organization.Invites.Remove(invite);
-                    _organizationRepository.Update(organization);
+                    _repository.Update(organization);
                 }
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
@@ -450,14 +359,88 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        private bool IsNameAvailable(string name) {
-            if (String.IsNullOrEmpty(name))
-                return false;
+        protected override Organization GetModel(string id) {
+            if (String.IsNullOrEmpty(id))
+                return null;
 
-            return _organizationRepository.Count(
-                Query.And(
-                     Query.In(OrganizationRepository.FieldNames.Id, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))),
-                     Query.EQ(OrganizationRepository.FieldNames.Name, name))) == 0;
+            var model = _repository.GetByIdCached(id);
+            if (model != null && !IsInOrganization(model.Id))
+                return null;
+
+            return model;
+        }
+
+        protected override PermissionResult CanAdd(Organization value) {
+            if (String.IsNullOrEmpty(value.Name))
+                return PermissionResult.DenyWithResult(BadRequest("Organization name is required."));
+
+            if (!_billingManager.CanAddOrganization(ExceptionlessUser))
+                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add an additional organization."));
+
+            return base.CanAdd(value);
+        }
+
+        protected override Organization AddModel(Organization value) {
+            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
+
+            var organization = base.AddModel(value);
+
+            // TODO: Ensure that the owin context contains the most up-to-date version.
+            //User user = _userRepository.GetById(User.UserEntity.Id);
+            ExceptionlessUser.OrganizationIds.Add(organization.Id);
+            _userRepository.Update(ExceptionlessUser);
+
+            return organization;
+        }
+
+        protected override PermissionResult CanDelete(Organization value) {
+            if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
+                return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it has a subscription."));
+
+            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
+            if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
+                return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it contains any projects."));
+
+            return base.CanDelete(value);
+        }
+
+        protected override void DeleteModel(Organization value) {
+            var currentUser = ExceptionlessUser;
+            Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.EventCount).Write();
+
+            if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
+                Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
+
+                var customerService = new StripeCustomerService();
+                customerService.CancelSubscription(value.StripeCustomerId);
+            }
+
+            List<User> users = _userRepository.GetByOrganizationId(value.Id).ToList();
+            foreach (User user in users) {
+                // delete the user if they are not associated to any other organizations and they are not the current user
+                if (user.OrganizationIds.All(oid => String.Equals(oid, value.Id)) && !String.Equals(user.Id, currentUser.Id)) {
+                    Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, value.Name, value.Id).Write();
+                    _userRepository.Delete(user.Id);
+                } else {
+                    Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, value.Name, value.Id).Write();
+                    user.OrganizationIds.Remove(value.Id);
+                    _userRepository.Update(user);
+                }
+            }
+
+            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
+            if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
+                foreach (Project project in projects) {
+                    Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
+                    _projectController.ResetData(project.Id);
+                }
+
+                Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
+                _projectRepository.Delete(projects);
+            }
+
+            Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
+            base.DeleteModel(value);
         }
 
         public enum OrganizationSortBy {
