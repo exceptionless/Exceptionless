@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
     public class JsonEventParserPlugin : IEventParserPlugin {
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             var events = new List<PersistentEvent>();
-            var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Error, ContractResolver = new ExtensionContractResolver() };
+            var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore, ContractResolver = new ExtensionContractResolver() };
 
             switch (input.GetJsonType()) {
                 case JsonType.Object: {

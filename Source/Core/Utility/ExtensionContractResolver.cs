@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
-using Newtonsoft.Json;
 #if EMBEDDED
 using Exceptionless.Json;
 using Exceptionless.Json.Serialization;
 #else
+using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 #endif
 
@@ -50,7 +51,7 @@ namespace Exceptionless.Serializer {
                 if (dataObject.Data == null)
                     dataObject.Data = new DataDictionary();
 
-                dataObject.Data.Add(key, value);
+                dataObject.Data.Add(key, value.ToJson());
             };
 
             return contract;
