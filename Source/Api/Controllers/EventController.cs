@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -10,11 +9,8 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
@@ -37,12 +33,30 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
             var options = GetOptions(before, after, limit);
-
-            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organization))
-                options.Query = Query.And(Query.EQ(CommonFieldNames.OrganizationId, ObjectId.Parse(organization)));
+            options.OrganizationId = organization;
 
             var results = GetEntities<PersistentEvent>(options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
+        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
+            var options = GetOptions(before, after, limit);
+            options.StackId = stackId;
+
+            var results = GetEntities<PersistentEvent>(options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
+        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
+            var options = GetOptions(before, after, limit);
+            options.ProjectId = projectId;
+
+            var results = GetEntities<PersistentEvent>(options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
         }
 
         private GetEntitiesOptions GetOptions(string before, string after, int limit) {
@@ -55,26 +69,6 @@ namespace Exceptionless.Api.Controllers {
                 options.AfterQuery = Query.GT(EventRepository.FieldNames.Date_UTC, afterDate.Ticks);
 
             return options;
-        }
-
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
-        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
-            var options = GetOptions(before, after, limit);
-            options.Query = Query.And(Query.EQ(EventRepository.FieldNames.StackId, ObjectId.Parse(stackId)));
-
-            var results = GetEntities<PersistentEvent>(options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
-        }
-
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
-        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
-            var options = GetOptions(before, after, limit);
-            options.Query = Query.And(Query.EQ(EventRepository.FieldNames.ProjectId, ObjectId.Parse(projectId)));
-
-            var results = GetEntities<PersistentEvent>(options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString());
         }
 
         [HttpGet]

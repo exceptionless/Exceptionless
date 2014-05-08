@@ -44,11 +44,7 @@ namespace Exceptionless.Api.Controllers {
         #region Get
 
         public virtual IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            IMongoQuery query = null;
-            if (_isOwnedByOrganization && !String.IsNullOrEmpty(organization))
-                query = Query.EQ("oid", ObjectId.Parse(organization));
-
-            var options = new GetEntitiesOptions { Query = query, AfterValue = after, BeforeValue = before, Limit = limit };
+            var options = new GetEntitiesOptions { OrganizationId = organization, AfterValue = after, BeforeValue = before, Limit = limit };
             var results = GetEntities<TViewModel>(options);
             return OkWithResourceLinks(results, options.HasMore);
         }
@@ -56,9 +52,17 @@ namespace Exceptionless.Api.Controllers {
         protected List<T> GetEntities<T>(GetEntitiesOptions options) {
             options.Limit = GetLimit(options.Limit);
 
-            // filter by the associated organizations
-            if (_isOwnedByOrganization)
+            // filter by organization
+            if (GetAssociatedOrganizationIds().Contains(options.OrganizationId))
+                options.Query = options.Query.And(Query.EQ(CommonFieldNames.OrganizationId, ObjectId.Parse(options.OrganizationId)));
+            else if (_isOwnedByOrganization)
                 options.Query = options.Query.And(Query.In(CommonFieldNames.OrganizationId, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
+            
+            if (!String.IsNullOrEmpty(options.ProjectId))
+                options.Query = options.Query.And(Query.EQ(CommonFieldNames.ProjectId, ObjectId.Parse(options.ProjectId)));
+
+            if (!String.IsNullOrEmpty(options.StackId))
+                options.Query = options.Query.And(Query.EQ(CommonFieldNames.StackId, ObjectId.Parse(options.StackId)));
 
             if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
                 options.BeforeQuery = Query.LT("_id", ObjectId.Parse(options.BeforeValue));
@@ -222,6 +226,9 @@ namespace Exceptionless.Api.Controllers {
     }
 
     public class GetEntitiesOptions {
+        public string OrganizationId { get; set; }
+        public string ProjectId { get; set; }
+        public string StackId { get; set; }
         public bool HasMore { get; set; }
         public IMongoQuery Query { get; set; }
         public IMongoFields Fields { get; set; }
