@@ -4,7 +4,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ***
 
-_** NOTE: This branch is for Exceptionless 2.0 which is a work in progress. Please switch to the 1.4 branch if you are looking for the stable version._
+_This branch is for Exceptionless 2.0 which is a work in progress. Please switch to the 1.4 branch if you are looking for the stable version._
 
 ***
 
