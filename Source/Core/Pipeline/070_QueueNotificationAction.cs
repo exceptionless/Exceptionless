@@ -16,6 +16,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models.Admin;
 using NLog.Fluent;
 

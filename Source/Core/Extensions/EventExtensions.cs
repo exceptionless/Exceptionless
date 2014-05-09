@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Newtonsoft.Json;
 

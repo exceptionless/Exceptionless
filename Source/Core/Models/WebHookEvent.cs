@@ -11,6 +11,7 @@
 
 using System;
 using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {

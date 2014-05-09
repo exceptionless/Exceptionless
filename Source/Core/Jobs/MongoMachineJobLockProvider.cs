@@ -11,6 +11,7 @@
 
 using System;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Core.Jobs {
     public class MongoMachineJobLockProvider : MongoJobLockProvider {

@@ -14,6 +14,7 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http.Filters;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Web {

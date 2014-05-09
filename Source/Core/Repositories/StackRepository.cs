@@ -21,7 +21,7 @@ using MongoDB.Driver;
 using M = MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class StackRepository : MongoRepositoryOwnedByProject<Stack>, IStackRepository {
+    public class StackRepository : MongoRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
         private readonly EventRepository _eventRepository;

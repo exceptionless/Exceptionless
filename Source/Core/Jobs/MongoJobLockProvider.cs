@@ -12,6 +12,7 @@
 using System;
 using System.Diagnostics;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Repositories;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {

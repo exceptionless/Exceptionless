@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {

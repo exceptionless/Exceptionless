@@ -21,6 +21,4 @@ namespace Exceptionless.Core.Repositories {
         void RemoveAllByProjectId(string projectId);
         Task RemoveAllByProjectIdAsync(string projectId);
     }
-
-    public interface IRepositoryOwnedByOrganizationAndProject<T> : IRepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByOrganization, IOwnedByProject, IIdentity, new() {}
 }

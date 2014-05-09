@@ -272,6 +272,7 @@
     <Compile Include="Repositories\Base\CommonFieldNames.cs" />
     <Compile Include="Repositories\Base\FindOptions.cs" />
     <Compile Include="Repositories\Base\FindMultipleOptions.cs" />
+    <Compile Include="Repositories\Base\IRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProjectAndStack.cs" />

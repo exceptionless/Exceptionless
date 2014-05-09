@@ -12,6 +12,7 @@
 using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 using Stripe;

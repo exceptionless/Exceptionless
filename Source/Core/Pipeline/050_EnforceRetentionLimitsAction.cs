@@ -13,6 +13,7 @@ using System;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver.Builders;

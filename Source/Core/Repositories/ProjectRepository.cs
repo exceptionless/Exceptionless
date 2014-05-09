@@ -28,48 +28,19 @@ namespace Exceptionless.Core.Repositories {
             _organizationRepository = organizationRepository;
         }
 
-        public const string CollectionName = "project";
+        protected override void BeforeAdd(IList<Project> documents) {
+            // TODO: Do we still need to do this..
+            //foreach (string key in entity.ApiKeys)
+            //    InvalidateCache(key);
 
-        protected override string GetCollectionName() {
-            return CollectionName;
+            base.BeforeAdd(documents);
         }
 
-        public new static class FieldNames {
-            public const string Id = "_id";
-            public const string OrganizationId = "oid";
-            public const string Name = "Name";
-            public const string TimeZone = "TimeZone";
-            public const string ApiKeys = "ApiKeys";
-            public const string Configuration = "Configuration";
-            public const string Configuration_Version = "Configuration.Version";
-            public const string NotificationSettings = "NotificationSettings";
-            public const string PromotedTabs = "PromotedTabs";
-            public const string CustomContent = "CustomContent";
-            public const string StackCount = "StackCount";
-            public const string EventCount = "EventCount";
-            public const string TotalEventCount = "TotalEventCount";
-            public const string LastEventDate = "LastEventDate";
-            public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
-        }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
-            // TODO: Should we set an index on project and configuration key name.
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
-        }
-
-        public override Project Add(Project entity, bool addToCache = false) {
-            foreach (string key in entity.ApiKeys)
-                InvalidateCache(key);
-
-            var project =  base.Add(entity, addToCache);
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-            return project;
+        protected override void AfterAdd(IList<Project> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            base.AfterAdd(documents, addToCache, expiresIn);
+            foreach (var project in documents) {
+                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+            }
         }
 
         public override Project Update(Project entity, bool addToCache = false) {
@@ -179,5 +150,45 @@ namespace Exceptionless.Core.Repositories {
             Collection.Update(query, update);
             InvalidateCache(projectId);
         }
+
+        
+        #region Collection Setup
+
+        public const string CollectionName = "project";
+
+        protected override string GetCollectionName() {
+            return CollectionName;
+        }
+
+        public new static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string OrganizationId = CommonFieldNames.OrganizationId;
+            public const string Name = "Name";
+            public const string TimeZone = "TimeZone";
+            public const string ApiKeys = "ApiKeys";
+            public const string Configuration = "Configuration";
+            public const string Configuration_Version = "Configuration.Version";
+            public const string NotificationSettings = "NotificationSettings";
+            public const string PromotedTabs = "PromotedTabs";
+            public const string CustomContent = "CustomContent";
+            public const string StackCount = "StackCount";
+            public const string EventCount = "EventCount";
+            public const string TotalEventCount = "TotalEventCount";
+            public const string LastEventDate = "LastEventDate";
+            public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
+        }
+
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
+            // TODO: Should we set an index on project and configuration key name.
+        }
+
+        protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
+            base.ConfigureClassMap(cm);
+            cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
+        }
+
+        #endregion
     }
 }

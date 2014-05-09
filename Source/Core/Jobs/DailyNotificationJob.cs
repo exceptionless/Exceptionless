@@ -17,6 +17,7 @@ using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;

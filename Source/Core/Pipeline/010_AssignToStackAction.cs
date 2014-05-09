@@ -16,6 +16,7 @@ using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 

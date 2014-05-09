@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Repositories;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventPipeline {

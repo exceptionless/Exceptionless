@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 

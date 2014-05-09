@@ -12,6 +12,7 @@
 using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Repositories;
 using MongoDB.Driver;
 using NLog.Fluent;
 
