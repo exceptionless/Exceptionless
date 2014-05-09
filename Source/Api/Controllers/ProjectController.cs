@@ -66,31 +66,51 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("config")]
-        [Route("config/{id}")]
+        [Route("{id}/config")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public IHttpActionResult Config(string id = null) {
+        public IHttpActionResult GetConfig(string id = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
-            
-            if (String.IsNullOrEmpty(id))
-                    return NotFound();
 
-            var project = _repository.GetByIdCached(id);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = GetModel(id);
+            if (project == null)
                 return NotFound();
 
             return Ok(project.Configuration);
         }
 
+        [HttpPost]
+        [Route("{id}/config/{key}")]
+        public IHttpActionResult SetConfig(string id, string key, string value) {
+            var project = GetModel(id, false);
+            if (project == null)
+                return BadRequest();
+
+            project.Configuration.Settings[key] = value;
+            _repository.Update(project);
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/config/{key}")]
+        public IHttpActionResult DeleteConfig(string id, string key) {
+            var project = GetModel(id, false);
+            if (project == null)
+                return BadRequest();
+
+            project.Configuration.Settings.Remove(key);
+            _repository.Update(project);
+
+            return Ok();
+        }
+
         [HttpGet]
         [Route("{id}/reset-data")]
         public IHttpActionResult ResetData(string id) {
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
-
-            Project project = _repository.GetByIdCached(id);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
+            var project = GetModel(id);
+            if (project == null)
                 return BadRequest();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
@@ -100,29 +120,23 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}/get-key")]
-        public IHttpActionResult GetOrAddKey(string id) {
-            if (String.IsNullOrWhiteSpace(id))
-                return BadRequest();
-
-            var project = _repository.GetById(id);
-            if (project == null || CanAccessOrganization(project.OrganizationId))
+        [Route("{id}/apikey/get-default")]
+        public IHttpActionResult GetDefaultApiKey(string id) {
+            var project = GetModel(id);
+            if (project == null)
                 return BadRequest();
 
             if (project.ApiKeys.Count > 0)
-                return Ok(project.ApiKeys.First());
+                return Ok(new { Key = project.ApiKeys.First() });
 
-            return ManageApiKeys(id);
+            return GetNewApiKey(id);
         }
 
         [HttpPost]
-        [Route("{id}/key/")]
-        public IHttpActionResult ManageApiKeys(string id) {
-            if (String.IsNullOrWhiteSpace(id))
-                return BadRequest();
-
-            var project = _repository.GetById(id);
-            if (project == null || CanAccessOrganization(project.OrganizationId))
+        [Route("{id}/apikey/")]
+        public IHttpActionResult GetNewApiKey(string id) {
+            var project = GetModel(id, false);
+            if (project == null)
                 return BadRequest();
 
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
@@ -130,40 +144,55 @@ namespace Exceptionless.Api.Controllers {
 
             _repository.Update(project);
 
-            return Ok(apiKey);
+            return Ok(new { Key = apiKey });
         }
 
         [HttpDelete]
-        [Route("{id}/key/{apiKey}")]
-        public IHttpActionResult ManageApiKeys(string id, string apiKey) {
-            if (String.IsNullOrWhiteSpace(id) || String.IsNullOrEmpty(apiKey))
-                return BadRequest();
-
-            var project = _repository.GetById(id);
-            if (project == null || CanAccessOrganization(project.OrganizationId))
+        [Route("{id}/apikey/{apiKey}")]
+        public IHttpActionResult DeleteApiKey(string id, string apiKey) {
+            var project = GetModel(id, false);
+            if (project == null)
                 return BadRequest();
 
             if (!project.ApiKeys.Contains(apiKey))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            if (!CanAccessOrganization(project.OrganizationId))
-                throw new Exception("Invalid organization.");
-
             project.ApiKeys.Remove(apiKey);
             _repository.Update(project);
 
-            return Ok();
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        [HttpGet]
+        [Route("{id}/notification")]
+        public IHttpActionResult GetNotificationSettings(string id) {
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            return Ok(project.NotificationSettings);
+        }
+
+        [HttpGet]
+        [Route("{id}/notification/{userId}")]
+        public IHttpActionResult GetNotificationSettings(string id, string userId) {
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            if (!project.NotificationSettings.ContainsKey(userId))
+                return NotFound();
+
+            return Ok(project.NotificationSettings[userId]);
         }
 
         [HttpPut]
+        [HttpPost]
         [Route("{id}/notification/{userId}")]
-        public IHttpActionResult Notification(string id, string userId, NotificationSettings settings) {
-            if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(userId) || settings == null)
-                return BadRequest();
-
-            Project project = _repository.GetById(id);
-            if (project == null || CanAccessOrganization(project.OrganizationId))
-                return BadRequest();
+        public IHttpActionResult SetNotificationSettings(string id, string userId, NotificationSettings settings) {
+            var project = GetModel(id, false);
+            if (project == null)
+                return NotFound();
 
             project.NotificationSettings[userId] = settings;
             _repository.Update(project);
@@ -171,27 +200,67 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpGet]
-        [Route("is-name-available")]
-        public IHttpActionResult IsNameAvailable(string id, string name) {
-            if (String.IsNullOrEmpty(id) || String.IsNullOrWhiteSpace(name))
+        [HttpPut]
+        [HttpPost]
+        [Route("{id}/notification/{name}")]
+        public IHttpActionResult PromoteTab(string id, string name) {
+            var project = GetModel(id, false);
+            if (project == null)
                 return NotFound();
 
-            foreach (Project project in Projects) {
-                if (String.Equals(project.Name, name, StringComparison.OrdinalIgnoreCase)) {
-                    if (String.Equals(project.Id, id, StringComparison.OrdinalIgnoreCase))
-                        break;
-
-                    return NotFound();
-                }
+            if (!project.PromotedTabs.Contains(name)) {
+                project.PromotedTabs.Add(name);
+                _repository.Update(project);
             }
 
             return Ok();
         }
 
+        [HttpDelete]
+        [Route("{id}/promotedtabs/{name}")]
+        public IHttpActionResult DemoteTab(string id, string name) {
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            if (!project.PromotedTabs.Contains(name)) {
+                project.PromotedTabs.Remove(name);
+                _repository.Update(project);
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/notification/{userId}")]
+        public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            if (project.NotificationSettings.ContainsKey(userId)) {
+                project.NotificationSettings.Remove(userId);
+                _repository.Update(project);
+            }
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("check-name")]
+        public IHttpActionResult IsNameAvailable(string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return NotFound();
+
+            if (_repository.GetByOrganizationId(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                return Ok();
+
+            return NotFound();
+        }
+
         [HttpPost]
         [Route("{id}/data/{key}")]
-        public IHttpActionResult PostData(string id, string key, string value) {
+        public IHttpActionResult SetData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
                 return BadRequest();
@@ -241,18 +310,6 @@ namespace Exceptionless.Api.Controllers {
             var project = base.AddModel(value);
 
             return project;
-        }
-
-        private IEnumerable<Project> Projects {
-            get {
-                if (User == null)
-                    return new List<Project>();
-
-                if (_projects == null)
-                    _projects = _repository.WhereForOrganization(GetAssociatedOrganizationIds()).ToList();
-
-                return _projects;
-            }
         }
     }
 }
