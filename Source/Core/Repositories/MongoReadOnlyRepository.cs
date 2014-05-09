@@ -14,11 +14,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+using DbQuery = MongoDB.Driver.Builders.Query;
 
-namespace Exceptionless.Core {
+namespace Exceptionless.Core.Repositories {
     /// <summary>
     /// Deals with entities in MongoDb.
     /// </summary>
@@ -120,11 +123,82 @@ namespace Exceptionless.Core {
         }
 
         /// <summary>
+        /// Finds a T using the given query.
+        /// </summary>
+        /// <param name="query">The query to use.</param>
+        /// <param name="cacheKey">If specified, will allow the document to be read from cache.</param>
+        /// <returns>The Entity T.</returns>
+        public TModel FindOne<TModel>(IMongoQuery query, string cacheKey = null) where TModel: class, new() {
+            if (query == null)
+                throw new ArgumentNullException("query");
+
+            TModel result = null;
+            if (!String.IsNullOrEmpty(cacheKey))
+                result = Cache.Get<TModel>(GetScopedCacheKey(cacheKey));
+
+            if (result != null)
+                return result;
+
+            var findArgs = new FindOneArgs { Query = query };
+            if (!String.IsNullOrEmpty(cacheKey))
+                findArgs.ReadPreference = ReadPreference.Primary;
+
+            result = _collection.FindOneAs<TModel>(findArgs);
+
+            if (result != null)
+                Cache.Set(GetScopedCacheKey(cacheKey), result);
+
+            return result;
+        }
+
+        /// <summary>
+        /// Find all documents matching the specified query.
+        /// </summary>
+        /// <param name="options">The <see cref="FindOptions"/> to use when finding the entities.</param>
+        /// <returns>An IList<see cref="T" />> with entities that match the criteria.</returns>
+        protected IList<TModel> Find<TModel>(FindOptions options) where TModel : class, new() {
+            if (options == null)
+                throw new ArgumentNullException("options");
+
+            IList<TModel> result = null;
+            if (options.UseCache)
+                result = Cache.Get<IList<TModel>>(GetScopedCacheKey(options.CacheKey));
+
+            if (result != null)
+                return result;
+
+            var cursor = _collection.FindAs<TModel>(options.GetQuery());
+            if (!options.UseCache)
+                cursor.SetReadPreference(ReadPreference.Primary);
+            if (options.UsePaging)
+                cursor.SetSkip(options.GetSkip());
+            if (options.UseLimit)
+                cursor.SetLimit(options.GetLimit() + 1);
+            if (options.Fields != null)
+                cursor.SetFields(options.Fields);
+            if (options.SortBy != null)
+                cursor.SetSortOrder(options.SortBy);
+
+            result = cursor.ToList();
+            if (options.UseLimit) {
+                if (result.Count > options.GetLimit())
+                    options.HasMore = true;
+                result = result.Take(options.GetLimit()).ToList();
+            }
+
+            Cache.Set(GetScopedCacheKey(options.CacheKey), result);
+
+            return result;
+        }
+
+        /// <summary>
         /// Returns a single T by the given criteria.
         /// </summary>
         /// <param name="criteria">The expression.</param>
         /// <returns>A single T matching the criteria.</returns>
         public T FirstOrDefault(Expression<Func<T, bool>> criteria) {
+            var query = GetQueryFromExpression(criteria);
+            Collection.FindOne(query);
             return All().Where(criteria).FirstOrDefault();
         }
 
@@ -219,6 +293,96 @@ namespace Exceptionless.Core {
             }
 
             return result.AsQueryable();
+        }
+    }
+
+    public class FindOptions {
+        public FindOptions() {
+            Ids = new List<string>();
+            OrganizationIds = new List<string>();
+            ProjectIds = new List<string>();
+            StackIds = new List<string>();
+        }
+
+        public List<string> Ids { get; set; }
+        public List<string> OrganizationIds { get; set; }
+        public List<string> ProjectIds { get; set; }
+        public List<string> StackIds { get; set; }
+        public bool HasMore { get; set; }
+        public IMongoQuery Query { get; set; }
+        public IMongoFields Fields { get; set; }
+        public IMongoSortBy SortBy { get; set; }
+        public string BeforeValue { get; set; }
+        public IMongoQuery BeforeQuery { get; set; }
+        public string AfterValue { get; set; }
+        public IMongoQuery AfterQuery { get; set; }
+        public int? Limit { get; set; }
+        public int? Page { get; set; }
+        public string CacheKey { get; set; }
+
+        public bool UseLimit {
+            get { return Limit.HasValue; }
+        }
+
+        public bool UseSkip {
+            get { return UsePaging; }
+        }
+
+        public bool UseCache {
+            get { return !String.IsNullOrEmpty(CacheKey); }
+        }
+
+        public bool UsePaging {
+            get { return Page.HasValue; }
+        }
+
+        public const int DEFAULT_LIMIT = 10;
+        public const int MAX_LIMIT = 100;
+        public int GetLimit() {
+            if (!Limit.HasValue || Limit.Value < 1)
+                return DEFAULT_LIMIT;
+
+            if (Limit.Value > MAX_LIMIT)
+                return MAX_LIMIT;
+
+            return Limit.Value;
+        }
+
+        public int GetSkip() {
+            if (!Page.HasValue || Page.Value < 1)
+                return 0;
+
+            int skip = (Page.Value - 1) * GetLimit();
+            if (skip < 0)
+                skip = 0;
+
+            return skip;
+        }
+
+        public IMongoQuery GetQuery() {
+            IMongoQuery query = Query;
+            if (Ids.Count > 0)
+                query = query.And(DbQuery.In(CommonFieldNames.Id, Ids.Select(id => new BsonObjectId(new ObjectId(id)))));
+            if (OrganizationIds.Count > 0)
+                query = query.And(DbQuery.In(CommonFieldNames.OrganizationId, OrganizationIds.Select(id => new BsonObjectId(new ObjectId(id)))));
+            if (ProjectIds.Count > 0)
+                query = query.And(DbQuery.In(CommonFieldNames.ProjectId, ProjectIds.Select(id => new BsonObjectId(new ObjectId(id)))));
+            if (StackIds.Count > 0)
+                query = query.And(DbQuery.In(CommonFieldNames.StackId, StackIds.Select(id => new BsonObjectId(new ObjectId(id)))));
+
+            if (Page.HasValue)
+                return query;
+
+            if (!String.IsNullOrEmpty(BeforeValue) && BeforeQuery == null)
+                BeforeQuery = DbQuery.LT(CommonFieldNames.Id, ObjectId.Parse(BeforeValue));
+
+            if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null)
+                AfterQuery = DbQuery.LT(CommonFieldNames.Id, ObjectId.Parse(AfterValue));
+
+            query = query.And(BeforeQuery);
+            query = query.And(AfterQuery);
+
+            return query;
         }
     }
 }

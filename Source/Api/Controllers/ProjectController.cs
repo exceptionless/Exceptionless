@@ -201,9 +201,24 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        [HttpDelete]
+        [Route("{id}/notification/{userId}")]
+        public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            if (project.NotificationSettings.ContainsKey(userId)) {
+                project.NotificationSettings.Remove(userId);
+                _repository.Update(project);
+            }
+
+            return Ok();
+        }
+
         [HttpPut]
         [HttpPost]
-        [Route("{id}/notification/{name}")]
+        [Route("{id}/promotedtabs/{name}")]
         public IHttpActionResult PromoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -226,21 +241,6 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
-                _repository.Update(project);
-            }
-
-            return Ok();
-        }
-
-        [HttpDelete]
-        [Route("{id}/notification/{userId}")]
-        public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
-            var project = GetModel(id);
-            if (project == null)
-                return NotFound();
-
-            if (project.NotificationSettings.ContainsKey(userId)) {
-                project.NotificationSettings.Remove(userId);
                 _repository.Update(project);
             }
 

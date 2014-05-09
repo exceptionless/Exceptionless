@@ -369,6 +369,18 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        [HttpGet]
+        [Route("check-name")]
+        public IHttpActionResult IsNameAvailable(string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return NotFound();
+
+            if (_repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
+                return Ok();
+
+            return NotFound();
+        }
+
         protected override PermissionResult CanAdd(Organization value) {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithResult(BadRequest("Organization name is required."));
