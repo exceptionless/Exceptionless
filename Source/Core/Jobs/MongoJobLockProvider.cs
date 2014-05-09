@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Jobs {
                     return new JobLock(this, lockName, false);
 
                 _jobLockRepository.Add(new JobLockInfo {
-                    Name = lockName,
+                    Id = lockName,
                     MachineName = Environment.MachineName,
                     CreatedDate = DateTime.UtcNow
                 });

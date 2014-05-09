@@ -18,9 +18,68 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class OrganizationRepository : MongoRepositoryWithIdentity<Organization>, IOrganizationRepository {
+namespace Exceptionless.Core.Repositories {
+    public class OrganizationRepository : MongoRepository<Organization>, IOrganizationRepository {
         public OrganizationRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+
+        public Organization GetByInviteToken(string token, out Invite invite) {
+            invite = null;
+            if (String.IsNullOrEmpty(token))
+                return null;
+
+            var organization = FindOne<Organization>(new FindOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
+            if (organization != null)
+                invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
+
+            return organization;
+        }
+
+        public Organization GetByStripeCustomerId(string customerId) {
+            if (String.IsNullOrEmpty(customerId))
+                throw new ArgumentNullException("customerId");
+
+            return FindOne<Organization>(new FindOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
+        }
+
+        public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException("organizationId");
+
+            var update = new UpdateBuilder();
+            if (projectCount.HasValue && projectCount.Value != 0)
+                update.Inc(FieldNames.ProjectCount, projectCount.Value);
+            if (eventCount.HasValue && eventCount.Value != 0) {
+                update.Inc(FieldNames.EventCount, eventCount.Value);
+                if (eventCount.Value > 0) {
+                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
+                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
+                }
+            }
+
+            if (stackCount.HasValue && stackCount.Value != 0)
+                update.Inc(FieldNames.StackCount, stackCount.Value);
+
+            UpdateAll(new QueryOptions().WithId(organizationId), update);
+            InvalidateCache(organizationId);
+        }
+
+        public void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null) {
+            if (String.IsNullOrEmpty(organizationId))
+                throw new ArgumentNullException("organizationId");
+
+            var update = new UpdateBuilder();
+            if (projectCount.HasValue)
+                update.Set(FieldNames.ProjectCount, projectCount.Value);
+            if (errorCount.HasValue)
+                update.Set(FieldNames.EventCount, errorCount.Value);
+            if (stackCount.HasValue)
+                update.Set(FieldNames.StackCount, stackCount.Value);
+
+            UpdateAll(new QueryOptions().WithId(organizationId), update);
+            InvalidateCache(organizationId);
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "organization";
 
@@ -28,8 +87,8 @@ namespace Exceptionless.Core {
             return CollectionName;
         }
 
-        public new static class FieldNames {
-            public const string Id = "_id";
+        public static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
             public const string StripeCustomerId = "StripeCustomerId";
             public const string PlanId = "PlanId";
@@ -80,61 +139,6 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.OverageDays).SetElementName(FieldNames.OverageDays).SetIgnoreIfNull(true);
         }
 
-        public Organization GetByInviteToken(string token, out Invite invite) {
-            invite = null;
-            if (String.IsNullOrEmpty(token))
-                return null;
-
-            Organization organization = Where(Query.EQ(FieldNames.Invites_Token, new BsonString(token))).FirstOrDefault();
-            if (organization != null)
-                invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
-
-            return organization;
-        }
-
-        public Organization GetByStripeCustomerId(string customerId) {
-            return String.IsNullOrEmpty(customerId) ? null : Where(Query.EQ(FieldNames.StripeCustomerId, new BsonString(customerId))).FirstOrDefault();
-        }
-
-        public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException("organizationId");
-
-            IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(organizationId)));
-
-            var update = new UpdateBuilder();
-            if (projectCount.HasValue && projectCount.Value != 0)
-                update.Inc(FieldNames.ProjectCount, projectCount.Value);
-            if (eventCount.HasValue && eventCount.Value != 0) {
-                update.Inc(FieldNames.EventCount, eventCount.Value);
-                if (eventCount.Value > 0) {
-                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
-                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
-                }
-            }
-            if (stackCount.HasValue && stackCount.Value != 0)
-                update.Inc(FieldNames.StackCount, stackCount.Value);
-
-            Collection.Update(query, update);
-            InvalidateCache(organizationId);
-        }
-
-        public void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException("organizationId");
-
-            IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(organizationId)));
-
-            var update = new UpdateBuilder();
-            if (projectCount.HasValue)
-                update.Set(FieldNames.ProjectCount, projectCount.Value);
-            if (errorCount.HasValue)
-                update.Set(FieldNames.EventCount, errorCount.Value);
-            if (stackCount.HasValue)
-                update.Set(FieldNames.StackCount, stackCount.Value);
-
-            Collection.Update(query, update);
-            InvalidateCache(organizationId);
-        }
+        #endregion
     }
 }

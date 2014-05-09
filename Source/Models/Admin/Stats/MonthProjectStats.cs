@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Globalization;
 
 namespace Exceptionless.Models {
-    public class MonthProjectStats : EventStatsWithStackIds {
+    public class MonthProjectStats : EventStatsWithStackIds, IIdentity, IOwnedByProject {
         public MonthProjectStats() {
             DayStats = new Dictionary<string, EventStatsWithStackIds>();
         }

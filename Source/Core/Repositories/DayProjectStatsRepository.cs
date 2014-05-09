@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -22,8 +20,12 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class DayProjectStatsRepository : MongoRepository<DayProjectStats> {
-        public DayProjectStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+    public class DayProjectStatsRepository : MongoRepositoryOwnedByProject<DayProjectStats> {
+        public DayProjectStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
+            _getIdValue = s => s;
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "project.stats.day";
 
@@ -32,9 +34,9 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static class FieldNames {
-            public const string Id = "_id";
+            public const string Id = CommonFieldNames.Id;
             public const string IdsFormat = "ids.{0}";
-            public const string ProjectId = "pid";
+            public const string ProjectId = CommonFieldNames.ProjectId;
             public const string Total = "tot";
             public const string NewTotal = "new";
             public const string NewStackIds = "newids";
@@ -45,10 +47,6 @@ namespace Exceptionless.Core.Repositories {
             public const string MinuteStats_NewTotalFormat = "mn.{0}.new";
             public const string MinuteStats_IdsFormat = "mn.{0}.ids.{1}";
             public const string MinuteStats_NewIdsFormat = "mn.{0}.newids";
-        }
-
-        protected override string GetId(DayProjectStats entity) {
-            return entity.Id;
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
@@ -66,27 +64,6 @@ namespace Exceptionless.Core.Repositories {
             EventStatsHelper.MapStatsClasses();
         }
 
-        public void RemoveAllByProjectId(string projectId) {
-            const int batchSize = 150;
-
-            var ids = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id)
-                .Select(es => new BsonString(es.Id))
-                .ToArray();
-
-            while (ids.Length > 0) {
-                Collection.Remove(Query.In(FieldNames.Id, ids));
-                ids = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id)
-                    .Select(es => new BsonString(es.Id))
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByProjectIdAsync(string projectId) {
-            await Task.Run(() => RemoveAllByProjectId(projectId));
-        }
+        #endregion
     }
 }

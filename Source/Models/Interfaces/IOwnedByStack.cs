@@ -10,13 +10,12 @@
 #endregion
 
 using System;
-using MongoDB.Driver;
 
-namespace Exceptionless.Core {
-    public interface IMongoRepositoryManagement {
-        void InitializeCollection(MongoDatabase database);
-        MongoCollection GetCollection();
-        string GetCollectionName();
-        Type GetEntityType();
+namespace Exceptionless.Models {
+    public interface IOwnedByStack {
+        /// <summary>
+        /// The stack that the document belongs to.
+        /// </summary>
+        string StackId { get; set; }
     }
 }

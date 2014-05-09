@@ -20,8 +20,8 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using M = MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class StackRepository : MongoRepositoryOwnedByOrganization<Stack>, IStackRepository {
+namespace Exceptionless.Core.Repositories {
+    public class StackRepository : MongoRepositoryOwnedByProject<Stack>, IStackRepository {
         private readonly OrganizationRepository _organizationRepository;
         private readonly ProjectRepository _projectRepository;
         private readonly EventRepository _eventRepository;

@@ -10,8 +10,8 @@
 #endregion
 
 using System;
-using System.Linq;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Jobs {
@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public override void RestoreHistory(JobRunner jobRunner) {
-            var history = _jobHistoryRepository.Where(h => h.Name == jobRunner.Name).OrderByDescending(j => j.StartTime).FirstOrDefault();
+            var history = _jobHistoryRepository.GetMostRecent(jobRunner.Name);
             if (history == null)
                 return;
 

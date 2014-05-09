@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
+namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
         Project GetByApiKey(string apiKey);
 

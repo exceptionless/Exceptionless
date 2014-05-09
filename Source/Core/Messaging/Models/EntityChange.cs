@@ -10,8 +10,9 @@ namespace Exceptionless.Core.Messaging.Models {
 
     public enum EntityChangeType {
         Added,
-        Updated,
-        Deleted,
-        DeletedAll
+        Saved,
+        Removed,
+        RemovedAll,
+        UpdatedAll
     }
 }

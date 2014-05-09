@@ -10,11 +10,9 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using Exceptionless.Models.Admin;
 
-namespace Exceptionless.Core {
-    public interface IProjectHookRepository : IRepositoryWithIdentity<ProjectHook> {
-        IEnumerable<ProjectHook> GetByProjectId(string projectId);
+namespace Exceptionless.Core.Repositories {
+    public interface IProjectHookRepository : IRepositoryOwnedByProject<ProjectHook> {
     }
 }

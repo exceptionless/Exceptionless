@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
 
         public Type GetCollectionEntityType(string collectionName) {
             var collection = GetRepositories().FirstOrDefault(r => r.GetCollectionName().Equals(collectionName));
-            return collection == null ? null : collection.GetEntityType();
+            return collection == null ? null : collection.GetDocumentType();
         }
     }
 }

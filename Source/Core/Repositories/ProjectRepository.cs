@@ -20,7 +20,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
+namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
         private readonly OrganizationRepository _organizationRepository;
 

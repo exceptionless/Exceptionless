@@ -14,9 +14,12 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IUserRepository : IRepository<User> {
-        User GetByEmailAddress(string emailAddress);
-        User GetByVerifyEmailAddressToken(string token);
-        IList<User> GetByOrganizationId(string id);
+    public interface IReadOnlyRepository<T> where T : class, IIdentity, new() {
+        void InvalidateCache(string cacheKey);
+        void InvalidateCache(T document);
+        long Count();
+        T GetById(string id, bool useCache = false, TimeSpan? expiresIn = null);
+        IList<T> GetByIds(IList<string> ids, bool useCache = false, TimeSpan? expiresIn = null);
+        bool Exists(string id);
     }
 }

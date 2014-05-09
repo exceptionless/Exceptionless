@@ -10,8 +10,13 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Jobs;
+using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IJobLockInfoRepository : IRepository<JobLockInfo> {}
+    public interface IMongoRepositoryManagement {
+        void InitializeCollection(MongoDatabase database);
+        MongoCollection GetCollection();
+        string GetCollectionName();
+        Type GetDocumentType();
+    }
 }

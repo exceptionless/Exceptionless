@@ -20,8 +20,8 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class UserRepository : MongoRepositoryWithIdentity<User>, IUserRepository {
+namespace Exceptionless.Core.Repositories {
+    public class UserRepository : MongoRepository<User>, IUserRepository {
         public UserRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
         public const string CollectionName = "user";

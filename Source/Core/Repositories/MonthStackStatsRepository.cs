@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -21,8 +19,12 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class MonthStackStatsRepository : MongoRepository<MonthStackStats> {
-        public MonthStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+    public class MonthStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<MonthStackStats> {
+        public MonthStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
+            _getIdValue = s => s;
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "stack.stats.month";
 
@@ -32,22 +34,18 @@ namespace Exceptionless.Core.Repositories {
 
         public static class FieldNames {
             public const string DayStats_Format = "day.{0}";
-            public const string Id = "_id";
-            public const string ProjectId = "pid";
-            public const string ErrorStackId = "sid";
+            public const string Id = CommonFieldNames.Id;
+            public const string ProjectId = CommonFieldNames.ProjectId;
+            public const string StackId = CommonFieldNames.StackId;
             public const string Total = "tot";
             public const string DayStats = "day";
-        }
-
-        protected override string GetId(MonthStackStats entity) {
-            return entity.Id;
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
             base.InitializeCollection(database);
 
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<MonthStackStats> cm) {
@@ -55,56 +53,10 @@ namespace Exceptionless.Core.Repositories {
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
+            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.StackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.DayStats).SetElementName(FieldNames.DayStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 
-        public void RemoveAllByProjectId(string projectId) {
-            const int batchSize = 150;
-
-            BsonString[] ids = Collection
-                .Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id)
-                .Select(es => new BsonString(es.Id))
-                .ToArray();
-
-            while (ids.Length > 0) {
-                Collection.Remove(Query.In(FieldNames.Id, ids));
-                ids = Collection
-                    .Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id)
-                    .Select(es => new BsonString(es.Id))
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByProjectIdAsync(string projectId) {
-            await Task.Run(() => RemoveAllByProjectId(projectId));
-        }
-
-        public void RemoveAllByErrorStackId(string errorStackId) {
-            const int batchSize = 150;
-
-            BsonString[] ids = Collection.Find(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id)
-                .Select(es => new BsonString(es.Id))
-                .ToArray();
-
-            while (ids.Length > 0) {
-                Collection.Remove(Query.In(FieldNames.Id, ids));
-                ids = Collection.Find(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id)
-                    .Select(es => new BsonString(es.Id))
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByErrorStackIdAsync(string errorStackId) {
-            await Task.Run(() => RemoveAllByErrorStackId(errorStackId));
-        }
+        #endregion
     }
 }

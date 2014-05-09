@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models.Admin;
 using MongoDB.Bson;
@@ -19,9 +17,16 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class ProjectHookRepository : MongoRepositoryWithIdentity<ProjectHook>, IProjectHookRepository {
+namespace Exceptionless.Core.Repositories {
+    public class ProjectHookRepository : MongoRepositoryOwnedByProject<ProjectHook>, IProjectHookRepository {
         public ProjectHookRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+
+        public override void InvalidateCache(ProjectHook entity) {
+            Cache.Remove(GetScopedCacheKey(entity.ProjectId));
+            base.InvalidateCache(entity);
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "project.hook";
 
@@ -29,9 +34,9 @@ namespace Exceptionless.Core {
             return CollectionName;
         }
 
-        public new static class FieldNames {
-            public const string Id = "_id";
-            public const string ProjectId = "ProjectId";
+        public static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string ProjectId = CommonFieldNames.ProjectId;
             public const string Url = "Url";
             public const string EventTypes = "EventTypes";
         }
@@ -57,22 +62,6 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
         }
 
-        public IEnumerable<ProjectHook> GetByProjectId(string projectId) {
-            ProjectHook[] result = Cache != null ? Cache.Get<ProjectHook[]>(GetScopedCacheKey(projectId)) : null;
-            if (result == null) {
-                result = Collection
-                    .Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                    .ToArray();
-                if (Cache != null)
-                    Cache.Set(GetScopedCacheKey(projectId), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public override void InvalidateCache(ProjectHook entity) {
-            Cache.Remove(GetScopedCacheKey(entity.ProjectId));
-            base.InvalidateCache(entity);
-        }
+        #endregion
     }
 }

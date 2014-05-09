@@ -15,13 +15,13 @@ using Exceptionless.Core.Jobs;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 
-namespace Exceptionless.Core {
+namespace Exceptionless.Core.Repositories {
     public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockInfoRepository {
-        public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
-
-        protected override string GetId(JobLockInfo jobLock) {
-            return jobLock.Name;
+        public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
+            _getIdValue = s => s;
         }
+
+        #region Collection Setup
 
         public const string CollectionName = "joblock";
 
@@ -31,7 +31,9 @@ namespace Exceptionless.Core {
 
         protected override void ConfigureClassMap(BsonClassMap<JobLockInfo> cm) {
             base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Name));
+            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
         }
+
+        #endregion
     }
 }

@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -21,18 +22,190 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class EventRepository : MongoRepositoryOwnedByOrganization<PersistentEvent>, IEventRepository {
+namespace Exceptionless.Core.Repositories {
+    public class EventRepository : MongoRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
         private readonly ProjectRepository _projectRepository;
         private readonly OrganizationRepository _organizationRepository;
-        //private readonly ErrorStatsHelper _statsHelper;
 
         public EventRepository(MongoDatabase database, ProjectRepository projectRepository, OrganizationRepository organizationRepository, ICacheClient cacheClient = null)
             : base(database, cacheClient) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
-            //_statsHelper = statsHelper;
         }
+
+        public void UpdateFixedByStackId(string stackId, bool value) {
+            if (String.IsNullOrEmpty(stackId))
+                throw new ArgumentNullException("stackId");
+
+            var update = new UpdateBuilder();
+            if (value)
+                update.Set(FieldNames.IsFixed, true);
+            else
+                update.Unset(FieldNames.IsFixed);
+
+            UpdateAll(new QueryOptions().WithStackId(stackId), update);
+        }
+
+        public void UpdateHiddenByStackId(string stackId, bool value) {
+            if (String.IsNullOrEmpty(stackId))
+                throw new ArgumentNullException("stackId");
+
+            var update = new UpdateBuilder();
+            if (value)
+                update.Set(FieldNames.IsHidden, true);
+            else
+                update.Unset(FieldNames.IsHidden);
+
+            UpdateAll(new QueryOptions().WithStackId(stackId), update);
+        }
+
+        public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
+            var query = Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks);
+            RemoveAll(new QueryOptions().WithOrganizationId(organizationId).WithQuery(query));
+        }
+
+        public void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
+            var query = Query.And(
+                Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
+                Query.GTE(FieldNames.Date_UTC, utcStartDate.Ticks),
+                Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks));
+            RemoveAll(new QueryOptions().WithQuery(query));
+        }
+
+        protected override void AfterRemove(IList<PersistentEvent> documents, bool sendNotification = true) {
+            base.AfterRemove(documents, sendNotification);
+
+            var groups = documents.GroupBy(e => new {
+                    e.OrganizationId,
+                    e.ProjectId
+                }).ToList();
+
+            foreach (var grouping in groups) {
+                if (!grouping.Any())
+                    continue;
+
+                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, grouping.Count());
+                // TODO: Should be updating stack
+            }
+
+            // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
+
+            //var groups = errors.GroupBy(e => new {
+            //    e.OrganizationId,
+            //    e.ProjectId,
+            //    e.ErrorStackId
+            //}).ToList();
+            //foreach (var grouping in groups) {
+            //    if (_statsHelper == null)
+            //        continue;
+
+            //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
+            //}
+        }
+
+        public async Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
+            await Task.Run(() => RemoveAllByClientIpAndDate(clientIp, utcStartDate, utcEndDate));
+        }
+
+        private void IncrementOrganizationAndProjectEventCounts(string organizationId, string projectId, long count) {
+            _organizationRepository.IncrementStats(organizationId, eventCount: -count);
+            _projectRepository.IncrementStats(projectId, eventCount: -count);
+        }
+
+        public IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+            IMongoQuery query = Query.Null;
+            
+            if (utcStart != DateTime.MinValue)
+                query = query.And(Query.GTE(FieldNames.Date_UTC, utcStart.Ticks));
+            if (utcEnd != DateTime.MaxValue)
+                query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
+
+            if (!includeHidden)
+                query = query.And(Query.NE(FieldNames.IsHidden, true));
+
+            if (!includeFixed)
+                query = query.And(Query.NE(FieldNames.IsFixed, true));
+
+            if (!includeNotFound)
+                query = query.And(Query.NE(FieldNames.Type, "404"));
+
+            return Find<PersistentEvent>(new FindMultipleOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+        }
+
+        public IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            IMongoQuery query = Query.Null;
+
+            if (utcStart != DateTime.MinValue)
+                query = query.And(Query.GTE(FieldNames.Date_UTC, utcStart.Ticks));
+            if (utcEnd != DateTime.MaxValue)
+                query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
+
+            return Find<PersistentEvent>(new FindMultipleOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+        }
+
+        public string GetPreviousEventIdInStack(string id) {
+            PersistentEvent data = GetById(id, true);
+            if (data == null)
+                return null;
+
+            IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.LTE(FieldNames.Date_UTC, data.Date.UtcTicks));
+
+            var documents = Find<PersistentEvent>(new FindMultipleOptions()
+                .WithStackId(data.StackId)
+                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithLimit(10)
+                .WithFields(FieldNames.Id, FieldNames.Date)
+                .WithQuery(query));
+
+            if (documents.Count == 0)
+                return null;
+
+            // make sure we don't have records with the exact same occurrence date
+            if (documents.All(t => t.Date != data.Date))
+                return documents.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).First().Id;
+
+            // we have records with the exact same occurrence date, we need to figure out the order of those
+            // put our target error into the mix, sort it and return the result before the target
+            var unionResults = documents.Union(new[] { data })
+                .OrderBy(t => t.Date.UtcTicks).ThenBy(t => t.Id)
+                .ToList();
+
+            var index = unionResults.FindIndex(t => t.Id == data.Id);
+            return index == 0 ? null : unionResults[index - 1].Id;
+        }
+
+        public string GetNextEventIdInStack(string id) {
+            PersistentEvent data = GetById(id, true);
+            if (data == null)
+                return null;
+
+            IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks));
+
+            var documents = Find<PersistentEvent>(new FindMultipleOptions()
+                .WithStackId(data.StackId)
+                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithLimit(10)
+                .WithFields(FieldNames.Id, FieldNames.Date)
+                .WithQuery(query));
+
+            if (documents.Count == 0)
+                return null;
+
+            // make sure we don't have records with the exact same occurrence date
+            if (documents.All(t => t.Date != data.Date))
+                return documents.OrderBy(t => t.Date).ThenBy(t => t.Id).First().Id;
+
+            // we have records with the exact same occurrence date, we need to figure out the order of those
+            // put our target error into the mix, sort it and return the result after the target
+            var unionResults = documents.Union(new[] { data })
+                .OrderBy(t => t.Date.Ticks).ThenBy(t => t.Id)
+                .ToList();
+
+            var index = unionResults.FindIndex(t => t.Id == data.Id);
+            return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "event";
 
@@ -40,20 +213,18 @@ namespace Exceptionless.Core {
             return CollectionName;
         }
 
-        #region Class Mapping
-
-        public new static class FieldNames {
-            public const string Id = "_id";
-            public const string OrganizationId = "oid";
-            public const string ProjectId = "pid";
-            public const string StackId = "sid";
+        public static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string OrganizationId = CommonFieldNames.OrganizationId;
+            public const string ProjectId = CommonFieldNames.ProjectId;
+            public const string StackId = CommonFieldNames.StackId;
             public const string Type = "typ";
             public const string Source = "src";
-            public const string Date = "dt";
-            public const string Date_UTC = "dt.0";
+            public const string Date = CommonFieldNames.Date;
+            public const string Date_UTC = CommonFieldNames.Date_UTC;
             public const string Tags = "tag";
             public const string Message = "msg";
-            public const string Data = "ext";
+            public const string Data = CommonFieldNames.Data;
             public const string ReferenceId = "ref";
             public const string SessionId = "xid";
             public const string SummaryHtml = "html";
@@ -96,341 +267,6 @@ namespace Exceptionless.Core {
                     evcm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Tags.Any());
                 });
             }
-        }
-
-        #endregion
-
-        public override PersistentEvent Add(PersistentEvent data, bool addToCache = false) {
-            if (data == null)
-                throw new ArgumentNullException("data");
-            if (String.IsNullOrEmpty(data.OrganizationId))
-                throw new ArgumentException("OrganizationId must be set.", "data");
-            if (String.IsNullOrEmpty(data.ProjectId))
-                throw new ArgumentException("ProjectId must be set.", "data");
-
-            return base.Add(data, addToCache);
-        }
-
-        public override void Add(IEnumerable<PersistentEvent> events, bool addToCache = false) {
-            foreach (PersistentEvent eventData in events)
-                Add(eventData, addToCache);
-        }
-
-        public void UpdateFixedByStackId(string stackId, bool value) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException("stackId");
-
-            IMongoQuery query = Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId)));
-
-            var update = new UpdateBuilder();
-            if (value)
-                update.Set(FieldNames.IsFixed, true);
-            else
-                update.Unset(FieldNames.IsFixed);
-
-            Collection.Update(query, update, UpdateFlags.Multi);
-        }
-
-        public void UpdateHiddenByStackId(string stackId, bool value) {
-            if (String.IsNullOrEmpty(stackId))
-                throw new ArgumentNullException("stackId");
-
-            IMongoQuery query = Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId)));
-
-            var update = new UpdateBuilder();
-            if (value)
-                update.Set(FieldNames.IsHidden, true);
-            else
-                update.Unset(FieldNames.IsHidden);
-
-            Collection.Update(query, update, UpdateFlags.Multi);
-        }
-
-        public void RemoveAllByProjectId(string projectId) {
-            const int batchSize = 150;
-
-            var errors = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id, FieldNames.OrganizationId)
-                .Select(es => new PersistentEvent {
-                    Id = es.Id,
-                    OrganizationId = es.OrganizationId,
-                    ProjectId = projectId
-                })
-                .ToArray();
-
-            while (errors.Length > 0) {
-                Delete(errors);
-
-                errors = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id, FieldNames.OrganizationId)
-                    .Select(es => new PersistentEvent {
-                        Id = es.Id,
-                        OrganizationId = es.OrganizationId,
-                        ProjectId = projectId
-                    })
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByProjectIdAsync(string projectId) {
-            await Task.Run(() => RemoveAllByProjectId(projectId));
-        }
-
-        public void RemoveAllByStackId(string stackId) {
-            const int batchSize = 150;
-
-            var errors = Collection.Find(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new PersistentEvent {
-                    Id = e.Id,
-                    OrganizationId = e.OrganizationId,
-                    ProjectId = e.ProjectId,
-                    StackId = stackId
-                })
-                .ToArray();
-
-            while (errors.Length > 0) {
-                Delete(errors);
-
-                errors = Collection.Find(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new PersistentEvent {
-                        Id = e.Id,
-                        OrganizationId = e.OrganizationId,
-                        ProjectId = e.ProjectId,
-                        StackId = stackId
-                    })
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByStackIdAsync(string stackId) {
-            await Task.Run(() => RemoveAllByStackId(stackId));
-        }
-
-        public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
-            const int batchSize = 150;
-
-            var errors = Collection.Find(Query.And(
-                Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
-                Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks)))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new PersistentEvent {
-                    Id = e.Id,
-                    OrganizationId = e.OrganizationId,
-                    ProjectId = e.ProjectId,
-                    StackId = e.StackId
-                })
-                .ToArray();
-
-            while (errors.Length > 0) {
-                Delete(errors);
-
-                errors = Collection.Find(Query.And(
-                    Query.EQ(FieldNames.OrganizationId, new BsonObjectId(new ObjectId(organizationId))),
-                    Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks)))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new PersistentEvent {
-                        Id = e.Id,
-                        OrganizationId = e.OrganizationId,
-                        ProjectId = e.ProjectId,
-                        StackId = e.StackId
-                    }).ToArray();
-            }
-        }
-
-        public void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
-            const int batchSize = 150;
-
-            var errors = Collection.Find(Query.And(
-                Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
-                Query.GTE(FieldNames.Date_UTC, utcStartDate.Ticks),
-                Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks)))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                .Select(e => new PersistentEvent {
-                    Id = e.Id,
-                    OrganizationId = e.OrganizationId,
-                    ProjectId = e.ProjectId,
-                    StackId = e.StackId
-                })
-                .ToArray();
-
-            while (errors.Length > 0) {
-                Delete(errors);
-                // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
-
-                //var groups = errors.GroupBy(e => new {
-                //    e.OrganizationId,
-                //    e.ProjectId,
-                //    e.ErrorStackId
-                //}).ToList();
-                //foreach (var grouping in groups) {
-                //    if (_statsHelper == null)
-                //        continue;
-
-                //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
-                //}
-
-                errors = Collection.Find(Query.And(
-                    Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
-                    Query.GTE(FieldNames.Date_UTC, utcStartDate.Ticks),
-                    Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks)))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId)
-                    .Select(e => new PersistentEvent {
-                        Id = e.Id,
-                        OrganizationId = e.OrganizationId,
-                        ProjectId = e.ProjectId,
-                        StackId = e.StackId
-                    })
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
-            await Task.Run(() => RemoveAllByClientIpAndDate(clientIp, utcStartDate, utcEndDate));
-        }
-
-        public override void Delete(IEnumerable<PersistentEvent> events) {
-            var groups = events.GroupBy(e => new {
-                e.OrganizationId,
-                e.ProjectId
-            }).ToList();
-            foreach (var grouping in groups) {
-                var result = _collection.Remove(Query.In(FieldNames.Id, grouping.ToArray().Select(error => new BsonObjectId(new ObjectId(error.Id)))));
-
-                if (result.DocumentsAffected <= 0)
-                    continue;
-
-                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, result.DocumentsAffected);
-                // TODO: Should be updating stack
-            }
-
-            foreach (PersistentEvent entity in events)
-                InvalidateCache(entity);
-        }
-
-        private void IncrementOrganizationAndProjectEventCounts(string organizationId, string projectId, long count) {
-            _organizationRepository.IncrementStats(organizationId, eventCount: -count);
-            _projectRepository.IncrementStats(projectId, eventCount: -count);
-        }
-
-        #region Queries
-
-        public IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var conditions = new List<IMongoQuery> {
-                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId)))
-            };
-
-            if (utcStart != DateTime.MinValue)
-                conditions.Add(Query.GTE(FieldNames.Date_UTC, utcStart.Ticks));
-            if (utcEnd != DateTime.MaxValue)
-                conditions.Add(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
-
-            if (!includeHidden)
-                conditions.Add(Query.NE(FieldNames.IsHidden, true));
-
-            if (!includeFixed)
-                conditions.Add(Query.NE(FieldNames.IsFixed, true));
-
-            if (!includeNotFound)
-                conditions.Add(Query.NE(FieldNames.Type, "404"));
-
-            var cursor = _collection.FindAs<PersistentEvent>(Query.And(conditions));
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.Date_UTC));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
-            return cursor;
-        }
-
-        public IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take) {
-            var cursor = _collection.FindAs<PersistentEvent>(Query.And(Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(stackId))), Query.GTE(FieldNames.Date_UTC, utcStart.Ticks), Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks)));
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.Date_UTC));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
-            return cursor;
-        }
-
-        public string GetPreviousEventIdInStack(string id) {
-            PersistentEvent data = GetByIdCached(id);
-            if (data == null)
-                return null;
-
-            var cursor = _collection.FindAs<PersistentEvent>(
-                                                   Query.And(
-                                                             Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(data.StackId))),
-                                                       Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))),
-                                                       Query.LTE(FieldNames.Date_UTC, data.Date.UtcTicks)));
-
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.Date_UTC));
-            cursor.SetLimit(10);
-            cursor.SetFields(FieldNames.Id, FieldNames.Date);
-
-            var results = cursor.Select(e => Tuple.Create(e.Id, e.Date)).ToList();
-            if (results.Count == 0)
-                return null;
-
-            // make sure we don't have records with the exact same occurrence date
-            if (results.All(t => t.Item2 != data.Date))
-                return results.OrderByDescending(t => t.Item2).ThenByDescending(t => t.Item1).First().Item1;
-
-            // we have records with the exact same occurrence date, we need to figure out the order of those
-            // put our target error into the mix, sort it and return the result before the target
-            var unionResults = results.Union(new[] { Tuple.Create(data.Id, data.Date) })
-                .OrderBy(t => t.Item2.UtcTicks).ThenBy(t => t.Item1)
-                .ToList();
-
-            var index = unionResults.FindIndex(t => t.Item1 == data.Id);
-            return index == 0 ? null : unionResults[index - 1].Item1;
-        }
-
-        public string GetNextEventIdInStack(string id) {
-            PersistentEvent data = GetByIdCached(id);
-            if (data == null)
-                return null;
-
-            var cursor = _collection.FindAs<PersistentEvent>(Query.And(
-                    Query.EQ(FieldNames.StackId, new BsonObjectId(new ObjectId(data.StackId))),
-                    Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))),
-                    Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks)));
-
-            cursor.SetSortOrder(SortBy.Ascending(FieldNames.Date_UTC));
-            cursor.SetLimit(10);
-            cursor.SetFields(FieldNames.Id, FieldNames.Date);
-
-            var results = cursor.Select(e => Tuple.Create(e.Id, e.Date)).ToList();
-            if (results.Count == 0)
-                return null;
-
-            // make sure we don't have records with the exact same occurrence date
-            if (results.All(t => t.Item2 != data.Date))
-                return results.OrderBy(t => t.Item2).ThenBy(t => t.Item1).First().Item1;
-
-            // we have records with the exact same occurrence date, we need to figure out the order of those
-            // put our target error into the mix, sort it and return the result after the target
-            var unionResults = results.Union(new[] { Tuple.Create(data.Id, data.Date) })
-                .OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1)
-                .ToList();
-
-            var index = unionResults.FindIndex(t => t.Item1 == data.Id);
-            return index == unionResults.Count - 1 ? null : unionResults[index + 1].Item1;
         }
 
         #endregion

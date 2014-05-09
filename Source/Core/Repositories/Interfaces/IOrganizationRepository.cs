@@ -12,10 +12,9 @@
 using System;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
-    public interface IOrganizationRepository : IRepositoryWithIdentity<Organization> {
+namespace Exceptionless.Core.Repositories {
+    public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
-
         Organization GetByStripeCustomerId(string customerId);
     }
 }

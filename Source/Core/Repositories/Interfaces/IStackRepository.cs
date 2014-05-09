@@ -13,25 +13,16 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
-    public interface IStackRepository : IRepositoryOwnedByOrganization<Stack> {
+namespace Exceptionless.Core.Repositories {
+    public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
         StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash);
-
         IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-
         IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-
         void InvalidateHiddenIdsCache(string projectId);
-
         string[] GetFixedIds(string projectId);
-
         void InvalidateFixedIdsCache(string projectId);
-
         string[] GetNotFoundIds(string projectId);
-
         void InvalidateNotFoundIdsCache(string projectId);
-
-        void RemoveAllByProjectId(string projectId);
     }
 
     public class StackInfo {

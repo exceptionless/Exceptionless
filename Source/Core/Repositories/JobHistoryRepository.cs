@@ -14,12 +14,20 @@ using Exceptionless.Core.Jobs;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class JobHistoryRepository : MongoRepositoryWithIdentity<JobHistory>, IJobHistoryRepository {
-        public JobHistoryRepository(MongoDatabase database) : base(database) {}
+namespace Exceptionless.Core.Repositories {
+    public class JobHistoryRepository : MongoRepository<JobHistory>, IJobHistoryRepository {
+        public JobHistoryRepository(MongoDatabase database) : base(database) {
+            _getIdValue = s => s;
+        }
 
-        public new static class FieldNames {
-            public const string Id = "_id";
+        public JobHistory GetMostRecent(string jobName) {
+            return FindOne<JobHistory>(new FindOptions().WithQuery(Query.EQ(FieldNames.Name, jobName)).WithSort(SortBy.Descending(FieldNames.StartTime)));
+        }
+
+        #region Collection Setup
+
+        public static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
             public const string StartTime = "StartTime";
         }
@@ -43,5 +51,7 @@ namespace Exceptionless.Core {
         protected override string GetCollectionName() {
             return CollectionName;
         }
+
+        #endregion
     }
 }

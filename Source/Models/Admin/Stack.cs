@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Models {
-    public class Stack : IOwnedByOrganization, IIdentity {
+    public class Stack : IOwnedByOrganization, IOwnedByProject, IIdentity {
         public Stack() {
             Tags = new TagSet();
             References = new Collection<string>();

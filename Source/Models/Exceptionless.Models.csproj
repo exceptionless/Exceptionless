@@ -62,7 +62,7 @@
     <Compile Include="Client\Legacy\Parameter.cs" />
     <Compile Include="Client\Legacy\RequestInfo.cs" />
     <Compile Include="Client\Legacy\StackFrame.cs" />
-    <Compile Include="Client\PersistentEvent.cs" />
+    <Compile Include="Admin\PersistentEvent.cs" />
     <Compile Include="Client\SessionInfo.cs" />
     <Compile Include="Enums\NotificationMode.cs" />
     <Compile Include="Collections\ModuleCollection.cs" />
@@ -89,6 +89,8 @@
     <Compile Include="Admin\Stack.cs" />
     <Compile Include="Enums\SuspensionCode.cs" />
     <Compile Include="Interfaces\IData.cs" />
+    <Compile Include="Interfaces\IOwnedByProject.cs" />
+    <Compile Include="Interfaces\IOwnedByStack.cs" />
     <Compile Include="Interfaces\IOwnedByOrganization.cs" />
     <Compile Include="Interfaces\IIdentity.cs" />
     <Compile Include="Admin\Organization.cs" />

@@ -13,16 +13,11 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
-    public interface IEventRepository : IRepositoryOwnedByOrganization<PersistentEvent> {
-        IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-
-        IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, int? skip, int? take);
-
+namespace Exceptionless.Core.Repositories {
+    public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
+        IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         string GetPreviousEventIdInStack(string id);
-
         string GetNextEventIdInStack(string id);
-
-        void RemoveAllByProjectId(string projectId);
     }
 }

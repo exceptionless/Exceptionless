@@ -12,7 +12,7 @@
 using System;
 
 namespace Exceptionless.Models.Admin {
-    public class ProjectHook : IIdentity {
+    public class ProjectHook : IIdentity, IOwnedByProject {
         public string Id { get; set; }
         public string ProjectId { get; set; }
         public string Url { get; set; }

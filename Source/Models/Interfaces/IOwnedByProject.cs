@@ -10,8 +10,12 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Jobs;
 
-namespace Exceptionless.Core.Repositories {
-    public interface IJobLockInfoRepository : IRepository<JobLockInfo> {}
+namespace Exceptionless.Models {
+    public interface IOwnedByProject {
+        /// <summary>
+        /// The project that the document belongs to.
+        /// </summary>
+        string ProjectId { get; set; }
+    }
 }

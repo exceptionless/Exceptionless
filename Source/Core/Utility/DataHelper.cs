@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Utility {
 
                 _eventRepository.RemoveAllByStackId(errorStackId);
                 _dayStackStats.RemoveAllByErrorStackId(errorStackId);
-                _monthStackStats.RemoveAllByErrorStackId(errorStackId);
+                _monthStackStats.RemoveAllByStackId(errorStackId);
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;
