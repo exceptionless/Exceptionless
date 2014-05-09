@@ -7,7 +7,7 @@ using NLog.Fluent;
 using Stripe;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "stripe")]
+    [RoutePrefix(API_PREFIX + "/stripe")]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
 

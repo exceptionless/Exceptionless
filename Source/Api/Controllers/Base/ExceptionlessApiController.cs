@@ -73,6 +73,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected int GetSkip(int currentPage, int pageSize) {
+            if (currentPage < 1)
+                currentPage = 1;
+
             int skip = (currentPage - 1) * pageSize;
             if (skip < 0)
                 skip = 0;

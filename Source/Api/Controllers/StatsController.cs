@@ -26,7 +26,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "stats")]
+    [RoutePrefix(API_PREFIX + "/stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
         private readonly EventStatsHelper _statsHelper;

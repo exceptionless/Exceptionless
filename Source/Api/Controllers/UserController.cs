@@ -2,71 +2,73 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using AutoMapper;
 using Exceptionless.Api.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Models.Stats;
+using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "user")]
-    public class UserController : ExceptionlessApiController {
+    [RoutePrefix(API_PREFIX + "/user")]
+    [Authorize(Roles = AuthorizationRoles.User)]
+    public class UserController : RepositoryApiController<UserRepository, User, ViewUser, User, User> {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IUserRepository _userRepository;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository) {
+        public UserController(UserRepository userRepository, IOrganizationRepository organizationRepository) : base(userRepository) {
             _organizationRepository = organizationRepository;
-            _userRepository = userRepository;
         }
 
-        [HttpPut]
-        [Route("update-admin-role")]
+        [HttpGet]
+        [Route]
+        public IHttpActionResult Get(string organization = null, int page = 1, int limit = 10) {
+            limit = GetLimit(limit);
+            int skip = GetSkip(page, limit);
+
+            List<ViewUser> results = _repository.GetByOrganizationId(organization).Select(Mapper.Map<User, ViewUser>).ToList();
+            var org = _organizationRepository.GetByIdCached(organization);
+            if (org.Invites.Any())
+                results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
+
+            return OkWithResourceLinks(results.Skip(skip).Take(limit).ToList(), results.Count > limit);
+        }
+
+        [HttpPost]
+        [Route("{id}/admin-role")]
+        [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult UpdateAdminRole(string id) {
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
+            var user = GetModel(id);
+            if (user == null)
+                return NotFound();
 
-            var user = _userRepository.GetByIdCached(id);
+            if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+                user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+
+            _repository.Update(user, true);
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id}/admin-role")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult DeleteAdminRole(string id) {
+            var user = GetModel(id);
             if (user == null)
                 return NotFound();
 
             if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
-            else
-                user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
-            _userRepository.Update(user);
+            _repository.Update(user, true);
             return Ok();
         }
 
-        [HttpGet]
-        [Route]
-        [Authorize(Roles = AuthorizationRoles.User)]
-        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
-            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
-                return NotFound();
-
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            List<ViewUser> results = _userRepository.GetByOrganizationId(organizationId).Select(u => 
-                new ViewUser {
-                    Id = u.Id, 
-                    FullName = u.FullName, 
-                    EmailAddress = u.EmailAddress, 
-                    IsEmailAddressVerified = u.IsEmailAddressVerified, 
-                    HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin)
-                }).ToList();
-
-            var organization = _organizationRepository.GetByIdCached(organizationId);
-            if (organization.Invites.Any())
-                results.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
-
-            var result = new PagedResult<ViewUser>(results.Skip(skip).Take(pageSize).ToList(), results.Count) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10
-            };
-
-            return Ok(result);
+        protected override void CreateMaps() {
+            Mapper.CreateMap<User, ViewUser>().AfterMap((u, vu) => {
+                vu.HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin);
+            });
+            base.CreateMaps();
         }
     }
 }
