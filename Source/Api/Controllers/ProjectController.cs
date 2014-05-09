@@ -88,6 +88,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             project.Configuration.Settings[key] = value;
+            project.Configuration.Version++;
             _repository.Update(project);
 
             return Ok();
