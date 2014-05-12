@@ -39,31 +39,22 @@ namespace Exceptionless.Core.Repositories {
             });
 
             foreach (var grouping in organizations) {
-                var result = _collection.Remove(M.Query.In(FieldNames.Id, grouping.ToArray().Select(stack => new BsonObjectId(new ObjectId(stack.Id)))));
-
-                if (result.DocumentsAffected <= 0)
-                    continue;
-
-                _organizationRepository.IncrementStats(grouping.Key.OrganizationId, stackCount: result.DocumentsAffected * -1);
-                _projectRepository.IncrementStats(grouping.Key.ProjectId, stackCount: result.DocumentsAffected * -1);
+                _organizationRepository.IncrementStats(grouping.Key.OrganizationId, stackCount: grouping.Count() * -1);
+                _projectRepository.IncrementStats(grouping.Key.ProjectId, stackCount: grouping.Count() * -1);
             }
 
-            foreach (Stack entity in documents) {
-                // NOTE: We shouldn't need to call InvalidateHiddenId's here because they no longer exists.
-                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
-                base.InvalidateCache(entity);
-            }
+            foreach (Stack document in documents)
+                InvalidateCache(String.Concat(document.ProjectId, document.SignatureHash));
 
             base.AfterRemove(documents, sendNotification);
         }
 
         public void IncrementStats(string stackId, DateTime occurrenceDate) {
             // if total occurrences are zero (stack data was reset), then set first occurrence date
-            _collection.Update(
-                               M.Query.And(
-                                           M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))),
-                                   M.Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
-                                   ),
+            _collection.Update(M.Query.And(
+                    M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))),
+                    M.Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
+                ),
                 M.Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
 
             // Only update the LastOccurrence if the new date is greater then the existing date.
@@ -79,25 +70,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
-            var result = Cache != null ? Cache.Get<StackInfo>(GetScopedCacheKey(String.Concat(projectId, signatureHash, "v2"))) : null;
-            if (result == null) {
-                result = Collection
-                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.EQ(FieldNames.SignatureHash, signatureHash)))
-                    .SetLimit(1)
-                    .SetFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
-                    .Select(es => new StackInfo {
-                        Id = es.Id,
-                        DateFixed = es.DateFixed,
-                        OccurrencesAreCritical = es.OccurrencesAreCritical,
-                        IsHidden = es.IsHidden
-                    })
-                    .FirstOrDefault();
-
-                if (Cache != null && result != null)
-                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, signatureHash, "v2")), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
+            return FindOne<StackInfo>(new OneOptions()
+                .WithProjectId(projectId)
+                .WithQuery(M.Query.EQ(FieldNames.SignatureHash, signatureHash))
+                .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
+                .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
         }
 
         public string[] GetHiddenIds(string projectId) {

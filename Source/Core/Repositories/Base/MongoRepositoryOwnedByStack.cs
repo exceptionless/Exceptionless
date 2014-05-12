@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public IList<T> GetByStackId(string stackId, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new FindMultipleOptions().WithOrganizationId(stackId).WithCacheKey(useCache ? String.Concat("stack:", stackId) : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationId(stackId).WithCacheKey(useCache ? String.Concat("stack:", stackId) : null).WithExpiresIn(expiresIn));
         }
 
         public IList<T> GetByStackId(IList<string> stackIds, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             string cacheKey = String.Concat("stack:", String.Join("", stackIds).GetHashCode().ToString());
-            return Find<T>(new FindMultipleOptions().WithOrganizationIds(stackIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationIds(stackIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
         }
 
         public void RemoveAllByStackId(string stackId) {

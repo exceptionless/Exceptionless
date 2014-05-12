@@ -28,14 +28,14 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 // timeout locks older than 20 minutes.
-                _jobLockRepository.Delete(l => l.Name == lockName && l.CreatedDate <= DateTime.UtcNow.AddMinutes(-20));
+                _jobLockRepository.RemoveByAge(lockName, DateTime.UtcNow.AddMinutes(-20));
 
-                if (_jobLockRepository.Exists(l => l.Name == lockName))
+                if (_jobLockRepository.ExistsByName(lockName))
                     return new JobLock(this, lockName, false);
 
                 _jobLockRepository.Add(new JobLockInfo {
                     Id = lockName,
-                    MachineName = Environment.MachineName,
+                    Name = Environment.MachineName,
                     CreatedDate = DateTime.UtcNow
                 });
 
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             try {
-                _jobLockRepository.Delete(l => l.Name == jobLock.LockName);
+                _jobLockRepository.RemoveByName(jobLock.LockName);
             } catch (Exception e) {
                 Log.Error().Message("Error attempting to release job lock '{0}' on {1}.", jobLock.LockName, Environment.MachineName).Exception(e).Report().Write();
             }

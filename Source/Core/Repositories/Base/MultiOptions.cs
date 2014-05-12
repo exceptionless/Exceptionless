@@ -5,7 +5,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
-    public class FindMultipleOptions : FindOptions {
+    public class MultiOptions : OneOptions {
         public event EventHandler<EventArgs<bool>> HasMoreChanged;
         private bool _hasMore;
         public bool HasMore {

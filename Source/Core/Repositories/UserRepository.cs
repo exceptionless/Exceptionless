@@ -27,14 +27,14 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(emailAddress))
                 return null;
 
-            return FindOne<User>(new FindOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(GetScopedCacheKey(emailAddress)));
+            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
         }
 
         public User GetByVerifyEmailAddressToken(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return FindOne<User>(new FindOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
         }
 
         // TODO: Have this return a limited subset of user data.
@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 return new List<User>();
 
-            return Find<User>(new FindMultipleOptions().WithOrganizationId(id).WithCacheKey(GetScopedCacheKey(id)));
+            return Find<User>(new MultiOptions().WithOrganizationId(id).WithCacheKey(String.Concat("org:",id)));
         }
 
         #region Collection Setup

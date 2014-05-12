@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public IList<T> GetByOrganizationId(string organizationId, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new FindMultipleOptions().WithOrganizationId(organizationId).WithCacheKey(useCache ? String.Concat("org:", organizationId) : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationId(organizationId).WithCacheKey(useCache ? String.Concat("org:", organizationId) : null).WithExpiresIn(expiresIn));
         }
 
         public IList<T> GetByOrganizationId(IList<string> organizationIds, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return Find<T>(new FindMultipleOptions().WithOrganizationIds(organizationIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationIds(organizationIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
         }
 
         public void RemoveAllByOrganizationId(string organizationId) {

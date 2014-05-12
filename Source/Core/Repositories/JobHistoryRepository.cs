@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public JobHistory GetMostRecent(string jobName) {
-            return FindOne<JobHistory>(new FindOptions().WithQuery(Query.EQ(FieldNames.Name, jobName)).WithSort(SortBy.Descending(FieldNames.StartTime)));
+            return FindOne<JobHistory>(new OneOptions().WithQuery(Query.EQ(FieldNames.Name, jobName)).WithSort(SortBy.Descending(FieldNames.StartTime)));
         }
 
         #region Collection Setup

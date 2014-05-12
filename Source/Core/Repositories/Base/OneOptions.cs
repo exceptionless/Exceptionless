@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
-    public class FindOptions : QueryOptions {
-        public FindOptions() {
+    public class OneOptions : QueryOptions {
+        public OneOptions() {
             Fields = new List<string>();
         }
 

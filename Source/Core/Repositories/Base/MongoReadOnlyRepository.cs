@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(GetCollectionName(), "-", cacheKey);
         }
 
-        protected TModel FindOne<TModel>(FindOptions options) where TModel : class, new() {
+        protected TModel FindOne<TModel>(OneOptions options) where TModel : class, new() {
             if (options == null)
                 throw new ArgumentNullException("options");
 
@@ -115,7 +115,7 @@ namespace Exceptionless.Core.Repositories {
             return result;
         }
 
-        protected bool Exists(FindOptions options) {
+        protected bool Exists(OneOptions options) {
             if (options == null)
                 throw new ArgumentNullException("options");
 
@@ -128,7 +128,7 @@ namespace Exceptionless.Core.Repositories {
             return _collection.FindOneAs<T>(findArgs) != null;
         }
 
-        protected IList<TModel> Find<TModel>(FindMultipleOptions options) where TModel : class, new() {
+        protected IList<TModel> Find<TModel>(MultiOptions options) where TModel : class, new() {
             if (options == null)
                 throw new ArgumentNullException("options");
 
@@ -172,7 +172,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            return FindOne<T>(new FindOptions().WithIds(id).WithCacheKey(useCache ? GetScopedCacheKey(id) : null).WithExpiresIn(expiresIn));
+            return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? GetScopedCacheKey(id) : null).WithExpiresIn(expiresIn));
         }
 
         public IList<T> GetByIds(IList<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -180,14 +180,14 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             string cacheKey = String.Join("", ids).GetHashCode().ToString();
-            return Find<T>(new FindMultipleOptions().WithIds(ids).WithCacheKey(useCache ? GetScopedCacheKey(cacheKey) : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithIds(ids).WithCacheKey(useCache ? GetScopedCacheKey(cacheKey) : null).WithExpiresIn(expiresIn));
         }
 
         public bool Exists(string id) {
             if (String.IsNullOrEmpty(id))
                 return false;
 
-            return Exists(new FindOptions().WithId(id));
+            return Exists(new OneOptions().WithId(id));
         }
     }
 }

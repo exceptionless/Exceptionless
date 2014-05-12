@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(apiKey))
                 throw new ArgumentNullException("apiKey");
 
-            return FindOne<Project>(new FindOptions().WithQuery(Query.EQ(FieldNames.ApiKeys, apiKey)).WithCacheKey(GetScopedCacheKey(apiKey)));
+            return FindOne<Project>(new OneOptions().WithQuery(Query.EQ(FieldNames.ApiKeys, apiKey)).WithCacheKey(GetScopedCacheKey(apiKey)));
         }
 
         public void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null) {

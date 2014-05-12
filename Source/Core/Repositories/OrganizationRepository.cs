@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var organization = FindOne<Organization>(new FindOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
+            var organization = FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
             if (organization != null)
                 invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
 
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException("customerId");
 
-            return FindOne<Organization>(new FindOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
+            return FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
         }
 
         public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {

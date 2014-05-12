@@ -14,6 +14,7 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockInfoRepository {
@@ -21,9 +22,27 @@ namespace Exceptionless.Core.Repositories {
             _getIdValue = s => s;
         }
 
+        public void RemoveByAge(string name, TimeSpan age) {
+            RemoveAll(new QueryOptions().WithQuery(Query.And(Query.EQ(FieldNames.Name, name), Query.LT(FieldNames.CreatedDate, DateTime.Now.Subtract(age)))));
+        }
+
+        public void RemoveByName(string lockName) {
+            throw new NotImplementedException();
+        }
+
+        public bool ExistsByName(string lockName) {
+            throw new NotImplementedException();
+        }
+
         #region Collection Setup
 
         public const string CollectionName = "joblock";
+
+        public static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string Name = "Name";
+            public const string CreatedDate = "CreatedDate";
+        }
 
         protected override string GetCollectionName() {
             return CollectionName;

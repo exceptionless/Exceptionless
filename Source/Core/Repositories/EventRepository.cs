@@ -129,7 +129,7 @@ namespace Exceptionless.Core.Repositories {
             if (!includeNotFound)
                 query = query.And(Query.NE(FieldNames.Type, "404"));
 
-            return Find<PersistentEvent>(new FindMultipleOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
         public IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -140,7 +140,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
 
-            return Find<PersistentEvent>(new FindMultipleOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
         public string GetPreviousEventIdInStack(string id) {
@@ -150,7 +150,7 @@ namespace Exceptionless.Core.Repositories {
 
             IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.LTE(FieldNames.Date_UTC, data.Date.UtcTicks));
 
-            var documents = Find<PersistentEvent>(new FindMultipleOptions()
+            var documents = Find<PersistentEvent>(new MultiOptions()
                 .WithStackId(data.StackId)
                 .WithSort(SortBy.Descending(FieldNames.Date_UTC))
                 .WithLimit(10)
@@ -181,7 +181,7 @@ namespace Exceptionless.Core.Repositories {
 
             IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks));
 
-            var documents = Find<PersistentEvent>(new FindMultipleOptions()
+            var documents = Find<PersistentEvent>(new MultiOptions()
                 .WithStackId(data.StackId)
                 .WithSort(SortBy.Descending(FieldNames.Date_UTC))
                 .WithLimit(10)

@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public IList<T> GetByProjectId(string projectId, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new FindMultipleOptions().WithOrganizationId(projectId).WithCacheKey(useCache ? String.Concat("project:", projectId) : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationId(projectId).WithCacheKey(useCache ? String.Concat("project:", projectId) : null).WithExpiresIn(expiresIn));
         }
 
         public IList<T> GetByProjectId(IList<string> projectIds, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             string cacheKey = String.Concat("project:", String.Join("", projectIds).GetHashCode().ToString());
-            return Find<T>(new FindMultipleOptions().WithOrganizationIds(projectIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithOrganizationIds(projectIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
         }
 
         public void RemoveAllByProjectId(string projectId) {

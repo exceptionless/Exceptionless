@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Repositories;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
