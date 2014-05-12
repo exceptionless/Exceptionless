@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -19,9 +20,22 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class DayStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<DayStackStats> {
+    public class DayStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<DayStackStats>, IDayStackStatsRepository {
         public DayStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
             _getIdValue = s => s;
+        }
+
+        public IList<DayStackStats> GetRange(string start, string end) {
+            var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
+            return Find<DayStackStats>(new MultiOptions().WithQuery(query));
+        }
+
+        public long IncrementStats(string id, long getTimeBucket) {
+            UpdateBuilder update = Update
+                .Inc(FieldNames.Total, 1)
+                .Inc(String.Format(FieldNames.MinuteStats_Format, getTimeBucket.ToString("0000")), 1);
+
+            return UpdateAll(new QueryOptions().WithId(id), update);
         }
 
         #region Collection Setup
@@ -57,6 +71,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 
-        #endregion
+        #endregion\
     }
 }

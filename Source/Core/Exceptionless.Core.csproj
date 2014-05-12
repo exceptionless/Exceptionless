@@ -286,6 +286,10 @@
     <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\QueryOptions.cs" />
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />
+    <Compile Include="Repositories\Interfaces\IDayProjectStatsRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IDayStackStatsRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IMonthStackStatsRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IMonthProjectStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
     <Compile Include="Repositories\ProjectHookRepository.cs" />

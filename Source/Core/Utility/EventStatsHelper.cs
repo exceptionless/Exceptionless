@@ -21,7 +21,6 @@ using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
@@ -67,12 +66,7 @@ namespace Exceptionless.Core.Utility {
             localStartDate = range.Item1;
             localEndDate = range.Item2;
 
-            var results = _monthProjectStats.Collection.Find(
-                Query.And(
-                    Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localStartDate.Value, utcOffset, projectId)),
-                    Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetMonthProjectStatsId(localEndDate.Value, utcOffset, projectId))
-                )).ToList();
-
+            var results = _monthProjectStats.GetRange(GetMonthProjectStatsId(localStartDate.Value, utcOffset, projectId), GetMonthProjectStatsId(localEndDate.Value, utcOffset, projectId));
             if (results.Count > 0) {
                 var firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.DayStats.Any(ds => ds.Value.Total > 0));
                 if (firstWithOccurrence != null) {
@@ -120,7 +114,7 @@ namespace Exceptionless.Core.Utility {
 
             // Add missing month documents.
             foreach (var monthDocId in monthDocIds) {
-                if (!results.Exists(d => d.Id == GetMonthProjectStatsId(monthDocId.Item1, monthDocId.Item2, utcOffset, projectId)))
+                if (!results.Any(d => d.Id == GetMonthProjectStatsId(monthDocId.Item1, monthDocId.Item2, utcOffset, projectId)))
                     results.Add(CreateBlankMonthProjectStats(utcOffset, new DateTime(monthDocId.Item1, monthDocId.Item2, 1), projectId));
             }
 
@@ -188,12 +182,7 @@ namespace Exceptionless.Core.Utility {
             DateTime utcStartDate = new DateTimeOffset(range.Item1.Ticks, utcOffset).UtcDateTime;
             DateTime utcEndDate = new DateTimeOffset(range.Item2.Ticks, utcOffset).UtcDateTime;
 
-            List<DayProjectStats> results = _dayProjectStats.Collection.Find(
-                Query.And(
-                    Query.GTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcStartDate)),
-                    Query.LTE(MonthProjectStatsRepository.FieldNames.Id, GetDayProjectStatsId(projectId, utcEndDate))
-                )).ToList();
-
+            var results = _dayProjectStats.GetRange(GetDayProjectStatsId(projectId, utcStartDate), GetDayProjectStatsId(projectId, utcEndDate));
             if (results.Count > 0) {
                 DayProjectStats firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.MinuteStats.Any(ds => ds.Value.Total > 0));
                 if (firstWithOccurrence != null) {
@@ -234,7 +223,7 @@ namespace Exceptionless.Core.Utility {
 
             // add missing day documents
             foreach (DateTime dayDocDate in dayDocDates) {
-                if (!results.Exists(d => d.Id == GetDayProjectStatsId(projectId, dayDocDate)))
+                if (!results.Any(d => d.Id == GetDayProjectStatsId(projectId, dayDocDate)))
                     results.Add(CreateBlankDayProjectStats(dayDocDate, projectId));
             }
 
@@ -325,12 +314,8 @@ namespace Exceptionless.Core.Utility {
             localStartDate = range.Item1;
             localEndDate = range.Item2;
 
-            var results = _monthStackStats.Collection.Find(
-                Query.And(
-                    Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localStartDate.Value, utcOffset, stackId)),
-                    Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetMonthStackStatsId(localEndDate.Value, utcOffset, stackId)))
-                ).ToList();
 
+            var results = _monthStackStats.GetRange(GetMonthStackStatsId(localStartDate.Value, utcOffset, stackId), GetMonthStackStatsId(localEndDate.Value, utcOffset, stackId));
             if (results.Count > 0) {
                 var firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.DayStats.Any(ds => ds.Value > 0));
                 if (firstWithOccurrence != null) {
@@ -352,7 +337,7 @@ namespace Exceptionless.Core.Utility {
             }
 
             foreach (var monthDocId in monthDocIds) {
-                if (!results.Exists(d => d.Id == GetMonthStackStatsId(monthDocId.Item1, monthDocId.Item2, utcOffset, stackId)))
+                if (!results.Any(d => d.Id == GetMonthStackStatsId(monthDocId.Item1, monthDocId.Item2, utcOffset, stackId)))
                     results.Add(CreateBlankMonthStackStats(utcOffset, new DateTime(monthDocId.Item1, monthDocId.Item2, 1), stackId, null));
             }
 
@@ -394,12 +379,8 @@ namespace Exceptionless.Core.Utility {
             DateTime utcStartDate = new DateTimeOffset(range.Item1.Ticks, utcOffset).UtcDateTime;
             DateTime utcEndDate = new DateTimeOffset(range.Item2.Ticks, utcOffset).UtcDateTime;
 
-            List<DayStackStats> results = _dayStackStats.Collection.Find(
-                Query.And(
-                    Query.GTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(stackId, utcStartDate)), 
-                    Query.LTE(MonthStackStatsRepository.FieldNames.Id, GetDayStackStatsId(stackId, utcEndDate)))
-                ).ToList();
 
+            var results = _dayStackStats.GetRange(GetDayStackStatsId(stackId, utcStartDate), GetDayStackStatsId(stackId, utcEndDate));
             if (results.Count > 0) {
                 DayStackStats firstWithOccurrence = results.OrderBy(r => r.Id).FirstOrDefault(r => r.MinuteStats.Any(ds => ds.Value > 0));
                 if (firstWithOccurrence != null) {
@@ -419,7 +400,7 @@ namespace Exceptionless.Core.Utility {
 
             // add missing day documents
             foreach (DateTime dayDocDate in dayDocDates) {
-                if (!results.Exists(d => d.Id == GetDayStackStatsId(stackId, dayDocDate)))
+                if (!results.Any(d => d.Id == GetDayStackStatsId(stackId, dayDocDate)))
                     results.Add(CreateBlankDayStackStats(dayDocDate, stackId));
             }
 
@@ -539,46 +520,6 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        public void DecrementMonthProjectStatsByStackId(string projectId, string stackId) {
-            var monthStats = _monthProjectStats.GetByProjectId(projectId);
-            foreach (var monthStat in monthStats) {
-                if (!monthStat.StackIds.ContainsKey(stackId))
-                    continue;
-
-                int monthCount = monthStat.StackIds[stackId];
-
-                IMongoQuery query = Query.EQ(MonthProjectStatsRepository.FieldNames.Id, monthStat.Id);
-                UpdateBuilder update = Update.Inc(MonthProjectStatsRepository.FieldNames.Total, -monthCount)
-                    .Unset(String.Format(MonthProjectStatsRepository.FieldNames.IdsFormat, stackId));
-
-                if (monthStat.NewStackIds.Contains(stackId)) {
-                    update.Inc(MonthProjectStatsRepository.FieldNames.NewTotal, -1);
-                    update.Pull(MonthProjectStatsRepository.FieldNames.NewStackIds, new BsonObjectId(new ObjectId(stackId)));
-                }
-
-                foreach (var ds in monthStat.DayStats) {
-                    if (!ds.Value.StackIds.ContainsKey(stackId))
-                        continue;
-
-                    int dayCount = ds.Value.StackIds[stackId];
-
-                    if (ds.Value.Total <= dayCount) {
-                        // remove the entire node since total will be zero after removing our stats
-                        update.Unset(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_Format, ds.Key));
-                    } else {
-                        update.Inc(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_TotalFormat, ds.Key), -dayCount);
-                        update.Unset(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_IdsFormat, ds.Key, stackId));
-                        if (ds.Value.NewStackIds.Contains(stackId)) {
-                            update.Inc(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_NewTotalFormat, ds.Key), -1);
-                            update.Pull(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_NewIdsFormat, ds.Key), stackId);
-                        }
-                    }
-                }
-
-                _monthProjectStats.Collection.Update(query, update);
-            }
-        }
-
         public void DecrementDayProjectStatsByStackIds(IEnumerable<DayProjectStats> dayStats, string[] stackIds) {
             foreach (DayProjectStats dayStat in dayStats) {
                 foreach (string stackId in stackIds) {
@@ -623,58 +564,13 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        public void DecrementDayProjectStatsByStackId(string projectId, string stackId) {
-            var dayStats = _dayProjectStats.GetByProjectId(projectId);
-            foreach (DayProjectStats dayStat in dayStats) {
-                if (!dayStat.StackIds.ContainsKey(stackId))
-                    continue;
-
-                int dayCount = dayStat.StackIds[stackId];
-
-                IMongoQuery query = Query.EQ(DayProjectStatsRepository.FieldNames.Id, dayStat.Id);
-                UpdateBuilder update = Update.Inc(DayProjectStatsRepository.FieldNames.Total, -dayCount)
-                    .Unset(String.Format(DayProjectStatsRepository.FieldNames.IdsFormat, stackId));
-
-                if (dayStat.NewStackIds.Contains(stackId)) {
-                    update.Inc(DayProjectStatsRepository.FieldNames.NewTotal, -1);
-                    update.Pull(DayProjectStatsRepository.FieldNames.NewStackIds, new BsonObjectId(new ObjectId(stackId)));
-                }
-
-                foreach (var ms in dayStat.MinuteStats) {
-                    if (!ms.Value.StackIds.ContainsKey(stackId))
-                        continue;
-
-                    int minuteCount = ms.Value.StackIds[stackId];
-
-                    if (ms.Value.Total <= minuteCount) {
-                        // remove the entire node since total will be zero after removing our stats
-                        update.Unset(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_Format, ms.Key));
-                    } else {
-                        update.Inc(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_TotalFormat, ms.Key), -minuteCount);
-                        update.Unset(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_IdsFormat, ms.Key, stackId));
-                        if (ms.Value.NewStackIds.Contains(stackId)) {
-                            update.Inc(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_NewTotalFormat, ms.Key), -1);
-                            update.Pull(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_NewIdsFormat, ms.Key), stackId);
-                        }
-                    }
-                }
-
-                _dayProjectStats.Collection.Update(query, update);
-            }
-        }
-
         private static readonly object _dayStackStatsLock = new object();
 
         private void IncrementDayStackStats(PersistentEvent data) {
             string id = GetDayStackStatsId(data.StackId, data.Date);
 
-            IMongoQuery query = Query.EQ(DayStackStatsRepository.FieldNames.Id, id);
-            UpdateBuilder update = Update
-                .Inc(DayStackStatsRepository.FieldNames.Total, 1)
-                .Inc(String.Format(DayStackStatsRepository.FieldNames.MinuteStats_Format, GetTimeBucket(data.Date).ToString("0000")), 1);
-
-            WriteConcernResult result = _dayStackStats.Collection.Update(query, update);
-            if (result.DocumentsAffected != 0)
+            long documentsAffected = _dayStackStats.IncrementStats(id, GetTimeBucket(data.Date));
+            if (documentsAffected > 0)
                 return;
 
             lock (_dayStackStatsLock) {
@@ -682,8 +578,8 @@ namespace Exceptionless.Core.Utility {
                     _dayStackStats.Save(CreateBlankDayStackStats(data));
                 } catch (MongoDuplicateKeyException) {
                     // the doc was already created by another thread, update it.
-                    result = _dayStackStats.Collection.Update(query, update);
-                    if (result.DocumentsAffected == 0)
+                    documentsAffected = _dayStackStats.IncrementStats(id, GetTimeBucket(data.Date));
+                    if (documentsAffected == 0)
                         Log.Error().Project(data.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
                 }
             }
@@ -723,31 +619,17 @@ namespace Exceptionless.Core.Utility {
         private void IncrementDayProjectStats(PersistentEvent data, bool isNew) {
             string id = GetDayProjectStatsId(data.ProjectId, data.Date);
 
-            IMongoQuery query = Query.EQ(DayProjectStatsRepository.FieldNames.Id, id);
-            UpdateBuilder update = Update
-                .Inc(DayProjectStatsRepository.FieldNames.Total, 1)
-                .Inc(DayProjectStatsRepository.FieldNames.NewTotal, isNew ? 1 : 0)
-                .Inc(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_TotalFormat, GetTimeBucket(data.Date).ToString("0000")), 1)
-                .Inc(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_NewTotalFormat, GetTimeBucket(data.Date).ToString("0000")), isNew ? 1 : 0)
-                .Inc(String.Format(DayProjectStatsRepository.FieldNames.IdsFormat, data.StackId), 1)
-                .Inc(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_IdsFormat, GetTimeBucket(data.Date).ToString("0000"), data.StackId), 1);
-
-            if (isNew) {
-                update.Push(DayProjectStatsRepository.FieldNames.NewStackIds, new BsonObjectId(new ObjectId(data.StackId)));
-                update.Push(String.Format(DayProjectStatsRepository.FieldNames.MinuteStats_NewIdsFormat, GetTimeBucket(data.Date).ToString("0000")), new BsonObjectId(new ObjectId(data.StackId)));
-            }
-
-            WriteConcernResult result = _dayProjectStats.Collection.Update(query, update);
-            if (result.DocumentsAffected != 0)
+            long documentsAffected = _dayProjectStats.IncrementStats(id, data.StackId, GetTimeBucket(data.Date), isNew);
+            if (documentsAffected > 0)
                 return;
 
             lock (_dayProjectStatsLock) {
                 try {
-                    _dayProjectStats.Collection.Insert(CreateBlankDayProjectStats(data, isNew));
+                    _dayProjectStats.Add(CreateBlankDayProjectStats(data, isNew));
                 } catch (MongoDuplicateKeyException) {
-                    // the doc was already created by another thread, update it.
-                    result = _dayProjectStats.Collection.Update(query, update);
-                    if (result.DocumentsAffected == 0)
+                    // The doc was already created by another thread, update it.
+                    documentsAffected = _dayProjectStats.IncrementStats(id, data.StackId, GetTimeBucket(data.Date), isNew);
+                    if (documentsAffected == 0)
                         Log.Error().Project(data.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
                 }
             }
@@ -802,14 +684,8 @@ namespace Exceptionless.Core.Utility {
 
         private void IncrementMonthStackStats(PersistentEvent data, DateTime localDate, TimeSpan utcOffset) {
             string id = GetMonthStackStatsId(localDate, utcOffset, data.StackId);
-
-            IMongoQuery query = Query.EQ(MonthStackStatsRepository.FieldNames.Id, id);
-            UpdateBuilder update = Update
-                .Inc(MonthStackStatsRepository.FieldNames.Total, 1)
-                .Inc(String.Format(MonthStackStatsRepository.FieldNames.DayStats_Format, localDate.Day), 1);
-
-            WriteConcernResult result = _monthStackStats.Collection.Update(query, update);
-            if (result.DocumentsAffected != 0)
+            long documentsAffected = _monthStackStats.IncrementStats(id, localDate);
+            if (documentsAffected > 0)
                 return;
 
             lock (_monthStackStatsLock) {
@@ -817,8 +693,8 @@ namespace Exceptionless.Core.Utility {
                     _monthStackStats.Add(CreateBlankMonthStackStats(utcOffset, localDate, data.StackId, data.ProjectId));
                 } catch (MongoDuplicateKeyException) {
                     // the doc was already created by another thread, update it.
-                    result = _monthStackStats.Collection.Update(query, update);
-                    if (result.DocumentsAffected == 0)
+                    documentsAffected = _monthStackStats.IncrementStats(id, localDate);
+                    if (documentsAffected == 0)
                         Log.Error().Project(data.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
                 }
             }
@@ -856,32 +732,17 @@ namespace Exceptionless.Core.Utility {
 
         private void IncrementMonthProjectStats(PersistentEvent data, bool isNew, DateTime localDate, TimeSpan utcOffset) {
             string id = GetMonthProjectStatsId(localDate, utcOffset, data.ProjectId);
-
-            IMongoQuery query = Query.EQ(MonthProjectStatsRepository.FieldNames.Id, id);
-            UpdateBuilder update = Update
-                .Inc(MonthProjectStatsRepository.FieldNames.Total, 1)
-                .Inc(MonthProjectStatsRepository.FieldNames.NewTotal, isNew ? 1 : 0)
-                .Inc(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_TotalFormat, localDate.Day), 1)
-                .Inc(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_NewTotalFormat, localDate.Day), isNew ? 1 : 0)
-                .Inc(String.Format(MonthProjectStatsRepository.FieldNames.IdsFormat, data.StackId), 1)
-                .Inc(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_IdsFormat, localDate.Day, data.StackId), 1);
-
-            if (isNew) {
-                update.Push(MonthProjectStatsRepository.FieldNames.NewStackIds, new BsonObjectId(new ObjectId(data.StackId)));
-                update.Push(String.Format(MonthProjectStatsRepository.FieldNames.DayStats_NewIdsFormat, localDate.Day), new BsonObjectId(new ObjectId(data.StackId)));
-            }
-
-            WriteConcernResult result = _monthProjectStats.Collection.Update(query, update);
-            if (result.DocumentsAffected != 0)
+            long documentsAffected = _monthProjectStats.IncrementStats(id, data.StackId, localDate, isNew);
+            if (documentsAffected > 0)
                 return;
 
             lock (_monthProjectStatsLock) {
                 try {
                     _monthProjectStats.Add(CreateBlankMonthProjectStats(utcOffset, localDate, data.ProjectId, data.StackId, isNew));
                 } catch (MongoDuplicateKeyException) {
-                    // the doc was already created by another thread, update it.
-                    result = _monthProjectStats.Collection.Update(query, update);
-                    if (result.DocumentsAffected == 0)
+                    // The doc was already created by another thread, update it.
+                    documentsAffected = _monthProjectStats.IncrementStats(id, data.StackId, localDate, isNew);
+                    if (documentsAffected == 0)
                         Log.Error().Project(data.ProjectId).Message("Unable to update or insert stats doc id (\"{0}\").", id).Write();
                 }
             }

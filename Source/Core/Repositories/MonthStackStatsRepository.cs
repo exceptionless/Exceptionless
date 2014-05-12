@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -19,9 +20,21 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class MonthStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<MonthStackStats> {
+    public class MonthStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<MonthStackStats>, IMonthStackStatsRepository {
         public MonthStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
             _getIdValue = s => s;
+        }
+
+        public IList<MonthStackStats> GetRange(string start, string end) {
+            var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
+            return Find<MonthStackStats>(new MultiOptions().WithQuery(query));
+        }
+
+        public long IncrementStats(string id, DateTime localDate) {
+            var update = Update.Inc(FieldNames.Total, 1)
+                               .Inc(String.Format(FieldNames.DayStats_Format, localDate.Day), 1);
+
+            return UpdateAll(new QueryOptions().WithId(id), update);
         }
 
         #region Collection Setup

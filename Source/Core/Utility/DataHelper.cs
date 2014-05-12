@@ -28,7 +28,6 @@ namespace Exceptionless.Core.Utility {
         private readonly MonthStackStatsRepository _monthStackStats;
         private readonly DayProjectStatsRepository _dayProjectStats;
         private readonly MonthProjectStatsRepository _monthProjectStats;
-        private readonly EventStatsHelper _statsHelper;
         private readonly BillingManager _billingManager;
 
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
@@ -42,7 +41,6 @@ namespace Exceptionless.Core.Utility {
             MonthStackStatsRepository monthStackStats,
             DayProjectStatsRepository dayProjectStats,
             MonthProjectStatsRepository monthProjectStats,
-            EventStatsHelper eventStatsHelper,
             BillingManager billingManager) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -53,7 +51,6 @@ namespace Exceptionless.Core.Utility {
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
             _monthProjectStats = monthProjectStats;
-            _statsHelper = eventStatsHelper;
             _billingManager = billingManager;
         }
 
@@ -103,8 +100,8 @@ namespace Exceptionless.Core.Utility {
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
                 _stackRepository.Save(stack);
 
-                _statsHelper.DecrementDayProjectStatsByStackId(stack.ProjectId, errorStackId);
-                _statsHelper.DecrementMonthProjectStatsByStackId(stack.ProjectId, errorStackId);
+                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
+                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
 
                 _eventRepository.RemoveAllByStackId(errorStackId);
                 _dayStackStats.RemoveAllByStackId(errorStackId);

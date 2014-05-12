@@ -17,7 +17,7 @@ using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using M = MongoDB.Driver.Builders;
+using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : MongoRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
@@ -51,28 +51,28 @@ namespace Exceptionless.Core.Repositories {
 
         public void IncrementStats(string stackId, DateTime occurrenceDate) {
             // if total occurrences are zero (stack data was reset), then set first occurrence date
-            _collection.Update(M.Query.And(
-                    M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))),
-                    M.Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
+            _collection.Update(Query.And(
+                    Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))),
+                    Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
                 ),
-                M.Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
+                Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
 
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            IMongoQuery query = M.Query.And(M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), M.Query.LT(FieldNames.LastOccurrence, occurrenceDate));
-            M.UpdateBuilder update = M.Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
+            IMongoQuery query = Query.And(Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), Query.LT(FieldNames.LastOccurrence, occurrenceDate));
+            UpdateBuilder update = Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
 
             var result = _collection.Update(query, update);
             if (result.DocumentsAffected > 0)
                 return;
 
-            _collection.Update(M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), M.Update.Inc(FieldNames.TotalOccurrences, 1));
+            _collection.Update(Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), Update.Inc(FieldNames.TotalOccurrences, 1));
             InvalidateCache(stackId);
         }
 
         public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
             return FindOne<StackInfo>(new OneOptions()
                 .WithProjectId(projectId)
-                .WithQuery(M.Query.EQ(FieldNames.SignatureHash, signatureHash))
+                .WithQuery(Query.EQ(FieldNames.SignatureHash, signatureHash))
                 .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
                 .WithReadPreference(ReadPreference.Primary)
                 .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.EQ(FieldNames.IsHidden, BsonBoolean.True)))
+                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.EQ(FieldNames.IsHidden, BsonBoolean.True)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Repositories {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__FIXED"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.Exists(FieldNames.DateFixed)))
+                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.Exists(FieldNames.DateFixed)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Repositories {
             var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND"))) : null;
             if (result == null) {
                 result = Collection
-                    .Find(M.Query.And(M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), M.Query.Exists(FieldNames.SignatureInfo_Path)))
+                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.Exists(FieldNames.SignatureInfo_Path)))
                     .SetFields(FieldNames.Id)
                     .Select(err => err.Id)
                     .ToArray();
@@ -137,22 +137,22 @@ namespace Exceptionless.Core.Repositories {
 
         public IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var conditions = new List<IMongoQuery> {
-                M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
-                M.Query.GTE(FieldNames.LastOccurrence, utcStart),
-                M.Query.LTE(FieldNames.LastOccurrence, utcEnd)
+                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
+                Query.GTE(FieldNames.LastOccurrence, utcStart),
+                Query.LTE(FieldNames.LastOccurrence, utcEnd)
             };
 
             if (!includeFixed)
-                conditions.Add(M.Query.NotExists(FieldNames.DateFixed));
+                conditions.Add(Query.NotExists(FieldNames.DateFixed));
 
             if (!includeHidden)
-                conditions.Add(M.Query.NE(FieldNames.IsHidden, true));
+                conditions.Add(Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
-                conditions.Add(M.Query.NotExists(FieldNames.SignatureInfo_Path));
+                conditions.Add(Query.NotExists(FieldNames.SignatureInfo_Path));
 
-            var cursor = _collection.FindAs<Stack>(M.Query.And(conditions));
-            cursor.SetSortOrder(M.SortBy.Descending(FieldNames.LastOccurrence));
+            var cursor = _collection.FindAs<Stack>(Query.And(conditions));
+            cursor.SetSortOrder(SortBy.Descending(FieldNames.LastOccurrence));
 
             if (skip.HasValue)
                 cursor.SetSkip(skip.Value);
@@ -166,22 +166,22 @@ namespace Exceptionless.Core.Repositories {
 
         public IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var conditions = new List<IMongoQuery> {
-                M.Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
-                M.Query.GTE(FieldNames.FirstOccurrence, utcStart),
-                M.Query.LTE(FieldNames.FirstOccurrence, utcEnd)
+                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
+                Query.GTE(FieldNames.FirstOccurrence, utcStart),
+                Query.LTE(FieldNames.FirstOccurrence, utcEnd)
             };
 
             if (!includeFixed)
-                conditions.Add(M.Query.NotExists(FieldNames.DateFixed));
+                conditions.Add(Query.NotExists(FieldNames.DateFixed));
 
             if (!includeHidden)
-                conditions.Add(M.Query.NE(FieldNames.IsHidden, true));
+                conditions.Add(Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
-                conditions.Add(M.Query.NotExists(FieldNames.SignatureInfo_Path));
+                conditions.Add(Query.NotExists(FieldNames.SignatureInfo_Path));
 
-            var cursor = _collection.FindAs<Stack>(M.Query.And(conditions));
-            cursor.SetSortOrder(M.SortBy.Descending(FieldNames.FirstOccurrence));
+            var cursor = _collection.FindAs<Stack>(Query.And(conditions));
+            cursor.SetSortOrder(SortBy.Descending(FieldNames.FirstOccurrence));
 
             if (skip.HasValue)
                 cursor.SetSkip(skip.Value);
@@ -193,7 +193,7 @@ namespace Exceptionless.Core.Repositories {
             return cursor;
         }
         public void MarkAsRegressed(string id) {
-            UpdateAll(new QueryOptions().WithId(id), M.Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
+            UpdateAll(new QueryOptions().WithId(id), Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
         }
 
         #region Collection Setup
@@ -229,9 +229,9 @@ namespace Exceptionless.Core.Repositories {
         protected override void InitializeCollection(MongoDatabase database) {
             base.InitializeCollection(database);
 
-            _collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true).SetBackground(true));
-            _collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), M.IndexOptions.SetBackground(true));
-            _collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), M.IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), IndexOptions.SetUnique(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Stack> cm) {

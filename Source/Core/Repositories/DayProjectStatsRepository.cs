@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -20,9 +21,68 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class DayProjectStatsRepository : MongoRepositoryOwnedByProject<DayProjectStats> {
+    public class DayProjectStatsRepository : MongoRepositoryOwnedByProject<DayProjectStats>, IDayProjectStatsRepository {
         public DayProjectStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
             _getIdValue = s => s;
+        }
+        
+        public IList<DayProjectStats> GetRange(string start, string end) {
+            var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
+            return Find<DayProjectStats>(new MultiOptions().WithQuery(query));
+        }
+
+        public long IncrementStats(string id, string stackId, long timeBucket, bool isNew) {
+            UpdateBuilder update = Update
+                .Inc(FieldNames.Total, 1)
+                .Inc(FieldNames.NewTotal, isNew ? 1 : 0)
+                .Inc(String.Format(FieldNames.MinuteStats_TotalFormat, timeBucket.ToString("0000")), 1)
+                .Inc(String.Format(FieldNames.MinuteStats_NewTotalFormat, timeBucket.ToString("0000")), isNew ? 1 : 0)
+                .Inc(String.Format(FieldNames.IdsFormat, stackId), 1)
+                .Inc(String.Format(FieldNames.MinuteStats_IdsFormat, timeBucket.ToString("0000"), stackId), 1);
+
+            if (isNew) {
+                update.Push(FieldNames.NewStackIds, new BsonObjectId(new ObjectId(stackId)));
+                update.Push(String.Format(FieldNames.MinuteStats_NewIdsFormat, timeBucket.ToString("0000")), new BsonObjectId(new ObjectId(stackId)));
+            }
+
+            return UpdateAll(new QueryOptions().WithId(id), update);
+        }
+
+        public void DecrementStatsByStackId(string projectId, string stackId) {
+            var dayStats = GetByProjectId(projectId);
+            foreach (DayProjectStats dayStat in dayStats) {
+                if (!dayStat.StackIds.ContainsKey(stackId))
+                    continue;
+
+                int dayCount = dayStat.StackIds[stackId];
+                UpdateBuilder update = Update.Inc(FieldNames.Total, -dayCount).Unset(String.Format(FieldNames.IdsFormat, stackId));
+
+                if (dayStat.NewStackIds.Contains(stackId)) {
+                    update.Inc(FieldNames.NewTotal, -1);
+                    update.Pull(FieldNames.NewStackIds, new BsonObjectId(new ObjectId(stackId)));
+                }
+
+                foreach (var ms in dayStat.MinuteStats) {
+                    if (!ms.Value.StackIds.ContainsKey(stackId))
+                        continue;
+
+                    int minuteCount = ms.Value.StackIds[stackId];
+
+                    if (ms.Value.Total <= minuteCount) {
+                        // Remove the entire node since total will be zero after removing our stats.
+                        update.Unset(String.Format(FieldNames.MinuteStats_Format, ms.Key));
+                    } else {
+                        update.Inc(String.Format(FieldNames.MinuteStats_TotalFormat, ms.Key), -minuteCount);
+                        update.Unset(String.Format(FieldNames.MinuteStats_IdsFormat, ms.Key, stackId));
+                        if (ms.Value.NewStackIds.Contains(stackId)) {
+                            update.Inc(String.Format(FieldNames.MinuteStats_NewTotalFormat, ms.Key), -1);
+                            update.Pull(String.Format(FieldNames.MinuteStats_NewIdsFormat, ms.Key), stackId);
+                        }
+                    }
+                }
+
+                UpdateAll(new QueryOptions().WithId(dayStat.Id), update);
+            }
         }
 
         #region Collection Setup
