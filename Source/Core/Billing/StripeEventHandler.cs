@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Billing {
             } else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing) {
                 org.RemoveSuspension();
             }
-            _organizationRepository.Update(org);
+            _organizationRepository.Save(org);
         }
 
         private void SubscriptionDeleted(StripeSubscription sub) {
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Billing {
             org.SuspendedByUserId = "Stripe";
 
             org.BillingChangeDate = DateTime.Now;
-            _organizationRepository.Update(org);
+            _organizationRepository.Save(org);
         }
 
         private void InvoicePaymentSucceeded(StripeInvoice inv) {

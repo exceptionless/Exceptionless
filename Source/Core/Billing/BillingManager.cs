@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Billing {
             if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
                 return false;
 
-            var organization = _organizationRepository.GetByIdCached(project.OrganizationId, true);
+            var organization = _organizationRepository.GetById(project.OrganizationId);
             if (organization == null)
                 return false;
 
@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Billing {
         }
 
         public bool HasPremiumFeatures(string organizationId) {
-            var organization = _organizationRepository.GetByIdCached(organizationId, true);
+            var organization = _organizationRepository.GetById(organizationId);
             if (organization == null)
                 return false;
 

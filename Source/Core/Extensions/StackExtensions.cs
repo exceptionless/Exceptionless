@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Extensions {
             if (stack == null)
                 return null;
 
-            return stack.ToProjectLocalTime(repository.GetByIdCached(stack.ProjectId));
+            return stack.ToProjectLocalTime(repository.GetById(stack.ProjectId, true));
         }
 
         public static bool IsFixed(this Stack stack) {

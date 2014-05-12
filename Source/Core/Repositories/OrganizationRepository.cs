@@ -10,7 +10,10 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -39,6 +42,24 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("customerId");
 
             return FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
+        }
+
+        public IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging) {
+            return Find<Organization>(new MultiOptions()
+                .WithQuery(Query.GT(FieldNames.RetentionDays, 0))
+                .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
+                .WithPaging(paging));
+        }
+
+        public IList<Organization> GetStaleAccounts(int? limit = 20) {
+            var query = Query.And(
+                Query.EQ(FieldNames.PlanId, BillingManager.FreePlan.Id),
+                Query.LTE(FieldNames.TotalEventCount, new BsonInt64(0)),
+                Query.GTE(FieldNames.Id, new BsonObjectId(ObjectId.GenerateNewId(DateTime.Now.SubtractDays(90)))),
+                Query.GTE(FieldNames.LastEventDate, DateTime.Now.SubtractDays(90)),
+                Query.NotExists(FieldNames.StripeCustomerId));
+
+            return Find<Organization>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
         public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {

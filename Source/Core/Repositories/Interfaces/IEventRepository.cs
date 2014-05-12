@@ -20,5 +20,6 @@ namespace Exceptionless.Core.Repositories {
         IList<string> GetExceededRetentionEventIds(string stackId, int maxEventsPerStack);
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
+        void MarkAsRegressedByStack(string id);
     }
 }

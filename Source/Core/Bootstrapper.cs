@@ -63,7 +63,6 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            string serviceBusConnectionString = "";
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
             container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
             container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
@@ -85,8 +84,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<MonthProjectStatsRepository>();
             container.RegisterSingle<MonthStackStatsRepository>();
             container.RegisterSingle<DayStackStatsRepository>();
-
-            container.RegisterSingle<MongoCollection<User>>(() => container.GetInstance<UserRepository>().Collection);
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();

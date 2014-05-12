@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Repositories {
             InvalidateCache(projectId);
         }
         
-        public IEnumerable<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
+        public IList<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
             return new[] { GetDefaultTimeOffset(projectId) };
         }
 
@@ -81,20 +81,20 @@ namespace Exceptionless.Core.Repositories {
             return GetById(projectId, true).DefaultTimeZone();
         }
 
-        public DateTime UtcToDefaultProjectLocalTime(string projectId, DateTime utcDateTime) {
-            TimeSpan offset = GetDefaultTimeOffset(projectId);
+        public DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime) {
+            TimeSpan offset = GetDefaultTimeOffset(id);
             return utcDateTime.Add(offset);
         }
 
-        public DateTimeOffset UtcToDefaultProjectLocalTime(string projectId, DateTimeOffset dateTimeOffset) {
-            return TimeZoneInfo.ConvertTime(dateTimeOffset, GetDefaultTimeZone(projectId));
+        public DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset) {
+            return TimeZoneInfo.ConvertTime(dateTimeOffset, GetDefaultTimeZone(id));
         }
 
-        public DateTime DefaultProjectLocalTimeToUtc(string projectId, DateTime dateTime) {
+        public DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime) {
             if (dateTime == DateTime.MinValue || dateTime == DateTime.MaxValue)
                 return dateTime;
 
-            TimeSpan offset = GetDefaultTimeOffset(projectId);
+            TimeSpan offset = GetDefaultTimeOffset(id);
             return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
         }
 
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public new static class FieldNames {
+        public static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string Name = "Name";
@@ -157,5 +157,18 @@ namespace Exceptionless.Core.Repositories {
         }
         
         #endregion
+
+        public IList<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+            IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+            return Find<Project>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+        }
+
+        public long IncrementNextSummaryEndOfDayTicks(IList<string> ids) {
+            if (ids == null || !ids.Any())
+                throw new ArgumentNullException("ids");
+
+            UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
+            return UpdateAll(new QueryOptions().WithIds(ids), update);
+        }
     }
 }

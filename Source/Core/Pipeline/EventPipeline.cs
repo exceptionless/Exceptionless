@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
                     if (String.IsNullOrEmpty(ev.ProjectId))
                         throw new ArgumentException("ProjectId must be populated on the Event.");
 
-                    var project = _projectRepository.GetByIdCached(ev.ProjectId);
+                    var project = _projectRepository.GetById(ev.ProjectId, true);
                     if (project == null)
                         throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
 
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Pipeline {
                         ev.OrganizationId = project.OrganizationId;
 
                     var ctx = new EventContext(ev) {
-                        Organization = _organizationRepository.GetByIdCached(ev.OrganizationId),
+                        Organization = _organizationRepository.GetById(ev.OrganizationId, true),
                         Project = project
                     };
 

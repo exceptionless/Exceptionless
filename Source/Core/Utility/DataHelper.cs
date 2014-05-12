@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId);
             if (project == null)
                 return;
 
@@ -76,13 +76,13 @@ namespace Exceptionless.Core.Utility {
                 project.EventCount = 0;
                 project.StackCount = 0;
 
-                _projectRepository.Update(project);
+                _projectRepository.Save(project);
 
-                IQueryable<Project> orgProjects = _projectRepository.WhereForOrganization(project.OrganizationId);
+                var orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
                 Organization organization = _organizationRepository.GetById(project.OrganizationId);
                 organization.EventCount = orgProjects.Sum(p => p.EventCount);
                 organization.StackCount = orgProjects.Sum(p => p.StackCount);
-                _organizationRepository.Update(organization);
+                _organizationRepository.Save(organization);
             } catch (Exception e) {
                 Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Report().Write();
                 throw;
@@ -101,13 +101,13 @@ namespace Exceptionless.Core.Utility {
                 stack.TotalOccurrences = 0;
                 stack.LastOccurrence = DateTime.MinValue.ToUniversalTime();
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
-                _stackRepository.Update(stack);
+                _stackRepository.Save(stack);
 
                 _statsHelper.DecrementDayProjectStatsByStackId(stack.ProjectId, errorStackId);
                 _statsHelper.DecrementMonthProjectStatsByStackId(stack.ProjectId, errorStackId);
 
                 _eventRepository.RemoveAllByStackId(errorStackId);
-                _dayStackStats.RemoveAllByErrorStackId(errorStackId);
+                _dayStackStats.RemoveAllByStackId(errorStackId);
                 _monthStackStats.RemoveAllByStackId(errorStackId);
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
@@ -119,7 +119,7 @@ namespace Exceptionless.Core.Utility {
             if (_projectRepository.GetByApiKey(SAMPLE_API_KEY) != null)
                 return;
 
-            User user = _userRepository.GetByIdCached(userId);
+            User user = _userRepository.GetById(userId, true);
             var organization = new Organization { Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
@@ -134,7 +134,7 @@ namespace Exceptionless.Core.Utility {
             _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(user);
+            _userRepository.Save(user);
         }
     }
 }

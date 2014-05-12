@@ -104,8 +104,8 @@ namespace Exceptionless.Core.Repositories {
                 return result;
 
             var findArgs = new FindOneArgs { Query = options.GetQuery(_getIdValue), Fields = Fields.Include(options.Fields.ToArray()), SortBy = options.SortBy };
-            if (!options.UseCache)
-                findArgs.ReadPreference = ReadPreference.Primary;
+            if (options.ReadPreference != null)
+                findArgs.ReadPreference = options.ReadPreference;
 
             result = _collection.FindOneAs<TModel>(findArgs);
 
@@ -140,8 +140,8 @@ namespace Exceptionless.Core.Repositories {
                 return result;
 
             var cursor = _collection.FindAs<TModel>(options.GetQuery(_getIdValue));
-            if (!options.UseCache)
-                cursor.SetReadPreference(ReadPreference.Primary);
+            if (options.ReadPreference != null)
+                cursor.SetReadPreference(options.ReadPreference);
             if (options.UsePaging)
                 cursor.SetSkip(options.GetSkip());
             if (options.UseLimit)
@@ -175,7 +175,7 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? GetScopedCacheKey(id) : null).WithExpiresIn(expiresIn));
         }
 
-        public IList<T> GetByIds(IList<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
+        public IList<T> GetByIds(ICollection<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
             if (ids == null || ids.Count == 0)
                 return new List<T>();
 

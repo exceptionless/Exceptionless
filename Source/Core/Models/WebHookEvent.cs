@@ -53,15 +53,15 @@ namespace Exceptionless.Core.Models {
             if (organizationRepository == null)
                 throw new ArgumentNullException("organizationRepository");
 
-            var project = projectRepository.GetByIdCached(ctx.Event.ProjectId);
+            var project = projectRepository.GetById(ctx.Event.ProjectId);
             if (project == null)
                 throw new ArgumentException("ProjectId not found.");
 
-            var organization = organizationRepository.GetByIdCached(ctx.Event.OrganizationId);
+            var organization = organizationRepository.GetById(ctx.Event.OrganizationId);
             if (organization == null)
                 throw new ArgumentException("OrganizationId not found.");
 
-            var errorStack = stackRepository.GetByIdCached(ctx.Event.StackId);
+            var errorStack = stackRepository.GetById(ctx.Event.StackId);
             if (errorStack == null)
                 throw new ArgumentException("ErrorStackId not found.");
 

@@ -69,6 +69,11 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
+        public static T WithReadPreference<T>(this T options, ReadPreference readPreference) where T : QueryOptions {
+            options.ReadPreference = readPreference;
+            return options;
+        }
+        
         public static T WithSort<T>(this T options, IMongoSortBy sort) where T : OneOptions {
             options.SortBy = sort;
             return options;

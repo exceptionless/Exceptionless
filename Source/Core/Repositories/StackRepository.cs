@@ -74,6 +74,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithProjectId(projectId)
                 .WithQuery(M.Query.EQ(FieldNames.SignatureHash, signatureHash))
                 .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
+                .WithReadPreference(ReadPreference.Primary)
                 .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
         }
 
@@ -190,6 +191,9 @@ namespace Exceptionless.Core.Repositories {
 
             count = cursor.Count();
             return cursor;
+        }
+        public void MarkAsRegressed(string id) {
+            UpdateAll(new QueryOptions().WithId(id), M.Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
         }
 
         #region Collection Setup

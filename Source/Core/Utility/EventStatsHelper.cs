@@ -540,7 +540,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void DecrementMonthProjectStatsByStackId(string projectId, string stackId) {
-            var monthStats = _monthProjectStats.Where(s => s.ProjectId == projectId);
+            var monthStats = _monthProjectStats.GetByProjectId(projectId);
             foreach (var monthStat in monthStats) {
                 if (!monthStat.StackIds.ContainsKey(stackId))
                     continue;
@@ -624,7 +624,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void DecrementDayProjectStatsByStackId(string projectId, string stackId) {
-            IQueryable<DayProjectStats> dayStats = _dayProjectStats.Where(s => s.ProjectId == projectId);
+            var dayStats = _dayProjectStats.GetByProjectId(projectId);
             foreach (DayProjectStats dayStat in dayStats) {
                 if (!dayStat.StackIds.ContainsKey(stackId))
                     continue;
@@ -679,7 +679,7 @@ namespace Exceptionless.Core.Utility {
 
             lock (_dayStackStatsLock) {
                 try {
-                    _dayStackStats.Collection.Insert(CreateBlankDayStackStats(data));
+                    _dayStackStats.Save(CreateBlankDayStackStats(data));
                 } catch (MongoDuplicateKeyException) {
                     // the doc was already created by another thread, update it.
                     result = _dayStackStats.Collection.Update(query, update);
@@ -814,7 +814,7 @@ namespace Exceptionless.Core.Utility {
 
             lock (_monthStackStatsLock) {
                 try {
-                    _monthStackStats.Collection.Insert(CreateBlankMonthStackStats(utcOffset, localDate, data.StackId, data.ProjectId));
+                    _monthStackStats.Add(CreateBlankMonthStackStats(utcOffset, localDate, data.StackId, data.ProjectId));
                 } catch (MongoDuplicateKeyException) {
                     // the doc was already created by another thread, update it.
                     result = _monthStackStats.Collection.Update(query, update);
@@ -877,7 +877,7 @@ namespace Exceptionless.Core.Utility {
 
             lock (_monthProjectStatsLock) {
                 try {
-                    _monthProjectStats.Collection.Insert(CreateBlankMonthProjectStats(utcOffset, localDate, data.ProjectId, data.StackId, isNew));
+                    _monthProjectStats.Add(CreateBlankMonthProjectStats(utcOffset, localDate, data.ProjectId, data.StackId, isNew));
                 } catch (MongoDuplicateKeyException) {
                     // the doc was already created by another thread, update it.
                     result = _monthProjectStats.Collection.Update(query, update);

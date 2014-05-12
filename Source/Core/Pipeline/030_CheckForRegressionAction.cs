@@ -34,17 +34,9 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
                 return;
 
-            Log.Trace().Message("Marking error as an regression.").Write();
-            _stackRepository.Collection.Update(
-                Query.EQ(StackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
-                Update
-                    .Unset(StackRepository.FieldNames.DateFixed)
-                    .Set(StackRepository.FieldNames.IsRegressed, true));
-
-            _eventRepository.Collection.Update(
-                Query.EQ(EventRepository.FieldNames.StackId, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
-                Update
-                    .Unset(EventRepository.FieldNames.IsFixed));
+            Log.Trace().Message("Marking event as an regression.").Write();
+            _stackRepository.MarkAsRegressed(ctx.StackInfo.Id);
+            _eventRepository.MarkAsRegressedByStack(ctx.StackInfo.Id);
 
             string signatureHash = ctx.GetProperty<string>("__SignatureHash");
             _stackRepository.InvalidateCache(ctx.Event.StackId, signatureHash, ctx.Event.ProjectId);

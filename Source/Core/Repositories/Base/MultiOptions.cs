@@ -8,6 +8,7 @@ namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {
         public event EventHandler<EventArgs<bool>> HasMoreChanged;
         private bool _hasMore;
+
         public bool HasMore {
             get { return _hasMore; }
             set {

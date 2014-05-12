@@ -13,13 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
@@ -57,59 +53,21 @@ namespace Exceptionless.Core.Jobs {
         public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
-            int skip = 0;
-            var organizations = _organizationRepository.Collection.FindAs<Organization>(
-                Query.And(
-                    Query.LTE(OrganizationRepository.FieldNames.TotalEventCount, new BsonInt64(0)), 
-                    Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastEventDate)
-                .SetLimit(20).SetSkip(skip).ToList();
-
+            var organizations = _organizationRepository.GetStaleAccounts();
             while (organizations.Count > 0) {
                 foreach (var organization in organizations)
                     TryDeleteOrganization(organization);
 
-                skip += 20;
-                organizations = _organizationRepository.Collection.FindAs<Organization>(
-                    Query.And(
-                        Query.LTE(OrganizationRepository.FieldNames.TotalEventCount, new BsonInt64(0)), 
-                        Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastEventDate)
-                    .SetLimit(20).SetSkip(skip).ToList();
+                organizations = _organizationRepository.GetStaleAccounts();
             }
 
-            return Task.FromResult(new JobResult {
-                Message = "Successfully removed all stale accounts."
-            });
+            return Task.FromResult(new JobResult { Message = "Successfully removed all stale accounts." });
         }
 
         private void TryDeleteOrganization(Organization organization) {
             try {
-                Log.Info().Message("Checking to see if organization '{0}' with Id: '{1}' can be deleted.", organization.Name, organization.Id).Write();
-
-                ObjectId id;
-                if (String.IsNullOrWhiteSpace(organization.Id) || !ObjectId.TryParse(organization.Id, out id)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has an invalid id.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (id.CreationTime >= DateTime.Now.SubtractDays(90)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has been created less than 90 days ago.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (organization.LastEventDate >= DateTime.Now.SubtractDays(90)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has had an exception newer than 90 days.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has a stripe customer id and cannot be deleted.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
                 Log.Info().Message("Removing existing empty projects for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                List<Project> projects = _projectRepository.WhereForOrganization(organization.Id).ToList();
+                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
                 if (projects.Any(project => project.TotalEventCount > 0)) {
                     Log.Info().Message("Organization '{0}' with Id: '{1}' has a project with existing data. This organization will not be deleted.", organization.Name, organization.Id).Write();
                     return;
@@ -126,23 +84,23 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                _projectRepository.Delete(projects);
+                _projectRepository.Remove(projects);
 
                 Log.Info().Message("Removing users from organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
                 foreach (User user in users) {
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id))) {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();
-                        _userRepository.Delete(user.Id);
+                        _userRepository.Remove(user.Id);
                     } else {
                         Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
                         user.OrganizationIds.Remove(organization.Id);
-                        _userRepository.Update(user);
+                        _userRepository.Save(user);
                     }
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                _organizationRepository.Delete(organization);
+                _organizationRepository.Remove(organization);
 
                 // TODO: Send notifications that the organization and projects have been updated.
             } catch (Exception ex) {

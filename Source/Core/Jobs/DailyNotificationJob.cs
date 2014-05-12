@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -37,29 +39,17 @@ namespace Exceptionless.Core.Jobs {
         public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Daily Notification job starting").Write();
 
-            if (!Settings.Current.EnableSummaryNotifications) {
-                return Task.FromResult(new JobResult {
-                    Message = "Summary Notifications are disabled.",
-                    IsCancelled = true
-                });
-            }
+            if (!Settings.Current.EnableSummaryNotifications)
+                return Task.FromResult(new JobResult { Message = "Summary Notifications are disabled.", IsCancelled = true });
 
             const int BATCH_SIZE = 25;
 
-            // Send an email at 9:00am in the projects local time.
-            IMongoQuery query = Query.LT(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * 9)));
-            UpdateBuilder update = Update.Inc(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
-
-            var projects = _projectRepository.Collection.FindAs<Project>(query)
-                .SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks)
-                .SetLimit(BATCH_SIZE).ToList();
-
+            // Get all project id's that should be sent at 9:00am in the projects local time.
+            var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             while (projects.Count > 0) {
-                IMongoQuery queryWithProjectIds = Query.And(Query.In(ProjectRepository.FieldNames.Id, projects.Select(p => new BsonObjectId(new ObjectId(p.Id)))), query);
-                var result = _projectRepository.Collection.Update(queryWithProjectIds, update, UpdateFlags.Multi);
-                Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, result.DocumentsAffected);
-
-                Debug.Assert(projects.Count == result.DocumentsAffected);
+                var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
+                Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, documentsUpdated);
+                Debug.Assert(projects.Count == documentsUpdated);
 
                 foreach (var project in projects) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
@@ -81,14 +71,10 @@ namespace Exceptionless.Core.Jobs {
                         Log.Error().Message("Message Factory is null").Write();
                 }
 
-                projects = _projectRepository.Collection.FindAs<Project>(query)
-                    .SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks)
-                    .SetLimit(BATCH_SIZE).ToList();
+                projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             }
 
-            return Task.FromResult(new JobResult {
-                Message = "Successfully enforced all retention limits."
-            });
+            return Task.FromResult(new JobResult { Message = "Successfully enforced all retention limits." });
         }
     }
 }

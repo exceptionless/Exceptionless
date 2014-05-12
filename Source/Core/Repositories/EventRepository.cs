@@ -215,6 +215,10 @@ namespace Exceptionless.Core.Repositories {
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
+        public void MarkAsRegressedByStack(string id) {
+            UpdateAll(new QueryOptions().WithStackId(id), Update.Unset(FieldNames.IsFixed));
+        }
+
         #region Collection Setup
 
         public const string CollectionName = "event";

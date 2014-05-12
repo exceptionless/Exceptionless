@@ -10,13 +10,16 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
         Organization GetByStripeCustomerId(string customerId);
-
+        IList<Organization> GetStaleAccounts(int? limit = 20);
+        IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
+
     }
 }

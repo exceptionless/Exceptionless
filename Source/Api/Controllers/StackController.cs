@@ -25,6 +25,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
@@ -74,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
 
-            Stack stack = _stackRepository.GetByIdCached(id);
+            Stack stack = _stackRepository.GetById(id, true);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
@@ -144,18 +145,17 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
 
-            Stack stack = _stackRepository.GetByIdCached(id);
+            Stack stack = _stackRepository.GetById(id);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
-                return this.PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
+                return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
             List<ProjectHook> promotedProjectHooks = _projectHookRepository.GetByProjectId(stack.ProjectId).Where(p => p.EventTypes.Contains(ProjectHookRepository.EventTypes.StackPromoted)).ToList();
             if (!promotedProjectHooks.Any())
-                return this.NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
+                return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
-            
             foreach (ProjectHook hook in promotedProjectHooks) {
                 _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     ProjectId = hook.ProjectId,

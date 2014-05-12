@@ -33,31 +33,20 @@ namespace Exceptionless.Core.Jobs {
         public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Enforce retention limits job starting").Write();
 
-            int skip = 0;
-            var organizations = _organizationRepository.Collection.FindAs<Organization>(Query.Null)
-                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.RetentionDays)
-                .SetLimit(100).SetSkip(skip).ToList();
-
+            var page = 1;
+            var organizations = _organizationRepository.GetWithRetentionDaysGreaterThanZero(new PagingOptions().WithLimit(100));
             while (organizations.Count > 0) {
                 // TODO: Need to add overage days to the org when they went over their limit for the day.
                 foreach (var organization in organizations)
                     EnforceEventCountLimits(organization);
 
-                skip += 100;
-                organizations = _organizationRepository.Collection.FindAs<Organization>(Query.Null)
-                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.RetentionDays)
-                    .SetLimit(100).SetSkip(skip).ToList();
+                organizations = _organizationRepository.GetWithRetentionDaysGreaterThanZero(new PagingOptions().WithPage(++page).WithLimit(100));
             }
 
-            return Task.FromResult(new JobResult {
-                Message = "Successfully enforced all retention limits."
-            });
+            return Task.FromResult(new JobResult { Message = "Successfully enforced all retention limits." });
         }
 
         private void EnforceEventCountLimits(Organization organization) {
-            if (organization.RetentionDays <= 0)
-                return;
-
             Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {

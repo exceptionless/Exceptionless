@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Web {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            var project = ProjectRepository.GetByIdCached(projectId);
+            var project = ProjectRepository.GetById(projectId, true);
             if (project == null)
                 return;
 

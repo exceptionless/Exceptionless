@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 // timeout locks older than 20 minutes.
-                _jobLockRepository.RemoveByAge(lockName, DateTime.UtcNow.AddMinutes(-20));
+                _jobLockRepository.RemoveByAge(lockName, TimeSpan.FromMinutes(20));
 
                 if (_jobLockRepository.ExistsByName(lockName))
                     return new JobLock(this, lockName, false);

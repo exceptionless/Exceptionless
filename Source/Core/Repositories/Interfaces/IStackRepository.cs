@@ -23,6 +23,8 @@ namespace Exceptionless.Core.Repositories {
         void InvalidateFixedIdsCache(string projectId);
         string[] GetNotFoundIds(string projectId);
         void InvalidateNotFoundIdsCache(string projectId);
+
+        void MarkAsRegressed(string id);
     }
 
     public class StackInfo {

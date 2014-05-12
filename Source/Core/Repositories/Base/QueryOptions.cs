@@ -19,6 +19,7 @@ namespace Exceptionless.Core.Repositories {
         public List<string> ProjectIds { get; set; }
         public List<string> StackIds { get; set; }
         public IMongoQuery Query { get; set; }
+        public ReadPreference ReadPreference { get; set; }
 
         public virtual IMongoQuery GetQuery(Func<string, BsonValue> getIdValue = null) {
             if (getIdValue == null)

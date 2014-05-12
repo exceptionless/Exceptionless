@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Extensions {
             if (data == null)
                 return null;
 
-            return data.ToProjectLocalTime(repository.GetByIdCached(data.ProjectId));
+            return data.ToProjectLocalTime(repository.GetById(data.ProjectId, true));
         }
 
         public static T GetValue<T>(this DataDictionary extendedData, string key) {
