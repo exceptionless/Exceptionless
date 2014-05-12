@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Pipeline {
                 Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.StackInfo.Id).Write();
                 ctx.Event.StackId = ctx.StackInfo.Id;
             } else {
-                ctx.Stack = _stackRepository.GetByIdCached(ctx.Event.StackId, true);
+                ctx.Stack = _stackRepository.GetByIdCached(ctx.Event.StackId, true); // get by cached and usePrimary..
 
                 // TODO: Update unit tests to work with this check.
                 //if (stack == null || stack.ProjectId != error.ProjectId)
@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Pipeline {
                     List<string> newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
                     if (newTags.Count > 0) {
                         ctx.Stack.Tags.AddRange(newTags);
-                        _stackRepository.Update(ctx.Stack);
+                        _stackRepository.Save(ctx.Stack);
                     }
                 }
 

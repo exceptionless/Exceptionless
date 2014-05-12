@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventPipeline;
@@ -33,26 +35,20 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.IsNew)
                 return;
 
-            int maxErrorsPerStack = 50;
-            maxErrorsPerStack = ctx.Organization.MaxErrorsPerDay > 0 ? ctx.Organization.MaxErrorsPerDay + Math.Min(50, ctx.Organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
+            int maxEventsPerStack = ctx.Organization.MaxEventsPerDay > 0 ? ctx.Organization.MaxEventsPerDay + Math.Min(50, ctx.Organization.MaxEventsPerDay * 2) : Int32.MaxValue;
 
-            // Get a list of oldest ids that exceed our desired max errors.
-            var errors = _eventRepository.Collection.Find(
-                Query.EQ(EventRepository.FieldNames.StackId, new BsonObjectId(new ObjectId(ctx.Event.StackId))))
-                .SetSortOrder(SortBy.Descending(EventRepository.FieldNames.Date_UTC))
-                .SetFields(EventRepository.FieldNames.Id)
-                .SetSkip(maxErrorsPerStack)
-                .SetLimit(150)
-                .Select(e => new PersistentEvent {
-                    Id = e.Id,
+            // Get a list of oldest ids that exceed our desired max events.
+            IList<string> ids = _eventRepository.GetExceededRetentionEventIds(ctx.Event.StackId, maxEventsPerStack);
+            if (ids.Count > 0) {
+                var eventsToRemove = ids.Select(id => new PersistentEvent {
+                    Id = id,
                     OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId,
                     StackId = ctx.Event.StackId
-                })
-                .ToArray();
+                }).ToList();
 
-            if (errors.Length > 0)
-                _eventRepository.Delete(errors);
+                _eventRepository.Remove(eventsToRemove);
+            }
         }
     }
 }

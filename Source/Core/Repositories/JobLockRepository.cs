@@ -23,15 +23,24 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void RemoveByAge(string name, TimeSpan age) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
             RemoveAll(new QueryOptions().WithQuery(Query.And(Query.EQ(FieldNames.Name, name), Query.LT(FieldNames.CreatedDate, DateTime.Now.Subtract(age)))));
         }
 
-        public void RemoveByName(string lockName) {
-            throw new NotImplementedException();
+        public void RemoveByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            RemoveAll(new QueryOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
         }
 
-        public bool ExistsByName(string lockName) {
-            throw new NotImplementedException();
+        public bool ExistsByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            return Exists(new OneOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
         }
 
         #region Collection Setup

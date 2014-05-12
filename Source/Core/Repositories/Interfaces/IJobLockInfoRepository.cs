@@ -14,8 +14,8 @@ using Exceptionless.Core.Jobs;
 
 namespace Exceptionless.Core.Repositories {
     public interface IJobLockInfoRepository : IRepository<JobLockInfo> {
-        void RemoveByAge(string name, DateTime cutoffAge);
-        void RemoveByName(string lockName);
-        bool ExistsByName(string lockName);
+        void RemoveByAge(string name, TimeSpan age);
+        void RemoveByName(string name);
+        bool ExistsByName(string name);
     }
 }

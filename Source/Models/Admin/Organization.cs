@@ -75,7 +75,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Maximum number of error occurrences allowed per day.
         /// </summary>
-        public int MaxErrorsPerDay { get; set; }
+        public int MaxEventsPerDay { get; set; }
 
         /// <summary>
         /// Number of days stats data is retained.

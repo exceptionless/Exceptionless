@@ -112,7 +112,7 @@ namespace Exceptionless.Core.Repositories {
             _projectRepository.IncrementStats(projectId, eventCount: -count);
         }
 
-        public IEnumerable<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+        public IList<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             IMongoQuery query = Query.Null;
             
             if (utcStart != DateTime.MinValue)
@@ -132,7 +132,7 @@ namespace Exceptionless.Core.Repositories {
             return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
-        public IEnumerable<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public IList<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             IMongoQuery query = Query.Null;
 
             if (utcStart != DateTime.MinValue)
@@ -141,6 +141,16 @@ namespace Exceptionless.Core.Repositories {
                 query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
 
             return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+        }
+
+        public IList<string> GetExceededRetentionEventIds(string stackId, int maxEventsPerStack) {
+            return Find<PersistentEvent>(new MultiOptions()
+                .WithStackId(stackId)
+                .WithFields(FieldNames.Id)
+                .WithLimit(150)
+                .WithSkip(maxEventsPerStack)
+                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                ).Select(e => e.Id);
         }
 
         public string GetPreviousEventIdInStack(string id) {
