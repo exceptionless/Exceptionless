@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public new static class FieldNames {
-            public const string Id = "_id";
+            public const string Id = CommonFieldNames.Id;
             public const string IsEmailAddressVerified = "IsEmailAddressVerified";
             public const string EmailNotificationsEnabled = "EmailNotificationsEnabled";
             public const string OrganizationIds = "OrganizationIds";
@@ -79,15 +79,13 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return Where(Query<User>.EQ(u => u.VerifyEmailAddressToken, token)).FirstOrDefault();
+            return FindOne<User>(new FindOptions().WithQuery(Query<User>.EQ(u => u.VerifyEmailAddressToken, token)));
         }
 
         // TODO: Have this return a limited subset of user data.
-        public IQueryable<User> GetByOrganizationId(string id) {
+        public IList<User> GetByOrganizationId(string id) {
+            return Find<User>(new FindMultipleOptions().WithOrganizationId(id));
             // TODO Cache this.
-            return Where(Query.In(FieldNames.OrganizationIds, new List<BsonValue> {
-                new BsonObjectId(new ObjectId(id))
-            }));
         }
 
         public override void InvalidateCache(User entity) {

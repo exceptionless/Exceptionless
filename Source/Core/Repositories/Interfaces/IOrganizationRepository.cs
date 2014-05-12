@@ -16,5 +16,7 @@ namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
         Organization GetByStripeCustomerId(string customerId);
+
+        void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
     }
 }
