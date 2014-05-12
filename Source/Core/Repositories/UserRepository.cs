@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -24,6 +23,30 @@ namespace Exceptionless.Core.Repositories {
     public class UserRepository : MongoRepository<User>, IUserRepository {
         public UserRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
+        public User GetByEmailAddress(string emailAddress) {
+            if (String.IsNullOrEmpty(emailAddress))
+                return null;
+
+            return FindOne<User>(new FindOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(GetScopedCacheKey(emailAddress)));
+        }
+
+        public User GetByVerifyEmailAddressToken(string token) {
+            if (String.IsNullOrEmpty(token))
+                return null;
+
+            return FindOne<User>(new FindOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+        }
+
+        // TODO: Have this return a limited subset of user data.
+        public IList<User> GetByOrganizationId(string id) {
+            if (String.IsNullOrEmpty(id))
+                return new List<User>();
+
+            return Find<User>(new FindMultipleOptions().WithOrganizationId(id).WithCacheKey(GetScopedCacheKey(id)));
+        }
+
+        #region Collection Setup
+
         public const string CollectionName = "user";
 
         protected override string GetCollectionName() {
@@ -31,9 +54,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public new static class FieldNames {
-            public const string Id = "_id";
+            public const string Id = CommonFieldNames.Id;
+            public const string EmailAddress = "EmailAddress";
             public const string IsEmailAddressVerified = "IsEmailAddressVerified";
             public const string EmailNotificationsEnabled = "EmailNotificationsEnabled";
+            public const string VerifyEmailAddressToken = "VerifyEmailAddressToken";
             public const string OrganizationIds = "OrganizationIds";
             public const string OAuthAccounts_Provider = "OAuthAccounts.Provider";
             public const string OAuthAccounts_ProviderUserId = "OAuthAccounts.ProviderUserId";
@@ -60,36 +85,7 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.VerifyEmailAddressToken).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
         }
-
-        public User GetByEmailAddress(string emailAddress) {
-            if (Cache == null)
-                return FirstOrDefault(u => u.EmailAddress == emailAddress);
-
-            var result = Cache.Get<User>(GetScopedCacheKey(emailAddress));
-            if (result == null) {
-                result = FirstOrDefault(u => u.EmailAddress == emailAddress);
-                if (result != null)
-                    Cache.Set(GetScopedCacheKey(emailAddress), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public User GetByVerifyEmailAddressToken(string token) {
-            if (String.IsNullOrEmpty(token))
-                return null;
-
-            return Where(Query<User>.EQ(u => u.VerifyEmailAddressToken, token)).FirstOrDefault();
-        }
-
-        // TODO: Have this return a limited subset of user data.
-        public IQueryable<User> GetByOrganizationId(string id) {
-            // TODO Cache this.
-            return Where(Query.In(FieldNames.OrganizationIds, new List<BsonValue> {
-                new BsonObjectId(new ObjectId(id))
-            }));
-        }
-
+        
         public override void InvalidateCache(User entity) {
             if (Cache == null)
                 return;
@@ -99,5 +95,7 @@ namespace Exceptionless.Core.Repositories {
 
             base.InvalidateCache(entity);
         }
+
+        #endregion
     }
 }

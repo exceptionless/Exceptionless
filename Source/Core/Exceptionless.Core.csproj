@@ -275,6 +275,7 @@
     <Compile Include="Repositories\Base\IRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByProject.cs" />
+    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByProjectAndStack.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByStack.cs" />

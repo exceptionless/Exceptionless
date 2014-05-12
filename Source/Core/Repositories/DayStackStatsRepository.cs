@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -35,26 +33,26 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static class FieldNames {
-            public const string MinuteStats_Format = "mn.{0}";
-            public const string Id = "_id";
-            public const string ProjectId = "pid";
-            public const string ErrorStackId = "sid";
+            public const string Id = CommonFieldNames.Id;
+            public const string ProjectId = CommonFieldNames.ProjectId;
+            public const string StackId = CommonFieldNames.StackId;
             public const string Total = "tot";
             public const string MinuteStats = "mn";
+            public const string MinuteStats_Format = "mn.{0}";
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
             base.InitializeCollection(database);
 
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {
             base.ConfigureClassMap(cm);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
             cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
+            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.StackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }

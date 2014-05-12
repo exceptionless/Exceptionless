@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -33,11 +32,12 @@ namespace Exceptionless.Core.Repositories {
             _eventRepository = eventRepository;
         }
 
-        public override void Delete(IEnumerable<Stack> stacks) {
-            var organizations = stacks.GroupBy(s => new {
+        protected override void AfterRemove(IList<Stack> documents, bool sendNotification = true) {
+            var organizations = documents.GroupBy(s => new {
                 s.OrganizationId,
                 s.ProjectId
             });
+
             foreach (var grouping in organizations) {
                 var result = _collection.Remove(M.Query.In(FieldNames.Id, grouping.ToArray().Select(stack => new BsonObjectId(new ObjectId(stack.Id)))));
 
@@ -48,11 +48,13 @@ namespace Exceptionless.Core.Repositories {
                 _projectRepository.IncrementStats(grouping.Key.ProjectId, stackCount: result.DocumentsAffected * -1);
             }
 
-            foreach (Stack entity in stacks) {
+            foreach (Stack entity in documents) {
                 // NOTE: We shouldn't need to call InvalidateHiddenId's here because they no longer exists.
                 InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
                 base.InvalidateCache(entity);
             }
+
+            base.AfterRemove(documents, sendNotification);
         }
 
         public void IncrementStats(string stackId, DateTime occurrenceDate) {
