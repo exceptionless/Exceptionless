@@ -19,6 +19,7 @@ using Exceptionless.App.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.App.Controllers {
@@ -59,7 +60,7 @@ namespace Exceptionless.App.Controllers {
         [ProjectRequiredActionFilter]
         [NotSuspended]
         public ActionResult New(string id) {
-            if (!String.IsNullOrEmpty(id) && _projectRepository.GetByIdCached(id) == null)
+            if (!String.IsNullOrEmpty(id) && _projectRepository.GetById(id, true) == null)
                 return RedirectToAction("Index");
 
             RouteData.SetProjectId(id);
@@ -70,7 +71,7 @@ namespace Exceptionless.App.Controllers {
         [ProjectRequiredActionFilter]
         [NotSuspended]
         public ActionResult Recent(string id) {
-            if (!String.IsNullOrEmpty(id) && _projectRepository.GetByIdCached(id) == null)
+            if (!String.IsNullOrEmpty(id) && _projectRepository.GetById(id, true) == null)
                 return RedirectToAction("Index");
 
             RouteData.SetProjectId(id);
@@ -81,7 +82,7 @@ namespace Exceptionless.App.Controllers {
         [ProjectRequiredActionFilter]
         [NotSuspended]
         public ActionResult Frequent(string id) {
-            if (!String.IsNullOrEmpty(id) && _projectRepository.GetByIdCached(id) == null)
+            if (!String.IsNullOrEmpty(id) && _projectRepository.GetById(id, true) == null)
                 return RedirectToAction("Index");
 
             RouteData.SetProjectId(id);
@@ -94,7 +95,7 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(id))
                 return RedirectToAction("Index");
 
-            Project project = _projectRepository.GetByIdCached(id);
+            Project project = _projectRepository.GetById(id, true);
             if (project == null)
                 return RedirectToAction("Index");
 
@@ -111,8 +112,8 @@ namespace Exceptionless.App.Controllers {
             if (project == null)
                 return RedirectToAction("Index");
 
-            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.AddHours(-8).Ticks;
-            _projectRepository.Update(project);
+            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.AddHours(-9).Ticks;
+            _projectRepository.Save(project);
 
             return RedirectToAction("Index");
         }
@@ -126,7 +127,7 @@ namespace Exceptionless.App.Controllers {
                     id = project.Id;
             }
 
-            if (String.IsNullOrEmpty(id) || _projectRepository.GetByIdCached(id) == null)
+            if (String.IsNullOrEmpty(id) || _projectRepository.GetById(id, true) == null)
                 return RedirectToAction("Index");
 
             return View();
@@ -188,7 +189,7 @@ namespace Exceptionless.App.Controllers {
 
                 User user = _userRepository.GetById(User.UserEntity.Id);
                 user.OrganizationIds.Add(organization.Id);
-                _userRepository.Update(user);
+                _userRepository.Save(user);
 
                 _notificationSender.OrganizationUpdated(organization.Id);
             }
@@ -220,7 +221,7 @@ namespace Exceptionless.App.Controllers {
             proj.ReportRegressions = notificationSettings.ReportRegressions;
             proj.Report404Errors = notificationSettings.Report404Errors;
             proj.ReportKnownBotErrors = notificationSettings.ReportKnownBotErrors;
-            proj.OrganizationName = _organizationRepository.GetByIdCached(project.OrganizationId).Name;
+            proj.OrganizationName = _organizationRepository.GetById(project.OrganizationId, true).Name;
             proj.UserId = User.UserEntity.Id;
 
             return proj;
@@ -232,7 +233,7 @@ namespace Exceptionless.App.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _projectRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
+                    _projects = _projectRepository.GetByOrganizationId(User.GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }

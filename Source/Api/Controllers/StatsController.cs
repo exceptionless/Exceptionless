@@ -14,11 +14,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using Exceptionless.Api.Models.Stats;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
             result.MostRecent = RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -86,14 +86,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException();
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 throw new ArgumentException();
 
             var range = GetDateRange(start, end);
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
             pageSize = GetLimit(pageSize);
             int skip = GetSkip(page, pageSize);
@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -135,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
             return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
         }
@@ -145,9 +145,9 @@ namespace Exceptionless.Api.Controllers {
             int skip = GetSkip(page, pageSize);
 
             var ers = new PlanPagedResult<EventStackResult>(result.Skip(skip).Take(pageSize).ToList());
-            IQueryable<Stack> errorStacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id));
+            var stacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id).ToList());
             foreach (EventStackResult stats in ers.Results.ToList()) {
-                Stack stack = errorStacks.SingleOrDefault(s => s.Id == stats.Id);
+                Stack stack = stacks.SingleOrDefault(s => s.Id == stats.Id);
                 if (stack == null) {
                     ers.Results.RemoveAll(r => r.Id == stats.Id);
                     continue;
@@ -186,8 +186,8 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            Project project = _projectRepository.GetByIdCached(stack.ProjectId);
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            Project project = _projectRepository.GetById(stack.ProjectId, true);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
         }
 

@@ -11,7 +11,7 @@
 
 using System;
 using System.Web.Mvc;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Stripe;
 

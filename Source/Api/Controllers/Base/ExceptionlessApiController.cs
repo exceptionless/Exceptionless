@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Controllers {
             return Request.IsInOrganization(organizationId);
         }
 
-        public IEnumerable<string> GetAssociatedOrganizationIds() {
+        public IList<string> GetAssociatedOrganizationIds() {
             return Request.GetAssociatedOrganizationIds();
         }
 

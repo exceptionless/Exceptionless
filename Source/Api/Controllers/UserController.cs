@@ -4,8 +4,8 @@ using System.Linq;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models.User;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
@@ -25,7 +25,7 @@ namespace Exceptionless.Api.Controllers {
             int skip = GetSkip(page, limit);
 
             List<ViewUser> results = _repository.GetByOrganizationId(organization).Select(Mapper.Map<User, ViewUser>).ToList();
-            var org = _organizationRepository.GetByIdCached(organization);
+            var org = _organizationRepository.GetById(organization, true);
             if (org.Invites.Any())
                 results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Controllers {
             if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
-            _repository.Update(user, true);
+            _repository.Save(user, true);
             return Ok();
         }
 
@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Controllers {
             if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
 
-            _repository.Update(user, true);
+            _repository.Save(user, true);
             return Ok();
         }
 

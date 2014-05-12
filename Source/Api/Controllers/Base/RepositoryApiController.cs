@@ -5,7 +5,6 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
@@ -16,7 +15,7 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
-            where TRepository : MongoRepositoryWithIdentity<TModel>
+            where TRepository : MongoRepository<TModel>
             where TModel : class, IIdentity, new()
             where TViewModel : class, IIdentity, new()
             where TNewModel : class, new()
@@ -112,7 +111,7 @@ namespace Exceptionless.Api.Controllers {
 
             TModel model;
             if (useCache)
-                model = _repository.GetByIdCached(id);
+                model = _repository.GetById(id, true);
             else
                 model = _repository.GetById(id, true);
             if (_isOwnedByOrganization && model != null && !IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
@@ -201,7 +200,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual TModel UpdateModel(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
-            return _repository.Update(original);
+            return _repository.Save(original);
         }
 
         #endregion
@@ -230,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual void DeleteModel(TModel value) {
-            _repository.Delete(value);
+            _repository.Remove(value);
         }
 
         #endregion

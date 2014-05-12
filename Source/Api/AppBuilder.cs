@@ -13,6 +13,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
@@ -20,7 +21,6 @@ using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
-using MongoDB.Driver.Linq;
 using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
@@ -111,7 +111,7 @@ namespace Exceptionless.Api {
 
                 return new Lazy<User>(() => {
                     var userRepository = container.GetInstance<IUserRepository>();
-                    return userRepository.GetByIdCached(ctx.Request.User.GetUserId());
+                    return userRepository.GetById(ctx.Request.User.GetUserId(), true);
                 });
             });
 
@@ -124,7 +124,7 @@ namespace Exceptionless.Api {
 
                 return new Lazy<Project>(() => {
                     var projectRepository = container.GetInstance<IProjectRepository>();
-                    return projectRepository.GetByIdCached(ctx.Request.User.GetProjectId());
+                    return projectRepository.GetById(ctx.Request.User.GetProjectId(), true);
                 });
             });
 
@@ -154,7 +154,7 @@ namespace Exceptionless.Api {
         private static void EnsureSampleData(Container container) {
             var dataHelper = container.GetInstance<DataHelper>();
             var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.FirstOrDefault(u => u.EmailAddress == "test@exceptionless.com");
+            var user = userRepository.GetByEmailAddress("test@exceptionless.com");
             if (user == null)
                 user = userRepository.Add(new User { EmailAddress = "test@exceptionless.com" });
             _userId = user.Id;

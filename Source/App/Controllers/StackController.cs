@@ -12,7 +12,7 @@
 using System;
 using System.Web.Mvc;
 using Exceptionless.App.Utility;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.App.Controllers {

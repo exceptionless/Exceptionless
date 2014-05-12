@@ -11,6 +11,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -133,7 +134,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
 
-            Organization organization = _repository.GetByIdCached(id);
+            Organization organization = _repository.GetById(id, true);
             if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return NotFound();
 
@@ -213,7 +214,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
-                _repository.Update(organization);
+                _repository.Save(organization);
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
                 return Ok(new { Success = false, Message = e.Message });
@@ -240,7 +241,7 @@ namespace Exceptionless.Api.Controllers {
             if (user != null) {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
-                    _userRepository.Update(user);
+                    _userRepository.Save(user);
                 }
 
                 _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
@@ -253,7 +254,7 @@ namespace Exceptionless.Api.Controllers {
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
-                    _repository.Update(organization);
+                    _repository.Save(organization);
                 }
 
                 _mailer.SendInviteAsync(currentUser, organization, invite);
@@ -282,7 +283,7 @@ namespace Exceptionless.Api.Controllers {
                     return Ok();
 
                 organization.Invites.Remove(invite);
-                _repository.Update(organization);
+                _repository.Save(organization);
             } else {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
@@ -290,16 +291,16 @@ namespace Exceptionless.Api.Controllers {
                 if (_userRepository.GetByOrganizationId(organization.Id).Count() == 1)
                     return BadRequest("An organization must contain at least one user.");
 
-                List<Project> projects = _projectRepository.WhereForOrganization(organization.Id).Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
+                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
                 if (projects.Count > 0) {
                     foreach (Project project in projects)
                         project.NotificationSettings.Remove(user.Id);
 
-                    _projectRepository.Update(projects);
+                    _projectRepository.Save(projects);
                 }
 
                 user.OrganizationIds.Remove(organization.Id);
-                _userRepository.Update(user);
+                _userRepository.Save(user);
             }
 
             return Ok();
@@ -319,7 +320,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = ExceptionlessUser.Id;
             organization.SuspensionCode = code;
             organization.SuspensionNotes = notes;
-            _repository.Update(organization);
+            _repository.Save(organization);
 
             return Ok();
         }
@@ -338,7 +339,7 @@ namespace Exceptionless.Api.Controllers {
             organization.SuspendedByUserId = null;
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
-            _repository.Update(organization);
+            _repository.Save(organization);
 
             return Ok();
         }
@@ -351,7 +352,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             organization.Data[key] = value;
-            _repository.Update(organization);
+            _repository.Save(organization);
 
             return Ok();
         }
@@ -364,7 +365,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             organization.Data.Remove(key);
-            _repository.Update(organization);
+            _repository.Save(organization);
 
             return Ok();
         }
@@ -397,7 +398,7 @@ namespace Exceptionless.Api.Controllers {
             var organization = base.AddModel(value);
 
             ExceptionlessUser.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(ExceptionlessUser);
+            _userRepository.Save(ExceptionlessUser);
 
             return organization;
         }
@@ -406,7 +407,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it has a subscription."));
 
-            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
+            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it contains any projects."));
 
@@ -429,15 +430,15 @@ namespace Exceptionless.Api.Controllers {
                 // delete the user if they are not associated to any other organizations and they are not the current user
                 if (user.OrganizationIds.All(oid => String.Equals(oid, value.Id)) && !String.Equals(user.Id, currentUser.Id)) {
                     Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, value.Name, value.Id).Write();
-                    _userRepository.Delete(user.Id);
+                    _userRepository.Remove(user.Id);
                 } else {
                     Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, value.Name, value.Id).Write();
                     user.OrganizationIds.Remove(value.Id);
-                    _userRepository.Update(user);
+                    _userRepository.Save(user);
                 }
             }
 
-            List<Project> projects = _projectRepository.WhereForOrganization(value.Id).ToList();
+            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
             if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
@@ -445,7 +446,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-                _projectRepository.Delete(projects);
+                _projectRepository.Save(projects);
             }
 
             Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();

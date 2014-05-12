@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Web.Http;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Controllers {
             organization.RemoveSuspension();
             _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
-            _repository.Update(organization);
+            _repository.Save(organization);
             _messagePublisher.PublishAsync(new PlanChanged {
                 OrganizationId = organization.Id
             });

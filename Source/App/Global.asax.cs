@@ -22,18 +22,14 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using System.Web.Security;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.App.Hubs;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Migrations;
-using Exceptionless.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
 using MongoDB.Driver;
 using NLog;
 using NLog.Fluent;
-using ServiceStack.CacheAccess;
-using ServiceStack.Redis;
 
 namespace Exceptionless.App {
     public class GlobalApplication : HttpApplication {

@@ -61,12 +61,12 @@ namespace Exceptionless.Api.Controllers {
             _messagePublisher = messagePublisher;
         }
 
-        // TODO..
+        //TODO: Implement
 
         [Route]
         [HttpGet]
         public IEnumerable<Stack> Get() {
-            return _stackRepository.WhereForOrganization(GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
+            return _stackRepository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
         }
 
         [HttpGet]
@@ -193,7 +193,7 @@ namespace Exceptionless.Api.Controllers {
             stack.IsRegressed = false;
 
             // TODO: Add a log entry.
-            _stackRepository.Update(stack);
+            _stackRepository.Save(stack);
 
             _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!stack.References.Contains(url)) {
                 stack.References.Add(url);
-                _stackRepository.Update(stack);
+                _stackRepository.Save(stack);
             }
 
             // notify client that the error stack has been updated.
@@ -244,7 +244,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -252,7 +252,7 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetByIdCached(project.OrganizationId).GetRetentionUtcCutoff();
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
 
@@ -279,7 +279,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return;
 
-            Stack stack = _stackRepository.GetByIdCached(id);
+            Stack stack = _stackRepository.GetById(id, true);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return;
 

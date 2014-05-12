@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
             return Find<T>(new MultiOptions().WithOrganizationId(organizationId).WithCacheKey(useCache ? String.Concat("org:", organizationId) : null).WithExpiresIn(expiresIn));
         }
 
-        public IList<T> GetByOrganizationId(IList<string> organizationIds, bool useCache = false, TimeSpan? expiresIn = null) {
+        public IList<T> GetByOrganizationIds(IList<string> organizationIds, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
                 return new List<T>();
 

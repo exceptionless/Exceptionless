@@ -13,9 +13,9 @@ using System;
 using System.Net;
 using System.Web.Http;
 using Exceptionless.Api.Controllers;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -114,7 +114,7 @@ namespace Exceptionless.App.Controllers.API {
                 return NotFound();
 
             // TODO: Validate that a user owns this webhook.
-            _repository.Delete(Query.EQ(ProjectHookRepository.FieldNames.Url, targetUrl));
+            _repository.Remove(Query.EQ(ProjectHookRepository.FieldNames.Url, targetUrl));
 
             return Ok();
         }
@@ -144,7 +144,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(value.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
 
-            Project project = _projectRepository.GetByIdCached(value.ProjectId);
+            Project project = _projectRepository.GetById(value.ProjectId, true);
             if (!IsInProject(project))
                 return PermissionResult.DenyWithResult(BadRequest());
 
@@ -172,7 +172,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(projectId))
                 return false;
 
-            return IsInProject(_projectRepository.GetByIdCached(projectId));
+            return IsInProject(_projectRepository.GetById(projectId, true));
         }
 
         private bool IsInProject(Project value) {

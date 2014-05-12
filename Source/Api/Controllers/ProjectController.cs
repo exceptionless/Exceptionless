@@ -5,10 +5,10 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
@@ -89,7 +89,7 @@ namespace Exceptionless.Api.Controllers {
 
             project.Configuration.Settings[key] = value;
             project.Configuration.Version++;
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok();
         }
@@ -102,7 +102,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             project.Configuration.Settings.Remove(key);
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok();
         }
@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Controllers {
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
             project.ApiKeys.Add(apiKey);
 
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok(new { Key = apiKey });
         }
@@ -159,7 +159,7 @@ namespace Exceptionless.Api.Controllers {
                 return StatusCode(HttpStatusCode.NoContent);
 
             project.ApiKeys.Remove(apiKey);
-            _repository.Update(project);
+            _repository.Save(project);
 
             return StatusCode(HttpStatusCode.NoContent);
         }
@@ -196,7 +196,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             project.NotificationSettings[userId] = settings;
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok();
         }
@@ -210,7 +210,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.NotificationSettings.ContainsKey(userId)) {
                 project.NotificationSettings.Remove(userId);
-                _repository.Update(project);
+                _repository.Save(project);
             }
 
             return Ok();
@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Add(name);
-                _repository.Update(project);
+                _repository.Save(project);
             }
 
             return Ok();
@@ -241,7 +241,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
-                _repository.Update(project);
+                _repository.Save(project);
             }
 
             return Ok();
@@ -253,7 +253,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(name))
                 return NotFound();
 
-            if (_repository.GetByOrganizationId(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
+            if (_repository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
                 return Ok();
 
             return NotFound();
@@ -267,7 +267,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             project.Data[key] = value;
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok();
         }
@@ -280,7 +280,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             project.Data.Remove(key);
-            _repository.Update(project);
+            _repository.Save(project);
 
             return Ok();
         }
@@ -288,7 +288,7 @@ namespace Exceptionless.Api.Controllers {
         protected override void CreateMaps() {
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
                 pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
-                pi.OrganizationName = _organizationRepository.GetByIdCached(p.OrganizationId).Name;
+                pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
             });
             base.CreateMaps();
         }

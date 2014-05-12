@@ -12,7 +12,7 @@
 using System;
 using System.Web.Mvc;
 using System.Web.Routing;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
@@ -33,14 +33,14 @@ namespace Exceptionless.App.Utility {
                 return;
 
             if (String.IsNullOrEmpty(organizationId)) {
-                Project project = ProjectRepository.GetByIdCached(projectId);
+                Project project = ProjectRepository.GetById(projectId, true);
                 if (project == null)
                     return;
 
                 organizationId = project.OrganizationId;
             }
 
-            Organization organization = OrganizationRepository.GetByIdCached(organizationId);
+            Organization organization = OrganizationRepository.GetById(organizationId, true);
             if (organization == null)
                 return;
 

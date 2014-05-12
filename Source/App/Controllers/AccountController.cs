@@ -23,6 +23,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Membership;
 using Exceptionless.Models;
@@ -131,7 +132,7 @@ namespace Exceptionless.App.Controllers {
                     if (!_isFirstUserChecked) {
                         _isFirstUserChecked = true;
 
-                        if (_userRepository.All().FirstOrDefault() == null)
+                        if (_userRepository.Count() == 0)
                             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
                     }
 
@@ -172,7 +173,7 @@ namespace Exceptionless.App.Controllers {
 
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
                 user.IsEmailAddressVerified = true;
-                _userRepository.Update(user);
+                _userRepository.Save(user);
             }
 
             if (!_billingManager.CanAddUser(organization)) {
@@ -181,10 +182,10 @@ namespace Exceptionless.App.Controllers {
             }
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(user);
+            _userRepository.Save(user);
 
             organization.Invites.Remove(invite);
-            _organizationRepository.Update(organization);
+            _organizationRepository.Save(organization);
             _notificationSender.OrganizationUpdated(organization.Id);
         }
 
@@ -452,7 +453,7 @@ namespace Exceptionless.App.Controllers {
                     // Add the GlobalAdmin role to the first user of the system.
                     if (!_isFirstUserChecked) {
                         _isFirstUserChecked = true;
-                        if (_userRepository.All().FirstOrDefault() == null)
+                        if (_userRepository.Count() == 0)
                             roles.Add(AuthorizationRoles.GlobalAdmin);
                     }
 
@@ -533,7 +534,7 @@ namespace Exceptionless.App.Controllers {
             user.IsEmailAddressVerified = true;
             user.VerifyEmailAddressToken = null;
             user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
-            _userRepository.Update(user);
+            _userRepository.Save(user);
 
             return RedirectToAction("Manage", "Account");
         }

@@ -150,7 +150,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithLimit(150)
                 .WithSkip(maxEventsPerStack)
                 .WithSort(SortBy.Descending(FieldNames.Date_UTC))
-                ).Select(e => e.Id);
+                ).Select(e => e.Id).ToList();
         }
 
         public string GetPreviousEventIdInStack(string id) {

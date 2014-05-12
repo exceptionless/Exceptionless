@@ -10,10 +10,10 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Net;
 using System.Web.Mvc;
-using Exceptionless.Core;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.App.Controllers {
     public class HomeController : Controller {

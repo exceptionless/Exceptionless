@@ -12,7 +12,7 @@
 using System;
 using System.Web.Mvc;
 using Exceptionless.App.Utility;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.App.Controllers {
     [Authorize]
