@@ -17,12 +17,12 @@ using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs {
-    public class MongoJobLockProviderTests : MongoRepositoryTestBase<JobLockInfo, IJobLockInfoRepository> {
-        public MongoJobLockProviderTests() : base(IoC.GetInstance<IJobLockInfoRepository>(), true) {}
+    public class MongoJobLockProviderTests : MongoRepositoryTestBase<JobLockInfo, IJobLockRepository> {
+        public MongoJobLockProviderTests() : base(IoC.GetInstance<IJobLockRepository>(), true) {}
 
         [Fact]
         public void CanLock() {
-            var provider = new MongoJobLockProvider(IoC.GetInstance<IJobLockInfoRepository>());
+            var provider = new MongoJobLockProvider(IoC.GetInstance<IJobLockRepository>());
             JobLock v1 = provider.Acquire("Test");
             Console.WriteLine(v1);
             Assert.True(v1.LockAcquired);
@@ -43,7 +43,7 @@ namespace Exceptionless.Tests.Jobs {
 
         [Fact]
         public void LockWillTimeout() {
-            var provider = new MongoJobLockProvider(IoC.GetInstance<IJobLockInfoRepository>());
+            var provider = new MongoJobLockProvider(IoC.GetInstance<IJobLockRepository>());
 
             JobLock v1 = provider.Acquire("Test");
             Console.WriteLine(v1);
@@ -68,7 +68,7 @@ namespace Exceptionless.Tests.Jobs {
 
         [Fact]
         public void CanMachineLock() {
-            var provider = new MongoMachineJobLockProvider(IoC.GetInstance<IJobLockInfoRepository>());
+            var provider = new MongoMachineJobLockProvider(IoC.GetInstance<IJobLockRepository>());
             JobLock v1 = provider.Acquire("Test");
             Console.WriteLine(v1);
             Assert.True(v1.LockAcquired);

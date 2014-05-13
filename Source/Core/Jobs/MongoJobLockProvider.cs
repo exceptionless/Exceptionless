@@ -17,9 +17,9 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class MongoJobLockProvider : JobLockProvider {
-        private readonly IJobLockInfoRepository _jobLockRepository;
+        private readonly IJobLockRepository _jobLockRepository;
 
-        public MongoJobLockProvider(IJobLockInfoRepository repository) {
+        public MongoJobLockProvider(IJobLockRepository repository) {
             _jobLockRepository = repository;
         }
 

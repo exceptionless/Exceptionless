@@ -334,7 +334,7 @@
     <Compile Include="Repositories\Interfaces\IJobHistoryRepository.cs" />
     <Compile Include="Repositories\JobHistoryRepository.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Interfaces\IJobLockInfoRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IJobLockRepository.cs" />
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Web\EncodingDelegatingHandler.cs" />

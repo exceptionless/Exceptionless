@@ -17,7 +17,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockInfoRepository {
+    public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockRepository {
         public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {
             _getIdValue = s => s;
         }
