@@ -32,14 +32,12 @@ namespace Exceptionless.App.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
 
-        public ProjectController(IUserRepository userRepository, IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager, NotificationSender notificationSender) {
+        public ProjectController(IUserRepository userRepository, IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
         }
 
         [HttpGet]
@@ -190,8 +188,6 @@ namespace Exceptionless.App.Controllers {
                 User user = _userRepository.GetById(User.UserEntity.Id);
                 user.OrganizationIds.Add(organization.Id);
                 _userRepository.Save(user);
-
-                _notificationSender.OrganizationUpdated(organization.Id);
             }
 
             var project = new Project { Name = model.Name, TimeZone = model.TimeZone, OrganizationId = organization.Id };
@@ -205,9 +201,7 @@ namespace Exceptionless.App.Controllers {
             }
 
             project = _projectRepository.Add(project);
-
             _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-            _notificationSender.ProjectUpdated(organization.Id, project.Id);
 
             return RedirectToAction("Configure", "Project", new { id = project.Id });
         }

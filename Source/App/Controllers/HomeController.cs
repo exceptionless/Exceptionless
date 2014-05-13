@@ -18,14 +18,10 @@ using Exceptionless.Core.Repositories;
 namespace Exceptionless.App.Controllers {
     public class HomeController : Controller {
         private readonly ICacheClient _cacheClient;
-        private readonly IRedisClientsManager _clientsManager;
-        private readonly NotificationSender _notificationSender;
         private readonly IUserRepository _userRepository;
 
-        public HomeController(ICacheClient cacheClient, IRedisClientsManager clientsManager, NotificationSender notificationSender, IUserRepository userRepository) {
+        public HomeController(ICacheClient cacheClient, IUserRepository userRepository) {
             _cacheClient = cacheClient;
-            _clientsManager = clientsManager;
-            _notificationSender = notificationSender;
             _userRepository = userRepository;
         }
 
@@ -82,13 +78,13 @@ namespace Exceptionless.App.Controllers {
                 if (!GlobalApplication.IsDbUpToDate())
                     return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB Schema Outdated");
 
-                var user = _userRepository.All().Take(1).FirstOrDefault();
+                var numberOfUsers = _userRepository.Count();
             } catch (Exception ex) {
                 return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo Not Working: " + ex.Message);
             }
 
-            if (!_notificationSender.IsListening())
-                return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
+            //if (!_notificationSender.IsListening())
+            //    return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
 
             return new ContentResult { Content = "All Systems Check" };
         }

@@ -738,17 +738,15 @@
     <Content Include="Scripts\typings\knockout.validation\knockout.validation.d.ts" />
     <Content Include="Scripts\typings\bootbox\bootbox.d.ts" />
     <Content Include="Scripts\typings\zeroclipboard\zeroclipboard.d.ts" />
-    <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
     <Content Include="Scripts\typings\jquery.livestampjs\jquery.livestampjs.d.ts" />
     <Content Include="Scripts\typings\bootstrap\bootstrap.d.ts" />
     <Content Include="Scripts\typings\signalr\signalr.d.ts" />
+    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
     <Content Include="Scripts\typings\d3\d3.d.ts" />
     <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
-    <Content Include="Scripts\typings\jquery\jquery.d.ts" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="Scripts\typings\moment\moment.d.ts" />
-    <TypeScriptCompile Include="Scripts\typings\underscore\underscore.d.ts" />
+    <Content Include="Scripts\typings\handlebars\handlebars.d.ts" />
+    <Content Include="Scripts\typings\moment\moment.d.ts" />
+    <Content Include="Scripts\typings\underscore\underscore.d.ts" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>

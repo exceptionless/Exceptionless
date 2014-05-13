@@ -143,13 +143,12 @@ namespace Exceptionless.Core.Repositories {
             return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
-        public IList<string> GetExceededRetentionEventIds(string stackId, int maxEventsPerStack) {
+        public IList<string> GetExceededRetentionEventIds(string stackId, PagingOptions options) {
             return Find<PersistentEvent>(new MultiOptions()
                 .WithStackId(stackId)
                 .WithFields(FieldNames.Id)
-                .WithLimit(150)
-                .WithSkip(maxEventsPerStack)
                 .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithPaging(options)
                 ).Select(e => e.Id).ToList();
         }
 

@@ -37,18 +37,16 @@ namespace Exceptionless.App.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
         private readonly IMailer _mailer;
         private readonly DataHelper _dataHelper;
 
         private static bool _isFirstUserChecked;
 
-        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer, DataHelper dataHelper) {
+        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IUserRepository userRepository, BillingManager billingManager, IMailer mailer, DataHelper dataHelper) {
             _membershipProvider = membership;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
             _mailer = mailer;
             _dataHelper = dataHelper;
         }
@@ -186,7 +184,6 @@ namespace Exceptionless.App.Controllers {
 
             organization.Invites.Remove(invite);
             _organizationRepository.Save(organization);
-            _notificationSender.OrganizationUpdated(organization.Id);
         }
 
         [HttpPost]

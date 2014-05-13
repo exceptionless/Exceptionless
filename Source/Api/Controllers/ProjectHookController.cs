@@ -114,7 +114,7 @@ namespace Exceptionless.App.Controllers.API {
                 return NotFound();
 
             // TODO: Validate that a user owns this webhook.
-            _repository.Remove(Query.EQ(ProjectHookRepository.FieldNames.Url, targetUrl));
+            _repository.RemoveByUrl(targetUrl);
 
             return Ok();
         }

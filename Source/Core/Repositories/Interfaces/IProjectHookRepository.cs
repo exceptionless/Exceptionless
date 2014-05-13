@@ -14,5 +14,6 @@ using Exceptionless.Models.Admin;
 
 namespace Exceptionless.Core.Repositories {
     public interface IProjectHookRepository : IRepositoryOwnedByProject<ProjectHook> {
+        void RemoveByUrl(string targetUrl);
     }
 }

@@ -21,9 +21,8 @@ namespace Exceptionless.Core.Repositories {
     public class ProjectHookRepository : MongoRepositoryOwnedByProject<ProjectHook>, IProjectHookRepository {
         public ProjectHookRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
-        public override void InvalidateCache(ProjectHook entity) {
-            Cache.Remove(GetScopedCacheKey(entity.ProjectId));
-            base.InvalidateCache(entity);
+        public void RemoveByUrl(string targetUrl) {
+            RemoveAll(new QueryOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
         }
 
         #region Collection Setup
@@ -60,6 +59,10 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.ProjectId).SetRepresentation(BsonType.ObjectId).SetElementName(FieldNames.ProjectId);
             cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
             cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
+        }
+        public override void InvalidateCache(ProjectHook entity) {
+            Cache.Remove(GetScopedCacheKey(entity.ProjectId));
+            base.InvalidateCache(entity);
         }
 
         #endregion

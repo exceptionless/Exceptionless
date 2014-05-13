@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
@@ -20,6 +21,6 @@ namespace Exceptionless.Core.Repositories {
         IList<Organization> GetStaleAccounts(int? limit = 20);
         IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
-
+        BillingPlanStats GetBillingPlanStats();
     }
 }

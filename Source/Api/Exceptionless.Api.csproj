@@ -166,7 +166,6 @@
     <Compile Include="Models\Project\NewProject.cs" />
     <Compile Include="Models\Project\UpdateProject.cs" />
     <Compile Include="Models\Project\ViewProject.cs" />
-    <Compile Include="Models\Stats\BillingPlanStatsModel.cs" />
     <Compile Include="Models\User\ViewUser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />

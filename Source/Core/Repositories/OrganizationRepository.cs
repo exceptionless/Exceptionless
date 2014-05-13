@@ -15,6 +15,7 @@ using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -98,6 +99,43 @@ namespace Exceptionless.Core.Repositories {
 
             UpdateAll(new QueryOptions().WithId(organizationId), update);
             InvalidateCache(organizationId);
+        }
+
+        public BillingPlanStats GetBillingPlanStats() {
+            var results = Find<Organization>(new MultiOptions()
+                .WithFields(FieldNames.PlanId, FieldNames.IsSuspended, FieldNames.BillingPrice, FieldNames.BillingStatus)
+                .WithSort(SortBy.Descending(FieldNames.PlanId)));
+
+            List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
+            decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+
+            List<Organization> smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+
+            return new BillingPlanStats {
+                SmallTotal = smallOrganizations.Count,
+                SmallYearlyTotal = smallYearlyOrganizations.Count,
+                MediumTotal = mediumOrganizations.Count,
+                MediumYearlyTotal = mediumYearlyOrganizations.Count,
+                LargeTotal = largeOrganizations.Count,
+                LargeYearlyTotal = largeYearlyOrganizations.Count,
+                MonthlyTotal = monthlyTotalPaid + (yearlyTotalPaid / 12),
+                YearlyTotal = (monthlyTotalPaid * 12) + yearlyTotalPaid,
+                MonthlyTotalAccounts = smallOrganizations.Count + mediumOrganizations.Count + largeOrganizations.Count,
+                YearlyTotalAccounts = smallYearlyOrganizations.Count + mediumYearlyOrganizations.Count + largeYearlyOrganizations.Count,
+                FreeAccounts = results.Count(o => String.Equals(o.PlanId, BillingManager.FreePlan.Id)),
+                PaidAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice > 0),
+                FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice <= 0),
+                SuspendedAccounts = results.Count(o => o.IsSuspended),
+            };
         }
 
         #region Collection Setup
