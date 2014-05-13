@@ -16,12 +16,12 @@ using MongoDB.Driver.Builders;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/event")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class EventController : RepositoryApiController<EventRepository, PersistentEvent, PersistentEvent, Event, Event> {
+    public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, Event, Event> {
         private readonly IProjectRepository _projectRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IAppStatsClient _statsClient;
 
-        public EventController(EventRepository repository, IProjectRepository projectRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
+        public EventController(IEventRepository repository, IProjectRepository projectRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
             _projectRepository = projectRepository;
             _eventPostQueue = eventPostQueue;
             _statsClient = statsClient;

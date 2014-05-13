@@ -19,31 +19,31 @@ using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<Event> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string errorStackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(generateId, id, organizationId, projectId, errorStackId, startDate, endDate, timeZoneOffset: timeZoneOffset);
+                yield return GenerateEvent(generateId, id, organizationId, projectId, stackId, startDate, endDate, timeZoneOffset: timeZoneOffset);
         }
 
-        public static List<Event> GenerateSampleEvents() {
-            return new List<Event> {
+        public static List<PersistentEvent> GenerateSampleEvents() {
+            return new List<PersistentEvent> {
                 GenerateSampleEvent(),
-                GenerateSampleEvent(TestConstants.ErrorId2),
-                GenerateSampleEvent(TestConstants.ErrorId7),
-                GenerateSampleEvent(TestConstants.ErrorId8),
+                GenerateSampleEvent(TestConstants.EventId2),
+                GenerateSampleEvent(TestConstants.EventId7),
+                GenerateSampleEvent(TestConstants.EventId8),
             };
         }
 
-        public static Event GenerateSampleEvent(string id = TestConstants.ErrorId) {
+        public static PersistentEvent GenerateSampleEvent(string id = TestConstants.EventId) {
             return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
         }
 
-        public static Event GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
             if (!startDate.HasValue)
                 startDate = DateTime.Now.AddDays(-90);
             if (!endDate.HasValue)
                 endDate = DateTime.Now;
 
-            var ev = new Event {
+            var ev = new PersistentEvent {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
@@ -69,13 +69,13 @@ namespace Exceptionless.Tests.Utility {
                 ev.Tags.Add(tag);
             }
 
-            ev.SetError(GenerateError(nestingLevel, minimiumNestingLevel));
+            ev.SetEvent(GenerateEvent(nestingLevel, minimiumNestingLevel));
 
             return ev;
         }
 
-        private static Error GenerateError(int nestingLevel = 0, int minimiumNestingLevel = 0) {
-            var error = new Error();
+        private static Event GenerateEvent(int nestingLevel = 0, int minimiumNestingLevel = 0) {
+            var error = new Event();
             error.Message = @"Generated exception message.";
             error.Type = TestConstants.ExceptionTypes.Random();
             if (RandomHelper.GetBool())
@@ -95,7 +95,7 @@ namespace Exceptionless.Tests.Utility {
             error.StackTrace = stack;
 
             if (minimiumNestingLevel > 0 || (nestingLevel < 5 && RandomHelper.GetBool()))
-                error.Inner = GenerateError(nestingLevel + 1);
+                error.Inner = GenerateEvent(nestingLevel + 1);
 
             return error;
         }

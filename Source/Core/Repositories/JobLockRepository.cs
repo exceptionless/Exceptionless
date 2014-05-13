@@ -22,6 +22,13 @@ namespace Exceptionless.Core.Repositories {
             _getIdValue = s => s;
         }
 
+        public JobLockInfo GetByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+            
+            return FindOne<JobLockInfo>(new OneOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
+        }
+
         public void RemoveByAge(string name, TimeSpan age) {
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException("name");

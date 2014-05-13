@@ -16,7 +16,6 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -37,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
     [RoutePrefix(API_PREFIX + "stack")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class StackController : RepositoryApiController<StackRepository, Stack, Stack, Stack, Stack> {
+    public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
@@ -47,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly DataHelper _dataHelper;
         private readonly IMessagePublisher _messagePublisher;
 
-        public StackController(StackRepository stackRepository, IOrganizationRepository organizationRepository, 
+        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IProjectHookRepository projectHookRepository, 
             IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, 
             DataHelper dataHelper, IMessagePublisher messagePublisher) : base(stackRepository) {

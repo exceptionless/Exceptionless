@@ -7,6 +7,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Microsoft.Owin.Hosting;
@@ -56,7 +57,7 @@ namespace Pcl.Tests {
         private void EnsureSampleData(Container container) {
             var dataHelper = container.GetInstance<DataHelper>();
             var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.FirstOrDefault(u => u.EmailAddress == "test@test.com");
+            var user = userRepository.GetByEmailAddress("test@test.com");
             if (user == null)
                 user = userRepository.Add(new User { EmailAddress = "test@test.com" });
             dataHelper.CreateSampleOrganizationAndProject(user.Id);

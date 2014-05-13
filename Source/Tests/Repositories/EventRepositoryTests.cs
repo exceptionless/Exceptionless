@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using MongoDB.Bson;

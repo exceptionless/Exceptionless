@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using Xunit;

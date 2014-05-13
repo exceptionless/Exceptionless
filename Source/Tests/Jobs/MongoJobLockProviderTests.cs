@@ -11,8 +11,8 @@
 
 using System;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using Xunit;
 
@@ -53,9 +53,9 @@ namespace Exceptionless.Tests.Jobs {
             Console.WriteLine(v2);
             Assert.False(v2.LockAcquired);
 
-            var l = Repository.FirstOrDefault(li => li.Name == "Test");
+            var l = Repository.GetByName("Test");
             l.CreatedDate = l.CreatedDate.Subtract(TimeSpan.FromMinutes(25));
-            Repository.Update(l);
+            Repository.Save(l);
 
             JobLock v3 = provider.Acquire("Test");
             Console.WriteLine(v3);

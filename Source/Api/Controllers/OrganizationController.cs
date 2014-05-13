@@ -22,14 +22,14 @@ using Stripe;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/organization")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class OrganizationController : RepositoryApiController<OrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
+    public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
 
-        public OrganizationController(OrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) : base(organizationRepository) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
@@ -53,7 +53,6 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, OrganizationSortBy sort = OrganizationSortBy.Newest, int page = 1, int limit = 10) {
             var options = new GetEntitiesOptions { Page = page, Limit = limit };
-            
             if (!String.IsNullOrWhiteSpace(criteria))
                 options.Query = options.Query.And(Query.Matches(OrganizationRepository.FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
 

@@ -21,11 +21,11 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : MongoRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
-        private readonly EventRepository _eventRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public StackRepository(MongoDatabase database, OrganizationRepository organizationRepository, ProjectRepository projectRepository, EventRepository eventRepository, ICacheClient cacheClient = null)
+        public StackRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient = null)
             : base(database, cacheClient) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -204,7 +204,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public new static class FieldNames {
+        public static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string ProjectId = CommonFieldNames.ProjectId;
             public const string OrganizationId = CommonFieldNames.OrganizationId;

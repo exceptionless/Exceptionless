@@ -11,9 +11,8 @@
 
 using System;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Caching;
 using Exceptionless.Tests.Utility;
-using ServiceStack.CacheAccess;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs {

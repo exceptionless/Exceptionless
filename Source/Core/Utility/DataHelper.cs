@@ -19,28 +19,28 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class DataHelper {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
-        private readonly UserRepository _userRepository;
-        private readonly EventRepository _eventRepository;
-        private readonly StackRepository _stackRepository;
-        private readonly DayStackStatsRepository _dayStackStats;
-        private readonly MonthStackStatsRepository _monthStackStats;
-        private readonly DayProjectStatsRepository _dayProjectStats;
-        private readonly MonthProjectStatsRepository _monthProjectStats;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IDayStackStatsRepository _dayStackStats;
+        private readonly IMonthStackStatsRepository _monthStackStats;
+        private readonly IDayProjectStatsRepository _dayProjectStats;
+        private readonly IMonthProjectStatsRepository _monthProjectStats;
         private readonly BillingManager _billingManager;
 
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
 
-        public DataHelper(OrganizationRepository organizationRepository,
-            ProjectRepository projectRepository,
-            UserRepository userRepository,
-            EventRepository eventRepository,
-            StackRepository stackRepository,
-            DayStackStatsRepository dayStackStats,
-            MonthStackStatsRepository monthStackStats,
-            DayProjectStatsRepository dayProjectStats,
-            MonthProjectStatsRepository monthProjectStats,
+        public DataHelper(IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
+            IUserRepository userRepository,
+            IEventRepository eventRepository,
+            IStackRepository stackRepository,
+            IDayStackStatsRepository dayStackStats,
+            IMonthStackStatsRepository monthStackStats,
+            IDayProjectStatsRepository dayProjectStats,
+            IMonthProjectStatsRepository monthProjectStats,
             BillingManager billingManager) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;

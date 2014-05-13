@@ -193,20 +193,9 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Base\AuthenticatedMongoApiControllerBase.cs" />
-    <Compile Include="Controllers\ErrorControllerTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Controllers\MockedEventControllerTests.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Controllers\OrganizationControllerTests.cs" />
-    <Compile Include="Controllers\ProjectControllerTests.cs" />
-    <Compile Include="Base\MockedControllerBase.cs" />
     <Compile Include="Base\DatabaseTestBase.cs" />
     <Compile Include="Base\DataTestBase.cs" />
     <Compile Include="Base\MongoRepositoryTestBase.cs" />
-    <Compile Include="Import\ImportSampleDataTests.cs" />
     <Compile Include="Jobs\RedisJobLockProviderTests.cs" />
     <Compile Include="Jobs\DailyNotificationJobTests.cs" />
     <Compile Include="Migrations\ErrorDocumentUpgraderTests.cs" />
@@ -229,7 +218,6 @@
     <Compile Include="Utility\UserData.cs" />
     <Compile Include="Utility\OrganizationData.cs" />
     <Compile Include="Utility\EventData.cs" />
-    <Compile Include="Base\MongoApiControllerBase.cs" />
     <Compile Include="Utility\ProjectData.cs" />
     <Compile Include="Stacking\ErrorSignatureTests.cs" />
     <Compile Include="Utility\TestConstants.cs" />
@@ -238,10 +226,6 @@
     <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
       <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
       <Name>Exceptionless.Api</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\App\Exceptionless.App.csproj">
-      <Project>{75B70E03-6F3D-4B05-979F-8E0BDAAD732C}</Project>
-      <Name>Exceptionless.App</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
       <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>

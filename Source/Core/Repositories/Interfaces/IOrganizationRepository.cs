@@ -22,5 +22,7 @@ namespace Exceptionless.Core.Repositories {
         IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
         BillingPlanStats GetBillingPlanStats();
+
+        void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null);
     }
 }

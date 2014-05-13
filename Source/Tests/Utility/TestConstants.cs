@@ -15,15 +15,15 @@ using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.Tests.Utility {
     public static class TestConstants {
-        public const string ErrorId = "1ecd0826e447ad1e78877ab4";
-        public const string ErrorId2 = "2ecd0826e447ad1e78877ab2";
-        public const string ErrorId3 = "3ecd0826e447ad1e78877ab3";
-        public const string ErrorId4 = "4ecd0826e447ad1e78877ab4";
-        public const string ErrorId5 = "5ecd0826e447ad1e78877ab5";
-        public const string ErrorId6 = "6ecd0826e447ad1e78877ab6";
-        public const string ErrorId7 = "7ecd0826e447ad1e78877ab7";
-        public const string ErrorId8 = "8ecd0826e447ad1e78877ab8";
-        public const string InvalidErrorId = "0ecd0826e447ad1e78877ab0";
+        public const string EventId = "1ecd0826e447ad1e78877ab4";
+        public const string EventId2 = "2ecd0826e447ad1e78877ab2";
+        public const string EventId3 = "3ecd0826e447ad1e78877ab3";
+        public const string EventId4 = "4ecd0826e447ad1e78877ab4";
+        public const string EventId5 = "5ecd0826e447ad1e78877ab5";
+        public const string EventId6 = "6ecd0826e447ad1e78877ab6";
+        public const string EventId7 = "7ecd0826e447ad1e78877ab7";
+        public const string EventId8 = "8ecd0826e447ad1e78877ab8";
+        public const string InvalidEventId = "0ecd0826e447ad1e78877ab0";
 
         public const string ProjectId = "1ecd0826e447ad1e78877ab2";
         public const string ProjectIdWithNoRoles = "1ecd0826e447ad1e78877a66";
@@ -51,9 +51,9 @@ namespace Exceptionless.Tests.Utility {
         public const string InvalidUserId = "0ec44826e447ad1e78444ab0";
         public const string InvalidUserEmail = "invalid@exceptionless.com";
 
-        public const string ErrorStackId = "1ecd0826e447a44e78877ab1";
-        public const string ErrorStackId2 = "2ecd0826e447a44e78877ab2";
-        public const string InvalidErrorStackId = "0ecd0826e447ad1e78877ab0";
+        public const string StackId = "1ecd0826e447a44e78877ab1";
+        public const string StackId2 = "2ecd0826e447a44e78877ab2";
+        public const string InvalidStackId = "0ecd0826e447ad1e78877ab0";
 
         public const string ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
         public const string ApiKey2 = "2ccd0826e447ad1e78877ab2";

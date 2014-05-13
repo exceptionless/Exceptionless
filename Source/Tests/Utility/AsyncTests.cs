@@ -19,12 +19,12 @@ using Xunit;
 
 namespace Exceptionless.Tests.Utility {
     public class AsyncTests {
-        private readonly EventRepository _eventRepository = IoC.GetInstance<EventRepository>();
-        private readonly StackRepository _stackRepository = IoC.GetInstance<StackRepository>();
-        private readonly DayStackStatsRepository _dayStackStats = IoC.GetInstance<DayStackStatsRepository>();
-        private readonly MonthStackStatsRepository _monthStackStats = IoC.GetInstance<MonthStackStatsRepository>();
-        private readonly DayProjectStatsRepository _dayProjectStats = IoC.GetInstance<DayProjectStatsRepository>();
-        private readonly MonthProjectStatsRepository _monthProjectStats = IoC.GetInstance<MonthProjectStatsRepository>();
+        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
+        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
+        private readonly IDayStackStatsRepository _dayStackStats = IoC.GetInstance<IDayStackStatsRepository>();
+        private readonly IMonthStackStatsRepository _monthStackStats = IoC.GetInstance<IMonthStackStatsRepository>();
+        private readonly IDayProjectStatsRepository _dayProjectStats = IoC.GetInstance<IDayProjectStatsRepository>();
+        private readonly IMonthProjectStatsRepository _monthProjectStats = IoC.GetInstance<IMonthProjectStatsRepository>();
 
         [Fact(Skip = "This is only for experimentation.")]
         public void CanRunAsyncMethodsAndWait() {

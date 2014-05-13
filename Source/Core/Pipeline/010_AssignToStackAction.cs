@@ -23,10 +23,10 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
-        private readonly StackRepository _stackRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly FormattingPluginManager _pluginManager;
 
-        public AssignToStackAction(StackRepository stackRepository, FormattingPluginManager pluginManager) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager pluginManager) {
             _stackRepository = stackRepository;
             _pluginManager = pluginManager;
         }

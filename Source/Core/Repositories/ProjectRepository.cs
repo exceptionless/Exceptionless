@@ -22,9 +22,9 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
-        private readonly OrganizationRepository _organizationRepository;
+        private readonly IOrganizationRepository _organizationRepository;
 
-        public ProjectRepository(MongoDatabase database, OrganizationRepository organizationRepository, ICacheClient cacheClient = null) : base(database, cacheClient) {
+        public ProjectRepository(MongoDatabase database, IOrganizationRepository organizationRepository, ICacheClient cacheClient = null) : base(database, cacheClient) {
             _organizationRepository = organizationRepository;
         }
 

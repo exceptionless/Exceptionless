@@ -29,13 +29,13 @@ namespace Exceptionless.Tests.Analytics {
         private readonly EventStatsHelper _eventStatsHelper = IoC.GetInstance<EventStatsHelper>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
-        private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
-        private readonly StackRepository _stackRepository = IoC.GetInstance<StackRepository>();
+        private readonly IUserRepository _userRepository = IoC.GetInstance<IUserRepository>();
+        private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
 
-        private readonly DayStackStatsRepository _dayStackStats = IoC.GetInstance<DayStackStatsRepository>();
-        private readonly MonthStackStatsRepository _monthStackStats = IoC.GetInstance<MonthStackStatsRepository>();
-        private readonly DayProjectStatsRepository _dayProjectStats = IoC.GetInstance<DayProjectStatsRepository>();
-        private readonly MonthProjectStatsRepository _monthProjectStats = IoC.GetInstance<MonthProjectStatsRepository>();
+        private readonly IDayStackStatsRepository _dayStackStats = IoC.GetInstance<IDayStackStatsRepository>();
+        private readonly IMonthStackStatsRepository _monthStackStats = IoC.GetInstance<IMonthStackStatsRepository>();
+        private readonly IDayProjectStatsRepository _dayProjectStats = IoC.GetInstance<IDayProjectStatsRepository>();
+        private readonly IMonthProjectStatsRepository _monthProjectStats = IoC.GetInstance<IMonthProjectStatsRepository>();
 
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
@@ -50,7 +50,7 @@ namespace Exceptionless.Tests.Analytics {
             DateTime utcEndDate = new DateTimeOffset(endDate, timeOffset).UtcDateTime;
             const int count = 100;
 
-            List<Event> events = EventData.GenerateEvents(count, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             DateTimeOffset first = events.Min(e => e.Date);
             Assert.True(first >= utcStartDate);
             DateTimeOffset last = events.Max(e => e.Date);
@@ -74,10 +74,10 @@ namespace Exceptionless.Tests.Analytics {
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date.AddMinutes(5);
             const int count = 25;
 
-            List<Event> events = EventData.GenerateEvents(count, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events);
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count, info.Total);
             Assert.Equal(1, info.UniqueTotal);
             Assert.Equal(0, info.NewTotal);
@@ -99,7 +99,7 @@ namespace Exceptionless.Tests.Analytics {
 
             overallsw.Start();
             sw.Start();
-            List<Event> events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId, timeZoneOffset: timeOffset).ToList();
             sw.Stop();
             Console.WriteLine("Generate Events: {0}", sw.Elapsed.ToWords(true));
 
@@ -109,7 +109,7 @@ namespace Exceptionless.Tests.Analytics {
             Console.WriteLine("Add Events: {0}", sw.Elapsed.ToWords(true));
 
             sw.Restart();
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             sw.Stop();
             Console.WriteLine("Get Stats: {0}", sw.Elapsed.ToWords(true));
             overallsw.Stop();
@@ -131,10 +131,10 @@ namespace Exceptionless.Tests.Analytics {
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
             const int count = 25;
 
-            List<Event> events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events);
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count, info.Total);
             Assert.InRange(info.UniqueTotal, 1, count);
             Assert.Equal(0, info.NewTotal);
@@ -152,13 +152,13 @@ namespace Exceptionless.Tests.Analytics {
             const int count1 = 50;
             const int count2 = 50;
 
-            List<Event> events1 = EventData.GenerateEvents(count1, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events1 = EventData.GenerateEvents(count1, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events1);
 
-            List<Event> events2 = EventData.GenerateEvents(count2, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, errorStackId: TestConstants.ErrorStackId2, projectId: TestConstants.ProjectIdWithNoRoles, timeZoneOffset: timeOffset).ToList();
+            var events2 = EventData.GenerateEvents(count2, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, stackId: TestConstants.StackId2, projectId: TestConstants.ProjectIdWithNoRoles, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events2);
 
-            var info1 = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info1 = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count1, info1.Total);
             Assert.InRange(info1.UniqueTotal, 1, count1);
             Assert.Equal(0, info1.NewTotal);
@@ -166,7 +166,7 @@ namespace Exceptionless.Tests.Analytics {
             Assert.Equal(count1, info1.Stats.Sum(ds => ds.Total));
             Assert.Equal(0, info1.Stats.Sum(ds => ds.NewTotal));
 
-            var info2 = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectIdWithNoRoles, timeOffset, startDate, endDate);
+            var info2 = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectIdWithNoRoles, timeOffset, startDate, endDate);
             Assert.Equal(count2, info2.Total);
             Assert.InRange(info2.UniqueTotal, 1, count2);
             Assert.Equal(0, info2.NewTotal);
@@ -176,19 +176,19 @@ namespace Exceptionless.Tests.Analytics {
         }
 
         [Fact]
-        public void CanStackErrors() {
+        public void CanStackEvents() {
             _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
             const int count = 25;
 
-            List<Event> events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events);
 
             long stackCount = _stackRepository.Count();
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count, info.Total);
             Assert.InRange(info.UniqueTotal, 1, count);
             Assert.Equal(stackCount, info.NewTotal);
@@ -198,22 +198,22 @@ namespace Exceptionless.Tests.Analytics {
         }
 
         [Fact]
-        public void CanStackErrorsForMultipleProjects() {
+        public void CanStackEventsForMultipleProjects() {
             _dataHelper.ResetProjectData(TestConstants.ProjectId);
             TimeSpan timeOffset = _projectRepository.GetDefaultTimeOffset(TestConstants.ProjectId);
             DateTime startDate = DateTime.UtcNow.Add(timeOffset).Date.AddDays(-120);
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
             const int count = 25;
 
-            List<Event> events1 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events1 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events1);
 
-            List<Event> events2 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectIdWithNoRoles, timeZoneOffset: timeOffset).ToList();
+            var events2 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectIdWithNoRoles, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events2);
 
             long stackCount = _stackRepository.Where(es => es.ProjectId == TestConstants.ProjectId).Count();
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count, info.Total);
             Assert.InRange(info.UniqueTotal, 1, count);
             Assert.Equal(stackCount, info.NewTotal);
@@ -248,14 +248,14 @@ namespace Exceptionless.Tests.Analytics {
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
             const int count = 100;
 
-            List<Event> events1 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events1 = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events1);
 
             long stackCount = _stackRepository.Where(es => es.ProjectId == TestConstants.ProjectId).Count();
             var firstStack = _stackRepository.Where(es => es.ProjectId == TestConstants.ProjectId).OrderBy(es => es.FirstOccurrence).First();
             Console.WriteLine("Count: " + firstStack.TotalOccurrences);
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count, info.Total);
             Assert.InRange(info.UniqueTotal, 1, count);
             Assert.Equal(stackCount, info.NewTotal);
@@ -266,7 +266,7 @@ namespace Exceptionless.Tests.Analytics {
             _eventStatsHelper.DecrementDayProjectStatsByStackId(TestConstants.ProjectId, firstStack.Id);
             _eventStatsHelper.DecrementMonthProjectStatsByStackId(TestConstants.ProjectId, firstStack.Id);
 
-            info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(count - firstStack.TotalOccurrences, info.Total);
             Assert.InRange(info.UniqueTotal - 1, 1, count);
             Assert.Equal(stackCount - 1, info.NewTotal);
@@ -283,7 +283,7 @@ namespace Exceptionless.Tests.Analytics {
             DateTime endDate = DateTime.UtcNow.Add(timeOffset).Date;
             const int count = 50;
 
-            List<Event> events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
+            var events = EventData.GenerateEvents(count, organizationId: TestConstants.OrganizationId, startDate: startDate, endDate: endDate, projectId: TestConstants.ProjectId, timeZoneOffset: timeOffset).ToList();
             _eventPipeline.Run(events);
 
             var firstStack = _stackRepository.Where(es => es.ProjectId == TestConstants.ProjectId).OrderBy(es => es.FirstOccurrence).First();
@@ -298,7 +298,7 @@ namespace Exceptionless.Tests.Analytics {
             long stackCount = _stackRepository.Where(s => !s.IsHidden).Count();
             int countWithoutHidden = count - firstStack.TotalOccurrences - biggestStack.TotalOccurrences;
 
-            var info = _eventStatsHelper.GetProjectErrorStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
+            var info = _eventStatsHelper.GetProjectEventStats(TestConstants.ProjectId, timeOffset, startDate, endDate);
             Assert.Equal(countWithoutHidden, info.Total);
             Assert.InRange(info.UniqueTotal, 1, count);
             Assert.Equal(stackCount, info.NewTotal);
@@ -314,8 +314,8 @@ namespace Exceptionless.Tests.Analytics {
             _projectRepository.Add(ProjectData.GenerateSampleProjects());
             _organizationRepository.Add(OrganizationData.GenerateSampleOrganizations());
 
-            //_errorStackRepository.Add(ErrorStackData.GenerateErrorStack(id: TestConstants.ErrorStackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
-            //_errorStackRepository.Add(ErrorStackData.GenerateErrorStack(id: TestConstants.ErrorStackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles));
+            //_errorStackRepository.Add(EventStackData.GenerateEventStack(id: TestConstants.EventStackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId));
+            //_errorStackRepository.Add(EventStackData.GenerateEventStack(id: TestConstants.EventStackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles));
         }
 
         protected override void RemoveData() {

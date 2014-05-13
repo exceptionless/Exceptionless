@@ -19,17 +19,16 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
-using MongoDB.Driver.Builders;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "projecthook")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectHookController : RepositoryApiController<ProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
+    public class ProjectHookController : RepositoryApiController<IProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public ProjectHookController(ProjectHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
+        public ProjectHookController(IProjectHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }

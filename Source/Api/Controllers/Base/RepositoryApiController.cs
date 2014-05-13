@@ -15,7 +15,7 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
-            where TRepository : MongoRepository<TModel>
+            where TRepository : IRepository<TModel>
             where TModel : class, IIdentity, new()
             where TViewModel : class, IIdentity, new()
             where TNewModel : class, new()

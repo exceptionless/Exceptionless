@@ -24,5 +24,7 @@ namespace Exceptionless.Core.Repositories {
         DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime);
         DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset);
         DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime);
+
+        void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null);
     }
 }

@@ -21,10 +21,10 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class EnforceRetentionLimitsJob : Job {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly EventRepository _eventRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public EnforceRetentionLimitsJob(OrganizationRepository organizationRepository, EventRepository eventRepository) {
+        public EnforceRetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
         }

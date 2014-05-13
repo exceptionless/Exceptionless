@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
@@ -21,5 +22,10 @@ namespace Exceptionless.Core.Repositories {
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
         void MarkAsRegressedByStack(string id);
+        void UpdateFixedByStackId(string stackId, bool value);
+        void UpdateHiddenByStackId(string stackId, bool value);
+        void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
+        void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+        Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate);
     }
 }

@@ -13,17 +13,15 @@ using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Repositories;
-using MongoDB.Bson;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(30)]
     public class CheckForRegressionAction : EventPipelineActionBase {
-        private readonly StackRepository _stackRepository;
-        private readonly EventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public CheckForRegressionAction(StackRepository stackRepository, EventRepository eventRepository) {
+        public CheckForRegressionAction(IStackRepository stackRepository, IEventRepository eventRepository) {
             _stackRepository = stackRepository;
             _eventRepository = eventRepository;
         }

@@ -30,10 +30,10 @@ namespace Exceptionless.App.Controllers {
 
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly OrganizationRepository _organizationRepository;
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
 
-        public ProjectController(IUserRepository userRepository, IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager) {
+        public ProjectController(IUserRepository userRepository, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, BillingManager billingManager) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;

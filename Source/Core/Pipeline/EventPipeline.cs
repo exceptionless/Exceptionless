@@ -19,11 +19,11 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly IAppStatsClient _statsClient;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, OrganizationRepository organizationRepository, ProjectRepository projectRepository, IAppStatsClient statsClient) : base(dependencyResolver) {
+        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IAppStatsClient statsClient) : base(dependencyResolver) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _statsClient = statsClient;

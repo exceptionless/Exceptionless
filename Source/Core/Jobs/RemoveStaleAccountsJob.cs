@@ -20,25 +20,26 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class RemoveStaleAccountsJob : Job {
-        private readonly OrganizationRepository _organizationRepository;
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly DayStackStatsRepository _dayStackStats;
-        private readonly MonthStackStatsRepository _monthStackStats;
-        private readonly DayProjectStatsRepository _dayProjectStats;
-        private readonly MonthProjectStatsRepository _monthProjectStats;
+        private readonly IDayStackStatsRepository _dayStackStats;
+        private readonly IMonthStackStatsRepository _monthStackStats;
+        private readonly IDayProjectStatsRepository _dayProjectStats;
+        private readonly IMonthProjectStatsRepository _monthProjectStats;
 
         public RemoveStaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,
             IStackRepository stackRepository,
-            DayStackStatsRepository dayStackStats,
-            MonthStackStatsRepository monthStackStats,
-            DayProjectStatsRepository dayProjectStats,
-            MonthProjectStatsRepository monthProjectStats) {
+            IDayStackStatsRepository dayStackStats,
+            IMonthStackStatsRepository monthStackStats,
+            IDayProjectStatsRepository dayProjectStats,
+            IMonthProjectStatsRepository monthProjectStats)
+        {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;

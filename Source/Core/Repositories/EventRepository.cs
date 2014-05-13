@@ -24,10 +24,10 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : MongoRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        private readonly ProjectRepository _projectRepository;
-        private readonly OrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IOrganizationRepository _organizationRepository;
 
-        public EventRepository(MongoDatabase database, ProjectRepository projectRepository, OrganizationRepository organizationRepository, ICacheClient cacheClient = null)
+        public EventRepository(MongoDatabase database, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient = null)
             : base(database, cacheClient) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;

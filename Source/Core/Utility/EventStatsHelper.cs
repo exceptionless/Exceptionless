@@ -25,15 +25,15 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class EventStatsHelper {
-        private readonly StackRepository _stackRepository;
-        private readonly DayStackStatsRepository _dayStackStats;
-        private readonly MonthStackStatsRepository _monthStackStats;
-        private readonly DayProjectStatsRepository _dayProjectStats;
-        private readonly MonthProjectStatsRepository _monthProjectStats;
+        private readonly IStackRepository _stackRepository;
+        private readonly IDayStackStatsRepository _dayStackStats;
+        private readonly IMonthStackStatsRepository _monthStackStats;
+        private readonly IDayProjectStatsRepository _dayProjectStats;
+        private readonly IMonthProjectStatsRepository _monthProjectStats;
 
-        public EventStatsHelper(StackRepository stackRepository, DayStackStatsRepository dayStackStats,
-            MonthStackStatsRepository monthStackStats, DayProjectStatsRepository dayProjectStats,
-            MonthProjectStatsRepository monthProjectStats) {
+        public EventStatsHelper(IStackRepository stackRepository, IDayStackStatsRepository dayStackStats,
+            IMonthStackStatsRepository monthStackStats, IDayProjectStatsRepository dayProjectStats,
+            IMonthProjectStatsRepository monthProjectStats) {
             _stackRepository = stackRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;

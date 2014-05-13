@@ -10,10 +10,10 @@ namespace Exceptionless.Core.Plugins.EventPipeline {
     [Priority(0)]
     public class ThrottleBotsPlugin : EventPluginBase {
         private readonly ICacheClient _cacheClient;
-        private readonly EventRepository _eventRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, EventRepository eventRepository) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
         }

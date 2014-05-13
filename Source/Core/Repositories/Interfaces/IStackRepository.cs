@@ -18,13 +18,15 @@ namespace Exceptionless.Core.Repositories {
         StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash);
         IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
         IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        void InvalidateHiddenIdsCache(string projectId);
+        string[] GetHiddenIds(string projectId);
         string[] GetFixedIds(string projectId);
-        void InvalidateFixedIdsCache(string projectId);
         string[] GetNotFoundIds(string projectId);
-        void InvalidateNotFoundIdsCache(string projectId);
-
         void MarkAsRegressed(string id);
+        void IncrementStats(string stackId, DateTime occurrenceDate);
+        void InvalidateHiddenIdsCache(string projectId);
+        void InvalidateFixedIdsCache(string projectId);
+        void InvalidateNotFoundIdsCache(string projectId);
+        void InvalidateCache(string id, string signatureHash, string projectId);
     }
 
     public class StackInfo {

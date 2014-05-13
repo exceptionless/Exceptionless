@@ -15,7 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Exceptionless.Core.Migrations.Documents;
-using Exceptionless.Models;
+using Exceptionless.Models.Legacy;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -144,7 +144,7 @@ namespace Exceptionless.Tests.Migrations {
         public static IEnumerable<object[]> Errors {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\EventData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
                     result.Add(new object[] { file });
 
                 return result.ToArray();

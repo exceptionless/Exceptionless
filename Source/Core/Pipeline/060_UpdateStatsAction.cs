@@ -19,12 +19,12 @@ using Exceptionless.Core.Utility;
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
-        private readonly StackRepository _stackRepository;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly EventStatsHelper _statsHelper;
 
-        public UpdateStatsAction(EventStatsHelper statsHelper, OrganizationRepository organizationRepository, ProjectRepository projectRepository, StackRepository stackRepository) {
+        public UpdateStatsAction(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;

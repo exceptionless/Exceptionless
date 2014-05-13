@@ -10,14 +10,14 @@
 #endregion
 
 using System;
-using Exceptionless.Core;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using MongoDB.Driver;
 
 namespace Exceptionless.Tests {
     public abstract class MongoRepositoryTestBase<TModel, TRepository> : DatabaseTestBase
-        where TModel : class, new()
+        where TModel : class, IIdentity, new()
         where TRepository : class, IRepository<TModel> {
         private readonly TRepository _repository;
 
@@ -41,13 +41,13 @@ namespace Exceptionless.Tests {
         }
 
         protected override bool DatabaseExists() {
-            return ReadOnlyRepository != null && ReadOnlyRepository.Collection.Exists();
+            return ReadOnlyRepository != null && ReadOnlyRepository.Count() > 0;
         }
 
         protected override void CreateData() {}
 
         protected override void RemoveData() {
-            _repository.DeleteAll();
+            _repository.RemoveAll();
         }
 
         private MongoReadOnlyRepository<TModel> ReadOnlyRepository { get { return _repository as MongoReadOnlyRepository<TModel>; } }
@@ -57,7 +57,7 @@ namespace Exceptionless.Tests {
 
     public abstract class MongoRepositoryTestBaseWithIdentity<TModel, TRepository> : MongoRepositoryTestBase<TModel, TRepository>
         where TModel : class, IIdentity, new()
-        where TRepository : class, IRepositoryWithIdentity<TModel> {
+        where TRepository : class, IRepository<TModel> {
         protected MongoRepositoryTestBaseWithIdentity(bool tearDownOnExit) : base(IoC.GetInstance<TRepository>(), tearDownOnExit) {}
 
         protected MongoRepositoryTestBaseWithIdentity(TRepository repository, bool tearDownOnExit) : base(repository, tearDownOnExit) {}

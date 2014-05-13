@@ -11,10 +11,10 @@ using Exceptionless.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/user")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class UserController : RepositoryApiController<UserRepository, User, ViewUser, User, User> {
+    public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, User> {
         private readonly IOrganizationRepository _organizationRepository;
 
-        public UserController(UserRepository userRepository, IOrganizationRepository organizationRepository) : base(userRepository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository) : base(userRepository) {
             _organizationRepository = organizationRepository;
         }
 

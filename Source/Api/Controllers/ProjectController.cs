@@ -16,14 +16,13 @@ using Exceptionless.Models;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/project")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectController : RepositoryApiController<ProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
+    public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private List<Project> _projects;
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
 
-        public ProjectController(ProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager)
-            : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager) : base(projectRepository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
             _dataHelper = dataHelper;

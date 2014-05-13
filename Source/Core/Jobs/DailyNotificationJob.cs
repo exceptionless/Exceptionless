@@ -20,18 +20,14 @@ using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class DailyNotificationJob : Job {
-        private readonly ProjectRepository _projectRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly IQueue<SummaryNotification> _summaryNotificationQueue;
 
-        public DailyNotificationJob(ProjectRepository projectRepository, IQueue<SummaryNotification> summaryNotificationQueue) {
+        public DailyNotificationJob(IProjectRepository projectRepository, IQueue<SummaryNotification> summaryNotificationQueue) {
             _projectRepository = projectRepository;
             _summaryNotificationQueue = summaryNotificationQueue;
         }

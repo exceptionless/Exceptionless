@@ -10,22 +10,19 @@
 #endregion
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(50)]
     public class EnforceRetentionLimitsAction : EventPipelineActionBase {
-        private readonly EventRepository _eventRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public EnforceRetentionLimitsAction(EventRepository eventRepository) {
+        public EnforceRetentionLimitsAction(IEventRepository eventRepository) {
             _eventRepository = eventRepository;
         }
 
