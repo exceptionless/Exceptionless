@@ -14,7 +14,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -29,10 +28,8 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly ICacheClient _cacheClient;
 
-        public StatsController(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository, ICacheClient cacheClient) {
-            _cacheClient = cacheClient;
+        public StatsController(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository) {
             _statsHelper = statsHelper;
             _organizationRepository = organizationRepository;
             _stackRepository = stackRepository;
@@ -182,14 +179,6 @@ namespace Exceptionless.Api.Controllers {
             Project project = _projectRepository.GetById(stack.ProjectId, true);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
-        }
-
-        [HttpGet]
-        [Route("plans")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult Plans() {
-            return Ok(_organizationRepository.GetBillingPlanStats());
         }
     }
 }

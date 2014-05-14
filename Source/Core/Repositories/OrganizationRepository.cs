@@ -15,6 +15,7 @@ using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -99,6 +100,43 @@ namespace Exceptionless.Core.Repositories {
 
             UpdateAll(new QueryOptions().WithId(organizationId), update);
             InvalidateCache(organizationId);
+        }
+
+        public ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+            var options = new MultiOptions().WithPaging(paging);
+            if (!String.IsNullOrWhiteSpace(criteria))
+                options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
+            
+            if (paid.HasValue) {
+                if (paid.Value)
+                    options.Query.And(Query.NE(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                else
+                    options.Query.And(Query.EQ(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+            }
+
+            if (suspended.HasValue) {
+                if (suspended.Value)
+                    options.Query.And(Query.Or(Query.And(Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))), Query.EQ(FieldNames.IsSuspended, new BsonBoolean(true))));
+                else
+                    options.Query.And(Query.Or(Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))), Query.EQ(FieldNames.IsSuspended, new BsonBoolean(false)));
+            }
+
+            switch (sortBy) {
+                case OrganizationSortBy.Newest:
+                    options.SortBy = SortBy.Descending(FieldNames.Id);
+                    break;
+                case OrganizationSortBy.Subscribed:
+                    options.SortBy = SortBy.Descending(FieldNames.SubscribeDate);
+                    break;
+                case OrganizationSortBy.MostActive:
+                    options.SortBy = SortBy.Descending(FieldNames.TotalEventCount);
+                    break;
+                default:
+                    options.SortBy = SortBy.Ascending(FieldNames.Name);
+                    break;
+            }
+
+            return Find<Organization>(options);
         }
 
         public BillingPlanStats GetBillingPlanStats() {
@@ -199,5 +237,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         #endregion
+    }
+
+    public enum OrganizationSortBy {
+        Newest = 0,
+        Subscribed = 1,
+        MostActive = 2,
+        Alphabetical = 3,
     }
 }

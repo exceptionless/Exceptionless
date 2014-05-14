@@ -21,8 +21,9 @@ namespace Exceptionless.Core.Repositories {
         ICollection<Organization> GetAbandoned(int? limit = 20);
         ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
-        BillingPlanStats GetBillingPlanStats();
-
         void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null);
+
+        ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
+        BillingPlanStats GetBillingPlanStats();
     }
 }

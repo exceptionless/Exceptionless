@@ -30,7 +30,6 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
-using Exceptionless.Models.Stats;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
