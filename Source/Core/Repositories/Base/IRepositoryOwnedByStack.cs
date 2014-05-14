@@ -16,9 +16,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByStack<T> : IRepository<T> where T : class, IOwnedByStack, IIdentity, new() {
-        IList<T> GetByStackId(string stackId, bool useCache = false, TimeSpan? expiresIn = null);
-        IList<T> GetByStackId(IList<string> stackIds, bool useCache = false, TimeSpan? expiresIn = null);
-        void RemoveAllByStackId(string stackId);
+        ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task RemoveAllByStackIdAsync(string stackId);
     }
 

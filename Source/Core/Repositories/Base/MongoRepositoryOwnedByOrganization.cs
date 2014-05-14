@@ -12,31 +12,35 @@ namespace Exceptionless.Core.Repositories {
         public MongoRepositoryOwnedByOrganization(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {}
 
-        protected override void BeforeAdd(IList<T> documents) {
+        protected override void BeforeAdd(ICollection<T> documents) {
             if (documents.Any(d => String.IsNullOrEmpty(d.OrganizationId)))
                 throw new ArgumentException("OrganizationIds must be set.");
 
             base.BeforeAdd(documents);
         }
 
-        public IList<T> GetByOrganizationId(string organizationId, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new MultiOptions().WithOrganizationId(organizationId).WithCacheKey(useCache ? String.Concat("org:", organizationId) : null).WithExpiresIn(expiresIn));
+        public virtual ICollection<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return Find<T>(new MultiOptions()
+                .WithOrganizationId(organizationId)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? String.Concat("org:", organizationId) : null)
+                .WithExpiresIn(expiresIn));
         }
 
-        public IList<T> GetByOrganizationIds(IList<string> organizationIds, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual ICollection<T> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
                 return new List<T>();
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return Find<T>(new MultiOptions().WithOrganizationIds(organizationIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
-        }
-
-        public void RemoveAllByOrganizationId(string organizationId) {
-            RemoveAll(new QueryOptions().WithOrganizationId(organizationId));
+            return Find<T>(new MultiOptions()
+                .WithOrganizationIds(organizationIds)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
         }
 
         public async Task RemoveAllByOrganizationIdAsync(string organizationId) {
-            await Task.Run(() => RemoveAllByOrganizationId(organizationId));
+            await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationId(organizationId)));
         }
     }
 }

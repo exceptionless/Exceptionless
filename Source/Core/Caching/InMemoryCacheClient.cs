@@ -252,5 +252,7 @@ namespace Exceptionless.Core.Caching {
                 Log.Error().Exception(ex).Message("Error trying to remove items from cache with this {0} pattern", pattern).Write();
             }
         }
+
+        public int Count { get { return _memory.Count; } }
     }
 }

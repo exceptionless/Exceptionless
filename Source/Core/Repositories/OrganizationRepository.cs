@@ -45,14 +45,14 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
         }
 
-        public IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging) {
+        public ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
             return Find<Organization>(new MultiOptions()
                 .WithQuery(Query.GT(FieldNames.RetentionDays, 0))
                 .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
                 .WithPaging(paging));
         }
 
-        public IList<Organization> GetStaleAccounts(int? limit = 20) {
+        public ICollection<Organization> GetAbandoned(int? limit = 20) {
             var query = Query.And(
                 Query.EQ(FieldNames.PlanId, BillingManager.FreePlan.Id),
                 Query.LTE(FieldNames.TotalEventCount, new BsonInt64(0)),

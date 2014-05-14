@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         // TODO: Have this return a limited subset of user data.
-        public IList<User> GetByOrganizationId(string id) {
+        public ICollection<User> GetByOrganizationId(string id) {
             if (String.IsNullOrEmpty(id))
                 return new List<User>();
 

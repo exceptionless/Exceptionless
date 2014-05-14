@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         public IHttpActionResult Get(int page = 1, int limit = 10) {
             var options = new GetEntitiesOptions { Page = page, Limit = limit };
-            var results = GetEntities<ViewOrganization>(options);
+            var results = GetEntities<ViewOrganization>();
             return OkWithResourceLinks(results, options.HasMore);
         }
 
@@ -96,7 +96,7 @@ namespace Exceptionless.Api.Controllers {
                     break;
             }
 
-            var results = GetEntities<Organization>(options);
+            var results = GetEntities<Organization>();
             return OkWithResourceLinks(results, options.HasMore, page);
         }
 

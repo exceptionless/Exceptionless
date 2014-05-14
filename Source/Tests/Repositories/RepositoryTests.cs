@@ -16,8 +16,12 @@ using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Tests.Repositories {
-    public class RepositoryTests : MongoRepositoryTestBaseWithIdentity<Event, IEventRepository> {
-        public RepositoryTests() : base(IoC.GetInstance<IEventRepository>(), true) {}
+    public class RepositoryTests {
+        public readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
+
+        public RepositoryTests() {
+            
+        }
 
         [Fact]
         public void CreateUpdateRemove() {

@@ -44,7 +44,7 @@ namespace Exceptionless.Core {
                 throw new ConfigurationErrorsException("RedisConnectionString was not found in the Web.config.");
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-            container.Register<ICacheClient, InMemoryCacheClient>();
+            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))

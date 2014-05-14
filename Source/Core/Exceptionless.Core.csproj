@@ -284,6 +284,7 @@
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\PagingOptions.cs" />
     <Compile Include="Repositories\Base\PagingOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\PagingWithSortingOptions.cs" />
     <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\QueryOptions.cs" />
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />

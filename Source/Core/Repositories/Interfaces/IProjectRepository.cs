@@ -16,15 +16,14 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
         Project GetByApiKey(string apiKey);
-        IList<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
-        long IncrementNextSummaryEndOfDayTicks(IList<string> ids);
-        IList<TimeSpan> GetTargetTimeOffsetsForStats(string projectId);
+        ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
+        long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids);
+        void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null);
+        ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId);
         TimeSpan GetDefaultTimeOffset(string projectId);
         TimeZoneInfo GetDefaultTimeZone(string projectId);
         DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime);
         DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset);
         DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime);
-
-        void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null);
     }
 }

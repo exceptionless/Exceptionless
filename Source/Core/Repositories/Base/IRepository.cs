@@ -16,12 +16,12 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
         T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null);
-        void Add(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null);
+        void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null);
         T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null);
-        void Save(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null);
+        void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null);
         void Remove(string id);
         void Remove(T document);
-        void Remove(IList<T> documents, bool sendNotification = true);
+        void Remove(ICollection<T> documents, bool sendNotification = true);
         long RemoveAll(bool sendNotification = true);
     }
 }

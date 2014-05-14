@@ -5,13 +5,10 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using MongoDB.Bson;
 using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
@@ -21,13 +18,8 @@ namespace Exceptionless.Api.Controllers {
             where TNewModel : class, new()
             where TUpdateModel : class, new() {
         protected readonly TRepository _repository;
-        protected static readonly bool _isOwnedByOrganization;
-        protected static readonly bool _isOrganization;
-
-        static RepositoryApiController() {
-            _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
-            _isOrganization = typeof(TModel) == typeof(Organization);
-        }
+        protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
+        protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
 
         public RepositoryApiController(TRepository repository) {
             _repository = repository;
@@ -44,54 +36,58 @@ namespace Exceptionless.Api.Controllers {
 
         #region Get
 
-        public virtual IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            var options = new GetEntitiesOptions { OrganizationId = organization, AfterValue = after, BeforeValue = before, Limit = limit };
-            var results = GetEntities<TViewModel>(options);
-            return OkWithResourceLinks(results, options.HasMore);
+        public virtual IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10)
+        {
+            //var options = new GetEntitiesOptions { OrganizationId = organization, AfterValue = after, BeforeValue = before, Limit = limit };
+            //var results = GetEntities<TViewModel>(options);
+            //return OkWithResourceLinks(results, options.HasMore);
+            return null;
         }
 
-        protected List<T> GetEntities<T>(GetEntitiesOptions options) {
-            options.Limit = GetLimit(options.Limit);
+        protected List<T> GetEntities<T>() {
+            return null;
+            //options.Limit = GetLimit(options.Limit);
 
-            string orgIdField = _isOrganization ? CommonFieldNames.Id : CommonFieldNames.OrganizationId;
-            // filter by organization
-            if (GetAssociatedOrganizationIds().Contains(options.OrganizationId))
-                options.Query = options.Query.And(Query.EQ(orgIdField, ObjectId.Parse(options.OrganizationId)));
-            else if (_isOwnedByOrganization)
-                options.Query = options.Query.And(Query.In(orgIdField, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
-            
-            if (!String.IsNullOrEmpty(options.ProjectId))
-                options.Query = options.Query.And(Query.EQ(CommonFieldNames.ProjectId, ObjectId.Parse(options.ProjectId)));
+            //string orgIdField = _isOrganization ? CommonFieldNames.Id : CommonFieldNames.OrganizationId;
+            //// filter by organization
+            //if (GetAssociatedOrganizationIds().Contains(options.OrganizationId))
+            //    options.Query = options.Query.And(Query.EQ(orgIdField, ObjectId.Parse(options.OrganizationId)));
+            //else if (_isOwnedByOrganization)
+            //    options.Query = options.Query.And(Query.In(orgIdField, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
 
-            if (!String.IsNullOrEmpty(options.StackId))
-                options.Query = options.Query.And(Query.EQ(CommonFieldNames.StackId, ObjectId.Parse(options.StackId)));
+            //if (!String.IsNullOrEmpty(options.ProjectId))
+            //    options.Query = options.Query.And(Query.EQ(CommonFieldNames.ProjectId, ObjectId.Parse(options.ProjectId)));
 
-            if (!options.Page.HasValue) {
-                if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
-                    options.BeforeQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.BeforeValue));
+            //if (!String.IsNullOrEmpty(options.StackId))
+            //    options.Query = options.Query.And(Query.EQ(CommonFieldNames.StackId, ObjectId.Parse(options.StackId)));
 
-                if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
-                    options.AfterQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.AfterValue));
+            //if (!options.Page.HasValue)
+            //{
+            //    if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
+            //        options.BeforeQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.BeforeValue));
 
-                options.Query = options.Query.And(options.BeforeQuery);
-                options.Query = options.Query.And(options.AfterQuery);
-            }
+            //    if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
+            //        options.AfterQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.AfterValue));
 
-            var cursor = _repository.Collection.Find(options.Query ?? Query.Null).SetLimit(options.Limit + 1);
-            if (options.Page.HasValue)
-                cursor.SetSkip(GetSkip(options.Page.Value, options.Limit));
-            if (options.Fields != null)
-                cursor.SetFields(options.Fields);
-            if (options.SortBy != null)
-                cursor.SetSortOrder(options.SortBy);
+            //    options.Query = options.Query.And(options.BeforeQuery);
+            //    options.Query = options.Query.And(options.AfterQuery);
+            //}
 
-            var result = cursor.ToList();
-            options.HasMore = result.Count > options.Limit;
+            //var cursor = _repository.Collection.Find(options.Query ?? Query.Null).SetLimit(options.Limit + 1);
+            //if (options.Page.HasValue)
+            //    cursor.SetSkip(GetSkip(options.Page.Value, options.Limit));
+            //if (options.Fields != null)
+            //    cursor.SetFields(options.Fields);
+            //if (options.SortBy != null)
+            //    cursor.SetSortOrder(options.SortBy);
 
-            if (typeof(T) == typeof(TModel))
-                return result.Take(options.Limit).Cast<T>().ToList();
+            //var result = cursor.ToList();
+            //options.HasMore = result.Count > options.Limit;
 
-            return result.Take(options.Limit).Select(Mapper.Map<TModel, T>).ToList();
+            //if (typeof(T) == typeof(TModel))
+            //    return result.Take(options.Limit).Cast<T>().ToList();
+
+            //return result.Take(options.Limit).Select(Mapper.Map<TModel, T>).ToList();
         }
         
         public virtual IHttpActionResult GetById(string id) {

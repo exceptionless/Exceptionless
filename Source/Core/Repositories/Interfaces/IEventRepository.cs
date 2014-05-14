@@ -16,14 +16,14 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
-        IList<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        IList<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
-        IList<string> GetExceededRetentionEventIds(string stackId, PagingOptions options);
+        ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
         void MarkAsRegressedByStack(string id);
         void UpdateFixedByStackId(string stackId, bool value);
         void UpdateHiddenByStackId(string stackId, bool value);
+        void RemoveOldestEvents(string stackId, int maxEventsPerStack);
         void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
         void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate);
         Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate);

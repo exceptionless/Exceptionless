@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -32,7 +33,130 @@ namespace Exceptionless.Core.Repositories {
             _eventRepository = eventRepository;
         }
 
-        protected override void AfterRemove(IList<Stack> documents, bool sendNotification = true) {
+        public void IncrementStats(string stackId, DateTime occurrenceDate) {
+            // If total occurrences are zero (stack data was reset), then set first occurrence date
+            UpdateAll(new QueryOptions().WithId(stackId).WithQuery(Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))), Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
+
+            // Only update the LastOccurrence if the new date is greater then the existing date.
+            UpdateBuilder update = Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
+            var documentsAffected = UpdateAll(new QueryOptions().WithId(stackId).WithQuery(Query.LT(FieldNames.LastOccurrence, occurrenceDate)), update);
+            if (documentsAffected > 0)
+                return;
+
+            UpdateAll(new QueryOptions().WithId(stackId), Update.Inc(FieldNames.TotalOccurrences, 1));
+            InvalidateCache(stackId);
+        }
+
+        public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
+            return FindOne<StackInfo>(new OneOptions()
+                .WithProjectId(projectId)
+                .WithQuery(Query.EQ(FieldNames.SignatureHash, signatureHash))
+                .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
+                .WithReadPreference(ReadPreference.Primary)
+                .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
+        }
+
+        public string[] GetHiddenIds(string projectId) {
+            return Find<Stack>(new MultiOptions()
+                .WithProjectId(projectId)
+                .WithQuery(Query.EQ(FieldNames.IsHidden, BsonBoolean.True))
+                .WithFields(FieldNames.Id)
+                .WithCacheKey(String.Concat(projectId, "@__HIDDEN")))
+                .Select(s => s.Id).ToArray();
+        }
+
+        public void InvalidateHiddenIdsCache(string projectId) {
+            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN")));
+        }
+
+        public string[] GetFixedIds(string projectId) {
+            return Find<Stack>(new MultiOptions()
+                .WithProjectId(projectId)
+                .WithQuery(Query.Exists(FieldNames.DateFixed))
+                .WithFields(FieldNames.Id)
+                .WithCacheKey(String.Concat(projectId, "@__FIXED")))
+                .Select(s => s.Id).ToArray();
+        }
+
+        public void InvalidateFixedIdsCache(string projectId) {
+            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__FIXED")));
+        }
+
+        public string[] GetNotFoundIds(string projectId) {
+            return Find<Stack>(new MultiOptions()
+                .WithProjectId(projectId)
+                .WithQuery(Query.Exists(FieldNames.SignatureInfo_Path))
+                .WithFields(FieldNames.Id)
+                .WithCacheKey(String.Concat(projectId, "@__NOTFOUND")))
+                .Select(s => s.Id).ToArray();
+        }
+
+        public void InvalidateNotFoundIdsCache(string projectId) {
+            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND")));
+        }
+
+        public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+            var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.LastOccurrence)).WithPaging(paging);
+            options.Query.And(Query.GTE(FieldNames.LastOccurrence, utcStart), Query.LTE(FieldNames.LastOccurrence, utcEnd));
+
+            if (!includeFixed)
+                options.Query.And(Query.NotExists(FieldNames.DateFixed));
+
+            if (!includeHidden)
+                options.Query.And(Query.NE(FieldNames.IsHidden, true));
+
+            if (!includeNotFound)
+                options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+
+            return Find<Stack>(options);
+        }
+
+        public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+            var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.FirstOccurrence)).WithPaging(paging);
+            options.Query.And(Query.GTE(FieldNames.FirstOccurrence, utcStart), Query.LTE(FieldNames.FirstOccurrence, utcEnd));
+
+            if (!includeFixed)
+                options.Query.And(Query.NotExists(FieldNames.DateFixed));
+
+            if (!includeHidden)
+                options.Query.And(Query.NE(FieldNames.IsHidden, true));
+
+            if (!includeNotFound)
+                options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+
+            return Find<Stack>(options);
+        }
+
+        public void MarkAsRegressed(string id) {
+            UpdateAll(new QueryOptions().WithId(id), Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
+        }
+
+        public override void InvalidateCache(Stack entity) {
+            var originalStack = GetById(entity.Id, true);
+            if (originalStack != null) {
+                if (originalStack.DateFixed != entity.DateFixed) {
+                    _eventRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
+                    InvalidateFixedIdsCache(entity.ProjectId);
+                }
+
+                if (originalStack.IsHidden != entity.IsHidden) {
+                    _eventRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
+                    InvalidateHiddenIdsCache(entity.ProjectId);
+                }
+
+                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+            }
+
+            base.InvalidateCache(entity);
+        }
+
+        public void InvalidateCache(string id, string signatureHash, string projectId) {
+            InvalidateCache(id);
+            InvalidateCache(String.Concat(projectId, signatureHash));
+            InvalidateFixedIdsCache(projectId);
+        }
+
+        protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
             var organizations = documents.GroupBy(s => new {
                 s.OrganizationId,
                 s.ProjectId
@@ -47,153 +171,6 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(String.Concat(document.ProjectId, document.SignatureHash));
 
             base.AfterRemove(documents, sendNotification);
-        }
-
-        public void IncrementStats(string stackId, DateTime occurrenceDate) {
-            // if total occurrences are zero (stack data was reset), then set first occurrence date
-            _collection.Update(Query.And(
-                    Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))),
-                    Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
-                ),
-                Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
-
-            // Only update the LastOccurrence if the new date is greater then the existing date.
-            IMongoQuery query = Query.And(Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), Query.LT(FieldNames.LastOccurrence, occurrenceDate));
-            UpdateBuilder update = Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
-
-            var result = _collection.Update(query, update);
-            if (result.DocumentsAffected > 0)
-                return;
-
-            _collection.Update(Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(stackId))), Update.Inc(FieldNames.TotalOccurrences, 1));
-            InvalidateCache(stackId);
-        }
-
-        public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
-            return FindOne<StackInfo>(new OneOptions()
-                .WithProjectId(projectId)
-                .WithQuery(Query.EQ(FieldNames.SignatureHash, signatureHash))
-                .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
-                .WithReadPreference(ReadPreference.Primary)
-                .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
-        }
-
-        public string[] GetHiddenIds(string projectId) {
-            var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN"))) : null;
-            if (result == null) {
-                result = Collection
-                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.EQ(FieldNames.IsHidden, BsonBoolean.True)))
-                    .SetFields(FieldNames.Id)
-                    .Select(err => err.Id)
-                    .ToArray();
-                if (Cache != null)
-                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN")), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public void InvalidateHiddenIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN")));
-        }
-
-        public string[] GetFixedIds(string projectId) {
-            var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__FIXED"))) : null;
-            if (result == null) {
-                result = Collection
-                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.Exists(FieldNames.DateFixed)))
-                    .SetFields(FieldNames.Id)
-                    .Select(err => err.Id)
-                    .ToArray();
-                if (Cache != null)
-                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, "@__FIXED")), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public void InvalidateFixedIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__FIXED")));
-        }
-
-        public string[] GetNotFoundIds(string projectId) {
-            var result = Cache != null ? Cache.Get<string[]>(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND"))) : null;
-            if (result == null) {
-                result = Collection
-                    .Find(Query.And(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))), Query.Exists(FieldNames.SignatureInfo_Path)))
-                    .SetFields(FieldNames.Id)
-                    .Select(err => err.Id)
-                    .ToArray();
-                if (Cache != null)
-                    Cache.Set(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND")), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public void InvalidateNotFoundIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND")));
-        }
-
-        public IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var conditions = new List<IMongoQuery> {
-                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
-                Query.GTE(FieldNames.LastOccurrence, utcStart),
-                Query.LTE(FieldNames.LastOccurrence, utcEnd)
-            };
-
-            if (!includeFixed)
-                conditions.Add(Query.NotExists(FieldNames.DateFixed));
-
-            if (!includeHidden)
-                conditions.Add(Query.NE(FieldNames.IsHidden, true));
-
-            if (!includeNotFound)
-                conditions.Add(Query.NotExists(FieldNames.SignatureInfo_Path));
-
-            var cursor = _collection.FindAs<Stack>(Query.And(conditions));
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.LastOccurrence));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
-            count = cursor.Count();
-            return cursor;
-        }
-
-        public IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var conditions = new List<IMongoQuery> {
-                Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
-                Query.GTE(FieldNames.FirstOccurrence, utcStart),
-                Query.LTE(FieldNames.FirstOccurrence, utcEnd)
-            };
-
-            if (!includeFixed)
-                conditions.Add(Query.NotExists(FieldNames.DateFixed));
-
-            if (!includeHidden)
-                conditions.Add(Query.NE(FieldNames.IsHidden, true));
-
-            if (!includeNotFound)
-                conditions.Add(Query.NotExists(FieldNames.SignatureInfo_Path));
-
-            var cursor = _collection.FindAs<Stack>(Query.And(conditions));
-            cursor.SetSortOrder(SortBy.Descending(FieldNames.FirstOccurrence));
-
-            if (skip.HasValue)
-                cursor.SetSkip(skip.Value);
-
-            if (take.HasValue)
-                cursor.SetLimit(take.Value);
-
-            count = cursor.Count();
-            return cursor;
-        }
-        public void MarkAsRegressed(string id) {
-            UpdateAll(new QueryOptions().WithId(id), Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
         }
 
         #region Collection Setup
@@ -252,31 +229,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.OccurrencesAreCritical).SetElementName(FieldNames.OccurrencesAreCritical).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.References).SetElementName(FieldNames.References).SetShouldSerializeMethod(obj => ((Stack)obj).References.Any());
             cm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetShouldSerializeMethod(obj => ((Stack)obj).Tags.Any());
-        }
-
-        public override void InvalidateCache(Stack entity) {
-            var originalStack = GetById(entity.Id, true);
-            if (originalStack != null) {
-                if (originalStack.DateFixed != entity.DateFixed) {
-                    _eventRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
-                    InvalidateFixedIdsCache(entity.ProjectId);
-                }
-
-                if (originalStack.IsHidden != entity.IsHidden) {
-                    _eventRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
-                    InvalidateHiddenIdsCache(entity.ProjectId);
-                }
-
-                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
-            }
-
-            base.InvalidateCache(entity);
-        }
-
-        public void InvalidateCache(string id, string signatureHash, string projectId) {
-            InvalidateCache(id);
-            InvalidateCache(String.Concat(projectId, signatureHash));
-            InvalidateFixedIdsCache(projectId);
         }
 
         #endregion

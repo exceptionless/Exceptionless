@@ -16,6 +16,7 @@ using System.Net;
 using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -239,7 +240,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{projectId}/new")]
-        public IHttpActionResult New(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -255,21 +256,16 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
 
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            long count;
-            List<Stack> query = _stackRepository.GetNew(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
+            var paging = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
+            List<Stack> query = _stackRepository.GetNew(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound).ToList();
             List<EventStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
 
-            long totalLimitedByPlan = (query.Count - models.Count) > 0 ? count - (skip + models.Count) : 0;
-            var result = new PlanPagedResult<EventStackResult>(models, totalLimitedByPlan: totalLimitedByPlan, totalCount: count) {
-                Page = page > 1 ? page : 1,
-                PageSize = pageSize >= 1 ? pageSize : 10
-            };
+            long totalLimitedByPlan = query.Count - models.Count;
+            var headers = new Dictionary<string, IEnumerable<string>>();
+            if (totalLimitedByPlan > 0)
+                headers.Add(ExceptionlessHeaders.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
 
-            // TODO: Only return the populated fields (currently all properties are being returned).
-            return Ok(result);
+            return OkWithResourceLinks(models, paging.HasMore, e => e.First.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"), headers);
         }
 
         [HttpGet]

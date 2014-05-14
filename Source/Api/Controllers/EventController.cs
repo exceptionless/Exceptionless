@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -11,18 +12,19 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Web;
 using Exceptionless.Models;
-using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/event")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, Event, Event> {
         private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IAppStatsClient _statsClient;
 
-        public EventController(IEventRepository repository, IProjectRepository projectRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
+        public EventController(IEventRepository repository, IProjectRepository projectRepository, IStackRepository stackRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
             _projectRepository = projectRepository;
+            _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _statsClient = statsClient;
         }
@@ -31,44 +33,49 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            var options = GetOptions(before, after, limit);
-            options.OrganizationId = organization;
+        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
+            if (!String.IsNullOrEmpty(organizationId) && !IsInOrganization(organizationId))
+                return NotFound();
 
-            var results = GetEntities<PersistentEvent>(options);
+            var organizationIds = new List<string>();
+            if (String.IsNullOrEmpty(organizationId))
+                organizationIds.Add(organizationId);
+            else
+                organizationIds.AddRange(GetAssociatedOrganizationIds());
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByOrganizationIds(organizationIds, options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
         public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
-            var options = GetOptions(before, after, limit);
-            options.StackId = stackId;
+            if (String.IsNullOrEmpty(stackId))
+                return NotFound();
 
-            var results = GetEntities<PersistentEvent>(options);
+            var stack = _stackRepository.GetById(stackId, true);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByStackId(stackId, options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
         public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
-            var options = GetOptions(before, after, limit);
-            options.ProjectId = projectId;
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
 
-            var results = GetEntities<PersistentEvent>(options);
+            var project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByProjectId(projectId, options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
-        }
-
-        private GetEntitiesOptions GetOptions(string before, string after, int limit) {
-            var options = new GetEntitiesOptions { Limit = limit, SortBy = SortBy.Descending(EventRepository.FieldNames.Date_UTC) };
-
-            DateTime beforeDate, afterDate;
-            if (DateTime.TryParse(before, out beforeDate))
-                options.BeforeQuery = Query.LT(EventRepository.FieldNames.Date_UTC, beforeDate.Ticks);
-            if (DateTime.TryParse(after, out afterDate))
-                options.AfterQuery = Query.GT(EventRepository.FieldNames.Date_UTC, afterDate.Ticks);
-
-            return options;
         }
 
         [HttpGet]

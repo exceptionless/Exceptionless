@@ -12,31 +12,23 @@ namespace Exceptionless.Core.Repositories {
         public MongoRepositoryOwnedByStack(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {}
 
-        protected override void BeforeAdd(IList<T> documents) {
+        protected override void BeforeAdd(ICollection<T> documents) {
             if (documents.Any(d => String.IsNullOrEmpty(d.StackId)))
                 throw new ArgumentException("StackIds must be set.");
 
             base.BeforeAdd(documents);
         }
 
-        public IList<T> GetByStackId(string stackId, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new MultiOptions().WithOrganizationId(stackId).WithCacheKey(useCache ? String.Concat("stack:", stackId) : null).WithExpiresIn(expiresIn));
-        }
-
-        public IList<T> GetByStackId(IList<string> stackIds, bool useCache = false, TimeSpan? expiresIn = null) {
-            if (stackIds == null || stackIds.Count == 0)
-                return new List<T>();
-
-            string cacheKey = String.Concat("stack:", String.Join("", stackIds).GetHashCode().ToString());
-            return Find<T>(new MultiOptions().WithOrganizationIds(stackIds).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
-        }
-
-        public void RemoveAllByStackId(string stackId) {
-            RemoveAll(new QueryOptions().WithStackId(stackId));
+        public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return Find<T>(new MultiOptions()
+                .WithOrganizationId(stackId)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
+                .WithExpiresIn(expiresIn));
         }
 
         public async Task RemoveAllByStackIdAsync(string stackId) {
-            await Task.Run(() => RemoveAllByStackId(stackId));
+            await Task.Run(() => RemoveAll(new QueryOptions().WithStackId(stackId)));
         }
     }
 }

@@ -202,13 +202,12 @@
     <Compile Include="Models\ErrorModelTests.cs" />
     <Compile Include="Models\SampleErrors.cs" />
     <Compile Include="Pipeline\EventPipelineTests.cs" />
-    <Compile Include="Repositories\RepositoryTests.cs" />
-    <Compile Include="Repositories\ProjectRepositoryTests.cs" />
-    <Compile Include="Stats\StackStatsTests.cs" />
-    <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Jobs\MongoJobLockProviderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Base\TestBase.cs" />
+    <Compile Include="Repositories\RepositoryTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\AsyncTests.cs" />
     <Compile Include="Utility\ErrorStackData.cs" />
@@ -288,6 +287,7 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" />
   <Target Name="EnsureBclBuildImported" BeforeTargets="BeforeBuild" Condition="'$(BclBuildImported)' == ''">

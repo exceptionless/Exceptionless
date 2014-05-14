@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(apiKey))
                 throw new ArgumentNullException("apiKey");
 
-            return FindOne<Project>(new OneOptions().WithQuery(Query.EQ(FieldNames.ApiKeys, apiKey)).WithCacheKey(GetScopedCacheKey(apiKey)));
+            return FindOne<Project>(new OneOptions().WithQuery(Query.EQ(FieldNames.ApiKeys, apiKey)).WithCacheKey(apiKey));
         }
 
         public void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null) {
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Repositories {
             InvalidateCache(projectId);
         }
         
-        public IList<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
+        public ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
             return new[] { GetDefaultTimeOffset(projectId) };
         }
 
@@ -96,6 +96,40 @@ namespace Exceptionless.Core.Repositories {
 
             TimeSpan offset = GetDefaultTimeOffset(id);
             return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
+        }
+
+        public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+            IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+            return Find<Project>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+        }
+
+        public long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids) {
+            if (ids == null || !ids.Any())
+                throw new ArgumentNullException("ids");
+
+            UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
+            return UpdateAll(new QueryOptions().WithIds(ids), update);
+        }
+
+        protected override void AfterRemove(ICollection<Project> documents, bool sendNotification = true) {
+            foreach (var project in documents)
+                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: -1);
+
+            base.AfterRemove(documents, sendNotification);
+        }
+
+        protected override void AfterAdd(ICollection<Project> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            foreach (var project in documents)
+                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+
+            base.AfterAdd(documents, addToCache, expiresIn);
+        }
+
+        public override void InvalidateCache(Project entity) {
+            foreach (string key in entity.ApiKeys)
+                InvalidateCache(key);
+
+            base.InvalidateCache(entity);
         }
 
         #region Collection Setup
@@ -134,41 +168,7 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
         }
-
-        protected override void AfterAdd(IList<Project> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            foreach (var project in documents)
-                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-
-            base.AfterAdd(documents, addToCache, expiresIn);
-        }
-
-        protected override void AfterRemove(IList<Project> documents, bool sendNotification = true) {
-            foreach (var project in documents)
-                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: -1);
-
-            base.AfterRemove(documents, sendNotification);
-        }
-
-        public override void InvalidateCache(Project entity) {
-            foreach (string key in entity.ApiKeys)
-                InvalidateCache(key);
-
-            base.InvalidateCache(entity);
-        }
         
         #endregion
-
-        public IList<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
-            IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return Find<Project>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
-        }
-
-        public long IncrementNextSummaryEndOfDayTicks(IList<string> ids) {
-            if (ids == null || !ids.Any())
-                throw new ArgumentNullException("ids");
-
-            UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
-            return UpdateAll(new QueryOptions().WithIds(ids), update);
-        }
     }
 }

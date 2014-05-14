@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound));
         }
 
-        public PlanPagedResult<EventStackResult> RecentInternal(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public PlanPagedResult<EventStackResult> RecentInternal(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException();
 
@@ -91,15 +91,12 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
+            var paging = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
+            List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound).ToList();
+            List<Stack> stacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
-            long count;
-            List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, skip, pageSize, out count, hidden, @fixed, notfound).ToList();
-            List<Stack> errorStacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
-
-            var result = new PlanPagedResult<EventStackResult>(null, totalLimitedByPlan: query.Count - errorStacks.Count, totalCount: count);
-            result.Results.AddRange(errorStacks.Select(s => new EventStackResult {
+            var result = new PlanPagedResult<EventStackResult>(null, totalLimitedByPlan: query.Count - stacks.Count, totalCount: count);
+            result.Results.AddRange(stacks.Select(s => new EventStackResult {
                 Id = s.Id,
                 Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null,
                 Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null,
@@ -112,7 +109,7 @@ namespace Exceptionless.Api.Controllers {
             }));
 
             result.Page = page > 1 ? page : 1;
-            result.PageSize = pageSize >= 1 ? pageSize : 10;
+            result.PageSize = limit >= 1 ? limit : 10;
 
             return result;
         }

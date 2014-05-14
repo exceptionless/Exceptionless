@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Extensions {
             return false;
         }
 
-        public static IList<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
+        public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
             var items = new List<string>();
 
             var authType = message.GetAuthType();

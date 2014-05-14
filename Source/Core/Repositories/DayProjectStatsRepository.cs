@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Repositories {
             _getIdValue = s => s;
         }
         
-        public IList<DayProjectStats> GetRange(string start, string end) {
+        public ICollection<DayProjectStats> GetRange(string start, string end) {
             var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
             return Find<DayProjectStats>(new MultiOptions().WithQuery(query));
         }

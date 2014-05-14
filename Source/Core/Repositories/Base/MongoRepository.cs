@@ -26,6 +26,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
+        protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
 
         protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
             _messagePublisher = messagePublisher;
@@ -42,8 +43,8 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeAdd(IList<T> documents) {
-            if (_isOwnedByOrganization && documents.Any(d => String.IsNullOrEmpty(((IOwnedByOrganization)d).OrganizationId)))
+        protected virtual void BeforeAdd(ICollection<T> documents) {
+            if (_isOwnedByOrganization && !_isOrganization && documents.Any(d => String.IsNullOrEmpty(((IOwnedByOrganization)d).OrganizationId)))
                 throw new ArgumentException("OrganizationIds must be set.", "documents");
 
             if (_isOwnedByProject && documents.Any(d => String.IsNullOrEmpty(((IOwnedByProject)d).ProjectId)))
@@ -53,7 +54,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("StackIds must be set.", "documents");
         }
 
-        public void Add(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to add.", "documents");
 
@@ -62,7 +63,7 @@ namespace Exceptionless.Core.Repositories {
             AfterAdd(documents, addToCache, expiresIn);
         }
 
-        protected virtual void AfterAdd(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             foreach (var document in documents) {
                 InvalidateCache(document);
                 if (addToCache && Cache != null)
@@ -95,9 +96,9 @@ namespace Exceptionless.Core.Repositories {
             Remove(new[] { document });
         }
 
-        protected virtual void BeforeRemove(IList<T> documents) { }
+        protected virtual void BeforeRemove(ICollection<T> documents) { }
 
-        public void Remove(IList<T> documents, bool sendNotification = true) {
+        public void Remove(ICollection<T> documents, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
@@ -106,7 +107,7 @@ namespace Exceptionless.Core.Repositories {
             AfterRemove(documents, sendNotification);
         }
 
-        protected virtual void AfterRemove(IList<T> documents, bool sendNotification = true) {
+        protected virtual void AfterRemove(ICollection<T> documents, bool sendNotification = true) {
             foreach (var document in documents) {
                 InvalidateCache(document);
 
@@ -165,9 +166,9 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeSave(IList<T> documents) { }
+        protected virtual void BeforeSave(ICollection<T> documents) { }
 
-        public void Save(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
@@ -177,7 +178,7 @@ namespace Exceptionless.Core.Repositories {
             AfterSave(documents, addToCache, expiresIn);
         }
 
-        protected virtual void AfterSave(IList<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        protected virtual void AfterSave(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             foreach (var document in documents) {
                 InvalidateCache(document);
                 if (addToCache && Cache != null)

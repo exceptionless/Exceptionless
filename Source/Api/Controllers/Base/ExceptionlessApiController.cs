@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Web.Http;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
@@ -54,33 +53,12 @@ namespace Exceptionless.Api.Controllers {
             return Request.IsInOrganization(organizationId);
         }
 
-        public IList<string> GetAssociatedOrganizationIds() {
+        public ICollection<string> GetAssociatedOrganizationIds() {
             return Request.GetAssociatedOrganizationIds();
         }
 
         public string GetDefaultOrganizationId() {
             return Request.GetDefaultOrganizationId();
-        }
-
-        public const int DEFAULT_LIMIT = 10;
-        protected int GetLimit(int limit) {
-            if (limit < 1)
-                limit = DEFAULT_LIMIT;
-            else if (limit > 100)
-                limit = 100;
-
-            return limit;
-        }
-
-        protected int GetSkip(int currentPage, int pageSize) {
-            if (currentPage < 1)
-                currentPage = 1;
-
-            int skip = (currentPage - 1) * pageSize;
-            if (skip < 0)
-                skip = 0;
-
-            return skip;
         }
 
         public PlanLimitReachedActionResult PlanLimitReached(string message) {
@@ -95,11 +73,11 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IList<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(IList<TEntity> content, bool hasMore, int page) where TEntity : class {
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, page);
         }
     }

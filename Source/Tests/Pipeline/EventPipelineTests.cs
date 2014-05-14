@@ -99,7 +99,7 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(3, project.EventCount);
             Assert.Equal(3, project.TotalEventCount);
 
-            _eventRepository.RemoveAllByStackId(ev.StackId);
+            _eventRepository.RemoveAllByStackIdAsync(ev.StackId).Wait();
             organization = _organizationRepository.GetById(TestConstants.OrganizationId);
             Assert.Equal(2, organization.StackCount);
             Assert.Equal(1, organization.EventCount);

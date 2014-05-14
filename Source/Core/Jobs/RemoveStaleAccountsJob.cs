@@ -54,12 +54,12 @@ namespace Exceptionless.Core.Jobs {
         public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
-            var organizations = _organizationRepository.GetStaleAccounts();
+            var organizations = _organizationRepository.GetAbandoned();
             while (organizations.Count > 0) {
                 foreach (var organization in organizations)
                     TryDeleteOrganization(organization);
 
-                organizations = _organizationRepository.GetStaleAccounts();
+                organizations = _organizationRepository.GetAbandoned();
             }
 
             return Task.FromResult(new JobResult { Message = "Successfully removed all stale accounts." });
@@ -76,12 +76,12 @@ namespace Exceptionless.Core.Jobs {
 
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _stackRepository.RemoveAllByProjectId(project.Id);
-                    _eventRepository.RemoveAllByProjectId(project.Id);
-                    _dayStackStats.RemoveAllByProjectId(project.Id);
-                    _monthStackStats.RemoveAllByProjectId(project.Id);
-                    _dayProjectStats.RemoveAllByProjectId(project.Id);
-                    _monthProjectStats.RemoveAllByProjectId(project.Id);
+                    _stackRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _eventRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _dayStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _monthStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _dayProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _monthProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();

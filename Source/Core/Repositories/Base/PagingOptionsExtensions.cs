@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Repositories {
             options.After = after;
             return options;
         }
-
+        
         public static PagingOptions WithLimit(this PagingOptions options, int? limit) {
             options.Limit = limit;
             return options;

@@ -18,8 +18,8 @@ namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
         Organization GetByStripeCustomerId(string customerId);
-        IList<Organization> GetStaleAccounts(int? limit = 20);
-        IList<Organization> GetWithRetentionDaysGreaterThanZero(PagingOptions paging);
+        ICollection<Organization> GetAbandoned(int? limit = 20);
+        ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
         BillingPlanStats GetBillingPlanStats();
 

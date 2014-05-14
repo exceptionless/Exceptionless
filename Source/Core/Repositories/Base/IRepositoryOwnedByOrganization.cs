@@ -16,9 +16,8 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByOrganization<T> : IRepository<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        IList<T> GetByOrganizationId(string organizationId, bool useCache = false, TimeSpan? expiresIn = null);
-        IList<T> GetByOrganizationIds(IList<string> organizationIds, bool useCache = false, TimeSpan? expiresIn = null);
-        void RemoveAllByOrganizationId(string organizationId);
+        ICollection<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+        ICollection<T> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         Task RemoveAllByOrganizationIdAsync(string organizationId);
     }
 }

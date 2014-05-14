@@ -17,6 +17,6 @@ namespace Exceptionless.Core.Repositories {
     public interface IUserRepository : IRepository<User> {
         User GetByEmailAddress(string emailAddress);
         User GetByVerifyEmailAddressToken(string token);
-        IList<User> GetByOrganizationId(string id);
+        ICollection<User> GetByOrganizationId(string id);
     }
 }

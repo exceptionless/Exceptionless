@@ -33,25 +33,7 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             int maxEventsPerStack = ctx.Organization.MaxEventsPerDay > 0 ? ctx.Organization.MaxEventsPerDay + Math.Min(50, ctx.Organization.MaxEventsPerDay * 2) : Int32.MaxValue;
-
-            // Get a list of oldest ids that exceed our desired max events.
-            var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
-            IList<string> ids = _eventRepository.GetExceededRetentionEventIds(ctx.Event.StackId, options);
-            while (ids.Count > 0) {
-                var eventsToRemove = ids.Select(id => new PersistentEvent {
-                    Id = id,
-                    OrganizationId = ctx.Event.OrganizationId,
-                    ProjectId = ctx.Event.ProjectId,
-                    StackId = ctx.Event.StackId
-                }).ToList();
-
-                _eventRepository.Remove(eventsToRemove);
-
-                if (!options.HasMore)
-                    break;
-
-                ids = _eventRepository.GetExceededRetentionEventIds(ctx.Event.StackId, options);
-            }
+            _eventRepository.RemoveOldestEvents(ctx.Event.StackId, maxEventsPerStack);
         }
     }
 }

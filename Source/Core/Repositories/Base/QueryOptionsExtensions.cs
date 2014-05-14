@@ -130,10 +130,22 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithPaging<T>(this T options, PagingOptions paging) where T : MultiOptions {
-            options.AfterValue = paging.After;
+            if (paging == null)
+                return options;
+
+            var pagingWithSorting = paging as PagingWithSortingOptions;
+            if (pagingWithSorting != null) {
+                options.BeforeQuery = pagingWithSorting.BeforeQuery;
+                options.AfterQuery = pagingWithSorting.AfterQuery;
+                options.SortBy = pagingWithSorting.SortBy;
+            }
+
             options.BeforeValue = paging.Before;
+            options.AfterValue = paging.After;
             options.Page = paging.Page;
             options.Limit = paging.Limit;
+
+            options.HasMore = false;
             options.HasMoreChanged += (source, args) => paging.HasMore = args.Value;
             return options;
         }

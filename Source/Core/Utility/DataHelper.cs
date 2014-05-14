@@ -63,12 +63,12 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             try {
-                _stackRepository.RemoveAllByProjectId(projectId);
-                _eventRepository.RemoveAllByProjectId(projectId);
-                _dayStackStats.RemoveAllByProjectId(projectId);
-                _monthStackStats.RemoveAllByProjectId(projectId);
-                _dayProjectStats.RemoveAllByProjectId(projectId);
-                _monthProjectStats.RemoveAllByProjectId(projectId);
+                _stackRepository.RemoveAllByProjectIdAsync(projectId).Wait();
+                _eventRepository.RemoveAllByProjectIdAsync(projectId).Wait();
+                _dayStackStats.RemoveAllByProjectIdAsync(projectId).Wait();
+                _monthStackStats.RemoveAllByProjectIdAsync(projectId).Wait();
+                _dayProjectStats.RemoveAllByProjectIdAsync(projectId).Wait();
+                _monthProjectStats.RemoveAllByProjectIdAsync(projectId).Wait();
 
                 project.EventCount = 0;
                 project.StackCount = 0;
@@ -103,9 +103,9 @@ namespace Exceptionless.Core.Utility {
                 _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
                 _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
 
-                _eventRepository.RemoveAllByStackId(errorStackId);
-                _dayStackStats.RemoveAllByStackId(errorStackId);
-                _monthStackStats.RemoveAllByStackId(errorStackId);
+                _eventRepository.RemoveAllByStackIdAsync(errorStackId).Wait();
+                _dayStackStats.RemoveAllByStackIdAsync(errorStackId).Wait();
+                _monthStackStats.RemoveAllByStackIdAsync(errorStackId).Wait();
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;

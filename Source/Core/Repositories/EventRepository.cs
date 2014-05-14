@@ -72,37 +72,6 @@ namespace Exceptionless.Core.Repositories {
             RemoveAll(new QueryOptions().WithQuery(query));
         }
 
-        protected override void AfterRemove(IList<PersistentEvent> documents, bool sendNotification = true) {
-            base.AfterRemove(documents, sendNotification);
-
-            var groups = documents.GroupBy(e => new {
-                    e.OrganizationId,
-                    e.ProjectId
-                }).ToList();
-
-            foreach (var grouping in groups) {
-                if (!grouping.Any())
-                    continue;
-
-                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, grouping.Count());
-                // TODO: Should be updating stack
-            }
-
-            // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
-
-            //var groups = errors.GroupBy(e => new {
-            //    e.OrganizationId,
-            //    e.ProjectId,
-            //    e.ErrorStackId
-            //}).ToList();
-            //foreach (var grouping in groups) {
-            //    if (_statsHelper == null)
-            //        continue;
-
-            //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
-            //}
-        }
-
         public async Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
             await Task.Run(() => RemoveAllByClientIpAndDate(clientIp, utcStartDate, utcEndDate));
         }
@@ -112,7 +81,7 @@ namespace Exceptionless.Core.Repositories {
             _projectRepository.IncrementStats(projectId, eventCount: -count);
         }
 
-        public IList<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
+        public ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             IMongoQuery query = Query.Null;
             
             if (utcStart != DateTime.MinValue)
@@ -132,7 +101,7 @@ namespace Exceptionless.Core.Repositories {
             return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
-        public IList<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             IMongoQuery query = Query.Null;
 
             if (utcStart != DateTime.MinValue)
@@ -143,13 +112,25 @@ namespace Exceptionless.Core.Repositories {
             return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
-        public IList<string> GetExceededRetentionEventIds(string stackId, PagingOptions options) {
+        public void RemoveOldestEvents(string stackId, int maxEventsPerStack) {
+            var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
+            var events = GetOldestEvents(stackId, options);
+            while (events.Count > 0) {
+                Remove(events);
+
+                if (!options.HasMore)
+                    break;
+
+                events = GetOldestEvents(stackId, options);
+            }
+        }
+
+        private ICollection<PersistentEvent> GetOldestEvents(string stackId, PagingOptions options) {
             return Find<PersistentEvent>(new MultiOptions()
                 .WithStackId(stackId)
-                .WithFields(FieldNames.Id)
+                .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
                 .WithSort(SortBy.Descending(FieldNames.Date_UTC))
-                .WithPaging(options)
-                ).Select(e => e.Id).ToList();
+                .WithPaging(options));
         }
 
         public string GetPreviousEventIdInStack(string id) {
@@ -218,6 +199,63 @@ namespace Exceptionless.Core.Repositories {
             UpdateAll(new QueryOptions().WithStackId(id), Update.Unset(FieldNames.IsFixed));
         }
 
+        public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            GetBeforeAndAfterQuery(pagingWithSorting);
+            return base.GetByOrganizationIds(organizationIds, pagingWithSorting, useCache, expiresIn);
+        }
+
+        public override ICollection<PersistentEvent> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            GetBeforeAndAfterQuery(pagingWithSorting);
+            return base.GetByStackId(stackId, pagingWithSorting, useCache, expiresIn);
+        }
+
+        public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            GetBeforeAndAfterQuery(pagingWithSorting);
+            return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn);
+        }
+        
+        private void GetBeforeAndAfterQuery(PagingWithSortingOptions paging) {
+            DateTime beforeDate, afterDate;
+            if (DateTime.TryParse(paging.Before, out beforeDate))
+                paging.BeforeQuery = Query.LT(FieldNames.Date_UTC, beforeDate.Ticks);
+            if (DateTime.TryParse(paging.After, out afterDate))
+                paging.AfterQuery = Query.GT(FieldNames.Date_UTC, afterDate.Ticks);
+        }
+
+        protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
+            base.AfterRemove(documents, sendNotification);
+
+            var groups = documents.GroupBy(e => new {
+                    e.OrganizationId,
+                    e.ProjectId
+                }).ToList();
+
+            foreach (var grouping in groups) {
+                if (!grouping.Any())
+                    continue;
+
+                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, grouping.Count());
+                // TODO: Should be updating stack
+            }
+
+            // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
+
+            //var groups = errors.GroupBy(e => new {
+            //    e.OrganizationId,
+            //    e.ProjectId,
+            //    e.ErrorStackId
+            //}).ToList();
+            //foreach (var grouping in groups) {
+            //    if (_statsHelper == null)
+            //        continue;
+
+            //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
+            //}
+        }
+
         #region Collection Setup
 
         public const string CollectionName = "event";
@@ -271,7 +309,7 @@ namespace Exceptionless.Core.Repositories {
                     evcm.SetIgnoreExtraElements(false);
                     evcm.SetIgnoreExtraElementsIsInherited(true);
                     evcm.MapExtraElementsProperty(c => c.Data);
-                    evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any()); ;
+                    evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any());
                     evcm.GetMemberMap(c => c.Source).SetElementName(FieldNames.Source).SetIgnoreIfDefault(true);
                     evcm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfDefault(true);
                     evcm.GetMemberMap(c => c.ReferenceId).SetElementName(FieldNames.ReferenceId).SetIgnoreIfDefault(true);
@@ -281,7 +319,7 @@ namespace Exceptionless.Core.Repositories {
                 });
             }
         }
-
+        
         #endregion
     }
 }

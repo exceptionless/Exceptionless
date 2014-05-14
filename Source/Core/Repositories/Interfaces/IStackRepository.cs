@@ -16,8 +16,8 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
         StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash);
-        IEnumerable<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        IEnumerable<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, int? skip, int? take, out long count, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
         string[] GetHiddenIds(string projectId);
         string[] GetFixedIds(string projectId);
         string[] GetNotFoundIds(string projectId);

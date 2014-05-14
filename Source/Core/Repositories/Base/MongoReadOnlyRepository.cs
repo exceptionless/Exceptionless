@@ -23,7 +23,7 @@ using MongoDB.Driver.Builders;
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoReadOnlyRepository<T> : IReadOnlyRepository<T>, IMongoRepositoryManagement where T : class, IIdentity, new() {
         protected MongoCollection<T> _collection;
-        protected Func<string, BsonValue> _getIdValue = null;
+        protected Func<string, BsonValue> _getIdValue = id => new BsonObjectId(new ObjectId(id));
 
         protected MongoReadOnlyRepository(MongoDatabase database, ICacheClient cacheClient = null) {
             Cache = cacheClient;
@@ -128,13 +128,13 @@ namespace Exceptionless.Core.Repositories {
             return _collection.FindOneAs<T>(findArgs) != null;
         }
 
-        protected IList<TModel> Find<TModel>(MultiOptions options) where TModel : class, new() {
+        protected ICollection<TModel> Find<TModel>(MultiOptions options) where TModel : class, new() {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            IList<TModel> result = null;
+            ICollection<TModel> result = null;
             if (options.UseCache)
-                result = Cache.Get<IList<TModel>>(GetScopedCacheKey(options.CacheKey));
+                result = Cache.Get<ICollection<TModel>>(GetScopedCacheKey(options.CacheKey));
 
             if (result != null)
                 return result;
@@ -172,15 +172,15 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? GetScopedCacheKey(id) : null).WithExpiresIn(expiresIn));
+            return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
         }
 
-        public IList<T> GetByIds(ICollection<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
+        public ICollection<T> GetByIds(ICollection<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
             if (ids == null || ids.Count == 0)
                 return new List<T>();
 
             string cacheKey = String.Join("", ids).GetHashCode().ToString();
-            return Find<T>(new MultiOptions().WithIds(ids).WithCacheKey(useCache ? GetScopedCacheKey(cacheKey) : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithIds(ids).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
         }
 
         public bool Exists(string id) {

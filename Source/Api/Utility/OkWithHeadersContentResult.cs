@@ -33,41 +33,44 @@ namespace Exceptionless.Api.Utility {
         }
     }
 
-    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<IList<TEntity>>
+    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>>
         where TEntity : class {
-        public OkWithResourceLinks(IList<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
+        public OkWithResourceLinks(ICollection<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(IList<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null)
+        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null)
             : base(content, controller) {
             if (content == null)
                 return;
 
             List<string> links;
             if (page.HasValue)
-                links = GetPagedLinks(page.Value, hasMore);
+                links = GetPagedLinks(Request.RequestUri, page.Value, hasMore);
             else
-                links = GetBeforeAndAfterLinks(content, hasMore, pagePropertyAccessor);
+                links = GetBeforeAndAfterLinks(Request.RequestUri, content, hasMore, pagePropertyAccessor);
 
-            if (links.Count == 0)
-                return;
+            var headerItems = new Dictionary<string, IEnumerable<string>>();
+            if (links.Count > 0)
+                headerItems.Add("Link", links.ToArray());
 
-            Headers = new Dictionary<string, IEnumerable<string>> {
-                { "Link", links.ToArray() }
-            };
+            if (headers != null)
+                foreach (var header in headers)
+                    headerItems.Add(header.Key, header.Value);
+
+            Headers = headerItems;
         }
 
-        private List<string> GetPagedLinks(int page, bool hasMore) {
+        public static List<string> GetPagedLinks(Uri url, int page, bool hasMore) {
             bool includePrevious = page > 1;
             bool includeNext = hasMore;
 
-            var previousParameters = Request.RequestUri.ParseQueryString();
+            var previousParameters = url.ParseQueryString();
             previousParameters["page"] = (page - 1).ToString();
             var nextParameters = new NameValueCollection(previousParameters);
             nextParameters["page"] = (page + 1).ToString();
 
-            string baseUrl = Request.RequestUri.ToString();
-            if (!String.IsNullOrEmpty(Request.RequestUri.Query))
-                baseUrl = baseUrl.Replace(Request.RequestUri.Query, "");
+            string baseUrl = url.ToString();
+            if (!String.IsNullOrEmpty(url.Query))
+                baseUrl = baseUrl.Replace(url.Query, "");
 
             string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
             string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
@@ -81,7 +84,7 @@ namespace Exceptionless.Api.Utility {
             return links;
         }
 
-        private List<string> GetBeforeAndAfterLinks(IList<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
+        public static List<string> GetBeforeAndAfterLinks(Uri url, ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
             if (pagePropertyAccessor == null && typeof(IIdentity).IsAssignableFrom(typeof(TEntity)))
                 pagePropertyAccessor = e => ((IIdentity)e).Id;
 
@@ -91,12 +94,10 @@ namespace Exceptionless.Api.Utility {
             string firstId = content.Any() ? pagePropertyAccessor(content.First()) : String.Empty;
             string lastId = content.Any() ? pagePropertyAccessor(content.Last()) : String.Empty;
 
-            bool includePrevious = true;
-            bool includeNext = hasMore;
             bool hasBefore = false;
             bool hasAfter = false;
 
-            var previousParameters = Request.RequestUri.ParseQueryString();
+            var previousParameters = url.ParseQueryString();
             if (previousParameters["before"] != null)
                 hasBefore = true;
             previousParameters.Remove("before");
@@ -108,6 +109,8 @@ namespace Exceptionless.Api.Utility {
             previousParameters.Add("before", firstId);
             nextParameters.Add("after", lastId);
 
+            bool includePrevious = hasBefore ? hasMore : true;
+            bool includeNext = !hasBefore ? hasMore : true;
             if (hasBefore && !content.Any()) {
                 // are we currently before the first page?
                 includePrevious = false;
@@ -118,9 +121,9 @@ namespace Exceptionless.Api.Utility {
                 includePrevious = false;
             }
 
-            string baseUrl = Request.RequestUri.ToString();
-            if (!String.IsNullOrEmpty(Request.RequestUri.Query))
-                baseUrl = baseUrl.Replace(Request.RequestUri.Query, "");
+            string baseUrl = url.ToString();
+            if (!String.IsNullOrEmpty(url.Query))
+                baseUrl = baseUrl.Replace(url.Query, "");
 
             string previousLink = String.Format("<{0}?{1}>; rel=\"previous\"", baseUrl, previousParameters.ToQueryString());
             string nextLink = String.Format("<{0}?{1}>; rel=\"next\"", baseUrl, nextParameters.ToQueryString());
