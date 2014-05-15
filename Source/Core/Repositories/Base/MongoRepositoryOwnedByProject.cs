@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<T> cm) {
             base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()));
+            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
         }
     }
 }
