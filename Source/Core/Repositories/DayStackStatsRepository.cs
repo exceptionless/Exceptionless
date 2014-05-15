@@ -15,6 +15,7 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
@@ -63,7 +64,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {
-            base.ConfigureClassMap(cm);
+            cm.AutoMap();
+            cm.SetIgnoreExtraElements(true);
+            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
+            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
+            cm.GetMemberMap(c => c.StackId).SetElementName(CommonFieldNames.StackId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
