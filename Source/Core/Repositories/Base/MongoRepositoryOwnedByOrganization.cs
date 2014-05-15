@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
@@ -41,6 +44,11 @@ namespace Exceptionless.Core.Repositories {
 
         public async Task RemoveAllByOrganizationIdAsync(string organizationId) {
             await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationId(organizationId)));
+        }
+
+        protected override void ConfigureClassMap(BsonClassMap<T> cm) {
+            base.ConfigureClassMap(cm);
+            cm.SetIdMember(cm.GetMemberMap(c => c.OrganizationId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()));
         }
     }
 }

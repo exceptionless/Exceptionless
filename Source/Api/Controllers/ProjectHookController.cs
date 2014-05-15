@@ -52,6 +52,7 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpGet]
         [Route]
+        [Route("{id}", Name = "GetProjectHookById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }

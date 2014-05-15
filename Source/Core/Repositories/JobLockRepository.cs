@@ -12,7 +12,6 @@
 using System;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
@@ -62,11 +61,6 @@ namespace Exceptionless.Core.Repositories {
 
         protected override string GetCollectionName() {
             return CollectionName;
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<JobLockInfo> cm) {
-            base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
         }
 
         #endregion

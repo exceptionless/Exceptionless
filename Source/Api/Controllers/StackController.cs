@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}", Name = "GetProjectById")]
+        [Route("{id}")]
         public override IHttpActionResult GetById(string id) {
             var stack = GetModel(id);
             if (stack == null)

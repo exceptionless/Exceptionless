@@ -56,7 +56,6 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<ProjectHook> cm) {
             base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.ProjectId).SetRepresentation(BsonType.ObjectId).SetElementName(FieldNames.ProjectId);
             cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
             cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
         }

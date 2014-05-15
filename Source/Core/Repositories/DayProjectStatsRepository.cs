@@ -117,8 +117,6 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<DayProjectStats> cm) {
             base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
-            cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
 
             EventStatsHelper.MapStatsClasses();

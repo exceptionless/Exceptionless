@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (CanAccessOrganization(organizationId))
+            if (!String.IsNullOrEmpty(organizationId) && CanAccessOrganization(organizationId))
                 organizationIds.Add(organizationId);
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());

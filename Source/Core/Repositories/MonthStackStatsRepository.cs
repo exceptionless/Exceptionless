@@ -63,10 +63,7 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<MonthStackStats> cm) {
             base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
-            cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.StackId).SetElementName(FieldNames.StackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.DayStats).SetElementName(FieldNames.DayStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 

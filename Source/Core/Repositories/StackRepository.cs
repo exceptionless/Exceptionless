@@ -213,7 +213,6 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<Stack> cm) {
             base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.ProjectId).SetRepresentation(BsonType.ObjectId).SetElementName(FieldNames.ProjectId);
             cm.GetMemberMap(c => c.SignatureHash).SetElementName(FieldNames.SignatureHash);
             cm.GetMemberMap(c => c.SignatureInfo).SetElementName(FieldNames.SignatureInfo);
             cm.GetMemberMap(c => c.FixedInVersion).SetElementName(FieldNames.FixedInVersion).SetIgnoreIfNull(true);
