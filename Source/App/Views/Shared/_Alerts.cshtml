@@ -1,4 +1,4 @@
-﻿@using Exceptionless.Web.Controllers
+﻿@using Exceptionless.App.Controllers
 @foreach (string key in Alerts.ALL) {
     if (TempData.ContainsKey(key)) {
     <div class="alert alert-@key">

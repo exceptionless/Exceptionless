@@ -12,20 +12,18 @@
 using System;
 using System.Configuration;
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
-using System.Web.Security;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
 using MongoDB.Driver;
 using NLog;
@@ -52,36 +50,37 @@ namespace Exceptionless.App {
             AutoMapperConfig.CreateMappings();
 
             Trace.Listeners.Add(new NLogTraceListener());
-            if (ExceptionlessClient.Current.Configuration.Enabled) {
+            if (ExceptionlessClient.Default.Configuration.Enabled) {
                 //ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
                 //ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
-                ExceptionlessClient.Current.UnhandledExceptionReporting += CurrentOnUnhandledExceptionReporting;
+                ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
             }
 
             // startup the message queue
             JobManager.Current.JobManagerStarted += (sender, args) => JobManager.Current.RunJob("StartMq");
 
             // make the notification sender listen for messages
-            var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
-            notificationSender.Listen();
+            //var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
+            //notificationSender.Listen();
         }
 
-        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs args) {
-            if (args.Exception.GetType() == typeof(OperationCanceledException)
-                || args.Exception.GetType() == typeof(TaskCanceledException)) {
-                args.Cancel = true;
-                return;
-            }
+        private void OnSubmittingEvent(object sender, EventSubmittingEventArgs args) {
+            // TODO: Should we be doing this for only unhandled exceptions or all events?
+            //if (args.Event.Exception.GetType() == typeof(OperationCanceledException) || args.Event.Exception.GetType() == typeof(TaskCanceledException)) {
+            //    args.Cancel = true;
+            //    return;
+            //}
 
-            var p = Thread.CurrentPrincipal as ExceptionlessPrincipal;
-            if (p == null)
-                return;
+            // TODO: We should get these from the owin context.
+            //var projectId = User.GetProjectId();
+            //if (!String.IsNullOrEmpty(projectId)) {
+            //    var projectRepository = DependencyResolver.Current.GetService<IProjectRepository>();
+            //    args.Event.AddObject(projectRepository.GetById(projectId), "Project");
+            //}
 
-            if (p.Project != null)
-                args.Event.AddObject(p.Project, "Project");
-
-            if (p.UserEntity != null)
-                args.Event.AddObject(p.UserEntity, "User");
+            //var user = User.GetClaimsPrincipal();
+            //if (user != null)
+            //    args.Event.AddObject(user, "User");
         }
 
         private static bool? _dbIsUpToDate;
@@ -129,8 +128,8 @@ namespace Exceptionless.App {
 
         private void CheckDbOrCacheDown() {
             // make sure we are still listening for events
-            var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
-            notificationSender.EnsureListening();
+            //var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
+            //notificationSender.EnsureListening();
 
             // check if the cache is down every 5 seconds or every request if it's currently marked as down
             if (_isCacheDown || DateTime.Now.Subtract(_lastCacheCheck).TotalSeconds > 5) {
@@ -139,7 +138,7 @@ namespace Exceptionless.App {
                     var ping = cache.Get<string>("__PING__");
                     _isCacheDown = false;
                     _lastCacheCheck = DateTime.Now;
-                } catch (RedisException) {
+                } catch (Exception) {
                     _isCacheDown = true;
                     _lastCacheCheck = DateTime.Now;
                 }
@@ -196,42 +195,6 @@ namespace Exceptionless.App {
 
             if (RequestRequiresAuth())
                 CheckDbOrCacheDown();
-        }
-
-        protected void Application_PostAuthenticateRequest(Object sender, EventArgs e) {
-            if (!RequestRequiresAuth())
-                return;
-
-            if (!User.Identity.IsAuthenticated)
-                return;
-
-            if (User is ExceptionlessPrincipal)
-                return;
-
-            CheckDbOrCacheDown();
-
-            try {
-                var userRepository = DependencyResolver.Current.GetService<IUserRepository>();
-                User user = userRepository.GetByEmailAddress(User.Identity.Name);
-                if (user == null) {
-                    FormsAuthentication.SignOut();
-                    FormsAuthentication.RedirectToLoginPage();
-                    return;
-                }
-
-                var principal = new ExceptionlessPrincipal(user);
-                Thread.CurrentPrincipal = principal;
-                if (HttpContext.Current != null)
-                    HttpContext.Current.User = principal;
-            } catch (MongoConnectionException ex) {
-                Log.Error().Exception(ex).Message("Error getting user: {0}", ex.Message).Report().Write();
-                MarkDbDown();
-                RedirectToMaintenancePage();
-            } catch (SocketException ex) {
-                Log.Error().Exception(ex).Message("Error getting user: {0}", ex.Message).Report().Write();
-                MarkDbDown();
-                RedirectToMaintenancePage();
-            }
         }
 
         protected void Application_Error(Object sender, EventArgs e) {

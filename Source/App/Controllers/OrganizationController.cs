@@ -11,6 +11,7 @@
 
 using System;
 using System.Web.Mvc;
+using Exceptionless.App.Models.Organization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Stripe;
@@ -31,7 +32,7 @@ namespace Exceptionless.App.Controllers {
 
         [HttpGet]
         public ActionResult Manage(string id) {
-            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
 
             Organization organization = _repository.GetById(id);
@@ -59,7 +60,7 @@ namespace Exceptionless.App.Controllers {
             if (org == null)
                 return HttpNotFound();
 
-            if (!User.CanAccessOrganization(org.Id))
+            if (!CanAccessOrganization(org.Id))
                 return HttpNotFound();
 
             return View(new InvoiceModel { Invoice = invoice, Organization = org });
@@ -67,10 +68,10 @@ namespace Exceptionless.App.Controllers {
 
         [HttpGet]
         public ActionResult Suspended(string id = null) {
-            if (String.IsNullOrEmpty(id) || !User.CanAccessOrganization(id))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return View();
 
-            Organization organization = _repository.GetByIdCached(id);
+            Organization organization = _repository.GetById(id);
             if (organization.IsSuspended)
                 return View(organization);
 

@@ -160,7 +160,6 @@
     <Compile Include="Extensions\AppBuilderExtensions.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
-    <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
     <Compile Include="Models\Organization\ViewOrganization.cs" />
     <Compile Include="Models\Project\NewProject.cs" />

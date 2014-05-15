@@ -10,13 +10,29 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Web.Mvc;
 using Exceptionless.App.Utility;
+using Exceptionless.Models;
 
 namespace Exceptionless.App.Controllers {
     [ViewBagDefaults]
     [MvcRequireHttps]
     public abstract class ExceptionlessController : Controller {
+        protected User GetUser() {
+            return null;
+        }
+
+        protected bool CanAccessOrganization(string organizationId) {
+            // TODO: Implement this.
+            return false;
+        }
+
+        protected ICollection<string> GetAssociatedOrganizationIds() {
+            // TODO: Implement this.
+            return null;
+        }
+
         public void SetAttentionAlert(string message) {
             TempData[Alerts.ATTENTION] = message;
         }

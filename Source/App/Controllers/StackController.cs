@@ -31,7 +31,7 @@ namespace Exceptionless.App.Controllers {
                 return RedirectToAction("Index", "Project");
 
             Stack stack = _repository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return HttpNotFound("An error stack with this id was not found.");
 
             RouteData.SetOrganizationId(stack.OrganizationId);
@@ -45,7 +45,7 @@ namespace Exceptionless.App.Controllers {
                 return RedirectToAction("Index", "Project");
 
             Stack stack = _repository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return RedirectToAction("Index", "Project");
 
             stack.DateFixed = DateTime.UtcNow;
@@ -53,7 +53,7 @@ namespace Exceptionless.App.Controllers {
             stack.IsRegressed = false;
 
             // TODO: Add a log entry.
-            _repository.Update(stack);
+            _repository.Save(stack);
 
             return RedirectToAction("Index", "Stack", new { id = stack.Id, notification = "mark-fixed" });
         }
@@ -65,12 +65,12 @@ namespace Exceptionless.App.Controllers {
                 return RedirectToAction("Index", "Project");
 
             Stack stack = _repository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return RedirectToAction("Index", "Project");
 
             stack.DisableNotifications = true;
             // TODO: Add a log entry.
-            _repository.Update(stack);
+            _repository.Save(stack);
 
             return RedirectToAction("Index", "Stack", new { id = stack.Id, notification = "stop-notifications" });
         }

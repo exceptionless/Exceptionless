@@ -230,7 +230,7 @@ namespace Exceptionless.App.Controllers {
             if (state != null)
                 state.Errors.Clear();
 
-            User user = User.UserEntity;
+            User user = GetUser();
             if (ModelState.IsValid) {
                 try {
                     _userRepository.InvalidateCache(user);
@@ -254,10 +254,7 @@ namespace Exceptionless.App.Controllers {
                         _mailer.SendVerifyEmailAsync(user);
                     }
 
-                    var principal = new ExceptionlessPrincipal(user);
-                    Thread.CurrentPrincipal = principal;
-                    if (System.Web.HttpContext.Current != null)
-                        System.Web.HttpContext.Current.User = principal;
+                    // TODO: Update the current user..
                 } catch (Exception e) {
                     ModelState.AddModelError("", e.Message);
                 }
@@ -265,7 +262,7 @@ namespace Exceptionless.App.Controllers {
 
             if (!ModelState.IsValid) {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return Json(ModelState.ToDictionary());
+                return Json(ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
             }
 
             return Json(new { IsVerified = user.IsEmailAddressVerified });
@@ -306,7 +303,7 @@ namespace Exceptionless.App.Controllers {
 
             if (!ModelState.IsValid) {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return Json(ModelState.ToDictionary());
+                return Json(ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
             }
 
             return Json(true);

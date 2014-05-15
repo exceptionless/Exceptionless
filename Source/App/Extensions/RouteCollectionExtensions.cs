@@ -12,7 +12,7 @@
 using System;
 using System.Web.Mvc;
 using System.Web.Routing;
-using Exceptionless.Core.Web;
+using Exceptionless.App.Utility;
 
 namespace Exceptionless.App.Extensions {
     /// <summary>

@@ -119,8 +119,9 @@ namespace Exceptionless.App.Controllers {
         [HttpGet]
         [ProjectRequiredActionFilter]
         public ActionResult Configure(string id) {
-            if (String.IsNullOrEmpty(id) && User != null && User.UserEntity != null && User.UserEntity.OrganizationIds.Count > 0) {
-                var project = _projectRepository.GetByOrganizationId(User.UserEntity.OrganizationIds.First()).FirstOrDefault();
+            var user = GetUser();
+            if (String.IsNullOrEmpty(id) && user != null && user.OrganizationIds.Count > 0) {
+                var project = _projectRepository.GetByOrganizationId(user.OrganizationIds.First()).FirstOrDefault();
                 if (project != null)
                     id = project.Id;
             }
@@ -176,16 +177,16 @@ namespace Exceptionless.App.Controllers {
 
             #endregion
 
+            var user = GetUser();
             if (String.IsNullOrEmpty(organization.Id)) {
-                if (!_billingManager.CanAddOrganization(User.UserEntity)) {
+                if (!_billingManager.CanAddOrganization(user)) {
                     ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional organization.");
                     return View(model);
                 }
 
-                _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, User.UserEntity);
+                _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
                 organization = _organizationRepository.Add(organization, true);
 
-                User user = _userRepository.GetById(User.UserEntity.Id);
                 user.OrganizationIds.Add(organization.Id);
                 _userRepository.Save(user);
             }
@@ -193,7 +194,7 @@ namespace Exceptionless.App.Controllers {
             var project = new Project { Name = model.Name, TimeZone = model.TimeZone, OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
             project.ApiKeys.Add(Guid.NewGuid().ToString("N").ToLower());
-            project.AddDefaultOwnerNotificationSettings(User.UserEntity.Id);
+            project.AddDefaultOwnerNotificationSettings(user.Id);
 
             if (!_billingManager.CanAddProject(project)) {
                 ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional project.");
@@ -207,18 +208,19 @@ namespace Exceptionless.App.Controllers {
         }
 
         private ProjectModel PopulateProjectModel(Project project) {
-            ProjectModel proj = Mapper.Map<Project, ProjectModel>(project);
-            NotificationSettings notificationSettings = project.GetNotificationSettings(User.UserEntity.Id) ?? new NotificationSettings();
-            proj.Mode = notificationSettings.Mode;
-            proj.SendDailySummary = notificationSettings.SendDailySummary;
-            proj.ReportCriticalErrors = notificationSettings.ReportCriticalErrors;
-            proj.ReportRegressions = notificationSettings.ReportRegressions;
-            proj.Report404Errors = notificationSettings.Report404Errors;
-            proj.ReportKnownBotErrors = notificationSettings.ReportKnownBotErrors;
-            proj.OrganizationName = _organizationRepository.GetById(project.OrganizationId, true).Name;
-            proj.UserId = User.UserEntity.Id;
+            var user = GetUser();
+            ProjectModel p = Mapper.Map<Project, ProjectModel>(project);
+            NotificationSettings notificationSettings = project.GetNotificationSettings(user.Id) ?? new NotificationSettings();
+            p.Mode = notificationSettings.Mode;
+            p.SendDailySummary = notificationSettings.SendDailySummary;
+            p.ReportCriticalErrors = notificationSettings.ReportCriticalErrors;
+            p.ReportRegressions = notificationSettings.ReportRegressions;
+            p.Report404Errors = notificationSettings.Report404Errors;
+            p.ReportKnownBotErrors = notificationSettings.ReportKnownBotErrors;
+            p.OrganizationName = _organizationRepository.GetById(project.OrganizationId, true).Name;
+            p.UserId = user.Id;
 
-            return proj;
+            return p;
         }
 
         private List<Project> Projects {
@@ -227,7 +229,7 @@ namespace Exceptionless.App.Controllers {
                     return new List<Project>();
 
                 if (_projects == null)
-                    _projects = _projectRepository.GetByOrganizationId(User.GetAssociatedOrganizationIds()).ToList();
+                    _projects = _projectRepository.GetByOrganizationIds(GetAssociatedOrganizationIds()).ToList();
 
                 return _projects;
             }
@@ -239,7 +241,7 @@ namespace Exceptionless.App.Controllers {
                     return new List<Organization>();
 
                 if (_organizations == null)
-                    _organizations = _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds()).ToList();
+                    _organizations = _organizationRepository.GetByIds(GetAssociatedOrganizationIds()).ToList();
 
                 return _organizations;
             }

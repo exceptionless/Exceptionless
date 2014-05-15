@@ -208,6 +208,7 @@
     <Compile Include="Messaging\Models\StackUpdated.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
+    <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />

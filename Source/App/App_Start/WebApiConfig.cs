@@ -14,6 +14,7 @@ using System.Net.Http.Formatting;
 using System.Web.Http;
 using Exceptionless.App.Controllers;
 using Exceptionless.Core;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
 
@@ -26,8 +27,8 @@ namespace Exceptionless.App {
             config.MessageHandlers.Add(new EncodingDelegatingHandler());
 
             // Throttle api calls to X every 15 minutes by IP address.
-            var clientsManager = config.DependencyResolver.GetService(typeof(IRedisClientsManager)) as IRedisClientsManager;
-            config.MessageHandlers.Add(new ThrottlingHandler(clientsManager, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            var cacheClient = config.DependencyResolver.GetService(typeof(ICacheClient)) as ICacheClient;
+            config.MessageHandlers.Add(new ThrottlingHandler(cacheClient, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
 
             config.Formatters.Clear();
             //config.Formatters.Remove(config.Formatters.JsonFormatter);
