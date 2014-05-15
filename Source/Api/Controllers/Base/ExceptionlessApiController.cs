@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Web.Http;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web.Results;
 using Exceptionless.Models;
@@ -32,6 +33,28 @@ namespace Exceptionless.Api.Controllers {
 
             return starTime < endTime ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
         }
+
+        protected const int DEFAULT_LIMIT = 10;
+        protected int GetLimit(int limit) {
+            if (limit < 1)
+                limit = DEFAULT_LIMIT;
+            else if (limit > 100)
+                limit = 100;
+
+            return limit;
+        }
+
+        protected int GetSkip(int currentPage, int limit) {
+            if (currentPage < 1)
+                currentPage = 1;
+
+            int skip = (currentPage - 1) * limit;
+            if (skip < 0)
+                skip = 0;
+
+            return skip;
+        }
+
 
         public User ExceptionlessUser {
             get { return Request.GetUser(); }
@@ -79,6 +102,13 @@ namespace Exceptionless.Api.Controllers {
 
         public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, page);
+        }
+
+        protected Dictionary<string, IEnumerable<string>> GetLimitedByPlanHeader(long totalLimitedByPlan) {
+            var headers = new Dictionary<string, IEnumerable<string>>();
+            if (totalLimitedByPlan > 0)
+                headers.Add(ExceptionlessHeaders.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
+            return headers;
         }
     }
 }

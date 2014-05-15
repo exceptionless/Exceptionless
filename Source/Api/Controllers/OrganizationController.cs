@@ -39,10 +39,10 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(int page = 1, int limit = 10) {
-            var options = new GetEntitiesOptions { Page = page, Limit = limit };
-            var results = GetEntities<ViewOrganization>();
-            return OkWithResourceLinks(results, options.HasMore);
+        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]

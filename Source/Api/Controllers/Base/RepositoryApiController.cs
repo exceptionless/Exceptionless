@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Web.Http;
@@ -36,60 +35,6 @@ namespace Exceptionless.Api.Controllers {
 
         #region Get
 
-        public virtual IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10)
-        {
-            //var options = new GetEntitiesOptions { OrganizationId = organization, AfterValue = after, BeforeValue = before, Limit = limit };
-            //var results = GetEntities<TViewModel>(options);
-            //return OkWithResourceLinks(results, options.HasMore);
-            return null;
-        }
-
-        protected List<T> GetEntities<T>() {
-            return null;
-            //options.Limit = GetLimit(options.Limit);
-
-            //string orgIdField = _isOrganization ? CommonFieldNames.Id : CommonFieldNames.OrganizationId;
-            //// filter by organization
-            //if (GetAssociatedOrganizationIds().Contains(options.OrganizationId))
-            //    options.Query = options.Query.And(Query.EQ(orgIdField, ObjectId.Parse(options.OrganizationId)));
-            //else if (_isOwnedByOrganization)
-            //    options.Query = options.Query.And(Query.In(orgIdField, GetAssociatedOrganizationIds().Select(id => new BsonObjectId(new ObjectId(id)))));
-
-            //if (!String.IsNullOrEmpty(options.ProjectId))
-            //    options.Query = options.Query.And(Query.EQ(CommonFieldNames.ProjectId, ObjectId.Parse(options.ProjectId)));
-
-            //if (!String.IsNullOrEmpty(options.StackId))
-            //    options.Query = options.Query.And(Query.EQ(CommonFieldNames.StackId, ObjectId.Parse(options.StackId)));
-
-            //if (!options.Page.HasValue)
-            //{
-            //    if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
-            //        options.BeforeQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.BeforeValue));
-
-            //    if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
-            //        options.AfterQuery = Query.LT(CommonFieldNames.Id, ObjectId.Parse(options.AfterValue));
-
-            //    options.Query = options.Query.And(options.BeforeQuery);
-            //    options.Query = options.Query.And(options.AfterQuery);
-            //}
-
-            //var cursor = _repository.Collection.Find(options.Query ?? Query.Null).SetLimit(options.Limit + 1);
-            //if (options.Page.HasValue)
-            //    cursor.SetSkip(GetSkip(options.Page.Value, options.Limit));
-            //if (options.Fields != null)
-            //    cursor.SetFields(options.Fields);
-            //if (options.SortBy != null)
-            //    cursor.SetSortOrder(options.SortBy);
-
-            //var result = cursor.ToList();
-            //options.HasMore = result.Count > options.Limit;
-
-            //if (typeof(T) == typeof(TModel))
-            //    return result.Take(options.Limit).Cast<T>().ToList();
-
-            //return result.Take(options.Limit).Select(Mapper.Map<TModel, T>).ToList();
-        }
-        
         public virtual IHttpActionResult GetById(string id) {
             TModel model = GetModel(id);
             if (model == null)
@@ -229,21 +174,5 @@ namespace Exceptionless.Api.Controllers {
         }
 
         #endregion
-    }
-
-    public class GetEntitiesOptions {
-        public string OrganizationId { get; set; }
-        public string ProjectId { get; set; }
-        public string StackId { get; set; }
-        public bool HasMore { get; set; }
-        public IMongoQuery Query { get; set; }
-        public IMongoFields Fields { get; set; }
-        public IMongoSortBy SortBy { get; set; }
-        public string BeforeValue { get; set; }
-        public IMongoQuery BeforeQuery { get; set; }
-        public string AfterValue { get; set; }
-        public IMongoQuery AfterQuery { get; set; }
-        public int Limit { get; set; }
-        public int? Page { get; set; }
     }
 }

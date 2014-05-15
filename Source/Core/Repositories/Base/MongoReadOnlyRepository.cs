@@ -175,12 +175,12 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
         }
 
-        public ICollection<T> GetByIds(ICollection<string> ids, bool useCache = false, TimeSpan? expiresIn = null) {
+        public ICollection<T> GetByIds(ICollection<string> ids, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (ids == null || ids.Count == 0)
                 return new List<T>();
 
             string cacheKey = String.Join("", ids).GetHashCode().ToString();
-            return Find<T>(new MultiOptions().WithIds(ids).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
+            return Find<T>(new MultiOptions().WithIds(ids).WithPaging(paging).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
         }
 
         public bool Exists(string id) {

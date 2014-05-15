@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
@@ -43,7 +44,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Count);
 
-            Assert.NotEqual(organizations[0], organizations2[0]);
+            Assert.NotEqual(organizations.First(), organizations2.First());
            
             organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions());
             Assert.NotNull(organizations);

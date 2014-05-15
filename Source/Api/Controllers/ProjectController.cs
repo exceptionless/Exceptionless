@@ -32,8 +32,13 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public override IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10) {
-            return base.Get(organization, before, after, limit);
+        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
+            if (!CanAccessOrganization(organizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByOrganizationId(organizationId, options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]

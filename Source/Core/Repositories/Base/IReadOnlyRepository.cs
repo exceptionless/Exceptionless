@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         void InvalidateCache(T document);
         long Count();
         T GetById(string id, bool useCache = false, TimeSpan? expiresIn = null);
-        ICollection<T> GetByIds(ICollection<string> ids, bool useCache = false, TimeSpan? expiresIn = null);
+        ICollection<T> GetByIds(ICollection<string> ids, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
         bool Exists(string id);
     }
 }

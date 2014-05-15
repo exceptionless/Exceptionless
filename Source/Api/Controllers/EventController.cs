@@ -34,11 +34,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
-            if (!CanAccessOrganization(organizationId))
+            if (!String.IsNullOrEmpty(organizationId) && !CanAccessOrganization(organizationId))
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (String.IsNullOrEmpty(organizationId))
+            if (CanAccessOrganization(organizationId))
                 organizationIds.Add(organizationId);
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());

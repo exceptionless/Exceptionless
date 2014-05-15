@@ -37,132 +37,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId}")]
-        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, int page = 1, int pageSize = 10, bool hidden = false, bool @fixed = false, bool notfound = true) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
-            result.MostFrequent = Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize);
-            result.MostRecent = RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound);
-
-            return Ok(result);
-        }
-
-        [HttpGet]
-        [Route("project/{projectId}/recent")]
-        public IHttpActionResult Recent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            return Ok(RecentInternal(projectId, page, pageSize, start, end, hidden, @fixed, notfound));
-        }
-
-        public PlanPagedResult<EventStackResult> RecentInternal(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException();
-
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                throw new ArgumentException();
-
-            var range = GetDateRange(start, end);
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-
-            var paging = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            List<Stack> query = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound).ToList();
-            List<Stack> stacks = query.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
-
-            var result = new PlanPagedResult<EventStackResult>(null, totalLimitedByPlan: query.Count - stacks.Count, totalCount: count);
-            result.Results.AddRange(stacks.Select(s => new EventStackResult {
-                Id = s.Id,
-                Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null,
-                Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null,
-                Path = s.SignatureInfo.ContainsKey("Path") ? s.SignatureInfo["Path"] : null,
-                Is404 = s.SignatureInfo.ContainsKey("Path"),
-                Title = s.Title,
-                Total = s.TotalOccurrences,
-                First = s.FirstOccurrence,
-                Last = s.LastOccurrence
-            }));
-
-            result.Page = page > 1 ? page : 1;
-            result.PageSize = limit >= 1 ? limit : 10;
-
-            return result;
-        }
-
-        [HttpGet]
-        [Route("project/{projectId}/frequent")]
-        public IHttpActionResult Frequent(string projectId, int page = 1, int pageSize = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
-            return Ok(Frequent(result.MostFrequent.Results, result.TotalLimitedByPlan, page, pageSize));
-        }
-
-        private PlanPagedResult<EventStackResult> Frequent(List<EventStackResult> result, long totalLimitedByPlan, int page = 1, int pageSize = 10) {
-            pageSize = GetLimit(pageSize);
-            int skip = GetSkip(page, pageSize);
-
-            var ers = new PlanPagedResult<EventStackResult>(result.Skip(skip).Take(pageSize).ToList());
-            var stacks = _stackRepository.GetByIds(ers.Results.Select(s => s.Id).ToList());
-            foreach (EventStackResult stats in ers.Results.ToList()) {
-                Stack stack = stacks.SingleOrDefault(s => s.Id == stats.Id);
-                if (stack == null) {
-                    ers.Results.RemoveAll(r => r.Id == stats.Id);
-                    continue;
-                }
-
-                // Stat's Id and Total properties are already calculated in the Results.
-                stats.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
-                stats.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
-                stats.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
-                stats.Is404 = stack.SignatureInfo.ContainsKey("Path");
-
-                stats.Title = stack.Title;
-                stats.First = stack.FirstOccurrence;
-                stats.Last = stack.LastOccurrence;
-            }
-
-            ers.TotalLimitedByPlan = ers.Results.Count != pageSize ? totalLimitedByPlan : 0;
-            ers.TotalCount = result.Count + totalLimitedByPlan;
-            ers.Page = page > 1 ? page : 1;
-            ers.PageSize = pageSize >= 1 ? pageSize : 10;
-
-            return ers;
-        }
-
-        [HttpGet]
         [Route("stack/{stackId}")]
         public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(stackId))
@@ -179,6 +53,73 @@ namespace Exceptionless.Api.Controllers {
             Project project = _projectRepository.GetById(stack.ProjectId, true);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
+        }
+
+        [HttpGet]
+        [Route("project/{projectId}/")]
+        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
+
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
+            result.MostFrequent = null;
+            result.MostRecent = null;
+
+            return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("project/{projectId}/frequent")]
+        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
+
+            limit = GetLimit(limit);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
+            var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
+            var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
+
+            foreach (var esr in results) {
+                var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
+                if (stack == null) {
+                    results.RemoveAll(r => r.Id == esr.Id);
+                    continue;
+                }
+
+                // Stat's Id and Total properties are already calculated in the Results.
+                esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
+                esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
+                esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
+                esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
+
+                esr.Title = stack.Title;
+                esr.First = stack.FirstOccurrence;
+                esr.Last = stack.LastOccurrence;
+            }
+
+            Dictionary<string, IEnumerable<string>> header = null;
+            if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
+                header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
+
+            return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
         }
     }
 }

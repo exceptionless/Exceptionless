@@ -13,15 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
@@ -44,12 +40,11 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
-        private readonly IMessagePublisher _messagePublisher;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IProjectHookRepository projectHookRepository, 
             IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, 
-            DataHelper dataHelper, IMessagePublisher messagePublisher) : base(stackRepository) {
+            DataHelper dataHelper) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -57,86 +52,115 @@ namespace Exceptionless.Api.Controllers {
             _webHookNotificationQueue = webHookNotificationQueue;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
-            _messagePublisher = messagePublisher;
         }
 
-        //TODO: Implement
+        #region CRUD
 
+        [HttpGet]
         [Route]
-        [HttpGet]
-        public IEnumerable<Stack> Get() {
-            return _stackRepository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Take(100).ToList().Select(e => e.ToProjectLocalTime(_projectRepository));
+        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
+            if (!CanAccessOrganization(organizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByOrganizationId(organizationId, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
-        [Route("{id}")]
-        public IHttpActionResult Get(string id) {
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
-
-            Stack stack = _stackRepository.GetById(id, true);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return BadRequest();
+        [Route("{id}", Name = "GetProjectById")]
+        public override IHttpActionResult GetById(string id) {
+            var stack = GetModel(id);
+            if (stack == null)
+                return NotFound();
 
             return Ok(stack.ToProjectLocalTime(_projectRepository));
         }
 
-        //protected bool CanUpdateEntity(Stack original, Delta<Stack> value) {
-        //    // TODO: Only let the client patch certain things.
-        //    Stack entity = value.GetEntity();
-        //    if (value.ContainsChangedProperty(t => t.FirstOccurrence) && original.FirstOccurrence != entity.FirstOccurrence)
-        //        return false;
+        #endregion
 
-        //    if (value.ContainsChangedProperty(t => t.LastOccurrence) && original.LastOccurrence != entity.LastOccurrence)
-        //        return false;
+        [HttpPost]
+        [Route("{id}/mark-fixed")]
+        public IHttpActionResult MarkFixed(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
 
-        //    if (value.ContainsChangedProperty(t => t.TotalOccurrences) && original.TotalOccurrences != entity.TotalOccurrences)
-        //        return false;
+            // TODO: Implement Fixed in version.
+            stack.DateFixed = DateTime.UtcNow;
+            //stack.FixedInVersion = "TODO";
+            stack.IsRegressed = false;
 
-        //    if (value.ContainsChangedProperty(t => t.ProjectId) && !String.Equals(original.ProjectId, entity.ProjectId, StringComparison.OrdinalIgnoreCase))
-        //        return false;
+            // TODO: Add a log entry.
+            _stackRepository.Save(stack);
+            _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
-        //    if (value.ContainsChangedProperty(t => t.OrganizationId) && !String.Equals(original.OrganizationId, entity.OrganizationId, StringComparison.OrdinalIgnoreCase))
-        //        return false;
+            return Ok();
+        }
 
-        //    return false;
-        //}
+        /// <summary>
+        /// This controller action is called by zapier to mark the stack as fixed.
+        /// </summary>
+        /// <param name="data"></param>
+        [HttpPost]
+        [Route("{id}/mark-fixed")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        public IHttpActionResult MarkFixed(JObject data) {
+            var id = data.GetValue("ErrorStack").Value<string>();
+            if (String.IsNullOrEmpty(id))
+                return BadRequest();
 
-        //protected Stack UpdateEntity(Stack original, Delta<Stack> value) {
-        //    Stack entity = value.GetEntity();
+            if (id.StartsWith("http"))
+                id = id.Substring(id.LastIndexOf('/') + 1);
 
-        //    bool updateFixedInformation = (value.ContainsChangedProperty(t => t.DateFixed) && original.DateFixed != entity.DateFixed)
-        //                                  || (value.ContainsChangedProperty(t => t.FixedInVersion) && original.FixedInVersion != entity.FixedInVersion);
+            return MarkFixed(id);
+        }
 
-        //    bool visibilityChanged = (value.ContainsChangedProperty(t => t.IsHidden) && original.IsHidden != entity.IsHidden);
+        [HttpDelete]
+        [Route("{id}/mark-fixed")]
+        public IHttpActionResult MarkNotFixed(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
 
-        //    value.Patch(original);
+            stack.DateFixed = null;
+            //stack.IsRegressed = false;
 
-        //    if (updateFixedInformation) {
-        //        // TODO: Implement Fixed in version.
-        //        if (original.DateFixed.HasValue) {
-        //            original.DateFixed = DateTime.UtcNow;
-        //            //original.FixedInVersion = "TODO";
-        //            original.IsRegressed = false;
-        //        } else {
-        //            //original.DateFixed = null;
-        //            //original.FixedInVersion = null;
-        //        }
-        //    }
+            // TODO: Add a log entry.
+            _stackRepository.Save(stack);
+            _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
-        //    Stack stack = _stackRepository.Update(original);
+            return StatusCode(HttpStatusCode.NoContent);
+        }
 
-        //    if (visibilityChanged)
-        //        _stackRepository.InvalidateHiddenIdsCache(original.ProjectId);
+        [HttpPost]
+        [Route("{id}/mark-hidden")]
+        public IHttpActionResult MarkHidden(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
 
-        //    if (updateFixedInformation)
-        //        _stackRepository.InvalidateFixedIdsCache(original.ProjectId);
+            stack.IsHidden = true;
+            _stackRepository.Save(stack);
+            _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
 
-        //    // notify client that the error stack has been updated.
-        //    _notificationSender.StackUpdated(stack.OrganizationId, stack.ProjectId, stack.Id, stack.IsHidden, stack.IsFixed(), stack.Is404());
+            return Ok();
+        }
 
-        //    return stack;
-        //}
+        [HttpDelete]
+        [Route("{id}/mark-hidden")]
+        public IHttpActionResult MarkNotHidden(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            stack.IsHidden = false;
+            _stackRepository.Save(stack);
+            _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
 
         [HttpPost]
         [Route("{id}/promote")]
@@ -164,42 +188,6 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return Ok();
-        }
-
-        /// <summary>
-        /// This controller action is called by zapier to mark the stack as fixed.
-        /// </summary>
-        /// <param name="data"></param>
-        [HttpPost]
-        [OverrideAuthorization]
-        [Route("{id}/mark-fixed")]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public HttpResponseMessage MarkFixed(JObject data) {
-            var id = data.GetValue("ErrorStack").Value<string>();
-            if (String.IsNullOrEmpty(id))
-                return new HttpResponseMessage(HttpStatusCode.BadRequest);
-
-            if (id.StartsWith("http"))
-                id = id.Substring(id.LastIndexOf('/') + 1);
-
-            Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return new HttpResponseMessage(HttpStatusCode.BadRequest);
-
-            // TODO: Implement Fixed in version.
-            stack.DateFixed = DateTime.UtcNow;
-            //stack.FixedInVersion = "TODO";
-            stack.IsRegressed = false;
-
-            // TODO: Add a log entry.
-            _stackRepository.Save(stack);
-
-            _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
-
-            // notify client that the error stack has been updated.
-            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
-
-            return new HttpResponseMessage(HttpStatusCode.OK);
         }
 
         /// <summary>
@@ -231,14 +219,11 @@ namespace Exceptionless.Api.Controllers {
                 _stackRepository.Save(stack);
             }
 
-            // notify client that the error stack has been updated.
-            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
-
             return Ok();
         }
 
         [HttpGet]
-        [Route("{projectId}/new")]
+        [Route("project/{projectId}/new")]
         public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -251,20 +236,40 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+
+            var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
+            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, hidden, @fixed, notfound).ToList();
+            List<EventStackResult> results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
+
+            return OkWithResourceLinks(results, options.HasMore, e => e.First.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"), GetLimitedByPlanHeader(stacks.Count - results.Count));
+        }
+
+        [HttpGet]
+        [Route("project/{projectId}/recent")]
+        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
+
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
             var paging = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            List<Stack> query = _stackRepository.GetNew(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound).ToList();
-            List<EventStackResult> models = query.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
+            var results = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound);
+            var stacks = results.Where(es => es.LastOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack,EventStackResult>).ToList();
 
-            long totalLimitedByPlan = query.Count - models.Count;
-            var headers = new Dictionary<string, IEnumerable<string>>();
-            if (totalLimitedByPlan > 0)
-                headers.Add(ExceptionlessHeaders.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
-
-            return OkWithResourceLinks(models, paging.HasMore, e => e.First.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"), headers);
+            return OkWithResourceLinks(results, paging.HasMore, e => e.Id, GetLimitedByPlanHeader(stacks.Count - results.Count));
         }
 
         [HttpGet]
@@ -278,7 +283,21 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             _dataHelper.ResetStackData(id);
-            _messagePublisher.PublishAsync(new StackUpdated { OrganizationId = stack.OrganizationId, ProjectId = stack.ProjectId, Id = stack.Id, IsHidden = stack.IsHidden, IsFixed = stack.IsFixed(), Is404 = stack.Is404() });
+        }
+
+        protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<Stack, EventStackResult>() == null)
+                Mapper.CreateMap<Stack, EventStackResult>().AfterMap((s, esr) => {
+                    esr.Id = s.Id;
+                    esr.Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null;
+                    esr.Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null;
+                    esr.Path = s.SignatureInfo.ContainsKey("Path") ? s.SignatureInfo["Path"] : null;
+                    esr.Is404 = s.SignatureInfo.ContainsKey("Path");
+                    esr.Title = s.Title;
+                    esr.Total = s.TotalOccurrences;
+                    esr.First = s.FirstOccurrence;
+                    esr.Last = s.LastOccurrence;
+                });
         }
     }
 }

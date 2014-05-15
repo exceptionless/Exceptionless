@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
@@ -10,12 +11,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.Ids.AddRange(ids);
+            options.Ids.AddRange(ids.Distinct());
             return options;
         }
 
         public static T WithIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.Ids.AddRange(ids);
+            options.Ids.AddRange(ids.Distinct());
             return options;
         }
 
@@ -25,12 +26,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithOrganizationIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.OrganizationIds.AddRange(ids);
+            options.OrganizationIds.AddRange(ids.Distinct());
             return options;
         }
 
         public static T WithOrganizationIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.OrganizationIds.AddRange(ids);
+            options.OrganizationIds.AddRange(ids.Distinct());
             return options;
         }
 
@@ -40,12 +41,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithProjectIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.ProjectIds.AddRange(ids);
+            options.ProjectIds.AddRange(ids.Distinct());
             return options;
         }
 
         public static T WithProjectIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.ProjectIds.AddRange(ids);
+            options.ProjectIds.AddRange(ids.Distinct());
             return options;
         }
 
@@ -55,12 +56,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithStackIds<T>(this T options, params string[] ids) where T : QueryOptions {
-            options.StackIds.AddRange(ids);
+            options.StackIds.AddRange(ids.Distinct());
             return options;
         }
 
         public static T WithStackIds<T>(this T options, IEnumerable<string> ids) where T : QueryOptions {
-            options.StackIds.AddRange(ids);
+            options.StackIds.AddRange(ids.Distinct());
             return options;
         }
 

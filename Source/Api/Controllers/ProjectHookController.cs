@@ -34,6 +34,21 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #region CRUD
+        
+        [HttpGet]
+        [Route]
+        public IHttpActionResult Get(string projectId = null, string before = null, string after = null, int limit = 10) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            var project = _projectRepository.GetById(projectId);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByProjectId(projectId, options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+        }
 
         [HttpGet]
         [Route]

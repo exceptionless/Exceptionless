@@ -20,16 +20,17 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string organization = null, int page = 1, int limit = 10) {
-            limit = GetLimit(limit);
-            int skip = GetSkip(page, limit);
+        public IHttpActionResult Get(string organizationId = null, int page = 1, int limit = 10) {
+            if (!CanAccessOrganization(organizationId))
+                return NotFound();
 
-            List<ViewUser> results = _repository.GetByOrganizationId(organization).Select(Mapper.Map<User, ViewUser>).ToList();
-            var org = _organizationRepository.GetById(organization, true);
+            List<ViewUser> results = _repository.GetByOrganizationId(organizationId).Select(Mapper.Map<User, ViewUser>).ToList();
+            var org = _organizationRepository.GetById(organizationId, true);
             if (org.Invites.Any())
                 results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
-            return OkWithResourceLinks(results.Skip(skip).Take(limit).ToList(), results.Count > limit);
+            limit = GetLimit(limit);
+            return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit);
         }
 
         [HttpPost]
