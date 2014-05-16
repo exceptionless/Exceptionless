@@ -97,6 +97,7 @@ namespace Exceptionless.Api {
                 if (project == null)
                     return next.Invoke();
 
+                // TODO: Ensure that the current users roles are properly set.
                 context.Request.User = PrincipalUtility.CreateUser(_userId, new[] { AuthorizationRoles.GlobalAdmin });
                 return next.Invoke();
             });

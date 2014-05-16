@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
 
         public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()
-                .WithOrganizationId(stackId)
+                .WithStackId(stackId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
                 .WithExpiresIn(expiresIn));

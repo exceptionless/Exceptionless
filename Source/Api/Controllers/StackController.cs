@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Core.Authorization;
@@ -30,7 +31,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
-    [RoutePrefix(API_PREFIX + "stack")]
+    [RoutePrefix(API_PREFIX + "/stack")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
@@ -86,6 +87,9 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null)
                 return BadRequest();
 
+            if (stack.DateFixed.HasValue)
+                return Ok();
+
             // TODO: Implement Fixed in version.
             stack.DateFixed = DateTime.UtcNow;
             //stack.FixedInVersion = "TODO";
@@ -124,6 +128,9 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null)
                 return BadRequest();
 
+            if (!stack.DateFixed.HasValue)
+                return Ok();
+
             stack.DateFixed = null;
             //stack.IsRegressed = false;
 
@@ -141,9 +148,11 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null)
                 return BadRequest();
 
-            stack.IsHidden = true;
-            _stackRepository.Save(stack);
-            _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
+            if (!stack.IsHidden) {
+                stack.IsHidden = true;
+                _stackRepository.Save(stack);
+                _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
+            }
 
             return Ok();
         }
@@ -155,9 +164,11 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null)
                 return BadRequest();
 
-            stack.IsHidden = false;
-            _stackRepository.Save(stack);
-            _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
+            if (stack.IsHidden) {
+                stack.IsHidden = false;
+                _stackRepository.Save(stack);
+                _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
+            }
 
             return StatusCode(HttpStatusCode.NoContent);
         }
@@ -274,15 +285,16 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id}/reset-data")]
-        public void ResetData(string id) {
+        public async Task<IHttpActionResult> ResetDataAsync(string id) {
             if (String.IsNullOrEmpty(id))
-                return;
+                return NotFound();
 
             Stack stack = _stackRepository.GetById(id, true);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return;
+                return NotFound();
 
-            _dataHelper.ResetStackData(id);
+            await _dataHelper.ResetStackDataASync(id);
+            return Ok();
         }
 
         protected override void CreateMaps() {

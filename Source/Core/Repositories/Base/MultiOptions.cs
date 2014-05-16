@@ -72,9 +72,7 @@ namespace Exceptionless.Core.Repositories {
             if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null)
                 AfterQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(AfterValue));
 
-            query = query.And(BeforeQuery);
-            query = query.And(AfterQuery);
-
+            query = query.And(BeforeQuery, AfterQuery);
             return query;
         }
     }

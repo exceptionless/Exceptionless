@@ -42,7 +42,8 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 return new List<User>();
 
-            return Find<User>(new MultiOptions().WithOrganizationId(id).WithCacheKey(String.Concat("org:",id)));
+            var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
+            return Find<User>(new MultiOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
         }
 
         #region Collection Setup

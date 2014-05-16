@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
 
         public virtual ICollection<T> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()
-                .WithOrganizationId(projectId)
+                .WithProjectId(projectId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
                 .WithExpiresIn(expiresIn));

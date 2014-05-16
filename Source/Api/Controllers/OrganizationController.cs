@@ -326,8 +326,8 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return BadRequest();
 
-            organization.Data.Remove(key);
-            _repository.Save(organization);
+            if (organization.Data.Remove(key))
+                _repository.Save(organization);
 
             return Ok();
         }
@@ -404,7 +404,7 @@ namespace Exceptionless.Api.Controllers {
             if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _projectController.ResetData(project.Id);
+                    _projectController.ResetDataAsync(project.Id);
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();

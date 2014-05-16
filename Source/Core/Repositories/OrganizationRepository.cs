@@ -105,20 +105,33 @@ namespace Exceptionless.Core.Repositories {
         public ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var options = new MultiOptions().WithPaging(paging);
             if (!String.IsNullOrWhiteSpace(criteria))
-                options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
+                options.Query = options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
             
             if (paid.HasValue) {
                 if (paid.Value)
-                    options.Query.And(Query.NE(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                    options.Query = options.Query.And(Query.NE(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
                 else
-                    options.Query.And(Query.EQ(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                    options.Query = options.Query.And(Query.EQ(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
             }
 
             if (suspended.HasValue) {
                 if (suspended.Value)
-                    options.Query.And(Query.Or(Query.And(Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))), Query.EQ(FieldNames.IsSuspended, new BsonBoolean(true))));
+                    options.Query = options.Query.And(
+                        Query.Or(
+                            Query.And(
+                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), 
+                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), 
+                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))
+                            ), 
+                            Query.EQ(FieldNames.IsSuspended, new BsonBoolean(true))));
                 else
-                    options.Query.And(Query.Or(Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))), Query.EQ(FieldNames.IsSuspended, new BsonBoolean(false)));
+                    options.Query = options.Query.And(
+                        Query.Or(
+                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), 
+                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), 
+                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))
+                        ), 
+                        Query.EQ(FieldNames.IsSuspended, new BsonBoolean(false)));
             }
 
             switch (sortBy) {

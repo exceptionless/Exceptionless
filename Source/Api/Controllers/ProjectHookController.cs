@@ -22,7 +22,7 @@ using Exceptionless.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
-    [RoutePrefix(API_PREFIX + "projecthook")]
+    [RoutePrefix(API_PREFIX + "/projecthook")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectHookController : RepositoryApiController<IProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
         private readonly IProjectRepository _projectRepository;
@@ -37,6 +37,7 @@ namespace Exceptionless.App.Controllers.API {
         
         [HttpGet]
         [Route]
+        [Route("project/{projectId}")]
         public IHttpActionResult Get(string projectId = null, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -51,7 +52,6 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [Route]
         [Route("{id}", Name = "GetProjectHookById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
@@ -77,15 +77,6 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #endregion
-
-        [HttpGet]
-        [Route("project/{projectId}")]
-        public IHttpActionResult GetByProject(string projectId) {
-            if (!IsInProject(projectId))
-                return NotFound();
-
-            return Ok(_repository.GetByProjectId(projectId));
-        }
 
         /// <summary>
         /// This controller action is called by zapier to create a hook subscription.

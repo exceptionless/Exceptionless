@@ -97,32 +97,32 @@ namespace Exceptionless.Core.Repositories {
 
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.LastOccurrence)).WithPaging(paging);
-            options.Query.And(Query.GTE(FieldNames.LastOccurrence, utcStart), Query.LTE(FieldNames.LastOccurrence, utcEnd));
+            options.Query = options.Query.And(Query.GTE(FieldNames.LastOccurrence, utcStart), Query.LTE(FieldNames.LastOccurrence, utcEnd));
 
             if (!includeFixed)
-                options.Query.And(Query.NotExists(FieldNames.DateFixed));
+                options.Query = options.Query.And(Query.NotExists(FieldNames.DateFixed));
 
             if (!includeHidden)
-                options.Query.And(Query.NE(FieldNames.IsHidden, true));
+                options.Query = options.Query.And(Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
-                options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+                options.Query = options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
 
             return Find<Stack>(options);
         }
 
         public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.FirstOccurrence)).WithPaging(paging);
-            options.Query.And(Query.GTE(FieldNames.FirstOccurrence, utcStart), Query.LTE(FieldNames.FirstOccurrence, utcEnd));
+            options.Query = options.Query.And(Query.GTE(FieldNames.FirstOccurrence, utcStart), Query.LTE(FieldNames.FirstOccurrence, utcEnd));
 
             if (!includeFixed)
-                options.Query.And(Query.NotExists(FieldNames.DateFixed));
+                options.Query = options.Query.And(Query.NotExists(FieldNames.DateFixed));
 
             if (!includeHidden)
-                options.Query.And(Query.NE(FieldNames.IsHidden, true));
+                options.Query = options.Query.And(Query.NE(FieldNames.IsHidden, true));
 
             if (!includeNotFound)
-                options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+                options.Query = options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
 
             return Find<Stack>(options);
         }

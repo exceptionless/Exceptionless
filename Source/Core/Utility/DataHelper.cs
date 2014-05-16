@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -54,7 +55,7 @@ namespace Exceptionless.Core.Utility {
             _billingManager = billingManager;
         }
 
-        public void ResetProjectData(string projectId) {
+        public async Task ResetProjectDataAsync(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
@@ -63,12 +64,12 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             try {
-                _stackRepository.RemoveAllByProjectIdAsync(projectId).Wait();
-                _eventRepository.RemoveAllByProjectIdAsync(projectId).Wait();
-                _dayStackStats.RemoveAllByProjectIdAsync(projectId).Wait();
-                _monthStackStats.RemoveAllByProjectIdAsync(projectId).Wait();
-                _dayProjectStats.RemoveAllByProjectIdAsync(projectId).Wait();
-                _monthProjectStats.RemoveAllByProjectIdAsync(projectId).Wait();
+                await _stackRepository.RemoveAllByProjectIdAsync(projectId);
+                await _eventRepository.RemoveAllByProjectIdAsync(projectId);
+                await _dayStackStats.RemoveAllByProjectIdAsync(projectId);
+                await _monthStackStats.RemoveAllByProjectIdAsync(projectId);
+                await _dayProjectStats.RemoveAllByProjectIdAsync(projectId);
+                await _monthProjectStats.RemoveAllByProjectIdAsync(projectId);
 
                 project.EventCount = 0;
                 project.StackCount = 0;
@@ -86,11 +87,11 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        public void ResetStackData(string errorStackId) {
-            if (String.IsNullOrEmpty(errorStackId))
+        public async Task ResetStackDataASync(string stackId) {
+            if (String.IsNullOrEmpty(stackId))
                 return;
 
-            Stack stack = _stackRepository.GetById(errorStackId);
+            Stack stack = _stackRepository.GetById(stackId);
             if (stack == null)
                 return;
 
@@ -100,12 +101,12 @@ namespace Exceptionless.Core.Utility {
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
                 _stackRepository.Save(stack);
 
-                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
-                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, errorStackId);
+                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
+                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
 
-                _eventRepository.RemoveAllByStackIdAsync(errorStackId).Wait();
-                _dayStackStats.RemoveAllByStackIdAsync(errorStackId).Wait();
-                _monthStackStats.RemoveAllByStackIdAsync(errorStackId).Wait();
+                await _eventRepository.RemoveAllByStackIdAsync(stackId);
+                await _dayStackStats.RemoveAllByStackIdAsync(stackId);
+                await _monthStackStats.RemoveAllByStackIdAsync(stackId);
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;
@@ -117,11 +118,11 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             User user = _userRepository.GetById(userId, true);
-            var organization = new Organization { Name = "Acme" };
+            var organization = new Organization { Id = "537650f3b77efe23a47914f3", Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
-            var project = new Project { Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
+            var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
             project.ApiKeys.Add(SAMPLE_API_KEY);
             project.Configuration.Settings.Add("IncludeConditionalData", "true");

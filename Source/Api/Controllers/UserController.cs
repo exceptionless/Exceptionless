@@ -37,15 +37,16 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id}/admin-role")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult UpdateAdminRole(string id) {
-            var user = GetModel(id);
+        public IHttpActionResult AddAdminRole(string id) {
+            var user = GetModel(id, false);
             if (user == null)
                 return NotFound();
 
-            if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+            if (!user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+                _repository.Save(user, true);
+            }
 
-            _repository.Save(user, true);
             return Ok();
         }
 
@@ -54,14 +55,15 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult DeleteAdminRole(string id) {
-            var user = GetModel(id);
+            var user = GetModel(id, false);
             if (user == null)
                 return NotFound();
 
-            if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin))
+            if (user.Roles.Contains(AuthorizationRoles.GlobalAdmin)) {
                 user.Roles.Remove(AuthorizationRoles.GlobalAdmin);
+                _repository.Save(user, true);
+            }
 
-            _repository.Save(user, true);
             return Ok();
         }
 

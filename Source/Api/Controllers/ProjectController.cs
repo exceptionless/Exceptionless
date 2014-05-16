@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models;
@@ -105,21 +106,21 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return BadRequest();
 
-            project.Configuration.Settings.Remove(key);
-            _repository.Save(project);
+            if (project.Configuration.Settings.Remove(key))
+                _repository.Save(project);
 
             return Ok();
         }
 
         [HttpGet]
         [Route("{id}/reset-data")]
-        public IHttpActionResult ResetData(string id) {
+        public async Task<IHttpActionResult> ResetDataAsync(string id) {
             var project = GetModel(id);
             if (project == null)
                 return BadRequest();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
-            _dataHelper.ResetProjectData(id);
+            await _dataHelper.ResetProjectDataAsync(id);
 
             return Ok();
         }
@@ -127,7 +128,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id}/apikey/get-default")]
         public IHttpActionResult GetDefaultApiKey(string id) {
-            var project = GetModel(id);
+            var project = GetModel(id, false);
             if (project == null)
                 return BadRequest();
 
@@ -162,8 +163,8 @@ namespace Exceptionless.Api.Controllers {
             if (!project.ApiKeys.Contains(apiKey))
                 return StatusCode(HttpStatusCode.NoContent);
 
-            project.ApiKeys.Remove(apiKey);
-            _repository.Save(project);
+            if (project.ApiKeys.Remove(apiKey))
+                _repository.Save(project);
 
             return StatusCode(HttpStatusCode.NoContent);
         }
@@ -178,6 +179,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings);
         }
 
+        // TODO: Should we remove userId and just use the current user..
         [HttpGet]
         [Route("{id}/notification/{userId}")]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
@@ -188,9 +190,11 @@ namespace Exceptionless.Api.Controllers {
             if (!project.NotificationSettings.ContainsKey(userId))
                 return NotFound();
 
+            // TODO: We should just return the settings instead of user id and settings.
             return Ok(project.NotificationSettings[userId]);
         }
 
+        // TODO: Should we remove userId and just use the current user..
         [HttpPut]
         [HttpPost]
         [Route("{id}/notification/{userId}")]
@@ -208,7 +212,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}/notification/{userId}")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
-            var project = GetModel(id);
+            var project = GetModel(id, false);
             if (project == null)
                 return NotFound();
 
@@ -239,7 +243,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id}/promotedtabs/{name}")]
         public IHttpActionResult DemoteTab(string id, string name) {
-            var project = GetModel(id);
+            var project = GetModel(id, false);
             if (project == null)
                 return NotFound();
 
@@ -265,7 +269,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id}/data/{key}")]
-        public IHttpActionResult SetData(string id, string key, string value) {
+        public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
                 return BadRequest();
@@ -283,8 +287,8 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return BadRequest();
 
-            project.Data.Remove(key);
-            _repository.Save(project);
+            if (project.Data.Remove(key))
+                _repository.Save(project);
 
             return Ok();
         }

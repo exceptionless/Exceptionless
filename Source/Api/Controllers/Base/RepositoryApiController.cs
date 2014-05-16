@@ -149,7 +149,7 @@ namespace Exceptionless.Api.Controllers {
         #region Delete
 
         public virtual IHttpActionResult Delete(string id) {
-            TModel item = GetModel(id);
+            TModel item = GetModel(id, false);
             if (item == null)
                 return BadRequest();
 
