@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
             var stack = GetModel(id);
             if (stack == null)
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Controllers {
         #endregion
 
         [HttpPost]
-        [Route("{id}/mark-fixed")]
+        [Route("{id:objectid}/mark-fixed")]
         public IHttpActionResult MarkFixed(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="data"></param>
         [HttpPost]
-        [Route("{id}/mark-fixed")]
+        [Route("{id:objectid}/mark-fixed")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult MarkFixed(JObject data) {
@@ -122,7 +122,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/mark-fixed")]
+        [Route("{id:objectid}/mark-fixed")]
         public IHttpActionResult MarkNotFixed(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/mark-hidden")]
+        [Route("{id:objectid}/mark-hidden")]
         public IHttpActionResult MarkHidden(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -158,7 +158,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/mark-hidden")]
+        [Route("{id:objectid}/mark-hidden")]
         public IHttpActionResult MarkNotHidden(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -174,7 +174,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/promote")]
+        [Route("{id:objectid}/promote")]
         public IHttpActionResult Promote(string id) {
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
@@ -234,7 +234,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId}/new")]
+        [Route("project/{projectId:objectid}/new")]
         public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -259,7 +259,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId}/recent")]
+        [Route("project/{projectId:objectid}/recent")]
         public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -284,7 +284,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}/reset-data")]
+        [Route("{id:objectid}/reset-data")]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             if (String.IsNullOrEmpty(id))
                 return NotFound();

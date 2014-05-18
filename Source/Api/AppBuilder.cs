@@ -5,9 +5,11 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Routing;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Caching;
@@ -49,7 +51,9 @@ namespace Exceptionless.Api {
             var cacheClient = container.GetInstance<ICacheClient>();
             config.MessageHandlers.Add(new ThrottlingHandler(cacheClient, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
 
-            config.MapHttpAttributeRoutes();
+            var constraintResolver = new DefaultInlineConstraintResolver();
+            constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
+            config.MapHttpAttributeRoutes(constraintResolver);
 
             container.RegisterWebApiFilterProvider(config);
             try {

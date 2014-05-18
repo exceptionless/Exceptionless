@@ -37,7 +37,7 @@ namespace Exceptionless.App.Controllers.API {
         
         [HttpGet]
         [Route]
-        [Route("project/{projectId}")]
+        [Route("project/{projectId:objectid}")]
         public IHttpActionResult Get(string projectId = null, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -52,7 +52,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [Route("{id}", Name = "GetProjectHookById")]
+        [Route("{id:objectid}", Name = "GetProjectHookById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
@@ -65,13 +65,13 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpPatch]
         [HttpPut]
-        [Route]
+        [Route("{id}:objectid")]
         public override IHttpActionResult Patch(string id, Delta<ProjectHook> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
-        [Route]
+        [Route("{id}:objectid")]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }

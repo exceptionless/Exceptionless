@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/admin-role")]
+        [Route("{id:objectid}/admin-role")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult AddAdminRole(string id) {
@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/admin-role")]
+        [Route("{id:objectid}/admin-role")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult DeleteAdminRole(string id) {

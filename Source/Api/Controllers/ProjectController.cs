@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}", Name = "GetProjectById")]
+        [Route("{id:objectid}", Name = "GetProjectById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
@@ -56,13 +56,13 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPatch]
         [HttpPut]
-        [Route("{id}")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult Patch(string id, Delta<UpdateProject> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
-        [Route("{id}")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("config")]
-        [Route("{id}/config")]
+        [Route("{id:objectid}/config")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult GetConfig(string id = null) {
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/config/{key}")]
+        [Route("{id:objectid}/config/{key}")]
         public IHttpActionResult SetConfig(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -100,7 +100,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/config/{key}")]
+        [Route("{id:objectid}/config/{key}")]
         public IHttpActionResult DeleteConfig(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
@@ -113,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}/reset-data")]
+        [Route("{id:objectid}/reset-data")]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}/apikey/get-default")]
+        [Route("{id:objectid}/apikey/get-default")]
         public IHttpActionResult GetDefaultApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/apikey/")]
+        [Route("{id:objectid}/apikey/")]
         public IHttpActionResult GetNewApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -154,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/apikey/{apiKey}")]
+        [Route("{id:objectid}/apikey/{apiKey}")]
         public IHttpActionResult DeleteApiKey(string id, string apiKey) {
             var project = GetModel(id, false);
             if (project == null)
@@ -170,7 +170,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}/notification")]
+        [Route("{id:objectid}/notification")]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -181,7 +181,7 @@ namespace Exceptionless.Api.Controllers {
 
         // TODO: Should we remove userId and just use the current user..
         [HttpGet]
-        [Route("{id}/notification/{userId}")]
+        [Route("{id:objectid}/notification/{userId:objectid}")]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
             var project = GetModel(id);
             if (project == null)
@@ -197,7 +197,7 @@ namespace Exceptionless.Api.Controllers {
         // TODO: Should we remove userId and just use the current user..
         [HttpPut]
         [HttpPost]
-        [Route("{id}/notification/{userId}")]
+        [Route("{id:objectid}/notification/{userId:objectid}")]
         public IHttpActionResult SetNotificationSettings(string id, string userId, NotificationSettings settings) {
             var project = GetModel(id, false);
             if (project == null)
@@ -210,7 +210,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/notification/{userId}")]
+        [Route("{id:objectid}/notification/{userId:objectid}")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)
@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPut]
         [HttpPost]
-        [Route("{id}/promotedtabs/{name}")]
+        [Route("{id:objectid}/promotedtabs/{name}")]
         public IHttpActionResult PromoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -241,7 +241,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/promotedtabs/{name}")]
+        [Route("{id:objectid}/promotedtabs/{name}")]
         public IHttpActionResult DemoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -268,7 +268,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/data/{key}")]
+        [Route("{id:objectid}/data/{key}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -281,7 +281,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/data/{key}")]
+        [Route("{id:objectid}/data/{key}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)

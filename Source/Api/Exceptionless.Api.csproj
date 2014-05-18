@@ -169,6 +169,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
+    <Compile Include="Utility\ObjectIdRouteConstraint.cs" />
     <Compile Include="Utility\OkWithHeadersContentResult.cs" />
     <Compile Include="Utility\RequireHttpsAttribute.cs" />
     <Compile Include="Utility\RequireHttpsExceptLocalAttribute.cs" />

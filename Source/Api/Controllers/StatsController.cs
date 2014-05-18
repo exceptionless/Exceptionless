@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("stack/{stackId}")]
+        [Route("stack/{stackId:objectid}")]
         public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId}")]
+        [Route("project/{projectId:objectid}")]
         public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId}/frequent")]
+        [Route("project/{projectId:objectid}/frequent")]
         public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();

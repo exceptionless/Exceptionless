@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/stack/{stackId}/event")]
+        [Route("~/" + API_PREFIX + "/stack/{stackId:objectid}/event")]
         public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId}/event")]
+        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/event")]
         public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -79,7 +79,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }

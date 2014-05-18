@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id}", Name = "GetOrganizationById")]
+        [Route("{id:objectid}", Name = "GetOrganizationById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
@@ -77,13 +77,13 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPatch]
         [HttpPut]
-        [Route("{id}")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult Patch(string id, Delta<NewOrganization> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
-        [Route("{id}")]
+        [Route("{id}:objectid")]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
         #endregion
 
         [HttpGet]
-        [Route("{id}/invoice")]
+        [Route("{id:objectid}/invoice")]
         public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/change-plan")]
+        [Route("{id:objectid}/change-plan")]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken, string last4) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/user/{email}")]
+        [Route("{id:objectid}/user/{email}")]
         public IHttpActionResult AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/user/{email}")]
+        [Route("{id:objectid}/user/{email}")]
         public IHttpActionResult RemoveUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -269,7 +269,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/suspend")]
+        [Route("{id:objectid}/suspend")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult Suspend(string id, SuspensionCode code, string notes = null) {
@@ -288,7 +288,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/suspend")]
+        [Route("{id:objectid}/suspend")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult Unsuspend(string id) {
@@ -307,7 +307,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id}/data/{key}")]
+        [Route("{id:objectid}/data/{key}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var organization = GetModel(id, false);
             if (organization == null)
@@ -320,7 +320,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id}/data/{key}")]
+        [Route("{id:objectid}/data/{key}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var organization = GetModel(id, false);
             if (organization == null)
