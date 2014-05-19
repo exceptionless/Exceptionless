@@ -4,10 +4,13 @@ HOST: http://api.exceptionless.com/api/v1
 # Exceptionless
 Discover errors in your .NET app you never knew were happening and use detailed error reports to squash them with ease. Make your app Exceptionless!
 
-## Group Organization  [/organization]
+# Group Event  [/event]
+Manage your event 
+
+# Group Organization  [/organization]
 Manage your organization
 
-### List all Organizations [GET]
+## List all Organizations [GET]
 
 + Response 200 (application/json)
 
@@ -17,14 +20,14 @@ Manage your organization
           "id": "537650f3b77efe23a47914f3", "title": "Pick-up posters from post-office"
         }]
 
-### Get an Organization [/{id}]
+## Get an Organization [/{id}]
 A single Organization object with all its details
 
 + Parameters
     + id (required, string, `1`) ... Numeric `id` of the Note to perform action with. Has example value.
 
 
-### Create an Organization [POST]
+## Create an Organization [POST]
 + Request (application/json)
 
         { "name": "Acme" }
@@ -33,11 +36,11 @@ A single Organization object with all its details
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-### Retrieve an Organization [GET]
+## Retrieve an Organization [GET]
 + Response 200 (application/json)
     + Body
 
             { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-### Remove an Organization [DELETE]
+## Remove an Organization [DELETE]
 + Response 204
