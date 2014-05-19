@@ -385,14 +385,15 @@ A single project object with all its details
 # Group Project Hook
 Project Hook related resources of the **Project Hook  API**
 
-### Create a new project hook [POST]
+## Create [/projecthook/]
+### Create new project hook [POST]
 To create a new project hook, you must specify project_id, url and event_types.
 
 + Request (application/json)
 
-    { "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] }
+    { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] }
 
-## Get by project [/project/{projectId}]
+## Get by project [/projecthook/project/{projectId}]
 
 ### List all project hooks for a given project [GET]
 + Parameters
@@ -403,8 +404,33 @@ To create a new project hook, you must specify project_id, url and event_types.
 
 + Response 200 (application/json)
 
-        [{
-          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
-        }, {
-          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
+        [{ 
+          "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] 
+         }, {
+          "id": "100650f3b77efe23a4791401", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"]
         }]
+
+## Update [/projecthook/{id}]
+
++ Parameters
+    + id (required, string, `100650f3b77efe23a4791400`) ... The identifier of the project hook.
+
+### Retrieve project hook [GET]
+A single project hook object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] }
+
+### Update organization [PATCH]
++ Request (application/json)
+
+        { "url": "https://exceptionless.com" }
+
++ Response 200 (application/json)
+
+        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "https://exceptionless.com", "event_types": ["NewError"] }
+
+### Remove organization [DELETE]
++ Response 204
