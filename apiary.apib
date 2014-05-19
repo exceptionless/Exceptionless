@@ -7,7 +7,7 @@ Discover errors in your .NET app you never knew were happening and use detailed 
 # Group Event
 Events related resources of the **Events API**
 
-## Event [/event]
+## CRUD [/event]
 ### List all events for an organization [GET]
 + Parameters
     + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
@@ -36,7 +36,7 @@ Events related resources of the **Events API**
 
 + Response 200 (application/json)
 
-## Get By Stack [/stack/{stackId}/event]
+## Get by stack [/stack/{stackId}/event]
 
 ### List all events for a given stack [GET]
 + Parameters
@@ -53,7 +53,7 @@ Events related resources of the **Events API**
           "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
         }]
 
-## Get By Project [/project/{projectId}/event]
+## Get by project [/project/{projectId}/event]
 
 ### List all events for a given project [GET]
 + Parameters
@@ -74,7 +74,7 @@ Events related resources of the **Events API**
 # Group Organization
 Organization related resources of the **Organization API**
 
-## Organization [/organization]
+## Get all [/organization]
 
 ### List all organizations [GET]
 
@@ -100,7 +100,7 @@ Organization related resources of the **Organization API**
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-## Organization [/organization/{id}]
+## CRUD [/organization/{id}]
 
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
@@ -125,7 +125,7 @@ A single organization object with all its details
 ### Remove organization [DELETE]
 + Response 204
 
-## Organization [/organization/{id}/user/{email}]
+## Users [/organization/{id}/user/{email}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
@@ -136,7 +136,7 @@ A single organization object with all its details
 ### Remove user [DELETE]
 + Response 200
 
-## Organization [/organization/{id}/data/{key}]
+## Data [/organization/{id}/data/{key}]
 
 ### Add data value [POST]
 + Parameters
@@ -153,7 +153,7 @@ A single organization object with all its details
     
 + Response 200
 
-## Organization [/organization/check-name{?name}]
+## Validation [/organization/check-name{?name}]
 
 ### Check for unique organization name [GET]
 + Parameters
@@ -164,7 +164,7 @@ A single organization object with all its details
 # Group Project
 Project related resources of the **Project API**
 
-## Project [/project]
+## Get by organization [/project]
 
 ### List all projects [GET]
 
@@ -191,7 +191,7 @@ Project related resources of the **Project API**
 
         { "organization_id": "537650f3b77efe23a47914f3", "id": "537650f3b77efe23a47914f1", "name": "Acme" }
 
-## Project [/project/{id}]
+## CRUD [/project/{id}]
 
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
@@ -216,7 +216,7 @@ A single project object with all its details
 ### Remove project [DELETE]
 + Response 204
 
-## Project [/project/{id}/apikey/get-default]
+## Get default api key [/project/{id}/apikey/get-default]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
 
@@ -225,7 +225,7 @@ A single project object with all its details
 
     { "key": "100650f3b77efe23a4791411" }
 
-## Project [/project/{id}/apikey]
+## Create new api key [/project/{id}/apikey]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
 
@@ -234,7 +234,7 @@ A single project object with all its details
 
     { "key": "100650f3b77efe23a4791411" }
 
-## Project [/project/{id}/apikey/{apikey}]
+## Remove api key [/project/{id}/apikey/{apikey}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
     + apikey (required, string, `100650f3b77efe23a4791411`) ... The api key that should be removed.
@@ -242,14 +242,14 @@ A single project object with all its details
 ### Delete an api key [DELETE]
 + Response 200
 
-## Project [/project/{id}/reset-data]
+## Reset project data [/project/{id}/reset-data]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
 
 ### Reset project data [GET]
 + Response 200
 
-## Project [/project/{id}/config]
+## Get configuration values [/project/{id}/config]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
 
@@ -263,7 +263,7 @@ A single project object with all its details
       }
     }
 
-## Project [/project/{id}/config/{key}]
+## Configuration [/project/{id}/config/{key}]
 
 ### Add configuration value [POST]
 + Parameters
@@ -280,7 +280,7 @@ A single project object with all its details
     
 + Response 200
 
-## Project [/project/{id}/data/{key}]
+## Data [/project/{id}/data/{key}]
 
 ### Add data value [POST]
 + Parameters
@@ -297,7 +297,7 @@ A single project object with all its details
     
 + Response 200
 
-## Project [/project/{id}/promotedtabs/{name}]
+## Promoted Tabs [/project/{id}/promotedtabs/{name}]
 
 ### Promote Tab [POST]
 + Parameters
@@ -313,7 +313,7 @@ A single project object with all its details
     
 + Response 200
 
-## Project [/project/{id}/notification]
+## Get notification settings [/project/{id}/notification]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
 
@@ -339,7 +339,7 @@ A single project object with all its details
       }
     }
     
-## Project [/project/{id}/notification/{userId}]
+## Notification settings [/project/{id}/notification/{userId}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
     + userId (required, string, `007650f3b77efe23a4791411`) ... A identifier of the user.
@@ -374,7 +374,7 @@ A single project object with all its details
 ### Remove notification settings for a specific user [DELETE]
 + Response 200
     
-## Project [/project/check-name{?name}]
+## Validation [/project/check-name{?name}]
 
 ### Check for unique project name [GET]
 + Parameters
