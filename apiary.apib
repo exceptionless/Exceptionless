@@ -4,14 +4,12 @@ HOST: http://api.exceptionless.com/api/v1
 # Exceptionless
 Discover errors in your .NET app you never knew were happening and use detailed error reports to squash them with ease. Make your app Exceptionless!
 
-# Group Event  [/event]
-Manage your event 
+# Group Event
+Events related resources of the **Events API**
 
-# Group Organization  [/organization]
-Manage your organization
+## Event [/event]
 
-## List all Organizations [GET]
-
+### List all events [GET]
 + Response 200 (application/json)
 
         [{
@@ -20,14 +18,27 @@ Manage your organization
           "id": "537650f3b77efe23a47914f3", "title": "Pick-up posters from post-office"
         }]
 
-## Get an Organization [/{id}]
-A single Organization object with all its details
+# Group Organization
+Organization related resources of the **Organization API**
+
+## Organization [/organization]
+
+### List all organizations [GET]
 
 + Parameters
-    + id (required, string, `1`) ... Numeric `id` of the Note to perform action with. Has example value.
+    + before (optional, string, `1`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `1`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
++ Response 200 (application/json)
 
-## Create an Organization [POST]
+        [{
+          "id": "537650f3b77efe23a47914f3", "name": "Acme"
+        }, {
+          "id": "537650f3b77efe23a47914f3", "name": "Acme Supply"
+        }]
+
+### Create a new organization [POST]
 + Request (application/json)
 
         { "name": "Acme" }
@@ -36,11 +47,56 @@ A single Organization object with all its details
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-## Retrieve an Organization [GET]
+## Organization [/organization/{id}]
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the document to be updated.
+
+### Retrieve an Organization [GET]
+A single Organization object with all its details
+
 + Response 200 (application/json)
     + Body
 
             { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-## Remove an Organization [DELETE]
+### Update an organization [PATCH]
++ Request (application/json)
+
+        { "name": "Updated Acme" }
+
++ Response 200 (application/json)
+
+        { "id": "537650f3b77efe23a47914f3", "name": "Updated Acme" }
+
+### Remove an Organization [DELETE]
 + Response 204
+
+## Organization [/organization/{id}/user/{email}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the document to be updated.
+    + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
+
+### Add new user [POST]
++ Response 200
+
+### Remove user [DELETE]
++ Response 200
+
+## Organization [/organization/{id}/data/{key}]
+
+### Add key [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the document to be updated.
+    + key (required, string, `zip-code`) ... A identifier of the data object.
+    + value (required, string, `90210`) ... Any string value.
+
++ Response 200
+
+### Remove key [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the document to be updated.
+    + key (required, string, `zip-code`) ... A identifier of the data object.
+    
++ Response 200
+
