@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/user/{email}")]
+        [Route("{id:objectid}/user/{email:minlength(1)}")]
         public IHttpActionResult AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/user/{email}")]
+        [Route("{id:objectid}/user/{email:minlength(1)}")]
         public IHttpActionResult RemoveUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -307,7 +307,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/data/{key}")]
+        [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var organization = GetModel(id, false);
             if (organization == null)
@@ -320,7 +320,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/data/{key}")]
+        [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var organization = GetModel(id, false);
             if (organization == null)
@@ -333,7 +333,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("check-name/{name}")]
+        [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return NotFound();

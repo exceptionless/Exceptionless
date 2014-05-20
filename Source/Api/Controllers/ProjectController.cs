@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "organization/{organizationId:objectid}/projects")]
+        [Route("~/" + API_PREFIX + "/organization/{organizationId:objectid}/projects")]
         public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
@@ -100,7 +100,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/config/{key}")]
+        [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult SetConfig(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -114,7 +114,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/config/{key}")]
+        [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult DeleteConfig(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
@@ -168,7 +168,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/apikey/{apiKey}")]
+        [Route("{id:objectid}/apikey/{apiKey:minlength(1)}")]
         public IHttpActionResult DeleteApiKey(string id, string apiKey) {
             var project = GetModel(id, false);
             if (project == null)
@@ -240,7 +240,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPut]
         [HttpPost]
-        [Route("{id:objectid}/promotedtabs/{name}")]
+        [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public IHttpActionResult PromoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -255,7 +255,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/promotedtabs/{name}")]
+        [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public IHttpActionResult DemoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -270,7 +270,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("check-name/{name}")]
+        [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return NotFound();
@@ -282,7 +282,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/data/{key}")]
+        [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -295,7 +295,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/data/{key}")]
+        [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
