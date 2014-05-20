@@ -9,14 +9,13 @@ Events related resources of the **Events API**
 
 ## Create [/event]
 ### Create new log event [POST]
-
 + Request (application/json)
 
         "Exceptionless is amazing!"
 
 + Response 200
 
-## Get by id [/event/{id}]
+## Get [/event/{id}]
 
 ### Get by id [GET]
 + Parameters
@@ -109,7 +108,7 @@ Events related resources of the **Events API**
           }
         ]
         
-## Get by stack [/stack/{stackId}/event]
+## Get by stack [/stack/{stackId}/event{?before,after,limit}]
 
 ### List all events for a given stack [GET]
 + Parameters
@@ -157,22 +156,16 @@ Organization related resources of the **Organization API**
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
 
-## Get by id [/organization/{id}]
-
-### Get by id [GET]
+## Get, Update, Remove [/organization/{id}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
 
+### Get by id [GET]
 + Response 200 (application/json)
     
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-## Update [/organization/{id}]
-
 ### Update organization [PATCH]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    
 + Request (application/json)
 
         { "name": "Updated Acme" }
@@ -181,17 +174,10 @@ Organization related resources of the **Organization API**
 
         { "id": "537650f3b77efe23a47914f3", "name": "Updated Acme" }
 
-
-
-## Remove [/organization/{id}]
-
 ### Remove organization [DELETE]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    
 + Response 204
 
-## Users [/organization/{id}/user/{email}]
+## Manage users [/organization/{id}/user/{email}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
