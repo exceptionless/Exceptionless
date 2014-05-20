@@ -7,11 +7,49 @@ Discover errors in your .NET app you never knew were happening and use detailed 
 # Group Event
 Events related resources of the **Events API**
 
-## Get by organization [/event{?organization,after,limit}]
+## Create [/event]
+### Create a new log event [POST]
+
++ Request (application/json)
+
+        "Exceptionless is amazing!"
+
++ Response 200
+
+## Get by id [/organization/{id}]
+
+### Get by id [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    
++ Response 200 (application/json)
+
+        {
+          "id": "537b7255b77efe2474bfdd80",
+          "organization_id": "537650f3b77efe23a47914f3",
+          "project_id": "537650f3b77efe23a47914f4",
+          "stack_id": "537b7255b77efe2474bfdd7f",
+          "summary_html": null,
+          "is_fixed": false,
+          "is_hidden": false,
+          "type": "log",
+          "source": null,
+          "tags": [],
+          "message": "Exceptionless is amazing!",
+          "data": {},
+          "reference_id": null,
+          "session_id": null,
+          "is_critical": false,
+          "is_not_found": false,
+          "is_error": false
+        }
+
+## Get by organization [/event{?organization,before,after,limit}]
 ### List all events for an organization [GET]
 + Parameters
     + organization (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -27,7 +65,6 @@ Events related resources of the **Events API**
             "is_hidden": false,
             "type": "log",
             "source": null,
-            "date": "2014-05-20T10:18:45.8656763-05:00",
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
@@ -39,49 +76,71 @@ Events related resources of the **Events API**
           }
         ]
 
-## Create [/event]
-### Create a new log event [POST]
+## Get by project [/project/{projectId}/event{?before,after,limit}]
 
-+ Request (application/json)
-
-        "Exceptionless is amazing!"
+### List all events for a given project [GET]
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+        
 ## Get by stack [/stack/{stackId}/event]
 
 ### List all events for a given stack [GET]
 + Parameters
-    + stackId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the stack.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
-        [{
-          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
-        }, {
-          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
-        }]
-
-## Get by project [/project/{projectId}/event]
-
-### List all events for a given project [GET]
-+ Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
-        }, {
-          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
-        }]
-
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
 
 # Group Organization
 Organization related resources of the **Organization API**
