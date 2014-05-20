@@ -53,18 +53,17 @@ You can also post a multiline string. We automatically split strings by the `\n`
           "is_error": false
         }
 
-## Get by organization [/event{?organization,before,after,limit}]
-### List all events for an organization [GET]
+## Get by organization [/event{?id,before,after,limit}]
+### List all events for a given organization [GET]
 + Parameters
-    + organization (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + id (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
     + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
-        [
-          {
+        [{
             "id": "537b7255b77efe2474bfdd80",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
@@ -82,13 +81,12 @@ You can also post a multiline string. We automatically split strings by the `\n`
             "is_critical": false,
             "is_not_found": false,
             "is_error": false
-          }
-        ]
+          }]
 
-## Get by project [/project/{projectId}/events{?before,after,limit}]
+## Get by project [/project/{id}/events{?before,after,limit}]
 ### List all events for a given project [GET]
 + Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -117,10 +115,10 @@ You can also post a multiline string. We automatically split strings by the `\n`
           }
         ]
         
-## Get by stack [/stack/{stackId}/events{?before,after,limit}]
+## Get by stack [/stack/{id}/events{?before,after,limit}]
 ### List all events for a given stack [GET]
 + Parameters
-    + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
     + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -321,10 +319,10 @@ Project related resources of the **Project API**
             "total_event_count": 1,
         }]
 
-## Get by organization [/organization/{organizationId:objectid}/projects{?before,after,limit}]
+## Get by organization [/organization/{id}/projects{?before,after,limit}]
 ### List all projects for a given organization [GET]
 + Parameters
-    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -681,10 +679,10 @@ To create a new project hook, you must specify project_id, url and event_types.
 ### Remove project hook [DELETE]
 + Response 204
 
-## Get by project [/project/{projectId}/projecthooks{?before,after,limit}]
+## Get by project [/project/{id}/projecthooks{?before,after,limit}]
 ### List all project hooks for a given project [GET]
 + Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -706,11 +704,11 @@ To create a new project hook, you must specify project_id, url and event_types.
 # Group Stack
 Stack related resources of the **Stack API**
 
-## Get by organization [/stack{?organization,before,after,limit}]
+## Get by organization [/stack{?id,before,after,limit}]
 ### List all projects for a given organization [GET]
 
 + Parameters
-    + organization (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -738,10 +736,10 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get newest by project [/project/{projectId}/stacks/new{?before,after,limit}]
+## Get newest by project [/project/{id}/stacks/new{?before,after,limit}]
 ### Get newest by project [GET]
 + Parameters
-    + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -770,10 +768,10 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get most recent by project [/project/{projectId}/stacks/recent{?before,after,limit}]
+## Get most recent by project [/project/{id}/stacks/recent{?before,after,limit}]
 ### Get most recent by project [GET]
 + Parameters
-    + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -802,10 +800,10 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get most frequent by project [/project/{projectId}/stacks/frequent{?page,limit,start,end,hidden,fixed,notfound}]
+## Get most frequent by project [/project/{id}/stacks/frequent{?page,limit,start,end,hidden,fixed,notfound}]
 ### Gets most frequent by project [GET]
 + Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
     + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
@@ -912,10 +910,10 @@ Stack related resources of the **Stack API**
 # Group Stats
 Stat related resources of the **Stats API**
 
-## Get by project [/project/{projectId}/stats{?start,end,hidden,fixed,notfound}]
+## Get by project [/project/{id}/stats{?start,end,hidden,fixed,notfound}]
 ### Get stats for a given project [GET]
 + Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
     + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
     + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
     + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
@@ -1359,10 +1357,10 @@ Stat related resources of the **Stats API**
           "total": 1
         }
 
-## Get by stack [/stack/{stackId}/stats{?start,end}]
+## Get by stack [/stack/{id}/stats{?start,end}]
 ### Get stats for a given stack [GET]
 + Parameters
-    + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
     + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
     + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
 
@@ -1682,10 +1680,10 @@ Stat related resources of the **Stats API**
 # Group User
 User related resources of the **Users API**
 
-## Get by organization [/organization/{organizationId}/users{?page,limit}]
+## Get by organization [/organization/{id}/users{?page,limit}]
 ### List all users for an organization [GET]
 + Parameters
-    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + id (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
  
