@@ -395,8 +395,8 @@ Project related resources of the **Project API**
 
         { "key": "e3d51ea621464280bbcb79c11fd6483e" }
 
-## Create new api key [/project/{id}/apikey]
-### Create new api key [POST]
+## Create api key [/project/{id}/apikey]
+### Create a new api key [POST]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
 
@@ -550,55 +550,94 @@ Returns a `404` status code if an existing project with the specified name does 
 # Group Project Hook
 Project Hook related resources of the **Project Hook  API**
 
-## Create [/projecthook/]
+## Create [/projecthook]
 ### Create new project hook [POST]
 To create a new project hook, you must specify project_id, url and event_types.
 
 + Request (application/json)
 
-    { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] }
+        { 
+            "project_id": "537650f3b77efe23a47914f4", 
+            "url": "http://exceptionless.com", 
+            "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] 
+        }
 
-## Get by project [/projecthook/project/{projectId}]
++ Response 201 (application/json)
 
-### List all project hooks for a given project [GET]
+        {
+            "id": "537b84cfb77efe2474072488",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+## Get, Update, Remove [/projecthook/{id}]
 + Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the project hook.
 
+### Get by id [GET]
 + Response 200 (application/json)
 
-        [{ 
-          "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] 
-         }, {
-          "id": "100650f3b77efe23a4791401", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"]
-        }]
-
-## Update [/projecthook/{id}]
-
-+ Parameters
-    + id (required, string, `100650f3b77efe23a4791400`) ... The identifier of the project hook.
-
-### Retrieve project hook [GET]
-A single project hook object with all its details
-
-+ Response 200 (application/json)
-    + Body
-
-        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] }
+        {
+            "id": "537b84cfb77efe2474072488",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
 
 ### Update project hook [PATCH]
 + Request (application/json)
 
-        { "url": "https://exceptionless.com" }
+        { "url": "https://mycompanywebsite.com" }
 
 + Response 200 (application/json)
 
-        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "https://exceptionless.com", "event_types": ["NewError"] }
+        {
+            "id": "537b84cfb77efe2474072488",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "https://mycompanywebsite.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
 
 ### Remove project hook [DELETE]
 + Response 204
+
+## Get by project [/projecthook/project/{projectId}{?before,after,limit}]
+### List all project hooks for a given project [GET]
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b84cfb77efe2474072488",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }]
 
 # Group Stack
 Stack related resources of the **Stack API**
