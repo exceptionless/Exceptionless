@@ -10,7 +10,7 @@ Events related resources of the **Events API**
 ## Create [/event]
 You can create an event by posting any string or json object.
 
-### Create new log event [POST]
+### Create new event [POST]
 You can post any JSON object to create an event. If we know how to handle it we will create a new event. If none of the JSON properties match the `event` object then we will create a new event and place your JSON object into the events data collection.
 
 You can also post a multiline string. We automatically split strings by the `\n` character and create a new log event for every line.
