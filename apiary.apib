@@ -263,6 +263,47 @@ Project related resources of the **Project API**
             "total_event_count": 1,
         }
 
+## Get all [/project{?before,after,limit}]
+### List all projects [GET]
++ Parameters
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{ 
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "api_keys": [
+              "e3d51ea621464280bbcb79c11fd6483e"
+            ],
+            "configuration": {
+              "version": 0,
+              "settings": {
+                "include_conditional_data": "true"
+              }
+            },
+            "notification_settings": {
+              "537b6e77b77efe102444053d": {
+                "mode": 1,
+                "send_daily_summary": true,
+                "report_critical_errors": true,
+                "report_regressions": true,
+                "report404_errors": false,
+                "report_known_bot_errors": false
+              }
+            },
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 1,
+            "event_count": 1,
+            "total_event_count": 1,
+        }]
+
 ## Get by organization [/organization/{organizationId:objectid}/projects{?before,after,limit}]
 ### List all projects for a given organization [GET]
 + Parameters
@@ -617,7 +658,7 @@ To create a new project hook, you must specify project_id, url and event_types.
 ### Remove project hook [DELETE]
 + Response 204
 
-## Get by project [/projecthook/project/{projectId}{?before,after,limit}]
+## Get by project [/project/{projectId}/projecthooks{?before,after,limit}]
 ### List all project hooks for a given project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -674,7 +715,7 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get newest by project [/stack/project/{projectId}/new{?before,after,limit}]
+## Get newest by project [/project/{projectId}/stacks/new{?before,after,limit}]
 ### Get newest by project [GET]
 + Parameters
     + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -706,7 +747,7 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get most recent by project [/stack/project/{projectId}/recent{?before,after,limit}]
+## Get most recent by project [/project/{projectId}/stacks/recent{?before,after,limit}]
 ### Get most recent by project [GET]
 + Parameters
     + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -738,7 +779,7 @@ Stack related resources of the **Stack API**
             "tags": []
         }]
 
-## Get most frequent by project [/stack/project/{projectId}/frequent{?page,limit,start,end,hidden,fixed,notfound}]
+## Get most frequent by project [/project/{projectId}/stacks/frequent{?page,limit,start,end,hidden,fixed,notfound}]
 ### Gets most frequent by project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
@@ -848,7 +889,7 @@ Stack related resources of the **Stack API**
 # Group Stats
 Stat related resources of the **Stats API**
 
-## Get by project [/stats/project/{projectId}{?start,end,hidden,fixed,notfound}]
+## Get by project [/project/{projectId}/stats{?start,end,hidden,fixed,notfound}]
 ### Get stats for a given project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
@@ -1295,7 +1336,7 @@ Stat related resources of the **Stats API**
           "total": 1
         }
 
-## Get by stack [/stats/stack/{stackId}{?start,end}]
+## Get by stack [/stack/{stackId}/stats{?start,end}]
 ### Get stats for a given stack [GET]
 + Parameters
     + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
