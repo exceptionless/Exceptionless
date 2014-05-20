@@ -423,7 +423,7 @@ A single project hook object with all its details
 
         { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] }
 
-### Update organization [PATCH]
+### Update project hook [PATCH]
 + Request (application/json)
 
         { "url": "https://exceptionless.com" }
@@ -432,5 +432,119 @@ A single project hook object with all its details
 
         { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "https://exceptionless.com", "event_types": ["NewError"] }
 
-### Remove organization [DELETE]
+### Remove project hook [DELETE]
 + Response 204
+
+# Group Stack
+Stack related resources of the **Stack API**
+
+## Get by organization [/stack]
+
+### List all projects [GET]
+
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get new stacks by project [/stack/project/{projectId}/new]
+
+### Get new stacks by project [GET]
+
++ Parameters
+    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get most recent stacks by project [/stack/project/{projectId}/new]
+
+### Get most recent stacks by project [GET]
+
++ Parameters
+    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get by ID [/stack/{id}]
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a4791000`) ... The identifier of the stack.
+
+### Retrieve stack [GET]
+A single stack object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+            { "id": "537650f3b77efe23a4791000", "title": "My Custom Error" }
+
+## Reset stack data [/stack/{id}/reset-data]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Reset project data [GET]
++ Response 200
+
+## Mark fixed [/stack/{id}/mark-fixed]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Mark fixed [POST]
++ Response 200
+
+### Mark not fixed [DELETE]
++ Response 200
+
+## Mark hidden [/stack/{id}/mark-hidden]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Mark hidden [POST]
++ Response 200
+
+### Mark not hidden [DELETE]
++ Response 200
+
+## Promote to external [/stack/{id}/promote]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Promote to external service [POST]
++ Response 200
+
+## Add reference link [/stack/add-link]
+
+### Add reference link [POST]
+
++ Request (application/json)
+
+        { "stack": "537650f3b77efe23a47914f1", "link": "https://exceptionless.com" }
+
++ Response 200
