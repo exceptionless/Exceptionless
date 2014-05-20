@@ -16,7 +16,6 @@ Events related resources of the **Events API**
 + Response 200
 
 ## Get [/event/{id}]
-
 ### Get by id [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
@@ -76,7 +75,6 @@ Events related resources of the **Events API**
         ]
 
 ## Get by project [/project/{projectId}/event{?before,after,limit}]
-
 ### List all events for a given project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -109,7 +107,6 @@ Events related resources of the **Events API**
         ]
         
 ## Get by stack [/stack/{stackId}/event{?before,after,limit}]
-
 ### List all events for a given stack [GET]
 + Parameters
     + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
@@ -144,8 +141,7 @@ Events related resources of the **Events API**
 # Group Organization
 Organization related resources of the **Organization API**
 
-## Create [/organization]
-
+## Create, Get all [/organization]
 ### Create new organization [POST]
 + Request (application/json)
 
@@ -155,6 +151,15 @@ Organization related resources of the **Organization API**
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
+### List all organizations [GET]
++ Parameters
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{ "id": "537650f3b77efe23a47914f3", "name": "Acme" }]
 
 ## Get, Update, Remove [/organization/{id}]
 + Parameters
@@ -188,9 +193,8 @@ Organization related resources of the **Organization API**
 ### Remove user [DELETE]
 + Response 200
 
-## Data [/organization/{id}/data/{key}]
-
-### Add data value [POST]
+## Add custom data [/organization/{id}/data/{key}{?value}]
+### Add custom data value [POST]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + key (required, string, `zip-code`) ... The key name of the data object.
@@ -198,46 +202,22 @@ Organization related resources of the **Organization API**
 
 + Response 200
 
-### Remove data value [DELETE]
+## Remove custom data [/organization/{id}/data/{key}]
+### Remove custom data value [DELETE]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + key (required, string, `zip-code`) ... The key name of the data object.
     
 + Response 200
 
-## Validation [/organization/check-name{?name}]
-
+## Check for unique name [/organization/check-name/{name}]
 ### Check for unique organization name [GET]
+Returns a `404` status code if an existing orgnaization with the specified name does not exist.
+
 + Parameters
-    + name (required, string, `My Organization`) ... The organization name to check.
+    + name (required, string, `Acme`) ... The organization name to check.
 
 + Response 404
-
-## Get all [/organization]
-
-### List all organizations [GET]
-
-+ Parameters
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-          "id": "537650f3b77efe23a47914f3", "name": "Acme"
-        }, {
-          "id": "537650f3b77efe23a47914f3", "name": "Acme Supply"
-        }]
-
-### Create new organization [POST]
-+ Request (application/json)
-
-        { "name": "Acme" }
-
-+ Response 201 (application/json)
-
-        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
 # Group Project
 Project related resources of the **Project API**
