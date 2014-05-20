@@ -492,6 +492,28 @@ Stack related resources of the **Stack API**
           "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
         }]
 
+## Get most frequent stacks by project [/stack/project/{projectId}/frequent]
+
+### Gets the most frequent stacks for a project [GET]
+
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
+    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
+    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
 ## Get by ID [/stack/{id}]
 
 + Parameters
@@ -575,29 +597,6 @@ Stats related resources of the **Stats API**
 
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
-    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
-    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
-    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
-
-+ Response 200 (application/json)
-
-        [{
-          "TODO": "537650f3b77efe23a4791000",
-        }, {
-          "TODO": "537650f3b77efe23a4791001",
-        }]
-        
-        
-## Get most frequent stacks for a project [/stats/project/{projectId}/frequent]
-
-### Gets the most frequent stacks for a project [GET]
-
-+ Parameters
-    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
     + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
     + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
