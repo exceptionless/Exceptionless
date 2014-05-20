@@ -53,10 +53,9 @@ You can also post a multiline string. We automatically split strings by the `\n`
           "is_error": false
         }
 
-## Get by organization [/event{?id,before,after,limit}]
-### List all events for a given organization [GET]
+## Get all [/event{?before,after,limit}]
+### List all events [GET]
 + Parameters
-    + id (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
     + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -704,11 +703,10 @@ To create a new project hook, you must specify project_id, url and event_types.
 # Group Stack
 Stack related resources of the **Stack API**
 
-## Get by organization [/stack{?id,before,after,limit}]
-### List all projects for a given organization [GET]
+## Get all [/stack{?before,after,limit}]
+### List all projects [GET]
 
 + Parameters
-    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
     + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
