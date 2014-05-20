@@ -141,7 +141,7 @@ Events related resources of the **Events API**
 # Group Organization
 Organization related resources of the **Organization API**
 
-## Create, Get all [/organization]
+## Create [/organization]
 ### Create new organization [POST]
 + Request (application/json)
 
@@ -151,6 +151,7 @@ Organization related resources of the **Organization API**
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
+## Get all [/organization{?before,after,limit}]
 ### List all organizations [GET]
 + Parameters
     + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
@@ -187,7 +188,7 @@ Organization related resources of the **Organization API**
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
     + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
 
-### Add new user [POST]
+### Create new user [POST]
 + Response 200
 
 ### Remove user [DELETE]
@@ -222,54 +223,165 @@ Returns a `404` status code if an existing orgnaization with the specified name 
 # Group Project
 Project related resources of the **Project API**
 
-## Get by organization [/project]
+## Create [/project]
+### Create new project [POST]
++ Request (application/json)
 
-### List all projects [GET]
+        { "organization_id": "537650f3b77efe23a47914f3", "name": "Disintegrating Pistol" }
 
++ Response 201 (application/json)
+
+        { 
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "api_keys": [
+              "e3d51ea621464280bbcb79c11fd6483e"
+            ],
+            "configuration": {
+              "version": 0,
+              "settings": {
+                "include_conditional_data": "true"
+              }
+            },
+            "notification_settings": {
+              "537b6e77b77efe102444053d": {
+                "mode": 1,
+                "send_daily_summary": true,
+                "report_critical_errors": true,
+                "report_regressions": true,
+                "report404_errors": false,
+                "report_known_bot_errors": false
+              }
+            },
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 1,
+            "event_count": 1,
+            "total_event_count": 1,
+        }
+
+## Get by organization [/organization/{organizationId:objectid}/projects{?before,after,limit}]
+### List all projects for a given organization [GET]
 + Parameters
     + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
-        [{
-          "id": "537650f3b77efe23a47914f3", "name": "My Project"
-        }, {
-          "id": "537650f3b77efe23a47914f3", "name": "My Second Project"
+        [{ 
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "api_keys": [
+              "e3d51ea621464280bbcb79c11fd6483e"
+            ],
+            "configuration": {
+              "version": 0,
+              "settings": {
+                "include_conditional_data": "true"
+              }
+            },
+            "notification_settings": {
+              "537b6e77b77efe102444053d": {
+                "mode": 1,
+                "send_daily_summary": true,
+                "report_critical_errors": true,
+                "report_regressions": true,
+                "report404_errors": false,
+                "report_known_bot_errors": false
+              }
+            },
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 1,
+            "event_count": 1,
+            "total_event_count": 1,
         }]
 
-### Create new project [POST]
-+ Request (application/json)
-
-        { "organization_id": "537650f3b77efe23a47914f3", "name": "Acme" }
-
-+ Response 201 (application/json)
-
-        { "organization_id": "537650f3b77efe23a47914f3", "id": "537650f3b77efe23a47914f1", "name": "Acme" }
-
-## CRUD [/project/{id}]
-
+## Get, Update, Remove [/project/{id}]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
 
-### Retrieve project [GET]
-A single project object with all its details
-
+### Get by id [GET]
 + Response 200 (application/json)
-    + Body
 
-            { "id": "537650f3b77efe23a47914f1", "name": "Acme" }
+        { 
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "api_keys": [
+              "e3d51ea621464280bbcb79c11fd6483e"
+            ],
+            "configuration": {
+              "version": 0,
+              "settings": {
+                "include_conditional_data": "true"
+              }
+            },
+            "notification_settings": {
+              "537b6e77b77efe102444053d": {
+                "mode": 1,
+                "send_daily_summary": true,
+                "report_critical_errors": true,
+                "report_regressions": true,
+                "report404_errors": false,
+                "report_known_bot_errors": false
+              }
+            },
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 1,
+            "event_count": 1,
+            "total_event_count": 1,
+        }
 
 ### Update project [PATCH]
 + Request (application/json)
 
-        { "name": "Updated Acme" }
+        { "name": "Updated Disintegrating Pistol" }
 
-+ Response 200 (application/json)
++ Response 201 (application/json)
 
-        { "organization_id": "537650f3b77efe23a47914f3", "id": "537650f3b77efe23a47914f1", "name": "Acme" }
+        { 
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "name": "Updated Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "api_keys": [
+              "e3d51ea621464280bbcb79c11fd6483e"
+            ],
+            "configuration": {
+              "version": 0,
+              "settings": {
+                "include_conditional_data": "true"
+              }
+            },
+            "notification_settings": {
+              "537b6e77b77efe102444053d": {
+                "mode": 1,
+                "send_daily_summary": true,
+                "report_critical_errors": true,
+                "report_regressions": true,
+                "report404_errors": false,
+                "report_known_bot_errors": false
+              }
+            },
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 1,
+            "event_count": 1,
+            "total_event_count": 1,
+        }
 
 ### Remove project [DELETE]
 + Response 204
