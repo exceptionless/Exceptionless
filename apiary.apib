@@ -642,68 +642,108 @@ To create a new project hook, you must specify project_id, url and event_types.
 # Group Stack
 Stack related resources of the **Stack API**
 
-## Get by organization [/stack]
-
-### List all projects [GET]
+## Get by organization [/stack{?organization,before,after,limit}]
+### List all projects for a given organization [GET]
 
 + Parameters
-    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + organization (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get newest by project [/stack/project/{projectId}/new{?before,after,limit}]
+### Get newest by project [GET]
++ Parameters
+    + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
         [{
-          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
-        }, {
-          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
         }]
 
-## Get new stacks by project [/stack/project/{projectId}/new]
-
-### Get new stacks by project [GET]
-
+## Get most recent by project [/stack/project/{projectId}/recent{?before,after,limit}]
+### Get most recent by project [GET]
 + Parameters
-    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + projectId (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
 
         [{
-          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
-        }, {
-          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
         }]
 
-## Get most recent stacks by project [/stack/project/{projectId}/recent]
-
-### Get most recent stacks by project [GET]
-
-+ Parameters
-    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
-        }, {
-          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
-        }]
-
-## Get most frequent stacks by project [/stack/project/{projectId}/frequent]
-
-### Gets the most frequent stacks for a project [GET]
-
+## Get most frequent by project [/stack/project/{projectId}/frequent{?page,limit,start,end,hidden,fixed,notfound}]
+### Gets most frequent by project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
     + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
     + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
     + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
@@ -713,34 +753,66 @@ Stack related resources of the **Stack API**
 + Response 200 (application/json)
 
         [{
-          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
-        }, {
-          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
         }]
-
-## Get by ID [/stack/{id}]
-
+        
+## Get [/stack/{id}]
+### Get by id [GET]
 + Parameters
-    + id (required, string, `537650f3b77efe23a4791000`) ... The identifier of the stack.
-
-### Retrieve stack [GET]
-A single stack object with all its details
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
 
 + Response 200 (application/json)
-    + Body
 
-            { "id": "537650f3b77efe23a4791000", "title": "My Custom Error" }
+        {
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }
 
-## Reset stack data [/stack/{id}/reset-data]
+## Reset data [/stack/{id}/reset-data]
+### Reset data [GET]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
 
-### Reset project data [GET]
 + Response 200
 
 ## Mark fixed [/stack/{id}/mark-fixed]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
 
 ### Mark fixed [POST]
 + Response 200
@@ -750,7 +822,7 @@ A single stack object with all its details
 
 ## Mark hidden [/stack/{id}/mark-hidden]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
 
 ### Mark hidden [POST]
 + Response 200
@@ -758,77 +830,808 @@ A single stack object with all its details
 ### Mark not hidden [DELETE]
 + Response 200
 
-## Promote to external [/stack/{id}/promote]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
-
+## Promote [/stack/{id}/promote]
 ### Promote to external service [POST]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
 + Response 200
 
 ## Add reference link [/stack/add-link]
-
 ### Add reference link [POST]
-
 + Request (application/json)
 
-        { "stack": "537650f3b77efe23a47914f1", "link": "https://exceptionless.com" }
+        { "stack": "537b7255b77efe2474bfdd7f", "link": "https://exceptionless.com" }
 
 + Response 200
 
 # Group Stats
-Stats related resources of the **Stats API**
+Stat related resources of the **Stats API**
 
-## Get by stack [/stats/stack/{stackId}]
-
-### Get stats documents for a specific stack [GET]
-
-+ Parameters
-    + stackId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the stack.
-    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
-
-+ Response 200 (application/json)
-
-        [{
-          "TODO": "537650f3b77efe23a4791000",
-        }, {
-          "TODO": "537650f3b77efe23a4791001",
-        }]
-
-## Get by project [/stats/project/{projectId}]
-
-### Get stats documents for a specific project [GET]
-
+## Get by project [/stats/project/{projectId}{?start,end,hidden,fixed,notfound}]
+### Get stats for a given project [GET]
 + Parameters
     + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
     + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
     + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
     + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
 
 + Response 200 (application/json)
 
-        [{
-          "TODO": "537650f3b77efe23a4791000",
-        }, {
-          "TODO": "537650f3b77efe23a4791001",
-        }]
-        
-# Group User
-Users related resources of the **Users API**
+        {
+          "unique_total": 1,
+          "new_total": 1,
+          "most_frequent": null,
+          "most_recent": null,
+          "total_limited_by_plan": 0,
+          "start_date": "2014-05-20T09:15:00-05:00",
+          "end_date": "2014-05-21T00:00:00Z",
+          "stats": [
+            {
+              "unique_total": 1,
+              "new_total": 1,
+              "date": "2014-05-20T09:15:00",
+              "per_hour_average": 0.0,
+              "total": 1
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T09:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T09:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T10:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T10:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T10:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T10:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T11:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T11:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T11:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T11:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T12:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T12:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T12:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T12:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T13:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T13:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T13:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T13:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T14:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T14:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T14:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T14:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T15:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T15:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T15:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T15:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T16:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T16:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T16:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T16:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T17:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T17:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T17:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T17:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T18:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T18:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T18:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T18:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T19:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T19:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T19:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T19:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T20:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T20:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T20:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T20:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T21:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T21:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T21:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T21:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T22:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T22:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T22:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T22:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T23:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T23:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T23:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-20T23:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2014-05-21T00:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            }
+          ],
+          "per_day_average": 1.0,
+          "per_hour_average": 0.1,
+          "total": 1
+        }
 
-## Get by organization [/user/organization/{organizationId}]
-### List all users for an organization [GET]
+## Get by stack [/stats/stack/{stackId}{?start,end}]
+### Get stats for a given stack [GET]
 + Parameters
-    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + stackId (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
 
 + Response 200 (application/json)
 
+        {
+          "total_limited_by_plan": 0,
+          "start_date": "2014-05-20T09:15:00-05:00",
+          "end_date": "2014-05-21T00:00:00Z",
+          "stats": [
+            {
+              "date": "2014-05-20T09:15:00",
+              "per_hour_average": 0.0,
+              "total": 1
+            },
+            {
+              "date": "2014-05-20T09:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T09:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T10:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T10:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T10:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T10:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T11:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T11:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T11:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T11:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T12:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T12:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T12:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T12:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T13:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T13:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T13:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T13:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T14:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T14:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T14:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T14:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T15:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T15:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T15:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T15:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T16:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T16:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T16:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T16:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T17:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T17:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T17:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T17:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T18:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T18:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T18:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T18:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T19:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T19:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T19:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T19:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T20:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T20:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T20:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T20:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T21:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T21:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T21:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T21:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T22:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T22:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T22:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T22:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T23:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T23:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T23:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-20T23:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2014-05-21T00:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            }
+          ],
+          "per_day_average": 1.0,
+          "per_hour_average": 0.1,
+          "total": 1
+        }
+        
+# Group User
+User related resources of the **Users API**
+
+## Get by organization [/user/organization/{organizationId}{?page,limit}]
+### List all users for an organization [GET]
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+ 
++ Response 200 (application/json)
+
         [{
-          "TODO": "537650f3b77efe23a4791000",
-        }, {
-          "TODO": "537650f3b77efe23a4791001",
+            "id": "537b6e77b77efe102444053d",
+            "email_address": "noreply@exceptionless.com",
+            "full_name": "Test User",
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
         }]
