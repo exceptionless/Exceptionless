@@ -33,12 +33,26 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
-            if (!CanAccessOrganization(organizationId))
+        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "organization/{organizationId:objectid}/projects")]
+        public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
+            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
+            var organizationIds = new List<string>();
+            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
+                organizationIds.Add(organization);
+            else
+                organizationIds.AddRange(GetAssociatedOrganizationIds());
+
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationId(organizationId, options);
+            var results = _repository.GetByOrganizationIds(organizationIds, options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
@@ -256,7 +270,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("check-name")]
+        [Route("check-name/{name}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return NotFound();

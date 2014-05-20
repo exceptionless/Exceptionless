@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -37,26 +35,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("stack/{stackId:objectid}")]
-        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
-            if (String.IsNullOrEmpty(stackId))
-                return NotFound();
-
-            Stack stack = _stackRepository.GetById(stackId);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            Project project = _projectRepository.GetById(stack.ProjectId, true);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
-        }
-
-        [HttpGet]
-        [Route("project/{projectId:objectid}")]
+        [Route("~/" + API_PREFIX + "project/{projectId:objectid}/stats")]
         public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -75,6 +54,25 @@ namespace Exceptionless.Api.Controllers {
             result.MostRecent = null;
 
             return Ok(result);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "stack/{stackId:objectid}/stats")]
+        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
+            if (String.IsNullOrEmpty(stackId))
+                return NotFound();
+
+            Stack stack = _stackRepository.GetById(stackId);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+                return NotFound();
+
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
+
+            Project project = _projectRepository.GetById(stack.ProjectId, true);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
         }
     }
 }

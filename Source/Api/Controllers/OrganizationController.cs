@@ -333,7 +333,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("check-name")]
+        [Route("check-name/{name}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (String.IsNullOrWhiteSpace(name))
                 return NotFound();

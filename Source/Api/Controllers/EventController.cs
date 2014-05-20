@@ -29,37 +29,20 @@ namespace Exceptionless.Api.Controllers {
             _statsClient = statsClient;
         }
 
-        #region CRUD
-
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
-            if (!String.IsNullOrEmpty(organizationId) && !CanAccessOrganization(organizationId))
+        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10) {
+            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organizationId) && CanAccessOrganization(organizationId))
-                organizationIds.Add(organizationId);
+            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
+                organizationIds.Add(organization);
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByOrganizationIds(organizationIds, options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
-        }
-
-        [HttpGet]
-        [Route("~/" + API_PREFIX + "/stack/{stackId:objectid}/event")]
-        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
-            if (String.IsNullOrEmpty(stackId))
-                return NotFound();
-
-            var stack = _stackRepository.GetById(stackId, true);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
-
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByStackId(stackId, options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
         }
 
@@ -79,12 +62,25 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
+        [Route("~/" + API_PREFIX + "/stack/{stackId:objectid}/event")]
+        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
+            if (String.IsNullOrEmpty(stackId))
+                return NotFound();
+
+            var stack = _stackRepository.GetById(stackId, true);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
+                return NotFound();
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByStackId(stackId, options);
+            return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
+        }
+
+        [HttpGet]
         [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
-
-        #endregion
 
         [Route("~/api/v{version:int=1}/event")]
         [OverrideAuthorization]

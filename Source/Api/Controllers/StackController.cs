@@ -57,19 +57,6 @@ namespace Exceptionless.Api.Controllers {
             _dataHelper = dataHelper;
         }
 
-        #region CRUD
-
-        [HttpGet]
-        [Route]
-        public IHttpActionResult Get(string organizationId = null, string before = null, string after = null, int limit = 10) {
-            if (!CanAccessOrganization(organizationId))
-                return NotFound();
-
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationId(organizationId, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
-        }
-
         [HttpGet]
         [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
@@ -79,8 +66,6 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(stack.ToProjectLocalTime(_projectRepository));
         }
-
-        #endregion
 
         [HttpPost]
         [Route("{id:objectid}/mark-fixed")]
@@ -210,7 +195,7 @@ namespace Exceptionless.Api.Controllers {
         /// <param name="data"></param>
         [HttpPost]
         [OverrideAuthorization]
-        [Route("/add-link")]
+        [Route("add-link")]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult AddLink(JObject data) {
             var id = data.GetValue("stack").Value<string>();
@@ -237,7 +222,24 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId:objectid}/new")]
+        [Route]
+        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10) {
+            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
+                return NotFound();
+
+            var organizationIds = new List<string>();
+            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
+                organizationIds.Add(organization);
+            else
+                organizationIds.AddRange(GetAssociatedOrganizationIds());
+
+            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            var results = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "project/{projectId:objectid}/stacks/new")]
         public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -262,7 +264,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId:objectid}/recent")]
+        [Route("~/" + API_PREFIX + "project/{projectId:objectid}/stacks/recent")]
         public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -287,7 +289,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("project/{projectId:objectid}/frequent")]
+        [Route("~/" + API_PREFIX + "project/{projectId:objectid}/stacks/frequent")]
         public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
