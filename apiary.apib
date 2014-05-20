@@ -1,0 +1,631 @@
+FORMAT: 1A
+HOST: http://api.exceptionless.com/api/v1
+
+# Exceptionless
+Discover errors in your .NET app you never knew were happening and use detailed error reports to squash them with ease. Make your app Exceptionless!
+
+# Group Event
+Events related resources of the **Events API**
+
+## CRUD [/event]
+### List all events for an organization [GET]
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
+        }, {
+          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
+        }]
+
+### Create a new log event [POST]
+
++ Request (application/json)
+
+        "Exceptionless is amazing!"
+
+### Create a new error event [POST]
+
++ Request (application/json)
+
+        { "type": "error", "message": "An error occurred", "data": [{ "err": model }] }
+
++ Response 200 (application/json)
+
+## Get by stack [/stack/{stackId}/event]
+
+### List all events for a given stack [GET]
++ Parameters
+    + stackId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the stack.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
+        }, {
+          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
+        }]
+
+## Get by project [/project/{projectId}/event]
+
+### List all events for a given project [GET]
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f4", "message": "Jogging in park"
+        }, {
+          "id": "537650f3b77efe23a47914f5", "message": "Pick-up posters from post-office"
+        }]
+
+
+# Group Organization
+Organization related resources of the **Organization API**
+
+## Get all [/organization]
+
+### List all organizations [GET]
+
++ Parameters
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f3", "name": "Acme"
+        }, {
+          "id": "537650f3b77efe23a47914f3", "name": "Acme Supply"
+        }]
+
+### Create new organization [POST]
++ Request (application/json)
+
+        { "name": "Acme" }
+
++ Response 201 (application/json)
+
+        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
+
+## CRUD [/organization/{id}]
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+
+### Retrieve organization [GET]
+A single organization object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+            { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
+
+### Update organization [PATCH]
++ Request (application/json)
+
+        { "name": "Updated Acme" }
+
++ Response 200 (application/json)
+
+        { "id": "537650f3b77efe23a47914f3", "name": "Updated Acme" }
+
+### Remove organization [DELETE]
++ Response 204
+
+## Users [/organization/{id}/user/{email}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
+
+### Add new user [POST]
++ Response 200
+
+### Remove user [DELETE]
++ Response 200
+
+## Data [/organization/{id}/data/{key}]
+
+### Add data value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    + value (required, string, `90210`) ... Any string value.
+
++ Response 200
+
+### Remove data value [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    
++ Response 200
+
+## Validation [/organization/check-name{?name}]
+
+### Check for unique organization name [GET]
++ Parameters
+    + name (required, string, `My Organization`) ... The organization name to check.
+
++ Response 404
+
+# Group Project
+Project related resources of the **Project API**
+
+## Get by organization [/project]
+
+### List all projects [GET]
+
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f3", "name": "My Project"
+        }, {
+          "id": "537650f3b77efe23a47914f3", "name": "My Second Project"
+        }]
+
+### Create new project [POST]
++ Request (application/json)
+
+        { "organization_id": "537650f3b77efe23a47914f3", "name": "Acme" }
+
++ Response 201 (application/json)
+
+        { "organization_id": "537650f3b77efe23a47914f3", "id": "537650f3b77efe23a47914f1", "name": "Acme" }
+
+## CRUD [/project/{id}]
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+
+### Retrieve project [GET]
+A single project object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+            { "id": "537650f3b77efe23a47914f1", "name": "Acme" }
+
+### Update project [PATCH]
++ Request (application/json)
+
+        { "name": "Updated Acme" }
+
++ Response 200 (application/json)
+
+        { "organization_id": "537650f3b77efe23a47914f3", "id": "537650f3b77efe23a47914f1", "name": "Acme" }
+
+### Remove project [DELETE]
++ Response 204
+
+## Get default api key [/project/{id}/apikey/get-default]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+
+### Get the default api key [GET]
++ Response 200
+
+    { "key": "100650f3b77efe23a4791411" }
+
+## Create new api key [/project/{id}/apikey]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+
+### Create a new api key [POST]
++ Response 200
+
+    { "key": "100650f3b77efe23a4791411" }
+
+## Remove api key [/project/{id}/apikey/{apikey}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + apikey (required, string, `100650f3b77efe23a4791411`) ... The api key that should be removed.
+
+### Delete an api key [DELETE]
++ Response 200
+
+## Reset project data [/project/{id}/reset-data]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+
+### Reset project data [GET]
++ Response 200
+
+## Get configuration values [/project/{id}/config]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+
+### Get the project configuration object [GET]
++ Response 200
+
+    {
+      "version": 0,
+      "settings": {
+        "include_conditional_data": "true"
+      }
+    }
+
+## Configuration [/project/{id}/config/{key}]
+
+### Add configuration value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the config object.
+    + value (required, string, `90210`) ... Any config value.
+
++ Response 200
+
+### Remove configuration value [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the config object.
+    
++ Response 200
+
+## Data [/project/{id}/data/{key}]
+
+### Add data value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ...The key name of the data object.
+    + value (required, string, `90210`) ... Any string value.
+
++ Response 200
+
+### Remove data value [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    
++ Response 200
+
+## Promoted Tabs [/project/{id}/promotedtabs/{name}]
+
+### Promote Tab [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + name (required, string, `Machine Info`) ... The tab name.
+
++ Response 200
+
+### Demote Tab [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + key (required, string, `Machine Info`) ... The tab name.
+    
++ Response 200
+
+## Get notification settings [/project/{id}/notification]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+
+### Get the project's notification settings [GET]
++ Response 200
+
+    {
+      "117650f3b77efe23a4791411": {
+        "mode": 1,
+        "send_daily_summary": true,
+        "report_critical_errors": true,
+        "report_regressions": true,
+        "report404_errors": false,
+        "report_known_bot_errors": false
+      },
+      "1168f524b77efe1af40dee11": {
+        "mode": 2,
+        "send_daily_summary": true,
+        "report_critical_errors": true,
+        "report_regressions": true,
+        "report404_errors": false,
+        "report_known_bot_errors": false
+      }
+    }
+    
+## Notification settings [/project/{id}/notification/{userId}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the project.
+    + userId (required, string, `007650f3b77efe23a4791411`) ... A identifier of the user.
+
+### Get notification settings for a specific user [GET]
++ Response 200
+
+    {
+        "mode": 1,
+        "send_daily_summary": true,
+        "report_critical_errors": true,
+        "report_regressions": true,
+        "report404_errors": false,
+        "report_known_bot_errors": false
+    }
+
+### Add notification settings for a specific user [POST]
+
++ Request (application/json)
+
+    {
+        "mode": 2,
+        "send_daily_summary": false,
+        "report_critical_errors": true,
+        "report_regressions": true,
+        "report404_errors": false,
+        "report_known_bot_errors": false
+    }
+
++ Response 200
+
+### Remove notification settings for a specific user [DELETE]
++ Response 200
+    
+## Validation [/project/check-name{?name}]
+
+### Check for unique project name [GET]
++ Parameters
+    + name (required, string, `My Organization`) ... The project name to check.
+
++ Response 404
+
+# Group Project Hook
+Project Hook related resources of the **Project Hook  API**
+
+## Create [/projecthook/]
+### Create new project hook [POST]
+To create a new project hook, you must specify project_id, url and event_types.
+
++ Request (application/json)
+
+    { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] }
+
+## Get by project [/projecthook/project/{projectId}]
+
+### List all project hooks for a given project [GET]
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{ 
+          "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] 
+         }, {
+          "id": "100650f3b77efe23a4791401", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"]
+        }]
+
+## Update [/projecthook/{id}]
+
++ Parameters
+    + id (required, string, `100650f3b77efe23a4791400`) ... The identifier of the project hook.
+
+### Retrieve project hook [GET]
+A single project hook object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "http://exceptionless.com", "event_types": ["NewError"] }
+
+### Update project hook [PATCH]
++ Request (application/json)
+
+        { "url": "https://exceptionless.com" }
+
++ Response 200 (application/json)
+
+        { "id": "100650f3b77efe23a4791400", "project_id": "537650f3b77efe23a47914f3", "url": "https://exceptionless.com", "event_types": ["NewError"] }
+
+### Remove project hook [DELETE]
++ Response 204
+
+# Group Stack
+Stack related resources of the **Stack API**
+
+## Get by organization [/stack]
+
+### List all projects [GET]
+
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get new stacks by project [/stack/project/{projectId}/new]
+
+### Get new stacks by project [GET]
+
++ Parameters
+    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get most recent stacks by project [/stack/project/{projectId}/new]
+
+### Get most recent stacks by project [GET]
+
++ Parameters
+    + projectId (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a4791000", "title": "My Custom Error"
+        }, {
+          "id": "537650f3b77efe23a4791001", "title": "My Custom Error"
+        }]
+
+## Get by ID [/stack/{id}]
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a4791000`) ... The identifier of the stack.
+
+### Retrieve stack [GET]
+A single stack object with all its details
+
++ Response 200 (application/json)
+    + Body
+
+            { "id": "537650f3b77efe23a4791000", "title": "My Custom Error" }
+
+## Reset stack data [/stack/{id}/reset-data]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Reset project data [GET]
++ Response 200
+
+## Mark fixed [/stack/{id}/mark-fixed]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Mark fixed [POST]
++ Response 200
+
+### Mark not fixed [DELETE]
++ Response 200
+
+## Mark hidden [/stack/{id}/mark-hidden]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Mark hidden [POST]
++ Response 200
+
+### Mark not hidden [DELETE]
++ Response 200
+
+## Promote to external [/stack/{id}/promote]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f1`) ... The identifier of the stack.
+
+### Promote to external service [POST]
++ Response 200
+
+## Add reference link [/stack/add-link]
+
+### Add reference link [POST]
+
++ Request (application/json)
+
+        { "stack": "537650f3b77efe23a47914f1", "link": "https://exceptionless.com" }
+
++ Response 200
+
+# Group Stats
+Stats related resources of the **Stats API**
+
+## Get by stack [/stats/stack/{stackId}]
+
+### Get stats documents for a specific stack [GET]
+
++ Parameters
+    + stackId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the stack.
+    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+
++ Response 200 (application/json)
+
+        [{
+          "TODO": "537650f3b77efe23a4791000",
+        }, {
+          "TODO": "537650f3b77efe23a4791001",
+        }]
+
+## Get by project [/stats/project/{projectId}]
+
+### Get stats documents for a specific project [GET]
+
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
+    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
+    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+
++ Response 200 (application/json)
+
+        [{
+          "TODO": "537650f3b77efe23a4791000",
+        }, {
+          "TODO": "537650f3b77efe23a4791001",
+        }]
+        
+        
+## Get most frequent stacks for a project [/stats/project/{projectId}/frequent]
+
+### Gets the most frequent stacks for a project [GET]
+
++ Parameters
+    + projectId (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
+    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
+    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+
++ Response 200 (application/json)
+
+        [{
+          "TODO": "537650f3b77efe23a4791000",
+        }, {
+          "TODO": "537650f3b77efe23a4791001",
+        }]
+        
+# Group User
+Users related resources of the **Users API**
+
+## Get by organization [/user/organization/{organizationId}]
+### List all users for an organization [GET]
++ Parameters
+    + organizationId (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+
++ Response 200 (application/json)
+
+        [{
+          "TODO": "537650f3b77efe23a4791000",
+        }, {
+          "TODO": "537650f3b77efe23a4791001",
+        }]
