@@ -230,6 +230,12 @@ Returns a `404` status code if an existing orgnaization with the specified name 
     + name (required, string, `Acme`) ... The organization name to check.
 
 + Response 404
+    `404` status code is returned if the name is available.
+    + Body
+    
++ Response 200
+    `200` status code is returned if the name is not available.
+    + Body
 
 # Group Project
 Project related resources of the **Project API**
