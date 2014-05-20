@@ -150,7 +150,7 @@
     <Compile Include="Controllers\Base\PermissionResult.cs" />
     <Compile Include="Controllers\ProjectController.cs" />
     <Compile Include="Controllers\EventController.cs" />
-    <Compile Include="Controllers\ProjectHookController.cs" />
+    <Compile Include="Controllers\WebHookController.cs" />
     <Compile Include="Controllers\Base\RepositoryApiController.cs" />
     <Compile Include="Controllers\StackController.cs" />
     <Compile Include="Controllers\StatsController.cs" />

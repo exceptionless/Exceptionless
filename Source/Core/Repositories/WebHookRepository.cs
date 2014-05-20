@@ -10,24 +10,36 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models.Admin;
-using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class ProjectHookRepository : MongoRepositoryOwnedByProject<ProjectHook>, IProjectHookRepository {
-        public ProjectHookRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+    public class WebHookRepository : MongoRepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
+        public WebHookRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
 
         public void RemoveByUrl(string targetUrl) {
             RemoveAll(new QueryOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
         }
 
+        public ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
+            return Find<WebHook>(new MultiOptions()
+                .WithOrganizationId(organizationId)
+                .WithQuery(Query.Or(Query.NotExists(FieldNames.ProjectId), Query.EQ(FieldNames.ProjectId, projectId)))
+                .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
+                .WithExpiresIn(TimeSpan.FromMinutes(5)));
+        }
+
+        void IReadOnlyRepository<WebHook>.InvalidateCache(WebHook document) {
+            InvalidateCache(document);
+        }
+
         #region Collection Setup
 
-        public const string CollectionName = "project.hook";
+        public const string CollectionName = "webhook";
 
         protected override string GetCollectionName() {
             return CollectionName;
@@ -35,12 +47,15 @@ namespace Exceptionless.Core.Repositories {
 
         public static class FieldNames {
             public const string Id = CommonFieldNames.Id;
+            public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string ProjectId = CommonFieldNames.ProjectId;
             public const string Url = "Url";
             public const string EventTypes = "EventTypes";
         }
 
         public static class EventTypes {
+            public const string NewEvent = "NewEvent";
+            public const string CriticalEvent = "CriticalEvent";
             public const string NewError = "NewError";
             public const string ErrorRegression = "ErrorRegression";
             public const string CriticalError = "CriticalError";
@@ -54,12 +69,12 @@ namespace Exceptionless.Core.Repositories {
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
         }
 
-        protected override void ConfigureClassMap(BsonClassMap<ProjectHook> cm) {
+        protected override void ConfigureClassMap(BsonClassMap<WebHook> cm) {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
             cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
         }
-        public override void InvalidateCache(ProjectHook entity) {
+        public override void InvalidateCache(WebHook entity) {
             Cache.Remove(GetScopedCacheKey(entity.ProjectId));
             base.InvalidateCache(entity);
         }

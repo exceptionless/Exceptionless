@@ -25,16 +25,16 @@ namespace Exceptionless.Core.Pipeline {
     public class QueueNotificationAction : EventPipelineActionBase {
         private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
-        private readonly IProjectHookRepository _projectHookRepository;
+        private readonly IWebHookRepository _webHookRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
 
-        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IProjectHookRepository projectHookRepository,
+        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository,
             IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
-            _projectHookRepository = projectHookRepository;
+            _webHookRepository = webHookRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -56,10 +56,11 @@ namespace Exceptionless.Core.Pipeline {
                 ProjectName = ctx.Project.Name
             }).Wait();
 
-            foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Event.ProjectId)) {
-                bool shouldCall = hook.EventTypes.Contains(ProjectHookRepository.EventTypes.NewError) && ctx.IsNew
-                                  || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
-                                  || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
+            // TODO: Get by organization id or project id.
+            foreach (WebHook hook in _webHookRepository.GetByProjectId(ctx.Event.ProjectId)) {
+                bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
+                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
+                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
 
                 if (!shouldCall)
                     continue;

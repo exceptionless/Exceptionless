@@ -10,10 +10,12 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Models.Admin;
 
 namespace Exceptionless.Core.Repositories {
-    public interface IProjectHookRepository : IRepositoryOwnedByProject<ProjectHook> {
+    public interface IWebHookRepository : IRepositoryOwnedByOrganizationAndProject<WebHook> {
         void RemoveByUrl(string targetUrl);
+        ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId);
     }
 }

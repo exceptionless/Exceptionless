@@ -22,13 +22,13 @@ using Exceptionless.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
-    [RoutePrefix(API_PREFIX + "/projecthooks")]
+    [RoutePrefix(API_PREFIX + "/webhooks")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class ProjectHookController : RepositoryApiController<IProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
+    public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, WebHook, WebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
-        public ProjectHookController(IProjectHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
+        public WebHookController(IWebHookRepository repository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
             _projectRepository = projectRepository;
             _billingManager = billingManager;
         }
@@ -36,7 +36,7 @@ namespace Exceptionless.App.Controllers.API {
         #region CRUD
         
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/projecthooks")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
         public IHttpActionResult GetByProject(string projectId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -51,21 +51,21 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [Route("{id:objectid}", Name = "GetProjectHookById")]
+        [Route("{id:objectid}", Name = "GetWebHookById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
 
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(ProjectHook value) {
+        public override IHttpActionResult Post(WebHook value) {
             return base.Post(value);
         }
 
         [HttpPut]
         [HttpPatch]
         [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<ProjectHook> changes) {
+        public override IHttpActionResult Patch(string id, Delta<WebHook> changes) {
             return base.Patch(id, changes);
         }
 
@@ -93,7 +93,7 @@ namespace Exceptionless.App.Controllers.API {
             // TODO: Implement Subscribe.
             var project = Project;
             if (project != null) {
-                _repository.Add(new ProjectHook {
+                _repository.Add(new WebHook {
                     EventTypes = new[] { eventType },
                     ProjectId = project.Id,
                     Url = targetUrl
@@ -140,12 +140,12 @@ namespace Exceptionless.App.Controllers.API {
             });
         }
 
-        protected override ProjectHook GetModel(string id, bool useCache = true) {
+        protected override WebHook GetModel(string id, bool useCache = true) {
             var model = base.GetModel(id);
             return model != null && IsInProject(model.ProjectId) ? model : null;
         }
 
-        protected override PermissionResult CanAdd(ProjectHook value) {
+        protected override PermissionResult CanAdd(WebHook value) {
             if (String.IsNullOrEmpty(value.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
 
@@ -159,14 +159,14 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanAdd(value);
         }
 
-        protected override PermissionResult CanUpdate(ProjectHook original, Delta<ProjectHook> changes) {
+        protected override PermissionResult CanUpdate(WebHook original, Delta<WebHook> changes) {
             if (!IsInProject(original.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
             
             return base.CanUpdate(original, changes);
         }
 
-        protected override PermissionResult CanDelete(ProjectHook value) {
+        protected override PermissionResult CanDelete(WebHook value) {
             if (!IsInProject(value.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
 

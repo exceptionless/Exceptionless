@@ -12,8 +12,9 @@
 using System;
 
 namespace Exceptionless.Models.Admin {
-    public class ProjectHook : IIdentity, IOwnedByProject {
+    public class WebHook : IIdentity, IOwnedByProject, IOwnedByOrganization {
         public string Id { get; set; }
+        public string OrganizationId { get; set; }
         public string ProjectId { get; set; }
         public string Url { get; set; }
         public string[] EventTypes { get; set; }

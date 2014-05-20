@@ -37,20 +37,20 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IProjectHookRepository _projectHookRepository;
+        private readonly IWebHookRepository _webHookRepository;
         private readonly EventStatsHelper _statsHelper;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, IProjectHookRepository projectHookRepository, 
+            IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
             EventStatsHelper statsHelper, IQueue<WebHookNotification> webHookNotificationQueue, 
             BillingManager billingManager, DataHelper dataHelper) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _projectHookRepository = projectHookRepository;
+            _webHookRepository = webHookRepository;
             _statsHelper = statsHelper;
             _webHookNotificationQueue = webHookNotificationQueue;
             _billingManager = billingManager;
@@ -173,11 +173,11 @@ namespace Exceptionless.Api.Controllers {
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
                 return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
-            List<ProjectHook> promotedProjectHooks = _projectHookRepository.GetByProjectId(stack.ProjectId).Where(p => p.EventTypes.Contains(ProjectHookRepository.EventTypes.StackPromoted)).ToList();
+            List<WebHook> promotedProjectHooks = _webHookRepository.GetByProjectId(stack.ProjectId).Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
             if (!promotedProjectHooks.Any())
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
-            foreach (ProjectHook hook in promotedProjectHooks) {
+            foreach (WebHook hook in promotedProjectHooks) {
                 _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     ProjectId = hook.ProjectId,
                     Url = hook.Url,

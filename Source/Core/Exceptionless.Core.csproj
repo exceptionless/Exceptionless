@@ -266,7 +266,7 @@
     <Compile Include="Plugins\PluginManagerBase.cs" />
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
-    <Compile Include="Queues\Models\ProjectHookNotification.cs" />
+    <Compile Include="Queues\Models\WebHookNotification.cs" />
     <Compile Include="Queues\Models\WorkItem.cs" />
     <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\Models\SummaryNotification.cs" />
@@ -293,9 +293,9 @@
     <Compile Include="Repositories\Interfaces\IDayStackStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IMonthStackStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IMonthProjectStatsRepository.cs" />
-    <Compile Include="Repositories\Interfaces\IProjectHookRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
-    <Compile Include="Repositories\ProjectHookRepository.cs" />
+    <Compile Include="Repositories\WebHookRepository.cs" />
     <Compile Include="AppStats\InMemoryAppStatsClient.cs" />
     <Compile Include="Serialization\ConditionalContractResolver.cs" />
     <Compile Include="Serialization\DataDictionaryConverter.cs" />

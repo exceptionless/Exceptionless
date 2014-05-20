@@ -76,7 +76,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IJobHistoryRepository, JobHistoryRepository>();
             container.RegisterSingle<IProjectRepository, ProjectRepository>();
             container.RegisterSingle<IUserRepository, UserRepository>();
-            container.RegisterSingle<IProjectHookRepository, ProjectHookRepository>();
+            container.RegisterSingle<IWebHookRepository, WebHookRepository>();
             container.RegisterSingle<IDayProjectStatsRepository, DayProjectStatsRepository>();
             container.RegisterSingle<IMonthProjectStatsRepository, MonthProjectStatsRepository>();
             container.RegisterSingle<IMonthStackStatsRepository, MonthStackStatsRepository>();
