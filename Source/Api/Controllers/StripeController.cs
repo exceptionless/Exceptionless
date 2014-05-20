@@ -1,8 +1,7 @@
 ﻿using System;
-using System.IO;
-using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Web;
 using NLog.Fluent;
 using Stripe;
 
@@ -17,11 +16,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route]
         [HttpPost]
-        public async Task<IHttpActionResult> Post() {
-            Stream req = await Request.Content.ReadAsStreamAsync();
-            req.Seek(0, SeekOrigin.Begin);
-
-            string json = await new StreamReader(req).ReadToEndAsync();
+        public IHttpActionResult Post([NakedBody]string json) {
             StripeEvent stripeEvent;
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
