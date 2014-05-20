@@ -37,7 +37,7 @@ namespace Exceptionless.App.Controllers.API {
         
         [HttpGet]
         [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/projecthooks")]
-        public IHttpActionResult Get(string projectId, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByProject(string projectId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -64,13 +64,13 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpPut]
         [HttpPatch]
-        [Route("{id}:objectid")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult Patch(string id, Delta<ProjectHook> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
-        [Route("{id}:objectid")]
+        [Route("{id:objectid}")]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }
