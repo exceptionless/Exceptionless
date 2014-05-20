@@ -76,50 +76,5 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(result);
         }
-
-        [HttpGet]
-        [Route("project/{projectId:objectid}/frequent")]
-        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
-
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            limit = GetLimit(limit);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
-            var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
-            var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
-
-            foreach (var esr in results) {
-                var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
-                if (stack == null) {
-                    results.RemoveAll(r => r.Id == esr.Id);
-                    continue;
-                }
-
-                // Stat's Id and Total properties are already calculated in the Results.
-                esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
-                esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
-                esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
-                esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
-
-                esr.Title = stack.Title;
-                esr.First = stack.FirstOccurrence;
-                esr.Last = stack.LastOccurrence;
-            }
-
-            Dictionary<string, IEnumerable<string>> header = null;
-            if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
-                header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
-
-            return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
-        }
     }
 }

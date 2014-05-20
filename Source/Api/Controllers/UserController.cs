@@ -19,8 +19,8 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route]
-        public IHttpActionResult Get(string organizationId = null, int page = 1, int limit = 10) {
+        [Route("organization/{organizationId:objectid}")]
+        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 

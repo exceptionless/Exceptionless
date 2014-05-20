@@ -38,18 +38,20 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IProjectHookRepository _projectHookRepository;
+        private readonly EventStatsHelper _statsHelper;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IProjectHookRepository projectHookRepository, 
-            IQueue<WebHookNotification> webHookNotificationQueue, BillingManager billingManager, 
-            DataHelper dataHelper) : base(stackRepository) {
+            EventStatsHelper statsHelper, IQueue<WebHookNotification> webHookNotificationQueue, 
+            BillingManager billingManager, DataHelper dataHelper) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _projectHookRepository = projectHookRepository;
+            _statsHelper = statsHelper;
             _webHookNotificationQueue = webHookNotificationQueue;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
@@ -201,16 +203,17 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        // TODO: Look into refactoring this.
         /// <summary>
         /// This controller action is called by zapier to add a reference link to a stack.
         /// </summary>
         /// <param name="data"></param>
         [HttpPost]
         [OverrideAuthorization]
-        [Route("add-link")]
+        [Route("/add-link")]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult AddLink(JObject data) {
-            var id = data.GetValue("ErrorStack").Value<string>();
+            var id = data.GetValue("stack").Value<string>();
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
 
@@ -221,7 +224,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return BadRequest();
 
-            var url = data.GetValue("Link").Value<string>();
+            var url = data.GetValue("link").Value<string>();
             if (String.IsNullOrEmpty(url))
                 return BadRequest();
 
@@ -281,6 +284,51 @@ namespace Exceptionless.Api.Controllers {
             var stacks = results.Where(es => es.LastOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack,EventStackResult>).ToList();
 
             return OkWithResourceLinks(results, paging.HasMore, e => e.Id, GetLimitedByPlanHeader(stacks.Count - results.Count));
+        }
+
+        [HttpGet]
+        [Route("project/{projectId:objectid}/frequent")]
+        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            var range = GetDateRange(start, end);
+            if (range.Item1 == range.Item2)
+                return BadRequest("End date must be greater than start date.");
+
+            limit = GetLimit(limit);
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
+            var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
+            var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
+
+            foreach (var esr in results) {
+                var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
+                if (stack == null) {
+                    results.RemoveAll(r => r.Id == esr.Id);
+                    continue;
+                }
+
+                // Stat's Id and Total properties are already calculated in the Results.
+                esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
+                esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
+                esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
+                esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
+
+                esr.Title = stack.Title;
+                esr.First = stack.FirstOccurrence;
+                esr.Last = stack.LastOccurrence;
+            }
+
+            Dictionary<string, IEnumerable<string>> header = null;
+            if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
+                header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
+
+            return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
         }
 
         [HttpGet]

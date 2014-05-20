@@ -108,7 +108,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
-        public IHttpActionResult ChangePlan(string id, string planId, string stripeToken, string last4) {
+        public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
 

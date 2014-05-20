@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/apikey/")]
+        [Route("{id:objectid}/apikey")]
         public IHttpActionResult GetNewApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -247,7 +247,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!project.PromotedTabs.Contains(name)) {
+            if (project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
                 _repository.Save(project);
             }
