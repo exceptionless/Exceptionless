@@ -9,7 +9,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/user")]
+    [RoutePrefix(API_PREFIX + "/users")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, User> {
         private readonly IOrganizationRepository _organizationRepository;
@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/organization/{organizationId:objectid}/users")]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();

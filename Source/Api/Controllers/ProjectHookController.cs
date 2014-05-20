@@ -22,7 +22,7 @@ using Exceptionless.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
-    [RoutePrefix(API_PREFIX + "/projecthook")]
+    [RoutePrefix(API_PREFIX + "/projecthooks")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectHookController : RepositoryApiController<IProjectHookRepository, ProjectHook, ProjectHook, ProjectHook, ProjectHook> {
         private readonly IProjectRepository _projectRepository;
@@ -36,7 +36,7 @@ namespace Exceptionless.App.Controllers.API {
         #region CRUD
         
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/projecthooks")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/projecthooks")]
         public IHttpActionResult GetByProject(string projectId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();

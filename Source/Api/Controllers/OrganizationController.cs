@@ -18,7 +18,7 @@ using NLog.Fluent;
 using Stripe;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/organization")]
+    [RoutePrefix(API_PREFIX + "/organizations")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly IUserRepository _userRepository;
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/admin/organization")]
+        [Route("~/" + API_PREFIX + "/admin/organizations")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, string before = null, string after = null, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/admin/organization/stats")]
+        [Route("~/" + API_PREFIX + "/admin/organizations/stats")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult PlanStats() {
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
         #endregion
 
         [HttpGet]
-        [Route("{id:objectid}/invoice")]
+        [Route("{id:objectid}/invoices")]
         public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/user/{email:minlength(1)}")]
+        [Route("{id:objectid}/users/{email:minlength(1)}")]
         public IHttpActionResult AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -229,7 +229,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/user/{email:minlength(1)}")]
+        [Route("{id:objectid}/users/{email:minlength(1)}")]
         public IHttpActionResult RemoveUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();

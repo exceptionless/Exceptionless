@@ -14,7 +14,7 @@ using Exceptionless.Core.Web;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/event")]
+    [RoutePrefix(API_PREFIX + "/events")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, Event, Event> {
         private readonly IProjectRepository _projectRepository;
@@ -31,23 +31,14 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10) {
-            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
-                return NotFound();
-
-            var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
-                organizationIds.Add(organization);
-            else
-                organizationIds.AddRange(GetAssociatedOrganizationIds());
-
+        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(organizationIds, options);
+            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
             return OkWithResourceLinks(results, options.HasMore, e => e.Date.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"));
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/events")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
         public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -62,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/stack/{stackId:objectid}/events")]
+        [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
@@ -82,7 +73,7 @@ namespace Exceptionless.Api.Controllers {
             return base.GetById(id);
         }
 
-        [Route("~/api/v{version:int=1}/event")]
+        [Route("~/api/v{version:int=1}/events")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [HttpPost]

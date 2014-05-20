@@ -15,10 +15,9 @@ using Exceptionless.Core.Web;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
-    [RoutePrefix(API_PREFIX + "/project")]
+    [RoutePrefix(API_PREFIX + "/projects")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
-        private List<Project> _projects;
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
         private readonly BillingManager _billingManager;
@@ -40,7 +39,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/organization/{organizationId:objectid}/projects")]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
         public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
@@ -140,7 +139,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}/apikey/get-default")]
+        [Route("{id:objectid}/apikeys/default")]
         public IHttpActionResult GetDefaultApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -153,7 +152,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/apikey")]
+        [Route("{id:objectid}/apikeys")]
         public IHttpActionResult GetNewApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -168,7 +167,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/apikey/{apiKey:minlength(1)}")]
+        [Route("{id:objectid}/apikeys/{apiKey:minlength(1)}")]
         public IHttpActionResult DeleteApiKey(string id, string apiKey) {
             var project = GetModel(id, false);
             if (project == null)
@@ -184,7 +183,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}/notification")]
+        [Route("{id:objectid}/notifications")]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -195,7 +194,7 @@ namespace Exceptionless.Api.Controllers {
 
         // TODO: Should we remove userId and just use the current user..
         [HttpGet]
-        [Route("{id:objectid}/notification/{userId:objectid}")]
+        [Route("{id:objectid}/notifications/{userId:objectid}")]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
             var project = GetModel(id);
             if (project == null)
@@ -211,7 +210,7 @@ namespace Exceptionless.Api.Controllers {
         // TODO: Should we remove userId and just use the current user..
         [HttpPut]
         [HttpPost]
-        [Route("{id:objectid}/notification/{userId:objectid}")]
+        [Route("{id:objectid}/notifications/{userId:objectid}")]
         public IHttpActionResult SetNotificationSettings(string id, string userId, NotificationSettings settings) {
             var project = GetModel(id, false);
             if (project == null)
@@ -224,7 +223,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/notification/{userId:objectid}")]
+        [Route("{id:objectid}/notifications/{userId:objectid}")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)

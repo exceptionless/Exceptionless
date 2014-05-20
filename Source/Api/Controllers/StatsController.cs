@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/stats")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
         public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/stack/{stackId:objectid}/stats")]
+        [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
         public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();

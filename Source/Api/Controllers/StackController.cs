@@ -31,7 +31,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
-    [RoutePrefix(API_PREFIX + "/stack")]
+    [RoutePrefix(API_PREFIX + "/stacks")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
@@ -239,7 +239,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/stacks/new")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
         public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -264,7 +264,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/stacks/recent")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
         public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -289,7 +289,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/project/{projectId:objectid}/stacks/frequent")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
         public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
