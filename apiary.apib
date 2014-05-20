@@ -8,7 +8,7 @@ Discover errors in your .NET app you never knew were happening and use detailed 
 Events related resources of the **Events API**
 
 ## Create [/event]
-### Create a new log event [POST]
+### Create new log event [POST]
 
 + Request (application/json)
 
@@ -16,7 +16,7 @@ Events related resources of the **Events API**
 
 + Response 200
 
-## Get by id [/organization/{id}]
+## Get by id [/event/{id}]
 
 ### Get by id [GET]
 + Parameters
@@ -145,22 +145,7 @@ Events related resources of the **Events API**
 # Group Organization
 Organization related resources of the **Organization API**
 
-## Get all [/organization]
-
-### List all organizations [GET]
-
-+ Parameters
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-          "id": "537650f3b77efe23a47914f3", "name": "Acme"
-        }, {
-          "id": "537650f3b77efe23a47914f3", "name": "Acme Supply"
-        }]
+## Create [/organization]
 
 ### Create new organization [POST]
 + Request (application/json)
@@ -171,20 +156,23 @@ Organization related resources of the **Organization API**
 
         { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-## CRUD [/organization/{id}]
 
+## Get by id [/organization/{id}]
+
+### Get by id [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
 
-### Retrieve organization [GET]
-A single organization object with all its details
-
 + Response 200 (application/json)
-    + Body
+    
+        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
-            { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
+## Update [/organization/{id}]
 
 ### Update organization [PATCH]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    
 + Request (application/json)
 
         { "name": "Updated Acme" }
@@ -193,7 +181,14 @@ A single organization object with all its details
 
         { "id": "537650f3b77efe23a47914f3", "name": "Updated Acme" }
 
+
+
+## Remove [/organization/{id}]
+
 ### Remove organization [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    
 + Response 204
 
 ## Users [/organization/{id}/user/{email}]
@@ -231,6 +226,32 @@ A single organization object with all its details
     + name (required, string, `My Organization`) ... The organization name to check.
 
 + Response 404
+
+## Get all [/organization]
+
+### List all organizations [GET]
+
++ Parameters
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+          "id": "537650f3b77efe23a47914f3", "name": "Acme"
+        }, {
+          "id": "537650f3b77efe23a47914f3", "name": "Acme Supply"
+        }]
+
+### Create new organization [POST]
++ Request (application/json)
+
+        { "name": "Acme" }
+
++ Response 201 (application/json)
+
+        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
 
 # Group Project
 Project related resources of the **Project API**
