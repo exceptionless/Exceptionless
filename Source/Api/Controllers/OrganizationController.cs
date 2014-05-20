@@ -404,7 +404,7 @@ namespace Exceptionless.Api.Controllers {
             if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _projectController.ResetDataAsync(project.Id);
+                    _projectController.ResetDataAsync(project.Id).Wait();
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
