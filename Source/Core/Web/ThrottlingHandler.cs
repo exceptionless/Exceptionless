@@ -20,7 +20,7 @@ using Exceptionless.Core.Authorization;
 using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Web {
-    public class ThrottlingHandler : DelegatingHandler {
+    public sealed class ThrottlingHandler : DelegatingHandler {
         private readonly IRedisClientsManager _clientsManager;
         private readonly Func<string, long> _maxRequestsForUserIdentifier;
         private readonly TimeSpan _period;
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Web {
             _message = message;
         }
 
-        protected virtual string GetUserIdentifier(HttpRequestMessage request) {
+        private string GetUserIdentifier(HttpRequestMessage request) {
             HttpRequestContext ctx = request.GetRequestContext();
             if (ctx != null) {
                 // use organization id or user id as the identifier for throttling
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Web {
             return Settings.Current.WebsiteMode == WebsiteMode.Dev && String.IsNullOrEmpty(ip) ? "127.0.0.1" : ip;
         }
 
-        protected virtual string GetCacheKey(string userIdentifier) {
+        private string GetCacheKey(string userIdentifier) {
             return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
         }
 
@@ -83,10 +83,10 @@ namespace Exceptionless.Core.Web {
                 httpResponse.Headers.Add("RateLimit-Remaining", remaining.ToString());
 
                 return httpResponse;
-            });
+            }, cancellationToken);
         }
 
-        protected Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
+        private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             var tsc = new TaskCompletionSource<HttpResponseMessage>();
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;

@@ -16,6 +16,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
+using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
 namespace Exceptionless.App {
@@ -29,6 +30,11 @@ namespace Exceptionless.App {
             // Throttle api calls to X every 15 minutes by IP address.
             var clientsManager = config.DependencyResolver.GetService(typeof(IRedisClientsManager)) as IRedisClientsManager;
             config.MessageHandlers.Add(new ThrottlingHandler(clientsManager, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            
+            // Reject error posts in orgs over their max daily error limit.
+            var cacheClient = config.DependencyResolver.GetService(typeof(ICacheClient)) as ICacheClient;
+            var organizationRepository = config.DependencyResolver.GetService(typeof(IOrganizationRepository)) as IOrganizationRepository;
+            config.MessageHandlers.Add(new OverageHandler(cacheClient, organizationRepository));
 
             config.Formatters.Clear();
             //config.Formatters.Remove(config.Formatters.JsonFormatter);
