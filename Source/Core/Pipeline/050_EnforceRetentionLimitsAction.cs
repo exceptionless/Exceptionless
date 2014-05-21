@@ -9,52 +9,52 @@
 
 #endregion
 
-using System;
-using System.Linq;
-using CodeSmith.Core.Component;
-using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver.Builders;
+//using System;
+//using System.Linq;
+//using CodeSmith.Core.Component;
+//using Exceptionless.Models;
+//using MongoDB.Bson;
+//using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Pipeline {
-    [Priority(50)]
-    public class EnforceRetentionLimitsAction : ErrorPipelineActionBase {
-        private readonly ErrorRepository _errorRepository;
-        private readonly OrganizationRepository _organizationRepository;
+//namespace Exceptionless.Core.Pipeline {
+//    [Priority(50)]
+//    public class EnforceRetentionLimitsAction : ErrorPipelineActionBase {
+//        private readonly ErrorRepository _errorRepository;
+//        private readonly OrganizationRepository _organizationRepository;
 
-        public EnforceRetentionLimitsAction(ErrorRepository errorRepository, OrganizationRepository organizationRepository) {
-            _errorRepository = errorRepository;
-            _organizationRepository = organizationRepository;
-        }
+//        public EnforceRetentionLimitsAction(ErrorRepository errorRepository, OrganizationRepository organizationRepository) {
+//            _errorRepository = errorRepository;
+//            _organizationRepository = organizationRepository;
+//        }
 
-        protected override bool ContinueOnError { get { return true; } }
+//        protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            if (ctx.IsNew)
-                return;
+//        public override void Process(ErrorPipelineContext ctx) {
+//            if (ctx.IsNew)
+//                return;
 
-            int maxErrorsPerStack = 50;
-            Organization organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
-            if (organization != null)
-                maxErrorsPerStack = organization.MaxErrorsPerDay > 0 ? organization.MaxErrorsPerDay + Math.Min(50, organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
+//            int maxErrorsPerStack = 50;
+//            Organization organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
+//            if (organization != null)
+//                maxErrorsPerStack = organization.MaxErrorsPerDay > 0 ? organization.MaxErrorsPerDay + Math.Min(50, organization.MaxErrorsPerDay * 2) : Int32.MaxValue;
 
-            // Get a list of oldest ids that exceed our desired max errors.
-            var errors = _errorRepository.Collection.Find(
-                Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.Error.ErrorStackId))))
-                .SetSortOrder(SortBy.Descending(ErrorRepository.FieldNames.OccurrenceDate_UTC))
-                .SetFields(ErrorRepository.FieldNames.Id)
-                .SetSkip(maxErrorsPerStack)
-                .SetLimit(150)
-                .Select(e => new Error {
-                    Id = e.Id,
-                    OrganizationId = ctx.Error.OrganizationId,
-                    ProjectId = ctx.Error.ProjectId,
-                    ErrorStackId = ctx.Error.ErrorStackId
-                })
-                .ToArray();
+//            // Get a list of oldest ids that exceed our desired max errors.
+//            var errors = _errorRepository.Collection.Find(
+//                Query.EQ(ErrorRepository.FieldNames.OrganizationId, new BsonObjectId(new ObjectId(ctx.Error.OrganizationId))))
+//                .SetSortOrder(SortBy.Descending(ErrorRepository.FieldNames.OccurrenceDate_UTC))
+//                .SetFields(ErrorRepository.FieldNames.Id)
+//                .SetSkip(maxErrorsPerStack)
+//                .SetLimit(150)
+//                .Select(e => new Error {
+//                    Id = e.Id,
+//                    OrganizationId = ctx.Error.OrganizationId,
+//                    ProjectId = ctx.Error.ProjectId,
+//                    ErrorStackId = ctx.Error.ErrorStackId
+//                })
+//                .ToArray();
 
-            if (errors.Length > 0)
-                _errorRepository.Delete(errors);
-        }
-    }
-}
+//            if (errors.Length > 0)
+//                _errorRepository.Delete(errors);
+//        }
+//    }
+//}
