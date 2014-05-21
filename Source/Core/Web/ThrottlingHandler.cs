@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Web {
             HttpRequestContext ctx = request.GetRequestContext();
             if (ctx != null) {
                 // use organization id or user id as the identifier for throttling
-                var principal = request.GetRequestContext().Principal as ExceptionlessPrincipal;
+                var principal = ctx.Principal as ExceptionlessPrincipal;
                 if (principal != null)
                     return principal.Project != null ? principal.Project.OrganizationId : principal.UserEntity.Id;
             }

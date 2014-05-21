@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Web {
                 return null;
 
             // get the current principals associated organization
-            var principal = request.GetRequestContext().Principal as ExceptionlessPrincipal;
+            var principal = ctx.Principal as ExceptionlessPrincipal;
             if (principal != null)
                 return principal.Project != null ? principal.Project.OrganizationId : principal.UserEntity.OrganizationIds.FirstOrDefault();
 
