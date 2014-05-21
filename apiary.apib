@@ -608,98 +608,6 @@ Returns a `404` status code if an existing project with the specified name does 
     `200` status code is returned if the name is not available.
     + Body
 
-# Group Project Hooks
-Project Hook related resources of the **Project Hook  API**
-
-## Create [/projecthooks]
-### Create new project hook [POST]
-To create a new project hook, you must specify project_id, url and event_types.
-
-+ Request (application/json)
-
-        { 
-            "project_id": "537650f3b77efe23a47914f4", 
-            "url": "http://exceptionless.com", 
-            "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] 
-        }
-
-+ Response 201 (application/json)
-
-        {
-            "id": "537b84cfb77efe2474072488",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }
-
-## Get, Update, Remove [/projecthooks/{id}]
-+ Parameters
-    + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the project hook.
-
-### Get by id [GET]
-+ Response 200 (application/json)
-
-        {
-            "id": "537b84cfb77efe2474072488",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }
-
-### Update project hook [PATCH]
-+ Request (application/json)
-
-        { "url": "https://mycompanywebsite.com" }
-
-+ Response 200 (application/json)
-
-        {
-            "id": "537b84cfb77efe2474072488",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "https://mycompanywebsite.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }
-
-### Remove project hook [DELETE]
-+ Response 204
-
-## Get by project [/projects/{id}/projecthooks{?before,after,limit}]
-### List all project hooks for a given project [GET]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-            "id": "537b84cfb77efe2474072488",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }]
-
 # Group Stacks
 Stack related resources of the **Stacks API**
 
@@ -904,6 +812,104 @@ Stack related resources of the **Stacks API**
         { "stack": "537b7255b77efe2474bfdd7f", "link": "https://exceptionless.com" }
 
 + Response 200
+
+
+# Group Web Hooks
+Web Hook related resources of the **Web Hooks  API**
+
+## Create [/webhooks]
+### Create new web hook [POST]
+To create a new web hook, you must specify project_id, url and event_types.
+
++ Request (application/json)
+
+        { 
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4", 
+            "url": "http://exceptionless.com", 
+            "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] 
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+## Get, Update, Remove [/webhooks/{id}]
++ Parameters
+    + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the web hook.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+### Update web hook [PATCH]
++ Request (application/json)
+
+        { "url": "https://mycompanywebsite.com" }
+
++ Response 200 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "https://mycompanywebsite.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+### Remove web hook [DELETE]
++ Response 204
+
+## Get by project [/projects/{id}/webhooks{?before,after,limit}]
+### List all web hooks for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }]
 
 # Group Stats
 Stat related resources of the **Stats API**
