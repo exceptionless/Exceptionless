@@ -64,6 +64,8 @@ namespace Exceptionless.Core.Web {
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify organization for error post.");
 
             var org = _organizationRepository.GetByIdCached(organizationId);
+            if (org.MaxErrorsPerDay < 0)
+                return base.SendAsync(request, cancellationToken);
 
             string cacheKey = GetCounterCacheKey(organizationId);
             long errorCount = _cacheClient.Increment(cacheKey, 1);

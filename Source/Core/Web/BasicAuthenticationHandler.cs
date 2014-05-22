@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Web {
             _membershipSecurity = membershipSecurity;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             string userName, password;
             if (request.TryGetLoginInformation(out userName, out password)) {
                 IPrincipal principal;
@@ -55,13 +55,11 @@ namespace Exceptionless.Core.Web {
                     request.SetUserPrincipal(principal);
             }
 
-            return base.SendAsync(request, cancellationToken).ContinueWith(t => {
-                var response = t.Result;
-                if (response.StatusCode == HttpStatusCode.Unauthorized && !response.Headers.Contains(HttpResponseHeader.WwwAuthenticate.ToString()))
-                    response.Headers.Add(HttpResponseHeader.WwwAuthenticate.ToString(), ExceptionlessHeaders.Basic);
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.StatusCode == HttpStatusCode.Unauthorized && !response.Headers.Contains(HttpResponseHeader.WwwAuthenticate.ToString()))
+                response.Headers.Add(HttpResponseHeader.WwwAuthenticate.ToString(), ExceptionlessHeaders.Basic);
 
-                return response;
-            }, cancellationToken);
+            return response;
         }
 
         private bool TryCreatePrincipal(string emailAddress, string password, out IPrincipal principal) {
