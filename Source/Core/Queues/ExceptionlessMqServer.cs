@@ -212,8 +212,10 @@ namespace Exceptionless.Core.Queues {
 
             // after the first 5 occurrences, don't send a notification for the same stack more then once every 15 minutes
             var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", errorNotification.ErrorStackId));
-            if (totalOccurrences > 5 && !errorNotification.IsRegression && lastTimeSent != DateTime.MinValue &&
-                lastTimeSent > DateTime.Now.AddMinutes(-15)) {
+            if (totalOccurrences > 5 
+                && !errorNotification.IsRegression 
+                && lastTimeSent != DateTime.MinValue 
+                && lastTimeSent > DateTime.Now.AddMinutes(-15)) {
                 Log.Info().Message("Skipping message because of throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
                 return null;
             }

@@ -148,6 +148,34 @@ namespace Exceptionless.Tests.Pipeline {
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
+        [Fact]
+        public void EnsureSingleRegression() {
+            var pipeline = IoC.GetInstance<ErrorPipeline>();
+
+            Error error = ErrorData.GenerateError(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            var context = new ErrorPipelineContext(error);
+            Assert.DoesNotThrow(() => pipeline.Run(context));
+            Assert.False(context.IsRegression);
+
+            error = Repository.GetById(error.Id);
+            Assert.NotNull(error);
+
+            var stack = _errorStackRepository.GetById(error.ErrorStackId);
+            stack.DateFixed = DateTime.UtcNow;
+            stack.IsRegressed = false;
+            _errorStackRepository.Update(stack);
+
+            error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddDays(1), nestingLevel: 5, minimiumNestingLevel: 1);
+            context = new ErrorPipelineContext(error);
+            Assert.DoesNotThrow(() => pipeline.Run(context));
+            Assert.True(context.IsRegression);
+
+            error = ErrorData.GenerateError(errorStackId: error.ErrorStackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddDays(1), nestingLevel: 5, minimiumNestingLevel: 1);
+            context = new ErrorPipelineContext(error);
+            Assert.DoesNotThrow(() => pipeline.Run(context));
+            Assert.False(context.IsRegression);
+        }
+
         [Theory]
         [PropertyData("Errors")]
         public void ProcessErrors(string errorFilePath) {
