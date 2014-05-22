@@ -281,8 +281,8 @@ namespace Exceptionless {
                 // The api key was suspended or could not be authorized.
                 if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden) {
                     Log.Info(typeof(ExceptionlessClient), "Unable to authenticate, please check your configuration. The error will not be submitted.");
-                    Configuration.Enabled = false;
-                    
+                    SuspendProcessing(TimeSpan.FromMinutes(15));
+
                     return true;
                 }
             }
@@ -507,10 +507,8 @@ namespace Exceptionless {
                 return;
             }
 
-            if (IsQueueProcessingSuspended) {
-                Log.Info(typeof(ExceptionlessClient), "Queue processing is currently suspended, the queue will be processed later.");
+            if (IsQueueProcessingSuspended)
                 return;
-            }
 
             if (!HasNetworkConnection) {
                 Log.Info(typeof(ExceptionlessClient), "No network connection is available, process the queue later.");
