@@ -27,7 +27,7 @@ using MongoDB.Driver.Builders;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.App.Controllers.API {
-    [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
         private readonly ErrorStatsHelper _statsHelper;
         private readonly IOrganizationRepository _organizationRepository;

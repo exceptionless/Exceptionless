@@ -35,7 +35,7 @@ using ServiceStack.Messaging;
 
 namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
-    [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryOwnedByOrganizationApiController<ErrorStack, IErrorStackRepository> {
         private readonly IMessageFactory _messageFactory;
         private readonly BillingManager _billingManager;
@@ -169,7 +169,7 @@ namespace Exceptionless.App.Controllers.API {
         /// </summary>
         /// <param name="data"></param>
         [HttpPost]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public HttpResponseMessage MarkFixed(JObject data) {
             var id = data.GetValue("ErrorStack").Value<string>();
             if (String.IsNullOrEmpty(id))
@@ -203,7 +203,7 @@ namespace Exceptionless.App.Controllers.API {
         /// </summary>
         /// <param name="data"></param>
         [HttpPost]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public HttpResponseMessage AddLink(JObject data) {
             var id = data.GetValue("ErrorStack").Value<string>();
             if (String.IsNullOrEmpty(id))

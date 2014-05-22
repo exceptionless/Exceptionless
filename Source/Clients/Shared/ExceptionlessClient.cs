@@ -44,7 +44,8 @@ namespace Exceptionless {
 
         private bool _updatingConfiguration;
         private readonly Timer _queueTimer;
-        private bool _isProcessQueueScheduled;
+        private const int QUEUE_TIMER_DUE_TIME_IN_SECONDS = 10;
+        private DateTime? _suspendProcessingUntil;
         private ILastErrorIdManager _lastErrorIdManager;
         private static volatile bool _processingQueue;
         private static readonly object _queueLock = new object();
@@ -162,7 +163,7 @@ namespace Exceptionless {
             }
 
             _queue = new QueueManager(this, store);
-            _queueTimer.Change(LocalConfiguration.QueuePoll, TimeSpan.Zero);
+            _queueTimer.Change(TimeSpan.FromSeconds(QUEUE_TIMER_DUE_TIME_IN_SECONDS), TimeSpan.Zero);
 #if SILVERLIGHT
             NetworkChange.NetworkAddressChanged += NetworkChange_NetworkAddressChanged;
 #else
@@ -171,7 +172,6 @@ namespace Exceptionless {
         }
 
         private void OnQueueTimer(object state) {
-            Log.Info(typeof(ExceptionlessClient), "Timer event fired.");
             if (!Configuration.TestMode)
                 ProcessQueue();
         }
@@ -257,9 +257,35 @@ namespace Exceptionless {
             completed = new SendErrorCompletedEventArgs(id, exception, false, error);
             OnSendErrorCompleted(completed);
 
-            // if there was a conflict, then the server already has the error and we should delete it locally
-            if (response != null && response.StatusCode == HttpStatusCode.Conflict)
-                return true;
+            if (response != null) {
+                // If there was a conflict, then the server already has the error and we should delete it locally
+                if (response.StatusCode == HttpStatusCode.Conflict) {
+                    Log.Info(typeof(ExceptionlessClient), "A duplicate error was submitted.");
+                    return true;
+                }
+
+                // You are currently over your rate limit or the servers are under stress.
+                if (response.StatusCode == HttpStatusCode.ServiceUnavailable) {
+                    Log.Info(typeof(ExceptionlessClient), "Server returned service unavailable.");
+                    SuspendProcessing();
+                    return false;
+                }
+
+                // If the organization over the rate limit then discard the error.
+                if (response.StatusCode == HttpStatusCode.PaymentRequired) {
+                    Log.Info(typeof(ExceptionlessClient), "Too many errors have been submitted, please upgrade your plan.");
+                    SuspendProcessing();
+                    return true;
+                }
+
+                // The api key was suspended or could not be authorized.
+                if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden) {
+                    Log.Info(typeof(ExceptionlessClient), "Unable to authenticate, please check your configuration. The error will not be submitted.");
+                    Configuration.Enabled = false;
+                    
+                    return true;
+                }
+            }
 
             return response.IsSuccessStatusCode() || Configuration.TestMode;
         }
@@ -321,7 +347,7 @@ namespace Exceptionless {
             Log.FormattedInfo(typeof(ExceptionlessClient), "Setting last error id '{0}'", data.Id);
             LastErrorIdManager.SetLast(data.Id);
 
-            QuickTimer();
+            ProcessQueueAsync();
             SaveEmailAddress(data.UserEmail, false);
             LocalConfiguration.SubmitCount++;
             // TODO: This can be removed once we fix the bug in the ObservableConcurrentDictionary where IsDirty is not set immediately.
@@ -469,34 +495,35 @@ namespace Exceptionless {
         /// Start processing the queue asynchronously.
         /// </summary>
         public void ProcessQueueAsync(double delay = 100) {
-            QuickTimer(delay);
+            _queueTimer.Change(TimeSpan.FromSeconds(QUEUE_TIMER_DUE_TIME_IN_SECONDS), TimeSpan.FromMilliseconds(delay));
         }
 
         /// <summary>
         /// Process the queue.
         /// </summary>
         public void ProcessQueue() {
-            Log.Info(typeof(ExceptionlessClient), "Processing queue...");
             if (!Configuration.Enabled) {
                 Log.Info(typeof(ExceptionlessClient), "Configuration is disabled. The queue will not be processed.");
-                //TODO: Should we call StopTimer here?
+                return;
+            }
+
+            if (IsQueueProcessingSuspended) {
+                Log.Info(typeof(ExceptionlessClient), "Queue processing is currently suspended, the queue will be processed later.");
                 return;
             }
 
             if (!HasNetworkConnection) {
                 Log.Info(typeof(ExceptionlessClient), "No network connection is available, process the queue later.");
-                SlowTimer();
+                SuspendProcessing();
                 return;
             }
 
             if (_processingQueue)
                 return;
 
+            Log.Info(typeof(ExceptionlessClient), "Processing queue...");
             lock (_queueLock) {
                 _processingQueue = true;
-                _isProcessQueueScheduled = false;
-                bool useSlowTimer = false;
-                StopTimer();
 
                 try {
                     using (new SingleGlobalInstance(Configuration.ApiKey, 500)) {
@@ -524,17 +551,14 @@ namespace Exceptionless {
                                     }
 
                                     SendManifest(manifest);
-                                    if (!manifest.BreakProcessing)
-                                        continue;
-
-                                    useSlowTimer = true;
-                                    break;
+                                    if (manifest.BreakProcessing || IsQueueProcessingSuspended)
+                                        break;
                                 }
 
                                 manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
                             }
                         } catch (SecurityException se) {
-                            useSlowTimer = true;
+                            SuspendProcessing();
                             Log.FormattedError(typeof(ExceptionlessClient), "Security exception while processing queue: {0}", se.Message);
                         } catch (Exception ex) {
                             Log.FormattedError(typeof(ExceptionlessClient), "Queue error: {0}", ex.Message);
@@ -544,11 +568,6 @@ namespace Exceptionless {
                     Log.FormattedError(typeof(ExceptionlessClient), ex, "Error trying to obtain instance lock: {0}", ex.Message);
                 } finally {
                     _processingQueue = false;
-
-                    if (useSlowTimer)
-                        SlowTimer();
-                    else
-                        PollTimer();
                 }
             }
         }
@@ -712,41 +731,17 @@ namespace Exceptionless {
 
         #endregion
 
-        #region Timer
+        public void SuspendProcessing(TimeSpan? suspensionTime = null) {
+            if (!suspensionTime.HasValue)
+                suspensionTime = TimeSpan.FromMinutes(5);
 
-        internal void StopTimer() {
-            Log.Info(typeof(ExceptionlessClient), "Stopping timer.");
-            _queueTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            Log.Info(typeof(ExceptionlessClient), String.Format("Suspending processing for: {0}.", suspensionTime.Value));
+            _suspendProcessingUntil = DateTime.Now.Add(suspensionTime.Value);
         }
 
-        internal void PollTimer() {
-            if (_processingQueue)
-                return;
-
-            Log.Info(typeof(ExceptionlessClient), "Poll timer.");
-            _queueTimer.Change(LocalConfiguration.QueuePoll, TimeSpan.Zero);
+        private bool IsQueueProcessingSuspended {
+            get { return _suspendProcessingUntil.HasValue && DateTime.Now < _suspendProcessingUntil.Value; }
         }
-
-        internal void QuickTimer(double milliseconds = 1000) {
-            Log.Info(typeof(ExceptionlessClient), "Triggering quick timer...");
-            if (_processingQueue || _isProcessQueueScheduled)
-                return;
-
-            _isProcessQueueScheduled = true;
-            _queueTimer.Change(TimeSpan.FromMilliseconds(milliseconds), TimeSpan.Zero);
-            Log.Info(typeof(ExceptionlessClient), "Quick timer scheduled");
-        }
-
-        internal void SlowTimer() {
-            Log.Info(typeof(ExceptionlessClient), "Triggering slow timer...");
-            if (_processingQueue)
-                return;
-
-            _queueTimer.Change(TimeSpan.FromHours(1), TimeSpan.Zero);
-            Log.Info(typeof(ExceptionlessClient), "Slow timer scheduled");
-        }
-
-        #endregion
 
         #region Singleton
 

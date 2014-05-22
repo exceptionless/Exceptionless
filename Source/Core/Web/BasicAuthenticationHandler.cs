@@ -27,8 +27,7 @@ namespace Exceptionless.Core.Web {
         private readonly IUserRepository _userRepository;
         private readonly IMembershipSecurity _membershipSecurity;
 
-        public BasicAuthenticationHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, IMembershipSecurity membershipSecurity)
-        {
+        public BasicAuthenticationHandler(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, IMembershipSecurity membershipSecurity) {
             if (organizationRepository == null)
                 throw new ArgumentNullException("organizationRepository");
 
@@ -49,7 +48,20 @@ namespace Exceptionless.Core.Web {
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             string userName, password;
-            if (request.TryGetLoginInformation(out userName, out password)) {
+            if (!request.TryGetLoginInformation(out userName, out password)) {
+                try {
+                    // check query string parameter
+                    var parameters = request.RequestUri.ParseQueryString();
+                    if (!String.IsNullOrEmpty(parameters["apikey"])) {
+                        userName = "client";
+                        password = parameters["apikey"];
+                    }
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("An error occurred while parsing the query string for the api key.").Write();
+                }
+            }
+
+            if (!String.IsNullOrEmpty(userName) && !String.IsNullOrEmpty(password)) {
                 IPrincipal principal;
                 if (TryCreatePrincipal(userName, password, out principal))
                     request.SetUserPrincipal(principal);
@@ -66,26 +78,25 @@ namespace Exceptionless.Core.Web {
             principal = null;
 
             if (String.IsNullOrEmpty(password)) {
-                Log.Error().Message("The password \"{0}\" is invalid.", password).Write();
+                Log.Info().Message("The password \"{0}\" is invalid.", password).Write();
                 return false;
             }
 
             if (String.Equals(emailAddress, "client", StringComparison.OrdinalIgnoreCase)) {
                 var project = _projectRepository.GetByApiKey(password);
                 if (project == null) {
-                    Log.Error().Message("Unable to find a project with the Api Key: \"{0}\".", password).Write();
+                    Log.Info().Message("Unable to find a project with the Api Key: \"{0}\".", password).Write();
                     return false;
                 }
 
                 var organization = _organizationRepository.GetByIdCached(project.OrganizationId);
                 if (organization == null) {
-                    Log.Error().Message("Unable to find organization: \"{0}\".", project.OrganizationId).Write();
+                    Log.Info().Message("Unable to find organization: \"{0}\".", project.OrganizationId).Write();
                     return false;
                 }
 
                 if (organization.IsSuspended) {
-                    Log.Error().Message("Rejecting authentication because the organization \"{0}\" is suspended.", project.OrganizationId).Write();
-                    //AuthDeniedReason = "Account has been suspended.";
+                    Log.Info().Message("Rejecting authentication because the organization \"{0}\" is suspended.", project.OrganizationId).Write();
                     return false;
                 }
 
@@ -96,12 +107,12 @@ namespace Exceptionless.Core.Web {
 
             var user = _userRepository.GetByEmailAddress(emailAddress);
             if (user == null) {
-                Log.Error().Message("Unable to find user a with the email address: \"{0}\".", emailAddress).Write();
+                Log.Info().Message("Unable to find user a with the email address: \"{0}\".", emailAddress).Write();
                 return false;
             }
 
             if (!String.Equals(user.Password, _membershipSecurity.GetSaltedHash(password, user.Salt))) {
-                Log.Error().Message("Invalid password").Write();
+                Log.Info().Message("Invalid password").Write();
                 return false;
             }
 

@@ -25,7 +25,7 @@ using MongoDB.Driver.Builders;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
-    [ExceptionlessAuthorize]
+    [Authorize]
     public class ProjectHookController : RepositoryApiController<ProjectHook, IProjectHookRepository> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
@@ -40,7 +40,7 @@ namespace Exceptionless.App.Controllers.API {
             throw new NotSupportedException();
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IEnumerable<ProjectHook> GetByProject(string projectId) {
             if (!IsInProject(projectId))
                 throw new HttpResponseException(NotFoundErrorResponseMessage(projectId));
@@ -48,7 +48,7 @@ namespace Exceptionless.App.Controllers.API {
             return _repository.GetByProjectId(projectId);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override ProjectHook Get(string id) {
             ProjectHook entity = base.Get(id);
 
@@ -58,7 +58,7 @@ namespace Exceptionless.App.Controllers.API {
             return entity;
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Post(ProjectHook value) {
             if (!IsInProject(value.ProjectId))
                 throw new HttpResponseException(BadRequestErrorResponseMessage());
@@ -70,7 +70,7 @@ namespace Exceptionless.App.Controllers.API {
             return base.Post(value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Put(string id, Delta<ProjectHook> value) {
             ProjectHook original = GetEntity(id);
             if (original == null || !IsInProject(original.ProjectId))
@@ -79,7 +79,7 @@ namespace Exceptionless.App.Controllers.API {
             return base.Put(id, value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Patch(string id, Delta<ProjectHook> value) {
             ProjectHook original = GetEntity(id);
             if (original == null || !IsInProject(original.ProjectId))
@@ -88,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
             return base.Patch(id, value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Delete(string id) {
             ProjectHook original = GetEntity(id);
             if (original == null || !IsInProject(original.ProjectId))
@@ -103,7 +103,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="data"></param>
         /// <returns></returns>
         [HttpPost]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public HttpResponseMessage Subscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
             var eventType = data.GetValue("event").Value<string>();
@@ -144,7 +144,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <returns></returns>
         [HttpPost]
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public HttpResponseMessage Test() {
             return Request.CreateResponse(HttpStatusCode.OK, new[] {
                 new { id = 1, Message = "Test message 1." },

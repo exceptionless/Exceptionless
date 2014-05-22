@@ -38,12 +38,6 @@ namespace Exceptionless.Configuration {
         #region Read/Write Properties
 
         [JsonIgnore]
-        public TimeSpan QueuePoll { get { return new TimeSpan(QueuePollTicks); } set { QueuePollTicks = value.Ticks; } }
-
-        [JsonIgnore]
-        public long QueuePollTicks { get { return this.GetInt64("QueuePollTicks"); } set { this["QueuePollTicks"] = value.ToString(); } }
-
-        [JsonIgnore]
         public Guid InstallIdentifier { get { return this.GetGuid("InstallIdentifier"); } set { this["InstallIdentifier"] = value.ToString(); } }
 
         [JsonIgnore]
@@ -107,11 +101,6 @@ namespace Exceptionless.Configuration {
         }
 
         private void LoadDefaults() {
-            if (QueuePollTicks == 0) {
-                QueuePollTicks = TimeSpan.FromSeconds(300).Ticks;
-                IsDirty = true; // TODO: this can be removed once this property is updated in real time. Please see the the IsDirtyTests.
-            }
-
             if (InstallIdentifier == Guid.Empty) {
                 InstallIdentifier = Guid.NewGuid();
                 IsDirty = true; // TODO: this can be removed once this property is updated in real time. Please see the the IsDirtyTests.

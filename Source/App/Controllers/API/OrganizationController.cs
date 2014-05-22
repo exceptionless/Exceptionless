@@ -37,7 +37,7 @@ using Stripe;
 
 namespace Exceptionless.App.Controllers.API {
     [ConfigurationResponseFilter]
-    [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class OrganizationController : RepositoryApiController<Organization, IOrganizationRepository> {
         private readonly ICacheClient _cacheClient;
         private readonly IUserRepository _userRepository;

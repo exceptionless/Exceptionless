@@ -61,7 +61,7 @@ namespace Exceptionless.App.Controllers.API {
             return base.Get(id).ToProjectLocalTime(_projectRepository);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public override HttpResponseMessage Post(Error value) {
             if (value == null)
                 return Request.CreateErrorResponse(HttpStatusCode.BadRequest, "Invalid error posted.");

@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Controllers {
     // http://trocolate.wordpress.com/2012/07/19/mitigate-issue-260-in-batching-scenario/
     // http://www.jefclaes.be/2012/09/supporting-options-verb-in-aspnet-web.html
 
-    [ExceptionlessAuthorize]
+    [Authorize]
     public abstract class RepositoryBaseApiController<TModel> : ExceptionlessApiController where TModel : class, IIdentity, new() {
         protected RepositoryBaseApiController() {
             string typeName = typeof(TModel).Name;
@@ -33,10 +33,10 @@ namespace Exceptionless.Core.Controllers {
             _duplicateResponseMessage = String.Concat(typeName, " with id '{0}' already exists in the collection.");
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public abstract IEnumerable<TModel> Get();
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public virtual TModel Get(string id) {
             TModel item = GetEntity(id);
             if (item == null)
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Controllers {
         }
 
         // TODO: Investigate work around for: http://aspnetwebstack.codeplex.com/workitem/562
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public virtual HttpResponseMessage Put(string id, Web.OData.Delta<TModel> value) {
             if (value == null || !value.GetChangedPropertyNames().Any())
                 return BadRequestErrorResponseMessage();
@@ -103,7 +103,7 @@ namespace Exceptionless.Core.Controllers {
             return new HttpResponseMessage(HttpStatusCode.OK); // NoContent
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public virtual HttpResponseMessage Delete(string id) {
             TModel item = GetEntity(id);
             if (item == null)

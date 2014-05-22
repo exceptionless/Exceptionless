@@ -48,7 +48,7 @@ namespace Exceptionless.App.Controllers.API {
             _dataHelper = dataHelper;
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override IEnumerable<Project> Get() {
             return base.Get().Select(p => {
                 NotificationSettings settings = p.GetNotificationSettings(User.UserEntity.Id);
@@ -61,7 +61,7 @@ namespace Exceptionless.App.Controllers.API {
             });
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override Project Get(string id) {
             Project project = base.Get(id);
             NotificationSettings settings = project.GetNotificationSettings(User.UserEntity.Id);
@@ -73,29 +73,29 @@ namespace Exceptionless.App.Controllers.API {
             return project;
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Post(Project value) {
             return base.Post(value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Put(string id, Delta<Project> value) {
             return base.Put(id, value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Patch(string id, Delta<Project> value) {
             // TODO: We need to add support for array item level patching (E.G., API Keys and Promoted tabs).
             return base.Patch(id, value);
         }
 
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public override HttpResponseMessage Delete(string id) {
             return base.Delete(id);
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IEnumerable<ProjectInfoModel> List(int page = 1, int pageSize = 100) {
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
@@ -109,7 +109,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 return NotFound();
@@ -181,7 +181,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public string GetOrAddKey(string projectId) {
             Project project = Get(projectId);
             if (project.ApiKeys.Count > 0)
@@ -191,7 +191,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpPost]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public string ManageApiKeys(string projectId) {
             string apiKey = Guid.NewGuid().ToString("N").ToLower();
 
@@ -204,7 +204,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpDelete]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public HttpResponseMessage ManageApiKeys(string projectId, string apiKey) {
             if (String.IsNullOrEmpty(apiKey))
                 return BadRequestErrorResponseMessage();
@@ -229,7 +229,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <param name="id">The Project Id</param>
         /// <returns>The Configuration for a specific project.</returns>
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Config(string id = null) {
             // TODO: Only the client should be using this..
             if (User.Identity.AuthenticationType.Equals("ApiKey"))
@@ -246,7 +246,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public void ResetData(string id) {
             if (String.IsNullOrEmpty(id))
                 return;
@@ -260,7 +260,7 @@ namespace Exceptionless.App.Controllers.API {
 
         // TODO: Move this to use patch.
         [HttpPut]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public HttpResponseMessage Notification(string id, string userId, NotificationSettings settings) {
             if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(userId) || settings == null)
                 return BadRequestErrorResponseMessage();

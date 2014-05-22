@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Web {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             string identifier = GetUserIdentifier(request);
             if (String.IsNullOrEmpty(identifier))
-                return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
+                return base.SendAsync(request, cancellationToken);
 
             string cacheKey = GetCacheKey(identifier);
             long requestCount = 0;
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Web {
             Task<HttpResponseMessage> response = null;
             long maxRequests = _maxRequestsForUserIdentifier(identifier);
             if (requestCount > maxRequests)
-                response = CreateResponse(request, HttpStatusCode.Conflict, _message);
+                response = CreateResponse(request, HttpStatusCode.ServiceUnavailable, _message);
             else
                 response = base.SendAsync(request, cancellationToken);
 

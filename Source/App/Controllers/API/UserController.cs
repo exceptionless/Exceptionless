@@ -32,7 +32,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpPut]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public HttpResponseMessage UpdateAdminRole(string id) {
             if (String.IsNullOrEmpty(id))
                 return BadRequestErrorResponseMessage();
@@ -51,7 +51,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [ExceptionlessAuthorize(Roles = AuthorizationRoles.User)]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int pageSize = 10) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 return NotFound();

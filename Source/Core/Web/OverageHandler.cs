@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Models;
+using NLog.Fluent;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Web {
@@ -61,7 +62,7 @@ namespace Exceptionless.Core.Web {
 
             string organizationId = GetOrganizationId(request);
             if (String.IsNullOrEmpty(organizationId))
-                return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify organization for error post.");
+                return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             var org = _organizationRepository.GetByIdCached(organizationId);
             if (org.MaxErrorsPerDay < 0)
@@ -86,10 +87,12 @@ namespace Exceptionless.Core.Web {
                 };
                 org.OverageDays.Add(overageInfo);
             } else {
+                overageInfo.Limit = org.MaxErrorsPerDay;
                 overageInfo.Count = (int)errorCount;
             }
 
             _organizationRepository.Update(org);
+            _cacheClient.Set(GetCounterSavedCacheKey(organizationId), DateTime.UtcNow);
             return CreateResponse(request, HttpStatusCode.PaymentRequired, String.Format("Daily error limit ({0}) exceeded ({1}).", org.MaxErrorsPerDay, errorCount));
         }
 
