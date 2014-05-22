@@ -16,6 +16,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Controllers;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Web;
+using Exceptionless.Membership;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
@@ -27,13 +28,19 @@ namespace Exceptionless.App {
             config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
             config.MessageHandlers.Add(new EncodingDelegatingHandler());
 
+            // Reject error posts in orgs over their max daily error limit.
+            var organizationRepository = config.DependencyResolver.GetService(typeof(IOrganizationRepository)) as IOrganizationRepository;
+            var projectRepository = config.DependencyResolver.GetService(typeof(IProjectRepository)) as IProjectRepository;
+            var userRepository = config.DependencyResolver.GetService(typeof(IUserRepository)) as IUserRepository;
+            var membershipSecurity = config.DependencyResolver.GetService(typeof(IMembershipSecurity)) as IMembershipSecurity;
+            config.MessageHandlers.Add(new BasicAuthenticationHandler(organizationRepository, projectRepository, userRepository, membershipSecurity));
+
             // Throttle api calls to X every 15 minutes by IP address.
             var clientsManager = config.DependencyResolver.GetService(typeof(IRedisClientsManager)) as IRedisClientsManager;
             config.MessageHandlers.Add(new ThrottlingHandler(clientsManager, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
             
             // Reject error posts in orgs over their max daily error limit.
             var cacheClient = config.DependencyResolver.GetService(typeof(ICacheClient)) as ICacheClient;
-            var organizationRepository = config.DependencyResolver.GetService(typeof(IOrganizationRepository)) as IOrganizationRepository;
             config.MessageHandlers.Add(new OverageHandler(cacheClient, organizationRepository));
 
             config.Formatters.Clear();

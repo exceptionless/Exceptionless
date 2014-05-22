@@ -305,6 +305,7 @@
     <Compile Include="Utility\NLogExceptionlessLog.cs" />
     <Compile Include="Web\JsonContentNegotiator.cs" />
     <Compile Include="Web\NotSuspendedAttribute.cs" />
+    <Compile Include="Web\BasicAuthenticationHandler.cs" />
     <Compile Include="Web\OverageHandler.cs" />
     <Compile Include="Web\ThrottlingHandler.cs" />
     <Compile Include="Web\UpgradableJsonMediaTypeFormatter.cs" />
