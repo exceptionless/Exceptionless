@@ -44,7 +44,7 @@ namespace Exceptionless {
 
         private bool _updatingConfiguration;
         private readonly Timer _queueTimer;
-        private const int QUEUE_TIMER_DUE_TIME_IN_SECONDS = 10;
+        private const int QUEUE_INTERVAL_SECONDS = 10;
         private DateTime? _suspendProcessingUntil;
         private ILastErrorIdManager _lastErrorIdManager;
         private static volatile bool _processingQueue;
@@ -146,7 +146,6 @@ namespace Exceptionless {
         /// Initializes a new instance of the <see cref="ExceptionlessClient" /> class.
         /// </summary>
         internal ExceptionlessClient(IQueueStore store = null, IExceptionlessLog log = null) {
-            _queueTimer = new Timer(OnQueueTimer, null, Timeout.Infinite, Timeout.Infinite);
             _log = log ?? _nullLogger;
 
             try {
@@ -163,7 +162,7 @@ namespace Exceptionless {
             }
 
             _queue = new QueueManager(this, store);
-            _queueTimer.Change(TimeSpan.FromSeconds(QUEUE_TIMER_DUE_TIME_IN_SECONDS), TimeSpan.Zero);
+            _queueTimer = new Timer(OnQueueTimer, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(QUEUE_INTERVAL_SECONDS));
 #if SILVERLIGHT
             NetworkChange.NetworkAddressChanged += NetworkChange_NetworkAddressChanged;
 #else
@@ -172,7 +171,7 @@ namespace Exceptionless {
         }
 
         private void OnQueueTimer(object state) {
-            if (!Configuration.TestMode)
+            if (!Configuration.TestMode && !_processingQueue)
                 ProcessQueue();
         }
 
@@ -503,7 +502,7 @@ namespace Exceptionless {
         /// Start processing the queue asynchronously.
         /// </summary>
         public void ProcessQueueAsync(double delay = 100) {
-            _queueTimer.Change(TimeSpan.FromSeconds(QUEUE_TIMER_DUE_TIME_IN_SECONDS), TimeSpan.FromMilliseconds(delay));
+            _queueTimer.Change(TimeSpan.FromMilliseconds(delay), TimeSpan.FromSeconds(QUEUE_INTERVAL_SECONDS));
         }
 
         /// <summary>
@@ -746,10 +745,11 @@ namespace Exceptionless {
 
             Log.Info(typeof(ExceptionlessClient), String.Format("Suspending processing for: {0}.", suspensionTime.Value));
             _suspendProcessingUntil = DateTime.Now.Add(suspensionTime.Value);
+            _queueTimer.Change(suspensionTime.Value, TimeSpan.FromSeconds(QUEUE_INTERVAL_SECONDS));
         }
 
         private bool IsQueueProcessingSuspended {
-            get { return _suspendProcessingUntil.HasValue && DateTime.Now < _suspendProcessingUntil.Value; }
+            get { return _suspendProcessingUntil.HasValue && _suspendProcessingUntil.Value > DateTime.Now; }
         }
 
         #region Singleton

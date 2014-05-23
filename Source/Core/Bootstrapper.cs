@@ -90,7 +90,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<DataHelper>();
 
             container.Register<BasicAuthenticationHandler>();
-            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<IRedisClientsManager>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
             container.Register<OverageHandler>();
         }
     }

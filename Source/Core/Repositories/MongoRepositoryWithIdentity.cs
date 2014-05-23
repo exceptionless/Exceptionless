@@ -69,8 +69,9 @@ namespace Exceptionless.Core {
             if (result == null) {
                 result = GetById(id, usePrimary);
 
+                // we can aggressively cache this entry since we are good about invalidating it
                 if (result != null)
-                    Cache.Set(GetScopedCacheKey(id), result);
+                    Cache.Set(GetScopedCacheKey(id), result, TimeSpan.FromHours(1));
             }
 
             return result;

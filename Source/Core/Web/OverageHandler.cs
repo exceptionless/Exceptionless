@@ -17,8 +17,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
-using NLog.Fluent;
 using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Web {
@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Web {
                 return base.SendAsync(request, cancellationToken);
 
             string cacheKey = GetCounterCacheKey(organizationId);
-            long errorCount = _cacheClient.Increment(cacheKey, 1);
+            long errorCount = _cacheClient.Increment(cacheKey, 1, TimeSpan.FromDays(1));
             if (errorCount <= org.MaxErrorsPerDay)
                 return base.SendAsync(request, cancellationToken);
 

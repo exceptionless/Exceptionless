@@ -17,20 +17,21 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Authorization;
-using ServiceStack.Redis;
+using Exceptionless.Extensions;
+using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Web {
     public sealed class ThrottlingHandler : DelegatingHandler {
-        private readonly IRedisClientsManager _clientsManager;
+        private readonly ICacheClient _cacheClient;
         private readonly Func<string, long> _maxRequestsForUserIdentifier;
         private readonly TimeSpan _period;
         private readonly string _message;
 
-        public ThrottlingHandler(IRedisClientsManager clientsManager, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period)
-            : this(clientsManager, maxRequestsForUserIdentifier, period, "The allowed number of requests has been exceeded.") {}
+        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period)
+            : this(cacheClient, maxRequestsForUserIdentifier, period, "The allowed number of requests has been exceeded.") { }
 
-        public ThrottlingHandler(IRedisClientsManager clientsManager, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message) {
-            _clientsManager = clientsManager;
+        public ThrottlingHandler(ICacheClient cacheClient, Func<string, long> maxRequestsForUserIdentifier, TimeSpan period, string message) {
+            _cacheClient = cacheClient;
             _maxRequestsForUserIdentifier = maxRequestsForUserIdentifier;
             _period = period;
             _message = message;
@@ -59,12 +60,7 @@ namespace Exceptionless.Core.Web {
                 return base.SendAsync(request, cancellationToken);
 
             string cacheKey = GetCacheKey(identifier);
-            long requestCount = 0;
-            using (IRedisClient client = _clientsManager.GetClient()) {
-                requestCount = client.IncrementValueBy(cacheKey, 1);
-                if (requestCount == 1)
-                    client.ExpireEntryIn(cacheKey, _period);
-            }
+            long requestCount = _cacheClient.Increment(cacheKey, 1, _period);
 
             Task<HttpResponseMessage> response = null;
             long maxRequests = _maxRequestsForUserIdentifier(identifier);

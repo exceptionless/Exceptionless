@@ -25,5 +25,14 @@ namespace Exceptionless.Extensions {
                 return defaultValue;
             }
         }
+
+        public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive) {
+            var count = client.Get<long?>(key);
+            if (count.HasValue)
+                return client.Increment(key, value);
+
+            client.Set(key, value, timeToLive);
+            return value;
+        }
     }
 }

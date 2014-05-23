@@ -21,6 +21,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using MongoDB.Driver.Builders;
 using NLog.Fluent;
@@ -210,13 +211,22 @@ namespace Exceptionless.Core.Queues {
             Log.Trace().Message("Loaded stack: title={0}", stack.Title).Write();
             int totalOccurrences = stack.TotalOccurrences;
 
-            // after the first 5 occurrences, don't send a notification for the same stack more then once every 15 minutes
-            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("NOTIFICATION_THROTTLE_", errorNotification.ErrorStackId));
-            if (totalOccurrences > 5 
-                && !errorNotification.IsRegression 
-                && lastTimeSent != DateTime.MinValue 
-                && lastTimeSent > DateTime.Now.AddMinutes(-15)) {
-                Log.Info().Message("Skipping message because of throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
+            // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
+            var lastTimeSent = _cacheClient.Get<DateTime>(String.Concat("notify:stack-throttle:", errorNotification.ErrorStackId));
+            if (totalOccurrences > 2
+                && !errorNotification.IsRegression
+                && lastTimeSent != DateTime.MinValue
+                && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
+                Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
+                return null;
+            }
+
+            // don't send more than 10 notifications for a given project every 30 minutes
+            var projectTimeWindow = TimeSpan.FromMinutes(30);
+            string cacheKey = String.Concat("notify:project-throttle:", errorNotification.ProjectId, "-", DateTime.UtcNow.Floor(projectTimeWindow).Ticks);
+            long notificationCount = _cacheClient.Increment(cacheKey, 1, projectTimeWindow);
+            if (notificationCount > 10 && !errorNotification.IsRegression) {
+                Log.Info().Project(errorNotification.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).Write();
                 return null;
             }
 
@@ -313,7 +323,7 @@ namespace Exceptionless.Core.Queues {
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0)
-                _cacheClient.Set(String.Concat("NOTIFICATION_THROTTLE_", errorNotification.ErrorStackId), DateTime.Now, DateTime.Now.AddMinutes(15));
+                _cacheClient.Set(String.Concat("notify:stack-throttle:", errorNotification.ErrorStackId), DateTime.Now, DateTime.Now.AddMinutes(15));
 
             return null;
         }

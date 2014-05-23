@@ -114,7 +114,7 @@ namespace Exceptionless.Core {
         }
 
         protected string GetScopedCacheKey(string cacheKey) {
-            return String.Concat(GetCollectionName(), "-", cacheKey);
+            return String.Concat(GetCollectionName(), ":", cacheKey);
         }
 
         /// <summary>
