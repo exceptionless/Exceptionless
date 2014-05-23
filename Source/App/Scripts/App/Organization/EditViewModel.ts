@@ -60,6 +60,9 @@ module exceptionless.organization {
 
             this.applyBindings();
             this.populateViewModel(data);
+
+            if (data)
+                this.loading(false);
         }
 
         public populateViewModel(data?: any) {
