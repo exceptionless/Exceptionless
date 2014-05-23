@@ -285,6 +285,14 @@ namespace Exceptionless {
 
                     return true;
                 }
+
+                // The service end point could not be found.
+                if (response.StatusCode == HttpStatusCode.NotFound) {
+                    Log.Info(typeof(ExceptionlessClient), "Unable to reach the service end point, please check your configuration. The error will not be submitted.");
+                    SuspendProcessing(TimeSpan.FromHours(4));
+
+                    return true;
+                }
             }
 
             return response.IsSuccessStatusCode() || Configuration.TestMode;
