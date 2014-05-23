@@ -103,7 +103,7 @@ namespace Exceptionless.Api.Controllers {
             });
             _statsClient.Counter(StatNames.PostsQueued);
 
-            return Ok();
+            return StatusCode(HttpStatusCode.Accepted);
         }
 
         private string GetDefaultProjectId() {
