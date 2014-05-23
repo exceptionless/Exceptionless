@@ -521,6 +521,9 @@ namespace Exceptionless {
 
             Log.Info(typeof(ExceptionlessClient), "Processing queue...");
             lock (_queueLock) {
+                if (IsQueueProcessingSuspended)
+                    return;
+
                 _processingQueue = true;
 
                 try {
