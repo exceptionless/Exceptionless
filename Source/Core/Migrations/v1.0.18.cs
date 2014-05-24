@@ -48,20 +48,20 @@ namespace Exceptionless.Core.Migrations {
             else
                 document.Set(OrganizationRepository.FieldNames.RetentionDays, new BsonInt64(BillingManager.MediumPlan.RetentionDays));
 
-            if (!document.Contains(OrganizationRepository.FieldNames.MaxErrorsPerDay))
-                document.Add(OrganizationRepository.FieldNames.MaxErrorsPerDay, new BsonInt64(BillingManager.FreePlan.MaxErrorsPerMonth));
+            if (!document.Contains("MaxErrorsPerDay"))
+                document.Add("MaxErrorsPerDay", new BsonInt64(BillingManager.FreePlan.MaxErrorsPerMonth));
             else
-                document.Set(OrganizationRepository.FieldNames.MaxErrorsPerDay, new BsonInt64(BillingManager.FreePlan.MaxErrorsPerMonth));
+                document.Set("MaxErrorsPerDay", new BsonInt64(BillingManager.FreePlan.MaxErrorsPerMonth));
 
             if (!document.Contains(OrganizationRepository.FieldNames.HasPremiumFeatures))
                 document.Add(OrganizationRepository.FieldNames.HasPremiumFeatures, new BsonBoolean(BillingManager.FreePlan.HasPremiumFeatures));
             else
                 document.Set(OrganizationRepository.FieldNames.HasPremiumFeatures, new BsonBoolean(BillingManager.FreePlan.HasPremiumFeatures));
 
-            if (!document.Contains(OrganizationRepository.FieldNames.OverageDays))
-                document.Add(OrganizationRepository.FieldNames.OverageDays, new BsonArray());
+            if (!document.Contains("OverageDays"))
+                document.Add("OverageDays", new BsonArray());
             else
-                document.Set(OrganizationRepository.FieldNames.OverageDays, new BsonArray());
+                document.Set("OverageDays", new BsonArray());
 
             collection.Save(document);
         }

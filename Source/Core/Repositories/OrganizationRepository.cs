@@ -47,7 +47,7 @@ namespace Exceptionless.Core {
             public const string RetentionDays = "RetentionDays";
             public const string HasPremiumFeatures = "HasPremiumFeatures";
             public const string MaxUsers = "MaxUsers";
-            public const string MaxErrorsPerDay = "MaxErrorsPerDay";
+            public const string MaxErrorsPerMonth = "MaxErrorsPerMonth";
             public const string MaxProjects = "MaxProjects";
             public const string ProjectCount = "ProjectCount";
             public const string StackCount = "StackCount";
@@ -58,7 +58,7 @@ namespace Exceptionless.Core {
             public const string Invites_Token = "Invites.Token";
             public const string Invites_EmailAddress = "Invites.EmailAddress";
             public const string Invites_DateAdded = "Invites.DateAdded";
-            public const string OverageDays = "OverageDays";
+            public const string OverageHours = "OverageHours";
         }
 
         protected override void InitializeCollection(MongoCollection<Organization> collection) {
@@ -77,7 +77,7 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.SubscribeDate).SetElementName(FieldNames.SubscribeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangeDate).SetElementName(FieldNames.BillingChangeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageDays).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true);
         }
 
         public Organization GetByInviteToken(string token, out Invite invite) {
