@@ -186,7 +186,7 @@ namespace Exceptionless.App.Controllers.API {
                 && !IsNameAvailable(organization.Name))
                 return false;
 
-            if ((value.ContainsChangedProperty(t => t.MaxErrorsPerDay) && original.MaxErrorsPerDay != organization.MaxErrorsPerDay)
+            if ((value.ContainsChangedProperty(t => t.MaxErrorsPerMonth) && original.MaxErrorsPerMonth != organization.MaxErrorsPerMonth)
                 || (value.ContainsChangedProperty(t => t.LastErrorDate) && original.LastErrorDate != organization.LastErrorDate)
                 || (value.ContainsChangedProperty(t => t.StripeCustomerId) && original.StripeCustomerId != organization.StripeCustomerId)
                 || (value.ContainsChangedProperty(t => t.PlanId) && original.PlanId != organization.PlanId)
@@ -194,7 +194,7 @@ namespace Exceptionless.App.Controllers.API {
                 || (value.ContainsChangedProperty(t => t.SubscribeDate) && original.SubscribeDate != organization.SubscribeDate)
                 || (value.ContainsChangedProperty(t => t.BillingChangeDate) && original.BillingChangeDate != organization.BillingChangeDate)
                 || (value.ContainsChangedProperty(t => t.RetentionDays) && original.RetentionDays != organization.RetentionDays)
-                || (value.ContainsChangedProperty(t => t.MaxErrorsPerDay) && original.MaxErrorsPerDay != organization.MaxErrorsPerDay)
+                || (value.ContainsChangedProperty(t => t.MaxErrorsPerMonth) && original.MaxErrorsPerMonth != organization.MaxErrorsPerMonth)
                 || (value.ContainsChangedProperty(t => t.MaxProjects) && original.MaxProjects != organization.MaxProjects)
                 || (value.ContainsChangedProperty(t => t.ProjectCount) && original.ProjectCount != organization.ProjectCount)
                 || (value.ContainsChangedProperty(t => t.StackCount) && original.StackCount != organization.StackCount)

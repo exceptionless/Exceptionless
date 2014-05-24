@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Billing {
             }
 
             // TODO: We need to make this smarter.
-            if (organization.OverageDays != null && organization.OverageDays.Count(d => d.Day > DateTime.Now.AddDays(-30)) > 0 && plan.MaxErrorsPerDay < GetBillingPlan(organization.PlanId).MaxErrorsPerDay) {
+            if (organization.OverageHours != null && organization.OverageHours.Count(d => d.Date > DateTime.Now.AddDays(-30)) > 0 && plan.MaxErrorsPerMonth < GetBillingPlan(organization.PlanId).MaxErrorsPerMonth) {
                 message = "You would exceed the maximum errors per day plan limit.";
                 return false;
             }
@@ -117,7 +117,7 @@ namespace Exceptionless.Core.Billing {
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;
-            organization.MaxErrorsPerDay = plan.MaxErrorsPerDay;
+            organization.MaxErrorsPerMonth = plan.MaxErrorsPerMonth;
             organization.HasPremiumFeatures = plan.HasPremiumFeatures;
         }
 
@@ -131,7 +131,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 1,
                     MaxUsers = 1,
                     RetentionDays = 3,
-                    MaxErrorsPerDay = 100,
+                    MaxErrorsPerMonth = 3000,
                     HasPremiumFeatures = false
                 };
             }
@@ -147,7 +147,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxErrorsPerDay = 500,
+                    MaxErrorsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -163,7 +163,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxErrorsPerDay = 500,
+                    MaxErrorsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -179,7 +179,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxErrorsPerDay = 2500,
+                    MaxErrorsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -195,7 +195,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxErrorsPerDay = 2500,
+                    MaxErrorsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -211,7 +211,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxErrorsPerDay = 5000,
+                    MaxErrorsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -227,7 +227,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxErrorsPerDay = 5000,
+                    MaxErrorsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -244,7 +244,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = -1,
-                    MaxErrorsPerDay = -1,
+                    MaxErrorsPerMonth = -1,
                     HasPremiumFeatures = true
                 };
             }

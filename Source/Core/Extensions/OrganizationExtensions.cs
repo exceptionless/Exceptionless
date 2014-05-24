@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Linq;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
@@ -24,6 +26,46 @@ namespace Exceptionless.Core.Extensions {
             organization.SuspensionCode = null;
             organization.SuspensionNotes = null;
             organization.SuspendedByUserId = null;
+        }
+
+        public static int GetHourlyErrorLimit(this Organization organization) {
+            if (organization.MaxErrorsPerMonth <= 0)
+                return Int32.MaxValue;
+
+            // allow any single hour to have 5 times the monthly limit converted to hours
+            return organization.MaxErrorsPerMonth / 730 * 5;
+        }
+
+        public static void SetHourlyOverage(this Organization organization, long count) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            var overageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+            if (overageInfo == null) {
+                overageInfo = new OverageInfo {
+                    Date = date,
+                    Count = (int)count,
+                    Limit = organization.GetHourlyErrorLimit()
+                };
+                organization.OverageHours.Add(overageInfo);
+            } else {
+                overageInfo.Limit = organization.GetHourlyErrorLimit();
+                overageInfo.Count = (int)count;
+            }            
+        }
+
+        public static void SetMonthlyOverage(this Organization organization, long count) {
+            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0);
+            var overageInfo = organization.OverageMonths.FirstOrDefault(o => o.Date == date);
+            if (overageInfo == null) {
+                overageInfo = new OverageInfo {
+                    Date = date,
+                    Count = (int)count,
+                    Limit = organization.MaxErrorsPerMonth
+                };
+                organization.OverageMonths.Add(overageInfo);
+            } else {
+                overageInfo.Limit = organization.MaxErrorsPerMonth;
+                overageInfo.Count = (int)count;
+            }
         }
     }
 }

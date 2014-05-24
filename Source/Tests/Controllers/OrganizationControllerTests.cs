@@ -176,7 +176,7 @@ namespace Exceptionless.Tests.Controllers {
             Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
 
             response = PatchResponse(TestConstants.OrganizationId, new {
-                MaxErrorsPerDay = organization.MaxErrorsPerDay
+                MaxErrorsPerDay = organization.MaxErrorsPerMonth
             });
             Assert.NotNull(response);
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);

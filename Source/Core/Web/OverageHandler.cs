@@ -16,10 +16,12 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using ServiceStack.CacheAccess;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Web {
     public sealed class OverageHandler : DelegatingHandler {
@@ -48,12 +50,16 @@ namespace Exceptionless.Core.Web {
             return request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.Contains("/error");
         }
 
-        private string GetCounterCacheKey(string organizationId) {
-            return String.Concat("overage", ":", organizationId, ":", DateTime.UtcNow.Date.ToString("MMdd"));
+        private string GetHourlyCounterCacheKey(string organizationId) {
+            return String.Concat("overage", ":hr-", organizationId, ":", DateTime.UtcNow.Date.ToString("MMddHH"));
+        }
+
+        private string GetMonthlyCounterCacheKey(string organizationId) {
+            return String.Concat("overage", ":month-", organizationId, ":", DateTime.UtcNow.Date.ToString("MM"));
         }
 
         private string GetCounterSavedCacheKey(string organizationId) {
-            return String.Concat("overage-saved", ":", organizationId, ":", DateTime.UtcNow.Date.ToString("MMdd"));
+            return String.Concat("overage-saved", ":", organizationId);
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
@@ -65,35 +71,30 @@ namespace Exceptionless.Core.Web {
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             var org = _organizationRepository.GetByIdCached(organizationId);
-            if (org.MaxErrorsPerDay < 0)
+            if (org.MaxErrorsPerMonth < 0)
                 return base.SendAsync(request, cancellationToken);
 
-            string cacheKey = GetCounterCacheKey(organizationId);
-            long errorCount = _cacheClient.Increment(cacheKey, 1, TimeSpan.FromDays(1));
-            if (errorCount <= org.MaxErrorsPerDay)
+            string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
+            long hourlyErrorCount = _cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
+            string monthlyCacheKey = GetMonthlyCounterCacheKey(organizationId);
+            long monthlyErrorCount = _cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32));
+
+            if (hourlyErrorCount <= org.GetHourlyErrorLimit() && monthlyErrorCount <= org.MaxErrorsPerMonth)
                 return base.SendAsync(request, cancellationToken);
 
             var lastCounterSavedDate = _cacheClient.Get<DateTime?>(GetCounterSavedCacheKey(organizationId));
             if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
-                return CreateResponse(request, HttpStatusCode.PaymentRequired, String.Format("Daily error limit ({0}) exceeded ({1}).", org.MaxErrorsPerDay, errorCount));
+                return CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.");
 
             org = _organizationRepository.GetById(organizationId, true);
-            var overageInfo = org.OverageDays.FirstOrDefault(o => o.Day == DateTime.UtcNow.Date);
-            if (overageInfo == null) {
-                overageInfo = new OverageInfo {
-                    Day = DateTime.UtcNow.Date,
-                    Count = (int)errorCount,
-                    Limit = org.MaxErrorsPerDay
-                };
-                org.OverageDays.Add(overageInfo);
-            } else {
-                overageInfo.Limit = org.MaxErrorsPerDay;
-                overageInfo.Count = (int)errorCount;
-            }
+            if (hourlyErrorCount > org.GetHourlyErrorLimit())
+                org.SetHourlyOverage(hourlyErrorCount);
+            if (monthlyErrorCount > org.MaxErrorsPerMonth)
+                org.SetMonthlyOverage(monthlyErrorCount);
 
             _organizationRepository.Update(org);
             _cacheClient.Set(GetCounterSavedCacheKey(organizationId), DateTime.UtcNow);
-            return CreateResponse(request, HttpStatusCode.PaymentRequired, String.Format("Daily error limit ({0}) exceeded ({1}).", org.MaxErrorsPerDay, errorCount));
+            return CreateResponse(request, HttpStatusCode.PaymentRequired, String.Format("Error limit exceeded."));
         }
 
         private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
