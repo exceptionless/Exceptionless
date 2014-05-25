@@ -22,11 +22,8 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            if (document.ChangeName("OverageDays", OrganizationRepository.FieldNames.OverageHours)) {
-                var overageHours = document.GetElement(OrganizationRepository.FieldNames.OverageHours).Value;
-                foreach (var overage in overageHours.AsBsonArray)
-                    overage.AsBsonDocument.ChangeName("Day", "Date");
-            }
+            if (document.Contains("OverageDays"))
+                document.Remove("OverageDays");
 
             document.ChangeName("MaxErrorsPerDay", OrganizationRepository.FieldNames.MaxErrorsPerMonth);
             var maxErrorsPerMonth = document.GetValue(OrganizationRepository.FieldNames.MaxErrorsPerMonth).AsInt32;

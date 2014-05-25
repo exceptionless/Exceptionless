@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
@@ -38,33 +39,26 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetHourlyOverage(this Organization organization, long count) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            var overageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            if (overageInfo == null) {
-                overageInfo = new OverageInfo {
-                    Date = date,
-                    Count = (int)count,
-                    Limit = organization.GetHourlyErrorLimit()
-                };
-                organization.OverageHours.Add(overageInfo);
-            } else {
-                overageInfo.Limit = organization.GetHourlyErrorLimit();
-                overageInfo.Count = (int)count;
-            }            
+            organization.OverageHours.SetOverage(date, (int)count, organization.GetHourlyErrorLimit());
         }
 
         public static void SetMonthlyOverage(this Organization organization, long count) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0);
-            var overageInfo = organization.OverageMonths.FirstOrDefault(o => o.Date == date);
+            organization.OverageMonths.SetOverage(date, (int)count, organization.MaxErrorsPerMonth);
+        }
+
+        public static void SetOverage(this ICollection<OverageInfo> overages, DateTime date, int count, int limit) {
+            var overageInfo = overages.FirstOrDefault(o => o.Date == date);
             if (overageInfo == null) {
                 overageInfo = new OverageInfo {
                     Date = date,
-                    Count = (int)count,
-                    Limit = organization.MaxErrorsPerMonth
+                    Count = count,
+                    Limit = limit
                 };
-                organization.OverageMonths.Add(overageInfo);
+                overages.Add(overageInfo);
             } else {
-                overageInfo.Limit = organization.MaxErrorsPerMonth;
-                overageInfo.Count = (int)count;
+                overageInfo.Limit = limit;
+                overageInfo.Count = count;
             }
         }
     }

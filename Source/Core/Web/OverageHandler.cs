@@ -19,7 +19,6 @@ using System.Web.Http.Controllers;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Extensions;
-using Exceptionless.Models;
 using ServiceStack.CacheAccess;
 using Exceptionless.Core.Extensions;
 
@@ -74,6 +73,9 @@ namespace Exceptionless.Core.Web {
             if (org.MaxErrorsPerMonth < 0)
                 return base.SendAsync(request, cancellationToken);
 
+            // TODO: We need to be using the current value from the org for monthly error count if the
+            // key doesn't exist in Redis since redis might restart. We only store the count if the plan is over
+            // the limit, so we need to figure out a plan.
             string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
             long hourlyErrorCount = _cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
             string monthlyCacheKey = GetMonthlyCounterCacheKey(organizationId);
