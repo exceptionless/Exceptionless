@@ -19,6 +19,7 @@ namespace Exceptionless.Models {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
             OverageHours = new Collection<UsageInfo>();
+            Usage = new Collection<UsageInfo>();
         }
 
         /// <summary>
