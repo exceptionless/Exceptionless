@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Extensions {
                 return Int32.MaxValue;
 
             // allow any single hour to have 5 times the monthly limit converted to hours
-            return organization.MaxErrorsPerMonth / 730 * 5;
+            return (int)Math.Ceiling(organization.MaxErrorsPerMonth / 730d * 5d);
         }
 
         public static bool IsOverMonthlyLimit(this Organization organization) {

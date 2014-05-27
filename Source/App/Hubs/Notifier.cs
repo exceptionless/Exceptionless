@@ -12,6 +12,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Mvc;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
@@ -51,23 +52,40 @@ namespace Exceptionless.App.Hubs {
                 using (IRedisClient client = _redisClientsManager.GetReadOnlyClient()) {
                     using (IRedisSubscription subscription = client.CreateSubscription()) {
                         subscription.OnMessage = (channel, msg) => {
-                            if (msg == "ping" && Ping != null)
-                                Ping(this, EventArgs.Empty);
-
                             string[] parts = msg.Split(':');
-                            if (parts.Length != 6)
+                            if (parts.Length < 1)
                                 return;
 
-                            bool isHidden;
-                            Boolean.TryParse(parts[3], out isHidden);
+                            switch (parts[0]) {
+                                case "ping":
+                                    Ping(this, EventArgs.Empty);
+                                    break;
+                                case "overlimit":
+                                    if (parts.Length != 3)
+                                        return;
 
-                            bool isFixed;
-                            Boolean.TryParse(parts[4], out isFixed);
+                                    if (parts[1] == "hr")
+                                        WentOverHourlyLimit(parts[2]);
+                                    else
+                                        WentOverMonthlyLimit(parts[2]);
+                                        
+                                    break;
+                                default: // error occurred
+                                    if (parts.Length != 6)
+                                        return;
 
-                            bool is404;
-                            Boolean.TryParse(parts[5], out is404);
+                                    bool isHidden;
+                                    Boolean.TryParse(parts[3], out isHidden);
 
-                            NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
+                                    bool isFixed;
+                                    Boolean.TryParse(parts[4], out isFixed);
+
+                                    bool is404;
+                                    Boolean.TryParse(parts[5], out is404);
+
+                                    NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
+                                    break;
+                            }
                         };
                         RetryUtil.Retry(() => subscription.SubscribeToChannels(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY));
                     }
@@ -205,6 +223,36 @@ namespace Exceptionless.App.Hubs {
 
             context.Clients.Group(organizationId).newError(projectId, stackId, isHidden, isFixed, is404);
             _cacheClient.Set(String.Concat("SignalR.Org.", organizationId), DateTime.Now);
+        }
+
+        public void WentOverHourlyLimit(string organizationId) {
+            if (!Settings.Current.EnableSignalR)
+                return;
+
+            if (GlobalHost.ConnectionManager == null)
+                return;
+
+            IHubContext context = GlobalHost.ConnectionManager.GetHubContext<Notifier>();
+
+            if (context == null)
+                return;
+
+            context.Clients.Group(organizationId).wentOverHourlyLimit(organizationId);
+        }
+
+        public void WentOverMonthlyLimit(string organizationId) {
+            if (!Settings.Current.EnableSignalR)
+                return;
+
+            if (GlobalHost.ConnectionManager == null)
+                return;
+
+            IHubContext context = GlobalHost.ConnectionManager.GetHubContext<Notifier>();
+
+            if (context == null)
+                return;
+
+            context.Clients.Group(organizationId).wentOverMonthlyLimit(organizationId);
         }
     }
 }

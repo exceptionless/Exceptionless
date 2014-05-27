@@ -16,19 +16,19 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Extensions;
-using ServiceStack.CacheAccess;
 using Exceptionless.Core.Extensions;
+using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Web {
     public sealed class OverageHandler : DelegatingHandler {
-        private readonly ICacheClient _cacheClient;
+        private readonly IRedisClientsManager _clientsManager;
         private readonly IOrganizationRepository _organizationRepository;
 
-        public OverageHandler(ICacheClient cacheClient, IOrganizationRepository organizationRepository) {
-            _cacheClient = cacheClient;
+        public OverageHandler(IRedisClientsManager clientManager, IOrganizationRepository organizationRepository) {
+            _clientsManager = clientManager;
             _organizationRepository = organizationRepository;
         }
 
@@ -73,26 +73,37 @@ namespace Exceptionless.Core.Web {
             if (org.MaxErrorsPerMonth < 0)
                 return base.SendAsync(request, cancellationToken);
 
-            string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
-            long hourlyErrorCount = _cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
-            string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
-            long monthlyErrorCount = _cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyUsage());
-            bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxErrorsPerMonth;
+            using (var cacheClient = _clientsManager.GetCacheClient()) {
+                string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
+                long hourlyErrorCount = cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
+                string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
+                long monthlyErrorCount = cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyUsage());
+                bool justWentOverHourly = hourlyErrorCount == org.GetHourlyErrorLimit() + 1;
+                bool justWentOverMonthly = monthlyErrorCount == org.MaxErrorsPerMonth + 1;
+                bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxErrorsPerMonth;
 
-            var lastCounterSavedDate = _cacheClient.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
-            if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
-                return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
+                if (justWentOverHourly)
+                    using (IRedisClient client = _clientsManager.GetClient())
+                        client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:hr:", org.Id));
 
-            org = _organizationRepository.GetById(organizationId, true);
-            if (hourlyErrorCount > org.GetHourlyErrorLimit())
-                org.SetHourlyOverage(hourlyErrorCount);
-            if (monthlyErrorCount > org.MaxErrorsPerMonth)
+                if (justWentOverMonthly)
+                    using (IRedisClient client = _clientsManager.GetClient())
+                        client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:month:", org.Id));
+
+                var lastCounterSavedDate = cacheClient.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
+                if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
+                    return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
+
+                org = _organizationRepository.GetById(organizationId, true);
                 org.SetMonthlyUsage(monthlyErrorCount);
+                if (hourlyErrorCount > org.GetHourlyErrorLimit())
+                    org.SetHourlyOverage(hourlyErrorCount);
 
-            _organizationRepository.Update(org);
-            _cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+                _organizationRepository.Update(org);
+                cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
 
-            return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
+                return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
+            }
         }
 
         private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

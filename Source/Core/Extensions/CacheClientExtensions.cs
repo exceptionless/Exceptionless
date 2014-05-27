@@ -27,6 +27,9 @@ namespace Exceptionless.Extensions {
         }
 
         public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, uint? startingValue = null) {
+            if (!startingValue.HasValue)
+                startingValue = 0;
+
             var count = client.Get<long?>(key);
             if (count.HasValue)
                 return client.Increment(key, value);
