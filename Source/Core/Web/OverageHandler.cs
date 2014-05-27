@@ -53,12 +53,12 @@ namespace Exceptionless.Core.Web {
             return String.Concat("overage", ":hr-", organizationId, ":", DateTime.UtcNow.Date.ToString("MMddHH"));
         }
 
-        private string GetMonthlyCounterCacheKey(string organizationId) {
-            return String.Concat("overage", ":month-", organizationId, ":", DateTime.UtcNow.Date.ToString("MM"));
+        private string GetMonthlyUsageCacheKey(string organizationId) {
+            return String.Concat("usage", ":month-", organizationId, ":", DateTime.UtcNow.Date.ToString("MM"));
         }
 
-        private string GetCounterSavedCacheKey(string organizationId) {
-            return String.Concat("overage-saved", ":", organizationId);
+        private string GetUsageSavedCacheKey(string organizationId) {
+            return String.Concat("usage-saved", ":", organizationId);
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
@@ -73,30 +73,26 @@ namespace Exceptionless.Core.Web {
             if (org.MaxErrorsPerMonth < 0)
                 return base.SendAsync(request, cancellationToken);
 
-            // TODO: We need to be using the current value from the org for monthly error count if the
-            // key doesn't exist in Redis since redis might restart. We only store the count if the plan is over
-            // the limit, so we need to figure out a plan.
             string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
             long hourlyErrorCount = _cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
-            string monthlyCacheKey = GetMonthlyCounterCacheKey(organizationId);
-            long monthlyErrorCount = _cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32));
+            string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
+            long monthlyErrorCount = _cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyUsage());
+            bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxErrorsPerMonth;
 
-            if (hourlyErrorCount <= org.GetHourlyErrorLimit() && monthlyErrorCount <= org.MaxErrorsPerMonth)
-                return base.SendAsync(request, cancellationToken);
-
-            var lastCounterSavedDate = _cacheClient.Get<DateTime?>(GetCounterSavedCacheKey(organizationId));
+            var lastCounterSavedDate = _cacheClient.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
             if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
-                return CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.");
+                return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
 
             org = _organizationRepository.GetById(organizationId, true);
             if (hourlyErrorCount > org.GetHourlyErrorLimit())
                 org.SetHourlyOverage(hourlyErrorCount);
             if (monthlyErrorCount > org.MaxErrorsPerMonth)
-                org.SetMonthlyOverage(monthlyErrorCount);
+                org.SetMonthlyUsage(monthlyErrorCount);
 
             _organizationRepository.Update(org);
-            _cacheClient.Set(GetCounterSavedCacheKey(organizationId), DateTime.UtcNow);
-            return CreateResponse(request, HttpStatusCode.PaymentRequired, String.Format("Error limit exceeded."));
+            _cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+
+            return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
         }
 
         private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

@@ -26,12 +26,12 @@ namespace Exceptionless.Extensions {
             }
         }
 
-        public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive) {
+        public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, uint? startingValue = null) {
             var count = client.Get<long?>(key);
             if (count.HasValue)
                 return client.Increment(key, value);
 
-            client.Set(key, value, timeToLive);
+            client.Set(key, startingValue + value, timeToLive);
             return value;
         }
     }

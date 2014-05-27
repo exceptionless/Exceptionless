@@ -79,7 +79,7 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.BillingChangeDate).SetElementName(FieldNames.BillingChangeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.OverageMonths).SetElementName(FieldNames.OverageMonths).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.OverageMonths).SetIgnoreIfNull(true);
         }
 
         public Organization GetByInviteToken(string token, out Invite invite) {

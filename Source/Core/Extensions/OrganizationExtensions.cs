@@ -37,28 +37,46 @@ namespace Exceptionless.Core.Extensions {
             return organization.MaxErrorsPerMonth / 730 * 5;
         }
 
+        public static bool IsOverMonthlyLimit(this Organization organization) {
+            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0);
+            var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null && usageInfo.Count > organization.MaxErrorsPerMonth;
+        }
+
+        public static bool IsOverHourlyLimit(this Organization organization) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null && usageInfo.Count > organization.GetHourlyErrorLimit();
+        }
+
+        public static int GetCurrentMonthlyUsage(this Organization organization) {
+            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0);
+            var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.Count : 0;
+        }
+
         public static void SetHourlyOverage(this Organization organization, long count) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetOverage(date, (int)count, organization.GetHourlyErrorLimit());
+            organization.OverageHours.SetUsage(date, (int)count, organization.GetHourlyErrorLimit());
         }
 
-        public static void SetMonthlyOverage(this Organization organization, long count) {
+        public static void SetMonthlyUsage(this Organization organization, long count) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0);
-            organization.OverageMonths.SetOverage(date, (int)count, organization.MaxErrorsPerMonth);
+            organization.Usage.SetUsage(date, (int)count, organization.MaxErrorsPerMonth);
         }
 
-        public static void SetOverage(this ICollection<OverageInfo> overages, DateTime date, int count, int limit) {
-            var overageInfo = overages.FirstOrDefault(o => o.Date == date);
-            if (overageInfo == null) {
-                overageInfo = new OverageInfo {
+        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int count, int limit) {
+            var usageInfo = usages.FirstOrDefault(o => o.Date == date);
+            if (usageInfo == null) {
+                usageInfo = new UsageInfo {
                     Date = date,
                     Count = count,
                     Limit = limit
                 };
-                overages.Add(overageInfo);
+                usages.Add(usageInfo);
             } else {
-                overageInfo.Limit = limit;
-                overageInfo.Count = count;
+                usageInfo.Limit = limit;
+                usageInfo.Count = count;
             }
         }
     }

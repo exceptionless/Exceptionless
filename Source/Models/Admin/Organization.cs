@@ -18,7 +18,7 @@ namespace Exceptionless.Models {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
-            OverageHours = new Collection<OverageInfo>();
+            OverageHours = new Collection<UsageInfo>();
         }
 
         /// <summary>
@@ -152,17 +152,17 @@ namespace Exceptionless.Models {
         public ICollection<Invite> Invites { get; set; }
 
         /// <summary>
-        /// Days over daily error limit.
+        /// Hours over error limit.
         /// </summary>
-        public ICollection<OverageInfo> OverageHours { get; set; }
+        public ICollection<UsageInfo> OverageHours { get; set; }
 
         /// <summary>
-        /// Months over monthly error limit.
+        /// Account error usage information.
         /// </summary>
-        public ICollection<OverageInfo> OverageMonths { get; set; }
+        public ICollection<UsageInfo> Usage { get; set; }
     }
 
-    public class OverageInfo {
+    public class UsageInfo {
         public DateTime Date { get; set; }
         public int Count { get; set; }
         public int Limit { get; set; }
