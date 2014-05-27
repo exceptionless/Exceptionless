@@ -49,6 +49,12 @@ namespace Exceptionless.App {
                     esr.Is404 = es.SignatureInfo.ContainsKey("Path") && !es.SignatureInfo.ContainsKey("ExceptionType");
                 });
 
+            Mapper.CreateMap<Organization, OrganizationInfoModel>()
+                .AfterMap((o, oim) => {
+                    oim.IsOverHourlyLimit = o.IsOverHourlyLimit();
+                    oim.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
+                });
+
             Mapper.CreateMap<Project, ProjectModel>();
 
             Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => { igm.Id = si.Id.Substring(3); });

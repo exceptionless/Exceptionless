@@ -410,6 +410,7 @@
     <Compile Include="Models\Common\EmailAddressModel.cs" />
     <Compile Include="Models\Error\ErrorModel.cs" />
     <Compile Include="Models\Error\ExtendedDataItemModel.cs" />
+    <Compile Include="Models\Organization\OrganizationInfoModel.cs" />
     <Compile Include="Models\Stats\BillingPlanStatsModel.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
@@ -605,6 +606,7 @@
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Organization\Suspended.cshtml" />
     <Content Include="Scripts\underscore-min.map" />
+    <Content Include="Views\Shared\_Notifications.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ClientAccessPolicy.xml">

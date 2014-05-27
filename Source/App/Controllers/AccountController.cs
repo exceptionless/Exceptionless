@@ -21,6 +21,7 @@ using DotNetOpenAuth.AspNet;
 using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Account;
 using Exceptionless.App.Models.Common;
+using Exceptionless.App.Models.Organization;
 using Exceptionless.App.Models.Project;
 using Exceptionless.App.Models.User;
 using Exceptionless.Core;
@@ -97,7 +98,7 @@ namespace Exceptionless.App.Controllers {
                 },
                 EnableBilling = Settings.Current.EnableBilling,
                 BillingInfo = BillingManager.Plans,
-                Organizations = organizations,
+                Organizations = organizations.Select(Mapper.Map<Organization, OrganizationInfoModel>),
                 Projects = projects.Select(Mapper.Map<Project, ProjectInfoModel>),
             }, JsonRequestBehavior.AllowGet);
         }

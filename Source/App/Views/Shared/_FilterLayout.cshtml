@@ -6,10 +6,7 @@
     @RenderSection("HeadContent", required: false)
 }
 
-<div id="free-plan-notification" class="alert in fade alert-success" style="display: none;">
-    <strong>You are on a free plan.</strong>
-    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable premium features and extra storage!
-</div>
+@Html.Partial("_Notifications")
 
 <div class="well well-small">
     <div class="btn-toolbar" style="margin-top: 0; margin-bottom: 0;">
