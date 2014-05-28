@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Web {
                 if (hourlyErrorCount > org.GetHourlyErrorLimit())
                     org.SetHourlyOverage(hourlyErrorCount);
 
-                _organizationRepository.Update(org);
+                _organizationRepository.Update(org, true);
                 cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
 
                 return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
