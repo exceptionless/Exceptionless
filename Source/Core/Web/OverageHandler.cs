@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Web {
         }
 
         private string GetHourlyCounterCacheKey(string organizationId) {
-            return String.Concat("overage", ":hr-", organizationId, ":", DateTime.UtcNow.Date.ToString("MMddHH"));
+            return String.Concat("overage", ":hr-", organizationId, ":", DateTime.UtcNow.ToString("MMddHH"));
         }
 
         private string GetMonthlyUsageCacheKey(string organizationId) {
