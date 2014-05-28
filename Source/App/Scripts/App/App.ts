@@ -99,6 +99,26 @@ module exceptionless {
                     && (App._previousOrganization.isSuspended !== o.isSuspended)) {
                     location.reload();
                 }
+
+                var monthlyLimitNotification = $('#monthly-limit-notification');
+                if (!monthlyLimitNotification.length)
+                    return;
+
+                if (o.isOverMonthlyLimit) {
+                    monthlyLimitNotification.show();
+                    return;
+                } else {
+                    monthlyLimitNotification.hide();
+                }
+
+                var hourlyLimitNotification = $('#hourly-limit-notification');
+                if (!hourlyLimitNotification.length)
+                    return;
+
+                if (o.isOverHourlyLimit)
+                    hourlyLimitNotification.show();
+                else
+                    hourlyLimitNotification.hide();
             });
 
             App.onPlanChanged.subscribe(() => App.refreshViewModelData());
