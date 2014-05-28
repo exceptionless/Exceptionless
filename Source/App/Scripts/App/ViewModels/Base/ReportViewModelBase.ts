@@ -26,19 +26,6 @@ module exceptionless {
                 if (plan.id === Constants.FREE_PLAN_ID)
                     $('#free-plan-notification').show();
             });
-
-            App.selectedOrganization.subscribe(organization => {
-                if (organization.isOverHourlyLimit)
-                    $('#hourly-limit-notification').show();
-                else
-                    $('#hourly-limit-notification').hide();
-
-
-                if (organization.isOverHourlyLimit)
-                    $('#monthly-limit-notification').show();
-                else
-                    $('#monthly-limit-notification').hide();
-            });
         }
 
         public onStackUpdated(stack) {
