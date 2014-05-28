@@ -12,6 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 
@@ -83,12 +84,6 @@ namespace Exceptionless.Core.Billing {
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
             if (organization.ProjectCount > maxProjects) {
                 message = String.Format("Please remove {0} project{1} and try again.", organization.ProjectCount - maxProjects, (organization.ProjectCount - maxProjects) > 0 ? "s" : String.Empty);
-                return false;
-            }
-
-            // TODO: We need to make this smarter.
-            if (organization.OverageHours != null && organization.OverageHours.Count(d => d.Date > DateTime.Now.AddDays(-30)) > 0 && plan.MaxErrorsPerMonth < GetBillingPlan(organization.PlanId).MaxErrorsPerMonth) {
-                message = "You would exceed the maximum errors per day plan limit.";
                 return false;
             }
 
