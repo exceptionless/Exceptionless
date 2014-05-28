@@ -59,7 +59,7 @@ namespace Exceptionless.Core {
             public const string Invites_EmailAddress = "Invites.EmailAddress";
             public const string Invites_DateAdded = "Invites.DateAdded";
             public const string OverageHours = "OverageHours";
-            public const string OverageMonths = "OverageMonths";
+            public const string Usage = "Usage";
         }
 
         protected override void InitializeCollection(MongoCollection<Organization> collection) {
@@ -78,8 +78,8 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.SubscribeDate).SetElementName(FieldNames.SubscribeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangeDate).SetElementName(FieldNames.BillingChangeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.OverageMonths).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).OverageHours.Any());
+            cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.Usage).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Usage.Any());
         }
 
         public Organization GetByInviteToken(string token, out Invite invite) {
