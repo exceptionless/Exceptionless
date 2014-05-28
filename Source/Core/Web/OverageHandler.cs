@@ -91,7 +91,7 @@ namespace Exceptionless.Core.Web {
                         client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:month:", org.Id));
 
                 var lastCounterSavedDate = cacheClient.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
-                if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
+                if (!justWentOverHourly && !justWentOverMonthly && lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
                     return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
 
                 org = _organizationRepository.GetById(organizationId, true);
