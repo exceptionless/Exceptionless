@@ -18,7 +18,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
     public class WebHookRepository : MongoRepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
         public WebHookRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) { }
 

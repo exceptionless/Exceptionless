@@ -13,18 +13,14 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Bson.Serialization.Options;
-using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
-    public class DayStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<DayStackStats>, IDayStackStatsRepository {
-        public DayStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
+    public class InMemoryDayStackStatsRepository : InMemoryRepositoryOwnedByProjectAndStack<DayStackStats>, IDayStackStatsRepository {
+        public InMemoryDayStackStatsRepository(ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 
@@ -56,23 +52,6 @@ namespace Exceptionless.Core.Repositories {
             public const string Total = "tot";
             public const string MinuteStats = "mn";
             public const string MinuteStats_Format = "mn.{0}";
-        }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {
-            cm.AutoMap();
-            cm.SetIgnoreExtraElements(true);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Id));
-            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
-            cm.GetMemberMap(c => c.StackId).SetElementName(CommonFieldNames.StackId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
-            cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
-            cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 
         #endregion\

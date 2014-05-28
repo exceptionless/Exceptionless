@@ -20,7 +20,7 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
     public class UserRepository : MongoRepository<User>, IUserRepository {
         public UserRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) { }
 

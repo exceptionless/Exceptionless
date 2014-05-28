@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 
@@ -19,12 +21,16 @@ namespace Exceptionless.Core.Jobs {
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IAppStatsClient _statsClient;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
 
-        public ProcessEventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient) {
+        public ProcessEventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository) {
             _queue = queue;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
             _statsClient = statsClient;
+            _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
         }
 
         public async override Task<JobResult> RunAsync(JobRunContext context) {
@@ -65,9 +71,22 @@ namespace Exceptionless.Core.Jobs {
                     continue;
                 }
 
+                int eventsToProcess = events.Count;
                 bool isSingleEvent = events.Count == 1;
+                if (!isSingleEvent) {
+                    var project = _projectRepository.GetById(queueEntry.Value.ProjectId, true);
+                    // Don't process all the events if it will put the account over its limits.
+                    eventsToProcess = _organizationRepository.GetRemainingEventLimit(project.OrganizationId);
+
+                    // Add 1 because we already counted 1 against their limit when we received the event post.
+                    if (eventsToProcess < Int32.MaxValue)
+                        eventsToProcess += 1;
+
+                    // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
+                    _organizationRepository.IncrementUsage(project.OrganizationId, events.Count - 1);
+                }
                 int errorCount = 0;
-                foreach (PersistentEvent ev in events) {
+                foreach (PersistentEvent ev in events.Take(eventsToProcess)) {
                     try {
                         _eventPipeline.Run(ev);
                     } catch (Exception ex) {

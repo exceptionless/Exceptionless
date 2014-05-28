@@ -12,6 +12,8 @@
 using System;
 using System.Collections.Generic;
 using Exceptionless.Models;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 
 namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
@@ -30,6 +32,7 @@ namespace Exceptionless.Core.Repositories {
     }
 
     public class StackInfo {
+        [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
         public DateTime? DateFixed { get; set; }
         public bool OccurrencesAreCritical { get; set; }

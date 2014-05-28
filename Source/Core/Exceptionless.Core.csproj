@@ -205,6 +205,7 @@
     <Compile Include="Messaging\Models\EventOccurrence.cs" />
     <Compile Include="Messaging\Models\EntityChange.cs" />
     <Compile Include="Messaging\Models\PlanChanged.cs" />
+    <Compile Include="Messaging\Models\PlanOverage.cs" />
     <Compile Include="Messaging\Models\StackUpdated.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
@@ -345,6 +346,7 @@
     <Compile Include="Web\Delta\Delta.cs" />
     <Compile Include="Web\Delta\NonValidatingParameterBindingAttribute.cs" />
     <Compile Include="Web\Delta\PerRequestParameterBinding.cs" />
+    <Compile Include="Web\OverageHandler.cs" />
     <Compile Include="Web\Results\NotImplementedActionResult.cs" />
     <Compile Include="Web\Results\PlanLimitReachedActionResult.cs" />
     <Compile Include="Web\UserAgentParameterBinding.cs" />

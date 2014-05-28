@@ -13,15 +13,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
-    public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
+    public abstract class Repository<T> : ReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
         protected readonly IMessagePublisher _messagePublisher;
         protected readonly static string _entityType = typeof(T).Name;
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
@@ -29,7 +29,8 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
 
-        protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+        protected Repository(ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(cacheClient) {
             _messagePublisher = messagePublisher;
             EnableNotifications = true;
         }
@@ -60,7 +61,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to add.", "documents");
 
             BeforeAdd(documents);
-            _collection.InsertBatch<T>(documents);
+            _collection.AddRange(documents);
             AfterAdd(documents, addToCache, expiresIn);
         }
 
@@ -108,7 +109,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
             BeforeRemove(documents);
-            _collection.Remove(Query.In(CommonFieldNames.Id, documents.Select(d => _getIdValue(d.Id))));
+            _collection.RemoveAll(d => documents.Select(doc => doc.Id).Contains(d.Id));
             AfterRemove(documents, sendNotification);
         }
 
@@ -200,7 +201,7 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        protected long UpdateAll(QueryOptions options, IMongoUpdate update, bool sendNotifications = true) {
+        protected long UpdateAll(QueryOptions<T> options, IMongoUpdate update, bool sendNotifications = true) {
             var result = _collection.Update(options.GetQuery(_getIdValue), update, UpdateFlags.Multi);
             if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
                 return result.DocumentsAffected;

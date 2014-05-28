@@ -7,7 +7,6 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Caching {
     public class InMemoryCacheClient : ICacheClient {
         private ConcurrentDictionary<string, CacheEntry> _memory;
-        private ConcurrentDictionary<string, int> _counters;
 
         public bool FlushOnDispose { get; set; }
 
@@ -35,7 +34,6 @@ namespace Exceptionless.Core.Caching {
 
         public InMemoryCacheClient() {
             _memory = new ConcurrentDictionary<string, CacheEntry>();
-            _counters = new ConcurrentDictionary<string, int>();
         }
 
         private bool CacheAdd(string key, object value) {
@@ -98,7 +96,6 @@ namespace Exceptionless.Core.Caching {
             if (!FlushOnDispose) return;
 
             _memory = new ConcurrentDictionary<string, CacheEntry>();
-            _counters = new ConcurrentDictionary<string, int>();
         }
 
         public bool Remove(string key) {
@@ -143,20 +140,23 @@ namespace Exceptionless.Core.Caching {
             return default(T);
         }
 
-        private int UpdateCounter(string key, int value) {
-            if (!_counters.ContainsKey(key))
-                _counters[key] = 0;
-            
-            _counters[key] += value;
-            return _counters[key];
+        private long UpdateCounter(string key, long value) {
+            if (!_memory.ContainsKey(key)) {
+                Set(key, value);
+                return value;
+            }
+
+            var current = Get<long>(key);
+            Set(key, current += value);
+            return current;
         }
 
         public long Increment(string key, uint amount) {
-            return UpdateCounter(key, (int)amount);
+            return UpdateCounter(key, amount);
         }
 
         public long Decrement(string key, uint amount) {
-            return UpdateCounter(key, (int)amount * -1);
+            return UpdateCounter(key, amount * -1);
         }
 
         public bool Add<T>(string key, T value) {

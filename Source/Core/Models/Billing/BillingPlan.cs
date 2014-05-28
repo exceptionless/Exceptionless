@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Models.Billing {
         public int MaxProjects { get; set; }
         public int MaxUsers { get; set; }
         public int RetentionDays { get; set; }
-        public int MaxEventsPerDay { get; set; }
+        public int MaxEventsPerMonth { get; set; }
         public bool HasPremiumFeatures { get; set; }
         public bool IsHidden { get; set; }
     }

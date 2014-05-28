@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.IsNew)
                 return;
 
-            int maxEventsPerStack = ctx.Organization.MaxEventsPerDay > 0 ? ctx.Organization.MaxEventsPerDay + Math.Min(50, ctx.Organization.MaxEventsPerDay * 2) : Int32.MaxValue;
+            int maxEventsPerStack = ctx.Organization.MaxEventsPerMonth > 0 ? ctx.Organization.MaxEventsPerMonth + Math.Min(50, ctx.Organization.MaxEventsPerMonth * 2) : Int32.MaxValue;
             _eventRepository.RemoveOldestEvents(ctx.Event.StackId, maxEventsPerStack);
         }
     }

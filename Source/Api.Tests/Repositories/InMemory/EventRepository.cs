@@ -16,6 +16,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -23,13 +24,13 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
-    public class EventRepository : MongoRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
+    public class InMemoryEventRepository : InMemoryRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
 
-        public EventRepository(MongoDatabase database, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+        public InMemoryEventRepository(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(cacheClient, messagePublisher) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
         }
@@ -99,7 +100,7 @@ namespace Exceptionless.Core.Repositories {
             if (!includeNotFound)
                 query = query.And(Query.NE(FieldNames.Type, "404"));
 
-            return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            return Find<PersistentEvent>(FindOptionsExtensions.WithPaging(new MultiOptions().WithProjectId(projectId).WithQuery(query), paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
         public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -110,7 +111,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
 
-            return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            return Find<PersistentEvent>(FindOptionsExtensions.WithPaging(new MultiOptions().WithStackId(stackId).WithQuery(query), paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
         public void RemoveOldestEvents(string stackId, int maxEventsPerStack) {
@@ -127,11 +128,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private ICollection<PersistentEvent> GetOldestEvents(string stackId, PagingOptions options) {
-            return Find<PersistentEvent>(new MultiOptions()
-                .WithStackId(stackId)
-                .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
-                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
-                .WithPaging(options));
+            return Find<PersistentEvent>(FindOptionsExtensions.WithPaging(new MultiOptions()
+                    .WithStackId(stackId)
+                    .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
+                    .WithSort(SortBy.Descending(FieldNames.Date_UTC)), options));
         }
 
         public string GetPreviousEventIdInStack(string id) {
@@ -284,39 +284,6 @@ namespace Exceptionless.Core.Repositories {
             public const string IsHidden = "hid";
             public const string RequestInfo = "req";
             public const string RequestInfo_ClientIpAddress = RequestInfo + ".ip";
-        }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.Date_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Type), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.StackId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<PersistentEvent> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.SummaryHtml).SetElementName(FieldNames.SummaryHtml).SetIgnoreIfDefault(true);
-
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Event))) {
-                BsonClassMap.RegisterClassMap<Event>(evcm => {
-                    evcm.AutoMap();
-                    evcm.SetIgnoreExtraElements(false);
-                    evcm.SetIgnoreExtraElementsIsInherited(true);
-                    evcm.MapExtraElementsProperty(c => c.Data);
-                    evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any());
-                    evcm.GetMemberMap(c => c.Source).SetElementName(FieldNames.Source).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.ReferenceId).SetElementName(FieldNames.ReferenceId).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.SessionId).SetElementName(FieldNames.SessionId).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.Date).SetElementName(FieldNames.Date).SetSerializer(new UtcDateTimeOffsetSerializer());
-                    evcm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Tags.Any());
-                });
-            }
         }
         
         #endregion

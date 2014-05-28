@@ -10,31 +10,31 @@
 #endregion
 
 using System;
+using System.Linq;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Messaging;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Exceptionless.Core.Repositories;
 
-namespace Exceptionless.Core.Repositories {
-    public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockRepository {
-        public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
-            _getIdValue = s => s;
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
+    public class InMemoryJobLockRepository : InMemoryRepository<JobLockInfo>, IJobLockRepository {
+        public InMemoryJobLockRepository(ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(cacheClient, messagePublisher) {
         }
 
         public JobLockInfo GetByName(string name) {
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException("name");
             
-            return FindOne<JobLockInfo>(new OneOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
+            return Collection.FirstOrDefault(d => d.Name == name);
         }
 
         public void RemoveByAge(string name, TimeSpan age) {
             if (String.IsNullOrEmpty(name))
                 throw new ArgumentNullException("name");
 
-            RemoveAll(new QueryOptions().WithQuery(Query.And(Query.EQ(FieldNames.Name, name), Query.LT(FieldNames.CreatedDate, DateTime.Now.Subtract(age)))));
+            Collection.RemoveAll(d => d.Name == name && d.CreatedDate < DateTime.Now.Subtract(age));
         }
 
         public void RemoveByName(string name) {
@@ -54,16 +54,6 @@ namespace Exceptionless.Core.Repositories {
         #region Collection Setup
 
         public const string CollectionName = "joblock";
-
-        public static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string Name = "Name";
-            public const string CreatedDate = "CreatedDate";
-        }
-
-        protected override string GetCollectionName() {
-            return CollectionName;
-        }
 
         #endregion
     }

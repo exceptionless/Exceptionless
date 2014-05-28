@@ -21,41 +21,40 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
-    public class DayStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<DayStackStats>, IDayStackStatsRepository {
-        public DayStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
+    public class MonthStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<MonthStackStats>, IMonthStackStatsRepository {
+        public MonthStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 
-        public ICollection<DayStackStats> GetRange(string start, string end) {
+        public ICollection<MonthStackStats> GetRange(string start, string end) {
             var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
-            return Find<DayStackStats>(new MultiOptions().WithQuery(query));
+            return Find<MonthStackStats>(new MultiOptions().WithQuery(query));
         }
 
-        public long IncrementStats(string id, long getTimeBucket) {
-            UpdateBuilder update = Update
-                .Inc(FieldNames.Total, 1)
-                .Inc(String.Format(FieldNames.MinuteStats_Format, getTimeBucket.ToString("0000")), 1);
+        public long IncrementStats(string id, DateTime localDate) {
+            var update = Update.Inc(FieldNames.Total, 1)
+                               .Inc(String.Format(FieldNames.DayStats_Format, localDate.Day), 1);
 
             return UpdateAll(new QueryOptions().WithId(id), update);
         }
 
         #region Collection Setup
 
-        public const string CollectionName = "stack.stats.day";
+        public const string CollectionName = "stack.stats.month";
 
         protected override string GetCollectionName() {
             return CollectionName;
         }
 
         public static class FieldNames {
+            public const string DayStats_Format = "day.{0}";
             public const string Id = CommonFieldNames.Id;
             public const string ProjectId = CommonFieldNames.ProjectId;
             public const string StackId = CommonFieldNames.StackId;
             public const string Total = "tot";
-            public const string MinuteStats = "mn";
-            public const string MinuteStats_Format = "mn.{0}";
+            public const string DayStats = "day";
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
@@ -65,16 +64,16 @@ namespace Exceptionless.Core.Repositories {
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
         }
 
-        protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {
+        protected override void ConfigureClassMap(BsonClassMap<MonthStackStats> cm) {
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
             cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
             cm.GetMemberMap(c => c.StackId).SetElementName(CommonFieldNames.StackId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
-            cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
+            cm.GetMemberMap(c => c.DayStats).SetElementName(FieldNames.DayStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 
-        #endregion\
+        #endregion
     }
 }

@@ -26,7 +26,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
     public class OrganizationRepository : MongoRepository<Organization>, IOrganizationRepository {
         public OrganizationRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) { }
 

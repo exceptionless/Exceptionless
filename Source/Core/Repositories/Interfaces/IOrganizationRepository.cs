@@ -22,8 +22,9 @@ namespace Exceptionless.Core.Repositories {
         ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
         void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
         void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null);
-
         ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         BillingPlanStats GetBillingPlanStats();
+        bool IncrementUsage(string organizationId, int count = 1);
+        int GetRemainingEventLimit(string organizationId);
     }
 }

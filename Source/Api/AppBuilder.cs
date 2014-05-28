@@ -12,7 +12,6 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
@@ -48,8 +47,10 @@ namespace Exceptionless.Api {
             config.MessageHandlers.Add(new EncodingDelegatingHandler());
 
             // Throttle api calls to X every 15 minutes by IP address.
-            var cacheClient = container.GetInstance<ICacheClient>();
-            config.MessageHandlers.Add(new ThrottlingHandler(cacheClient, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
+
+            // Reject event posts in orgs over their max event limits.
+            config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
@@ -76,7 +77,7 @@ namespace Exceptionless.Api {
                 throw;
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            config.EnableSystemDiagnosticsTracing();
+            //config.EnableSystemDiagnosticsTracing();
 
             // sample middleware that would be how we would auth an api token
             // maybe we should be using custom OAuthBearerAuthenticationProvider's
@@ -148,6 +149,7 @@ namespace Exceptionless.Api {
             });
             app.UseStageMarker(PipelineStage.PostMapHandler);
 
+            app.UseWelcomePage();
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 
             // TODO: Remove this as it's only for testing.

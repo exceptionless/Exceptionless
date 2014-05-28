@@ -18,7 +18,8 @@ namespace Exceptionless.Models {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
-            OverageDays = new Collection<OverageInfo>();
+            Usage = new Collection<UsageInfo>();
+            OverageHours = new Collection<UsageInfo>();
             Data = new DataDictionary();
         }
 
@@ -73,9 +74,9 @@ namespace Exceptionless.Models {
         public decimal BillingPrice { get; set; }
 
         /// <summary>
-        /// Maximum number of error occurrences allowed per day.
+        /// Maximum number of event occurrences allowed per month.
         /// </summary>
-        public int MaxEventsPerDay { get; set; }
+        public int MaxEventsPerMonth { get; set; }
 
         /// <summary>
         /// Number of days stats data is retained.
@@ -153,9 +154,14 @@ namespace Exceptionless.Models {
         public ICollection<Invite> Invites { get; set; }
 
         /// <summary>
-        /// Days over daily error limit.
+        /// Hours over event limit.
         /// </summary>
-        public ICollection<OverageInfo> OverageDays { get; set; }
+        public ICollection<UsageInfo> OverageHours { get; set; }
+
+        /// <summary>
+        /// Account event usage information.
+        /// </summary>
+        public ICollection<UsageInfo> Usage { get; set; }
 
         /// <summary>
         /// Optional data entries that contain additional configuration information for this organization.
@@ -165,8 +171,8 @@ namespace Exceptionless.Models {
         string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }
 
-    public class OverageInfo {
-        public DateTime Day { get; set; }
+    public class UsageInfo {
+        public DateTime Date { get; set; }
         public int Count { get; set; }
         public int Limit { get; set; }
     }

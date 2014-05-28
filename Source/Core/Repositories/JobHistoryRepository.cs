@@ -10,13 +10,15 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Messaging;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class JobHistoryRepository : MongoRepository<JobHistory>, IJobHistoryRepository {
-        public JobHistoryRepository(MongoDatabase database) : base(database) {
+        public JobHistoryRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 

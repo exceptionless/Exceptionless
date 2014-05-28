@@ -87,12 +87,6 @@ namespace Exceptionless.Core.Billing {
                 return false;
             }
 
-            // TODO: We need to make this smarter.
-            if (organization.OverageDays != null && organization.OverageDays.Count(d => d.Day > DateTime.Now.AddDays(-30)) > 0 && plan.MaxEventsPerDay < GetBillingPlan(organization.PlanId).MaxEventsPerDay) {
-                message = "You would exceed the maximum events per day plan limit.";
-                return false;
-            }
-
             // Ensure the user can't be apart of more than one free plan.
             if (String.Equals(plan.Id, FreePlan.Id) && user != null && _organizationRepository.GetByIds(user.OrganizationIds).Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
                 message = "You already have one free account. You are not allowed to create more than one free account.";
@@ -118,7 +112,7 @@ namespace Exceptionless.Core.Billing {
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;
-            organization.MaxEventsPerDay = plan.MaxEventsPerDay;
+            organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
             organization.HasPremiumFeatures = plan.HasPremiumFeatures;
         }
 
@@ -132,7 +126,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 1,
                     MaxUsers = 1,
                     RetentionDays = 3,
-                    MaxEventsPerDay = 100,
+                    MaxEventsPerMonth = 3000,
                     HasPremiumFeatures = false
                 };
             }
@@ -148,7 +142,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxEventsPerDay = 500,
+                    MaxEventsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -164,7 +158,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxEventsPerDay = 500,
+                    MaxEventsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -180,7 +174,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxEventsPerDay = 2500,
+                    MaxEventsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -196,7 +190,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxEventsPerDay = 2500,
+                    MaxEventsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -212,7 +206,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxEventsPerDay = 5000,
+                    MaxEventsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -228,7 +222,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxEventsPerDay = 5000,
+                    MaxEventsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -245,7 +239,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = -1,
-                    MaxEventsPerDay = -1,
+                    MaxEventsPerMonth = -1,
                     HasPremiumFeatures = true
                 };
             }

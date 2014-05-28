@@ -21,7 +21,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
         private readonly IOrganizationRepository _organizationRepository;
 

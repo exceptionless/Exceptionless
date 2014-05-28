@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
@@ -22,7 +23,7 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core.Repositories {
+namespace Exceptionless.Api.Tests.Repositories.InMemory {
     public class MonthProjectStatsRepository : MongoRepositoryOwnedByProject<MonthProjectStats>, IMonthProjectStatsRepository {
         public MonthProjectStatsRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {

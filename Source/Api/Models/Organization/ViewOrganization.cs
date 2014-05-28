@@ -28,7 +28,8 @@ namespace Exceptionless.Api.Models {
         public DateTime LastEventDate { get; set; }
         public long TotalEventCount { get; set; }
         public ICollection<Invite> Invites { get; set; }
-        public ICollection<OverageInfo> OverageDays { get; set; }
+        public ICollection<UsageInfo> OverageHours { get; set; }
+        public ICollection<UsageInfo> Usage { get; set; }
         public DataDictionary Data { get; set; }
     }
 }
