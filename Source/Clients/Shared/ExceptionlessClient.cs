@@ -46,6 +46,7 @@ namespace Exceptionless {
         private readonly Timer _queueTimer;
         private const int QUEUE_INTERVAL_SECONDS = 10;
         private DateTime? _suspendProcessingUntil;
+        private DateTime? _suspendErrorSubmissionUntil;
         private ILastErrorIdManager _lastErrorIdManager;
         private static volatile bool _processingQueue;
         private static readonly object _queueLock = new object();
@@ -273,7 +274,8 @@ namespace Exceptionless {
                 // If the organization over the rate limit then discard the error.
                 if (response.StatusCode == HttpStatusCode.PaymentRequired) {
                     Log.Info(typeof(ExceptionlessClient), "Too many errors have been submitted, please upgrade your plan.");
-                    SuspendProcessing();
+                    SuspendProcessing(suspendErrorSubmission: true, clearQueue: true);
+
                     return true;
                 }
 
@@ -333,17 +335,21 @@ namespace Exceptionless {
         /// <param name="data">The error data.</param>
         public void SubmitError(Error data) {
             Log.FormattedInfo(typeof(ExceptionlessClient), "Submitting error: id={0} type={1}", data != null ? data.Id : "null", data != null ? data.Type : "null");
-
-            if (CheckForDuplicateError(data))
-                return;
+            if (data == null)
+                throw new ArgumentNullException("data");
 
             if (!Configuration.Enabled) {
                 Log.Info(typeof(ExceptionlessClient), "Configuration is disabled. The error will not be submitted.");
                 return;
             }
 
-            if (data == null)
-                throw new ArgumentNullException("data");
+            if (IsErrorSubmissionSuspended) {
+                Log.Info(typeof(ExceptionlessClient), "Error submission is currently suspended. The error will not be submitted.");
+                return;
+            }
+
+            if (CheckForDuplicateError(data))
+                return;
 
             if (data.ExceptionlessClientInfo == null)
                 data.ExceptionlessClientInfo = ExceptionlessClientInfoCollector.Collect(this, Configuration.IncludePrivateInformation);
@@ -739,17 +745,32 @@ namespace Exceptionless {
 
         #endregion
 
-        public void SuspendProcessing(TimeSpan? suspensionTime = null) {
+        public void SuspendProcessing(TimeSpan? suspensionTime = null, bool suspendErrorSubmission = false, bool clearQueue = false) {
             if (!suspensionTime.HasValue)
                 suspensionTime = TimeSpan.FromMinutes(5);
 
             Log.Info(typeof(ExceptionlessClient), String.Format("Suspending processing for: {0}.", suspensionTime.Value));
             _suspendProcessingUntil = DateTime.Now.Add(suspensionTime.Value);
             _queueTimer.Change(suspensionTime.Value, TimeSpan.FromSeconds(QUEUE_INTERVAL_SECONDS));
+
+            if (suspendErrorSubmission)
+                _suspendErrorSubmissionUntil = DateTime.Now.Add(suspensionTime.Value);
+            
+            if (!clearQueue)
+                return;
+
+            // Account is over the limit and we want to ensure that the sample size being sent in will contain newer errors.
+            try {
+                _queue.Cleanup(DateTime.MaxValue);
+            } catch (Exception) {}
         }
 
         private bool IsQueueProcessingSuspended {
             get { return _suspendProcessingUntil.HasValue && _suspendProcessingUntil.Value > DateTime.Now; }
+        }
+
+        private bool IsErrorSubmissionSuspended {
+            get { return _suspendErrorSubmissionUntil.HasValue && _suspendErrorSubmissionUntil.Value > DateTime.Now; }
         }
 
         #region Singleton

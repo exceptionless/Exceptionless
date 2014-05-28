@@ -100,25 +100,23 @@ module exceptionless {
                     location.reload();
                 }
 
-                var monthlyLimitNotification = $('#monthly-limit-notification');
-                if (!monthlyLimitNotification.length)
-                    return;
-
                 if (o.isOverMonthlyLimit) {
-                    monthlyLimitNotification.show();
+                    $('#monthly-limit-notification').show();
                     return;
                 } else {
-                    monthlyLimitNotification.hide();
+                    $('#monthly-limit-notification').hide();
                 }
 
-                var hourlyLimitNotification = $('#hourly-limit-notification');
-                if (!hourlyLimitNotification.length)
-                    return;
-
                 if (o.isOverHourlyLimit)
-                    hourlyLimitNotification.show();
+                    $('#hourly-limit-notification').show();
                 else
-                    hourlyLimitNotification.hide();
+                    $('#hourly-limit-notification').hide();
+            });
+
+
+            App.onNewError.subscribe(() => {
+                $('#hourly-limit-notification').hide();
+                $('#monthly-limit-notification').hide();
             });
 
             App.onPlanChanged.subscribe(() => App.refreshViewModelData());

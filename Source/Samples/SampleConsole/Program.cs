@@ -18,6 +18,7 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless;
+using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Serialization;
 using Exceptionless.Extensions;
@@ -28,6 +29,8 @@ namespace SampleConsole {
         private static bool _sendingContinuous = false;
 
         private static void Main() {
+            ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
+            ExceptionlessClient.Current.SuspendProcessing(TimeSpan.FromMinutes(1));
             ExceptionlessClient.Current.Startup();
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
