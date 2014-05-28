@@ -193,7 +193,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetHourlyUsageCacheKey(string organizationId) {
-            return String.Concat("usage", ":hr-", organizationId, ":", DateTime.UtcNow.Date.ToString("MMddHH"));
+            return String.Concat("usage", ":hr-", organizationId, ":", DateTime.UtcNow.ToString("MMddHH"));
         }
 
         private string GetMonthlyUsageCacheKey(string organizationId) {
