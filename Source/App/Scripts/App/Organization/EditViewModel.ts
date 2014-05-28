@@ -22,9 +22,22 @@ module exceptionless.organization {
                 $('#free-plan-notification').hide();
 
                 var org = ko.utils.arrayFirst(organizations, (o) => (<any>o).id === organizationId);
-                if (org != null && org.planId === Constants.FREE_PLAN_ID) {
+                if (org == null)
+                    return;
+
+                if (org.planId === Constants.FREE_PLAN_ID)
                     $('#free-plan-notification').show();
-                }
+                
+                if (org.isOverHourlyLimit)
+                    $('#hourly-limit-notification').show();
+                else
+                    $('#hourly-limit-notification').hide();
+
+
+                if (org.isOverHourlyLimit)
+                    $('#monthly-limit-notification').show();
+                else
+                    $('#monthly-limit-notification').hide();
             });
 
             // TODO Optmize this into only loading the data when the tab changes and or consolidate it into one request.

@@ -55,6 +55,19 @@ module exceptionless.project {
                     $('#free-plan-notification').show();
             });
 
+            App.selectedOrganization.subscribe(organization => {
+                if (organization.isOverHourlyLimit)
+                    $('#hourly-limit-notification').show();
+                else
+                    $('#hourly-limit-notification').hide();
+
+
+                if (organization.isOverHourlyLimit)
+                    $('#monthly-limit-notification').show();
+                else
+                    $('#monthly-limit-notification').hide();
+            });
+
             this.saveDirtyFlag = new ko.DirtyFlag([this.name, this.customContent]);
             this.saveCommand = ko.asyncCommand({
                 canExecute: (isExecuting) => {
