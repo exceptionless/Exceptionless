@@ -29,6 +29,8 @@ namespace Exceptionless.Core.Migrations {
             var maxErrorsPerMonth = document.GetValue(OrganizationRepository.FieldNames.MaxErrorsPerMonth).AsInt32;
             if (maxErrorsPerMonth > 0)
                 document.Set(OrganizationRepository.FieldNames.MaxErrorsPerMonth, maxErrorsPerMonth * 30);
+
+            collection.Save(document);
         }
     }
 }

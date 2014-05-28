@@ -528,13 +528,13 @@ namespace Exceptionless {
 
             Log.Info(typeof(ExceptionlessClient), "Processing queue...");
             lock (_queueLock) {
-                if (IsQueueProcessingSuspended)
-                    return;
-
                 _processingQueue = true;
 
                 try {
                     using (new SingleGlobalInstance(Configuration.ApiKey, 500)) {
+                        if (IsQueueProcessingSuspended)
+                            return;
+
                         try {
                             // discard older cases and make sure the queue isn't filling up
                             int count = _queue.Cleanup(DateTime.UtcNow.AddDays(-3));
@@ -560,7 +560,7 @@ namespace Exceptionless {
 
                                     SendManifest(manifest);
                                     if (manifest.BreakProcessing || IsQueueProcessingSuspended)
-                                        break;
+                                        return;
                                 }
 
                                 manifests = _queue.GetManifests(20, false, processReportsOlderThan).ToList();
