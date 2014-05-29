@@ -12,11 +12,11 @@
 using System;
 using System.Net.Http.Formatting;
 using System.Web.Http;
+using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Utility;
 using Exceptionless.App.Controllers;
 using Exceptionless.Core;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
 
 namespace Exceptionless.App {
     public static class WebApiConfig {

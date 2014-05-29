@@ -20,7 +20,6 @@ using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
-using Microsoft.Owin.StaticFiles;
 using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;

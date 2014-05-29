@@ -217,9 +217,9 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net">
-      <HintPath>..\..\packages\Stripe.net.2.2.1\lib\net40\Stripe.net.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Stripe.net, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Stripe.net.2.2.2\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -703,6 +703,10 @@
     <Content Include="Views\Shared\EditorTemplates\Color.cshtml" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
+      <Project>{6819B8D7-2364-426B-A944-1B4CBAF4BC32}</Project>
+      <Name>Exceptionless.Api</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
       <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
       <Name>Pcl</Name>
