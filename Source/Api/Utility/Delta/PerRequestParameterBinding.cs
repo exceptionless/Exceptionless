@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     /// <summary>
     /// A special HttpParameterBinding that uses a Per Request formatter instance with access to the Request.
     /// </summary>

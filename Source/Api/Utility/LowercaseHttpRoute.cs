@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Web.Http.Routing;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     internal class LowercaseHttpRoute : HttpRoute {
         public LowercaseHttpRoute() {}
 

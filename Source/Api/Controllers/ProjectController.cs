@@ -11,7 +11,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {

@@ -16,7 +16,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Extensions;
 using Exceptionless.Models.Legacy;
 

@@ -197,7 +197,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetMonthlyUsageCacheKey(string organizationId) {
-            return String.Concat("usage", ":month-", organizationId, ":", DateTime.UtcNow.Date.ToString("MM"));
+            return String.Concat("usage", ":month-", organizationId, ":", DateTime.UtcNow.ToString("MM"));
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {

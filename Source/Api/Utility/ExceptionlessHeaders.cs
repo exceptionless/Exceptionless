@@ -12,7 +12,7 @@
 using System;
 
 #if !EMBEDDED
-namespace Exceptionless.Core {
+namespace Exceptionless.Api.Utility {
 #else
 namespace Exceptionless.Submission.Net {
 #endif

@@ -13,11 +13,12 @@ using System;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http.Filters;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class ConfigurationResponseFilterAttribute : ActionFilterAttribute {
         [Inject]

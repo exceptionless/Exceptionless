@@ -5,7 +5,7 @@ using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using MongoDB.Driver;
 

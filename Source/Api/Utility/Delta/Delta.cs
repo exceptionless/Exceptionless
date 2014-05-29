@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     /// <summary>
     /// A class the tracks changes (i.e. the Delta) for a particular <typeparamref name="TEntityType" />.
     /// </summary>

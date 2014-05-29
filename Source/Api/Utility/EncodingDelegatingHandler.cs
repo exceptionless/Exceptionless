@@ -19,7 +19,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (request.Method != HttpMethod.Get && request.Content != null && request.Content.Headers.ContentEncoding.Any()) {

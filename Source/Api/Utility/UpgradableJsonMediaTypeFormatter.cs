@@ -16,11 +16,12 @@ using System.Net.Http.Formatting;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Exceptionless.Core;
 using Exceptionless.Core.Migrations.Documents;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class UpgradableJsonMediaTypeFormatter : JsonMediaTypeFormatter {
         public UpgradableJsonMediaTypeFormatter() {
             LegacyErrorDocumentUpgrader.RegisterUpgrades();

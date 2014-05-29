@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using Exceptionless.Api.Utility;
 using KellermanSoftware.CompareNetObjects;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.Api.Extensions {
     public static class DeltaExtensions {
-        public static List<string> GetChangedProperties<T>(this Web.Delta<T> value, T original, List<String> includeList = null) where T : class, new() {
+        public static List<string> GetChangedProperties<T>(this Delta<T> value, T original, List<String> includeList = null) where T : class, new() {
             if (value == null)
                 throw new ArgumentNullException("value");
 
@@ -29,7 +30,7 @@ namespace Exceptionless.Core.Extensions {
             return !result ? compareObjects.Differences.Select(d => d.PropertyName).Distinct().ToList() : new List<string>();
         }
 
-        public static bool ContainsChangedProperty<T>(this Web.Delta<T> value, Expression<Func<T, object>> action) where T : class, new() {
+        public static bool ContainsChangedProperty<T>(this Delta<T> value, Expression<Func<T, object>> action) where T : class, new() {
             if (!value.GetChangedPropertyNames().Any())
                 return false;
 

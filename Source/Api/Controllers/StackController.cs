@@ -24,7 +24,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Newtonsoft.Json.Linq;

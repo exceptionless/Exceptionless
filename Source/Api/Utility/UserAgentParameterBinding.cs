@@ -6,7 +6,7 @@ using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class UserAgentParameterBinding : HttpParameterBinding {
         public UserAgentParameterBinding(HttpParameterDescriptor descriptor) : base(descriptor) { }
 

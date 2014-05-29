@@ -25,7 +25,6 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Web;
 using MongoDB.Driver;
 using RazorSharpEmail;
 using SimpleInjector;
@@ -94,9 +93,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<DataHelper>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
-
-            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
-            container.Register<OverageHandler>();
         }
     }
 }

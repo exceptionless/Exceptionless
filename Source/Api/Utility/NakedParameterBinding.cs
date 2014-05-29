@@ -7,7 +7,7 @@ using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Metadata;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class NakedBodyParameterBinding : HttpParameterBinding {
         public NakedBodyParameterBinding(HttpParameterDescriptor descriptor) : base(descriptor) {}
 

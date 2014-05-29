@@ -137,6 +137,7 @@
     <Reference Include="System.Web.Http.Tracing">
       <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Tracing.5.1.2\lib\net45\System.Web.Http.Tracing.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GlobalAssemblyInfo.cs">
@@ -160,6 +161,11 @@
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\UtilityController.cs" />
     <Compile Include="Extensions\AppBuilderExtensions.cs" />
+    <Compile Include="Extensions\DeltaExtensions.cs" />
+    <Compile Include="Extensions\HttpClientExtensions.cs" />
+    <Compile Include="Extensions\HttpExtensions.cs" />
+    <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />
+    <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
@@ -171,10 +177,27 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ApplicationOAuthProvider.cs" />
+    <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
+    <Compile Include="Utility\Delta\Delta.cs" />
+    <Compile Include="Utility\Delta\NonValidatingParameterBindingAttribute.cs" />
+    <Compile Include="Utility\Delta\PerRequestParameterBinding.cs" />
+    <Compile Include="Utility\EncodingDelegatingHandler.cs" />
+    <Compile Include="Utility\ExceptionlessHeaders.cs" />
+    <Compile Include="Utility\InvalidModelStateFilterAttribute.cs" />
+    <Compile Include="Utility\JsonContentNegotiator.cs" />
+    <Compile Include="Utility\LowercaseHttpRoute.cs" />
+    <Compile Include="Utility\NakedParameterBinding.cs" />
     <Compile Include="Utility\ObjectIdRouteConstraint.cs" />
     <Compile Include="Utility\OkWithHeadersContentResult.cs" />
+    <Compile Include="Utility\OverageHandler.cs" />
     <Compile Include="Utility\RequireHttpsAttribute.cs" />
     <Compile Include="Utility\RequireHttpsExceptLocalAttribute.cs" />
+    <Compile Include="Utility\Results\NotImplementedActionResult.cs" />
+    <Compile Include="Utility\Results\PlanLimitReachedActionResult.cs" />
+    <Compile Include="Utility\ThrottlingHandler.cs" />
+    <Compile Include="Utility\UpgradableJsonMediaTypeFormatter.cs" />
+    <Compile Include="Utility\UserAgentParameterBinding.cs" />
+    <Compile Include="Utility\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
@@ -202,7 +225,9 @@
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Utility\Delta\LICENSE.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

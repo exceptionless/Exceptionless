@@ -14,9 +14,9 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Web.Http;
 using System.Web.Http.Routing;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.Api.Extensions {
     /// <summary>
     /// Contains extension methods to map HTTP routes to lowercase URLs.
     /// </summary>

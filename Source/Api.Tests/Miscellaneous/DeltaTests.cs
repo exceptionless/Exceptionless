@@ -1,6 +1,6 @@
 ﻿using System;
 using Exceptionless.Api.Tests.Messaging;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Miscelaneous {
