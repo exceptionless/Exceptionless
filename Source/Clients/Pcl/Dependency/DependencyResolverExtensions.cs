@@ -49,39 +49,39 @@ namespace Exceptionless.Dependency {
         }
 
         public static IExceptionlessLog GetLog(this IDependencyResolver resolver) {
-            return resolver.Resolve<IExceptionlessLog>() ?? new NullExceptionlessLog();
+            return resolver.Resolve<IExceptionlessLog>() ?? resolver.Resolve<NullExceptionlessLog>();
         }
 
         public static IJsonSerializer GetJsonSerializer(this IDependencyResolver resolver) {
-            return resolver.Resolve<IJsonSerializer>() ?? new DefaultJsonSerializer();
+            return resolver.Resolve<IJsonSerializer>() ?? resolver.Resolve<DefaultJsonSerializer>();
         }
 
         public static IEventQueue GetEventQueue(this IDependencyResolver resolver) {
-            return resolver.Resolve<IEventQueue>() ?? new DefaultEventQueue(resolver.Resolve<ExceptionlessConfiguration>(), resolver.GetLog(), resolver.GetSubmissionClient());
+            return resolver.Resolve<IEventQueue>() ?? resolver.Resolve<DefaultEventQueue>();
         }
 
         public static ISubmissionClient GetSubmissionClient(this IDependencyResolver resolver) {
-            return resolver.Resolve<ISubmissionClient>() ?? new DefaultSubmissionClient();
+            return resolver.Resolve<ISubmissionClient>() ?? resolver.Resolve<DefaultSubmissionClient>();
         }
 
         public static IKeyValueStorage GetKeyValueStorage(this IDependencyResolver resolver) {
-            return resolver.Resolve<IKeyValueStorage>() ?? new InMemoryKeyValueStorage();
+            return resolver.Resolve<IKeyValueStorage>() ?? resolver.Resolve<InMemoryKeyValueStorage>();
         }
 
         public static IFileStorage GetFileStorage(this IDependencyResolver resolver) {
-            return resolver.Resolve<IFileStorage>() ?? new InMemoryFileStorage();
+            return resolver.Resolve<IFileStorage>() ?? resolver.Resolve<InMemoryFileStorage>();
         }
 
         public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {
-            return resolver.Resolve<IEnvironmentInfoCollector>() ?? new DefaultEnvironmentInfoCollector();
+            return resolver.Resolve<IEnvironmentInfoCollector>() ?? resolver.Resolve<DefaultEnvironmentInfoCollector>();
         }
 
         public static ILastReferenceIdManager GetLastReferenceIdManager(this IDependencyResolver resolver) {
-            return resolver.Resolve<ILastReferenceIdManager>() ?? new DefaultLastReferenceIdManager();
+            return resolver.Resolve<ILastReferenceIdManager>() ?? resolver.Resolve<DefaultLastReferenceIdManager>();
         }
 
         public static IDuplicateChecker GetDuplicateChecker(this IDependencyResolver resolver) {
-            return resolver.Resolve<IDuplicateChecker>() ?? new DefaultDuplicateChecker(resolver.GetLog());
+            return resolver.Resolve<IDuplicateChecker>() ?? resolver.Resolve<DefaultDuplicateChecker>();
         }
     }
 }

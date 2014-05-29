@@ -1,94 +1,70 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Storage;
 using Exceptionless.Submission;
-using Exceptionless.Utility;
 
 namespace Exceptionless.Queue {
     public class DefaultEventQueue : IEventQueue, IDisposable {
-        private readonly ConcurrentQueue<Event> _queue = new ConcurrentQueue<Event>();
         private readonly IExceptionlessLog _log;
         private readonly ExceptionlessConfiguration _config;
         private readonly ISubmissionClient _client;
+        private readonly IFileStorage _storage;
+        private readonly IJsonSerializer _serializer;
         private Timer _queueTimer;
         private bool _processingQueue;
 
-        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client) {
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer) {
             _log = log;
             _config = config;
             _client = client;
+            _storage = fileStorage;
+            _serializer = serializer;
 
             // Wait 10 seconds to start processing to keep the startup resource demand low.
             _queueTimer = new Timer(OnProcessQueue, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(5));
         }
 
         public Task EnqueueAsync(Event ev) {
-            _queue.Enqueue(ev);
-            return TaskHelper.FromResult(0);
+            return _storage.SaveFileAsync(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), _serializer.Serialize(ev));
         }
 
-        public Task ProcessAsync() {
+        public async Task ProcessAsync() {
             _log.Info(typeof(DefaultEventQueue), "Processing queue...");
             if (!_config.Enabled) {
                 _log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
-                return TaskHelper.FromResult(0);
-            }
-
-            if (_queue.Count == 0) {
-                _log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
-                return TaskHelper.FromResult(0);
+                return;
             }
 
             if (_processingQueue) {
                 _log.Info(typeof(DefaultEventQueue), "The queue is already being processed.");
-                return TaskHelper.FromResult(0);
+                return;
             }
 
             _processingQueue = true;
 
-            // TODO: Make this size configurable.
-            var events = new List<Event>();
-            for (int i = 0; i < 20; i++) {
-                Event ev;
-                if (_queue.Count <= 0 || !_queue.TryDequeue(out ev))
-                    break;
-
-                events.Add(ev);
+            var batch = await _storage.GetEventBatchAsync(_serializer);
+            if (!batch.Any()) {
+                _log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
+                return;
             }
 
-            return _client.SubmitAsync(events, _config).ContinueWith(t => {
-                if (t.IsFaulted || t.IsCanceled || t.Exception != null || !t.Result.Success) {
-                    _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting the event: ", t.Result != null ? t.Result.Message : t.Exception.GetMessage()));
-                    foreach (var ev in events)
-                        EnqueueAsync(ev);
+            var response = await _client.SubmitAsync(batch.Select(b => b.Item2), _config);
+            if (response.Success) {
+                await _storage.DeleteBatchAsync(batch);
+            } else {
+                _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting events: ", response.Message));
+                await _storage.ReleaseBatchAsync(batch);
+            }
 
-                    SlowTimer();
-                    _processingQueue = false;
-                    return t;
-                }
+            SlowTimer();
+            _processingQueue = false;
 
-                //if (Configuration.CurrentConfigurationVersion < t.Result.SettingsVersion) {
-                //    t.ContinueWith(ts => client.GetSettingsAsync(Configuration).ContinueWith(r => {
-                //        if (r.IsFaulted || r.IsCanceled || r.Exception != null || !r.Result.Success) {
-                //            _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while getting the configuration settings. Exception: ", t.Exception.GetMessage()));
-                //        }
-
-                //        Configuration.Settings.Clear();
-                //        if (r.Result.Settings != null)
-                //            foreach (var setting in r.Result.Settings)
-                //                Configuration.Settings.Add(setting.Key, setting.Value);
-
-                //        _processingQueue = false;
-                //        // TODO: Fire event for Configuration Settings Updated.
-                //    }));
-                //}
-
-                return t;
-            });
+            // TODO: Check to see if the configuration needs to be updated.
         }
 
         private void OnProcessQueue(object state) {

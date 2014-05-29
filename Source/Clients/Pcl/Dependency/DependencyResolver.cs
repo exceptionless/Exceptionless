@@ -32,25 +32,25 @@ namespace Exceptionless.Dependency {
             var exceptionlessLog = new Lazy<IExceptionlessLog>(() => resolver.Resolve<NullExceptionlessLog>());
             resolver.Register(typeof(IExceptionlessLog), () => exceptionlessLog.Value);
 
-            var jsonSerializer = new Lazy<IJsonSerializer>(() => new DefaultJsonSerializer());
+            var jsonSerializer = new Lazy<IJsonSerializer>(() => resolver.Resolve<DefaultJsonSerializer>());
             resolver.Register(typeof(IJsonSerializer), () => jsonSerializer.Value);
 
-            var eventQueue = new Lazy<IEventQueue>(() => new DefaultEventQueue(resolver.Resolve<ExceptionlessConfiguration>(), resolver.GetLog(), resolver.GetSubmissionClient()));
+            var eventQueue = new Lazy<IEventQueue>(() => resolver.Resolve<DefaultEventQueue>());
             resolver.Register(typeof(IEventQueue), () => eventQueue.Value);
 
-            var submissionClient = new Lazy<ISubmissionClient>(() => new DefaultSubmissionClient());
+            var submissionClient = new Lazy<ISubmissionClient>(() => resolver.Resolve<DefaultSubmissionClient>());
             resolver.Register(typeof(ISubmissionClient), () => submissionClient.Value);
 
-            var keyValueStorage = new Lazy<IKeyValueStorage>(() => new InMemoryKeyValueStorage());
+            var keyValueStorage = new Lazy<IKeyValueStorage>(() => resolver.Resolve<InMemoryKeyValueStorage>());
             resolver.Register(typeof(IKeyValueStorage), () => keyValueStorage.Value);
 
-            var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => new DefaultEnvironmentInfoCollector());
+            var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => resolver.Resolve<DefaultEnvironmentInfoCollector>());
             resolver.Register(typeof(IEnvironmentInfoCollector), () => environmentInfoCollector.Value);
 
-            var lastClientIdManager = new Lazy<ILastReferenceIdManager>(() => new DefaultLastReferenceIdManager());
+            var lastClientIdManager = new Lazy<ILastReferenceIdManager>(() => resolver.Resolve<DefaultLastReferenceIdManager>());
             resolver.Register(typeof(ILastReferenceIdManager), () => lastClientIdManager.Value);
 
-            var duplicateChecker = new Lazy<IDuplicateChecker>(() => new DefaultDuplicateChecker(resolver.GetLog()));
+            var duplicateChecker = new Lazy<IDuplicateChecker>(() => resolver.Resolve<DefaultDuplicateChecker>());
             resolver.Register(typeof(IDuplicateChecker), () => duplicateChecker.Value);
         }
     }
