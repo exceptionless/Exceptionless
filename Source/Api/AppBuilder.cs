@@ -12,12 +12,13 @@ using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
@@ -174,6 +175,9 @@ namespace Exceptionless.Api {
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
             container.RegisterPackage<Bootstrapper>();
+
+            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            container.Register<OverageHandler>();
 
             return container;
         }

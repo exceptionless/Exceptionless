@@ -15,7 +15,7 @@ using System.Net.Http;
 using System.Net.Http.Formatting;
 using System.Net.Http.Headers;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class JsonContentNegotiator : IContentNegotiator {
         public ContentNegotiationResult Negotiate(Type type, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) {
             var result = new ContentNegotiationResult(new JsonMediaTypeFormatter(), new MediaTypeHeaderValue("application/json"));

@@ -15,10 +15,12 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Api.Extensions;
+using Exceptionless.Core;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class ThrottlingHandler : DelegatingHandler {
         private readonly ICacheClient _cacheClient;
         private readonly Func<string, long> _maxRequestsForUserIdentifier;

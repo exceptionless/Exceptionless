@@ -14,10 +14,10 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Extensions;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
 

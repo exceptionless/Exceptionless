@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Web.Http;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using NLog.Fluent;
 using Stripe;
 

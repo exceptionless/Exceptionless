@@ -10,7 +10,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Web;
+using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {

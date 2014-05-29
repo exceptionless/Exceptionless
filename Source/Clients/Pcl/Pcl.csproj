@@ -46,7 +46,7 @@
     <Compile Include="..\..\Core\Serialization\RequestInfoConverter.cs">
       <Link>Serializer\RequestInfoConverter.cs</Link>
     </Compile>
-    <Compile Include="..\..\Core\Web\ExceptionlessHeaders.cs">
+    <Compile Include="..\..\Api\Utility\ExceptionlessHeaders.cs">
       <Link>Submission\Net\ExceptionlessHeaders.cs</Link>
     </Compile>
     <Compile Include="..\..\GlobalAssemblyInfo.cs">

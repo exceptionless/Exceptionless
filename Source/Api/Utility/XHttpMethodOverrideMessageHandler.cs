@@ -16,7 +16,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Routing;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     public class XHttpMethodOverrideDelegatingHandler : DelegatingHandler {
         private static readonly string[] _httpMethods = { "PUT", "HEAD", "DELETE", "PATCH" };
         private const string HTTP_METHOD_OVERRIDE_HEADER = "X-HTTP-Method-Override";

@@ -17,7 +17,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core;
+using Exceptionless.Api.Utility;
 
 namespace System.Net.Http {
     public static class HttpClientExtensions {

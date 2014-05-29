@@ -14,13 +14,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
-using System.ServiceModel.Channels;
 using System.Text;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
         public static User GetUser(this HttpRequestMessage message) {
             if (message == null)

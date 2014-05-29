@@ -15,7 +15,7 @@ using System.Net.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 
-namespace Exceptionless.Core.Web {
+namespace Exceptionless.Api.Utility {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = true)]
     public class InvalidModelStateFilterAttribute : ActionFilterAttribute {
         public override void OnActionExecuting(HttpActionContext context) {

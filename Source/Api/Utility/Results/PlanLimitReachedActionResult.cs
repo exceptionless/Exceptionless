@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
 
-namespace Exceptionless.Core.Web.Results {
+namespace Exceptionless.Api.Utility.Results {
     public class PlanLimitReachedActionResult : IHttpActionResult {
         public PlanLimitReachedActionResult(string message, HttpRequestMessage request) {
             if (message == null) {

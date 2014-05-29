@@ -12,10 +12,11 @@
 using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web.Results;
+using Exceptionless.Api.Utility.Results;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
