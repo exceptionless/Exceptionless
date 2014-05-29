@@ -16,6 +16,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Extensions;
@@ -26,10 +27,12 @@ namespace Exceptionless.Core.Web {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IRedisClientsManager _clientsManager;
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IAppStatsClient _statsClient;
 
-        public OverageHandler(IRedisClientsManager clientManager, IOrganizationRepository organizationRepository) {
+        public OverageHandler(IRedisClientsManager clientManager, IOrganizationRepository organizationRepository, IAppStatsClient statsClient) {
             _clientsManager = clientManager;
             _organizationRepository = organizationRepository;
+            _statsClient = statsClient;
         }
 
         private string GetOrganizationId(HttpRequestMessage request) {
@@ -81,6 +84,9 @@ namespace Exceptionless.Core.Web {
                 bool justWentOverHourly = hourlyErrorCount == org.GetHourlyErrorLimit() + 1;
                 bool justWentOverMonthly = monthlyErrorCount == org.MaxErrorsPerMonth + 1;
                 bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxErrorsPerMonth;
+
+                if (overLimit)
+                    _statsClient.Counter(StatNames.ErrorsBlocked);
 
                 if (justWentOverHourly)
                     using (IRedisClient client = _clientsManager.GetClient())

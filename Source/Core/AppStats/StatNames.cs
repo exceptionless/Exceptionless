@@ -20,5 +20,6 @@ namespace Exceptionless.Core.AppStats {
         public const string ErrorsProcessingTime = "errors.processingtime";
         public const string ErrorsPaidProcessed = "errors.paid.processed";
         public const string ErrorsProcessingFailed = "errors.processing.failed";
+        public const string ErrorsBlocked = "errors.blocked";
     }
 }
