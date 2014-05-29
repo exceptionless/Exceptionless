@@ -20,6 +20,7 @@ using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.Security.OAuth;
+using Microsoft.Owin.StaticFiles;
 using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
@@ -147,7 +148,7 @@ namespace Exceptionless.Api {
             });
             app.UseStageMarker(PipelineStage.PostMapHandler);
 
-            app.UseWelcomePage();
+            app.UseFileServer("/content");
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 
             // TODO: Remove this as it's only for testing.

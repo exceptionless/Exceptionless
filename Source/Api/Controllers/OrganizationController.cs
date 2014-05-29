@@ -132,12 +132,16 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new { Success = false, Message = message });
 
             var customerService = new StripeCustomerService();
+            var subscriptionService = new StripeSubscriptionService();
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
                 if (!String.Equals(organization.PlanId, BillingManager.FreePlan.Id) && String.Equals(plan.Id, BillingManager.FreePlan.Id)) {
-                    if (!String.IsNullOrEmpty(organization.StripeCustomerId))
-                        customerService.CancelSubscription(organization.StripeCustomerId);
+                    if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
+                        var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                        foreach (var sub in subs)
+                            subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
+                    }
 
                     organization.BillingStatus = BillingStatus.Trialing;
                     organization.RemoveSuspension();
@@ -159,15 +163,22 @@ namespace Exceptionless.Api.Controllers {
                     if (customer.StripeCardList.StripeCards.Count > 0)
                         organization.CardLast4 = customer.StripeCardList.StripeCards[0].Last4;
                 } else {
-                    var update = new StripeCustomerUpdateSubscriptionOptions { PlanId = planId };
+                    var update = new StripeSubscriptionUpdateOptions {  PlanId = planId };
+                    var create = new StripeSubscriptionCreateOptions();
                     bool cardUpdated = false;
 
                     if (!String.IsNullOrEmpty(stripeToken)) {
                         update.TokenId = stripeToken;
+                        create.TokenId = stripeToken;
                         cardUpdated = true;
                     }
+                    
+                    var subscription = subscriptionService.List(organization.StripeCustomerId).FirstOrDefault(s => !s.CanceledAt.HasValue);
+                    if (subscription != null)
+                        subscriptionService.Update(organization.StripeCustomerId, subscription.Id, update);
+                    else
+                        subscriptionService.Create(organization.StripeCustomerId, planId, create);
 
-                    customerService.UpdateSubscription(organization.StripeCustomerId, update);
                     if (cardUpdated)
                         organization.CardLast4 = last4;
 
@@ -383,8 +394,10 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
                 Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
 
-                var customerService = new StripeCustomerService();
-                customerService.CancelSubscription(value.StripeCustomerId);
+                var subscriptionService = new StripeSubscriptionService();
+                var subs = subscriptionService.List(value.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                foreach (var sub in subs)
+                    subscriptionService.Cancel(value.StripeCustomerId, sub.Id);
             }
 
             List<User> users = _userRepository.GetByOrganizationId(value.Id).ToList();
