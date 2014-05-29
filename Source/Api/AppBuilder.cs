@@ -19,6 +19,7 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
+using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.Security.OAuth;
 using Newtonsoft.Json;
 using Owin;
@@ -147,7 +148,10 @@ namespace Exceptionless.Api {
             });
             app.UseStageMarker(PipelineStage.PostMapHandler);
 
-            app.UseFileServer("/content");
+            var fileSystem = new PhysicalFileSystem("./bin/Content");
+            app.UseDefaultFiles(new DefaultFilesOptions { FileSystem = fileSystem });
+            app.UseStaticFiles(new StaticFileOptions { FileSystem = fileSystem });
+
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 
             // TODO: Remove this as it's only for testing.
