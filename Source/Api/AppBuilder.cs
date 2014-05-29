@@ -10,15 +10,12 @@ using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
-using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
@@ -174,10 +171,8 @@ namespace Exceptionless.Api {
             container.Options.AllowOverridingRegistrations = true;
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
-            container.RegisterPackage<Bootstrapper>();
-
-            container.Register<ThrottlingHandler>(() => new ThrottlingHandler(container.GetInstance<ICacheClient>(), userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
-            container.Register<OverageHandler>();
+            container.RegisterPackage<Core.Bootstrapper>();
+            container.RegisterPackage<Api.Bootstrapper>();
 
             return container;
         }

@@ -146,6 +146,7 @@
     <Compile Include="App_Start\AutoMapperConfig.cs" />
     <Compile Include="App_Start\IdentityConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
+    <Compile Include="Bootstrapper.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\Base\ExceptionlessApiController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
