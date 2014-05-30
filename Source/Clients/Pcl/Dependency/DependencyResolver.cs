@@ -44,6 +44,9 @@ namespace Exceptionless.Dependency {
             var keyValueStorage = new Lazy<IKeyValueStorage>(() => resolver.Resolve<InMemoryKeyValueStorage>());
             resolver.Register(typeof(IKeyValueStorage), () => keyValueStorage.Value);
 
+            var fileStorage = new Lazy<IFileStorage>(() => resolver.Resolve<InMemoryFileStorage>());
+            resolver.Register(typeof(IFileStorage), () => fileStorage.Value);
+
             var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => resolver.Resolve<DefaultEnvironmentInfoCollector>());
             resolver.Register(typeof(IEnvironmentInfoCollector), () => environmentInfoCollector.Value);
 

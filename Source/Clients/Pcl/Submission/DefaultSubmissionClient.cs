@@ -9,70 +9,54 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        public Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "event"));
+        public async Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration, IJsonSerializer serializer) {
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "events"));
             client.SetUserAgent(configuration.UserAgent);
             client.AddAuthorizationHeader(configuration);
 
-            // TODO: We only support one error right now..
-            var serializer = configuration.Resolver.GetJsonSerializer();
-            var data = serializer.Serialize(events.FirstOrDefault());
+            var data = serializer.Serialize(events);
+            var response = (HttpWebResponse)await client.PostJsonAsync(data);
 
-            return client.PostJsonAsync(data).ContinueWith(t => {
-                // TODO: We need to break down the aggregate exceptions error message into something usable.
-                if (t.IsFaulted || t.IsCanceled || t.Exception != null)
-                    return new SubmissionResponse(false, exception: t.Exception, message: t.Exception.GetMessage());
+            int settingsVersion;
+            if (!Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
+                settingsVersion = -1;
 
-                var response = (HttpWebResponse)t.Result;
-
-                int settingsVersion;
-                if (!Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
-                    settingsVersion = -1;
-
-                // TODO: Add support for sending errors later (e.g., Suspended Account. Invalid API Key).
-
-                if (response.StatusCode != HttpStatusCode.OK)
-                    return new SubmissionResponse(false, settingsVersion, message: response.GetResponseText());
-
-                return new SubmissionResponse(true, settingsVersion);
-            });
+            return new SubmissionResponse((int)response.StatusCode, settingsVersion, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
         }
 
-        public Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration) {
+        public async Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration, IJsonSerializer serializer) {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "projects/config"));
             client.AddAuthorizationHeader(configuration);
-            
-            return client.GetJsonAsync().ContinueWith(t => {
-                if (t.IsFaulted || t.IsCanceled || t.Exception != null)
-                    return new SettingsResponse(false, exception: t.Exception, message: t.Exception.GetMessage());
 
-                var response = (HttpWebResponse)t.Result;
-                if (response.StatusCode != HttpStatusCode.OK)
-                    return new SettingsResponse(false, message: "Unable to retrieve configuration settings.");
+            HttpWebResponse response;
+            try {
+                response = (HttpWebResponse)await client.GetJsonAsync();
+            } catch (Exception ex) {
+                return new SettingsResponse(false, exception: ex, message: ex.Message);
+            }
 
-                var json = response.GetResponseText();
-                if (String.IsNullOrWhiteSpace(json))
-                    return new SettingsResponse(false, message: "Invalid configuration settings.");
+            if (response.StatusCode != HttpStatusCode.OK)
+                return new SettingsResponse(false, message: "Unable to retrieve configuration settings.");
 
-                var serializer = DependencyResolver.Default.GetJsonSerializer();
-                try {
-                    var settings = serializer.Deserialize<ClientConfiguration>(json);
-                    return new SettingsResponse(true, settings.Settings, settings.Version);
-                } catch (Exception ex) {
-                    var message = String.Format("Unable to deserialize configuration settings. Exception: {0}", ex.Message);
-                    return new SettingsResponse(false, message: message);
-                }
-            });
+            var json = response.GetResponseText();
+            if (String.IsNullOrWhiteSpace(json))
+                return new SettingsResponse(false, message: "Invalid configuration settings.");
+
+            try {
+                var settings = serializer.Deserialize<ClientConfiguration>(json);
+                return new SettingsResponse(true, settings.Settings, settings.Version);
+            } catch (Exception ex) {
+                var message = String.Format("Unable to deserialize configuration settings. Exception: {0}", ex.Message);
+                return new SettingsResponse(false, message: message);
+            }
         }
     }
 }

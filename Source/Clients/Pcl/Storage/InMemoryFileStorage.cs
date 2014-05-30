@@ -11,7 +11,9 @@ namespace Exceptionless.Storage {
         private readonly Dictionary<string, Tuple<FileInfo, byte[]>> _storage = new Dictionary<string, Tuple<FileInfo, byte[]>>(StringComparer.OrdinalIgnoreCase);
         private readonly object _lock = new object();
 
-        public InMemoryFileStorage(long maxFileSize = 1024 * 1024 * 256, int maxFiles = 100) {
+        public InMemoryFileStorage() : this(1024 * 1024 * 256, 100) {}
+
+        public InMemoryFileStorage(long maxFileSize, int maxFiles) {
             MaxFileSize = maxFileSize;
             MaxFiles = maxFiles;
         }
@@ -91,7 +93,7 @@ namespace Exceptionless.Storage {
             if (spec == null)
                 spec = "*";
 
-            var regex = new Regex(spec.Replace("*", ".*?"));
+            var regex = new Regex(Regex.Escape(spec).Replace("\\*", ".*?"));
             lock (_lock)
                 return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1);
         }

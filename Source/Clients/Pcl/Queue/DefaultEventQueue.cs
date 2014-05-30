@@ -21,7 +21,9 @@ namespace Exceptionless.Queue {
         private DateTime? _suspendProcessingUntil;
         private DateTime? _discardQueuedItemsUntil;
 
-        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer, TimeSpan? processQueueInterval = null, TimeSpan? queueStartDelay = null) {
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer): this(config, log, client, fileStorage, serializer, null, null) {}
+
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer, TimeSpan? processQueueInterval, TimeSpan? queueStartDelay) {
             _log = log;
             _config = config;
             _client = client;
@@ -69,16 +71,50 @@ namespace Exceptionless.Queue {
                     return;
                 }
 
-                var response = await _client.SubmitAsync(batch.Select(b => b.Item2), _config);
-                if (response.Success) {
-                    await _storage.DeleteBatchAsync(batch);
-                } else {
-                    _log.Info(typeof(DefaultEventQueue), String.Concat("An error occurred while submitting events: ", response.Message));
-                    await _storage.ReleaseBatchAsync(batch);
+                bool deleteBatch = true;
+
+                try {
+                    var response = await _client.SubmitAsync(batch.Select(b => b.Item2), _config, _serializer);
+                    if (response.ServiceUnavailable) {
+                        // You are currently over your rate limit or the servers are under stress.
+                        _log.Error(typeof(DefaultEventQueue), "Server returned service unavailable.");
+                        SuspendProcessing();
+                        deleteBatch = false;
+                    } else if (response.PaymentRequired) {
+                        // If the organization over the rate limit then discard the error.
+                        _log.Info(typeof(DefaultEventQueue), "Too many errors have been submitted, please upgrade your plan.");
+                        SuspendProcessing(discardFutureQueuedItems: true, clearQueue: true);
+                    } else if (response.UnableToAuthenticate) {
+                        // The api key was suspended or could not be authorized.
+                        _log.Info(typeof(DefaultEventQueue), "Unable to authenticate, please check your configuration. The error will not be submitted.");
+                        SuspendProcessing(TimeSpan.FromMinutes(15));
+                    } else if (response.NotFound) {
+                        // The service end point could not be found.
+                        _log.Error(typeof(DefaultEventQueue), "Unable to reach the service end point, please check your configuration. The error will not be submitted.");
+                        SuspendProcessing(TimeSpan.FromHours(4));
+                    } else if (!response.Success) {
+                        deleteBatch = false;
+                    }
+                } catch (Exception ex) {
+                    _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while submitting events: ", ex.Message));
+                    deleteBatch = false;
                 }
+
+                if (deleteBatch)
+                    await _storage.DeleteBatchAsync(batch);
+                else
+                    await _storage.ReleaseBatchAsync(batch);
+            } catch (Exception ex) {
+                _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while processing the queue: ", ex.Message));
             } finally {
                 _processingQueue = false;
             }
+
+            //if (response.ShouldUpdateConfiguration(LocalConfiguration.CurrentConfigurationVersion))
+            //    UpdateConfiguration(true);
+
+            //completed = new SendErrorCompletedEventArgs(id, exception, false, error);
+            //OnSendErrorCompleted(completed);
 
             // TODO: Check to see if the configuration needs to be updated.
         }
@@ -88,7 +124,7 @@ namespace Exceptionless.Queue {
                 ProcessAsync().Wait();
         }
 
-        public void SuspendProcessing(TimeSpan? duration = null, bool discardQueuedItems = false, bool clearQueue = false) {
+        public void SuspendProcessing(TimeSpan? duration = null, bool discardFutureQueuedItems = false, bool clearQueue = false) {
             if (!duration.HasValue)
                 duration = TimeSpan.FromMinutes(5);
 
@@ -96,7 +132,7 @@ namespace Exceptionless.Queue {
             _suspendProcessingUntil = DateTime.Now.Add(duration.Value);
             _queueTimer.Change(duration.Value, _processQueueInterval);
 
-            if (discardQueuedItems)
+            if (discardFutureQueuedItems)
                 _discardQueuedItemsUntil = DateTime.Now.Add(duration.Value);
 
             if (!clearQueue)

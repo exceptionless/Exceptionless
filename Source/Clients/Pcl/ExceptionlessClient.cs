@@ -189,7 +189,7 @@ namespace Exceptionless {
 
         #endregion
 
-        public void Dispose() {
+        void IDisposable.Dispose() {
             Configuration.Resolver.Dispose();
         }
 

@@ -14,8 +14,8 @@ using System.Collections.Generic;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
-using Exceptionless.Dependency;
 using Exceptionless.Models;
+using Exceptionless.Serializer;
 using Exceptionless.Submission;
 using Microsoft.Owin.Hosting;
 using Xunit;
@@ -36,9 +36,10 @@ namespace Pcl.Tests.Submission {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
                 var configuration = ExceptionlessConfiguration.CreateDefault();
+                var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.SubmitAsync(events, configuration).Result;
+                var response = client.SubmitAsync(events, configuration, serializer).Result;
                 Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.Null(response.Message);
@@ -49,9 +50,10 @@ namespace Pcl.Tests.Submission {
         public void GetSettingsAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var configuration = ExceptionlessConfiguration.CreateDefault();
+                var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.GetSettingsAsync(configuration).Result;
+                var response = client.GetSettingsAsync(configuration, serializer).Result;
                 Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.NotNull(response.Settings);

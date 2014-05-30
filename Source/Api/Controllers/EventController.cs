@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             _statsClient.Counter(StatNames.PostsSubmitted);
             if (projectId == null)
-                projectId = GetDefaultProjectId();
+                projectId = User.GetProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -104,11 +104,6 @@ namespace Exceptionless.Api.Controllers {
             _statsClient.Counter(StatNames.PostsQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
-        }
-
-        private string GetDefaultProjectId() {
-            var project = _projectRepository.GetByOrganizationId(GetDefaultOrganizationId()).FirstOrDefault();
-            return project != null ? project.Id : null;
         }
     }
 }

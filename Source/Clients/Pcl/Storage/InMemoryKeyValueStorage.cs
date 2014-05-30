@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Storage {
     public class InMemoryKeyValueStorage : IKeyValueStorage {
-        private readonly Dictionary<string, object> _storage = new Dictionary<string, object>();
+        private readonly Dictionary<string, object> _storage = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
         private readonly object _lock = new object();
 
         public object Get(string key) {
