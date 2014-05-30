@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -149,9 +150,16 @@ namespace Exceptionless.Api {
             });
             app.UseStageMarker(PipelineStage.PostMapHandler);
 
-            var fileSystem = new PhysicalFileSystem("./bin/Content");
-            app.UseDefaultFiles(new DefaultFilesOptions { FileSystem = fileSystem });
-            app.UseStaticFiles(new StaticFileOptions { FileSystem = fileSystem });
+            PhysicalFileSystem fileSystem = null;
+            if (Directory.Exists("./Content"))
+                fileSystem = new PhysicalFileSystem("./Content");
+            if (Directory.Exists("./bin/Content"))
+                fileSystem = new PhysicalFileSystem("./bin/Content");
+
+            if (fileSystem != null) {
+                app.UseDefaultFiles(new DefaultFilesOptions { FileSystem = fileSystem });
+                app.UseStaticFiles(new StaticFileOptions { FileSystem = fileSystem });
+            }
 
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 

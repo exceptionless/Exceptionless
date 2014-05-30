@@ -49,7 +49,7 @@ namespace Exceptionless.Submission {
         }
 
         public Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "project/config"));
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "projects/config"));
             client.AddAuthorizationHeader(configuration);
             
             return client.GetJsonAsync().ContinueWith(t => {
