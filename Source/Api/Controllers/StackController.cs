@@ -24,13 +24,11 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
-    [ConfigurationResponseFilter]
     [RoutePrefix(API_PREFIX + "/stacks")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
