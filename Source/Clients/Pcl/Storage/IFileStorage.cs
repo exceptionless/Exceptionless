@@ -4,7 +4,7 @@ using System.IO;
 using System.Threading.Tasks;
 
 namespace Exceptionless.Storage {
-    public interface IFileStorage {
+    public interface IFileStorage : IDisposable {
         Task<Stream> GetFileContentsAsync(string path);
         Task SaveFileAsync(string path, Stream contents);
         Task RenameFileAsync(string oldpath, string newpath);

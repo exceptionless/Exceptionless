@@ -95,5 +95,10 @@ namespace Exceptionless.Storage {
             lock (_lock)
                 return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1);
         }
+
+        public void Dispose() {
+            if (_storage != null)
+                _storage.Clear();
+        }
     }
 }

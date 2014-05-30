@@ -9,26 +9,37 @@
 
 using System;
 using System.Threading.Tasks;
-using Exceptionless.Utility;
 
 namespace Exceptionless.Extensions {
-    public static class TaskExtensions {
+    public static class Tasker {
         public static Task Success<TResult>(this Task<TResult> task, Action<Task<TResult>> successor) {
             return task.ContinueWith(_ => {
                 if (task.IsCanceled || task.IsFaulted)
                     return task;
 
-                return Task.Factory.StartNew(() => successor(task));
+                return TaskEx.Run(() => successor(task));
             }).Unwrap();
         }
 
         public static Task<TResult> Success<TResult>(this Task task, Func<Task, TResult> successor) {
             return task.ContinueWith(_ => {
                 if (task.IsFaulted)
-                    return TaskHelper.FromException<TResult>(task.Exception);
+                    return FromException<TResult>(task.Exception);
 
-                return task.IsCanceled ? TaskHelper.Canceled<TResult>() : Task.Factory.StartNew(() => successor(task));
+                return task.IsCanceled ? Canceled<TResult>() : TaskEx.Run(() => successor(task));
             }).Unwrap();
+        }
+
+        public static Task<T> FromException<T>(Exception e) {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+            taskCompletionSource.SetException(e);
+            return taskCompletionSource.Task;
+        }
+
+        public static Task<T> Canceled<T>() {
+            var taskCompletionSource = new TaskCompletionSource<T>();
+            taskCompletionSource.SetCanceled();
+            return taskCompletionSource.Task;
         }
     }
 }

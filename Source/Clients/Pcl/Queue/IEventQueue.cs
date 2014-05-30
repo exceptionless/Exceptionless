@@ -3,8 +3,9 @@ using System.Threading.Tasks;
 using Exceptionless.Models;
 
 namespace Exceptionless.Queue {
-    public interface IEventQueue {
+    public interface IEventQueue : IDisposable {
         Task EnqueueAsync(Event ev);
-        Task ProcessAsync();
-   }
+        Task ProcessAsync(TimeSpan? delay = null);
+        void SuspendProcessing(TimeSpan? duration = null, bool discardQueuedItems = false, bool clearQueue = false);
+    }
 }

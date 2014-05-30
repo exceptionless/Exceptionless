@@ -15,5 +15,10 @@ namespace Exceptionless.Storage {
             lock (_lock)
             _storage[key] = value;
         }
+
+        public void Dispose() {
+            if (_storage != null)
+                _storage.Clear();
+        }
     }
 }
