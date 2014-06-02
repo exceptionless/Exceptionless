@@ -85,12 +85,6 @@ module exceptionless {
 
             App.onStackUpdated.subscribe((stack) => this.onStackUpdated(stack));
             App.onNewError.subscribe((error) => this.onNewError(error));
-
-            App.selectedPlan.subscribe((plan: account.BillingPlan) => {
-                $('#free-plan-notification').hide();
-                if (plan.id === Constants.FREE_PLAN_ID)
-                    $('#free-plan-notification').show();
-            });
         }
 
         public onStackUpdated(stack) {

@@ -9,13 +9,6 @@ module exceptionless.error {
 
             this._navigationViewModel = new NavigationViewModel(navigationElementId, null, defaultProjectId);
             App.onPlanChanged.subscribe(() => window.location.reload());
-
-            App.selectedPlan.subscribe((plan: account.BillingPlan) => {
-                $('#free-plan-notification').hide();
-                if (plan.id === Constants.FREE_PLAN_ID)
-                    $('#free-plan-notification').show();
-            });
-
             this.applyBindings();
         }
     }

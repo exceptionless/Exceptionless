@@ -89,8 +89,8 @@ module exceptionless {
                 }
             });
 
-            (<any>App).selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
-            (<any>App).selectedOrganization.subscribe((o)=> {
+            App.selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
+            App.selectedOrganization.subscribe((o)=> {
                 if (App._previousOrganization
                     && !StringUtil.isNullOrEmpty(App._previousOrganization.id)
                     && o
@@ -100,19 +100,17 @@ module exceptionless {
                     location.reload();
                 }
 
-                if (o.isOverMonthlyLimit) {
+                $('#free-plan-notification').hide();
+                $('#monthly-limit-notification').hide();
+                $('#hourly-limit-notification').hide();
+
+                if (o.isOverMonthlyLimit)
                     $('#monthly-limit-notification').show();
-                    return;
-                } else {
-                    $('#monthly-limit-notification').hide();
-                }
-
-                if (o.isOverHourlyLimit)
+                else if (o.isOverHourlyLimit)
                     $('#hourly-limit-notification').show();
-                else
-                    $('#hourly-limit-notification').hide();
+                else if (o.planId === Constants.FREE_PLAN_ID)
+                    $('#free-plan-notification').show();
             });
-
 
             App.onNewError.subscribe(() => {
                 $('#hourly-limit-notification').hide();
