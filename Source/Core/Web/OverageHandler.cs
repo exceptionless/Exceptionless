@@ -52,12 +52,20 @@ namespace Exceptionless.Core.Web {
             return request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.Contains("/error");
         }
 
-        private string GetHourlyCounterCacheKey(string organizationId) {
-            return String.Concat("overage", ":hr-", organizationId, ":", DateTime.UtcNow.ToString("MMddHH"));
+        private string GetHourlyAcceptedCacheKey(string organizationId) {
+            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyUsageCacheKey(string organizationId) {
-            return String.Concat("usage", ":month-", organizationId, ":", DateTime.UtcNow.Date.ToString("MM"));
+        private string GetHourlyTotalCacheKey(string organizationId) {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MMddHH"), ":", organizationId);
+        }
+
+        private string GetMonthlyAcceptedCacheKey(string organizationId) {
+            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        }
+
+        private string GetMonthlyTotalCacheKey(string organizationId) {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {
@@ -77,14 +85,20 @@ namespace Exceptionless.Core.Web {
                 return base.SendAsync(request, cancellationToken);
 
             using (var cacheClient = _clientsManager.GetCacheClient()) {
-                string hourlyCacheKey = GetHourlyCounterCacheKey(organizationId);
-                long hourlyErrorCount = cacheClient.Increment(hourlyCacheKey, 1, TimeSpan.FromMinutes(61));
-                string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
-                long monthlyErrorCount = cacheClient.Increment(monthlyCacheKey, 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyUsage());
-                bool justWentOverHourly = hourlyErrorCount == org.GetHourlyErrorLimit() + 1;
-                bool justWentOverMonthly = monthlyErrorCount == org.MaxErrorsPerMonth + 1;
-                bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxErrorsPerMonth;
+                long hourlyTotal = cacheClient.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61));
+                bool overLimit = hourlyTotal > org.GetHourlyErrorLimit();
+                bool justWentOverHourly = overLimit && hourlyTotal == org.GetHourlyErrorLimit() + 1;
+                long hourlyAccepted = org.GetHourlyErrorLimit();
+                if (!overLimit)
+                    hourlyAccepted = cacheClient.Increment(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61));
 
+                long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
+                bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
+                long monthlyAccepted = org.MaxErrorsPerMonth;
+                if (monthlyTotal <= org.MaxErrorsPerMonth)
+                    monthlyAccepted = cacheClient.Increment(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyAccepted());
+
+                overLimit = overLimit || monthlyTotal > org.MaxErrorsPerMonth;
                 if (overLimit)
                     _statsClient.Counter(StatNames.ErrorsBlocked);
 
@@ -101,9 +115,9 @@ namespace Exceptionless.Core.Web {
                     return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
 
                 org = _organizationRepository.GetById(organizationId, true);
-                org.SetMonthlyUsage(monthlyErrorCount);
-                if (hourlyErrorCount > org.GetHourlyErrorLimit())
-                    org.SetHourlyOverage(hourlyErrorCount);
+                org.SetMonthlyUsage(monthlyTotal, monthlyAccepted);
+                if (hourlyTotal > org.GetHourlyErrorLimit())
+                    org.SetHourlyOverage(hourlyTotal, hourlyAccepted);
 
                 _organizationRepository.Update(org, true);
                 cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));

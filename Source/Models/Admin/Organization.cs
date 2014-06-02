@@ -165,7 +165,8 @@ namespace Exceptionless.Models {
 
     public class UsageInfo {
         public DateTime Date { get; set; }
-        public int Count { get; set; }
+        public int Total { get; set; }
+        public int Accepted { get; set; }
         public int Limit { get; set; }
     }
 
