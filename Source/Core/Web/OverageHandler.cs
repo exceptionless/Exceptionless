@@ -53,11 +53,11 @@ namespace Exceptionless.Core.Web {
         }
 
         private string GetHourlyAcceptedCacheKey(string organizationId) {
-            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-accepted", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
-            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MMddHH"), ":", organizationId);
+            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetMonthlyAcceptedCacheKey(string organizationId) {
@@ -95,7 +95,9 @@ namespace Exceptionless.Core.Web {
                 long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
                 bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
                 long monthlyAccepted = org.MaxErrorsPerMonth;
-                if (monthlyTotal <= org.MaxErrorsPerMonth)
+                if (overLimit)
+                    monthlyAccepted = cacheClient.TryGet(GetMonthlyAcceptedCacheKey(organizationId), (uint)org.GetCurrentMonthlyAccepted());
+                else if(monthlyTotal <= org.MaxErrorsPerMonth)
                     monthlyAccepted = cacheClient.Increment(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyAccepted());
 
                 overLimit = overLimit || monthlyTotal > org.MaxErrorsPerMonth;
