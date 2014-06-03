@@ -39,16 +39,16 @@ namespace Exceptionless.Core.Extensions {
             return (int)Math.Ceiling(organization.MaxErrorsPerMonth / 730d * 5d);
         }
 
-        public static bool IsOverMonthlyLimit(this Organization organization) {
-            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+       public static int GetCurrentHourlyTotal(this Organization organization) { 
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Total > organization.MaxErrorsPerMonth;
+            return usageInfo != null ? usageInfo.Total : 0;
         }
 
-        public static bool IsOverHourlyLimit(this Organization organization) {
+        public static int GetCurrentHourlyAccepted(this Organization organization) { 
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Total > organization.GetHourlyErrorLimit();
+            return usageInfo != null ? usageInfo.Accepted : 0;
         }
 
         public static int GetCurrentMonthlyTotal(this Organization organization) {

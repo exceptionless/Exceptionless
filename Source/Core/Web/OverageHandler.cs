@@ -85,12 +85,12 @@ namespace Exceptionless.Core.Web {
                 return base.SendAsync(request, cancellationToken);
 
             using (var cacheClient = _clientsManager.GetCacheClient()) {
-                long hourlyTotal = cacheClient.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61));
+                long hourlyTotal = cacheClient.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
                 bool overLimit = hourlyTotal > org.GetHourlyErrorLimit();
                 bool justWentOverHourly = overLimit && hourlyTotal == org.GetHourlyErrorLimit() + 1;
                 long hourlyAccepted = org.GetHourlyErrorLimit();
                 if (!overLimit)
-                    hourlyAccepted = cacheClient.Increment(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61));
+                    hourlyAccepted = cacheClient.Increment(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyAccepted());
 
                 long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
                 bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
