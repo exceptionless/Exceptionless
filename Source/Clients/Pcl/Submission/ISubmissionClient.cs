@@ -9,13 +9,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Exceptionless.Models;
 
 namespace Exceptionless.Submission {
     public interface ISubmissionClient {
-        Task<SubmissionResponse> SubmitAsync(IEnumerable<Event> events, ExceptionlessConfiguration configuration, IJsonSerializer serializer);
-
-        Task<SettingsResponse> GetSettingsAsync(ExceptionlessConfiguration configuration, IJsonSerializer serializer);
+        SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration configuration, IJsonSerializer serializer);
+        SettingsResponse GetSettings(ExceptionlessConfiguration configuration, IJsonSerializer serializer);
     }
 }

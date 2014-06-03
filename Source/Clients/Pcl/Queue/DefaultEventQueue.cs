@@ -35,22 +35,23 @@ namespace Exceptionless.Queue {
             _queueTimer = new Timer(OnProcessQueue, null, queueStartDelay ?? TimeSpan.FromSeconds(10), _processQueueInterval);
         }
 
-        public Task EnqueueAsync(Event ev) {
+        public void Enqueue(Event ev) {
             if (AreQueuedItemsDiscarded) {
                 _log.Info(typeof(ExceptionlessClient), "Queue items are currently being discarded. The event will not be queued.");
-                return TaskEx.FromResult(0);
+                return;
             }
 
-            return _storage.SaveFileAsync(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), _serializer.Serialize(ev));
+            _storage.SaveFile(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), _serializer.Serialize(ev));
         }
 
-        public async Task ProcessAsync(TimeSpan? delay = null) {
-            if (delay.HasValue)
-                await TaskEx.Delay(delay.Value);
-            
+        public Task ProcessAsync() {
+            return Task.Factory.StartNew(Process);
+        }
+
+        public void Process() {
             if (IsQueueProcessingSuspended)
                 return;
-            
+
             _log.Info(typeof(DefaultEventQueue), "Processing queue...");
             if (!_config.Enabled) {
                 _log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
@@ -65,7 +66,7 @@ namespace Exceptionless.Queue {
             _processingQueue = true;
 
             try {
-                var batch = await _storage.GetEventBatchAsync(_serializer);
+                var batch = _storage.GetEventBatch(_serializer);
                 if (!batch.Any()) {
                     _log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
                     return;
@@ -74,7 +75,7 @@ namespace Exceptionless.Queue {
                 bool deleteBatch = true;
 
                 try {
-                    var response = await _client.SubmitAsync(batch.Select(b => b.Item2), _config, _serializer);
+                    var response = _client.Submit(batch.Select(b => b.Item2), _config, _serializer);
                     if (response.ServiceUnavailable) {
                         // You are currently over your rate limit or the servers are under stress.
                         _log.Error(typeof(DefaultEventQueue), "Server returned service unavailable.");
@@ -101,9 +102,9 @@ namespace Exceptionless.Queue {
                 }
 
                 if (deleteBatch)
-                    await _storage.DeleteBatchAsync(batch);
+                    _storage.DeleteBatch(batch);
                 else
-                    await _storage.ReleaseBatchAsync(batch);
+                    _storage.ReleaseBatch(batch);
             } catch (Exception ex) {
                 _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while processing the queue: ", ex.Message));
             } finally {
@@ -121,7 +122,7 @@ namespace Exceptionless.Queue {
 
         private void OnProcessQueue(object state) {
             if (!_processingQueue)
-                ProcessAsync().Wait();
+                Process();
         }
 
         public void SuspendProcessing(TimeSpan? duration = null, bool discardFutureQueuedItems = false, bool clearQueue = false) {
@@ -140,7 +141,9 @@ namespace Exceptionless.Queue {
 
             // Account is over the limit and we want to ensure that the sample size being sent in will contain newer errors.
             try {
-                _storage.DeleteOldQueueFilesAsync(DateTime.Now);
+#pragma warning disable 4014
+                _storage.DeleteOldQueueFiles(DateTime.Now);
+#pragma warning restore 4014
             } catch (Exception) { }
         }
 

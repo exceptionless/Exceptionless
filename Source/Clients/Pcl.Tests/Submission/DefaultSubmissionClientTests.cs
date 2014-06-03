@@ -39,7 +39,7 @@ namespace Pcl.Tests.Submission {
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.SubmitAsync(events, configuration, serializer).Result;
+                var response = client.Submit(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.Null(response.Message);
@@ -53,7 +53,7 @@ namespace Pcl.Tests.Submission {
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.GetSettingsAsync(configuration, serializer).Result;
+                var response = client.GetSettings(configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.NotNull(response.Settings);

@@ -109,7 +109,7 @@ namespace Exceptionless {
             }
 
             _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: type={0}{1}", ev.Type, !String.IsNullOrEmpty(ev.ReferenceId) ? " refid=" + ev.ReferenceId : String.Empty);
-            _queue.Value.EnqueueAsync(ev).Wait();
+            _queue.Value.Enqueue(ev);
 
             if (!String.IsNullOrEmpty(ev.ReferenceId)) {
                 _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);

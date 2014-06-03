@@ -3,12 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Exceptionless.Extensions;
 
 namespace Exceptionless.Storage {
     public class InMemoryFileStorage : IFileStorage {
-        private readonly Dictionary<string, Tuple<FileInfo, byte[]>> _storage = new Dictionary<string, Tuple<FileInfo, byte[]>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, Tuple<FileInfo, string>> _storage = new Dictionary<string, Tuple<FileInfo, string>>(StringComparer.OrdinalIgnoreCase);
         private readonly object _lock = new object();
 
         public InMemoryFileStorage() : this(1024 * 1024 * 256, 100) {}
@@ -21,7 +20,7 @@ namespace Exceptionless.Storage {
         public long MaxFileSize { get; set; }
         public long MaxFiles { get; set; }
 
-        public async Task<Stream> GetFileContentsAsync(string path) {
+        public string GetFileContents(string path) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -29,7 +28,7 @@ namespace Exceptionless.Storage {
                 if (!_storage.ContainsKey(path))
                     throw new FileNotFoundException();
 
-                return new MemoryStream(_storage[path].Item2);
+                return _storage[path].Item2;
             }
         }
 
@@ -40,7 +39,7 @@ namespace Exceptionless.Storage {
             }
         }
 
-        public async Task SaveFileAsync(string path, Stream contents) {
+        public void SaveFile(string path, string contents) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -53,14 +52,14 @@ namespace Exceptionless.Storage {
                     Modified = DateTime.Now,
                     Path = path,
                     Size = contents.Length
-                }, ReadBytes(contents));
+                }, contents);
 
                 if (_storage.Count > MaxFiles)
                     _storage.Remove(_storage.OrderByDescending(kvp => kvp.Value.Item1.Created).First().Key);
             }
         }
 
-        public async Task RenameFileAsync(string oldpath, string newpath) {
+        public void RenameFile(string oldpath, string newpath) {
             if (String.IsNullOrWhiteSpace(oldpath))
                 throw new ArgumentNullException("oldpath");
             if (String.IsNullOrWhiteSpace(newpath))
@@ -77,7 +76,7 @@ namespace Exceptionless.Storage {
             }
         }
 
-        public async Task DeleteFileAsync(string path) {
+        public void DeleteFile(string path) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -89,7 +88,7 @@ namespace Exceptionless.Storage {
             }
         }
 
-        public async Task<IEnumerable<FileInfo>> GetFileListAsync(string spec = null) {
+        public IEnumerable<FileInfo> GetFileList(string spec = null) {
             if (spec == null)
                 spec = "*";
 

@@ -16,7 +16,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
-using CodeSmith.Core.Component;
 using Exceptionless.Core;
 
 namespace Exceptionless.Api.Utility {
@@ -31,24 +30,20 @@ namespace Exceptionless.Api.Utility {
             context.Response = response;
         }
 
-        Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
+        async Task<HttpResponseMessage> IAuthorizationFilter.ExecuteAuthorizationFilterAsync(HttpActionContext actionContext, CancellationToken cancellationToken, Func<Task<HttpResponseMessage>> continuation) {
             if (actionContext == null)
                 throw new ArgumentNullException("actionContext");
 
             if (continuation == null)
                 throw new ArgumentNullException("continuation");
 
-            try {
-                if (Settings.Current.EnableSSL && actionContext.Request.RequestUri.Scheme != Uri.UriSchemeHttps)
-                    HandleNonHttpsRequest(actionContext);
-            } catch (Exception e) {
-                return TaskHelper.FromError<HttpResponseMessage>(e);
-            }
+            if (Settings.Current.EnableSSL && actionContext.Request.RequestUri.Scheme != Uri.UriSchemeHttps)
+                HandleNonHttpsRequest(actionContext);
 
             if (actionContext.Response != null)
-                return TaskHelper.FromResult(actionContext.Response);
+                return actionContext.Response;
 
-            return continuation();
+            return await continuation();
         }
 
         bool IFilter.AllowMultiple { get { return true; } }

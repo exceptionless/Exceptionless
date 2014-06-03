@@ -36,7 +36,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Enrichments\Error.cs" />
+    <Compile Include="Enrichments\ErrorEnrichment.cs" />
     <Compile Include="ExceptionlessSection.cs" />
     <Compile Include="Extensions\ExceptionlessConfigurationExtensions.cs" />
     <Compile Include="Extensions\IEnumerableExtensions.cs" />

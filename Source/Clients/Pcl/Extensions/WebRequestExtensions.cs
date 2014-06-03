@@ -14,6 +14,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Exceptionless.Submission.Net;
+using Exceptionless.Threading.Tasks;
 
 namespace Exceptionless.Extensions {
     public static class WebRequestExtensions {
@@ -23,8 +24,8 @@ namespace Exceptionless.Extensions {
             return Task.Factory.FromAsync<Stream>(request.BeginGetRequestStream, request.EndGetRequestStream, null);
         }
 
-        public static Task<WebResponse> GetResponseAsync(this WebRequest request) {
-            return Task.Factory.FromAsync<WebResponse>(request.BeginGetResponse, request.EndGetResponse, null);
+        public static Task<HttpWebResponse> GetResponseAsync(this WebRequest request) {
+            return Task.Factory.FromAsync<WebResponse>(request.BeginGetResponse, request.EndGetResponse, null).Then(t => t.Result as HttpWebResponse);
         }
 
         public static void AddAuthorizationHeader(this WebRequest request, ExceptionlessConfiguration configuration) {
@@ -45,17 +46,18 @@ namespace Exceptionless.Extensions {
                 request.Headers[ExceptionlessHeaders.Client] = userAgent;
         }
 
-        public static Task<WebResponse> PostJsonAsync(this HttpWebRequest request, string data) {
+        public static Task<HttpWebResponse> PostJsonAsync(this HttpWebRequest request, string data) {
             request.Accept = request.ContentType = JSON_CONTENT_TYPE;
             request.Method = "POST";
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
-            return request.GetRequestStreamAsync()
-                .Success(t => t.Result.Write(buffer, 0, buffer.Length))
-                .Success(t => request.GetResponseAsync()).Unwrap();
+            return request.GetRequestStreamAsync().Then(t => {
+                    t.Result.Write(buffer, 0, buffer.Length);
+                    return request.GetResponseAsync();
+                });
         }
 
-        public static Task<WebResponse> GetJsonAsync(this HttpWebRequest request) {
+        public static Task<HttpWebResponse> GetJsonAsync(this HttpWebRequest request) {
             request.Accept = JSON_CONTENT_TYPE;
             request.Method = "GET";
 

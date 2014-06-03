@@ -10,7 +10,7 @@ using Exceptionless.Json.Serialization;
 
 namespace Exceptionless.Serializer {
     public class DefaultJsonSerializer : IJsonSerializer {
-        protected readonly JsonSerializerSettings _serializerSettings;
+        private readonly JsonSerializerSettings _serializerSettings;
 
         public DefaultJsonSerializer() {
             _serializerSettings = new JsonSerializerSettings {
