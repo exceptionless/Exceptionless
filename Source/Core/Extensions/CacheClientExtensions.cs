@@ -35,7 +35,7 @@ namespace Exceptionless.Extensions {
                 return client.Increment(key, value);
 
             client.Set(key, startingValue.Value + value, timeToLive);
-            return value;
+            return startingValue.Value + value;
         }
     }
 }

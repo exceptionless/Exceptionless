@@ -95,10 +95,12 @@ namespace Exceptionless.Core.Web {
                 long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
                 bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
                 long monthlyAccepted = org.MaxErrorsPerMonth;
-                if (overLimit)
-                    monthlyAccepted = cacheClient.TryGet(GetMonthlyAcceptedCacheKey(organizationId), (uint)org.GetCurrentMonthlyAccepted());
-                else if(monthlyTotal <= org.MaxErrorsPerMonth)
+                if (overLimit) {
+                    var ma = cacheClient.TryGet<long?>(GetMonthlyAcceptedCacheKey(organizationId));
+                    monthlyAccepted = ma.HasValue ? ma.Value : org.GetCurrentMonthlyAccepted();
+                } else if (monthlyTotal <= org.MaxErrorsPerMonth) {
                     monthlyAccepted = cacheClient.Increment(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyAccepted());
+                }
 
                 overLimit = overLimit || monthlyTotal > org.MaxErrorsPerMonth;
                 if (overLimit)

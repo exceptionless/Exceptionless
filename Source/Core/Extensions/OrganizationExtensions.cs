@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Extensions {
 
        public static int GetCurrentHourlyTotal(this Organization organization) { 
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+            var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
             return usageInfo != null ? usageInfo.Total : 0;
         }
 
