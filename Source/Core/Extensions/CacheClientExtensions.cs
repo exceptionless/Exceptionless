@@ -33,8 +33,9 @@ namespace Exceptionless.Extensions {
             if (count.HasValue)
                 return client.Increment(key, value);
 
-            client.Set(key, startingValue.Value + value, timeToLive);
-            return startingValue.Value + value;
+            long newValue = shouldIncrement ? startingValue.Value + value : startingValue.Value;
+            client.Set(key, newValue, timeToLive);
+            return newValue;
         }
 
         public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, long? startingValue = null) {
@@ -45,8 +46,9 @@ namespace Exceptionless.Extensions {
             if (count.HasValue)
                 return client.Increment(key, value);
 
-            client.Set(key, startingValue.Value + value, timeToLive);
-            return startingValue.Value + value;
+            long newValue = startingValue.Value + value;
+            client.Set(key, newValue, timeToLive);
+            return newValue;
         }
     }
 }

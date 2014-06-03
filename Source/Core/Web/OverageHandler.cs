@@ -52,16 +52,16 @@ namespace Exceptionless.Core.Web {
             return request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.Contains("/error");
         }
 
-        private string GetHourlyAcceptedCacheKey(string organizationId) {
-            return String.Concat("usage-accepted", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        private string GetHourlyBlockedCacheKey(string organizationId) {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyAcceptedCacheKey(string organizationId) {
-            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        private string GetMonthlyBlockedCacheKey(string organizationId) {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
@@ -88,8 +88,8 @@ namespace Exceptionless.Core.Web {
                 long hourlyTotal = cacheClient.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
                 long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
                 bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || monthlyTotal > org.MaxErrorsPerMonth;
-                long hourlyAccepted = cacheClient.IncrementIf(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), !overLimit, (uint)org.GetCurrentHourlyAccepted());
-                long monthlyAccepted = cacheClient.IncrementIf(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), !overLimit, (uint)org.GetCurrentMonthlyAccepted());
+                long hourlyBlocked = cacheClient.IncrementIf(GetHourlyBlockedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
+                long monthlyBlocked = cacheClient.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), 1, TimeSpan.FromDays(32), overLimit, (uint)org.GetCurrentMonthlyBlocked());
 
                 if (overLimit)
                     _statsClient.Counter(StatNames.ErrorsBlocked);
@@ -104,17 +104,30 @@ namespace Exceptionless.Core.Web {
                     using (IRedisClient client = _clientsManager.GetClient())
                         client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:month:", org.Id));
 
+                bool shouldSaveUsage = false;
                 var lastCounterSavedDate = cacheClient.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
-                if (!justWentOverHourly && !justWentOverMonthly && lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < 5)
-                    return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
 
-                org = _organizationRepository.GetById(organizationId, true);
-                org.SetMonthlyUsage(monthlyTotal, monthlyAccepted);
-                if (hourlyTotal > org.GetHourlyErrorLimit())
-                    org.SetHourlyOverage(hourlyTotal, hourlyAccepted);
+                // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
+                if (!lastCounterSavedDate.HasValue)
+                    cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
 
-                _organizationRepository.Update(org, true);
-                cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+                // save usages if we just went over one of the limits
+                if (justWentOverHourly || justWentOverMonthly)
+                    shouldSaveUsage = true;
+
+                // save usages if the last time we saved them is more than 5 minutes ago
+                if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= 5)
+                    shouldSaveUsage = true;
+
+                if (shouldSaveUsage) {
+                    org = _organizationRepository.GetById(organizationId, true);
+                    org.SetMonthlyUsage(monthlyTotal, monthlyBlocked);
+                    if (hourlyTotal > org.GetHourlyErrorLimit())
+                        org.SetHourlyOverage(hourlyTotal, hourlyBlocked);
+
+                    _organizationRepository.Update(org, true);
+                    cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+                }
 
                 return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
             }

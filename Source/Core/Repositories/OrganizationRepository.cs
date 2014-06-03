@@ -80,6 +80,17 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).OverageHours.Any());
             cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.Usage).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Usage.Any());
+
+            if (!BsonClassMap.IsClassMapRegistered(typeof(UsageInfo))) {
+                BsonClassMap.RegisterClassMap<UsageInfo>(cmm => {
+                    cmm.AutoMap();
+                    cmm.SetIgnoreExtraElements(true);
+                    cmm.GetMemberMap(c => c.Date).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Total).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Blocked).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Limit).SetIgnoreIfDefault(true);
+                });
+            }
         }
 
         public Organization GetByInviteToken(string token, out Invite invite) {
