@@ -27,13 +27,13 @@ namespace Exceptionless.Extensions {
                 startingValue = 0;
 
             var count = client.Get<long?>(key);
-            if (count.HasValue && !shouldIncrement)
-                return count.Value;
+            if (!shouldIncrement)
+                return count.HasValue ? count.Value : startingValue.Value;
 
             if (count.HasValue)
                 return client.Increment(key, value);
 
-            long newValue = shouldIncrement ? startingValue.Value + value : startingValue.Value;
+            long newValue = startingValue.Value + value;
             client.Set(key, newValue, timeToLive);
             return newValue;
         }
