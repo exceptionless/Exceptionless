@@ -12,10 +12,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web.Razor.Parser.SyntaxTree;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
-using NLog.LayoutRenderers;
 
 namespace Exceptionless.Core.Extensions {
     public static class OrganizationExtensions {

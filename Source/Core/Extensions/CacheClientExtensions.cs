@@ -14,16 +14,27 @@ using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
-        public static T TryGet<T>(this ICacheClient client, string key) {
-            return TryGet<T>(client, key, default(T));
-        }
-
-        public static T TryGet<T>(this ICacheClient client, string key, T defaultValue) {
+        public static T TryGet<T>(this ICacheClient client, string key, T defaultValue = default(T)) {
             try {
                 return client.Get<T>(key);
             } catch (Exception) {
                 return defaultValue;
             }
+        }
+
+        public static long IncrementIf(this ICacheClient client, string key, uint value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+            if (!startingValue.HasValue)
+                startingValue = 0;
+
+            var count = client.Get<long?>(key);
+            if (count.HasValue && !shouldIncrement)
+                return count.Value;
+
+            if (count.HasValue)
+                return client.Increment(key, value);
+
+            client.Set(key, startingValue.Value + value, timeToLive);
+            return startingValue.Value + value;
         }
 
         public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, long? startingValue = null) {

@@ -86,30 +86,20 @@ namespace Exceptionless.Core.Web {
 
             using (var cacheClient = _clientsManager.GetCacheClient()) {
                 long hourlyTotal = cacheClient.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
-                bool overLimit = hourlyTotal > org.GetHourlyErrorLimit();
-                bool justWentOverHourly = overLimit && hourlyTotal == org.GetHourlyErrorLimit() + 1;
-                long hourlyAccepted = org.GetHourlyErrorLimit();
-                if (!overLimit)
-                    hourlyAccepted = cacheClient.Increment(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyAccepted());
-
                 long monthlyTotal = cacheClient.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
-                bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
-                long monthlyAccepted = org.MaxErrorsPerMonth;
-                if (overLimit) {
-                    var ma = cacheClient.TryGet<long?>(GetMonthlyAcceptedCacheKey(organizationId));
-                    monthlyAccepted = ma.HasValue ? ma.Value : org.GetCurrentMonthlyAccepted();
-                } else if (monthlyTotal <= org.MaxErrorsPerMonth) {
-                    monthlyAccepted = cacheClient.Increment(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyAccepted());
-                }
+                bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || monthlyTotal > org.MaxErrorsPerMonth;
+                long hourlyAccepted = cacheClient.IncrementIf(GetHourlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), !overLimit, (uint)org.GetCurrentHourlyAccepted());
+                long monthlyAccepted = cacheClient.IncrementIf(GetMonthlyAcceptedCacheKey(organizationId), 1, TimeSpan.FromDays(32), !overLimit, (uint)org.GetCurrentMonthlyAccepted());
 
-                overLimit = overLimit || monthlyTotal > org.MaxErrorsPerMonth;
                 if (overLimit)
                     _statsClient.Counter(StatNames.ErrorsBlocked);
 
+                bool justWentOverHourly = hourlyTotal == org.GetHourlyErrorLimit() + 1;
                 if (justWentOverHourly)
                     using (IRedisClient client = _clientsManager.GetClient())
                         client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:hr:", org.Id));
 
+                bool justWentOverMonthly = monthlyTotal == org.MaxErrorsPerMonth + 1;
                 if (justWentOverMonthly)
                     using (IRedisClient client = _clientsManager.GetClient())
                         client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, String.Concat("overlimit:month:", org.Id));
