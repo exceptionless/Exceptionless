@@ -40,43 +40,63 @@ namespace Exceptionless.Core.Extensions {
         public static bool IsOverMonthlyLimit(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Count > organization.MaxEventsPerMonth;
+            return usageInfo != null && usageInfo.Total > organization.MaxEventsPerMonth;
         }
 
         public static bool IsOverHourlyLimit(this Organization organization) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Count > organization.GetHourlyErrorLimit();
+            return usageInfo != null && usageInfo.Total > organization.GetHourlyErrorLimit();
         }
 
-        public static int GetCurrentMonthlyUsage(this Organization organization) {
+        public static int GetCurrentHourlyTotal(this Organization organization) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.Total : 0;
+        }
+
+        public static int GetCurrentHourlyAccepted(this Organization organization) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.Accepted : 0;
+        }
+
+        public static int GetCurrentMonthlyTotal(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null ? usageInfo.Count : 0;
+            return usageInfo != null ? usageInfo.Total : 0;
         }
 
-        public static void SetHourlyOverage(this Organization organization, long count) {
-            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)count, organization.GetHourlyErrorLimit());
-        }
-
-        public static void SetMonthlyUsage(this Organization organization, long count) {
+        public static int GetCurrentMonthlyAccepted(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            organization.Usage.SetUsage(date, (int)count, organization.MaxEventsPerMonth);
+            var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.Accepted : 0;
         }
 
-        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int count, int limit) {
+        public static void SetHourlyOverage(this Organization organization, long total, long accepted) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            organization.OverageHours.SetUsage(date, (int)total, (int)accepted, organization.GetHourlyErrorLimit());
+        }
+
+        public static void SetMonthlyUsage(this Organization organization, long total, long accepted) {
+            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            organization.Usage.SetUsage(date, (int)total, (int)accepted, organization.MaxEventsPerMonth);
+        }
+
+        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int accepted, int limit) {
             var usageInfo = usages.FirstOrDefault(o => o.Date == date);
             if (usageInfo == null) {
                 usageInfo = new UsageInfo {
                     Date = date,
-                    Count = count,
+                    Total = total,
+                    Accepted = accepted,
                     Limit = limit
                 };
                 usages.Add(usageInfo);
             } else {
                 usageInfo.Limit = limit;
-                usageInfo.Count = count;
+                usageInfo.Total = total;
+                usageInfo.Accepted = accepted;
             }
         }
     }

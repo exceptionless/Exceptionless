@@ -26,6 +26,21 @@ namespace Exceptionless.Extensions {
             }
         }
 
+        public static long IncrementIf(this ICacheClient client, string key, uint value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+            if (!startingValue.HasValue)
+                startingValue = 0;
+
+            var count = client.Get<long?>(key);
+            if (count.HasValue && !shouldIncrement)
+                return count.Value;
+
+            if (count.HasValue)
+                return client.Increment(key, value);
+
+            client.Set(key, startingValue.Value + value, timeToLive);
+            return startingValue.Value + value;
+        }
+
         public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, long? startingValue = null) {
             if (!startingValue.HasValue)
                 startingValue = 0;
@@ -35,7 +50,7 @@ namespace Exceptionless.Extensions {
                 return client.Increment(key, value);
 
             client.Set(key, startingValue.Value + value, timeToLive);
-            return value;
+            return startingValue.Value + value;
         }
     }
 }

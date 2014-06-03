@@ -192,12 +192,20 @@ namespace Exceptionless.Core.Repositories {
             };
         }
 
-        private string GetHourlyUsageCacheKey(string organizationId) {
-            return String.Concat("usage", ":hr-", organizationId, ":", DateTime.UtcNow.ToString("MMddHH"));
+        private string GetHourlyAcceptedCacheKey(string organizationId) {
+            return String.Concat("usage-accepted", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyUsageCacheKey(string organizationId) {
-            return String.Concat("usage", ":month-", organizationId, ":", DateTime.UtcNow.ToString("MM"));
+        private string GetHourlyTotalCacheKey(string organizationId) {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
+        private string GetMonthlyAcceptedCacheKey(string organizationId) {
+            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        }
+
+        private string GetMonthlyTotalCacheKey(string organizationId) {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetUsageSavedCacheKey(string organizationId) {
@@ -211,17 +219,17 @@ namespace Exceptionless.Core.Repositories {
             if (org.MaxEventsPerMonth < 0)
                 return false;
 
-            string hourlyCacheKey = GetHourlyUsageCacheKey(org.Id);
-            long hourlyErrorCount = Cache.Increment(hourlyCacheKey, (uint)count, TimeSpan.FromMinutes(61));
-            string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
-            long monthlyErrorCount = Cache.Increment(monthlyCacheKey, (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyUsage());
-            bool justWentOverHourly = hourlyErrorCount > org.GetHourlyErrorLimit() && hourlyErrorCount <= org.GetHourlyErrorLimit() + count;
-            bool justWentOverMonthly = monthlyErrorCount > org.MaxEventsPerMonth && monthlyErrorCount <= org.MaxEventsPerMonth + count;
-            bool overLimit = hourlyErrorCount > org.GetHourlyErrorLimit() || monthlyErrorCount > org.MaxEventsPerMonth;
+            long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
+            long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
+            bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || monthlyTotal > org.MaxEventsPerMonth;
+            long hourlyAccepted = Cache.IncrementIf(GetHourlyAcceptedCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), !overLimit, (uint)org.GetCurrentHourlyAccepted());
+            long monthlyAccepted = Cache.IncrementIf(GetMonthlyAcceptedCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), !overLimit, (uint)org.GetCurrentMonthlyAccepted());
 
+            bool justWentOverHourly = hourlyTotal > org.GetHourlyErrorLimit() && hourlyTotal <= org.GetHourlyErrorLimit() + count;
             if (justWentOverHourly)
                 PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
 
+            bool justWentOverMonthly = monthlyTotal > org.MaxEventsPerMonth && monthlyTotal <= org.MaxEventsPerMonth + count;
             if (justWentOverMonthly)
                 PublishMessageAsync(new PlanOverage { OrganizationId = org.Id });
 
@@ -230,9 +238,9 @@ namespace Exceptionless.Core.Repositories {
                 return overLimit;
 
             org = GetById(organizationId, false);
-            org.SetMonthlyUsage(monthlyErrorCount);
-            if (hourlyErrorCount > org.GetHourlyErrorLimit())
-                org.SetHourlyOverage(hourlyErrorCount);
+            org.SetMonthlyUsage(monthlyTotal, monthlyAccepted);
+            if (hourlyTotal > org.GetHourlyErrorLimit())
+                org.SetHourlyOverage(hourlyTotal, hourlyAccepted);
 
             Save(org);
             Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
@@ -245,7 +253,7 @@ namespace Exceptionless.Core.Repositories {
             if (org.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 
-            string monthlyCacheKey = GetMonthlyUsageCacheKey(organizationId);
+            string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
             var monthlyErrorCount = Cache.Get<long?>(monthlyCacheKey);
             if (!monthlyErrorCount.HasValue)
                 monthlyErrorCount = 0;
