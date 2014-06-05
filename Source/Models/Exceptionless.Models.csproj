@@ -47,7 +47,9 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Admin\Application.cs" />
     <Compile Include="Admin\NotificationSettings.cs" />
+    <Compile Include="Admin\Token.cs" />
     <Compile Include="Admin\WebHook.cs" />
     <Compile Include="Admin\Results\EventResultBase.cs" />
     <Compile Include="Admin\Results\EventResult.cs" />

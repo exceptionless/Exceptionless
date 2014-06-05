@@ -79,6 +79,7 @@ namespace Exceptionless.Api {
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             //config.EnableSystemDiagnosticsTracing();
+            new Startup2().ConfigureAuth(app);
 
             // sample middleware that would be how we would auth an api token
             // maybe we should be using custom OAuthBearerAuthenticationProvider's
@@ -140,7 +141,7 @@ namespace Exceptionless.Api {
             app.UseWebApi(config);
 
             app.Use((context, next) => {
-                if (!context.Request.Uri.AbsolutePath.StartsWith("/" + ExceptionlessApiController.API_PREFIX))
+                if (!context.Request.Uri.AbsolutePath.StartsWith("/api"))
                     return next.Invoke();
 
                 context.Response.Write("{\r\n   \"message\": \"not found\"\r\n}");
@@ -151,15 +152,14 @@ namespace Exceptionless.Api {
             app.UseStageMarker(PipelineStage.PostMapHandler);
 
             PhysicalFileSystem fileSystem = null;
-            if (Directory.Exists("./Content"))
-                fileSystem = new PhysicalFileSystem("./Content");
-            if (Directory.Exists("./bin/Content"))
-                fileSystem = new PhysicalFileSystem("./bin/Content");
+            var root = AppDomain.CurrentDomain.BaseDirectory;
+            if (Directory.Exists(Path.Combine(root, "./Content")))
+                fileSystem = new PhysicalFileSystem(Path.Combine(root, "./Content"));
+            if (Directory.Exists(Path.Combine(root, "./bin/Content")))
+                fileSystem = new PhysicalFileSystem(Path.Combine(root, "./bin/Content"));
 
-            if (fileSystem != null) {
-                app.UseDefaultFiles(new DefaultFilesOptions { FileSystem = fileSystem });
-                app.UseStaticFiles(new StaticFileOptions { FileSystem = fileSystem });
-            }
+            if (fileSystem != null)
+                app.UseFileServer(new FileServerOptions { FileSystem = fileSystem });
 
             Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
 

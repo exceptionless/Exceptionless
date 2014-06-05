@@ -14,6 +14,11 @@ namespace Exceptionless.Api.Providers {
             _publicClientId = publicClientId;
         }
 
+        public override Task ValidateClientAuthentication(OAuthValidateClientAuthenticationContext context) {
+            context.Validated("blah");
+            return Task.FromResult(0);
+        }
+
         public override Task ValidateClientRedirectUri(OAuthValidateClientRedirectUriContext context) {
             if (context.ClientId == _publicClientId) {
                 Uri expectedRootUri = new Uri(context.Request.Uri, "/");

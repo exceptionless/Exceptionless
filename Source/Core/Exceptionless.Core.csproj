@@ -214,6 +214,7 @@
     <Compile Include="Queues\ServiceBusQueue.cs" />
     <Compile Include="Queues\Models\SummaryNotification.cs" />
     <Compile Include="Queues\QueueEntry.cs" />
+    <Compile Include="Repositories\ApplicationRepository.cs" />
     <Compile Include="Repositories\Base\CommonFieldNames.cs" />
     <Compile Include="Repositories\Base\OneOptions.cs" />
     <Compile Include="Repositories\Base\MultiOptions.cs" />
@@ -234,10 +235,12 @@
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />
     <Compile Include="Repositories\Interfaces\IDayProjectStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IDayStackStatsRepository.cs" />
+    <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
     <Compile Include="Repositories\Interfaces\IMonthStackStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IMonthProjectStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
+    <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
     <Compile Include="AppStats\InMemoryAppStatsClient.cs" />
     <Compile Include="Serialization\ConditionalContractResolver.cs" />

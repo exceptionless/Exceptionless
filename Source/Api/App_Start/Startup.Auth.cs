@@ -1,7 +1,10 @@
 ﻿using System;
+using System.Security.Claims;
 using Exceptionless.Api.Providers;
 using Microsoft.AspNet.Identity;
 using Microsoft.Owin;
+using Microsoft.Owin.Security;
+using Microsoft.Owin.Security.Google;
 using Microsoft.Owin.Security.OAuth;
 using Owin;
 
@@ -16,7 +19,10 @@ namespace Exceptionless.Api {
                 AuthorizeEndpointPath = new PathString("/account/authorize"),
                 Provider = new ExceptionlessOAuthProvider(PublicClientId),
                 AccessTokenExpireTimeSpan = TimeSpan.FromDays(14),
-                AllowInsecureHttp = true
+                AllowInsecureHttp = true,
+                AccessTokenProvider = new ExceptionlessTokenProvider(),
+                RefreshTokenProvider = new ExceptionlessTokenProvider(),
+                AuthorizationCodeProvider = new ExceptionlessTokenProvider()
             };
         }
 
@@ -27,24 +33,15 @@ namespace Exceptionless.Api {
         // For more information on configuring authentication, please visit http://go.microsoft.com/fwlink/?LinkId=301864
         public void ConfigureAuth(IAppBuilder app) {
             // Configure the db context and user manager to use a single instance per request
-            app.CreatePerOwinContext<ApplicationUserManager>(ApplicationUserManager.Create);
-
-            //// Enable the application to use a cookie to store information for the signed in user
-            //app.UseCookieAuthentication(new CookieAuthenticationOptions {
-            //    AuthenticationType = DefaultAuthenticationTypes.ApplicationCookie,
-            //    LoginPath = new PathString("/Account/Login"),
-            //    Provider = new CookieAuthenticationProvider {
-            //        OnValidateIdentity = SecurityStampValidator.OnValidateIdentity<ApplicationUserManager, User>(
-            //            validateInterval: TimeSpan.FromMinutes(20),
-            //            regenerateIdentity: (manager, user) => user.GenerateUserIdentityAsync(manager))
-            //    }
-            //});
-            // Use a cookie to temporarily store information about a user logging in with a third party login provider
-            app.UseExternalSignInCookie(DefaultAuthenticationTypes.ExternalCookie);
+            //app.CreatePerOwinContext<ApplicationUserManager>(ApplicationUserManager.Create);
 
             // Enable the application to use bearer tokens to authenticate users
-            app.UseOAuthBearerTokens(OAuthOptions);
-
+            app.UseOAuthAuthorizationServer(OAuthOptions);
+            app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions {
+                Provider = new ExceptionlessAuthenticationProvider(),
+                AccessTokenProvider = new ExceptionlessTokenProvider(),
+                AuthenticationMode = AuthenticationMode.Active
+            });
             // Uncomment the following lines to enable logging in with third party login providers
             //app.UseMicrosoftAccountAuthentication(
             //    clientId: "",
@@ -58,7 +55,9 @@ namespace Exceptionless.Api {
             //    appId: "",
             //    appSecret: "");
 
-            app.UseGoogleAuthentication();
+            //app.UseGoogleAuthentication(new GoogleOAuth2AuthenticationOptions {
+            //    Provider = new ExceptionlessGoogleOAuth2AuthenticationProvider()
+            //});
         }
     }
 }

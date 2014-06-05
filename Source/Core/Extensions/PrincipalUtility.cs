@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsPrincipal(identity);
         }
 
-        public static ClaimsPrincipal CreateUser(string userId, IEnumerable<string> roles) {
+        public static ClaimsIdentity CreateUserIdentity(string userId, IEnumerable<string> roles) {
             var claims = new List<Claim> {
                     new Claim(ClaimTypes.Name, userId),
                     new Claim(ClaimTypes.Role, AuthorizationRoles.User)
@@ -29,9 +29,11 @@ namespace Exceptionless.Core.Extensions {
 
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            var identity = new ClaimsIdentity(claims, UserAuthenticationType);
+            return new ClaimsIdentity(claims, UserAuthenticationType);
+        }
 
-            return new ClaimsPrincipal(identity);
+        public static ClaimsPrincipal CreateUser(string userId, IEnumerable<string> roles) {
+            return new ClaimsPrincipal(CreateUserIdentity(userId, roles));
         }
 
         public static AuthType GetAuthType(this IPrincipal principal) {
