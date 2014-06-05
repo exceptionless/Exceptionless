@@ -233,6 +233,7 @@
     <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\QueryOptions.cs" />
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />
+    <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IDayProjectStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\IDayStackStatsRepository.cs" />
     <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />

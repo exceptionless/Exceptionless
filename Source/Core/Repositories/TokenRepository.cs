@@ -20,7 +20,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class TokenRepository : MongoRepository<Token>, ITokenRepository {
+    public class TokenRepository : MongoRepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
         public TokenRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {
             _getIdValue = s => s;
@@ -58,6 +58,8 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Token> cm) {
+            //base.ConfigureClassMap(cm);
+
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
@@ -69,10 +71,10 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.Refresh).SetElementName(FieldNames.Refresh).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type);
             cm.GetMemberMap(c => c.Scopes).SetElementName(FieldNames.Scopes).SetShouldSerializeMethod(obj => ((Token)obj).Scopes.Any());
-            cm.GetMemberMap(c => c.ExpiresAt).SetElementName(FieldNames.ExpiresAt);
-            cm.GetMemberMap(c => c.Notes).SetElementName(FieldNames.Notes);
+            cm.GetMemberMap(c => c.ExpiresAt).SetElementName(FieldNames.ExpiresAt).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.Notes).SetElementName(FieldNames.Notes).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.CreatedDate).SetElementName(FieldNames.CreatedDate);
-            cm.GetMemberMap(c => c.ModifiedDate).SetElementName(FieldNames.ModifiedDate);
+            cm.GetMemberMap(c => c.ModifiedDate).SetElementName(FieldNames.ModifiedDate).SetIgnoreIfDefault(true);
         }
 
         #endregion
