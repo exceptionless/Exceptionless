@@ -23,14 +23,45 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(messages.Add);
 
-            var organization = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750 });
-            Assert.False(_repository.IncrementUsage(organization.Id));
+            var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750 });
+            Assert.False(_repository.IncrementUsage(o.Id, 4));
             Assert.Equal(0, messages.Count);
+            Assert.Equal(4, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
+            Assert.Equal(4, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
+            Assert.Equal(0, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
+            Assert.Equal(0, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
-            Assert.True(_repository.IncrementUsage(organization.Id, 6));
+            Assert.True(_repository.IncrementUsage(o.Id, 3));
             Assert.Equal(1, messages.Count);
-            
-            // TODO: Verify the what counts when you have 1 left and you submit 2.
+            Assert.Equal(7, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
+            Assert.Equal(7, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
+            Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
+            Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
+        }
+
+        private string GetHourlyBlockedCacheKey(string organizationId)
+        {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
+        private string GetHourlyTotalCacheKey(string organizationId)
+        {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
+        private string GetMonthlyBlockedCacheKey(string organizationId)
+        {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        }
+
+        private string GetMonthlyTotalCacheKey(string organizationId)
+        {
+            return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        }
+
+        private string GetUsageSavedCacheKey(string organizationId)
+        {
+            return String.Concat("usage-saved", ":", organizationId);
         }
     }
 }
