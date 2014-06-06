@@ -27,8 +27,10 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.False(_repository.IncrementUsage(organization.Id));
             Assert.Equal(0, messages.Count);
 
-            Assert.True(_repository.IncrementUsage(organization.Id));
+            Assert.True(_repository.IncrementUsage(organization.Id, 6));
             Assert.Equal(1, messages.Count);
+            
+            // TODO: Verify the what counts when you have 1 left and you submit 2.
         }
     }
 }

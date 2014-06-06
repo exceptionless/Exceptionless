@@ -219,12 +219,12 @@ namespace Exceptionless.Core.Repositories {
             if (org.MaxEventsPerMonth < 0)
                 return false;
 
-            long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
-            long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
+            long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
+            long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
             long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
             bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
-            long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
-            monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), 1, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
+            long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
+            monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyErrorLimit() && hourlyTotal <= org.GetHourlyErrorLimit() + count;
             if (justWentOverHourly)

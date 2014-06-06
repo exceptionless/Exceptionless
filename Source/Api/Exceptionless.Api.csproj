@@ -57,6 +57,27 @@
       <HintPath>..\..\packages\Microsoft.Owin.FileSystems.2.1.0\lib\net40\Microsoft.Owin.FileSystems.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Microsoft.Owin.Security">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.2.1.0\lib\net45\Microsoft.Owin.Security.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.Cookies">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.Cookies.2.1.0\lib\net45\Microsoft.Owin.Security.Cookies.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.Facebook">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.Facebook.2.1.0\lib\net45\Microsoft.Owin.Security.Facebook.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.Google">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.Google.2.1.0\lib\net45\Microsoft.Owin.Security.Google.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.MicrosoftAccount">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.MicrosoftAccount.2.1.0\lib\net45\Microsoft.Owin.Security.MicrosoftAccount.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.OAuth">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.OAuth.2.1.0\lib\net45\Microsoft.Owin.Security.OAuth.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Security.Twitter">
+      <HintPath>..\..\packages\Microsoft.Owin.Security.Twitter.2.1.0\lib\net45\Microsoft.Owin.Security.Twitter.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Owin.StaticFiles">
       <HintPath>..\..\packages\Microsoft.Owin.StaticFiles.2.1.0\lib\net45\Microsoft.Owin.StaticFiles.dll</HintPath>
     </Reference>
@@ -190,18 +211,6 @@
     <Compile Include="Utility\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\katanaproject\src\Microsoft.Owin.Security.Google\Microsoft.Owin.Security.Google.csproj">
-      <Project>{1f46bc62-a011-4b63-a5c6-51aee2ef538d}</Project>
-      <Name>Microsoft.Owin.Security.Google</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\katanaproject\src\Microsoft.Owin.Security.OAuth\Microsoft.Owin.Security.OAuth.csproj">
-      <Project>{f71e48d0-115a-4105-b332-fccb2139dc23}</Project>
-      <Name>Microsoft.Owin.Security.OAuth</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\katanaproject\src\Microsoft.Owin.Security\Microsoft.Owin.Security.csproj">
-      <Project>{aaaf8157-1e33-4d6c-8319-3b304d018005}</Project>
-      <Name>Microsoft.Owin.Security</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
       <Name>Pcl</Name>
