@@ -77,7 +77,15 @@ namespace Exceptionless.ExtendedData {
 
             try {
                 IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
-                IPAddress ip = hostEntry.AddressList.FirstOrDefault(a => a.AddressFamily == AddressFamily.InterNetwork);
+                var addresses = hostEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).ToList();
+                if (addresses.Count > 1)
+                {
+                    var regex = new Regex("(^127.)|(^10.)|(^172.1[6-9].)|(^172.2[0-9].)|(^172.3[0-1].)|(^192.168.)", RegexOptions.IgnoreCase);
+                    var addressPossibilities = addresses.Where(x => regex.IsMatch(x.ToString())).ToList();
+                    ip = addressPossibilities.Any() ? addressPossibilities.First() : addresses.First();
+                }
+                else
+                    ip = addresses.FirstOrDefault();
                 if (ip != null)
                     machineInfo.IpAddress = ip.ToString();
             } catch (Exception e) {
