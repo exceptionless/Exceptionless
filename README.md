@@ -34,6 +34,7 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   2. Setup IIS and add the Exceptionless website.
   3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
   4. Change the WebsiteMode to Production in the Web.config appSettings section.
+  5. [Configure your clients](http://docs.exceptionless.com/contents/configuration/#self-hosted-options) to send errors to your installation.
 
 
 ##  How is Exceptionless licensed?
