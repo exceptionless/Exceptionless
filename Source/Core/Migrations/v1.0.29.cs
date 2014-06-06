@@ -16,22 +16,21 @@ using MongoDB.Driver;
 using MongoMigrations;
 
 namespace Exceptionless.Core.Migrations {
-    public class EventConversionMigration : CollectionMigration {
-        public EventConversionMigration()
-            : base("1.0.29", StackRepository.CollectionName) {
-            Description = "Update the system to use more generic events instead of errors.";
-        }
-
-        public override void Update() {
-            // TODO: rename errorstack collection to stack
-            // TODO: update field names in org and project for counts
-            // TODO: rename error collection to event
-            // TODO: migrate errors to events on demand as documents are requested
-
-            base.Update();
+    public class UpdateOveragesImplementationMigration : CollectionMigration {
+        public UpdateOveragesImplementationMigration() : base("1.0.29", OrganizationRepository.CollectionName) {
+            Description = "Update property names and new plan limit implementation for orgs docs.";
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
+            if (document.Contains("OverageDays"))
+                document.Remove("OverageDays");
+
+            document.ChangeName("MaxErrorsPerDay", "MaxErrorsPerMonth");
+            var maxErrorsPerMonth = document.GetValue("MaxErrorsPerMonth").AsInt32;
+            if (maxErrorsPerMonth > 0)
+                document.Set("MaxErrorsPerMonth", maxErrorsPerMonth * 30);
+
+            collection.Save(document);
         }
     }
 }

@@ -562,6 +562,7 @@
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Organization\Suspended.cshtml" />
     <Content Include="Scripts\underscore-min.map" />
+    <Content Include="Views\Shared\_Notifications.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="ClientAccessPolicy.xml">

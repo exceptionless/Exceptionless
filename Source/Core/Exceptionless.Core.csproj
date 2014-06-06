@@ -152,6 +152,7 @@
     <Compile Include="Messaging\Models\PlanOverage.cs" />
     <Compile Include="Messaging\Models\StackUpdated.cs" />
     <Compile Include="Messaging\ServiceBusMessageBus.cs" />
+    <Compile Include="Migrations\v1.0.29.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
@@ -190,7 +191,7 @@
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Migrations\v1.0.29.cs" />
+    <Compile Include="Migrations\v1.0.31.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
     <Compile Include="Models\EventPost.cs" />

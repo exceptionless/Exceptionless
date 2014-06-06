@@ -5,10 +5,7 @@
     ViewBag.Title = "Manage \"" + Model.Name + "\" Project";
 }
 
-<div id="free-plan-notification" class="alert in fade alert-success" style="display: none;">
-    <strong>You are on a free plan.</strong>
-    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable premium features and extra storage!
-</div>
+@Html.Partial("_Notifications")
 
 <div class="row">
     <div class="span9">

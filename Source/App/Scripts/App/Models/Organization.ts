@@ -26,7 +26,10 @@ module exceptionless.models {
         suspendedByUserId: string;
         suspensionNotes: string;
 
-        constructor(id: string, name: string, projectCount: number, stackCount: number, errorCount: number, totalErrorCount: number, lastErrorDate?: Date, subscribeDate?: Date, billingChangeDate?: Date, billingChangedByUserId?: string, billingStatus?: number, billingPrice?:number, planId?: string, cardLast4?: string, stripeCustomerId?: string, isSuspended?: boolean, suspensionCode?: string, suspensionDate?: Date, suspendedByUserId?: string, suspensionNotes?: string) {
+        isOverHourlyLimit: boolean;
+        isOverMonthlyLimit: boolean;
+
+        constructor(id: string, name: string, projectCount: number, stackCount: number, errorCount: number, totalErrorCount: number, lastErrorDate?: Date, subscribeDate?: Date, billingChangeDate?: Date, billingChangedByUserId?: string, billingStatus?: number, billingPrice?: number, planId?: string, cardLast4?: string, stripeCustomerId?: string, isSuspended?: boolean, suspensionCode?: string, suspensionDate?: Date, suspendedByUserId?: string, suspensionNotes?: string, isOverHourlyLimit?: boolean, isOverMonthlyLimit?: boolean) {
             this.id = id;
             this.name = name;
             this.projectCount = projectCount;
@@ -59,6 +62,9 @@ module exceptionless.models {
             if (suspensionDate)
                 this.suspensionDate = suspensionDate;
             
+            this.isOverHourlyLimit = isOverHourlyLimit == true;
+            this.isOverMonthlyLimit = isOverMonthlyLimit == true;
+
             ko.track(this);
         }
 

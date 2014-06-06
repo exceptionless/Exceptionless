@@ -18,6 +18,7 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsProcessingTime = "events.processingtime";
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
+        public const string EventsBlocked = "events.blocked";
 
         public const string PostsSubmitted = "posts.submitted";
         public const string PostsQueued = "posts.queued";

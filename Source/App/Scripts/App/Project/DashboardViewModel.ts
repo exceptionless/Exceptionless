@@ -33,6 +33,8 @@ module exceptionless.project {
                 this.refreshViewModelData();
             });
 
+            App.onNewError.subscribe(() => $(Constants.NOTIFICATION_SYSTEM_ID).html(''));
+
             this._pagedRecentErrorsViewModel = new error.PagedRecentErrorsViewModel(recentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate);
             this._pagedFrequentErrorStackStatsViewModel = new stats.PagedFrequentErrorStackStatsViewModel(frequentErrorStackElementId, this.projectListViewModel, this.filterViewModel, pageSize, autoUpdate, this._frequentErrorStacks);
 

@@ -192,16 +192,16 @@ namespace Exceptionless.Core.Repositories {
             };
         }
 
-        private string GetHourlyAcceptedCacheKey(string organizationId) {
-            return String.Concat("usage-accepted", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        private string GetHourlyBlockedCacheKey(string organizationId) {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyAcceptedCacheKey(string organizationId) {
-            return String.Concat("usage-accepted", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        private string GetMonthlyBlockedCacheKey(string organizationId) {
+            return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyTotalCacheKey(string organizationId) {
@@ -219,11 +219,12 @@ namespace Exceptionless.Core.Repositories {
             if (org.MaxEventsPerMonth < 0)
                 return false;
 
-            long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
-            long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
-            bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || monthlyTotal > org.MaxEventsPerMonth;
-            long hourlyAccepted = Cache.IncrementIf(GetHourlyAcceptedCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), !overLimit, (uint)org.GetCurrentHourlyAccepted());
-            long monthlyAccepted = Cache.IncrementIf(GetMonthlyAcceptedCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), !overLimit, (uint)org.GetCurrentMonthlyAccepted());
+            long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
+            long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), 1, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
+            long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
+            bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
+            long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
+            monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), 1, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyErrorLimit() && hourlyTotal <= org.GetHourlyErrorLimit() + count;
             if (justWentOverHourly)
@@ -233,17 +234,30 @@ namespace Exceptionless.Core.Repositories {
             if (justWentOverMonthly)
                 PublishMessageAsync(new PlanOverage { OrganizationId = org.Id });
 
+            bool shouldSaveUsage = false;
             var lastCounterSavedDate = Cache.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));
-            if (!justWentOverHourly && !justWentOverMonthly && lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes < USAGE_SAVE_MINUTES)
-                return overLimit;
 
-            org = GetById(organizationId, false);
-            org.SetMonthlyUsage(monthlyTotal, monthlyAccepted);
-            if (hourlyTotal > org.GetHourlyErrorLimit())
-                org.SetHourlyOverage(hourlyTotal, hourlyAccepted);
+            // don't save on the 1st increment, but set the last saved date so we will save in 5 minutes
+            if (!lastCounterSavedDate.HasValue)
+                Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
 
-            Save(org);
-            Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+            // save usages if we just went over one of the limits
+            if (justWentOverHourly || justWentOverMonthly)
+                shouldSaveUsage = true;
+
+            // save usages if the last time we saved them is more than 5 minutes ago
+            if (lastCounterSavedDate.HasValue && DateTime.UtcNow.Subtract(lastCounterSavedDate.Value).TotalMinutes >= USAGE_SAVE_MINUTES)
+                shouldSaveUsage = true;
+
+            if (shouldSaveUsage) {
+                org = GetById(organizationId, false);
+                org.SetMonthlyUsage(monthlyTotal, monthlyBlocked);
+                if (hourlyTotal > org.GetHourlyErrorLimit())
+                    org.SetHourlyOverage(hourlyTotal, hourlyBlocked);
+
+                Save(org);
+                Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
+            }
 
             return overLimit;
         }
@@ -321,6 +335,18 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.Usage).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Usage.Any());
             cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).OverageHours.Any());
+
+            
+            if (!BsonClassMap.IsClassMapRegistered(typeof(UsageInfo))) {
+                BsonClassMap.RegisterClassMap<UsageInfo>(cmm => {
+                    cmm.AutoMap();
+                    cmm.SetIgnoreExtraElements(true);
+                    cmm.GetMemberMap(c => c.Date).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Total).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Blocked).SetIgnoreIfDefault(true);
+                    cmm.GetMemberMap(c => c.Limit).SetIgnoreIfDefault(true);
+                });
+            }
         }
 
         #endregion

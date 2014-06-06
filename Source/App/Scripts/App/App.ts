@@ -13,6 +13,8 @@ module exceptionless {
         public static onProjectUpdated = ko.observable<{ projectId: string; }>();
         public static onStackUpdated = ko.observable<{ projectId: string; id: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
         public static onNewError = ko.observable<{ projectId: string; stackId: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
+        public static onWentOverHourlyLimit = ko.observable<{ organizationId: string; }>();
+        public static onWentOverMonthlyLimit = ko.observable<{ organizationId: string; }>();
 
         public static organizations = ko.observableArray<models.Organization>([]);
         private static _previousOrganization: models.Organization;
@@ -87,8 +89,8 @@ module exceptionless {
                 }
             });
 
-            (<any>App).selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
-            (<any>App).selectedOrganization.subscribe((o)=> {
+            App.selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
+            App.selectedOrganization.subscribe((o)=> {
                 if (App._previousOrganization
                     && !StringUtil.isNullOrEmpty(App._previousOrganization.id)
                     && o
@@ -97,11 +99,29 @@ module exceptionless {
                     && (App._previousOrganization.isSuspended !== o.isSuspended)) {
                     location.reload();
                 }
+
+                $('#free-plan-notification').hide();
+                $('#monthly-limit-notification').hide();
+                $('#hourly-limit-notification').hide();
+
+                if (o.isOverMonthlyLimit)
+                    $('#monthly-limit-notification').show();
+                else if (o.isOverHourlyLimit)
+                    $('#hourly-limit-notification').show();
+                else if (o.planId === Constants.FREE_PLAN_ID)
+                    $('#free-plan-notification').show();
+            });
+
+            App.onNewError.subscribe(() => {
+                $('#hourly-limit-notification').hide();
+                $('#monthly-limit-notification').hide();
             });
 
             App.onPlanChanged.subscribe(() => App.refreshViewModelData());
             App.onOrganizationUpdated.subscribe(() => App.refreshViewModelData());
             App.onProjectUpdated.subscribe(() => App.refreshViewModelData());
+            App.onWentOverHourlyLimit.subscribe(() => App.refreshViewModelData());
+            App.onWentOverMonthlyLimit.subscribe(() => App.refreshViewModelData());
 
             App.refreshViewModelData();
 
@@ -146,7 +166,7 @@ module exceptionless {
             App.plans.sort((a: account.BillingPlan, b: account.BillingPlan) => { return a.price > b.price ? 1 : -1; });
 
             var organizations: models.Organization[] = [];
-            $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes)));
+            $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes, o.IsOverHourlyLimit, o.IsOverMonthlyLimit)));
             App.organizations(organizations);
             App.organizations.sort((a: models.Organization, b: models.Organization) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
@@ -522,6 +542,16 @@ module exceptionless {
             notifier.client.newError = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
                     App.onNewError({ projectId: projectId, stackId: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
+            };
+
+
+            notifier.client.wentOverHourlyLimit = (organizationId: string) => {
+                App.onWentOverHourlyLimit({ organizationId: organizationId });
+            };
+
+
+            notifier.client.wentOverMonthlyLimit = (organizationId: string) => {
+                App.onWentOverMonthlyLimit({ organizationId: organizationId });
             };
 
             $.connection.hub.start();

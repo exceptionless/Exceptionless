@@ -10,7 +10,7 @@
 Framework "4.5.1"
 
 properties {
-    $version =  "1.4"
+    $version =  "2.0"
     $configuration = "Release"
 
     $base_dir = Resolve-Path "."

@@ -8,6 +8,14 @@
     <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog({ id: '@Model.Id', name: '@Model.Name', planId: '@Model.PlanId' })">Upgrade now</a> to enable premium features and extra storage!
 </div>
 
+<div id="hourly-limit-notification" class="alert in fade alert-danger" style="display: none;">
+    Errors are currently being throttled to prevent using up your plan limit in a small window of time. <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog({ id: '@Model.Id', name: '@Model.Name', planId: '@Model.PlanId' })">Upgrade now</a> to increase your limits.
+</div>
+
+<div id="monthly-limit-notification" class="alert in fade alert-danger" style="display: none;">
+    You have reached your monthly plan limit. <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog({ id: '@Model.Id', name: '@Model.Name', planId: '@Model.PlanId' })">Upgrade now</a> to continue receiving errors.
+</div>
+
 <div class="row">
     <div class="span9">
         <div class="widget" id="organization-@Model.Id">
@@ -31,7 +39,7 @@
                             <div class="control-group" data-bind="validationElement: name">
                                 <label class="control-label">Name</label>
                                 <div class="controls">
-                                    <input type="text" data-bind="value: name" />
+                                    <input type="text" data-bind="value: name, valueUpdate: 'keyup'" />
                                 </div>
                             </div>
                             <div class="form-actions">
