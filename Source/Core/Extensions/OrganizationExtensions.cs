@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Extensions {
             organization.SuspendedByUserId = null;
         }
 
-        public static int GetHourlyErrorLimit(this Organization organization) {
+        public static int GetHourlyEventLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth <= 0)
                 return Int32.MaxValue;
 
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Extensions {
         public static bool IsOverHourlyLimit(this Organization organization) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
             var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && usageInfo.Total > organization.GetHourlyErrorLimit();
+            return usageInfo != null && usageInfo.Total > organization.GetHourlyEventLimit();
         }
 
        public static int GetCurrentHourlyTotal(this Organization organization) { 
@@ -75,7 +75,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetHourlyOverage(this Organization organization, long total, long blocked) {
             var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, organization.GetHourlyErrorLimit(), TimeSpan.FromDays(32));
+            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, organization.GetHourlyEventLimit(), TimeSpan.FromDays(32));
         }
 
         public static void SetMonthlyUsage(this Organization organization, long total, long blocked) {

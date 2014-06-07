@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Billing;
@@ -222,11 +223,20 @@ namespace Exceptionless.Core.Repositories {
             long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
             long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
             long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
-            bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
-            long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
-            monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
+            bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
 
-            bool justWentOverHourly = hourlyTotal > org.GetHourlyErrorLimit() && hourlyTotal <= org.GetHourlyErrorLimit() + count;
+            long totalBlocked = count;
+            if ((monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth)
+                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth ? monthlyTotal - monthlyBlocked - org.MaxEventsPerMonth : count;
+            else if (hourlyTotal > org.GetHourlyEventLimit())
+                totalBlocked = (hourlyTotal - count) < org.GetHourlyEventLimit() ? hourlyTotal - org.GetHourlyEventLimit() : count;
+
+            Debug.Assert(totalBlocked > 0);
+            
+            long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
+            monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
+
+            bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
             if (justWentOverHourly)
                 PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
 
@@ -252,7 +262,7 @@ namespace Exceptionless.Core.Repositories {
             if (shouldSaveUsage) {
                 org = GetById(organizationId, false);
                 org.SetMonthlyUsage(monthlyTotal, monthlyBlocked);
-                if (hourlyTotal > org.GetHourlyErrorLimit())
+                if (hourlyTotal > org.GetHourlyEventLimit())
                     org.SetHourlyOverage(hourlyTotal, hourlyBlocked);
 
                 Save(org);

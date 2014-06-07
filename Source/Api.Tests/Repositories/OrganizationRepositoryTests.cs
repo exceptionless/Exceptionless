@@ -37,6 +37,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(7, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
             Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
             Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
+
+            o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750 });
+            Assert.True(_repository.IncrementUsage(o.Id, 751));
+            Assert.Equal(2, messages.Count);
+            Assert.Equal(751, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
+            Assert.Equal(751, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
+            Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
+            Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
         }
 
         private string GetHourlyBlockedCacheKey(string organizationId)
