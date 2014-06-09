@@ -11,7 +11,7 @@ namespace Exceptionless.Api {
         }
 
         public Task CreateAsync(AuthenticationTokenCreateContext context) {
-            context.SetToken(Guid.NewGuid().ToString("N"));
+            Create(context);
             return Task.FromResult(0);
         }
 
@@ -20,7 +20,7 @@ namespace Exceptionless.Api {
         }
 
         public Task ReceiveAsync(AuthenticationTokenReceiveContext context) {
-            context.SetTicket(CreateTicket());
+            Receive(context);
             return Task.FromResult(0);
         }
 
