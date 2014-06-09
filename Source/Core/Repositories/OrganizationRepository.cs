@@ -226,11 +226,15 @@ namespace Exceptionless.Core.Repositories {
             bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
 
             long totalBlocked = count;
-            if ((monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth)
+
+            // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
+            if ((monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth && (monthlyTotal - monthlyBlocked - count + org.GetHourlyEventLimit()) >= org.MaxEventsPerMonth)
                 totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth ? monthlyTotal - monthlyBlocked - org.MaxEventsPerMonth : count;
             else if (hourlyTotal > org.GetHourlyEventLimit())
                 totalBlocked = (hourlyTotal - count) < org.GetHourlyEventLimit() ? hourlyTotal - org.GetHourlyEventLimit() : count;
-
+            else if ((monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth)
+                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth ? monthlyTotal - monthlyBlocked - org.MaxEventsPerMonth : count;
+            
             Debug.Assert(totalBlocked > 0);
             
             long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
