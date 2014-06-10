@@ -23,7 +23,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/webhooks")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.Admin)]
     public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, WebHook, WebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
@@ -85,7 +85,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost]
         [Route("subscribe")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.WriteOrClient)]
         public IHttpActionResult Subscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
             var eventType = data.GetValue("event").Value<string>();
@@ -132,7 +132,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost]
         [Route("test")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.ReadOrClient)]
         public IHttpActionResult Test() {
             return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },

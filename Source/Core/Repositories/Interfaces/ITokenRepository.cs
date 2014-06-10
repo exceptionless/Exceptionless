@@ -13,7 +13,7 @@ using System;
 using Exceptionless.Models.Admin;
 
 namespace Exceptionless.Core.Repositories {
-    public interface ITokenRepository : IRepositoryOwnedByOrganizationAndProject<Token> {
+    public interface ITokenRepository : IRepositoryOwnedByOrganization<Token> {
         Token GetByRefreshToken(string refreshToken);
     }
 }

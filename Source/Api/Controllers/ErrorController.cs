@@ -23,7 +23,7 @@ using Exceptionless.Models.Legacy;
 namespace Exceptionless.Api.Controllers {
     [ConfigurationResponseFilter]
     [RoutePrefix("api/v1/error")]
-    [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+    [Authorize(Roles = AuthorizationRoles.ReadOrClient)]
     public class ErrorController : ExceptionlessApiController {
         private readonly ICacheClient _cacheClient;
         private readonly IOrganizationRepository _organizationRepository;

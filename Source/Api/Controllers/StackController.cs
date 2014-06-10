@@ -30,7 +30,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stacks")]
-    [Authorize(Roles = AuthorizationRoles.User)]
+    [Authorize(Roles = AuthorizationRoles.Read)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
@@ -67,6 +67,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/mark-fixed")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult MarkFixed(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -94,7 +96,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("{id:objectid}/mark-fixed")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult MarkFixed(JObject data) {
             var id = data.GetValue("ErrorStack").Value<string>();
             if (String.IsNullOrEmpty(id))
@@ -108,6 +110,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/mark-fixed")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult MarkNotFixed(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -128,6 +132,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/mark-hidden")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult MarkHidden(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -144,6 +150,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/mark-hidden")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult MarkNotHidden(string id) {
             var stack = GetModel(id, false);
             if (stack == null)
@@ -160,6 +168,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/promote")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult Promote(string id) {
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
@@ -192,9 +202,9 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         /// <param name="data"></param>
         [HttpPost]
-        [OverrideAuthorization]
         [Route("add-link")]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult AddLink(JObject data) {
             var id = data.GetValue("stack").Value<string>();
             if (String.IsNullOrEmpty(id))
@@ -333,6 +343,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id:objectid}/reset-data")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.Write)]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             if (String.IsNullOrEmpty(id))
                 return NotFound();

@@ -81,6 +81,8 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IMonthProjectStatsRepository, MonthProjectStatsRepository>();
             container.RegisterSingle<IMonthStackStatsRepository, MonthStackStatsRepository>();
             container.RegisterSingle<IDayStackStatsRepository, DayStackStatsRepository>();
+            container.RegisterSingle<ITokenRepository, TokenRepository>();
+            container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
