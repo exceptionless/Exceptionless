@@ -16,6 +16,7 @@ module exceptionless.project {
         reportKnownBotErrors = ko.observable<boolean>(false);
         releases = ko.observableArray<any>([]);
         apiKeys = ko.observableArray<string>([]);
+        deleteBotDataEnabled = ko.observable<boolean>(true);
         configuration = ko.observableArray<models.KeyValuePair>([]);
         dataExclusions = ko.observable<string>('');
 
@@ -98,7 +99,7 @@ module exceptionless.project {
                     return !isExecuting && ko.utils.arrayFirst(this.configuration(), (item: models.KeyValuePair) => !item.isValid) === null;
                 },
                 execute: (complete) => {
-                    var data = { Configuration: { Settings: {} } };
+                    var data = { DeleteBotDataEnabled: this.deleteBotDataEnabled(), Configuration: { Settings: {} } };
                     ko.utils.arrayForEach(this.configuration(), (item: models.KeyValuePair) => {
                         if (!item.isValid)
                             return;
@@ -231,6 +232,7 @@ module exceptionless.project {
             }
             this.apiKeys(apiKeys);
 
+            this.deleteBotDataEnabled(data.DeleteBotDataEnabled);
             var settings: models.KeyValuePair[] = [];
             for (var name in data.Configuration.Settings) {
                 if (name === '@@DataExclusions') {

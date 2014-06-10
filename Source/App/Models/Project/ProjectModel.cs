@@ -46,6 +46,9 @@ namespace Exceptionless.App.Models.Project {
         [Display(Name = "Configuration Settings")]
         public ClientConfiguration Configuration { get; set; }
 
+        [Display(Name = "Automatically delete bot data")]
+        public bool DeleteBotDataEnabled { get; set; }
+
         public NotificationMode Mode { get; set; }
         public bool SendDailySummary { get; set; }
         public bool ReportCriticalErrors { get; set; }

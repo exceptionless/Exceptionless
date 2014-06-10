@@ -165,6 +165,14 @@
                         </div>
 
                         <div class="tab-pane" id="settings">
+                            <div>
+                                @Html.BeginLabelFor(m => m.DeleteBotDataEnabled, new { @class = "checkbox" })
+                                @Html.CheckBoxFor(m => m.DeleteBotDataEnabled, new { data_bind = "checked: deleteBotDataEnabled" })
+                                Automatically delete bot data
+                                @Html.EndLabel()
+                                If the system detects a high volume of errors coming from the same client IP address, it will automatically delete the data to reduce system noise.
+                            </div>
+
                             <h5>Data Exclusions</h5>
                             <p>
                                 A comma delimited list of field names that should be removed from any error report data
