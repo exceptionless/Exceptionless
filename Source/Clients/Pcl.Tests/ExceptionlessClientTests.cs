@@ -11,8 +11,8 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Dependency;
+using Exceptionless.Enrichments.Default;
 using Exceptionless.Models;
-using Exceptionless.Queue;
 using Exceptionless.Storage;
 using Microsoft.Owin.Hosting;
 using SimpleInjector;
@@ -43,6 +43,11 @@ namespace Pcl.Tests {
                 
                 var client = new ExceptionlessClient();
                 client.SubmitEvent(new Event { Message = "Test" });
+
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
+                Assert.NotNull(storage);
+                Assert.Equal(1, storage.GetFileList().Count());
+
                 client.ProcessQueue();
 
                 var processEventsJob = container.GetInstance<ProcessEventPostsJob>();
@@ -59,17 +64,44 @@ namespace Pcl.Tests {
         }
 
         [Fact]
-        public void CanQueueSimpleException() {
-            var client = new ExceptionlessClient();
-            try {
-                throw new Exception("Simple Exception");
-            } catch (Exception ex) {
-                client.SubmitException(ex);
-            }
+        public void CanSubmitSimpleException() {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
+                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                EnsureSampleData(container);
 
-            var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
-            Assert.NotNull(storage);
-            Assert.Equal(1, storage.GetFileList().Count());
+                Assert.NotNull(queue);
+                Assert.Equal(0, queue.Count);
+                
+                var client = new ExceptionlessClient(c => {
+                    c.ServerUrl = Settings.Current.BaseURL;
+                    c.AddEnrichment<SimpleError>();
+                });
+
+                try {
+                    throw new Exception("Simple Exception");
+                } catch (Exception ex) {
+                    client.SubmitException(ex);
+                }
+
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage; 
+                Assert.NotNull(storage);
+                Assert.Equal(1, storage.GetFileList().Count());
+                
+                client.ProcessQueue();
+
+                var processEventsJob = container.GetInstance<ProcessEventPostsJob>();
+                Task.Factory.StartNew(() => processEventsJob.Run());
+                Task.Delay(TimeSpan.FromSeconds(2)).Wait();
+                processEventsJob.Cancel();
+                Assert.Equal(0, queue.Count);
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
+            }
         }
 
         private void EnsureSampleData(Container container) {

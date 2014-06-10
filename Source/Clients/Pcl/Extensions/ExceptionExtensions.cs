@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Enrichments;
+using Exceptionless.Models;
 
 namespace Exceptionless {
     public static class ExceptionExtensions {
@@ -48,14 +49,7 @@ namespace Exceptionless {
 
             pluginContextData.Add(EventEnrichmentContext.KnownContextDataKeys.Exception, exception);
 
-            var builder = client.CreateEventBuilder(pluginContextData);
-
-            // TODO: If an error object has not been set after running the plugins then add a simple error model.
-            //if (!ev.Data.ContainsKey(Event.KnownDataKeys.Error)
-            //    && !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
-            //ev.SetSimpleError(exception.ToErrorModel());
-
-            return builder;
+            return client.CreateEventBuilder(pluginContextData);
         }
     }
 }

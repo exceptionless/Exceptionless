@@ -86,7 +86,7 @@ namespace Exceptionless.Models {
 
         public void SetError(object error) {
             Type = KnownTypes.Error;
-            Data[KnownDataKeys.Error] = error;
+            Data[error is SimpleError ? KnownDataKeys.SimpleError : KnownDataKeys.Error] = error;
         }
 
         public void SetRequestInfo(RequestInfo requestInfo) {

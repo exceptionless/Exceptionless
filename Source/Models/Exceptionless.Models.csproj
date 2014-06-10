@@ -56,6 +56,7 @@
     <Compile Include="Admin\Results\EventStackResult.cs" />
     <Compile Include="Admin\Stats\Results\PlanPagedResult.cs" />
     <Compile Include="Client\Data\Error.cs" />
+    <Compile Include="Client\Data\SimpleError.cs" />
     <Compile Include="Client\Data\InnerError.cs" />
     <Compile Include="Client\Event.cs" />
     <Compile Include="Client\Legacy\EnvironmentInfo.cs" />

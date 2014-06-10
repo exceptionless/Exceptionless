@@ -15,8 +15,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Exceptionless.Json.Utilities;
-using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Module = Exceptionless.Models.Data.Module;
@@ -26,15 +24,15 @@ namespace Exceptionless.Extensions {
         private static readonly Dictionary<string, Module> _moduleCache = new Dictionary<string, Module>();
         private static readonly string[] _exceptionExclusions = { "HelpLink", "InnerException", "Message", "Source", "StackTrace", "TargetSite", "HResult" };
 
-        public static Error ToSimpleErrorModel(this Exception exception, IExceptionlessLog log) {
+        public static SimpleError ToSimpleErrorModel(this Exception exception) {
             Type type = exception.GetType();
 
-            var error = new Error {
+            var error = new SimpleError {
                 Message = exception.GetMessage(),
-                Modules = GetLoadedModules(log),
-                Type = type.FullName
+                Modules = GetLoadedModules(),
+                Type = type.FullName,
+                StackTrace = exception.StackTrace
             };
-            error.PopulateStackTrace(error, exception);
 
             try {
                 PropertyInfo info = type.GetProperty("HResult", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -53,10 +51,10 @@ namespace Exceptionless.Extensions {
 
                 extraProperties = extraProperties.Where(kvp => !ValueIsEmpty(kvp.Value)).ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
 
-                if (extraProperties.Count > 0 && !error.Data.ContainsKey(Error.KnownDataKeys.ExtraProperties)) {
+                if (extraProperties.Count > 0 && !error.Data.ContainsKey(SimpleError.KnownDataKeys.ExtraProperties)) {
                     error.AddObject(new ExtendedDataInfo {
                         Data = extraProperties,
-                        Name = Error.KnownDataKeys.ExtraProperties,
+                        Name = SimpleError.KnownDataKeys.ExtraProperties,
                         IgnoreSerializationErrors = true,
                         MaxDepthToSerialize = 5
                     });
@@ -64,7 +62,7 @@ namespace Exceptionless.Extensions {
             } catch {}
 
             if (exception.InnerException != null)
-                error.Inner = exception.InnerException.ToSimpleErrorModel(log);
+                error.Inner = exception.InnerException.ToSimpleErrorModel();
 
             return error;
         }
@@ -94,10 +92,11 @@ namespace Exceptionless.Extensions {
             return !String.IsNullOrEmpty(message) ? message : defaultMessage;
         }
 
-        private static ModuleCollection GetLoadedModules(IExceptionlessLog log, bool includeSystem = false, bool includeDynamic = false) {
+        private static ModuleCollection GetLoadedModules(bool includeSystem = false, bool includeDynamic = false) {
             var modules = new ModuleCollection();
-
-            var assemblies = new List<Assembly> { Assembly.GetCallingAssembly(), Assembly.GetExecutingAssembly() };
+            var assemblies = new List<Assembly> { Assembly.GetCallingAssembly() };
+            if (assemblies[0] != Assembly.GetExecutingAssembly())
+                assemblies.Add(Assembly.GetExecutingAssembly());
 
             int id = 1;
             foreach (Assembly assembly in assemblies) {
@@ -117,67 +116,11 @@ namespace Exceptionless.Extensions {
                 }
 
                 var module = assembly.ToModuleInfo();
-                module.ModuleId = id;
-                modules.Add(assembly.ToModuleInfo());
-
-                id++;
+                module.ModuleId = id++;
+                modules.Add(module);
             }
 
             return modules;
-        }
-
-        private static void PopulateStackTrace(this Error error, Error root, Exception exception) {
-            // TODO: Store the stack trace as extended data.
-        }
-
-        private static void PopulateMethod(this Method method, Error root, MethodBase methodBase) {
-            if (methodBase == null)
-                return;
-
-            method.Name = methodBase.Name;
-            if (methodBase.DeclaringType != null) {
-                method.DeclaringNamespace = methodBase.DeclaringType.Namespace;
-                if (methodBase.DeclaringType.MemberType() == MemberTypes.Other) //.NestedType)
-                    method.DeclaringType = methodBase.DeclaringType.DeclaringType.Name + "+" + methodBase.DeclaringType.Name;
-                else
-                    method.DeclaringType = methodBase.DeclaringType.Name;
-            }
-
-            //method.Data["Attributes"] = (int)methodBase.Attributes;
-            if (methodBase.IsGenericMethod) {
-                foreach (Type type in methodBase.GetGenericArguments())
-                    method.GenericArguments.Add(type.Name);
-            }
-
-            foreach (ParameterInfo parameter in methodBase.GetParameters()) {
-                var parm = new Parameter {
-                    Name = parameter.Name,
-                    Type = parameter.ParameterType.Name,
-                    TypeNamespace = parameter.ParameterType.Namespace
-                };
-
-                parm.Data["IsIn"] = parameter.IsIn;
-                parm.Data["IsOut"] = parameter.IsOut;
-                parm.Data["IsOptional"] = parameter.IsOptional;
-
-                if (parameter.ParameterType.IsGenericParameter) {
-                    foreach (Type type in parameter.ParameterType.GetGenericArguments())
-                        parm.GenericArguments.Add(type.Name);
-                }
-
-                method.Parameters.Add(parm);
-            }
-
-            method.ModuleId = GetModuleId(root, methodBase.DeclaringType.Assembly);
-        }
-
-        private static int GetModuleId(Error root, Assembly assembly) {
-            foreach (Module mod in root.Modules) {
-                if (assembly.FullName.StartsWith(mod.Name, StringComparison.OrdinalIgnoreCase))
-                    return mod.ModuleId;
-            }
-
-            return -1;
         }
 
         private static Module ToModuleInfo(this Assembly assembly) {
