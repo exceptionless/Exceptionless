@@ -10,21 +10,20 @@
 using System;
 using System.Windows.Forms;
 using Exceptionless.Models;
-using Exceptionless.Utility;
 
 namespace Exceptionless.Dialogs {
     public sealed partial class CrashReportForm : Form {
-        public CrashReportForm(Error error) {
+        public CrashReportForm(Event error) {
             InitializeComponent();
-            Error = error;
+            Event = error;
             Text = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
             InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
-            EmailAddressTextBox.DataBindings.Add("Text", Error, "UserEmail");
-            DescriptionTextBox.DataBindings.Add("Text", Error, "UserDescription");
+            EmailAddressTextBox.DataBindings.Add("Text", Event, "UserEmail");
+            DescriptionTextBox.DataBindings.Add("Text", Event, "UserDescription");
         }
 
-        public Error Error { get; private set; }
+        public Event Event { get; private set; }
 
         private void ExitButton_Click(object sender, EventArgs e) {
             Close();
@@ -36,7 +35,7 @@ namespace Exceptionless.Dialogs {
             SendReportButton.Enabled = false;
             ExitButton.Enabled = false;
 
-            ExceptionlessClient.Current.SubmitError(Error);
+            ExceptionlessClient.Default.SubmitEvent(Event);
 
             Cursor = Cursors.Default;
             SendReportButton.Enabled = true;
@@ -45,11 +44,11 @@ namespace Exceptionless.Dialogs {
         }
 
         private void CrashReportForm_Load(object sender, EventArgs e) {
-            EmailAddressTextBox.Text = String.IsNullOrEmpty(Error.UserEmail)
-                ? ExceptionlessClient.Current.LocalConfiguration.EmailAddress
-                : Error.UserEmail;
+            EmailAddressTextBox.Text = String.IsNullOrEmpty(Event.UserEmail)
+                ? ExceptionlessClient.Default.LocalConfiguration.EmailAddress
+                : Event.UserEmail;
 
-            DescriptionTextBox.Text = Error.UserDescription;
+            DescriptionTextBox.Text = Event.UserDescription;
         }
     }
 }

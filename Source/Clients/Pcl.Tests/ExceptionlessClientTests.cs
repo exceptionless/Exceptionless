@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Api;
@@ -9,7 +10,10 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.Dependency;
 using Exceptionless.Models;
+using Exceptionless.Queue;
+using Exceptionless.Storage;
 using Microsoft.Owin.Hosting;
 using SimpleInjector;
 using Xunit;
@@ -52,6 +56,20 @@ namespace Pcl.Tests {
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
                 Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
             }
+        }
+
+        [Fact]
+        public void CanQueueSimpleException() {
+            var client = new ExceptionlessClient();
+            try {
+                throw new Exception("Simple Exception");
+            } catch (Exception ex) {
+                client.SubmitException(ex);
+            }
+
+            var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
+            Assert.NotNull(storage);
+            Assert.Equal(1, storage.GetFileList().Count());
         }
 
         private void EnsureSampleData(Container container) {

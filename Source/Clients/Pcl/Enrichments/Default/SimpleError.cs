@@ -1,13 +1,15 @@
 ﻿using System;
+using Exceptionless.Extensions;
+using Exceptionless.Logging;
 using Exceptionless.Models;
 
 namespace Exceptionless.Enrichments.Default {
     public class SimpleError : IEventEnrichment {
-        /// <summary>
-        /// Enrich the event with additional information.
-        /// </summary>
-        /// <param name="context">Context information.</param>
-        /// <param name="ev">Event to enrich.</param>
+        private readonly IExceptionlessLog _log;
+        public SimpleError(IExceptionlessLog log) {
+            _log = log;
+        }
+
         public void Enrich(EventEnrichmentContext context, Event ev) {
             if (!context.ContextData.ContainsKey(EventEnrichmentContext.KnownContextDataKeys.Exception))
                 return;
@@ -16,8 +18,7 @@ namespace Exceptionless.Enrichments.Default {
             if (exception == null)
                 return;
 
-            // TODO: create a simple error model.
-            ev.SetError(exception);
+            ev.SetError(exception.ToSimpleErrorModel(_log));
         }
     }
 }

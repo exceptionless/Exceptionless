@@ -16,7 +16,7 @@ using Exceptionless.Windows;
 namespace Exceptionless {
     public static class ExceptionlessManagerWindowsExtensions {
         public static void Register(this ExceptionlessClient client, bool showDialog = true) {
-            client.RegisterPlugin(new ExceptionlessWindowsPlugin(showDialog));
+            client..RegisterPlugin(new ExceptionlessWindowsPlugin(showDialog));
             client.Startup();
 
             if (showDialog) {
@@ -37,11 +37,11 @@ namespace Exceptionless {
         }
 
         private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e) {
-            ExceptionlessClient.Current.ProcessUnhandledException(e.Exception, "ApplicationThreadException");
+            ExceptionlessClient.Default.ProcessUnhandledException(e.Exception, "ApplicationThreadException");
         }
 
         private static void UnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
-            var dialog = new CrashReportForm(e.Error);
+            var dialog = new CrashReportForm(e.Event);
             DialogResult result = dialog.ShowDialog();
             e.Cancel = result == DialogResult.Cancel;
         }

@@ -80,8 +80,11 @@
     <Compile Include="Extensions\ClientExtensions.cs" />
     <Compile Include="Extensions\FileStorageExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
+    <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TaskFactoryExtensions.cs" />
+    <Compile Include="Extensions\ToSimpleErrorModelExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Extensions\WebResponseExtensions.cs" />
     <Compile Include="Extensions\JsonSerializerExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
