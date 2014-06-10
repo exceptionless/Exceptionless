@@ -21,6 +21,7 @@ namespace Exceptionless.Models {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
+            DeleteBotDataEnabled = true;
         }
 
         /// <summary>
@@ -43,6 +44,8 @@ namespace Exceptionless.Models {
         public HashSet<string> PromotedTabs { get; set; }
 
         public string CustomContent { get; set; }
+
+        public bool DeleteBotDataEnabled { get; set; }
 
         /// <summary>
         /// Current number of error stacks in the system.
