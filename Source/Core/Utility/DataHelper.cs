@@ -10,18 +10,23 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Exceptionless.Models.Admin;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class DataHelper {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
@@ -38,6 +43,7 @@ namespace Exceptionless.Core.Utility {
             IUserRepository userRepository,
             IEventRepository eventRepository,
             IStackRepository stackRepository,
+            ITokenRepository tokenRepository,
             IDayStackStatsRepository dayStackStats,
             IMonthStackStatsRepository monthStackStats,
             IDayProjectStatsRepository dayProjectStats,
@@ -48,6 +54,7 @@ namespace Exceptionless.Core.Utility {
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
+            _tokenRepository = tokenRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
@@ -114,7 +121,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void CreateSampleOrganizationAndProject(string userId) {
-            if (_projectRepository.GetByApiKey(SAMPLE_API_KEY) != null)
+            if (_tokenRepository.GetById(SAMPLE_API_KEY) != null)
                 return;
 
             User user = _userRepository.GetById(userId, true);
@@ -124,10 +131,21 @@ namespace Exceptionless.Core.Utility {
 
             var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
-            project.ApiKeys.Add(SAMPLE_API_KEY);
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = _projectRepository.Add(project);
+
+            _tokenRepository.Add(new Token {
+                Id = SAMPLE_API_KEY,
+                OrganizationId = organization.Id,
+                UserId = user.Id,
+                ExpiresUtc = DateTime.UtcNow.AddYears(100),
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access,
+                Scopes = new HashSet<string>(AuthorizationRoles.GlobalAll),
+                DefaultProjectId = project.Id
+            });
 
             _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
 

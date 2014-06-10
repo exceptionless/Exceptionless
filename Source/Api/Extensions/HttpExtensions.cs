@@ -69,27 +69,12 @@ namespace Exceptionless.Api.Extensions {
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
-            var authType = message.GetAuthType();
-            if (authType == AuthType.User)
-                return message.GetUser().OrganizationIds.Contains(organizationId);
-
-            if (authType == AuthType.Project)
-                return message.GetProject().OrganizationId == organizationId;
-
-            return false;
+            return message.GetAssociatedOrganizationIds().Contains(organizationId);
         }
 
         public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
-            var items = new List<string>();
-
-            var authType = message.GetAuthType();
-            if (authType == AuthType.User)
-                items.AddRange(message.GetUser().OrganizationIds);
-
-            if (authType == AuthType.Project)
-                items.Add(message.GetProject().OrganizationId);
-
-            return items;
+            var principal = message.GetClaimsPrincipal();
+            return principal.GetOrganizationIds();
         }
 
         public static string GetDefaultOrganizationId(this HttpRequestMessage message) {

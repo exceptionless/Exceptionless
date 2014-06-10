@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Utility {
 
         protected virtual string GetUserIdentifier(HttpRequestMessage request) {
             var authType = request.GetAuthType();
-            if (authType == AuthType.Project) {
+            if (authType == AuthType.Token) {
                 var project = request.GetProject();
                 if (project != null)
                     return project.OrganizationId;

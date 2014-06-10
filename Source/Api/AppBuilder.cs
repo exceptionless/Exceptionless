@@ -2,22 +2,21 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Routing;
 using AutoMapper;
-using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Providers;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
 using Microsoft.Owin.FileSystems;
@@ -79,60 +78,52 @@ namespace Exceptionless.Api {
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             //config.EnableSystemDiagnosticsTracing();
-            new Startup2().ConfigureAuth(app);
 
-            // sample middleware that would be how we would auth an api token
-            // maybe we should be using custom OAuthBearerAuthenticationProvider's
-            // http://leastprivilege.com/2013/10/31/retrieving-bearer-tokens-from-alternative-locations-in-katanaowin/
-            app.Use((context, next) => {
-                var token = context.Request.Query.Get("access_token");
-                if (String.IsNullOrEmpty(token)) {
-                    var authHeader = context.Request.Headers.Get("Authorization");
-                    if (!String.IsNullOrEmpty(authHeader)) {
-                        var authHeaderVal = AuthenticationHeaderValue.Parse(authHeader);
-                        if (authHeaderVal.Scheme.Equals("token", StringComparison.OrdinalIgnoreCase)
-                            || authHeaderVal.Scheme.Equals("bearer", StringComparison.OrdinalIgnoreCase))
-                            token = authHeaderVal.Parameter;
-                    }
-                }
-
-                var projectRepository = container.GetInstance<IProjectRepository>();
-                if (String.IsNullOrEmpty(token))
-                    return next.Invoke();
-
-                var project = projectRepository.GetByApiKey(token);
-                if (project == null)
-                    return next.Invoke();
-
-                // TODO: Ensure that the current users roles are properly set.
-                context.Request.User = PrincipalUtility.CreateUser(_userId, new[] { AuthorizationRoles.GlobalAdmin });
-                return next.Invoke();
+            var oauthProvider = container.GetInstance<ExceptionlessOAuthAuthorizationServerProvider>();
+            var tokenProvider = container.GetInstance<ExceptionlessTokenProvider>();
+            var authProvider = container.GetInstance<ExceptionlessOAuthBearerAuthenticationProvider>();
+            app.UseOAuthAuthorizationServer(new OAuthAuthorizationServerOptions {
+                TokenEndpointPath = new PathString("/token"),
+                AuthorizeEndpointPath = new PathString("/account/authorize"),
+                Provider = oauthProvider,
+                AccessTokenExpireTimeSpan = TimeSpan.FromDays(14),
+                AllowInsecureHttp = true,
+                AccessTokenProvider = tokenProvider,
+                RefreshTokenProvider = tokenProvider,
+                AuthorizationCodeProvider = tokenProvider
             });
-            app.UseStageMarker(PipelineStage.Authenticate);
+
+            app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions {
+                Provider = authProvider,
+                AccessTokenProvider = tokenProvider,
+                Realm = "Exceptionless"
+            });
 
             app.CreatePerContext<Lazy<User>>("LazyUser", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
-                if (!ctx.Request.User.IsUserAuthType())
+                string userId = ctx.Request.User.GetUserId();
+                if (String.IsNullOrEmpty(userId))
                     return null;
 
                 return new Lazy<User>(() => {
                     var userRepository = container.GetInstance<IUserRepository>();
-                    return userRepository.GetById(ctx.Request.User.GetUserId(), true);
+                    return userRepository.GetById(userId, true);
                 });
             });
 
-            app.CreatePerContext<Lazy<Project>>("LazyProject", ctx => {
+            app.CreatePerContext<Lazy<Project>>("LazyDefaultProject", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
-                if (!ctx.Request.User.IsProjectAuthType())
+                string projectId = ctx.Request.User.GetDefaultProjectId();
+                if (String.IsNullOrEmpty(projectId))
                     return null;
 
                 return new Lazy<Project>(() => {
                     var projectRepository = container.GetInstance<IProjectRepository>();
-                    return projectRepository.GetById(ctx.Request.User.GetProjectId(), true);
+                    return projectRepository.GetById(projectId, true);
                 });
             });
 

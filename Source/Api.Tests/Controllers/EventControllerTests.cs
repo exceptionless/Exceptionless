@@ -21,6 +21,7 @@ using System.Web.Http.Hosting;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
@@ -42,7 +43,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         [Fact]
         public void CanPostString() {
             try {
-                _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), false, false);
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
@@ -60,7 +61,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         [Fact]
         public void CanPostCompressedString() {
             try {
-                _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
                 Assert.IsType<OkResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
@@ -77,7 +78,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public void CanPostSingleEvent() {
-            _eventController.Request = CreateRequestMessage(PrincipalUtility.CreateClientUser(TestConstants.ProjectId), true, false);
+            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
             var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
             Assert.IsType<OkResult>(actionResult);
             Assert.Equal(1, _eventQueue.Count);

@@ -54,6 +54,8 @@
     <Reference Include="Microsoft.ServiceBus">
       <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.3.4.0\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
       <Private>True</Private>
+    <Reference Include="Microsoft.ServiceBus, Version=2.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.3.4.0\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Web.DistributedCache, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.Web.DistributedCache.dll</HintPath>
@@ -159,7 +161,7 @@
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
-    <Compile Include="Extensions\PrincipalUtility.cs" />
+    <Compile Include="Extensions\IdentityUtils.cs" />
     <Compile Include="Plugins\EventParser\Default\JsonEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\EventParserPluginManager.cs" />
     <Compile Include="Plugins\EventParser\IEventParserPlugin.cs" />
