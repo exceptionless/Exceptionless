@@ -22,7 +22,16 @@ namespace Exceptionless.Submission {
             client.AddAuthorizationHeader(configuration);
 
             var data = serializer.Serialize(events);
-            var response = client.PostJsonAsync(data).Result;
+
+            HttpWebResponse response = null;
+            try {
+                response = client.PostJsonAsync(data).Result;
+            } catch (AggregateException aex) {
+                var ex = aex.GetInnermostException() as WebException;
+                if (ex != null)
+                    response = (HttpWebResponse)ex.Response;
+            }
+
             int settingsVersion;
             if (!Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
                 settingsVersion = -1;

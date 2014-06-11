@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using Exceptionless.Enrichments;
 
 namespace Exceptionless {
     public static class ClientExtensions {

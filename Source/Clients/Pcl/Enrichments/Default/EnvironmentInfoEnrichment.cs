@@ -4,12 +4,7 @@ using Exceptionless.Logging;
 using Exceptionless.Models;
 
 namespace Exceptionless.Enrichments.Default {
-    public class EnvironmentInfo : IEventEnrichment {
-        /// <summary>
-        /// Enrich the event with additional information.
-        /// </summary>
-        /// <param name="context">Context information.</param>
-        /// <param name="ev">Event to enrich.</param>
+    public class EnvironmentInfoEnrichment : IEventEnrichment {
         public void Enrich(EventEnrichmentContext context, Event ev) {
             if (ev.Type != Event.KnownTypes.SessionStart)
                 return;
@@ -18,7 +13,7 @@ namespace Exceptionless.Enrichments.Default {
                 var collector = context.Resolver.GetEnvironmentInfoCollector();
                 ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, collector.GetEnvironmentInfo());
             } catch (Exception ex) {
-                context.Resolver.GetLog().FormattedError(typeof(EnvironmentInfo), ex, "Error adding machine information: {0}", ex.Message);
+                context.Resolver.GetLog().FormattedError(typeof(EnvironmentInfoEnrichment), ex, "Error adding machine information: {0}", ex.Message);
             }
         }
     }

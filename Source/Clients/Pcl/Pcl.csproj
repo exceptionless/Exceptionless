@@ -63,11 +63,11 @@
     <Compile Include="Dependency\TinyIoC.cs" />
     <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
-    <Compile Include="Enrichments\Default\ConfigurationDefaults.cs" />
-    <Compile Include="Enrichments\Default\SimpleError.cs" />
-    <Compile Include="Enrichments\Default\TraceLog.cs" />
-    <Compile Include="Enrichments\Default\EnvironmentInfo.cs" />
-    <Compile Include="Enrichments\Default\PrivateInformation.cs" />
+    <Compile Include="Enrichments\Default\ConfigurationDefaultsEnrichment.cs" />
+    <Compile Include="Enrichments\Default\SimpleErrorEnrichment.cs" />
+    <Compile Include="Enrichments\Default\TraceLogEnrichment.cs" />
+    <Compile Include="Enrichments\Default\EnvironmentInfoEnrichment.cs" />
+    <Compile Include="Enrichments\Default\PrivateInformationEnrichment.cs" />
     <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventSubmittingEventArgs.cs" />
@@ -80,7 +80,6 @@
     <Compile Include="Extensions\ClientExtensions.cs" />
     <Compile Include="Extensions\FileStorageExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
-    <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TaskFactoryExtensions.cs" />
     <Compile Include="Extensions\ToSimpleErrorModelExtensions.cs" />

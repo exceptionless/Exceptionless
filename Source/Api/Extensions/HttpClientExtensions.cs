@@ -42,7 +42,7 @@ namespace System.Net.Http {
                 throw new ArgumentNullException("password");
 
             string parameter = Convert.ToBase64String(Encoding.ASCII.GetBytes(String.Format("{0}:{1}", user, password)));
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(ExceptionlessHeaders.Token, parameter);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(ExceptionlessHeaders.Bearer, parameter);
         }
 
         private const string HttpContext = "MS_HttpContext";

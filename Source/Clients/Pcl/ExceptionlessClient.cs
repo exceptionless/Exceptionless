@@ -103,7 +103,7 @@ namespace Exceptionless {
             if (ev.Date == DateTimeOffset.MinValue)
                 ev.Date = DateTimeOffset.Now;
 
-            if (!OnSubmittingEvent(ev)) {
+            if (!OnSubmittingEvent(ev, enrichmentContextData)) {
                 _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Event submission cancelled by event handler: id={0} type={1}", ev.ReferenceId, ev.Type);
                 return;
             }
@@ -161,8 +161,8 @@ namespace Exceptionless {
         /// </summary>
         public event EventHandler<EventSubmittingEventArgs> SubmittingEvent;
 
-        private bool OnSubmittingEvent(Event ev) {
-            var args = new EventSubmittingEventArgs(ev);
+        private bool OnSubmittingEvent(Event ev, IDictionary<string, object> enrichmentContextData) {
+            var args = new EventSubmittingEventArgs(ev, enrichmentContextData);
             OnSubmittingEvent(args);
             return !args.Cancel;
         }

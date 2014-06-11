@@ -12,20 +12,8 @@
 using System;
 
 namespace Exceptionless.Models.Data {
-
-    public class SimpleError : SimpleInnerError {
-        /// <summary>
-        /// Any modules that were loaded / referenced when the error occurred.
-        /// </summary>
-        public ModuleCollection Modules { get; set; }
-
-        public static class KnownDataKeys {
-            public const string ExtraProperties = "ext";
-        }
-    }
-
-    public class SimpleInnerError : IData {
-        public SimpleInnerError() {
+    public class SimpleError : IData {
+        public SimpleError() {
             Data = new DataDictionary();
         }
 
@@ -40,9 +28,9 @@ namespace Exceptionless.Models.Data {
         public string Type { get; set; }
 
         /// <summary>
-        /// The error code.
+        /// The stack trace for the error.
         /// </summary>
-        public string Code { get; set; }
+        public string StackTrace { get; set; }
 
         /// <summary>
         /// Extended data entries for this error.
@@ -54,9 +42,8 @@ namespace Exceptionless.Models.Data {
         /// </summary>
         public SimpleError Inner { get; set; }
 
-        /// <summary>
-        /// The stack trace for the error.
-        /// </summary>
-        public string StackTrace { get; set; }
+        public static class KnownDataKeys {
+            public const string ExtraProperties = "ext";
+        }
     }
 }

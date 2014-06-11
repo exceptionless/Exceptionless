@@ -8,26 +8,23 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless {
-    /// <summary>
-    /// EventArgs derived type which holds the custom event fields
-    /// </summary>
     public class EventSubmittingEventArgs : EventArgs {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EventSubmittingEventArgs" /> class.
-        /// </summary>
-        /// <param name="data">The event.</param>
-        public EventSubmittingEventArgs(Event data) {
+        public EventSubmittingEventArgs(Event data, IDictionary<string, object> enrichmentContextData) {
             Event = data;
+            EnrichmentContextData = enrichmentContextData;
         }
 
-        /// <summary>
-        /// Gets the event.
-        /// </summary>
-        /// <value>The event.</value>
         public Event Event { get; private set; }
+        
+        /// <summary>
+        /// Any contextual data objects to be used by Exceptionless enrichments to gather default
+        /// information to add to the event data.
+        /// </summary>
+        public IDictionary<string, object> EnrichmentContextData { get; private set; }
 
         /// <summary>
         /// Wether the event should be canceled.

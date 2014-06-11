@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Enrichments;
-using Exceptionless.Models;
 
 namespace Exceptionless {
     public static class ExceptionExtensions {

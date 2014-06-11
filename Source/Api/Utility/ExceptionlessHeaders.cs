@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Utility {
 namespace Exceptionless.Submission.Net {
 #endif
     public static class ExceptionlessHeaders {
-        public const string Token = "Token";
+        public const string Bearer = "Bearer";
         public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";
         public const string Client = "X-Exceptionless-Client";
         public const string RateLimit = "X-RateLimit-Limit";

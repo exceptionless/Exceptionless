@@ -10,18 +10,13 @@
 #endregion
 
 using System;
-using System.CodeDom.Compiler;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using Exceptionless.Models;
 using Exceptionless.Models.Data;
-using Module = Exceptionless.Models.Data.Module;
 
 namespace Exceptionless.Extensions {
     internal static class ToSimpleErrorModelExtensions {
-        private static readonly Dictionary<string, Module> _moduleCache = new Dictionary<string, Module>();
         private static readonly string[] _exceptionExclusions = { "HelpLink", "InnerException", "Message", "Source", "StackTrace", "TargetSite", "HResult" };
 
         public static SimpleError ToSimpleErrorModel(this Exception exception) {
@@ -29,16 +24,9 @@ namespace Exceptionless.Extensions {
 
             var error = new SimpleError {
                 Message = exception.GetMessage(),
-                Modules = GetLoadedModules(),
                 Type = type.FullName,
                 StackTrace = exception.StackTrace
             };
-
-            try {
-                PropertyInfo info = type.GetProperty("HResult", BindingFlags.NonPublic | BindingFlags.Instance);
-                if (info != null)
-                    error.Code = info.GetValue(exception, null).ToString();
-            } catch (Exception) {}
 
             // TODO: Test adding non-serializable objects to ExtendedData and see what happens
             try {
@@ -79,89 +67,11 @@ namespace Exceptionless.Extensions {
             return false;
         }
 
-        private static readonly List<string> _msPublicKeyTokens = new List<string> {
-            "b77a5c561934e089",
-            "b03f5f7f11d50a3a",
-            "31bf3856ad364e35"
-        };
-
         private static string GetMessage(this Exception exception) {
             string defaultMessage = String.Format("Exception of type '{0}' was thrown.", exception.GetType().FullName);
             string message = !String.IsNullOrEmpty(exception.Message) ? String.Join(" ", exception.Message.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim() : null;
 
             return !String.IsNullOrEmpty(message) ? message : defaultMessage;
-        }
-
-        private static ModuleCollection GetLoadedModules(bool includeSystem = false, bool includeDynamic = false) {
-            var modules = new ModuleCollection();
-            var assemblies = new List<Assembly> { Assembly.GetCallingAssembly() };
-            if (assemblies[0] != Assembly.GetExecutingAssembly())
-                assemblies.Add(Assembly.GetExecutingAssembly());
-
-            int id = 1;
-            foreach (Assembly assembly in assemblies) {
-                if (!includeDynamic && assembly.IsDynamic)
-                    continue;
-
-                if (!includeSystem) {
-                    try {
-                        string publicKeyToken = assembly.GetAssemblyName().GetPublicKeyToken().ToHex();
-                        if (_msPublicKeyTokens.Contains(publicKeyToken))
-                            continue;
-
-                        object[] attrs = assembly.GetCustomAttributes(typeof(GeneratedCodeAttribute), true);
-                        if (attrs.Length > 0)
-                            continue;
-                    } catch {}
-                }
-
-                var module = assembly.ToModuleInfo();
-                module.ModuleId = id++;
-                modules.Add(module);
-            }
-
-            return modules;
-        }
-
-        private static Module ToModuleInfo(this Assembly assembly) {
-            if (assembly == null)
-                return null;
-
-            Module module;
-            if (!_moduleCache.TryGetValue(assembly.FullName, out module)) {
-                module = new Module();
-                AssemblyName name = assembly.GetAssemblyName();
-                if (name != null) {
-                    module.Name = name.Name;
-                    module.Version = name.Version.ToString();
-                    byte[] pkt = name.GetPublicKeyToken();
-                    if (pkt.Length > 0)
-                        module.Data["PublicKeyToken"] = pkt.ToHex();
-                }
-
-                string infoVersion = assembly.GetInformationalVersion();
-                if (!String.IsNullOrEmpty(infoVersion) && infoVersion != module.Version)
-                    module.Data["ProductVersion"] = infoVersion;
-
-                string fileVersion = assembly.GetFileVersion();
-                if (!String.IsNullOrEmpty(fileVersion) && fileVersion != module.Version)
-                    module.Data["FileVersion"] = fileVersion;
-
-                //DateTime? creationTime = assembly.GetCreationTime();
-                //if (creationTime.HasValue)
-                //    module.CreatedDate = creationTime.Value;
-
-                //DateTime? lastWriteTime = assembly.GetLastWriteTime();
-                //if (lastWriteTime.HasValue)
-                //    module.ModifiedDate = lastWriteTime.Value;
-            }
-
-            if (module != null) {
-                if (assembly == Assembly.GetCallingAssembly())
-                    module.IsEntry = true;
-            }
-
-            return module;
         }
     }
 }

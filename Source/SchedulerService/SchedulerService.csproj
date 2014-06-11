@@ -48,9 +48,10 @@
     <Reference Include="NLog">
       <HintPath>..\..\packages\NLog.3.0.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="NLog.Mongo, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="NLog.Mongo, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\NLog.Mongo.1.1.0.16\lib\net45\NLog.Mongo.dll</HintPath>
+      <HintPath>..\..\packages\NLog.Mongo.3.0.0.20\lib\net45\NLog.Mongo.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="SimpleInjector, Version=2.5.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

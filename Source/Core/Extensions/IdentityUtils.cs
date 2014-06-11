@@ -33,7 +33,10 @@ namespace Exceptionless.Core.Extensions {
             if (!String.IsNullOrEmpty(token.ProjectId))
                 claims.Add(new Claim(ProjectIdClaim, token.ProjectId));
 
-            claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
+            if (token.Scopes.Count > 0)
+                claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
+            else
+                claims.Add(new Claim(ClaimTypes.Role, Authorization.AuthorizationRoles.Client));
 
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
@@ -72,8 +75,11 @@ namespace Exceptionless.Core.Extensions {
             if (!String.IsNullOrEmpty(defaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, defaultProjectId));
 
-            claims.AddRange(roles.Select(scope => new Claim(ClaimTypes.Role, scope)));
-
+            if (roles.Any())
+                claims.AddRange(roles.Select(scope => new Claim(ClaimTypes.Role, scope)));
+            else
+                claims.Add(new Claim(ClaimTypes.Role, Authorization.AuthorizationRoles.User));
+            
             return new ClaimsIdentity(claims, UserAuthenticationType);
         }
 

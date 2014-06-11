@@ -74,11 +74,7 @@ namespace Pcl.Tests {
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.Count);
                 
-                var client = new ExceptionlessClient(c => {
-                    c.ServerUrl = Settings.Current.BaseURL;
-                    c.AddEnrichment<SimpleError>();
-                });
-
+                var client = new ExceptionlessClient();
                 try {
                     throw new Exception("Simple Exception");
                 } catch (Exception ex) {

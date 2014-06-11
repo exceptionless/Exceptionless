@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Exceptionless;
-using Exceptionless.Enrichments.Default;
 using Exceptionless.Serializer;
 using Exceptionless.Extensions;
 using Xunit;
@@ -11,14 +10,6 @@ namespace Pcl.Tests.Serializer {
     public class SerializerTests {
         protected virtual IJsonSerializer GetSerializer() {
             return new DefaultJsonSerializer();
-        }
-
-        [Fact]
-        public void Tester() {
-            var v = new ExceptionlessClient(config => {
-                config.ApiKey = "sdf";
-                config.AddEnrichment<ConfigurationDefaults>();
-            });
         }
 
         [Fact]

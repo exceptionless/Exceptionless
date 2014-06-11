@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Enrichments.Default {
-    //public class TraceLogEventEnrichment : IEventEnrichment {
+    //public class TraceLogEnrichment : IEventEnrichment {
     //    /// <summary>
     //    /// Enrich the event with additional information.
     //    /// </summary>

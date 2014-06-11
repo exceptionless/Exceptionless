@@ -14,7 +14,7 @@ namespace Pcl.Tests.Enrichments {
             var context = new EventEnrichmentContext(client);
             var ev = new Event();
 
-            var enrichment = new ConfigurationDefaults();
+            var enrichment = new ConfigurationDefaultsEnrichment();
             enrichment.Enrich(context, ev);
             Assert.Equal(0, ev.Tags.Count);
 
@@ -42,7 +42,7 @@ namespace Pcl.Tests.Enrichments {
             var context = new EventEnrichmentContext(client);
             var ev = new Event { Type = eventType };
 
-            var enrichment = new EnvironmentInfo();
+            var enrichment = new EnvironmentInfoEnrichment();
             enrichment.Enrich(context, ev);
             Assert.Equal(0, ev.Data.Count);
         }
@@ -53,7 +53,7 @@ namespace Pcl.Tests.Enrichments {
             var context = new EventEnrichmentContext(client);
             var ev = new Event { Type = Event.KnownTypes.SessionStart };
 
-            var enrichment = new EnvironmentInfo();
+            var enrichment = new EnvironmentInfoEnrichment();
             enrichment.Enrich(context, ev);
             Assert.Equal(1, ev.Data.Count);
             Assert.NotNull(ev.Data[Event.KnownDataKeys.EnvironmentInfo]);

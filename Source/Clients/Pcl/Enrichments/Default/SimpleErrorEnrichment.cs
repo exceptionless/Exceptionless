@@ -3,7 +3,7 @@ using Exceptionless.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless.Enrichments.Default {
-    public class SimpleError : IEventEnrichment {
+    public class SimpleErrorEnrichment : IEventEnrichment {
         public void Enrich(EventEnrichmentContext context, Event ev) {
             if (!context.ContextData.ContainsKey(EventEnrichmentContext.KnownContextDataKeys.Exception))
                 return;
@@ -12,7 +12,8 @@ namespace Exceptionless.Enrichments.Default {
             if (exception == null)
                 return;
 
-            ev.SetError(exception.ToSimpleErrorModel());
+            ev.Type = Event.KnownTypes.Error;
+            ev.Data[Event.KnownDataKeys.SimpleError] = exception.ToSimpleErrorModel();
         }
     }
 }

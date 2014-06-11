@@ -30,7 +30,7 @@ namespace Exceptionless.Extensions {
 
         public static void AddAuthorizationHeader(this WebRequest request, ExceptionlessConfiguration configuration) {
             var authorizationHeader = new AuthorizationHeader {
-                Scheme = ExceptionlessHeaders.Token,
+                Scheme = ExceptionlessHeaders.Bearer,
                 ParameterText = configuration.ApiKey
             };
 

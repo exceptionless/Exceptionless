@@ -25,18 +25,6 @@ namespace Pcl.Tests.Dependency {
         }
 
         [Fact]
-        public void Blah() {
-            ExceptionlessConfiguration.ConfigureDefaults.Add(config => {
-                //config.UseIsolatedStorage();
-                //config.UseAppConfig();
-                config.AddEnrichment<ConfigurationDefaults>();
-                config.AddEnrichment<ConfigurationDefaults>();
-            });
-            ExceptionlessClient.Default.SubmitEvent(new Event());
-            var e = ExceptionlessClient.Default.Configuration.Enrichments.ToList();
-        }
-
-        [Fact]
         public void CanInjectConstructors() {
             var resolver = new DefaultDependencyResolver();
             resolver.Register<IServiceA, ServiceA>();
