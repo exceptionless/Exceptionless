@@ -17,13 +17,15 @@ namespace Exceptionless.Core.Extensions {
         public const string ProjectIdClaim = "ProjectId";
         public const string DefaultProjectIdClaim = "DefaultProjectId";
 
-        public static ClaimsIdentity ToIdentity(this Token token) {
+        public static ClaimsIdentity ToIdentity(this Token token, IUserRepository userRepository) {
             if (token == null || token.Type != TokenType.Access)
                 return WindowsIdentity.GetAnonymous();
 
+            if (!String.IsNullOrEmpty(token.UserId))
+                return CreateUserIdentity(token.UserId, token.Scopes.ToArray(), userRepository);
+
             var claims = new List<Claim> {
                     new Claim(ClaimTypes.NameIdentifier, token.Id),
-                    new Claim(UserIdClaim, token.UserId),
                     new Claim(OrganizationIdsClaim, token.OrganizationId),
                     new Claim(DefaultProjectIdClaim, token.DefaultProjectId)
                 };
@@ -36,31 +38,39 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
 
-        public static ClaimsIdentity ToIdentity(this User user, IProjectRepository projectRepository) {
+        public static ClaimsIdentity CreateUserIdentity(string userId, string[] scopes, IUserRepository userRepository) {
+            if (String.IsNullOrEmpty(userId))
+                throw new ArgumentNullException("userId");
+            if (userRepository == null)
+                throw new ArgumentNullException("userRepository");
+
+            var user = userRepository.GetById(userId, true);
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
 
-            var defaultProject = projectRepository.GetByOrganizationIds(user.OrganizationIds).FirstOrDefault();
+            var roles = scopes.ToList();
+            if (roles.Count == 0)
+                roles.AddRange(user.Roles);
 
-            var claims = new List<Claim> {
-                    new Claim(ClaimTypes.Name, user.EmailAddress),
-                    new Claim(ClaimTypes.NameIdentifier, user.Id),
-                    new Claim(OrganizationIdsClaim, String.Join(",", user.OrganizationIds)),
-                    new Claim(DefaultProjectIdClaim, defaultProject != null ? defaultProject.Id : null)
-                };
+            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), roles.ToArray());
+        }
 
-            claims.AddRange(user.Roles.Select(scope => new Claim(ClaimTypes.Role, scope)));
+        public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {
+            if (user == null)
+                return WindowsIdentity.GetAnonymous();
 
-            return new ClaimsIdentity(claims, UserAuthenticationType);
+            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), user.Roles.ToArray(), defaultProjectId);
         }
 
         public static ClaimsIdentity CreateUserIdentity(string emailAddress, string id, string[] organizationIds, string[] roles, string defaultProjectId = null) {
             var claims = new List<Claim> {
                     new Claim(ClaimTypes.Name, emailAddress),
                     new Claim(ClaimTypes.NameIdentifier, id),
-                    new Claim(OrganizationIdsClaim, String.Join(",", organizationIds)),
-                    new Claim(DefaultProjectIdClaim, defaultProjectId)
+                    new Claim(OrganizationIdsClaim, String.Join(",", organizationIds))
                 };
+
+            if (!String.IsNullOrEmpty(defaultProjectId))
+                claims.Add(new Claim(DefaultProjectIdClaim, defaultProjectId));
 
             claims.AddRange(roles.Select(scope => new Claim(ClaimTypes.Role, scope)));
 

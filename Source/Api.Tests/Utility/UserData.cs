@@ -30,9 +30,8 @@ namespace Exceptionless.Tests.Utility {
                 GenerateSampleUserWithNoRoles(),
                 GenerateUser(id: TestConstants.UserId2, organizationId: TestConstants.OrganizationId2, emailAddress: TestConstants.UserEmail2, roles: new List<string> {
                     AuthorizationRoles.GlobalAdmin,
-                    AuthorizationRoles.Read,
-                    AuthorizationRoles.Write,
-                    AuthorizationRoles.Admin
+                    AuthorizationRoles.User,
+                    AuthorizationRoles.Client
                 })
             };
         }
@@ -40,9 +39,8 @@ namespace Exceptionless.Tests.Utility {
         public static User GenerateSampleUser() {
             return GenerateUser(id: TestConstants.UserId, organizationId: TestConstants.OrganizationId, emailAddress: TestConstants.UserEmail, roles: new List<string> {
                 AuthorizationRoles.GlobalAdmin,
-                AuthorizationRoles.Read,
-                AuthorizationRoles.Write,
-                AuthorizationRoles.Admin
+                AuthorizationRoles.User,
+                AuthorizationRoles.Client
             });
         }
 

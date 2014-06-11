@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -99,7 +100,7 @@ namespace Exceptionless.Api {
                 Realm = "Exceptionless"
             });
 
-            app.CreatePerContext<Lazy<User>>("LazyUser", ctx => {
+            app.CreatePerContext<Lazy<User>>("User", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
@@ -113,16 +114,17 @@ namespace Exceptionless.Api {
                 });
             });
 
-            app.CreatePerContext<Lazy<Project>>("LazyDefaultProject", ctx => {
+            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
-                string projectId = ctx.Request.User.GetDefaultProjectId();
-                if (String.IsNullOrEmpty(projectId))
-                    return null;
-
                 return new Lazy<Project>(() => {
+                    string projectId = ctx.Request.User.GetDefaultProjectId();
                     var projectRepository = container.GetInstance<IProjectRepository>();
+
+                    if (String.IsNullOrEmpty(projectId))
+                        return projectRepository.GetByOrganizationIds(ctx.Request.User.GetOrganizationIds(), useCache: true).FirstOrDefault();
+
                     return projectRepository.GetById(projectId, true);
                 });
             });

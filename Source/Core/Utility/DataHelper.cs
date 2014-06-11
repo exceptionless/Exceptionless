@@ -142,9 +142,7 @@ namespace Exceptionless.Core.Utility {
                 ExpiresUtc = DateTime.UtcNow.AddYears(100),
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
-                Type = TokenType.Access,
-                Scopes = new HashSet<string>(AuthorizationRoles.GlobalAll),
-                DefaultProjectId = project.Id
+                Type = TokenType.Access
             });
 
             _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);

@@ -9,9 +9,11 @@ using Microsoft.Owin.Security.Infrastructure;
 namespace Exceptionless.Api {
     public class ExceptionlessTokenProvider : AuthenticationTokenProvider {
         private readonly ITokenRepository _tokenRepository;
+        private readonly IUserRepository _userRepository;
 
-        public ExceptionlessTokenProvider(ITokenRepository tokenRepository) {
+        public ExceptionlessTokenProvider(ITokenRepository tokenRepository, IUserRepository userRepository) {
             _tokenRepository = tokenRepository;
+            _userRepository = userRepository;
         }
 
         public override void Create(AuthenticationTokenCreateContext context) {
@@ -44,7 +46,7 @@ namespace Exceptionless.Api {
             };
             props.Dictionary["client_id"] = token.ApplicationId;
 
-            return new AuthenticationTicket(token.ToIdentity(), props);    
+            return new AuthenticationTicket(token.ToIdentity(_userRepository), props);    
         }
     }
 }

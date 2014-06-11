@@ -15,7 +15,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
-    [Authorize(Roles = AuthorizationRoles.Read)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, Event, Event> {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route("~/api/v{version:int=1}/events")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.WriteOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [HttpPost]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {

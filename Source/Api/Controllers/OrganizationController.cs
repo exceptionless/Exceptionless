@@ -19,7 +19,7 @@ using Stripe;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/organizations")]
-    [Authorize(Roles = AuthorizationRoles.Read)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
@@ -71,8 +71,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Post(NewOrganization value) {
             return base.Post(value);
         }
@@ -80,16 +78,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Patch(string id, Delta<NewOrganization> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
         [Route("{id:objectid}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }
@@ -98,8 +92,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id:objectid}/invoices")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
             if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
                 return NotFound();
@@ -116,8 +108,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
@@ -208,8 +198,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -253,8 +241,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult RemoveUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
@@ -333,8 +319,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult PostData(string id, string key, string value) {
             var organization = GetModel(id, false);
             if (organization == null)
@@ -348,8 +332,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult DeleteData(string id, string key) {
             var organization = GetModel(id, false);
             if (organization == null)

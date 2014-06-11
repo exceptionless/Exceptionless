@@ -16,7 +16,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
-    [Authorize(Roles = AuthorizationRoles.Read)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
         private readonly DataHelper _dataHelper;
         private readonly OrganizationRepository _organizationRepository;
@@ -63,8 +63,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Post(NewProject value) {
             return base.Post(value);
         }
@@ -72,16 +70,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Patch(string id, Delta<UpdateProject> changes) {
             return base.Patch(id, changes);
         }
 
         [HttpDelete]
         [Route("{id:objectid}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public override IHttpActionResult Delete(string id) {
             return base.Delete(id);
         }
@@ -92,7 +86,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("config")]
         [Route("{id:objectid}/config")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.ReadOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult GetConfig(string id = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
@@ -106,8 +100,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult SetConfig(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -122,8 +114,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult DeleteConfig(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
@@ -137,8 +127,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id:objectid}/reset-data")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -165,8 +153,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/apikeys")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult GetNewApiKey(string id) {
             var project = GetModel(id, false);
             if (project == null)
@@ -182,8 +168,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/apikeys/{apiKey:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult DeleteApiKey(string id, string apiKey) {
             var project = GetModel(id, false);
             if (project == null)
@@ -200,8 +184,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id:objectid}/notifications")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -242,8 +224,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/notifications/{userId:objectid}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)
@@ -260,8 +240,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPut]
         [HttpPost]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult PromoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -277,8 +255,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Write)]
         public IHttpActionResult DemoteTab(string id, string name) {
             var project = GetModel(id, false);
             if (project == null)
@@ -306,8 +282,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
@@ -321,8 +295,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
-        [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.Admin)]
         public IHttpActionResult DeleteData(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)

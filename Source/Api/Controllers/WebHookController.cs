@@ -13,8 +13,10 @@ using System;
 using System.Net;
 using System.Web.Http;
 using Exceptionless.Api.Controllers;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Models;
@@ -23,7 +25,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/webhooks")]
-    [Authorize(Roles = AuthorizationRoles.Admin)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, WebHook, WebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
@@ -85,17 +87,21 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost]
         [Route("subscribe")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.WriteOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Subscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
             var eventType = data.GetValue("event").Value<string>();
 
-            // TODO: Implement Subscribe.
-            var project = Project;
-            if (project != null) {
+            if (User.GetProjectId() != null) {
                 _repository.Add(new WebHook {
                     EventTypes = new[] { eventType },
-                    ProjectId = project.Id,
+                    ProjectId = User.GetProjectId(),
+                    Url = targetUrl
+                });
+            } else {
+                _repository.Add(new WebHook {
+                    EventTypes = new[] { eventType },
+                    OrganizationId = Request.GetDefaultOrganizationId(),
                     Url = targetUrl
                 });
             }
@@ -132,7 +138,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpPost]
         [Route("test")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.ReadOrClient)]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Test() {
             return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },

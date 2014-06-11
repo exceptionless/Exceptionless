@@ -14,13 +14,10 @@ using System;
 namespace Exceptionless.Core.Authorization {
     public static class AuthorizationRoles {
         public const string Client = "client";
-        public const string Read = "read";
-        public const string Write = "write";
-        public const string Admin = "admin";
+        public const string User = "user";
         public const string GlobalAdmin = "global";
-        public const string ReadOrClient = "read,client";
-        public const string WriteOrClient = "write,client";
-        public static readonly string[] All = { Client, Read, Write, Admin };
-        public static readonly string[] GlobalAll = { Client, Read, Write, Admin, GlobalAdmin };
+        public const string UserOrClient = "user,client";
+        public static readonly string[] All = { Client, User };
+        public static readonly string[] GlobalAll = { Client, User, GlobalAdmin };
     }
 }

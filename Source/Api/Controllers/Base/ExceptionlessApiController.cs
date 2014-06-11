@@ -60,8 +60,8 @@ namespace Exceptionless.Api.Controllers {
             get { return Request.GetUser(); }
         }
 
-        public Project Project {
-            get { return Request.GetProject(); }
+        public Project DefaultProject {
+            get { return Request.GetDefaultProject(); }
         }
 
         public AuthType AuthType {

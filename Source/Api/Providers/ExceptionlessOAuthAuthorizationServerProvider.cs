@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Providers {
             if (user == null)
                 return Task.FromResult(0);
             
-            context.Validated(user.ToIdentity(_projectRepository));
+            context.Validated(user.ToIdentity());
 
             return Task.FromResult(0);
         }

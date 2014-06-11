@@ -26,18 +26,18 @@ namespace Exceptionless.Api.Extensions {
             if (message == null)
                 return null;
 
-            var user = message.GetOwinContext().Get<Lazy<User>>("LazyUser");
+            var user = message.GetOwinContext().Get<Lazy<User>>("User");
             if (user != null)
                 return user.Value;
 
             return null;
         }
 
-        public static Project GetProject(this HttpRequestMessage message) {
+        public static Project GetDefaultProject(this HttpRequestMessage message) {
             if (message == null)
                 return null;
 
-            var project = message.GetOwinContext().Get<Lazy<Project>>("LazyProject");
+            var project = message.GetOwinContext().Get<Lazy<Project>>("DefaultProject");
             if (project != null)
                 return project.Value;
 

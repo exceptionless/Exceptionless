@@ -20,7 +20,7 @@ using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
-    [Authorize(Roles = AuthorizationRoles.Read)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
         private readonly EventStatsHelper _statsHelper;
         private readonly IOrganizationRepository _organizationRepository;

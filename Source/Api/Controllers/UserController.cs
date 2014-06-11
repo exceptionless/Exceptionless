@@ -10,7 +10,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
-    [Authorize(Roles = AuthorizationRoles.Admin)]
+    [Authorize(Roles = AuthorizationRoles.User)]
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, User> {
         private readonly IOrganizationRepository _organizationRepository;
 
