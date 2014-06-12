@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -73,10 +73,11 @@ namespace Exceptionless.Api.Controllers {
             return base.GetById(id);
         }
 
+        [HttpPost]
         [Route("~/api/v{version:int=1}/events")]
+        [Route("~/api/v{version:int=1}/projects/{projectId:objectid}/events")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        [HttpPost]
         [ConfigurationResponseFilter]
         public async Task<IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             _statsClient.Counter(StatNames.PostsSubmitted);
@@ -85,9 +86,11 @@ namespace Exceptionless.Api.Controllers {
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
-                return StatusCode(HttpStatusCode.Unauthorized);
+                return BadRequest("No project id specified and no default project was found.");
 
-            // TODO: Add a check to see if the project id is over it's project limits. If it is, then turn off the client.
+            var project = _projectRepository.GetById(projectId, true);
+            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
+                return NotFound();
 
             bool isCompressed = Request.Content.Headers.ContentEncoding.Contains("gzip");
             if (!isCompressed)

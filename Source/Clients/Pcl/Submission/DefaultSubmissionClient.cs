@@ -23,13 +23,17 @@ namespace Exceptionless.Submission {
 
             var data = serializer.Serialize(events);
 
-            HttpWebResponse response = null;
+            HttpWebResponse response;
             try {
                 response = client.PostJsonAsync(data).Result;
             } catch (AggregateException aex) {
                 var ex = aex.GetInnermostException() as WebException;
                 if (ex != null)
                     response = (HttpWebResponse)ex.Response;
+                else
+                    return new SubmissionResponse(500, message: aex.GetMessage());
+            } catch (Exception ex) {
+                return new SubmissionResponse(500, message: ex.Message);
             }
 
             int settingsVersion;
@@ -43,7 +47,14 @@ namespace Exceptionless.Submission {
             HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "projects/config"));
             client.AddAuthorizationHeader(configuration);
 
-            var response = client.GetJsonAsync().Result;
+            HttpWebResponse response;
+            try {
+                response = client.GetJsonAsync().Result;
+            } catch (Exception ex) {
+                var message = String.Concat("Unable to retrieve configuration settings. Exception: ", ex.GetMessage());
+                return new SettingsResponse(false, message: message);
+            }
+
             if (response == null || response.StatusCode != HttpStatusCode.OK)
                 return new SettingsResponse(false, message: "Unable to retrieve configuration settings.");
 

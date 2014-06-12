@@ -18,6 +18,7 @@ namespace Exceptionless.Submission {
             Message = message;
 
             Success = (HttpStatusCode)statusCode == HttpStatusCode.Accepted;
+            BadRequest = (HttpStatusCode)statusCode == HttpStatusCode.BadRequest;
             ServiceUnavailable = (HttpStatusCode)statusCode == HttpStatusCode.ServiceUnavailable;
             PaymentRequired = (HttpStatusCode)statusCode == HttpStatusCode.PaymentRequired;
             UnableToAuthenticate = (HttpStatusCode)statusCode == HttpStatusCode.Unauthorized || (HttpStatusCode)statusCode == HttpStatusCode.Forbidden;
@@ -25,6 +26,7 @@ namespace Exceptionless.Submission {
         }
 
         public bool Success { get; private set; }
+        public bool BadRequest { get; private set; }
         public bool ServiceUnavailable { get; private set; }
         public bool PaymentRequired { get; private set; }
         public bool UnableToAuthenticate { get; private set; }

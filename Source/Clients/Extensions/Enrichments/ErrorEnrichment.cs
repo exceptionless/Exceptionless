@@ -19,7 +19,8 @@ namespace Exceptionless.Enrichments {
             if (exception == null)
                 return;
 
-            ev.SetError(exception.ToErrorModel(_log));
+            ev.Type = Event.KnownTypes.Error;
+            ev.Data[Event.KnownDataKeys.Error] = exception.ToErrorModel(_log);
         }
     }
 }

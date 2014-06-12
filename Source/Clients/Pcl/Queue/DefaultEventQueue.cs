@@ -89,7 +89,7 @@ namespace Exceptionless.Queue {
                         // The api key was suspended or could not be authorized.
                         _log.Info(typeof(DefaultEventQueue), "Unable to authenticate, please check your configuration. The error will not be submitted.");
                         SuspendProcessing(TimeSpan.FromMinutes(15));
-                    } else if (response.NotFound) {
+                    } else if (response.NotFound || response.BadRequest) {
                         // The service end point could not be found.
                         _log.Error(typeof(DefaultEventQueue), "Unable to reach the service end point, please check your configuration. The error will not be submitted.");
                         SuspendProcessing(TimeSpan.FromHours(4));

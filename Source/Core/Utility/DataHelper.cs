@@ -138,7 +138,7 @@ namespace Exceptionless.Core.Utility {
             _tokenRepository.Add(new Token {
                 Id = SAMPLE_API_KEY,
                 OrganizationId = organization.Id,
-                UserId = user.Id,
+                ProjectId = project.Id,
                 ExpiresUtc = DateTime.UtcNow.AddYears(100),
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,

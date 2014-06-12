@@ -69,7 +69,8 @@ namespace Exceptionless.Tests.Utility {
                 ev.Tags.Add(tag);
             }
 
-            ev.SetError(GenerateError(nestingLevel, minimiumNestingLevel));
+            ev.Type = Event.KnownTypes.Error;
+            ev.Data[Event.KnownDataKeys.Error] = GenerateError(nestingLevel, minimiumNestingLevel);
 
             return ev;
         }

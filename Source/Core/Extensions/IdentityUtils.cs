@@ -25,13 +25,15 @@ namespace Exceptionless.Core.Extensions {
                 return CreateUserIdentity(token.UserId, token.Scopes.ToArray(), userRepository);
 
             var claims = new List<Claim> {
-                    new Claim(ClaimTypes.NameIdentifier, token.Id),
-                    new Claim(OrganizationIdsClaim, token.OrganizationId),
-                    new Claim(DefaultProjectIdClaim, token.DefaultProjectId)
-                };
+                new Claim(ClaimTypes.NameIdentifier, token.Id),
+                new Claim(OrganizationIdsClaim, token.OrganizationId)
+            };
 
             if (!String.IsNullOrEmpty(token.ProjectId))
                 claims.Add(new Claim(ProjectIdClaim, token.ProjectId));
+
+            if (!String.IsNullOrEmpty(token.DefaultProjectId))
+                claims.Add(new Claim(DefaultProjectIdClaim, token.DefaultProjectId));
 
             if (token.Scopes.Count > 0)
                 claims.AddRange(token.Scopes.Select(scope => new Claim(ClaimTypes.Role, scope)));
