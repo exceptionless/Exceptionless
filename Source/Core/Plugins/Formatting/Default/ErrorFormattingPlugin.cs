@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         private bool ShouldHandle(PersistentEvent ev) {
-            return ev.IsError;
+            return ev.IsError();
         }
 
         public string GetStackSummaryHtml(PersistentEvent ev) {

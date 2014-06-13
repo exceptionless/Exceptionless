@@ -49,17 +49,12 @@ namespace Exceptionless.Queue {
         }
 
         public void Process() {
-            if (IsQueueProcessingSuspended)
+            if (IsQueueProcessingSuspended || _processingQueue)
                 return;
 
             _log.Info(typeof(DefaultEventQueue), "Processing queue...");
             if (!_config.Enabled) {
                 _log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
-                return;
-            }
-
-            if (_processingQueue) {
-                _log.Info(typeof(DefaultEventQueue), "The queue is already being processed.");
                 return;
             }
 

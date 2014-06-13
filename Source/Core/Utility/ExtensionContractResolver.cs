@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
@@ -22,14 +24,32 @@ namespace Exceptionless.Serializer {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
             Predicate<object> shouldSerialize = property.ShouldSerialize;
-            property.ShouldSerialize = obj => !IsDataProperty(property) && (shouldSerialize == null || shouldSerialize(obj));
+            property.ShouldSerialize = obj => !IsDataProperty(property) && (shouldSerialize == null || shouldSerialize(obj)) && !IsEmptyCollection(property, obj);
             return property;
         }
 
         private bool IsDataProperty(JsonProperty property) {
-            return (typeof(IData).IsAssignableFrom(property.PropertyType.DeclaringType)
+            return (typeof(IData).IsAssignableFrom(property.DeclaringType)
                 && property.PropertyType == typeof(DataDictionary)
-                && property.PropertyType.Name == "Data");
+                && property.PropertyName == "Data");
+        }
+
+        private bool IsEmptyCollection(JsonProperty property, object target) {
+            var value = property.ValueProvider.GetValue(target);
+            var collection = value as ICollection;
+            if (collection != null && collection.Count == 0)
+                return true;
+
+            if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType)) {
+                var countProp = property.PropertyType.GetProperty("Count");
+                if (countProp == null)
+                    return false;
+                
+                var count = (int)countProp.GetValue(value, null);
+                return count == 0;
+            }
+
+            return false;
         }
 
         protected override JsonObjectContract CreateObjectContract(Type objectType) {
@@ -50,11 +70,36 @@ namespace Exceptionless.Serializer {
 
                 if (dataObject.Data == null)
                     dataObject.Data = new DataDictionary();
-
-                dataObject.Data.Add(key, value.ToJson());
+                
+                if (IsPrimitiveType(value.GetType()))
+                    dataObject.Data.Add(key, value.ToString());
+                else
+                    dataObject.Data.Add(key, value.ToJson());
             };
 
             return contract;
+        }
+
+        private bool IsPrimitiveType(Type type) {
+            if (type.IsPrimitive)
+                return true;
+
+            if (type == typeof(Decimal)
+                || type == typeof(DateTime)
+                || type == typeof(String)
+                || type == typeof(DateTimeOffset)
+                || type == typeof(Guid)
+                || type == typeof(TimeSpan)
+                || type == typeof(Uri))
+                return true;
+
+            if (type.IsEnum)
+                return true;
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return IsPrimitiveType(Nullable.GetUnderlyingType(type));
+
+            return false;
         }
     }
 }

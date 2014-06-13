@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Pipeline {
             _notificationQueue.EnqueueAsync(new EventNotification {
                 Event = ctx.Event,
                 IsNew = ctx.IsNew,
-                IsCritical = ctx.Event.IsCritical,
+                IsCritical = ctx.Event.IsCritical(),
                 IsRegression = ctx.IsRegression,
                 //TotalOccurrences = ctx.Stack.TotalOccurrences,
                 ProjectName = ctx.Project.Name

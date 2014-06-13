@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Pipeline {
                     };
 
                     // new 404 stack id added, invalidate 404 id cache
-                    if (ctx.Event.IsNotFound)
+                    if (ctx.Event.IsNotFound())
                         _stackRepository.InvalidateNotFoundIdsCache(ctx.Event.ProjectId);
                 }
 

@@ -15,7 +15,7 @@ namespace Exceptionless.Duplicates {
         }
 
         public bool IsDuplicate(Event ev) {
-            if (!ev.IsError)
+            if (!ev.IsError())
                 return false;
 
             InnerError current = ev.GetError();

@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]
     public class NotFoundFormattingPlugin : IFormattingPlugin {
         private bool ShouldHandle(PersistentEvent ev) {
-            return ev.IsNotFound;
+            return ev.IsNotFound();
         }
 
         public string GetStackSummaryHtml(PersistentEvent ev) {

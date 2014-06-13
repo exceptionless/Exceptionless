@@ -57,31 +57,6 @@ namespace Exceptionless.Models {
         /// </summary>
         public string SessionId { get; set; }
 
-        /// <summary>
-        /// Indicates wether the event has been marked as critical.
-        /// </summary>
-        public bool IsCritical {
-            get { return Tags != null && Tags.Contains(KnownTags.Critical); }
-        }
-
-        /// <summary>
-        /// Marks the event as being a critical occurrence.
-        /// </summary>
-        public void MarkAsCritical() {
-            if (Tags == null)
-                Tags = new TagSet();
-
-            Tags.Add(KnownTags.Critical);
-        }
-
-        public bool IsNotFound {
-            get { return Type == KnownTypes.NotFound; }
-        }
-
-        public bool IsError {
-            get { return Type == KnownTypes.Error; }
-        }
-
         public static class KnownTypes {
             public const string Error = "error";
             public const string NotFound = "404";

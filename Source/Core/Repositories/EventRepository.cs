@@ -308,6 +308,7 @@ namespace Exceptionless.Core.Repositories {
                     evcm.SetIgnoreExtraElements(false);
                     evcm.SetIgnoreExtraElementsIsInherited(true);
                     evcm.MapExtraElementsProperty(c => c.Data);
+                    evcm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type).SetIgnoreIfDefault(true);
                     evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any());
                     evcm.GetMemberMap(c => c.Source).SetElementName(FieldNames.Source).SetIgnoreIfDefault(true);
                     evcm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfDefault(true);

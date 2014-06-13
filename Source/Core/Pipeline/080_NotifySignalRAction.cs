@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Pipeline {
                 StackId = ctx.Event.StackId,
                 IsHidden = ctx.Event.IsHidden,
                 IsFixed = ctx.Event.IsFixed,
-                IsNotFound = ctx.Event.IsNotFound,
+                IsNotFound = ctx.Event.IsNotFound(),
                 IsRegression = ctx.IsRegression
             }).Start();
         }
