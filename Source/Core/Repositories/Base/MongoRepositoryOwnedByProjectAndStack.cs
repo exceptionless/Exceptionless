@@ -11,7 +11,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
-    public class MongoRepositoryOwnedByProjectAndStack<T> : MongoRepositoryOwnedByProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, new() {
+    public abstract class MongoRepositoryOwnedByProjectAndStack<T> : MongoRepositoryOwnedByProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, new() {
         public MongoRepositoryOwnedByProjectAndStack(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, cacheClient, messagePublisher) {}
 

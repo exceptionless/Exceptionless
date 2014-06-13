@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = resetEvent.WaitOne(100);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(100);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
         [Fact]
@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(500);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
         [Fact]
@@ -85,7 +85,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = resetEvent.WaitOne(100);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
         }
 
         [Fact]
@@ -107,7 +107,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(100);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
         [Fact]
@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(100);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
     }
 }

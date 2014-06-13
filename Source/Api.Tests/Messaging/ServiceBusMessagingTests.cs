@@ -7,9 +7,14 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Messaging {
     public class ServiceBusMessagingTests {
-        private static readonly Lazy<ServiceBusMessageBus> _messageBus = new Lazy<ServiceBusMessageBus>(() => new ServiceBusMessageBus(Settings.Current.AzureServiceBusConnectionString, "test-messagebus"));
+        private static readonly Lazy<ServiceBusMessageBus> _messageBus = new Lazy<ServiceBusMessageBus>(() => {
+            if (String.IsNullOrEmpty(Settings.Current.AzureServiceBusConnectionString))
+                return null;
 
-        [Fact]
+            return new ServiceBusMessageBus(Settings.Current.AzureServiceBusConnectionString, "test-messagebus");
+        });
+
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanSendMessage() {
             var resetEvent = new AutoResetEvent(false);
             _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
@@ -21,10 +26,10 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = resetEvent.WaitOne(5000);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanSendMessageToMultipleSubscribers() {
             var latch = new CountDownLatch(3);
             _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
@@ -44,10 +49,10 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(5000);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanTolerateSubscriberFailure() {
             var latch = new CountDownLatch(2);
             _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
@@ -66,10 +71,10 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(5000);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void WillOnlyReceiveSubscribedMessageType() {
             var resetEvent = new AutoResetEvent(false);
             _messageBus.Value.Subscribe<SimpleMessageB>(msg => {
@@ -84,10 +89,10 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = resetEvent.WaitOne(5000);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void WillReceiveDerivedMessageTypes() {
             var latch = new CountDownLatch(2);
             _messageBus.Value.Subscribe<ISimpleMessage>(msg => {
@@ -105,10 +110,10 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(5000);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanSubscribeToAllMessageTypes() {
             var latch = new CountDownLatch(3);
             _messageBus.Value.Subscribe<object>(msg => {
@@ -125,7 +130,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             });
 
             bool success = latch.Wait(5000);
-            Assert.True(success, "Failed to recieve all messages.");
+            Assert.True(success, "Failed to receive all messages.");
         }
     }
 }

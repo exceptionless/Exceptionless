@@ -10,14 +10,19 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
     public class ServiceBusQueueTests {
-        private static readonly Lazy<ServiceBusQueue<SimpleWorkItem>> _queue = new Lazy<ServiceBusQueue<SimpleWorkItem>>(() =>
-            new ServiceBusQueue<SimpleWorkItem>(Settings.Current.AzureServiceBusConnectionString, "test-queue",
-                workItemTimeoutMilliseconds: 1000,
-                retries: 1,
-                shouldRecreate: true,
-                retryPolicy: new RetryExponential(TimeSpan.Zero, TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), TimeSpan.FromSeconds(100), 1)));
+        private static readonly Lazy<ServiceBusQueue<SimpleWorkItem>> _queue = new Lazy<ServiceBusQueue<SimpleWorkItem>>(() => {
+            if (String.IsNullOrEmpty(Settings.Current.AzureServiceBusConnectionString))
+                return null;
 
-        [Fact]
+            return new ServiceBusQueue<SimpleWorkItem>(Settings.Current.AzureServiceBusConnectionString, 
+                "test-queue", 
+                workItemTimeoutMilliseconds: 1000, 
+                retries: 1, 
+                shouldRecreate: true, 
+                retryPolicy: new RetryExponential(TimeSpan.Zero, TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), TimeSpan.FromSeconds(100), 1));
+        });
+        
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanQueueAndDequeueWorkItem() {
             var queue = _queue.Value;
             queue.EnqueueAsync(new SimpleWorkItem {
@@ -35,7 +40,7 @@ namespace Exceptionless.Api.Tests.Queue {
             Assert.Equal(0, queue.Count);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanUseQueueWorker() {
             var resetEvent = new AutoResetEvent(false);
             var queue = _queue.Value;
@@ -52,11 +57,11 @@ namespace Exceptionless.Api.Tests.Queue {
             bool success = resetEvent.WaitOne(1000);
             Assert.Equal(1, queue.Completed);
             Assert.Equal(0, queue.Count);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
             Assert.Equal(0, queue.WorkerErrors);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void WorkItemsWillTimeout() {
             var queue = _queue.Value;
             queue.EnqueueAsync(new SimpleWorkItem {
@@ -73,7 +78,7 @@ namespace Exceptionless.Api.Tests.Queue {
             Assert.Equal(0, queue.Count);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void WorkItemsWillGetMovedToDeadletter() {
             var queue = _queue.Value;
             queue.EnqueueAsync(new SimpleWorkItem {
@@ -98,7 +103,7 @@ namespace Exceptionless.Api.Tests.Queue {
             Assert.Equal(2, queue.Abandoned);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanAutoCompleteWorker() {
             var resetEvent = new AutoResetEvent(false);
             var queue = _queue.Value;
@@ -112,13 +117,13 @@ namespace Exceptionless.Api.Tests.Queue {
 
             Assert.Equal(1, queue.Enqueued);
             bool success = resetEvent.WaitOne(1000);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
             Assert.Equal(0, queue.Count);
             Assert.Equal(1, queue.Completed);
             Assert.Equal(0, queue.WorkerErrors);
         }
 
-        [Fact]
+        [Fact(Skip = "Requires Azure Service Bus")]
         public void CanHaveMultipleWorkers() {
             const int workItemCount = 50;
             var latch = new CountDownLatch(workItemCount);
@@ -137,7 +142,7 @@ namespace Exceptionless.Api.Tests.Queue {
             Assert.Equal(workItemCount, queue.Enqueued);
             bool success = latch.Wait(60000);
             Task.Delay(5000).Wait();
-            Assert.True(success, "Failed to recieve all work items.");
+            Assert.True(success, "Failed to receive all work items.");
             Assert.Equal(workItemCount, queue.Completed + queue.DeadletterCount);
             Assert.Equal(errorCount, queue.WorkerErrors);
             Assert.Equal(abandonCount + errorCount, queue.Abandoned);

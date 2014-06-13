@@ -27,7 +27,7 @@ namespace Exceptionless.Api.Utility {
             if (context == null)
                 throw new ArgumentNullException("context");
 
-            if (context.Response == null || context.Response.StatusCode != HttpStatusCode.OK)
+            if (context.Response == null || context.Response.StatusCode != HttpStatusCode.Accepted)
                 return;
 
             var ctx = context.Request.GetOwinContext();

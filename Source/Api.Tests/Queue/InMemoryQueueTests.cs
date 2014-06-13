@@ -43,7 +43,7 @@ namespace Exceptionless.Api.Tests.Queue {
             bool success = resetEvent.WaitOne(100);
             Assert.Equal(0, queue.Count);
             Assert.Equal(1, queue.Completed);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
             Assert.Equal(0, queue.WorkerErrors);
         }
 
@@ -104,7 +104,7 @@ namespace Exceptionless.Api.Tests.Queue {
 
             Assert.Equal(1, queue.Count);
             bool success = resetEvent.WaitOne(100);
-            Assert.True(success, "Failed to recieve message.");
+            Assert.True(success, "Failed to receive message.");
             Task.Delay(25).Wait();
             Assert.Equal(0, queue.Count);
             Assert.Equal(1, queue.Completed);
@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Tests.Queue {
             }));
 
             bool success = latch.Wait(1000);
-            Assert.True(success, "Failed to recieve all work items.");
+            Assert.True(success, "Failed to receive all work items.");
             Task.Delay(50).Wait();
             Assert.Equal(workItemCount, queue.Completed + queue.DeadletterCount);
             Assert.Equal(errorCount, queue.WorkerErrors);

@@ -16,8 +16,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
-using System.Web.Http.Hosting;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
@@ -42,15 +43,19 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public void CanPostString() {
+            RemoveAllEvents();
+
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
+                
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
-                Assert.IsType<OkResult>(actionResult);
+                Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-                var result = processEventsJob.Run();
-                Assert.True(result.IsSuccess, result.Message);
+                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
+                processEventsJob.Cancel();
+                 
                 Assert.Equal(0, _eventQueue.Count);
                 Assert.Equal(1, EventCount());
             } finally {
@@ -60,15 +65,18 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public void CanPostCompressedString() {
+            RemoveAllEvents();
+
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
-                Assert.IsType<OkResult>(actionResult);
+                Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.Count);
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-                var result = processEventsJob.Run();
-                Assert.True(result.IsSuccess, result.Message);
+                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
+                processEventsJob.Cancel();
+                
                 Assert.Equal(0, _eventQueue.Count);
                 Assert.Equal(1, EventCount());
             } finally {
@@ -78,30 +86,35 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public void CanPostSingleEvent() {
-            _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
-            var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
-            Assert.IsType<OkResult>(actionResult);
-            Assert.Equal(1, _eventQueue.Count);
-
-            var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-            var result = processEventsJob.Run();
-            Assert.Equal(0, _eventQueue.Count);
             RemoveAllEvents();
+            
+            try {
+                _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
+                Assert.IsType<StatusCodeResult>(actionResult);
+                Assert.Equal(1, _eventQueue.Count);
+
+                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
+                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
+                processEventsJob.Cancel();
+               
+                Assert.Equal(0, _eventQueue.Count);
+                Assert.Equal(1, EventCount());
+            } finally {
+                RemoveAllEvents();
+            }
         }
 
         #region Helpers
 
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
-            var request = new HttpRequestMessage {
-                Properties = {
-                    { HttpPropertyKeys.HttpConfigurationKey, new HttpConfiguration() }
-                }
-            };
+            var request = new HttpRequestMessage();
 
             var context = new OwinContext();
-            context.Request.User = user;
+            context.Request.User = Thread.CurrentPrincipal = user;
             request.SetOwinContext(context);
-            request.Content = new HttpMessageContent(new HttpRequestMessage(HttpMethod.Post, "/api/v1/event"));
+            request.SetConfiguration(new HttpConfiguration());
+            request.Content = new HttpMessageContent(new HttpRequestMessage(HttpMethod.Post, "/api/v2/events"));
             if (isCompressed)
                 request.Content.Headers.ContentEncoding.Add("gzip");
             request.Content.Headers.ContentType.MediaType = isJson ? "application/json" : "text/plain";
