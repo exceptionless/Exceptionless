@@ -33,10 +33,20 @@ namespace Exceptionless.Core.Jobs {
             _projectRepository = projectRepository;
         }
 
+        public void Run(int totalEventsToProcess) {
+            var context = new JobRunContext();
+            context.Properties.Add("TotalEventsToProcess", totalEventsToProcess);
+            Run(context);
+        }
+
         public async override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Process events job starting").Write();
+            int totalEventsProcessed = 0;
+            int totalEventsToProcess = -1;
+            if (context.Properties.ContainsKey("TotalEventsToProcess"))
+                totalEventsToProcess = (int)context.Properties["TotalEventsToProcess"];
 
-            while (!CancelPending) {
+            while (!CancelPending && (totalEventsToProcess == -1 || totalEventsProcessed < totalEventsToProcess)) {
                 QueueEntry<EventPost> queueEntry = null;
                 try {
                     queueEntry = await _queue.DequeueAsync();
@@ -89,6 +99,9 @@ namespace Exceptionless.Core.Jobs {
                 foreach (PersistentEvent ev in events.Take(eventsToProcess)) {
                     try {
                         _eventPipeline.Run(ev);
+                        totalEventsProcessed++;
+                        if (totalEventsToProcess > 0 && totalEventsProcessed >= totalEventsToProcess)
+                            break;
                     } catch (Exception ex) {
                         Log.Error().Exception(ex).Message("An error occurred while processing the EventPipeline: {0}", ex.Message).Write();
 

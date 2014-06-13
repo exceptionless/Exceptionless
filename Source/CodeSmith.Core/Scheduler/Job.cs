@@ -41,13 +41,23 @@ namespace CodeSmith.Core.Scheduler
         }
 
         /// <summary>
-        /// Runs this job.
+        /// Runs this job and waits for it to return.
         /// </summary>
         /// <returns>
         /// A <see cref="JobResult"/> instance indicating the results of the job.
         /// </returns>
         public JobResult Run() {
             return RunAsync(JobRunContext.Default).Result;
+        }
+
+        /// <summary>
+        /// Runs this job and waits for it to return.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="JobResult"/> instance indicating the results of the job.
+        /// </returns>
+        public JobResult Run(JobRunContext context) {
+            return RunAsync(context).Result;
         }
 
         /// <summary>
@@ -58,7 +68,24 @@ namespace CodeSmith.Core.Scheduler
         /// </returns>
         public JobResult TryRun() {
             try {
-                return RunAsync(JobRunContext.Default).Result;
+                return Run();
+            } catch (Exception ex) {
+                return new JobResult {
+                    Error = ex,
+                    Message = "Failed"
+                };
+            }
+        }
+
+        /// <summary>
+        /// Safely runs this job.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="JobResult"/> instance indicating the results of the job.
+        /// </returns>
+        public JobResult TryRun(JobRunContext context) {
+            try {
+                return Run(context);
             } catch (Exception ex) {
                 return new JobResult {
                     Error = ex,
