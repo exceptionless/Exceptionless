@@ -23,9 +23,9 @@ using System.Reflection;
 [assembly: AssemblyConfiguration("Release")]
 #endif
 
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-[assembly: AssemblyInformationalVersion("1.0.0.0-pre")]
+[assembly: AssemblyVersion("2.0.0")]
+[assembly: AssemblyFileVersion("2.0.0")]
+[assembly: AssemblyInformationalVersion("2.0.0")]
 
 internal sealed partial class ThisAssembly {
     internal const string AssemblyCompany = "Exceptionless";
@@ -38,11 +38,11 @@ internal sealed partial class ThisAssembly {
 
     internal const string AssemblyConfiguration = "Release";
 
-    internal const string AssemblyVersion = "1.0.0.0";
+    internal const string AssemblyVersion = "2.0.0";
 
-    internal const string AssemblyFileVersion = "1.0.0.0";
+    internal const string AssemblyFileVersion = "2.0.0";
 
-    internal const string AssemblyInformationalVersion = "1.0.0.0-pre";
+    internal const string AssemblyInformationalVersion = "2.0.0";
 
     private ThisAssembly() {}
 }

@@ -21,6 +21,7 @@ namespace Exceptionless.Core.Messaging {
         public ServiceBusMessageBus(string connectionString, string topicName) {
             _topicName = topicName;
             _subscriptionName = "MessageBus";
+            _connectionString = connectionString;
             _namespaceManager = NamespaceManager.CreateFromConnectionString(connectionString);
             if (!_namespaceManager.TopicExists(_topicName))
                 _namespaceManager.CreateTopic(_topicName);

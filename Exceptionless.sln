@@ -40,7 +40,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchedulerService", "Source\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorSharpEmail", "Source\RazorSharpEmail\RazorSharpEmail.csproj", "{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pcl", "Source\Clients\Pcl\Pcl.csproj", "{14DFD206-B445-4D52-9C3C-8B2F69B22B91}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless", "Source\Clients\Pcl\Exceptionless.csproj", "{14DFD206-B445-4D52-9C3C-8B2F69B22B91}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Pcl.Tests", "Source\Clients\Pcl.Tests\Pcl.Tests.csproj", "{D8F22775-3DB8-4BAD-AFCF-9CC8DAF7A807}"
 EndProject

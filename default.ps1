@@ -25,27 +25,27 @@ properties {
     $sign_file = "$source_dir\Exceptionless.snk"
 
     $client_projects = @(
-        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
-        @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
+        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Pcl";	    ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; }
+        #@{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
     )
 
     $client_build_configurations = @(
-        @{ Constants = "PFX_LEGACY_3_5;NET35;EMBEDDED;";	TargetFrameworkVersion = "v3.5"; NuGetDir = "net35"; },
-        @{ Constants = "EMBEDDED;NET40;"; 					TargetFrameworkVersion = "v4.0"; NuGetDir = "net40"; },
-        @{ Constants = "EMBEDDED;NET45;"; 					TargetFrameworkVersion = "v4.5"; NuGetDir = "net45"; }
+        @{ Constants = "PORTABLE40;EMBEDDED";	TargetFrameworkVersion = "v4.0"; NuGetDir = "portable-net40+sl50+win+wpa81+wp80"; }
+        #@{ Constants = "EMBEDDED;NET40;"; 					TargetFrameworkVersion = "v4.0"; NuGetDir = "net40"; },
+        #@{ Constants = "EMBEDDED;NET45;"; 					TargetFrameworkVersion = "v4.5"; NuGetDir = "net45"; }
     )
 
     $client_test_projects = @(
-        @{ Name = "Exceptionless.Client.Tests";	BuildDir = "$source_dir\Clients\Tests\bin\$configuration"; }
+        @{ Name = "Pcl.Tests";	BuildDir = "$source_dir\Clients\Pcl.Tests\bin\$configuration"; }
     )
 
     $server_test_projects = @(
-        @{ Name = "Exceptionless.Tests";		BuildDir = "$source_dir\Tests\bin\$configuration"; }
+        @{ Name = "Exceptionless.Api.Tests";		BuildDir = "$source_dir\Api.Tests\bin\$configuration"; }
     )
 }
 
@@ -105,7 +105,7 @@ task BuildClient -depends Init {
     }
 
     TeamCity-ReportBuildStart "Building Client Tests" 
-    exec { & msbuild "$source_dir\Clients\Tests\Exceptionless.Client.Tests.csproj" `
+    exec { & msbuild "$source_dir\Clients\Pcl.Tests\Pcl.Tests.csproj" `
         /p:Configuration="$configuration" `
         /t:"Rebuild" }
     TeamCity-ReportBuildFinish "Finished building Client Tests"
@@ -182,7 +182,6 @@ task PackageClient -depends TestClient {
 
         # Copy the source code for Symbol Source.
         robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs *.xaml /S /NP
-        robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         robocopy "$base_dir\Source\Core" "$workingDirectory\src\Source\Core" *.cs /S /NP /XD obj
         robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
         Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
@@ -235,8 +234,8 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
-    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
-    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api.IIS"
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.IIS.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
     TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 

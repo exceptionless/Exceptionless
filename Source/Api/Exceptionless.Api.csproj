@@ -120,9 +120,8 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.2.2\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net">
+      <HintPath>..\..\packages\Stripe.net.2.2.3\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -211,9 +210,9 @@
     <Compile Include="Utility\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Clients\Pcl\Pcl.csproj">
+    <ProjectReference Include="..\Clients\Pcl\Exceptionless.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
-      <Name>Pcl</Name>
+      <Name>Exceptionless</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
       <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>

@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Queue {
             });
 
             Assert.Equal(1, queue.Count);
-            bool success = resetEvent.WaitOne(100);
+            bool success = resetEvent.WaitOne(250);
             Assert.Equal(0, queue.Count);
             Assert.Equal(1, queue.Completed);
             Assert.True(success, "Failed to receive message.");

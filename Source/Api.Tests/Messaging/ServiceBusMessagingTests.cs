@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Data = "Hello"
             });
 
-            bool success = resetEvent.WaitOne(5000);
+            bool success = resetEvent.WaitOne(15000);
             Assert.True(success, "Failed to receive message.");
         }
 
@@ -56,7 +56,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Data = "Hello"
             });
 
-            bool success = latch.Wait(5000);
+            bool success = latch.Wait(15000);
             Assert.True(success, "Failed to receive all messages.");
         }
 

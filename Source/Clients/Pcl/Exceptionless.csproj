@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
+    <DefineConstants>TRACE;PORTABLE40;EMBEDDED</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
@@ -306,12 +306,19 @@
   <ItemGroup>
     <None Include="app.config" />
     <EmbeddedResource Include="Json.Dynamic.snk" />
+    <None Include="NuGet\Exceptionless.nuspec" />
+    <None Include="NuGet\tools\exceptionless.psm1" />
+    <None Include="NuGet\tools\install.ps1" />
+    <None Include="NuGet\tools\uninstall.ps1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
       <Name>Exceptionless.Models</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="NuGet\readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
