@@ -13,30 +13,31 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> EventData {
             get {
                 return new[] {
-                    new object[] { " \t", 0, Event.KnownTypes.Log }, 
-                    new object[] { "simple string", 1, Event.KnownTypes.Log }, 
-                    new object[] { " \r\nsimple string", 1, Event.KnownTypes.Log }, 
-                    new object[] { "{simple string", 1, Event.KnownTypes.Log },
-                    new object[] { "{simple string,simple string}", 1, Event.KnownTypes.Log },
-                    new object[] { "{ \"name\": \"value\" }", 1, Event.KnownTypes.Log },
-                    new object[] { "{ \"message\": \"simple string\" }", 1, Event.KnownTypes.Log },
-                    new object[] { "{ \"message\": \"simple string\", { \"data\": [{ \"" + Event.KnownDataKeys.Error + "\": {} }] }", 1, Event.KnownTypes.Error },
-                    new object[] { "[simple string", 1, Event.KnownTypes.Log },
-                    new object[] { "[simple string,simple string]", 1, Event.KnownTypes.Log },
-                    new object[] { "simple string\r\nsimple string", 2, Event.KnownTypes.Log }
+                    new object[] { " \t", 0, null, Event.KnownTypes.Log }, 
+                    new object[] { "simple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
+                    new object[] { " \r\nsimple string", 1, new [] { "simple string" }, Event.KnownTypes.Log }, 
+                    new object[] { "{simple string", 1, new [] { "{simple string" }, Event.KnownTypes.Log },
+                    new object[] { "{simple string,simple string}", 1, new [] { "{simple string,simple string}" }, Event.KnownTypes.Log },
+                    new object[] { "{ \"name\": \"value\" }", 1, new string[] { null }, Event.KnownTypes.Log },
+                    new object[] { "{ \"message\": \"simple string\" }", 1, new [] { "simple string" }, Event.KnownTypes.Log },
+                    new object[] { "{ \"message\": \"simple string\", \"data\": { \"" + Event.KnownDataKeys.Error + "\": {} } }", 1, new [] { "simple string" }, Event.KnownTypes.Error },
+                    new object[] { "[simple string", 1, new [] { "[simple string" }, Event.KnownTypes.Log },
+                    new object[] { "[simple string,simple string]", 1, new [] { "[simple string,simple string]" }, Event.KnownTypes.Log },
+                    new object[] { "simple string\r\nsimple string", 2, new [] { "simple string", "simple string" }, Event.KnownTypes.Log }
                 };
             }
         }
 
         [Theory]
         [PropertyData("EventData")]
-        public void ParseEvents(string input, int expectedEvents, string expectedType) {
-            var events = _eventParserPluginManager.ParseEvents(input, 1, "exceptionless/1.0.0.0");
+        public void ParseEvents(string input, int expectedEvents, string[] expectedMessage, string expectedType) {
+            var events = _eventParserPluginManager.ParseEvents(input, 2, "exceptionless/2.0.0.0");
             Assert.Equal(expectedEvents, events.Count);
-            foreach (var ev in events) {
+            for (int index = 0; index < events.Count; index++) {
+                var ev = events[index];
+                Assert.Equal(expectedMessage[index], ev.Message);
                 Assert.Equal(expectedType, ev.Type);
-                Assert.False(String.IsNullOrWhiteSpace(ev.Message));
-                Assert.NotEqual(ev.Date, DateTimeOffset.MinValue);
+                Assert.NotEqual(DateTimeOffset.MinValue, ev.Date);
             }
         }
     }

@@ -9,6 +9,9 @@ namespace Exceptionless.Api.Tests.Caching {
         private readonly AzureCacheClient _cache;
 
         public AzureCacheClientTests() {
+            if (!Settings.Current.UseAzureCache)
+                return;
+
             _cache = new AzureCacheClient(
                 endpointUrl: Settings.Current.AzureCacheEndpoint,
                 authorizationToken: Settings.Current.AzureCacheAuthorizationToken,
@@ -17,6 +20,9 @@ namespace Exceptionless.Api.Tests.Caching {
 
         [Fact]
         public void CanSetAndGetValue() {
+            if (_cache == null)
+                return;
+
             _cache.Set("test", 1);
             var value = _cache.Get<int>("test");
             Assert.Equal(1, value);
@@ -24,6 +30,9 @@ namespace Exceptionless.Api.Tests.Caching {
 
         [Fact]
         public void CanSetExpiration() {
+            if (_cache == null)
+                return;
+
             _cache.Set("test", 1, TimeSpan.FromMilliseconds(100));
             var value = _cache.Get<int>("test");
             Assert.Equal(1, value);

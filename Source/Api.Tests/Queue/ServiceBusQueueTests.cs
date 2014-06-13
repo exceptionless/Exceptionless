@@ -10,142 +10,157 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
     public class ServiceBusQueueTests {
-        private static readonly Lazy<ServiceBusQueue<SimpleWorkItem>> _queue = new Lazy<ServiceBusQueue<SimpleWorkItem>>(() => {
-            if (String.IsNullOrEmpty(Settings.Current.AzureServiceBusConnectionString))
-                return null;
+        private readonly ServiceBusQueue<SimpleWorkItem> _queue;
+        
+        public ServiceBusQueueTests() {
+          if (!Settings.Current.UseAzureServiceBus)
+                return;
 
-            return new ServiceBusQueue<SimpleWorkItem>(Settings.Current.AzureServiceBusConnectionString, 
-                "test-queue", 
+            _queue = new ServiceBusQueue<SimpleWorkItem>(Settings.Current.AzureServiceBusConnectionString, 
+                "test-_queue", 
                 workItemTimeoutMilliseconds: 1000, 
                 retries: 1, 
                 shouldRecreate: true, 
-                retryPolicy: new RetryExponential(TimeSpan.Zero, TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), TimeSpan.FromSeconds(100), 1));
-        });
-        
-        [Fact(Skip = "Requires Azure Service Bus")]
-        public void CanQueueAndDequeueWorkItem() {
-            var queue = _queue.Value;
-            queue.EnqueueAsync(new SimpleWorkItem {
-                Data = "Hello"
-            }).Wait();
-            Assert.Equal(1, queue.Count);
-
-            var workItem = queue.DequeueAsync(0).Result;
-            Assert.NotNull(workItem);
-            Assert.Equal("Hello", workItem.Value.Data);
-            Assert.Equal(1, queue.Dequeued);
-
-            workItem.CompleteAsync().Wait();
-            Assert.Equal(1, queue.Completed);
-            Assert.Equal(0, queue.Count);
+                retryPolicy: new RetryExponential(TimeSpan.Zero, TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1), TimeSpan.FromSeconds(100), 1));    
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
+        public void CanQueueAndDequeueWorkItem() {
+            if (_queue == null)
+                return;
+
+            _queue.EnqueueAsync(new SimpleWorkItem {
+                Data = "Hello"
+            }).Wait();
+            Assert.Equal(1, _queue.Count);
+
+            var workItem = _queue.DequeueAsync(0).Result;
+            Assert.NotNull(workItem);
+            Assert.Equal("Hello", workItem.Value.Data);
+            Assert.Equal(1, _queue.Dequeued);
+
+            workItem.CompleteAsync().Wait();
+            Assert.Equal(1, _queue.Completed);
+            Assert.Equal(0, _queue.Count);
+        }
+
+        [Fact]
         public void CanUseQueueWorker() {
+            if (_queue == null)
+                return;
+
             var resetEvent = new AutoResetEvent(false);
-            var queue = _queue.Value;
-            queue.StartWorking(w => {
+            
+            _queue.StartWorking(w => {
                 Assert.Equal("Hello", w.Value.Data);
                 w.CompleteAsync().Wait();
                 resetEvent.Set();
             });
-            queue.EnqueueAsync(new SimpleWorkItem {
+            _queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             }).Wait();
 
-            Assert.Equal(1, queue.Count);
+            Assert.Equal(1, _queue.Count);
             bool success = resetEvent.WaitOne(1000);
-            Assert.Equal(1, queue.Completed);
-            Assert.Equal(0, queue.Count);
+            Assert.Equal(1, _queue.Completed);
+            Assert.Equal(0, _queue.Count);
             Assert.True(success, "Failed to receive message.");
-            Assert.Equal(0, queue.WorkerErrors);
+            Assert.Equal(0, _queue.WorkerErrors);
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void WorkItemsWillTimeout() {
-            var queue = _queue.Value;
-            queue.EnqueueAsync(new SimpleWorkItem {
+            if (_queue == null)
+                return;
+
+            _queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             });
-            var workItem = queue.DequeueAsync(0).Result;
+            var workItem = _queue.DequeueAsync(0).Result;
             Assert.Equal("Hello", workItem.Value.Data);
 
-            Assert.Equal(0, queue.Count);
+            Assert.Equal(0, _queue.Count);
             // wait for the task to be auto abandoned
-            workItem = queue.DequeueAsync(15000).Result;
+            workItem = _queue.DequeueAsync(15000).Result;
             workItem.CompleteAsync().Wait();
             Assert.NotNull(workItem);
-            Assert.Equal(0, queue.Count);
+            Assert.Equal(0, _queue.Count);
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void WorkItemsWillGetMovedToDeadletter() {
-            var queue = _queue.Value;
-            queue.EnqueueAsync(new SimpleWorkItem {
+            if (_queue == null)
+                return;
+
+            _queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             });
-            var workItem = queue.DequeueAsync(0).Result;
+            var workItem = _queue.DequeueAsync(0).Result;
             Assert.Equal("Hello", workItem.Value.Data);
-            Assert.Equal(1, queue.Dequeued);
+            Assert.Equal(1, _queue.Dequeued);
 
-            Assert.Equal(0, queue.Count);
+            Assert.Equal(0, _queue.Count);
             workItem.AbandonAsync().Wait();
-            Assert.Equal(1, queue.Abandoned);
+            Assert.Equal(1, _queue.Abandoned);
 
             // work item should be retried 1 time.
-            workItem = queue.DequeueAsync(15000).Result;
+            workItem = _queue.DequeueAsync(15000).Result;
             Assert.Equal("Hello", workItem.Value.Data);
-            Assert.Equal(2, queue.Dequeued);
+            Assert.Equal(2, _queue.Dequeued);
 
             workItem.AbandonAsync().Wait();
-            // work item should be moved to deadletter queue after retries.
-            Assert.Equal(1, queue.DeadletterCount);
-            Assert.Equal(2, queue.Abandoned);
+            // work item should be moved to deadletter _queue after retries.
+            Assert.Equal(1, _queue.DeadletterCount);
+            Assert.Equal(2, _queue.Abandoned);
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void CanAutoCompleteWorker() {
+            if (_queue == null)
+                return;
+
             var resetEvent = new AutoResetEvent(false);
-            var queue = _queue.Value;
-            queue.StartWorking(w => {
+            _queue.StartWorking(w => {
                 Assert.Equal("Hello", w.Value.Data);
                 resetEvent.Set();
             }, true);
-            queue.EnqueueAsync(new SimpleWorkItem {
+            _queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             });
 
-            Assert.Equal(1, queue.Enqueued);
+            Assert.Equal(1, _queue.Enqueued);
             bool success = resetEvent.WaitOne(1000);
             Assert.True(success, "Failed to receive message.");
-            Assert.Equal(0, queue.Count);
-            Assert.Equal(1, queue.Completed);
-            Assert.Equal(0, queue.WorkerErrors);
+            Assert.Equal(0, _queue.Count);
+            Assert.Equal(1, _queue.Completed);
+            Assert.Equal(0, _queue.WorkerErrors);
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void CanHaveMultipleWorkers() {
+            if (_queue == null)
+                return;
+
             const int workItemCount = 50;
             var latch = new CountDownLatch(workItemCount);
             int errorCount = 0;
             int abandonCount = 0;
-            var queue = _queue.Value;
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+            Task.Factory.StartNew(() => _queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+            Task.Factory.StartNew(() => _queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+            Task.Factory.StartNew(() => _queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
 
-            Parallel.For(0, workItemCount, i => queue.EnqueueAsync(new SimpleWorkItem {
+            Parallel.For(0, workItemCount, i => _queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello",
                 Id = i
             }));
 
-            Assert.Equal(workItemCount, queue.Enqueued);
+            Assert.Equal(workItemCount, _queue.Enqueued);
             bool success = latch.Wait(60000);
             Task.Delay(5000).Wait();
             Assert.True(success, "Failed to receive all work items.");
-            Assert.Equal(workItemCount, queue.Completed + queue.DeadletterCount);
-            Assert.Equal(errorCount, queue.WorkerErrors);
-            Assert.Equal(abandonCount + errorCount, queue.Abandoned);
+            Assert.Equal(workItemCount, _queue.Completed + _queue.DeadletterCount);
+            Assert.Equal(errorCount, _queue.WorkerErrors);
+            Assert.Equal(abandonCount + errorCount, _queue.Abandoned);
         }
 
         private void DoWork(QueueEntry<SimpleWorkItem> w, CountDownLatch latch, ref int abandonCount, ref int errorCount) {

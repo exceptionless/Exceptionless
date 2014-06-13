@@ -7,21 +7,26 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Messaging {
     public class ServiceBusMessagingTests {
-        private static readonly Lazy<ServiceBusMessageBus> _messageBus = new Lazy<ServiceBusMessageBus>(() => {
-            if (String.IsNullOrEmpty(Settings.Current.AzureServiceBusConnectionString))
-                return null;
+        private readonly ServiceBusMessageBus _messageBus;
 
-            return new ServiceBusMessageBus(Settings.Current.AzureServiceBusConnectionString, "test-messagebus");
-        });
+        public ServiceBusMessagingTests() {
+            if (!Settings.Current.UseAzureServiceBus)
+                return;
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+            _messageBus = new ServiceBusMessageBus(Settings.Current.AzureServiceBusConnectionString, "test-messagebus");   
+        }
+
+        [Fact]
         public void CanSendMessage() {
+            if (_messageBus == null)
+                return;
+
             var resetEvent = new AutoResetEvent(false);
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -29,22 +34,25 @@ namespace Exceptionless.Api.Tests.Messaging {
             Assert.True(success, "Failed to receive message.");
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void CanSendMessageToMultipleSubscribers() {
+            if (_messageBus == null)
+                return;
+
             var latch = new CountDownLatch(3);
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -52,21 +60,24 @@ namespace Exceptionless.Api.Tests.Messaging {
             Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void CanTolerateSubscriberFailure() {
+            if (_messageBus == null)
+                return;
+
             var latch = new CountDownLatch(2);
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 throw new ApplicationException();
             });
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -74,17 +85,20 @@ namespace Exceptionless.Api.Tests.Messaging {
             Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void WillOnlyReceiveSubscribedMessageType() {
+            if (_messageBus == null)
+                return;
+
             var resetEvent = new AutoResetEvent(false);
-            _messageBus.Value.Subscribe<SimpleMessageB>(msg => {
+            _messageBus.Subscribe<SimpleMessageB>(msg => {
                 Assert.True(false, "Received wrong message type.");
             });
-            _messageBus.Value.Subscribe<SimpleMessageA>(msg => {
+            _messageBus.Subscribe<SimpleMessageA>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -92,20 +106,23 @@ namespace Exceptionless.Api.Tests.Messaging {
             Assert.True(success, "Failed to receive message.");
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void WillReceiveDerivedMessageTypes() {
+            if (_messageBus == null)
+                return;
+
             var latch = new CountDownLatch(2);
-            _messageBus.Value.Subscribe<ISimpleMessage>(msg => {
+            _messageBus.Subscribe<ISimpleMessage>(msg => {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageB {
+            _messageBus.PublishAsync(new SimpleMessageB {
                 Data = "Hello"
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageC {
+            _messageBus.PublishAsync(new SimpleMessageC {
                 Data = "Hello"
             });
 
@@ -113,19 +130,22 @@ namespace Exceptionless.Api.Tests.Messaging {
             Assert.True(success, "Failed to receive all messages.");
         }
 
-        [Fact(Skip = "Requires Azure Service Bus")]
+        [Fact]
         public void CanSubscribeToAllMessageTypes() {
+            if (_messageBus == null)
+                return;
+
             var latch = new CountDownLatch(3);
-            _messageBus.Value.Subscribe<object>(msg => {
+            _messageBus.Subscribe<object>(msg => {
                 latch.Signal();
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageA {
+            _messageBus.PublishAsync(new SimpleMessageA {
                 Data = "Hello"
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageB {
+            _messageBus.PublishAsync(new SimpleMessageB {
                 Data = "Hello"
             });
-            _messageBus.Value.PublishAsync(new SimpleMessageC {
+            _messageBus.PublishAsync(new SimpleMessageC {
                 Data = "Hello"
             });
 

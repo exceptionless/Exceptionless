@@ -53,9 +53,8 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(1, _eventQueue.Count);
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
-                processEventsJob.Cancel();
-                 
+                processEventsJob.Run(1);
+
                 Assert.Equal(0, _eventQueue.Count);
                 Assert.Equal(1, EventCount());
             } finally {
@@ -74,9 +73,8 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(1, _eventQueue.Count);
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
-                processEventsJob.Cancel();
-                
+                processEventsJob.Run(1);
+
                 Assert.Equal(0, _eventQueue.Count);
                 Assert.Equal(1, EventCount());
             } finally {
@@ -95,9 +93,8 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.Equal(1, _eventQueue.Count);
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
-                Task.Factory.StartNew(() => processEventsJob.Run()).Wait(TimeSpan.FromSeconds(2));
-                processEventsJob.Cancel();
-               
+                processEventsJob.Run(1);
+
                 Assert.Equal(0, _eventQueue.Count);
                 Assert.Equal(1, EventCount());
             } finally {
