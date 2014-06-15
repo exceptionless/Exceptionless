@@ -275,7 +275,6 @@
     <Compile Include="Pipeline\010_AssignToStackAction.cs" />
     <Compile Include="Pipeline\020_MarkAsCriticalAction.cs" />
     <Compile Include="Pipeline\030_CheckForRegressionAction.cs" />
-    <Compile Include="Pipeline\050_EnforceRetentionLimitsAction.cs" />
     <Compile Include="Pipeline\EventPipeline.cs" />
     <Compile Include="Pipeline\EventPipelineActionBase.cs" />
     <Compile Include="Pipeline\070_QueueNotificationAction.cs" />
