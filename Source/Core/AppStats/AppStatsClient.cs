@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Diagnostics;
 using StatsdClient;
 
 namespace Exceptionless.Core.AppStats {
@@ -33,12 +32,12 @@ namespace Exceptionless.Core.AppStats {
             _client.LogGauge(statName, (int)value);
         }
 
-        public void Timer(string statName, int milliseconds) {
+        public void Timer(string statName, long milliseconds) {
             _client.LogTiming(statName, milliseconds);
         }
 
         public IDisposable StartTimer(string statName) {
-            return new AppStatsTimer(statName, _client);
+            return new AppStatsTimer(statName, this);
         }
 
         public void Time(Action action, string statName) {
@@ -49,29 +48,6 @@ namespace Exceptionless.Core.AppStats {
         public T Time<T>(Func<T> func, string statName) {
             using (StartTimer(statName))
                 return func();
-        }
-    }
-
-    public class AppStatsTimer : IDisposable {
-        private readonly string _name;
-        private readonly Stopwatch _stopWatch;
-        private bool _disposed;
-        private readonly IStatsd _client;
-
-        public AppStatsTimer(string name, IStatsd client) {
-            _name = name;
-            _stopWatch = new Stopwatch();
-            _client = client;
-            _stopWatch.Start();
-        }
-
-        public void Dispose() {
-            if (_disposed)
-                return;
-
-            _disposed = true;
-            _stopWatch.Stop();
-            _client.LogTiming(_name, _stopWatch.ElapsedMilliseconds);
         }
     }
 }

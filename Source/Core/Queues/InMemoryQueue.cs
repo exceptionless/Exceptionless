@@ -83,11 +83,11 @@ namespace Exceptionless.Core.Queues {
         public Task<QueueEntry<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {
             try {
                 if (_queue.Count == 0 && !_autoEvent.WaitOne(millisecondsTimeout))
-                    throw new TimeoutException();
+                    return Task.FromResult<QueueEntry<T>>(null);
 
                 QueueInfo<T> info;
                 if (!_queue.TryDequeue(out info) || info == null)
-                    throw new TimeoutException();
+                    return Task.FromResult<QueueEntry<T>>(null);
 
                 Interlocked.Increment(ref _dequeuedCounter);
 

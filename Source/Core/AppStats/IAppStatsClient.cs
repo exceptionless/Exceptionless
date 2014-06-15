@@ -17,7 +17,7 @@ namespace Exceptionless.Core.AppStats {
 
         void Gauge(string statName, double value);
 
-        void Timer(string statName, int milliseconds);
+        void Timer(string statName, long milliseconds);
 
         IDisposable StartTimer(string statName);
 
