@@ -47,7 +47,10 @@ namespace Exceptionless.Api.Utility {
 
             // fallback to using the IP address
             var ip = request.GetClientIpAddress();
-            return Settings.Current.WebsiteMode == WebsiteMode.Dev && String.IsNullOrEmpty(ip) ? "127.0.0.1" : ip;
+            if (String.IsNullOrEmpty(ip))
+                ip = "127.0.0.1";
+
+            return ip;
         }
 
         protected virtual string GetCacheKey(string userIdentifier) {
