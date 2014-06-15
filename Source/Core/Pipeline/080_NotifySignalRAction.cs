@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
                 IsFixed = ctx.Event.IsFixed,
                 IsNotFound = ctx.Event.IsNotFound(),
                 IsRegression = ctx.IsRegression
-            }).Start();
+            });
         }
     }
 }

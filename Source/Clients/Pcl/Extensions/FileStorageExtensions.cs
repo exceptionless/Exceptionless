@@ -34,13 +34,14 @@ namespace Exceptionless.Extensions {
                 throw new ArgumentException(String.Format("Path \"{0}\" must contain the number of attempts.", info.Path));
 
             version++;
-            string newpath = String.Concat(parts[0], version, parts[2]);
+            string newpath = String.Join(".", parts[0], version, parts[2]);
             if (parts.Length == 4)
-                newpath += parts[4];
+                newpath += "." + parts[3];
 
+            string originalPath = info.Path;
             info.Path = newpath;
 
-            storage.RenameFile(info.Path, newpath);
+            storage.RenameFile(originalPath, newpath);
         }
 
         public static int GetAttempts(this FileInfo info) {
