@@ -129,6 +129,7 @@ namespace Exceptionless.Api {
                 });
             });
 
+            ExceptionlessClient.Default.RegisterWebApi(config);
             app.UseCors(CorsOptions.AllowAll);
             //app.MapSignalR();
             app.UseWebApi(config);

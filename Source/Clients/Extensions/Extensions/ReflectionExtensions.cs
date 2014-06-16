@@ -5,7 +5,7 @@ using System.IO;
 using System.Reflection;
 
 
-namespace Exceptionless.Extensions {
+namespace Exceptionless.Extras {
     internal static class ReflectionExtensions {
         public static bool IsBrowsable(this PropertyInfo property) {
             object[] attributes = property.GetCustomAttributes(typeof(BrowsableAttribute), true);

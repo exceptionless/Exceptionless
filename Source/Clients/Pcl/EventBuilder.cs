@@ -9,12 +9,13 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Enrichments;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless {
     public class EventBuilder {
-        public EventBuilder(Event ev, ExceptionlessClient client = null, IDictionary<string, object> enrichmentContextData = null) {
+        public EventBuilder(Event ev, ExceptionlessClient client = null, ContextData enrichmentContextData = null) {
             Client = client ?? ExceptionlessClient.Default;
             Target = ev;
             EnrichmentContextData = enrichmentContextData;
@@ -24,7 +25,7 @@ namespace Exceptionless {
         ///     Any contextual data objects to be used by Exceptionless plugins to gather default
         ///     information for inclusion in the event information.
         /// </summary>
-        public IDictionary<string, object> EnrichmentContextData { get; private set; } 
+        public ContextData EnrichmentContextData { get; private set; } 
         public ExceptionlessClient Client { get; set; }
         public Event Target { get; private set; }
 
@@ -33,7 +34,7 @@ namespace Exceptionless {
         ///     values, application configuration, and any registered plugins.
         /// </summary>
         /// <param name="contextData">Any contextual data objects to be used in gathering the default information.</param>
-        public EventBuilder AddDefaultInformation(IDictionary<string, object> contextData = null) {
+        public EventBuilder AddDefaultInformation(ContextData contextData = null) {
             //Target.AddDefaultInformation(contextData);
             return this;
         }

@@ -49,7 +49,6 @@ namespace Exceptionless.Core.Jobs {
                 QueueEntry<EventPost> queueEntry = null;
                 try {
                     queueEntry = await _queue.DequeueAsync();
-                    _statsClient.Counter(StatNames.PostsDequeued);
                 } catch (Exception ex) {
                     if (!(ex is TimeoutException)) {
                         Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost: {0}", ex.Message).Write();
@@ -58,6 +57,7 @@ namespace Exceptionless.Core.Jobs {
                 }
                 if (queueEntry == null)
                     continue;
+                _statsClient.Counter(StatNames.PostsDequeued);
 
                 Log.Info().Message("Processing EventPost '{0}'.", queueEntry.Id).Write();
                 

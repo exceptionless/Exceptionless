@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Exceptionless.Extensions {
+namespace Exceptionless.Extras {
     internal static class TypeExtensions {
         public static PropertyInfo[] GetPublicProperties(this Type type) {
             if (type.IsInterface) {

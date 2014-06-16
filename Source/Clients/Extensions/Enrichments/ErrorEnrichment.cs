@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Extensions;
+using Exceptionless.Extras;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 
@@ -12,10 +12,7 @@ namespace Exceptionless.Enrichments {
         }
 
         public void Enrich(EventEnrichmentContext context, Event ev) {
-            if (!context.ContextData.ContainsKey(EventEnrichmentContext.KnownContextDataKeys.Exception))
-                return;
-
-            var exception = ev.Data[EventEnrichmentContext.KnownContextDataKeys.Exception] as Exception;
+            var exception = context.Data.GetException();
             if (exception == null)
                 return;
 

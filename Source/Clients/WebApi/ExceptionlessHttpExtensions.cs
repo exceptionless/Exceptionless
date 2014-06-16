@@ -20,16 +20,18 @@ using Exceptionless.WebApi;
 namespace Exceptionless {
     public static class ExceptionlessHttpExtensions {
         public static void RegisterWebApi(this ExceptionlessClient client, HttpConfiguration config) {
-            client.RegisterPlugin(new ExceptionlessWebApiPlugin());
-            client.Startup();
+            client.Configuration.AddEnrichment<ExceptionlessWebApiEnrichment>();
+            client.Configuration.ReadFromConfig();
+            client.Configuration.UseErrorEnrichment();
+            //client.Startup();
             client.Configuration.IncludePrivateInformation = true;
 
             ReplaceHttpErrorHandler(config);
         }
 
         public static void UnregisterWebApi(this ExceptionlessClient client) {
-            client.UnregisterPlugin(typeof(ExceptionlessWebApiPlugin).FullName);
-            client.Shutdown();
+            client.Configuration.RemoveEnrichment<ExceptionlessWebApiEnrichment>();
+            //client.Shutdown();
         }
 
         private static void ReplaceHttpErrorHandler(HttpConfiguration config) {
@@ -49,27 +51,27 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        /// Adds the current request info as extended data to the error.
+        /// Adds the current request info as extended data to the event.
         /// </summary>
-        /// <param name="error">The error model.</param>
+        /// <param name="ev">The event model.</param>
         /// <param name="context">The http action context to gather information from.</param>
-        public static Error AddHttpRequestInfo(this Error error, HttpActionContext context) {
+        public static Event AddHttpRequestInfo(this Event ev, HttpActionContext context) {
             if (context == null)
-                return error;
+                return ev;
 
             // TODO: Create HttpActionContext version of request info.
             //context.Request.Headers.GetCookies();
-            error.RequestInfo = RequestInfoCollector.Collect(context, ExceptionlessClient.Current);
+            ev.Data[Event.KnownDataKeys.RequestInfo] = RequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions);
 
-            return error;
+            return ev;
         }
 
         /// <summary>
-        /// Adds the current request info as extended data to the error.
+        /// Adds the current request info as extended data to the event.
         /// </summary>
-        /// <param name="builder">The error builder.</param>
+        /// <param name="builder">The event builder.</param>
         /// <param name="context">The http action context to gather information from.</param>
-        public static ErrorBuilder AddHttpRequestInfo(this ErrorBuilder builder, HttpActionContext context) {
+        public static EventBuilder AddHttpRequestInfo(this EventBuilder builder, HttpActionContext context) {
             builder.Target.AddHttpRequestInfo(context);
             return builder;
         }

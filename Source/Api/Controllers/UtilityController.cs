@@ -12,5 +12,11 @@ namespace Exceptionless.Api.Controllers {
                 Url = "http://docs.exceptionless.com"
             });
         }
+
+        [Route("boom")]
+        [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
+        public IHttpActionResult Boom() {
+            throw new ApplicationException("Boom!");
+        }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Enrichments;
 
@@ -30,7 +29,7 @@ namespace Exceptionless {
         /// Creates a builder object for constructing error reports in a fluent api.
         /// </summary>
         /// <param name="exception">The exception.</param>
-        /// <param name="pluginContextData">
+        /// <param name="enrichmentContextData">
         /// Any contextual data objects to be used by Exceptionless plugins to gather default
         /// information for inclusion in the report information.
         /// </param>
@@ -39,16 +38,16 @@ namespace Exceptionless {
         /// ExceptionlessClient.Default.
         /// </param>
         /// <returns></returns>
-        public static EventBuilder ToExceptionless(this Exception exception, IDictionary<string, object> pluginContextData = null, ExceptionlessClient client = null) {
+        public static EventBuilder ToExceptionless(this Exception exception, ContextData enrichmentContextData = null, ExceptionlessClient client = null) {
             if (client == null)
                 client = ExceptionlessClient.Default;
 
-            if (pluginContextData == null)
-                pluginContextData = new Dictionary<string, object>();
+            if (enrichmentContextData == null)
+                enrichmentContextData = new ContextData();
 
-            pluginContextData.Add(EventEnrichmentContext.KnownContextDataKeys.Exception, exception);
+            enrichmentContextData.SetException(exception);
 
-            return client.CreateEventBuilder(pluginContextData);
+            return client.CreateEventBuilder(enrichmentContextData);
         }
     }
 }

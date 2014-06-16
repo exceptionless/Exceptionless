@@ -8,27 +8,22 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using Exceptionless.Dependency;
+using Exceptionless.Logging;
 
 namespace Exceptionless.Enrichments {
     public class EventEnrichmentContext {
-        public EventEnrichmentContext(ExceptionlessClient client, IEnumerable<KeyValuePair<string, object>> contextData = null) {
+        public EventEnrichmentContext(ExceptionlessClient client, ContextData contextData = null) {
             Client = client;
-            ContextData = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
-            if (contextData == null)
-                return;
-
-            foreach (var kvp in contextData)
-                ContextData.Add(kvp);
+            Data = contextData ?? new ContextData();
         }
 
         public ExceptionlessClient Client { get; private set; }
         public IDependencyResolver Resolver { get { return Client.Configuration.Resolver; }}
-        public IDictionary<string, object> ContextData { get; private set; }
+        public ContextData Data { get; private set; }
 
-        public static class KnownContextDataKeys {
-            public const string Exception = "@__Exception";
+        public IExceptionlessLog Log {
+            get { return Resolver.GetLog(); }
         }
     }
 }

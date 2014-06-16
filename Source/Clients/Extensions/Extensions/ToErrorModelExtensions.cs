@@ -18,13 +18,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Module = Exceptionless.Models.Data.Module;
 using StackFrame = System.Diagnostics.StackFrame;
 
-namespace Exceptionless.Extensions {
+namespace Exceptionless.Extras {
     internal static class ToErrorModelExtensions {
         private static readonly ConcurrentDictionary<string, Module> _moduleCache = new ConcurrentDictionary<string, Module>();
         private static readonly string[] _exceptionExclusions = { "HelpLink", "InnerException", "Message", "Source", "StackTrace", "TargetSite", "HResult" };

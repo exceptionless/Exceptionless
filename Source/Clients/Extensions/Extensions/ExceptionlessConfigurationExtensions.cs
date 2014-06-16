@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Configuration;
 using System.Linq;
-using Exceptionless.Configuration;
 using Exceptionless.Dependency;
-using Exceptionless.Extensions;
+using Exceptionless.Extras;
 using Exceptionless.Logging;
 
 namespace Exceptionless {

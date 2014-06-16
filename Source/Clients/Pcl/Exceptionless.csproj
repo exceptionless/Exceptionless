@@ -63,6 +63,7 @@
     <Compile Include="Dependency\TinyIoC.cs" />
     <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
+    <Compile Include="Enrichments\ContextData.cs" />
     <Compile Include="Enrichments\Default\ConfigurationDefaultsEnrichment.cs" />
     <Compile Include="Enrichments\Default\SimpleErrorEnrichment.cs" />
     <Compile Include="Enrichments\Default\TraceLogEnrichment.cs" />

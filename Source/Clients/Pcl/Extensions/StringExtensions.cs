@@ -14,7 +14,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Exceptionless.Extensions {
-    internal static class StringExtensions {
+    public static class StringExtensions {
         public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false) {
             if (patternsToMatch == null)
                 return false;

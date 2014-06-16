@@ -82,7 +82,7 @@ namespace Exceptionless {
         /// Any contextual data objects to be used by Exceptionless enrichments to gather default
         /// information for inclusion in the report information.
         /// </param>
-        public void SubmitEvent(Event ev, IDictionary<string, object> enrichmentContextData = null) {
+        public void SubmitEvent(Event ev, ContextData enrichmentContextData = null) {
             if (!Configuration.Enabled) {
                 _log.Value.Info(typeof(ExceptionlessClient), "Configuration is disabled. The error will not be submitted.");
                 return;
@@ -125,7 +125,7 @@ namespace Exceptionless {
         /// information to add to the event data.
         /// </param>
         /// <returns>A new instance of <see cref="EventBuilder" />.</returns>
-        public EventBuilder CreateEventBuilder(IDictionary<string, object> enrichmentContextData = null) {
+        public EventBuilder CreateEventBuilder(ContextData enrichmentContextData = null) {
             return new EventBuilder(new Event { Date = DateTimeOffset.Now }, this, enrichmentContextData);
         }
 

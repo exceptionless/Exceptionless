@@ -17,11 +17,11 @@ using System.Reflection;
 using System.ServiceModel.Channels;
 using System.Web.Http.Controllers;
 using Exceptionless.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.ExtendedData {
     internal static class RequestInfoCollector {
-        public static RequestInfo Collect(HttpActionContext context, ExceptionlessClient client) {
+        public static RequestInfo Collect(HttpActionContext context, ICollection<string> exclusions) {
             if (context == null)
                 return null;
 
@@ -43,7 +43,7 @@ namespace Exceptionless.ExtendedData {
             if (context.Request.Headers.Referrer != null)
                 info.Referrer = context.Request.Headers.Referrer.ToString();
 
-            info.Cookies = context.Request.Headers.GetCookies().ToDictionary(client);
+            info.Cookies = context.Request.Headers.GetCookies().ToDictionary(exclusions);
 
             //if (context.Request.Form.Count > 0) {
             //    info.PostData = context.Request.Form.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !_ignoredFormFields.Contains(k)).ToDictionary(k => k, k => {
@@ -67,7 +67,7 @@ namespace Exceptionless.ExtendedData {
             //    info.PostData = String.Format("Data is too large ({0}) to be included.", value + "kb");
             //}
 
-            info.QueryString = context.Request.RequestUri.ParseQueryString().ToDictionary(client);
+            info.QueryString = context.Request.RequestUri.ParseQueryString().ToDictionary(exclusions);
 
             return info;
         }
@@ -82,11 +82,11 @@ namespace Exceptionless.ExtendedData {
             "*SessionId*"
         };
 
-        private static Dictionary<string, string> ToDictionary(this IEnumerable<CookieHeaderValue> cookies, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this IEnumerable<CookieHeaderValue> cookies, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (CookieHeaderValue cookie in cookies) {
-                foreach (CookieState innerCookie in cookie.Cookies.Where(k => !String.IsNullOrEmpty(k.Name) && !k.Name.AnyWildcardMatches(_ignoredCookies, true) && !k.Name.AnyWildcardMatches(client.Configuration.DataExclusions, true))) {
+                foreach (CookieState innerCookie in cookie.Cookies.Where(k => !String.IsNullOrEmpty(k.Name) && !k.Name.AnyWildcardMatches(_ignoredCookies, true) && !k.Name.AnyWildcardMatches(exclusions, true))) {
                     if (innerCookie != null && !d.ContainsKey(innerCookie.Name))
                         d.Add(innerCookie.Name, innerCookie.Value);
                 }
@@ -95,11 +95,11 @@ namespace Exceptionless.ExtendedData {
             return d;
         }
 
-        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (string key in values.AllKeys) {
-                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(client.Configuration.DataExclusions, true))
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusions, true))
                     continue;
 
                 try {

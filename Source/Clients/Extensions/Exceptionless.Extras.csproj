@@ -7,8 +7,8 @@
     <ProjectGuid>{693F3CBF-5BC7-457D-9F31-BDD89C72677E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Exceptionless.Configuration</RootNamespace>
-    <AssemblyName>Exceptionless.Configuration</AssemblyName>
+    <RootNamespace>Exceptionless.Extras</RootNamespace>
+    <AssemblyName>Exceptionless.Extras</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>Client</TargetFrameworkProfile>
@@ -39,7 +39,6 @@
     <Compile Include="Enrichments\ErrorEnrichment.cs" />
     <Compile Include="ExceptionlessSection.cs" />
     <Compile Include="Extensions\ExceptionlessConfigurationExtensions.cs" />
-    <Compile Include="Extensions\IEnumerableExtensions.cs" />
     <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\ToErrorModelExtensions.cs" />

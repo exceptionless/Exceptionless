@@ -11,7 +11,7 @@
 using System.Configuration;
 using System;
 
-namespace Exceptionless.Configuration {
+namespace Exceptionless {
     internal class ExceptionlessSection : ConfigurationSection {
         [ConfigurationProperty("enabled", DefaultValue = true)]
         public bool Enabled { get { return (bool)base["enabled"]; } set { base["enabled"] = value; } }
