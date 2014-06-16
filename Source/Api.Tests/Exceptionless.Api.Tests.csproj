@@ -146,7 +146,6 @@
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
     <Compile Include="Repositories\BaseRepositoryTests.cs" />
     <Compile Include="SerializerTests.cs" />
-    <Compile Include="Utility\CountDownLatch.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />

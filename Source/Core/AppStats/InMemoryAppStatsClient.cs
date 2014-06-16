@@ -21,6 +21,7 @@ namespace Exceptionless.Core.AppStats {
         private readonly ConcurrentDictionary<string, long> _counters = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, double> _gauges = new ConcurrentDictionary<string, double>();
         private readonly ConcurrentDictionary<string, Stack<long>> _timings = new ConcurrentDictionary<string, Stack<long>>();
+        private readonly ConcurrentDictionary<string, EventWaitHandle> _counterEvents = new ConcurrentDictionary<string, EventWaitHandle>();
         private Timer _statsDisplayTimer;
 
         public InMemoryAppStatsClient() {
@@ -42,6 +43,21 @@ namespace Exceptionless.Core.AppStats {
 
         public void Counter(string statName, int value = 1) {
             _counters.AddOrUpdate(statName, value, (key, current) => current + value);
+            EventWaitHandle waitHandle;
+            _counterEvents.TryGetValue(statName, out waitHandle);
+            if (waitHandle != null)
+                waitHandle.Set();
+        }
+
+        public void WaitForCounter(string statName, int count = 1) {
+            if (count == 0)
+                return;
+
+            var waitHandle = _counterEvents.GetOrAdd(statName, s => new AutoResetEvent(false));
+            do {
+                waitHandle.WaitOne(TimeSpan.FromSeconds(10));
+                count--;
+            } while (count > 0);
         }
 
         public void Gauge(string statName, double value) {

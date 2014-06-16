@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Api.Tests.Utility;
+using CodeSmith.Core.Threading;
 using Exceptionless.Core;
 using Exceptionless.Core.Queues;
 using Microsoft.ServiceBus;

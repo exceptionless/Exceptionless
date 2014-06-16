@@ -128,6 +128,7 @@
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="Diagnostics\RollingFileTraceListener.cs" />
     <Compile Include="Diagnostics\TraceTextWriter.cs" />
+    <Compile Include="Threading\CountDownLatch.cs" />
     <Compile Include="Events\GenericEventArgs.cs" />
     <Compile Include="Events\WeakEventHandler.cs" />
     <Compile Include="ExtendedEventLog.cs">

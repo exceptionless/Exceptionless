@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using Exceptionless.Api.Tests.Utility;
+using CodeSmith.Core.Threading;
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging;
 using Xunit;

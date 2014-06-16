@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 
-namespace Exceptionless.Api.Tests.Utility {
+namespace CodeSmith.Core.Threading {
     public class CountDownLatch {
         private int _remaining;
         private EventWaitHandle _event;
@@ -29,5 +29,4 @@ namespace Exceptionless.Api.Tests.Utility {
             return _event.WaitOne(millisecondsTimeout);
         }
     }
-
 }
