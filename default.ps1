@@ -25,10 +25,10 @@ properties {
     $sign_file = "$source_dir\Exceptionless.snk"
 
     $client_projects = @(
-        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Pcl";	    ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; }
+        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	    ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; }
         #@{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         #@{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        #@{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
+        #@{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
         #@{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         #@{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
         #@{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
@@ -41,7 +41,7 @@ properties {
     )
 
     $client_test_projects = @(
-        @{ Name = "Client.Tests";	BuildDir = "$source_dir\Clients\Pcl.Tests\bin\$configuration"; }
+        @{ Name = "Client.Tests";	BuildDir = "$source_dir\Clients\Tests\bin\$configuration"; }
     )
 
     $server_test_projects = @(
@@ -105,7 +105,7 @@ task BuildClient -depends Init {
     }
 
     TeamCity-ReportBuildStart "Building Client Tests" 
-    exec { & msbuild "$source_dir\Clients\Pcl.Tests\Pcl.Tests.csproj" `
+    exec { & msbuild "$source_dir\Clients\Tests\Client.Tests.csproj" `
         /p:Configuration="$configuration" `
         /t:"Rebuild" }
     TeamCity-ReportBuildFinish "Finished building Client Tests"
