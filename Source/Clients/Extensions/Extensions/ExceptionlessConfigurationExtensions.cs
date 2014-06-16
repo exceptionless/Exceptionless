@@ -2,7 +2,9 @@
 using System.Configuration;
 using System.Linq;
 using Exceptionless.Configuration;
+using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Logging;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
@@ -13,6 +15,10 @@ namespace Exceptionless {
         public static void UseErrorEnrichment(this ExceptionlessConfiguration configuration) {
             configuration.RemoveEnrichment<Enrichments.Default.SimpleErrorEnrichment>();
             configuration.AddEnrichment<Enrichments.ErrorEnrichment>();
+        }
+
+        public static void UseTraceLogger(this ExceptionlessConfiguration configuration) {
+            configuration.Resolver.Register<IExceptionlessLog, TraceExceptionlessLog>();
         }
 
         /// <summary>

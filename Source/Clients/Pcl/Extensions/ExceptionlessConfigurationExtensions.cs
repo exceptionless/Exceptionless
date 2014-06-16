@@ -23,6 +23,10 @@ namespace Exceptionless {
             configuration.Resolver.Register<IExceptionlessLog, DebugExceptionlessLog>();
         }
 
+        public static void UseLogger(this ExceptionlessConfiguration configuration, IExceptionlessLog logger) {
+            configuration.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(logger));
+        }
+
         /// <summary>
         /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
         /// from the assembly.
