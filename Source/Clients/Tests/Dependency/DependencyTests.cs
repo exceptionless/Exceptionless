@@ -6,7 +6,7 @@ using Exceptionless.Enrichments.Default;
 using Exceptionless.Models;
 using Xunit;
 
-namespace Pcl.Tests.Dependency {
+namespace Client.Tests.Dependency {
     public class DependencyTests {
         [Fact]
         public void CanRegisterAndResolveTypes() {

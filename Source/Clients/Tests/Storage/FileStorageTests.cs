@@ -7,7 +7,7 @@ using Exceptionless.Serializer;
 using Exceptionless.Storage;
 using Xunit;
 
-namespace Pcl.Tests.Storage {
+namespace Client.Tests.Storage {
     public class FileStorageTests {
         [Fact]
         public void CanManageFiles() {

@@ -7,7 +7,7 @@ using Xunit;
 
 [assembly: Exceptionless("e3d51ea621464280bbcb79c11fd6483e", ServerUrl = "http://localhost:45000", EnableSSL = false)]
 [assembly: ExceptionlessSetting("testing", "configuration")]
-namespace Pcl.Tests.Configuration {
+namespace Client.Tests.Configuration {
     public class ConfigurationTests {
         [Fact]
         public void CanConfigureClientUsingActionMethod() {

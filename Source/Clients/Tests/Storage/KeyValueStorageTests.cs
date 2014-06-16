@@ -2,7 +2,7 @@
 using Exceptionless.Storage;
 using Xunit;
 
-namespace Pcl.Tests.Storage {
+namespace Client.Tests.Storage {
     public class KeyValueStorageTests {
         [Fact]
         public void CanManageKeys() {

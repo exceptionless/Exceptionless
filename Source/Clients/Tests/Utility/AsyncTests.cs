@@ -4,7 +4,7 @@ using Exceptionless.Threading.Tasks;
 using Task = System.Threading.Tasks.Task;
 using Xunit;
 
-namespace Pcl.Tests.Utility {
+namespace Client.Tests.Utility {
     public class AsyncTests {
         [Fact]
         public void CanChainForeach() {

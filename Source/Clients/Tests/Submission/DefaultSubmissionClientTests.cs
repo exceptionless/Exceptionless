@@ -20,7 +20,7 @@ using Exceptionless.Submission;
 using Microsoft.Owin.Hosting;
 using Xunit;
 
-namespace Pcl.Tests.Submission {
+namespace Client.Tests.Submission {
     public class DefaultSubmissionClientTests {
         public DefaultSubmissionClientTests() {
             ExceptionlessConfiguration.ConfigureDefaults.Add(c => {

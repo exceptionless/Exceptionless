@@ -6,7 +6,7 @@ using Exceptionless.Serializer;
 using Exceptionless.Extensions;
 using Xunit;
 
-namespace Pcl.Tests.Serializer {
+namespace Client.Tests.Serializer {
     public class SerializerTests {
         protected virtual IJsonSerializer GetSerializer() {
             return new DefaultJsonSerializer();

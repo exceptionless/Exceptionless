@@ -17,7 +17,7 @@ using Microsoft.Owin.Hosting;
 using SimpleInjector;
 using Xunit;
 
-namespace Pcl.Tests {
+namespace Client.Tests {
     public class ExceptionlessClientTests {
         public ExceptionlessClientTests() {
             ExceptionlessConfiguration.ConfigureDefaults.Add(c => {
