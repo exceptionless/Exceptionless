@@ -41,7 +41,7 @@ properties {
     )
 
     $client_test_projects = @(
-        @{ Name = "Pcl.Tests";	BuildDir = "$source_dir\Clients\Pcl.Tests\bin\$configuration"; }
+        @{ Name = "Client.Tests";	BuildDir = "$source_dir\Clients\Pcl.Tests\bin\$configuration"; }
     )
 
     $server_test_projects = @(
