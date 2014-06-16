@@ -56,6 +56,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Tests", "Source\Clie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Extras", "Source\Clients\Extras\Exceptionless.Extras.csproj", "{693F3CBF-5BC7-457D-9F31-BDD89C72677E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Web", "Source\Clients\Web\Exceptionless.Web.csproj", "{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -236,6 +238,16 @@ Global
 		{693F3CBF-5BC7-457D-9F31-BDD89C72677E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{693F3CBF-5BC7-457D-9F31-BDD89C72677E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{693F3CBF-5BC7-457D-9F31-BDD89C72677E}.Release|x86.ActiveCfg = Release|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -249,5 +261,6 @@ Global
 		{14DFD206-B445-4D52-9C3C-8B2F69B22B91} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
 		{D8F22775-3DB8-4BAD-AFCF-9CC8DAF7A807} = {295DE1D5-5F38-43C5-BAC0-6F48F6A52A0E}
 		{693F3CBF-5BC7-457D-9F31-BDD89C72677E} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
+		{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
 	EndGlobalSection
 EndGlobal

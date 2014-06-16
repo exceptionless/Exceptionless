@@ -6,7 +6,7 @@
 <h1>Error</h1>
 @using (Html.BeginForm("Error", "Home", FormMethod.Post)) {
     @Html.AntiForgeryToken()
-    @Html.Hidden("Identifier", ExceptionlessClient.Current.GetLastErrorId())
+    @Html.Hidden("Identifier", ExceptionlessClient.Default.GetLastErrorId())
         
     @Html.TextBox("EmailAddress")<br/>
     @Html.TextArea("Description")<br/>

@@ -20,9 +20,9 @@ namespace Exceptionless.SampleClient {
     public partial class MainForm : Form {
         public MainForm() {
             InitializeComponent();
-            ExceptionlessClient.Current.SendingError += OnFeedbackSubmitting;
-            ExceptionlessClient.Current.SendErrorCompleted += OnFeedbackCompleted;
-            ExceptionlessClient.Current.ConfigurationUpdated += OnConfigurationUpdated;
+            ExceptionlessClient.Default.SendingError += OnFeedbackSubmitting;
+            ExceptionlessClient.Default.SendErrorCompleted += OnFeedbackCompleted;
+            ExceptionlessClient.Default.ConfigurationUpdated += OnConfigurationUpdated;
         }
 
         private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
@@ -54,14 +54,14 @@ namespace Exceptionless.SampleClient {
 
             sb.AppendLine("Submit Completed: " + e.ErrorId);
 
-            if (e.Error != null)
-                sb.AppendLine("    Error: " + e.Error.Message);
-            //else if (e.ReportResponse.Status == ResponseStatusType.Error)
-            //    sb.AppendLine("    Error: " + e.ReportResponse.ExceptionMessage);
+            if (e.Event != null)
+                sb.AppendLine("    Event: " + e.Event.Message);
+            //else if (e.ReportResponse.Status == ResponseStatusType.Event)
+            //    sb.AppendLine("    Event: " + e.ReportResponse.ExceptionMessage);
 
             logTextBox.AppendText(sb.ToString());
 
-            statusLabel.Text = e.Error != null ? "Submit Error" : "Submit Completed";
+            statusLabel.Text = e.Event != null ? "Submit Event" : "Submit Completed";
         }
 
         private void OnFeedbackSubmitting(object sender, ErrorModelEventArgs e) {
@@ -70,14 +70,14 @@ namespace Exceptionless.SampleClient {
                 return;
             }
 
-            string message = "Submitting Message: " + e.Error.Id + Environment.NewLine;
+            string message = "Submitting Message: " + e.Event.Id + Environment.NewLine;
             logTextBox.AppendText(message);
 
-            e.Error.ExtendedData.Add("BaseDirectory", AppDomain.CurrentDomain.BaseDirectory);
+            e.Event.ExtendedData.Add("BaseDirectory", AppDomain.CurrentDomain.BaseDirectory);
             statusLabel.Text = "Submitting Message";
 
-            if (e.Error.Message == "Important Exception")
-                e.Error.Tags.Add("Important");
+            if (e.Event.Message == "Important Exception")
+                e.Event.Tags.Add("Important");
         }
 
         private void generateExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -88,11 +88,11 @@ namespace Exceptionless.SampleClient {
         }
 
         private void processQueueToolStripMenuItem_Click(object sender, EventArgs e) {
-            ExceptionlessClient.Current.ProcessQueueAsync();
+            ExceptionlessClient.Default.ProcessQueueAsync();
         }
 
         private void updateConfigurationToolStripMenuItem_Click(object sender, EventArgs e) {
-            ExceptionlessClient.Current.UpdateConfigurationAsync(true);
+            ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void randomExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -111,7 +111,7 @@ namespace Exceptionless.SampleClient {
                 //throw new System.IO.FileNotFoundException("The file could not be found.", "SomeFile.txt");
             } catch (Exception ex) {
                 throw new ApplicationException(
-                    "An error has occurred and I have wrapped it inside of this ApplicationException.", ex);
+                    "An ev has occurred and I have wrapped it inside of this ApplicationException.", ex);
             }
         }
 
@@ -120,7 +120,7 @@ namespace Exceptionless.SampleClient {
         }
 
         private void importantExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
-            using (ExceptionlessClient.Current.Tags.Add("Important")) {
+            using (ExceptionlessClient.Default.Tags.Add("Important")) {
                 // Doing really important work here like maybe processing an order.
                 throw new OverflowException("Bad things man.");
             }
@@ -133,12 +133,12 @@ namespace Exceptionless.SampleClient {
             decimal count = multiple.NumericUpDown.Value;
 
             for (int i = 0; i < count; i++) {
-                Error r = ExceptionlessClient.Current.CreateError(new ApplicationException("Multiple Crash Test."));
+                Event r = ExceptionlessClient.Default.CreateError(new ApplicationException("Multiple Crash Test."));
                 r.Message = "Testing multiple crash reports. " + i;
                 //r.Description = "Testing multiple crash reports.";
                 //r.EmailAddress = "my@email.com";
 
-                ExceptionlessClient.Current.SubmitError(r);
+                ExceptionlessClient.Default.SubmitError(r);
             }
         }
 
@@ -153,7 +153,7 @@ namespace Exceptionless.SampleClient {
             // find sample folder 
             string folder = SampleLoader.FindSamples();
             if (String.IsNullOrEmpty(folder)) {
-                logTextBox.AppendText("Error: Samples directory not found.");
+                logTextBox.AppendText("Event: Samples directory not found.");
                 return;
             }
 

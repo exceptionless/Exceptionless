@@ -18,8 +18,8 @@ namespace Exceptionless.SampleWeb {
     public partial class _Default : Page {
         protected void Page_Load(object sender, EventArgs e) {
             Response.Cookies.Add(new HttpCookie("Blah", "blah"));
-            //ExceptionlessClient.Current.UpdateConfiguration(true);
-            ExceptionlessClient.Current.Tags.Add("Blah");
+            //ExceptionlessClient.Default.UpdateConfiguration(true);
+            ExceptionlessClient.Default.Tags.Add("Blah");
             Trace.Write("Default.aspx load");
         }
 

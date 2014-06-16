@@ -11,6 +11,7 @@
 
 using System;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public static class EventExtensions {
@@ -37,6 +38,13 @@ namespace Exceptionless {
 
         public static bool IsError(this Event ev) {
             return ev.Type == Event.KnownTypes.Error;
+        }
+
+        /// <summary>
+        /// Adds the request info to the event.
+        /// </summary>
+        public static void AddRequestInfo(this Event ev, RequestInfo request) {
+            ev.Data[Event.KnownDataKeys.RequestInfo] = request;
         }
     }
 }

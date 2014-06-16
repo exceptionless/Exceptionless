@@ -59,11 +59,11 @@ namespace Exceptionless.SampleClient {
             if (!caseReport.Exists)
                 return;
 
-            Error report = null;
+            Event report = null;
 
             using (FileStream fs = caseReport.OpenRead()) {
                 using (XmlReader xr = new XmlTextReader(fs)) {
-                    //report = Error.Load(xr);
+                    //report = Event.Load(xr);
                 }
             }
 
@@ -72,11 +72,11 @@ namespace Exceptionless.SampleClient {
 
             InitializeReport(report);
 
-            ExceptionlessClient.Current.SubmitError(report);
+            ExceptionlessClient.Default.SubmitError(report);
             Submitted++;
         }
 
-        private void InitializeReport(Error report) {
+        private void InitializeReport(Event report) {
             if (report.ExtendedData == null)
                 report.ExtendedData = new DataDictionary();
             if (report.Tags == null)
@@ -85,7 +85,7 @@ namespace Exceptionless.SampleClient {
             // reset values
             report.Id = String.Empty;
             report.OccurrenceDate = DateTimeOffset.Now;
-            //report.ProjectId = ExceptionlessClient.Current.Configuration.ProjectId;
+            //report.ProjectId = ExceptionlessClient.Default.Configuration.ProjectId;
         }
     }
 }

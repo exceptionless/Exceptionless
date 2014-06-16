@@ -33,8 +33,8 @@ namespace SampleConsole {
                 ServerUrl = "http://localhost:50000"
             });
 
-            //ExceptionlessClient.Current.Startup();
-            //ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
+            //ExceptionlessClient.Default.Startup();
+            //ExceptionlessClient.Default.Log = new TraceExceptionlessLog();
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
@@ -123,15 +123,15 @@ namespace SampleConsole {
                     builder.Target.Date = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
                 if (critical)
                     builder.MarkAsCritical();
-                if (ExceptionlessClient.Current.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+                if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
                     builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
                 builder.Submit();
             }
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, 11);
-                Console.WriteLine("Sent 1 error.");
-                Trace.WriteLine("Sent 1 error.");
+                Console.WriteLine("Sent 1 event.");
+                Trace.WriteLine("Sent 1 event.");
             }
         }
 
@@ -143,7 +143,7 @@ namespace SampleConsole {
             foreach (string file in Directory.GetFiles(path)) {
                 var serializer = DependencyResolver.Default.GetJsonSerializer();
                 var e = serializer.Deserialize<Event>(file);
-                ExceptionlessClient.Current.SubmitEvent(e);
+                ExceptionlessClient.Default.SubmitEvent(e);
             }
         }
 

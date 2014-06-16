@@ -9,7 +9,7 @@
     protected void Page_Load(object sender, EventArgs e) {}
 
     protected void forceButton_Click(object sender, EventArgs e) {
-        ExceptionlessClient.Current.UpdateConfiguration(true);
+        ExceptionlessClient.Default.UpdateConfiguration(true);
     }
 
 </script>

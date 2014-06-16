@@ -38,17 +38,17 @@
                 </div>
             </li>
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless'">
-                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Startup()</code> during the startup of your app.</p>
+                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Default.Startup()</code> during the startup of your app.</p>
             </li>
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless.Nancy'">
-                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)</code> with an instance of Nancy.Bootstrapper.IPipelines inside of your NancyBootstrapper's ApplicationStartup method.</p>
+                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>Exceptionless.ExceptionlessClient.Default.RegisterNancy(pipelines)</code> with an instance of Nancy.Bootstrapper.IPipelines inside of your NancyBootstrapper's ApplicationStartup method.</p>
             </li>
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless.Windows' || $root.selectedProjectType().key() === 'Exceptionless.Wpf'">
-                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Register()</code> during the startup of your app.</p>
+                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Default.Register()</code> during the startup of your app.</p>
             </li>
             <li style="margin-top: 15px;" data-bind="visible: $root.selectedProjectType().key() === 'Exceptionless.WebApi'">
-                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.RegisterWebApi(config)</code> with an instance of HttpConfiguration during the startup of your app.</p>
-                <p>If you are hosting Web API inside of ASP.NET, you would register Exceptionless like: <code>Exceptionless.ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration)</code></p>
+                <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Default.RegisterWebApi(config)</code> with an instance of HttpConfiguration during the startup of your app.</p>
+                <p>If you are hosting Web API inside of ASP.NET, you would register Exceptionless like: <code>Exceptionless.ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration)</code></p>
             </li>
         </ol>
         <p><strong>That's it!</strong> Your project should now automatically be sending all unhandled exceptions to Exceptionless.  You can also send handled exceptions to Exceptionless using <code>ex.ToExceptionless().Submit()</code>.</p>

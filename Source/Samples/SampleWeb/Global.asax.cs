@@ -16,13 +16,13 @@ using Exceptionless.Logging;
 namespace Exceptionless.SampleWeb {
     public partial class Global : HttpApplication {
         protected void Application_Start(object sender, EventArgs e) {
-            ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
-            ExceptionlessClient.Current.UnhandledExceptionReporting += OnUnhandledExceptionReporting;
+            ExceptionlessClient.Default.Log = new TraceExceptionlessLog();
+            ExceptionlessClient.Default.UnhandledExceptionReporting += OnUnhandledExceptionReporting;
         }
 
         private void OnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
             // you can get access to the report here
-            e.Error.Tags.Add("WebTag");
+            e.Event.Tags.Add("WebTag");
         }
     }
 }

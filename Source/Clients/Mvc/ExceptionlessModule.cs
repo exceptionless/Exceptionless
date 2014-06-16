@@ -17,15 +17,15 @@ namespace Exceptionless.Mvc {
         private HttpApplication _context;
 
         public void Dispose() {
-            ExceptionlessClient.Current.Shutdown();
+            ExceptionlessClient.Default.Shutdown();
             _context.Error -= OnError;
         }
 
         public virtual void Init(HttpApplication context) {
-            ExceptionlessClient.Current.LastErrorIdManager = new WebLastErrorIdManager(ExceptionlessClient.Current);
-            ExceptionlessClient.Current.RegisterPlugin(new ExceptionlessMvcPlugin());
-            ExceptionlessClient.Current.Startup();
-            ExceptionlessClient.Current.Configuration.IncludePrivateInformation = true;
+            ExceptionlessClient.Default.LastErrorIdManager = new WebLastErrorIdManager(ExceptionlessClient.Default);
+            ExceptionlessClient.Default.RegisterPlugin(new ExceptionlessMvcPlugin());
+            ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
             _context = context;
             _context.Error -= OnError;
             _context.Error += OnError;
@@ -42,7 +42,7 @@ namespace Exceptionless.Mvc {
             if (exception == null)
                 return;
 
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, HttpContext.Current.ToDictionary());
+            ExceptionlessClient.Default.ProcessUnhandledException(exception, "HttpApplicationError", true, HttpContext.Current.ToDictionary());
         }
     }
 }

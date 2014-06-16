@@ -9,21 +9,23 @@
 
 using System;
 using System.Web;
+using Exceptionless.Dependency;
+using Exceptionless.Enrichments;
 
 namespace Exceptionless.Web {
     public class ExceptionlessModule : IHttpModule {
         private HttpApplication _context;
 
         public void Dispose() {
-            ExceptionlessClient.Current.Shutdown();
+            //ExceptionlessClient.Default.Shutdown();
             _context.Error -= OnError;
         }
 
         public virtual void Init(HttpApplication context) {
-            ExceptionlessClient.Current.LastErrorIdManager = new WebLastErrorIdManager(ExceptionlessClient.Current);
-            ExceptionlessClient.Current.RegisterPlugin(new ExceptionlessWebPlugin());
-            ExceptionlessClient.Current.Startup();
-            ExceptionlessClient.Current.Configuration.IncludePrivateInformation = true;
+            ExceptionlessClient.Default.Configuration.Resolver.Register<ILastReferenceIdManager, WebLastReferenceIdManager>();
+            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessWebEnrichment>();
+            //ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
             _context = context;
             _context.Error += OnError;
         }
@@ -36,7 +38,12 @@ namespace Exceptionless.Web {
             if (exception == null)
                 return;
 
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, HttpContext.Current.ToDictionary());
+            var contextData = new ContextData();
+            contextData.SetUnhandled();
+            contextData.SetSubmissionMethod("HttpApplicationError");
+            contextData.Add("HttpContext", HttpContext.Current.ToWrapped());
+
+            exception.ToExceptionless(contextData).Submit();
         }
     }
 }

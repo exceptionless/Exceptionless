@@ -32,7 +32,7 @@ assembly attribute and your own Exceptionless api key to your project (E.G., Ass
 Finally, you must import the Exceptionless namespace and call the following line
 of code to start reporting unhandled exceptions.
 
-Exceptionless.ExceptionlessClient.Current.Register()
+Exceptionless.ExceptionlessClient.Default.Register()
 
 -------------------------------------
    Manually reporting an exception

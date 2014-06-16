@@ -53,7 +53,7 @@ namespace Exceptionless.SampleMvc.Controllers {
             if (String.IsNullOrEmpty(emailaddress) && String.IsNullOrEmpty(description))
                 return RedirectToAction("Index", "Home");
 
-            ExceptionlessClient.Current.UpdateUserEmailAndDescription(identifier, emailaddress, description);
+            ExceptionlessClient.Default.UpdateUserEmailAndDescription(identifier, emailaddress, description);
 
             return View("ErrorSubmitted");
         }

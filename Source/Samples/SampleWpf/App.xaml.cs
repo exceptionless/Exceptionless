@@ -18,7 +18,7 @@ namespace Exceptionless.SampleWpf {
     /// </summary>
     public partial class App : Application {
         private void Application_Startup(object sender, StartupEventArgs e) {
-            ExceptionlessClient.Current.Register();
+            ExceptionlessClient.Default.Register();
         }
     }
 }

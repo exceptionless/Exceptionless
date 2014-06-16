@@ -42,12 +42,12 @@ namespace Exceptionless {
         }
 
         private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e) {
-            ExceptionlessClient.Current.ProcessUnhandledException(e.Exception, "DispatcherUnhandledException");
+            ExceptionlessClient.Default.ProcessUnhandledException(e.Exception, "DispatcherUnhandledException");
             e.Handled = true;
         }
 
         private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e) {
-            ExceptionlessClient.Current.ProcessUnhandledException(e.Exception, "ApplicationThreadException");
+            ExceptionlessClient.Default.ProcessUnhandledException(e.Exception, "ApplicationThreadException");
         }
     }
 }

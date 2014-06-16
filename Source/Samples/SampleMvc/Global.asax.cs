@@ -26,7 +26,7 @@ namespace Exceptionless.SampleMvc {
     public class MvcApplication : HttpApplication {
         protected void Application_Start() {
             Trace.Listeners.Add(new NLogTraceListener());
-            ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
+            ExceptionlessClient.Default.Log = new NLogExceptionlessLog();
 
             AreaRegistration.RegisterAllAreas();
 
@@ -34,7 +34,7 @@ namespace Exceptionless.SampleMvc {
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-            ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
+            ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
         }
     }
 }

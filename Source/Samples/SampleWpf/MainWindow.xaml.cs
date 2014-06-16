@@ -24,9 +24,9 @@ namespace Exceptionless.SampleWpf {
         public MainWindow() {
             InitializeComponent();
 
-            ExceptionlessClient.Current.SendingError += OnSendingError;
-            ExceptionlessClient.Current.SendErrorCompleted += OnSendErrorCompleted;
-            ExceptionlessClient.Current.ConfigurationUpdated += OnConfigurationUpdated;
+            ExceptionlessClient.Default.SendingError += OnSendingError;
+            ExceptionlessClient.Default.SendErrorCompleted += OnSendErrorCompleted;
+            ExceptionlessClient.Default.ConfigurationUpdated += OnConfigurationUpdated;
         }
 
         private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
@@ -34,8 +34,8 @@ namespace Exceptionless.SampleWpf {
 
             if (e.Configuration != null)
                 sb.Append(String.Format("Configuration updated.\tVersion: {0}", e.Configuration.Version.ToString()));
-            else if (e.Error != null)
-                sb.Append(String.Format("Configuration was not updated: {0}", e.Error.Message));
+            else if (e.Event != null)
+                sb.Append(String.Format("Configuration was not updated: {0}", e.Event.Message));
             else
                 sb.AppendLine("Configuration was not updated: Response is {null}");
 
@@ -48,22 +48,22 @@ namespace Exceptionless.SampleWpf {
             sb.AppendLine("Submit Completed: " + e.ErrorId);
             //sb.AppendLine("    Status: " + e.ReportResponse.Status);
 
-            if (e.Error != null)
-                sb.AppendLine("    Error: " + e.Error.Message);
-            //else if (e.ReportResponse.Status == ResponseStatusType.Error)
-            //    sb.AppendLine("    Error: " + e.ReportResponse.ExceptionMessage);
+            if (e.Event != null)
+                sb.AppendLine("    Event: " + e.Event.Message);
+            //else if (e.ReportResponse.Status == ResponseStatusType.Event)
+            //    sb.AppendLine("    Event: " + e.ReportResponse.ExceptionMessage);
 
             WriteLog(sb.ToString());
         }
 
         private void OnSendingError(object sender, ErrorModelEventArgs e) {
-            string message = "Submitting Message: " + e.Error.Id + Environment.NewLine;
+            string message = "Submitting Message: " + e.Event.Id + Environment.NewLine;
             WriteLog(message);
 
-            e.Error.ExtendedData["BaseDirectory"] = AppDomain.CurrentDomain.BaseDirectory;
+            e.Event.ExtendedData["BaseDirectory"] = AppDomain.CurrentDomain.BaseDirectory;
 
-            if (e.Error.Message == "Important Exception")
-                e.Error.Tags.Add("Important");
+            if (e.Event.Message == "Important Exception")
+                e.Event.Tags.Add("Important");
         }
 
         private void WriteLog(string message) {
@@ -110,11 +110,11 @@ namespace Exceptionless.SampleWpf {
         //}
 
         private void OnProcessQueue(object sender, RoutedEventArgs e) {
-            ExceptionlessClient.Current.ProcessQueueAsync();
+            ExceptionlessClient.Default.ProcessQueueAsync();
         }
 
         private void OnUpdateConfiguration(object sender, RoutedEventArgs e) {
-            ExceptionlessClient.Current.UpdateConfigurationAsync(true);
+            ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void OnGenerateThreadException(object sender, RoutedEventArgs e) {

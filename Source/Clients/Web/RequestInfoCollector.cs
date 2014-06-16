@@ -13,13 +13,14 @@ using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Web;
+using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Logging;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.ExtendedData {
     internal static class RequestInfoCollector {
-        public static RequestInfo Collect(ExceptionlessClient client, HttpContextBase context) {
+        public static RequestInfo Collect(HttpContextBase context, ExceptionlessConfiguration config) {
             if (context == null)
                 return null;
 
@@ -32,13 +33,13 @@ namespace Exceptionless.ExtendedData {
             try {
                 info.ClientIpAddress = context.Request.UserHostAddress;
             } catch (ArgumentException ex) {
-                client.Log.Error(ex, "An error occurred while setting the Client Ip Address.");
+                config.Resolver.GetLog().Error(ex, "An error occurred while setting the Client Ip Address.");
             }
 
             try {
                 info.IsSecure = context.Request.IsSecureConnection;
             } catch (ArgumentException ex) {
-                client.Log.Error(ex, "An error occurred while setting Is Secure Connection.");
+                config.Resolver.GetLog().Error(ex, "An error occurred while setting Is Secure Connection.");
             }
 
             if (context.Request.Url != null)
@@ -50,10 +51,10 @@ namespace Exceptionless.ExtendedData {
             if (context.Request.Url != null)
                 info.Port = context.Request.Url.Port;
 
-            info.Cookies = context.Request.Cookies.ToDictionary(client);
+            info.Cookies = context.Request.Cookies.ToDictionary(config.DataExclusions);
 
             if (context.Request.Form.Count > 0)
-                info.PostData = context.Request.Form.ToDictionary(client);
+                info.PostData = context.Request.Form.ToDictionary(config.DataExclusions);
             else if (context.Request.ContentLength > 0 && context.Request.ContentLength < 1024 * 4) {
                 try {
                     context.Request.InputStream.Position = 0;
@@ -68,9 +69,9 @@ namespace Exceptionless.ExtendedData {
             }
 
             try {
-                info.QueryString = context.Request.QueryString.ToDictionary(client);
+                info.QueryString = context.Request.QueryString.ToDictionary(config.DataExclusions);
             } catch (Exception ex) {
-                client.Log.Error(ex, "An error occurred while getting the cookies");
+                config.Resolver.GetLog().Error(ex, "An error occurred while getting the cookies");
             }
 
             return info;
@@ -89,10 +90,10 @@ namespace Exceptionless.ExtendedData {
             "__LastErrorId"
         };
 
-        private static Dictionary<string, string> ToDictionary(this HttpCookieCollection cookies, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this HttpCookieCollection cookies, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
-            foreach (string key in cookies.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !k.AnyWildcardMatches(_ignoredCookies, true) && !k.AnyWildcardMatches(client.Configuration.DataExclusions, true))) {
+            foreach (string key in cookies.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !k.AnyWildcardMatches(_ignoredCookies, true) && !k.AnyWildcardMatches(exclusions, true))) {
                 try {
                     HttpCookie cookie = cookies.Get(key);
                     if (cookie != null && !d.ContainsKey(key))
@@ -106,11 +107,11 @@ namespace Exceptionless.ExtendedData {
             return d;
         }
 
-        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (string key in values.AllKeys) {
-                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(client.Configuration.DataExclusions, true))
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusions, true))
                     continue;
 
                 try {

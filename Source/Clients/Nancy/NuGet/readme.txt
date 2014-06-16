@@ -27,7 +27,7 @@ Finally, you must import the "Exceptionless" namespace and call the following li
 of code inside of your NancyBootstrapper's ApplicationStartup method to start reporting 
 unhandled exceptions. You will need to pass an Nancy.Bootstrapper.IPipelines instance.
 
-Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)
+Exceptionless.ExceptionlessClient.Default.RegisterNancy(pipelines)
 
 -------------------------------------
    Manually reporting an exception

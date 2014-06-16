@@ -31,7 +31,7 @@ namespace Exceptionless {
         private static Response OnError(NancyContext context, Exception exception) {
             var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
 
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "NancyPipelineException", true, contextData);
+            ExceptionlessClient.Default.ProcessUnhandledException(exception, "NancyPipelineException", true, contextData);
 
             return context.Response;
         }
@@ -48,13 +48,13 @@ namespace Exceptionless {
             client.Shutdown();
         }
 
-        public static Error AddRequestInfo(this Error error, NancyContext context) {
+        public static Event AddRequestInfo(this Event ev, NancyContext context) {
             if (context == null)
-                return error;
+                return ev;
 
-            error.RequestInfo = NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Current);
+            ev.RequestInfo = NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Default);
 
-            return error;
+            return ev;
         }
 
         public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder, NancyContext context) {

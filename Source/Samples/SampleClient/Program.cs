@@ -20,8 +20,8 @@ namespace Exceptionless.SampleClient {
         /// </summary>
         [STAThread]
         private static void Main() {
-            ExceptionlessClient.Current.Register();
-            ExceptionlessClient.Current.UnhandledExceptionReporting += UnhandledExceptionReporting;
+            ExceptionlessClient.Default.Register();
+            ExceptionlessClient.Default.UnhandledExceptionReporting += UnhandledExceptionReporting;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             try {
@@ -33,7 +33,7 @@ namespace Exceptionless.SampleClient {
 
         private static void UnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
             // test adding an extra tag.
-            e.Error.Tags.Add("ExtraTag");
+            e.Event.Tags.Add("ExtraTag");
 
             if (e.Exception.GetType() == typeof(InvalidOperationException))
                 e.Cancel = true;

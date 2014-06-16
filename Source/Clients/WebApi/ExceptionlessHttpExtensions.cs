@@ -61,7 +61,7 @@ namespace Exceptionless {
 
             // TODO: Create HttpActionContext version of request info.
             //context.Request.Headers.GetCookies();
-            ev.Data[Event.KnownDataKeys.RequestInfo] = RequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions);
+            ev.AddRequestInfo(RequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions));
 
             return ev;
         }

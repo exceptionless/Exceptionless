@@ -18,20 +18,20 @@ namespace Exceptionless.Dialogs {
     /// Interaction logic for CrashReportDialog.xaml
     /// </summary>
     public partial class CrashReportDialog : Window {
-        public Error Error { get; internal set; }
+        public Event Event { get; internal set; }
 
-        public CrashReportDialog(Error error) {
+        public CrashReportDialog(Event ev) {
             InitializeComponent();
 
-            Error = error;
+            Event = ev;
             Title = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
             headerText.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
-            emailAddressTextBox.Text = String.IsNullOrEmpty(error.UserEmail)
-                ? ExceptionlessClient.Current.LocalConfiguration.EmailAddress
-                : error.UserEmail;
+            emailAddressTextBox.Text = String.IsNullOrEmpty(ev.UserEmail)
+                ? ExceptionlessClient.Default.LocalConfiguration.EmailAddress
+                : ev.UserEmail;
 
-            descriptionTextBox.Text = error.UserDescription;
+            descriptionTextBox.Text = ev.UserDescription;
         }
 
         private void sendReportButton_Click(object sender, RoutedEventArgs e) {
@@ -40,10 +40,10 @@ namespace Exceptionless.Dialogs {
             sendReportButton.IsEnabled = false;
             cancelButton.IsEnabled = false;
 
-            Error.UserEmail = emailAddressTextBox.Text;
-            Error.UserDescription = descriptionTextBox.Text;
+            Event.UserEmail = emailAddressTextBox.Text;
+            Event.UserDescription = descriptionTextBox.Text;
 
-            ExceptionlessClient.Current.SubmitError(Error);
+            ExceptionlessClient.Default.SubmitError(Event);
 
             Cursor = Cursors.Arrow;
             sendReportButton.IsEnabled = true;

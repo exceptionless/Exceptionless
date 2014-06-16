@@ -39,7 +39,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Exceptionless.snk</AssemblyOriginatorKeyFile>
@@ -61,15 +61,12 @@
     <Compile Include="ExceptionlessWcfHandleErrorAttribute.cs" />
     <Compile Include="ExceptionlessWebExtensions.cs" />
     <Compile Include="ExceptionlessModule.cs" />
-    <Compile Include="ExceptionlessWebPlugin.cs" />
+    <Compile Include="ExceptionlessWebEnrichment.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RequestInfoCollector.cs" />
-    <Compile Include="WebLastErrorIdManager.cs" />
+    <Compile Include="WebLastReferenceIdManager.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Exceptionless.snk">
-      <Link>Exceptionless.snk</Link>
-    </None>
     <None Include="NuGet\Exceptionless.Web.nuspec" />
     <None Include="NuGet\tools\install.ps1" />
     <None Include="NuGet\tools\uninstall.ps1" />
@@ -78,6 +75,10 @@
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Shared\Exceptionless.csproj">
+      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
+      <Name>Exceptionless</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

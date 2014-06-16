@@ -51,8 +51,8 @@ namespace Exceptionless.App {
 
             Trace.Listeners.Add(new NLogTraceListener());
             if (ExceptionlessClient.Default.Configuration.Enabled) {
-                //ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
-                //ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
+                //ExceptionlessClient.Default.Log = new NLogExceptionlessLog();
+                //ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
                 ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
             }
 
