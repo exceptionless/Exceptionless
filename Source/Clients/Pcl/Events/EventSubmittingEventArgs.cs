@@ -8,12 +8,12 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
+using Exceptionless.Enrichments;
 using Exceptionless.Models;
 
 namespace Exceptionless {
     public class EventSubmittingEventArgs : EventArgs {
-        public EventSubmittingEventArgs(Event data, IDictionary<string, object> enrichmentContextData) {
+        public EventSubmittingEventArgs(Event data, ContextData enrichmentContextData) {
             Event = data;
             EnrichmentContextData = enrichmentContextData;
         }
@@ -24,7 +24,7 @@ namespace Exceptionless {
         /// Any contextual data objects to be used by Exceptionless enrichments to gather default
         /// information to add to the event data.
         /// </summary>
-        public IDictionary<string, object> EnrichmentContextData { get; private set; }
+        public ContextData EnrichmentContextData { get; private set; }
 
         /// <summary>
         /// Wether the event should be canceled.

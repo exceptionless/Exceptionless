@@ -161,7 +161,7 @@ namespace Exceptionless {
         /// </summary>
         public event EventHandler<EventSubmittingEventArgs> SubmittingEvent;
 
-        private bool OnSubmittingEvent(Event ev, IDictionary<string, object> enrichmentContextData) {
+        private bool OnSubmittingEvent(Event ev, ContextData enrichmentContextData) {
             var args = new EventSubmittingEventArgs(ev, enrichmentContextData);
             OnSubmittingEvent(args);
             return !args.Cancel;
