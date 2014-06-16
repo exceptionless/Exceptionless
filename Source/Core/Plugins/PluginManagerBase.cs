@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins {
         }
 
         private void LoadDefaultPlugins() {
-            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>();
+            var pluginTypes = TypeHelper.GetDerivedTypes<TPlugin>(new[] { typeof(Bootstrapper).Assembly });
 
             foreach (var type in pluginTypes) {
                 try {

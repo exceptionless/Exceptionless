@@ -10,8 +10,11 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
+using CodeSmith.Core.Helpers;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Plugins.EventPipeline;
 using Exceptionless.Core.Repositories;
@@ -65,6 +68,10 @@ namespace Exceptionless.Core.Pipeline {
                 _statsClient.Counter(StatNames.EventsProcessErrors);
                 throw;
             }
+        }
+
+        protected override IList<Type> GetActionTypes() {
+            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>(new[] { typeof(EventPipeline).Assembly }).ToList());
         }
     }
 }

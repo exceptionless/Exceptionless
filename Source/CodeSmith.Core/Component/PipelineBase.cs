@@ -27,7 +27,7 @@ namespace CodeSmith.Core.Component
         where TAction : class, IPipelineAction<TContext>
         where TContext : IPipelineContext
     {
-        private static readonly ConcurrentDictionary<Type, List<Type>> _actionTypeCache;
+        protected static readonly ConcurrentDictionary<Type, List<Type>> _actionTypeCache;
         private readonly IDependencyResolver _dependencyResolver;
 
         static PipelineBase()
