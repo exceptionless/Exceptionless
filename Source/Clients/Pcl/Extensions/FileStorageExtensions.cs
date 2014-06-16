@@ -6,7 +6,15 @@ using Exceptionless.Storage;
 
 namespace Exceptionless.Extensions {
     public static class FileStorageExtensions {
-        public static T DeserializeFile<T>(this IFileStorage storage, string path, IJsonSerializer serializer) {
+        public static void Enqueue(this IFileStorage storage, Event ev, IJsonSerializer serializer) {
+            storage.SaveObject(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), ev, serializer);
+        }
+
+        public static void SaveObject<T>(this IFileStorage storage, string path, T data, IJsonSerializer serializer) {
+            storage.SaveFile(path, serializer.Serialize(data));
+        }
+
+        public static T GetObject<T>(this IFileStorage storage, string path, IJsonSerializer serializer) {
             string json = storage.GetFileContents(path);
             return serializer.Deserialize<T>(json);
         }
@@ -15,7 +23,7 @@ namespace Exceptionless.Extensions {
             if (!maxAge.HasValue)
                 maxAge = DateTime.Now.Subtract(TimeSpan.FromDays(1));
 
-            foreach (var file in storage.GetFileList("q\\*").Where(f => f.Created < maxAge).ToList())
+            foreach (var file in storage.GetFileList("q\\*").ToList().Where(f => f.Created < maxAge).ToList())
                 storage.DeleteFile(file.Path);
         }
 
@@ -76,7 +84,7 @@ namespace Exceptionless.Extensions {
         }
 
         public static void ReleaseOldLocks(this IFileStorage storage) {
-            foreach (var file in storage.GetFileList("q\\*.x").Where(f => f.Modified < DateTime.Now.Subtract(TimeSpan.FromMinutes(60))))
+            foreach (var file in storage.GetFileList("q\\*.x").ToList().Where(f => f.Modified < DateTime.Now.Subtract(TimeSpan.FromMinutes(60))))
                 storage.ReleaseFile(file);
         }
 
@@ -92,7 +100,7 @@ namespace Exceptionless.Extensions {
                 } catch { }
 
                 try {
-                    var ev = storage.DeserializeFile<Event>(file.Path, serializer);
+                    var ev = storage.GetObject<Event>(file.Path, serializer);
                     events.Add(Tuple.Create(file, ev));
                     if (events.Count == batchSize)
                         break;

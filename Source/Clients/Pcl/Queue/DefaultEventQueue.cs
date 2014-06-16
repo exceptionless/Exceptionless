@@ -41,7 +41,7 @@ namespace Exceptionless.Queue {
                 return;
             }
 
-            _storage.SaveFile(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), _serializer.Serialize(ev));
+            _storage.Enqueue(ev, _serializer);
         }
 
         public Task ProcessAsync() {
@@ -59,7 +59,7 @@ namespace Exceptionless.Queue {
             }
 
             _processingQueue = true;
-
+            
             try {
                 var batch = _storage.GetEventBatch(_serializer);
                 if (!batch.Any()) {
@@ -112,6 +112,7 @@ namespace Exceptionless.Queue {
             //completed = new SendErrorCompletedEventArgs(id, exception, false, error);
             //OnSendErrorCompleted(completed);
 
+            // TODO: Check for max attempts and see if we should delete
             // TODO: Check to see if the configuration needs to be updated.
         }
 

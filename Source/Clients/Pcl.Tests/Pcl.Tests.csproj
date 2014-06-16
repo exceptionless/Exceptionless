@@ -116,6 +116,8 @@
     <Compile Include="ExceptionlessClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serializer\SerializerTests.cs" />
+    <Compile Include="Storage\FileStorageTests.cs" />
+    <Compile Include="Storage\KeyValueStorageTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
     <Compile Include="Utility\AsyncTests.cs" />
   </ItemGroup>

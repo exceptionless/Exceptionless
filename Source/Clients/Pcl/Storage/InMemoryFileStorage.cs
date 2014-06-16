@@ -92,7 +92,7 @@ namespace Exceptionless.Storage {
             if (spec == null)
                 spec = "*";
 
-            var regex = new Regex(Regex.Escape(spec).Replace("\\*", ".*?"));
+            var regex = new Regex("^" + Regex.Escape(spec).Replace("\\*", ".*?") + "$");
             lock (_lock)
                 return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1);
         }
