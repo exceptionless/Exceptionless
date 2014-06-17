@@ -8,40 +8,29 @@
 #endregion
 
 using System;
-using System.Threading;
 using System.Windows.Forms;
 using Exceptionless.Dialogs;
-using Exceptionless.Enrichments;
+using Exceptionless.Windows.Extensions;
 
 namespace Exceptionless {
     public static class ExceptionlessWindowsExtensions {
         public static void Register(this ExceptionlessClient client, bool showDialog = true) {
-            //client.Startup();
+            client.Startup();
+            client.RegisterApplicationThreadExceptionHandler();
 
             if (showDialog) {
                 client.SubmittingEvent -= OnSubmittingEvent;
                 client.SubmittingEvent += OnSubmittingEvent;
             }
-
-            Application.ThreadException -= OnApplicationThreadException;
-            Application.ThreadException += OnApplicationThreadException;
         }
 
         public static void Unregister(this ExceptionlessClient client) {
-            //client.Shutdown();
+            client.Shutdown();
+            client.UnregisterApplicationThreadExceptionHandler();
             
             client.SubmittingEvent -= OnSubmittingEvent;
-            Application.ThreadException -= OnApplicationThreadException;
         }
 
-        private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e) {
-            var contextData = new ContextData();
-            contextData.SetUnhandled();
-            contextData.SetSubmissionMethod("ApplicationThreadException");
-
-            e.Exception.ToExceptionless(contextData).Submit();
-        }
-        
         private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             // ev.ExceptionlessClientInfo.Platform = ".NET Windows";
 

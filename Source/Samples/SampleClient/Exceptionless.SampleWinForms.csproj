@@ -8,8 +8,8 @@
     <ProjectGuid>{34FE8E6E-247B-46DD-967E-46E45D1CAE6D}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Exceptionless.SampleClient</RootNamespace>
-    <AssemblyName>Exceptionless.SampleClient</AssemblyName>
+    <RootNamespace>Exceptionless.SampleWinForms</RootNamespace>
+    <AssemblyName>Exceptionless.SampleWinForms</AssemblyName>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
@@ -124,6 +124,10 @@
     <Compile Include="SampleLoader.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Name>Exceptionless</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>

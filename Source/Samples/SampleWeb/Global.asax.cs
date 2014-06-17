@@ -11,7 +11,6 @@
 
 using System;
 using System.Web;
-using Exceptionless.Logging;
 
 namespace Exceptionless.SampleWeb {
     public partial class Global : HttpApplication {

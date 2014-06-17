@@ -13,7 +13,7 @@ using System;
 using System.Diagnostics;
 using System.Windows.Forms;
 
-namespace Exceptionless.SampleClient {
+namespace Exceptionless.SampleWinForms {
     internal static class Program {
         /// <summary>
         /// The main entry point for the application.

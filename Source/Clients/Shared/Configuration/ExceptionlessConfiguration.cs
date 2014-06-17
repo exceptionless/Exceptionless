@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
-using Exceptionless.Enrichments.Default;
 using Exceptionless.Models;
 
 namespace Exceptionless {

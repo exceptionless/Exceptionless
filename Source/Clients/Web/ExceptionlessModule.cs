@@ -10,40 +10,25 @@
 using System;
 using System.Web;
 using Exceptionless.Dependency;
-using Exceptionless.Enrichments;
+using Exceptionless.Web.Extensions;
 
 namespace Exceptionless.Web {
     public class ExceptionlessModule : IHttpModule {
-        private HttpApplication _context;
+        private HttpApplication _app;
+
+        public virtual void Init(HttpApplication app) {
+            ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.RegisterHttpApplicationErrorHandler(app);
+            ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
+            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessWebEnrichment>();
+            ExceptionlessClient.Default.Configuration.Resolver.Register<ILastReferenceIdManager, WebLastReferenceIdManager>();
+            
+            _app = app;
+        }
 
         public void Dispose() {
-            //ExceptionlessClient.Default.Shutdown();
-            _context.Error -= OnError;
-        }
-
-        public virtual void Init(HttpApplication context) {
-            ExceptionlessClient.Default.Configuration.Resolver.Register<ILastReferenceIdManager, WebLastReferenceIdManager>();
-            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessWebEnrichment>();
-            //ExceptionlessClient.Default.Startup();
-            ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
-            _context = context;
-            _context.Error += OnError;
-        }
-
-        private void OnError(object sender, EventArgs e) {
-            if (HttpContext.Current == null)
-                return;
-
-            Exception exception = HttpContext.Current.Server.GetLastError();
-            if (exception == null)
-                return;
-
-            var contextData = new ContextData();
-            contextData.SetUnhandled();
-            contextData.SetSubmissionMethod("HttpApplicationError");
-            contextData.Add("HttpContext", HttpContext.Current.ToWrapped());
-
-            exception.ToExceptionless(contextData).Submit();
+            ExceptionlessClient.Default.Shutdown();
+            ExceptionlessClient.Default.UnregisterHttpApplicationErrorExceptionHandler(_app);
         }
     }
 }

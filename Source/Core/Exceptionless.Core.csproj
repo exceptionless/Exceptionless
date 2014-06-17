@@ -106,9 +106,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\StatsdCsharpClient.1.2.1.0\lib\net45\StatsdClient.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Stripe.net, Version=2.2.4.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.2.3\lib\net40\Stripe.net.dll</HintPath>
+      <HintPath>..\..\packages\Stripe.net.2.2.4\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

@@ -21,9 +21,9 @@ namespace Exceptionless {
         private const string NANCY_CONTEXT = "NancyContext";
 
         public static void RegisterNancy(this ExceptionlessClient client, IPipelines pipelines) {
-            client.Configuration.AddEnrichment<ExceptionlessNancyEnrichment>();
-            //client.Startup();
+            client.Startup();
             client.Configuration.IncludePrivateInformation = true;
+            client.Configuration.AddEnrichment<ExceptionlessNancyEnrichment>();
 
             pipelines.OnError += OnError;
             pipelines.AfterRequest += AfterRequest;
@@ -48,8 +48,8 @@ namespace Exceptionless {
         }
 
         public static void UnregisterNancy(this ExceptionlessClient client) {
+            client.Shutdown();
             client.Configuration.RemoveEnrichment<ExceptionlessNancyEnrichment>();
-            //client.Shutdown();
         }
 
         public static Event AddRequestInfo(this Event ev, NancyContext context) {

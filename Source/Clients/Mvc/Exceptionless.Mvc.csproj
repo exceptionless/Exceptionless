@@ -56,6 +56,9 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\Web\ExceptionlessClientExtensions.cs">
+      <Link>ExceptionlessClientExtensions.cs</Link>
+    </Compile>
     <Compile Include="..\Web\ExceptionlessWebEnrichment.cs">
       <Link>ExceptionlessWebEnrichment.cs</Link>
     </Compile>

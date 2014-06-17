@@ -29,11 +29,10 @@ namespace Exceptionless.WebApi {
             if (actionContext == null)
                 return;
 
-            // TODO: Set the username.
-            //IPrincipal principal = GetPrincipal(actionContext.Request);
-            //if (context.Client.Configuration.IncludePrivateInformation
-            //    && principal != null && principal.Identity.IsAuthenticated)
-            //    ev.UserName = principal.Identity.Name;
+            IPrincipal principal = GetPrincipal(actionContext.Request);
+            if (context.Client.Configuration.IncludePrivateInformation
+                && principal != null && principal.Identity.IsAuthenticated)
+                ev.AddUserInfo(principal.Identity.Name);
 
             try {
                 ev.AddHttpRequestInfo(actionContext);

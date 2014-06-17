@@ -45,29 +45,25 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Newtonsoft.Json.6.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\..\packages\Newtonsoft.Json.6.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="NLog, Version=2.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\NLog.2.1.0\lib\net45\NLog.dll</HintPath>
+    <Reference Include="NLog">
+      <HintPath>..\..\..\packages\NLog.3.0.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data.Entity" />
     <Reference Include="System.Drawing" />
-    <Reference Include="System.Net.Http.Extensions, Version=2.2.18.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Microsoft.Net.Http.2.2.19\lib\net45\System.Net.Http.Extensions.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="System.Net.Http.Extensions">
+      <HintPath>..\..\..\packages\Microsoft.Net.Http.2.2.22\lib\net45\System.Net.Http.Extensions.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http.Formatting">
       <HintPath>..\..\..\packages\Microsoft.AspNet.WebApi.Client.5.1.2\lib\net45\System.Net.Http.Formatting.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System.Net.Http.Primitives">
-      <HintPath>..\..\..\packages\Microsoft.Net.Http.2.2.19\lib\net45\System.Net.Http.Primitives.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\..\packages\Microsoft.Net.Http.2.2.22\lib\net45\System.Net.Http.Primitives.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
@@ -143,9 +139,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Global.asax" />
-    <Content Include="Scripts\jquery-2.0.2.js" />
-    <Content Include="Scripts\jquery-2.0.2.min.js" />
     <None Include="Scripts\jquery-2.1.0.intellisense.js" />
+    <None Include="Scripts\jquery-2.1.0-vsdoc.js" />
     <Content Include="Scripts\jquery-2.1.0.js" />
     <Content Include="Scripts\jquery-2.1.0.min.js" />
     <Content Include="Web.config">
@@ -163,8 +158,8 @@
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
-    <Content Include="Scripts\jquery-2.1.0.min.map" />
     <Content Include="Views\Shared\CustomError.cshtml" />
+    <Content Include="Scripts\jquery-2.1.0.min.map" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Views\Home\Index.cshtml" />
@@ -173,6 +168,22 @@
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clients\Mvc\Exceptionless.Mvc.csproj">
+      <Project>{811bc612-86aa-4039-bd8f-4adc27d3eed9}</Project>
+      <Name>Exceptionless.Mvc</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
+      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
+      <Name>Exceptionless</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clients\WebApi\Exceptionless.WebApi.csproj">
+      <Project>{d6e6ee87-5869-4a62-8f67-7a685205bcad}</Project>
+      <Name>Exceptionless.WebApi</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>

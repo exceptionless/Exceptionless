@@ -12,7 +12,6 @@
 using System;
 using System.Net.Http;
 using System.Web.Http;
-using Exceptionless.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
 

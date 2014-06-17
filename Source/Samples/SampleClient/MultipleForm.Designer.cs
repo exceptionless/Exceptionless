@@ -1,4 +1,4 @@
-﻿namespace Exceptionless.SampleClient
+﻿namespace Exceptionless.SampleWinForms
 {
     partial class MultipleForm
     {

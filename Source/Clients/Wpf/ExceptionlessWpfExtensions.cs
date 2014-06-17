@@ -8,59 +8,31 @@
 #endregion
 
 using System;
-using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
 using Exceptionless.Dialogs;
-using Exceptionless.Enrichments;
 using Exceptionless.Models;
+using Exceptionless.Wpf.Extensions;
 
 namespace Exceptionless {
     public static class ExceptionlessWpfExtensions {
         public static void Register(this ExceptionlessClient client, bool showDialog = true) {
-            //client.Startup();
+            client.Startup();
+            client.RegisterApplicationThreadExceptionHandler();
+            client.RegisterApplicationDispatcherUnhandledExceptionHandler();
             
             if (showDialog) {
                 client.SubmittingEvent -= OnSubmittingEvent;
                 client.SubmittingEvent += OnSubmittingEvent;
             }
-
-            System.Windows.Forms.Application.ThreadException -= OnApplicationThreadException;
-            System.Windows.Forms.Application.ThreadException += OnApplicationThreadException;
-
-            if (Application.Current == null)
-                return;
-
-            Application.Current.DispatcherUnhandledException -= OnDispatcherUnhandledException;
-            Application.Current.DispatcherUnhandledException += OnDispatcherUnhandledException;
-
         }
 
         public static void Unregister(this ExceptionlessClient client) {
-            //client.Shutdown();
+            client.Shutdown();
+            client.UnregisterApplicationThreadExceptionHandler();
+            client.UnregisterApplicationDispatcherUnhandledExceptionHandler();
 
             client.SubmittingEvent -= OnSubmittingEvent;
-            System.Windows.Forms.Application.ThreadException -= OnApplicationThreadException;
-
-            if (Application.Current != null)
-                Application.Current.DispatcherUnhandledException -= OnDispatcherUnhandledException;
-        }
-
-        private static void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e) {
-            var contextData = new ContextData();
-            contextData.SetUnhandled();
-            contextData.SetSubmissionMethod("DispatcherUnhandledException");
-
-            e.Exception.ToExceptionless(contextData).Submit();
-            e.Handled = true;
-        }
-
-        private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e) {
-            var contextData = new ContextData();
-            contextData.SetUnhandled();
-            contextData.SetSubmissionMethod("ApplicationThreadException");
-
-            e.Exception.ToExceptionless(contextData).Submit();
         }
 
         private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {

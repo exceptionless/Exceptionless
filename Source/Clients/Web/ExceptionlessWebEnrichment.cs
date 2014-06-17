@@ -29,10 +29,10 @@ namespace Exceptionless.Web {
                 return;
 
             // ev.ExceptionlessClientInfo.Platform = ".NET Web";
-            //if (context.Client.Configuration.IncludePrivateInformation
-            //    && httpContext.User != null
-            //    && httpContext.User.Identity.IsAuthenticated)
-            //    ev.UserName = httpContext.User.Identity.Name;
+            if (context.Client.Configuration.IncludePrivateInformation
+                && httpContext.User != null
+                && httpContext.User.Identity.IsAuthenticated)
+                ev.AddUserInfo(httpContext.User.Identity.Name);
 
             var tags = httpContext.Items[TAGS_HTTP_CONTEXT_NAME] as TagSet;
             if (tags != null)

@@ -14,7 +14,7 @@ using System.IO;
 using System.Xml;
 using Exceptionless.Models;
 
-namespace Exceptionless.SampleClient {
+namespace Exceptionless.SampleWinForms {
     public class SampleLoader {
         public SampleLoader(string sampleFolder) {
             SampleFolder = sampleFolder;

@@ -120,8 +120,9 @@
     <Reference Include="SimpleInjector.Packaging">
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net">
-      <HintPath>..\..\packages\Stripe.net.2.2.3\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=2.2.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Stripe.net.2.2.4\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

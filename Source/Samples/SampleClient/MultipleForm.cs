@@ -12,7 +12,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace Exceptionless.SampleClient {
+namespace Exceptionless.SampleWinForms {
     public partial class MultipleForm : Form {
         public MultipleForm() {
             InitializeComponent();

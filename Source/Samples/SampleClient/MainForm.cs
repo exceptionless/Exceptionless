@@ -16,7 +16,7 @@ using System.Windows.Forms;
 using Exceptionless.Models;
 using Tester;
 
-namespace Exceptionless.SampleClient {
+namespace Exceptionless.SampleWinForms {
     public partial class MainForm : Form {
         public MainForm() {
             InitializeComponent();

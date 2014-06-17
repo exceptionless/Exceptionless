@@ -62,6 +62,9 @@
     <Compile Include="Dialogs\CrashReportDialog.xaml.cs">
       <DependentUpon>CrashReportDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ExceptionlessClientExtensions.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Validation\EmailValidationRule.cs" />
     <Compile Include="ExceptionlessWpfExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

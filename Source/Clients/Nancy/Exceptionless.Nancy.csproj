@@ -53,6 +53,10 @@
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
       <Name>Exceptionless.Models</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Shared\Exceptionless.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
       <Name>Exceptionless</Name>

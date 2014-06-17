@@ -26,8 +26,8 @@ namespace Exceptionless.Nancy {
                 NancyRequestInfoCollector.Collect(nancyContext, context.Client.Configuration.DataExclusions);
                 ev.AddRequestInfo(nancyContext);
 
-                //if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
-                //    error.UserName = nancyContext.CurrentUser.UserName;
+                if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
+                    ev.AddUserInfo(nancyContext.CurrentUser.UserName);
             } catch (Exception ex) {
                 context.Log.Error(typeof(ExceptionlessNancyEnrichment), ex, "Error adding request info.");
             }

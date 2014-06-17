@@ -13,7 +13,6 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
-using Exceptionless.Configuration;
 
 [assembly: AssemblyTitle("SampleWpf")]
 [assembly: AssemblyCulture("")]

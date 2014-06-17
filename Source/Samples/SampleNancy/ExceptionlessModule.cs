@@ -18,7 +18,7 @@ namespace Exceptionless.SampleNancy {
             Get["/"] = _ => "Hello!";
             Get["/error"] = _ => { throw new Exception("Unhandled Exception"); };
             Get["/custom"] = _ => {
-                ExceptionlessClient.Create(new Exception("Handled Exception")).AddDefaultInformation().AddRequestInfo(Context).Submit();
+                new Exception("Handled Exception").ToExceptionless().AddDefaultInformation().AddRequestInfo(Context).Submit();
                 return "ok, handled";
             };
         }

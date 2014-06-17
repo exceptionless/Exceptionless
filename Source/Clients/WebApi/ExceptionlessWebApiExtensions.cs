@@ -20,18 +20,18 @@ using Exceptionless.WebApi;
 namespace Exceptionless {
     public static class ExceptionlessWebApiExtensions {
         public static void RegisterWebApi(this ExceptionlessClient client, HttpConfiguration config) {
+            client.Startup();
             client.Configuration.AddEnrichment<ExceptionlessWebApiEnrichment>();
             client.Configuration.ReadFromConfig();
             client.Configuration.UseErrorEnrichment();
-            //client.Startup();
             client.Configuration.IncludePrivateInformation = true;
 
             ReplaceHttpErrorHandler(config);
         }
 
         public static void UnregisterWebApi(this ExceptionlessClient client) {
+            client.Shutdown();
             client.Configuration.RemoveEnrichment<ExceptionlessWebApiEnrichment>();
-            //client.Shutdown();
         }
 
         private static void ReplaceHttpErrorHandler(HttpConfiguration config) {
