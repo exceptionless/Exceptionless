@@ -8,8 +8,8 @@
     <ProjectGuid>{34FE8E6E-247B-46DD-967E-46E45D1CAE6D}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Exceptionless.SampleWinForms</RootNamespace>
-    <AssemblyName>Exceptionless.SampleWinForms</AssemblyName>
+    <RootNamespace>Exceptionless.SampleWindows</RootNamespace>
+    <AssemblyName>Exceptionless.SampleWindows</AssemblyName>
     <FileUpgradeFlags>
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>

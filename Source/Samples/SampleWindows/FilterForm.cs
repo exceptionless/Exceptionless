@@ -12,7 +12,7 @@
 using System;
 using System.IO;
 using System.Windows.Forms;
-using Exceptionless.SampleWinForms;
+using Exceptionless.SampleWindows;
 
 namespace Tester {
     public partial class FilterForm : Form {
@@ -38,7 +38,7 @@ namespace Tester {
     }
 }
 
-namespace Exceptionless.SampleWinForms {
+namespace Exceptionless.SampleWindows {
     public class FilterTest {
         public static void RunTest() {
             string path = Path.GetRandomFileName();

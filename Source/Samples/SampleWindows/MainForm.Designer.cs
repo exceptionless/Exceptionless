@@ -1,4 +1,4 @@
-namespace Exceptionless.SampleWinForms
+namespace Exceptionless.SampleWindows
 {
     partial class MainForm
     {
