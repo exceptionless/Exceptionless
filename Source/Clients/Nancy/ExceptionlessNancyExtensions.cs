@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Enrichments;
 using Exceptionless.ExtendedData;
 using Exceptionless.Models;
 using Exceptionless.Nancy;
@@ -20,8 +21,8 @@ namespace Exceptionless {
         private const string NANCY_CONTEXT = "NancyContext";
 
         public static void RegisterNancy(this ExceptionlessClient client, IPipelines pipelines) {
-            client.RegisterPlugin(new ExceptionlessNancyPlugin());
-            client.Startup();
+            client.Configuration.AddEnrichment<ExceptionlessNancyEnrichment>();
+            //client.Startup();
             client.Configuration.IncludePrivateInformation = true;
 
             pipelines.OnError += OnError;
@@ -29,48 +30,52 @@ namespace Exceptionless {
         }
 
         private static Response OnError(NancyContext context, Exception exception) {
-            var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
+            var contextData = new ContextData();
+            contextData.SetUnhandled();
+            contextData.SetSubmissionMethod("NancyPipelineException");
+            contextData.Add(NANCY_CONTEXT, context);
 
-            ExceptionlessClient.Default.ProcessUnhandledException(exception, "NancyPipelineException", true, contextData);
+            exception.ToExceptionless(contextData).Submit();
 
             return context.Response;
         }
 
         private static void AfterRequest(NancyContext context) {
-            var contextData = new Dictionary<string, object> { { NANCY_CONTEXT, context } };
-
+            // TODO: We need to be using the pass in the registered exceptionless client.
+            var contextData = new ContextData { { NANCY_CONTEXT, context } };
             if (context.Response.StatusCode == HttpStatusCode.NotFound)
-                new NotFoundException().ToExceptionless(true, contextData).Submit();
+                ExceptionlessClient.Default.SubmitEvent(new Event { Type = Event.KnownTypes.NotFound }, contextData);
         }
 
         public static void UnregisterNancy(this ExceptionlessClient client) {
-            client.UnregisterPlugin(typeof(ExceptionlessNancyPlugin).FullName);
-            client.Shutdown();
+            client.Configuration.RemoveEnrichment<ExceptionlessNancyEnrichment>();
+            //client.Shutdown();
         }
 
         public static Event AddRequestInfo(this Event ev, NancyContext context) {
             if (context == null)
                 return ev;
 
-            ev.RequestInfo = NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Default);
+            ev.AddRequestInfo(NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions));
 
             return ev;
         }
 
-        public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder, NancyContext context) {
+        /// <summary>
+        /// Adds the current request info as extended data to the event.
+        /// </summary>
+        /// <param name="builder">The event builder.</param>
+        /// <param name="context">The nancy context to gather information from.</param>
+        public static EventBuilder AddRequestInfo(this EventBuilder builder, NancyContext context) {
             builder.Target.AddRequestInfo(context);
             return builder;
         }
 
         internal static NancyContext GetNancyContext(this IDictionary<string, object> data) {
-            if (!data.HasNancyContext())
+            if (!data.ContainsKey(NANCY_CONTEXT))
                 return null;
 
             return data[NANCY_CONTEXT] as NancyContext;
-        }
-
-        internal static bool HasNancyContext(this IDictionary<string, object> data) {
-            return data.ContainsKey(NANCY_CONTEXT);
         }
     }
 }

@@ -18,7 +18,7 @@ using Exceptionless.Models;
 using Exceptionless.WebApi;
 
 namespace Exceptionless {
-    public static class ExceptionlessHttpExtensions {
+    public static class ExceptionlessWebApiExtensions {
         public static void RegisterWebApi(this ExceptionlessClient client, HttpConfiguration config) {
             client.Configuration.AddEnrichment<ExceptionlessWebApiEnrichment>();
             client.Configuration.ReadFromConfig();

@@ -40,7 +40,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Exceptionless.snk</AssemblyOriginatorKeyFile>
@@ -62,16 +62,12 @@
     <Compile Include="Dialogs\CrashReportDialog.xaml.cs">
       <DependentUpon>CrashReportDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ExceptionlessWpfPlugin.cs" />
     <Compile Include="Validation\EmailValidationRule.cs" />
-    <Compile Include="ExceptionlessManagerWpfExtensions.cs" />
+    <Compile Include="ExceptionlessWpfExtensions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Validation\RequiredValidationRule.cs" />
-    <None Include="..\..\Exceptionless.snk">
-      <Link>Exceptionless.snk</Link>
-    </None>
     <None Include="NuGet\Exceptionless.Wpf.nuspec" />
     <AppDesigner Include="Properties\" />
     <None Include="NuGet\tools\install.ps1" />
@@ -81,6 +77,14 @@
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Extras\Exceptionless.Extras.csproj">
+      <Project>{693F3CBF-5BC7-457D-9F31-BDD89C72677E}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Shared\Exceptionless.csproj">
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Name>Exceptionless</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -12,13 +12,13 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using Exceptionless.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Nancy;
 using Nancy.Helpers;
 
 namespace Exceptionless.ExtendedData {
     internal static class NancyRequestInfoCollector {
-        public static RequestInfo Collect(NancyContext context, ExceptionlessClient client) {
+        public static RequestInfo Collect(NancyContext context, ICollection<string> exclusions) {
             if (context == null)
                 return null;
 
@@ -40,10 +40,10 @@ namespace Exceptionless.ExtendedData {
             if (context.Request.Headers.Referrer != null)
                 info.Referrer = context.Request.Headers.Referrer;
 
-            info.Cookies = context.Request.Cookies.ToDictionary(client);
+            info.Cookies = context.Request.Cookies.ToDictionary(exclusions);
 
             if (context.Request.Url != null && !String.IsNullOrWhiteSpace(context.Request.Url.Query))
-                info.QueryString = HttpUtility.ParseQueryString(context.Request.Url.Query).ToDictionary(client);
+                info.QueryString = HttpUtility.ParseQueryString(context.Request.Url.Query).ToDictionary(exclusions);
 
             return info;
         }
@@ -59,10 +59,11 @@ namespace Exceptionless.ExtendedData {
             "_ncfa"
         };
 
-        private static Dictionary<string, string> ToDictionary(this IEnumerable<KeyValuePair<string, string>> cookies, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this IEnumerable<KeyValuePair<string, string>> cookies, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
-            foreach (var kv in cookies.Where(pair => !String.IsNullOrEmpty(pair.Key) && !pair.Key.AnyWildcardMatches(_ignoredCookies, true) && !pair.Key.AnyWildcardMatches(client.Configuration.DataExclusions, true))) {
+            foreach (var kv in cookies.Where(pair => !String.IsNullOrEmpty(pair.Key) && !pair.Key.AnyWildcardMatches(_ignoredCookies, true) && !pair.Key.AnyWildcardMatches(exclusions, true)))
+            {
                 if (!d.ContainsKey(kv.Key))
                     d.Add(kv.Key, kv.Value);
             }
@@ -70,11 +71,11 @@ namespace Exceptionless.ExtendedData {
             return d;
         }
 
-        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ExceptionlessClient client) {
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ICollection<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (string key in values.AllKeys) {
-                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(client.Configuration.DataExclusions, true))
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusions, true))
                     continue;
 
                 try {

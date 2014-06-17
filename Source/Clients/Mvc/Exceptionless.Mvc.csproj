@@ -37,7 +37,7 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Exceptionless.snk</AssemblyOriginatorKeyFile>
@@ -56,20 +56,20 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\Web\ExceptionlessWebEnrichment.cs">
+      <Link>ExceptionlessWebEnrichment.cs</Link>
+    </Compile>
     <Compile Include="..\Web\ExceptionlessWebExtensions.cs">
       <Link>ExceptionlessWebExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\Web\ExceptionlessWebPlugin.cs">
-      <Link>ExceptionlessWebPlugin.cs</Link>
     </Compile>
     <Compile Include="..\Web\RequestInfoCollector.cs">
       <Link>RequestInfoCollector.cs</Link>
     </Compile>
-    <Compile Include="..\Web\WebLastErrorIdManager.cs">
-      <Link>WebLastErrorIdManager.cs</Link>
+    <Compile Include="..\Web\WebLastReferenceIdManager.cs">
+      <Link>WebLastReferenceIdManager.cs</Link>
     </Compile>
     <Compile Include="ExceptionlessModule.cs" />
-    <Compile Include="ExceptionlessMvcPlugin.cs" />
+    <Compile Include="ExceptionlessMvcEnrichment.cs" />
     <Compile Include="ExceptionlessSendErrorsAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -88,9 +88,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Exceptionless.snk">
-      <Link>Exceptionless.snk</Link>
-    </None>
     <None Include="NuGet\tools\install.ps1" />
     <None Include="NuGet\tools\uninstall.ps1" />
     <None Include="NuGet\Exceptionless.Mvc.nuspec" />

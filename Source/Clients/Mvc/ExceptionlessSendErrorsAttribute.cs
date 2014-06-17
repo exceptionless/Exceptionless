@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Web.Mvc;
+using Exceptionless.Enrichments;
 
 namespace Exceptionless.Mvc {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class ExceptionlessSendErrorsAttribute : FilterAttribute, IExceptionFilter {
         public void OnException(ExceptionContext filterContext) {
-            ExceptionlessClient.Default.ProcessUnhandledException(filterContext.Exception, "SendErrorsAttribute", true, filterContext.HttpContext.ToDictionary());
+            var contextData = new ContextData();
+            contextData.SetUnhandled();
+            contextData.SetSubmissionMethod("SendErrorsAttribute");
+            contextData.Add("HttpContext", filterContext.HttpContext);
+
+            filterContext.Exception.ToExceptionless(contextData).Submit();
         }
     }
 }

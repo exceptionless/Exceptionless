@@ -10,8 +10,8 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
+using Exceptionless.Extras.Utility;
 using Exceptionless.Models;
-using Exceptionless.Utility;
 
 namespace Exceptionless.Dialogs {
     /// <summary>
@@ -25,29 +25,30 @@ namespace Exceptionless.Dialogs {
 
             Event = ev;
             Title = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
-            headerText.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
+            InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
-            emailAddressTextBox.Text = String.IsNullOrEmpty(ev.UserEmail)
-                ? ExceptionlessClient.Default.LocalConfiguration.EmailAddress
-                : ev.UserEmail;
+            // TODO: Implement this once the client has persisted storage.
+            var userInfo = ev.GetUserInfo();
+            if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity))
+                EmailAddressTextBox.Text = userInfo.Identity;
+            //else
+            //    EmailAddressTextBox.Text = ExceptionlessClient.Default.LocalConfiguration.EmailAddress;
 
-            descriptionTextBox.Text = ev.UserDescription;
+            DescriptionTextBox.Text = ev.GetUserDescription();
         }
 
-        private void sendReportButton_Click(object sender, RoutedEventArgs e) {
+        private void OnSubmitReportButtonClick(object sender, RoutedEventArgs e) {
             Cursor = Cursors.Wait;
 
-            sendReportButton.IsEnabled = false;
-            cancelButton.IsEnabled = false;
+            SubmitReportButton.IsEnabled = false;
+            CancelButton.IsEnabled = false;
 
-            Event.UserEmail = emailAddressTextBox.Text;
-            Event.UserDescription = descriptionTextBox.Text;
-
-            ExceptionlessClient.Default.SubmitError(Event);
+            Event.AddUserInfo(EmailAddressTextBox.Text);
+            Event.AddUserDescription(DescriptionTextBox.Text);
 
             Cursor = Cursors.Arrow;
-            sendReportButton.IsEnabled = true;
-            cancelButton.IsEnabled = true;
+            SubmitReportButton.IsEnabled = true;
+            CancelButton.IsEnabled = true;
 
             DialogResult = true;
             Close();

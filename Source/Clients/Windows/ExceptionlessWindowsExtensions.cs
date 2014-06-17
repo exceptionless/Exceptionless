@@ -11,17 +11,16 @@ using System;
 using System.Threading;
 using System.Windows.Forms;
 using Exceptionless.Dialogs;
-using Exceptionless.Windows;
+using Exceptionless.Enrichments;
 
 namespace Exceptionless {
-    public static class ExceptionlessManagerWindowsExtensions {
+    public static class ExceptionlessWindowsExtensions {
         public static void Register(this ExceptionlessClient client, bool showDialog = true) {
-            client..RegisterPlugin(new ExceptionlessWindowsPlugin(showDialog));
-            client.Startup();
+            //client.Startup();
 
             if (showDialog) {
-                client.UnhandledExceptionReporting -= UnhandledExceptionReporting;
-                client.UnhandledExceptionReporting += UnhandledExceptionReporting;
+                client.SubmittingEvent -= OnSubmittingEvent;
+                client.SubmittingEvent += OnSubmittingEvent;
             }
 
             Application.ThreadException -= OnApplicationThreadException;
@@ -29,21 +28,29 @@ namespace Exceptionless {
         }
 
         public static void Unregister(this ExceptionlessClient client) {
-            client.Shutdown();
-
-            client.UnhandledExceptionReporting -= UnhandledExceptionReporting;
-
+            //client.Shutdown();
+            
+            client.SubmittingEvent -= OnSubmittingEvent;
             Application.ThreadException -= OnApplicationThreadException;
         }
 
         private static void OnApplicationThreadException(object sender, ThreadExceptionEventArgs e) {
-            ExceptionlessClient.Default.ProcessUnhandledException(e.Exception, "ApplicationThreadException");
-        }
+            var contextData = new ContextData();
+            contextData.SetUnhandled();
+            contextData.SetSubmissionMethod("ApplicationThreadException");
 
-        private static void UnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
+            e.Exception.ToExceptionless(contextData).Submit();
+        }
+        
+        private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
+            // ev.ExceptionlessClientInfo.Platform = ".NET Windows";
+
+            if (!e.EnrichmentContextData.IsUnhandled)
+                return;
+
             var dialog = new CrashReportForm(e.Event);
             DialogResult result = dialog.ShowDialog();
-            e.Cancel = result == DialogResult.Cancel;
+            e.Cancel = result == DialogResult.OK;
         }
     }
 }

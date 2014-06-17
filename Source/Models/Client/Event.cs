@@ -76,6 +76,8 @@ namespace Exceptionless.Models {
             public const string RequestInfo = "req";
             public const string TraceLog = "trace";
             public const string EnvironmentInfo = "env";
+            public const string UserInfo = "user";
+            public const string UserDescription = "desc";
             //public const string ExceptionInfo = "__ExceptionInfo";
         }
     }

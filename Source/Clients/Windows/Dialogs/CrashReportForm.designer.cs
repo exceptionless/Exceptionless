@@ -160,8 +160,8 @@ namespace Exceptionless.Dialogs
             this.SendReportButton.Name = "SendReportButton";
             this.SendReportButton.Size = new System.Drawing.Size(90, 23);
             this.SendReportButton.TabIndex = 0;
-            this.SendReportButton.Text = "&Send Report";
-            this.SendReportButton.Click += new System.EventHandler(this.SendReportButton_Click);
+            this.SendReportButton.Text = "&Submit Report";
+            this.SendReportButton.Click += new System.EventHandler(this.OnSubmitReportButtonClick);
             // 
             // CrashReportForm
             // 
@@ -184,7 +184,6 @@ namespace Exceptionless.Dialogs
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "[AppName] Error";
-            this.Load += new System.EventHandler(this.CrashReportForm_Load);
             this.titleGroupBox.ResumeLayout(false);
             this.titleGroupBox.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.InformationHeaderPictureBox)).EndInit();

@@ -8,19 +8,16 @@
 #endregion
 
 using System;
+using Exceptionless.Enrichments;
 using Exceptionless.Models;
-using Exceptionless.Plugins;
-using Exceptionless.Web;
 
 namespace Exceptionless.Mvc {
-    internal class ExceptionlessMvcPlugin : ExceptionlessWebPlugin {
-        public override void AfterCreated(ExceptionlessPluginContext context, Error error, Exception exception) {
-            base.AfterCreated(context, error, exception);
-
+    internal class ExceptionlessMvcEnrichment : IEventEnrichment {
+        public void Enrich(EventEnrichmentContext context, Event ev) {
             if (context.Data.GetHttpContext() == null)
                 return;
 
-            error.ExceptionlessClientInfo.Platform = ".NET MVC";
+            //error.ExceptionlessClientInfo.Platform = ".NET MVC";
         }
     }
 }

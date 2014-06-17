@@ -2,11 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-#if !EMBEDDED
 namespace CodeSmith.Core.Reflection {
-#else
-namespace Exceptionless.Utility {
-#endif
     public class AssemblyHelper {
         public static Assembly GetRootAssembly() {
             Assembly assembly;
