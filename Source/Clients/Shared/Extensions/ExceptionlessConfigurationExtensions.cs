@@ -19,6 +19,10 @@ namespace Exceptionless {
             return builder.Uri;
         }
 
+        public static string GetQueueName(this ExceptionlessConfiguration config) {
+            return config.ApiKey.Substring(0, 8);
+        }
+
         public static void UseDebugLogger(this ExceptionlessConfiguration configuration) {
             configuration.Resolver.Register<IExceptionlessLog, DebugExceptionlessLog>();
         }

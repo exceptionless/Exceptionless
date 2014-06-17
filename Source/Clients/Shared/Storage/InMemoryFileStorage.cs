@@ -39,7 +39,7 @@ namespace Exceptionless.Storage {
             }
         }
 
-        public void SaveFile(string path, string contents) {
+        public bool SaveFile(string path, string contents) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -57,9 +57,11 @@ namespace Exceptionless.Storage {
                 if (_storage.Count > MaxFiles)
                     _storage.Remove(_storage.OrderByDescending(kvp => kvp.Value.Item1.Created).First().Key);
             }
+
+            return true;
         }
 
-        public void RenameFile(string oldpath, string newpath) {
+        public bool RenameFile(string oldpath, string newpath) {
             if (String.IsNullOrWhiteSpace(oldpath))
                 throw new ArgumentNullException("oldpath");
             if (String.IsNullOrWhiteSpace(newpath))
@@ -67,34 +69,38 @@ namespace Exceptionless.Storage {
 
             lock (_lock) {
                 if (!_storage.ContainsKey(oldpath))
-                    throw new InvalidOperationException(String.Format("File \"{0}\" does not exist.", oldpath));
+                    return false;
 
                 _storage[newpath] = _storage[oldpath];
                 _storage[newpath].Item1.Path = newpath;
                 _storage[newpath].Item1.Modified = DateTime.Now;
                 _storage.Remove(oldpath);
             }
+
+            return true;
         }
 
-        public void DeleteFile(string path) {
+        public bool DeleteFile(string path) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
             lock (_lock) {
                 if (!_storage.ContainsKey(path))
-                    throw new InvalidOperationException(String.Format("File \"{0}\" does not exist.", path));
+                    return false;
                 
                 _storage.Remove(path);
             }
+
+            return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string spec = null) {
-            if (spec == null)
-                spec = "*";
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null) {
+            if (searchPattern == null)
+                searchPattern = "*";
 
-            var regex = new Regex("^" + Regex.Escape(spec).Replace("\\*", ".*?") + "$");
+            var regex = new Regex("^" + Regex.Escape(searchPattern).Replace("\\*", ".*?") + "$");
             lock (_lock)
-                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1);
+                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1).ToList();
         }
 
         public void Dispose() {

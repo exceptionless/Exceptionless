@@ -25,14 +25,14 @@ namespace Exceptionless {
         [ConfigurationProperty("enableSSL", DefaultValue = true)]
         public bool? EnableSSL { get { return (bool?)base["enableSSL"]; } set { base["enableSSL"] = value; } }
 
-        //[ConfigurationProperty("enableLogging", DefaultValue = null)]
-        //public bool? EnableLogging { get { return (bool?)base["enableLogging"]; } set { base["enableLogging"] = value; } }
+        [ConfigurationProperty("enableLogging", DefaultValue = null)]
+        public bool? EnableLogging { get { return (bool?)base["enableLogging"]; } set { base["enableLogging"] = value; } }
 
-        //[ConfigurationProperty("logPath")]
-        //public string LogPath { get { return base["logPath"] as string; } set { base["logPath"] = value; } }
+        [ConfigurationProperty("logPath")]
+        public string LogPath { get { return base["logPath"] as string; } set { base["logPath"] = value; } }
 
-        //[ConfigurationProperty("queuePath")]
-        //public string QueuePath { get { return base["queuePath"] as string; } set { base["queuePath"] = value; } }
+        [ConfigurationProperty("storagePath")]
+        public string StoragePath { get { return base["storagePath"] as string; } set { base["storagePath"] = value; } }
 
         [ConfigurationProperty("tags")]
         public string Tags { get { return this["tags"] as string; } set { this["tags"] = value; } }
@@ -40,8 +40,8 @@ namespace Exceptionless {
         [ConfigurationProperty("settings", IsDefaultCollection = false)]
         public NameValueConfigurationCollection Settings { get { return this["settings"] as NameValueConfigurationCollection; } set { this["settings"] = value; } }
 
-        [ConfigurationProperty("extendedData", IsDefaultCollection = false)]
-        public NameValueConfigurationCollection ExtendedData { get { return this["extendedData"] as NameValueConfigurationCollection; } set { this["extendedData"] = value; } }
+        [ConfigurationProperty("data", IsDefaultCollection = false)]
+        public NameValueConfigurationCollection ExtendedData { get { return this["data"] as NameValueConfigurationCollection; } set { this["data"] = value; } }
     }
 }
 

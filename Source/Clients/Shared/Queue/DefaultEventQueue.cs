@@ -41,7 +41,7 @@ namespace Exceptionless.Queue {
                 return;
             }
 
-            _storage.Enqueue(ev, _serializer);
+            _storage.Enqueue(_config.GetQueueName(), ev, _serializer);
         }
 
         public Task ProcessAsync() {
@@ -61,7 +61,8 @@ namespace Exceptionless.Queue {
             _processingQueue = true;
             
             try {
-                var batch = _storage.GetEventBatch(_serializer);
+                _storage.DeleteOldQueueFiles(_config.GetQueueName(), TimeSpan.FromDays(1), 3);
+                var batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer);
                 if (!batch.Any()) {
                     _log.Info(typeof(DefaultEventQueue), "There are no events in the queue to process.");
                     return;
@@ -138,7 +139,7 @@ namespace Exceptionless.Queue {
             // Account is over the limit and we want to ensure that the sample size being sent in will contain newer errors.
             try {
 #pragma warning disable 4014
-                _storage.DeleteOldQueueFiles(DateTime.Now);
+                _storage.DeleteOldQueueFiles(_config.GetQueueName(), TimeSpan.Zero);
 #pragma warning restore 4014
             } catch (Exception) { }
         }

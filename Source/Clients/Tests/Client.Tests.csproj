@@ -116,7 +116,10 @@
     <Compile Include="ExceptionlessClientTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Serializer\SerializerTests.cs" />
-    <Compile Include="Storage\FileStorageTests.cs" />
+    <Compile Include="Storage\FileStorageTestsBase.cs" />
+    <Compile Include="Storage\FolderFileStorageTests.cs" />
+    <Compile Include="Storage\InMemoryFileStorageTests.cs" />
+    <Compile Include="Storage\IsolatedStorageFileStorageTests.cs" />
     <Compile Include="Storage\KeyValueStorageTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
     <Compile Include="Utility\AsyncTests.cs" />
@@ -141,6 +144,10 @@
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Extras\Exceptionless.Extras.csproj">
+      <Project>{693F3CBF-5BC7-457D-9F31-BDD89C72677E}</Project>
+      <Name>Exceptionless.Extras</Name>
     </ProjectReference>
     <ProjectReference Include="..\Shared\Exceptionless.csproj">
       <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>

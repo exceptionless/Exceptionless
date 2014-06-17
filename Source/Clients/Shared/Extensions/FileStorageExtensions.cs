@@ -6,8 +6,10 @@ using Exceptionless.Storage;
 
 namespace Exceptionless.Extensions {
     public static class FileStorageExtensions {
-        public static void Enqueue(this IFileStorage storage, Event ev, IJsonSerializer serializer) {
-            storage.SaveObject(String.Concat("q\\", Guid.NewGuid().ToString("N"), ".0.json"), ev, serializer);
+        private static readonly object _lockObject = new object();
+
+        public static void Enqueue(this IFileStorage storage, string queueName, Event ev, IJsonSerializer serializer) {
+            storage.SaveObject(String.Concat(queueName, "\\q\\", Guid.NewGuid().ToString("N"), ".0.json"), ev, serializer);
         }
 
         public static void SaveObject<T>(this IFileStorage storage, string path, T data, IJsonSerializer serializer) {
@@ -19,20 +21,24 @@ namespace Exceptionless.Extensions {
             return serializer.Deserialize<T>(json);
         }
 
-        public static void DeleteOldQueueFiles(this IFileStorage storage, DateTime? maxAge = null) {
+        public static void DeleteOldQueueFiles(this IFileStorage storage, string queueName, TimeSpan? maxAge = null, int? maxAttempts = 3) {
             if (!maxAge.HasValue)
-                maxAge = DateTime.Now.Subtract(TimeSpan.FromDays(1));
+                maxAge = TimeSpan.FromDays(1);
 
-            foreach (var file in storage.GetFileList("q\\*").ToList().Where(f => f.Created < maxAge).ToList())
-                storage.DeleteFile(file.Path);
+            foreach (var file in storage.GetFileList(queueName + "\\q\\*").ToList()) {
+                if (file.Created < DateTime.Now.Subtract(maxAge.Value))
+                    storage.DeleteFile(file.Path);
+                if (GetAttempts(file) >= 3)
+                    storage.DeleteFile(file.Path);
+            }
         }
 
-        public static ICollection<FileInfo> GetQueueFiles(this IFileStorage storage, int? limit = null) {
-            var files = storage.GetFileList("q\\*.json").OrderByDescending(f => f.Created);
+        public static ICollection<FileInfo> GetQueueFiles(this IFileStorage storage, string queueName, int? limit = null) {
+            var files = storage.GetFileList(queueName + "\\q\\*.json").OrderByDescending(f => f.Created);
             return limit.HasValue ? files.Take(limit.Value).ToList() : files.ToList();
         }
 
-        public static void IncrementAttempts(this IFileStorage storage, FileInfo info) {
+        public static bool IncrementAttempts(this IFileStorage storage, FileInfo info) {
             string[] parts = info.Path.Split('.');
             if (parts.Length < 3)
                 throw new ArgumentException(String.Format("Path \"{0}\" must contain the number of attempts.", info.Path));
@@ -49,7 +55,7 @@ namespace Exceptionless.Extensions {
             string originalPath = info.Path;
             info.Path = newpath;
 
-            storage.RenameFile(originalPath, newpath);
+            return storage.RenameFile(originalPath, newpath);
         }
 
         public static int GetAttempts(this FileInfo info) {
@@ -67,7 +73,10 @@ namespace Exceptionless.Extensions {
 
             string lockedPath = String.Concat(info.Path, ".x");
 
-            storage.RenameFile(info.Path, lockedPath);
+            bool success = storage.RenameFile(info.Path, lockedPath);
+            if (!success)
+                return false;
+
             info.Path = lockedPath;
             return true;
         }
@@ -78,37 +87,50 @@ namespace Exceptionless.Extensions {
 
             string path = info.Path.Substring(0, info.Path.Length - 2);
 
-            storage.RenameFile(info.Path, path);
+            bool success = storage.RenameFile(info.Path, path);
+            if (!success)
+                return false;
+
             info.Path = path;
             return true;
         }
 
-        public static void ReleaseOldLocks(this IFileStorage storage) {
-            foreach (var file in storage.GetFileList("q\\*.x").ToList().Where(f => f.Modified < DateTime.Now.Subtract(TimeSpan.FromMinutes(60))))
+        public static void ReleaseOldLocks(this IFileStorage storage, string queueName, TimeSpan? maxLockAge = null) {
+            if (!maxLockAge.HasValue)
+                maxLockAge = TimeSpan.FromMinutes(60);
+
+            foreach (var file in storage.GetFileList(queueName + "\\q\\*.x").ToList().Where(f => f.Modified < DateTime.Now.Subtract(maxLockAge.Value)))
                 storage.ReleaseFile(file);
         }
 
-        public static IList<Tuple<FileInfo, Event>> GetEventBatch(this IFileStorage storage, IJsonSerializer serializer, int batchSize = 20) {
+        public static IList<Tuple<FileInfo, Event>> GetEventBatch(this IFileStorage storage, string queueName, IJsonSerializer serializer, int batchSize = 20) {
             var events = new List<Tuple<FileInfo, Event>>();
 
-            foreach (var file in (storage.GetQueueFiles())) {
-                if (!storage.LockFile(file))
-                    continue;
+            lock (_lockObject) {
+                foreach (var file in storage.GetQueueFiles(queueName)) {
+                    if (!storage.LockFile(file))
+                        continue;
 
-                try {
-                    storage.IncrementAttempts(file);
-                } catch { }
+                    try {
+                        storage.IncrementAttempts(file);
+                    } catch {}
 
-                try {
-                    var ev = storage.GetObject<Event>(file.Path, serializer);
-                    events.Add(Tuple.Create(file, ev));
-                    if (events.Count == batchSize)
-                        break;
+                    try {
+                        var ev = storage.GetObject<Event>(file.Path, serializer);
+                        events.Add(Tuple.Create(file, ev));
+                        if (events.Count == batchSize)
+                            break;
 
-                } catch { }
+                    } catch {}
+                }
+
+                return events;
             }
+        }
 
-            return events;
+        public static void DeleteFiles(this IFileStorage storage, IEnumerable<FileInfo> files) {
+            foreach (var file in files)
+                storage.DeleteFile(file.Path);
         }
 
         public static void DeleteBatch(this IFileStorage storage, IList<Tuple<FileInfo, Event>> batch) {

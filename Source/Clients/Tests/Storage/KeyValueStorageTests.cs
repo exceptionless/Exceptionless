@@ -7,8 +7,8 @@ namespace Client.Tests.Storage {
         [Fact]
         public void CanManageKeys() {
             IKeyValueStorage storage = new InMemoryKeyValueStorage();
-            storage.Set("test", "test");
-            Assert.Equal("test", storage.Get("test"));
+            storage.Set("group", "test", "test");
+            Assert.Equal("test", storage.Get("group", "test"));
         }
     }
 }
