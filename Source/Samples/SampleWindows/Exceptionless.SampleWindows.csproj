@@ -124,9 +124,17 @@
     <Compile Include="SampleLoader.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
       <Name>Exceptionless</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clients\Windows\Exceptionless.Windows.csproj">
+      <Project>{159fb9d1-e226-4828-b2a5-fedd994f3525}</Project>
+      <Name>Exceptionless.Windows</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>

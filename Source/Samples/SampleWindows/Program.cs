@@ -21,7 +21,7 @@ namespace Exceptionless.SampleWindows {
         [STAThread]
         private static void Main() {
             ExceptionlessClient.Default.Register();
-            ExceptionlessClient.Default.UnhandledExceptionReporting += UnhandledExceptionReporting;
+            ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             try {
@@ -31,11 +31,11 @@ namespace Exceptionless.SampleWindows {
             }
         }
 
-        private static void UnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
-            // test adding an extra tag.
+        private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             e.Event.Tags.Add("ExtraTag");
 
-            if (e.Exception.GetType() == typeof(InvalidOperationException))
+            var exception = e.EnrichmentContextData.GetException();
+            if (exception != null && exception.GetType() == typeof(InvalidOperationException))
                 e.Cancel = true;
         }
     }
