@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace Exceptionless.Storage {
     public interface IFileStorage : IDisposable {
         string GetFileContents(string path);
-        void SaveFile(string path, string contents);
-        void RenameFile(string oldpath, string newpath);
-        void DeleteFile(string path);
-        IEnumerable<FileInfo> GetFileList(string spec = null);
+        bool SaveFile(string path, string contents);
+        bool RenameFile(string oldpath, string newpath);
+        bool DeleteFile(string path);
+        IEnumerable<FileInfo> GetFileList(string searchPattern = null);
     }
 
     public class FileInfo {

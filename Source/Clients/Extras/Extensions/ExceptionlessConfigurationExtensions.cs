@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Configuration;
+using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Dependency;
+using Exceptionless.Enrichments.Default;
 using Exceptionless.Extras;
+using Exceptionless.Extras.Storage;
 using Exceptionless.Logging;
+using Exceptionless.Storage;
+using Exceptionless.Utility;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
@@ -12,12 +17,38 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
         public static void UseErrorEnrichment(this ExceptionlessConfiguration configuration) {
-            configuration.RemoveEnrichment<Enrichments.Default.SimpleErrorEnrichment>();
+            configuration.RemoveEnrichment<SimpleErrorEnrichment>();
             configuration.AddEnrichment<Enrichments.ErrorEnrichment>();
+        }
+
+        public static void UseIsolatedStorage(this ExceptionlessConfiguration configuration) {
+            configuration.Resolver.Register<IFileStorage, IsolatedStorageFileStorage>();
+            configuration.Resolver.Register<IKeyValueStorage, IsolatedStorageKeyValueStorage>();
+        }
+
+        public static void UseFolderStorage(this ExceptionlessConfiguration configuration, string folder) {
+            configuration.Resolver.Register<IFileStorage>(new FolderFileStorage(folder));
+            configuration.Resolver.Register<IKeyValueStorage>(new FolderKeyValueStorage(folder));
         }
 
         public static void UseTraceLogger(this ExceptionlessConfiguration configuration) {
             configuration.Resolver.Register<IExceptionlessLog, TraceExceptionlessLog>();
+        }
+
+        public static void UseFileLogger(this ExceptionlessConfiguration configuration, string logPath) {
+            configuration.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(new FileExceptionlessLog(logPath)));
+        }
+
+        public static void UseIsolatedStorageLogger(this ExceptionlessConfiguration configuration) {
+            configuration.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(new IsolatedStorageFileExceptionlessLog("exceptionless.log")));
+        }
+
+        public static void UseTraceLogEntriesEnrichment(this ExceptionlessConfiguration configuration, int maxEntriesToInclude = TraceLogEnrichment.DefaultMaxEntriesToInclude) {
+            if (!Trace.Listeners.OfType<ExceptionlessTraceListener>().Any())
+                Trace.Listeners.Add(new ExceptionlessTraceListener());
+
+            configuration.Settings.Add(TraceLogEnrichment.MaxEntriesToIncludeKey, maxEntriesToInclude.ToString());
+            configuration.AddEnrichment<TraceLogEnrichment>();
         }
 
         /// <summary>
@@ -46,18 +77,15 @@ namespace Exceptionless {
             if (section.EnableSSL.HasValue)
                 configuration.EnableSSL = section.EnableSSL.Value;
 
-            //if (!String.IsNullOrEmpty(section.QueuePath))
-            //    configuration.QueuePath = section.QueuePath;
+            if (!String.IsNullOrEmpty(section.StoragePath))
+                configuration.UseFolderStorage(section.StoragePath);
 
-            //if (section.EnableLogging.HasValue)
-            //    configuration.EnableLogging = section.EnableLogging.Value;
-
-            //if (!String.IsNullOrEmpty(section.LogPath))
-            //    configuration.LogPath = section.LogPath;
-
-            //// if a log path is specified and enable logging setting isn't specified, then enable logging.
-            //if (!String.IsNullOrEmpty(section.LogPath) && !section.EnableLogging.HasValue)
-            //    configuration.EnableLogging = true;
+            if (!section.EnableLogging.HasValue || section.EnableLogging.Value) {
+                if (!String.IsNullOrEmpty(section.LogPath))
+                    configuration.UseFileLogger(section.LogPath);
+                else
+                    configuration.UseIsolatedStorageLogger();
+            }
 
             foreach (var tag in section.Tags.SplitAndTrim(',').Where(tag => !String.IsNullOrEmpty(tag)))
                 configuration.DefaultTags.Add(tag);

@@ -10,7 +10,7 @@
 using System;
 
 namespace Exceptionless.Logging {
-    internal class SafeExceptionlessLog : IExceptionlessLog, IDisposable {
+    public class SafeExceptionlessLog : IExceptionlessLog, IDisposable {
         private readonly IExceptionlessLog _log;
         private readonly IExceptionlessLog _fallbackLog;
 
