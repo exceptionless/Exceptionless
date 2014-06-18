@@ -94,31 +94,36 @@ namespace Exceptionless.Core.Utility {
                 }
             }
 
-            // We haven't found a user method yet, try some alternatives with the inner most error.
-            ErrorInfo innerMostError = errorStack[0];
-
-            if (innerMostError.TargetMethod != null) {
-                // Use the target method if it exists.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.TargetMethod));
-                if (ShouldFlagSignatureTarget)
-                    innerMostError.TargetMethod.IsSignatureTarget = true;
-            } else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0) {
-                // Use the topmost stack frame.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
-                if (ShouldFlagSignatureTarget)
-                    innerMostError.StackTrace[0].IsSignatureTarget = true;
-            } else {
-                // All else failed, use the type and message.
-                if (!String.IsNullOrWhiteSpace(innerMostError.Type))
-                    SignatureInfo.Add("ExceptionType", innerMostError.Type);
-
-                if (!String.IsNullOrWhiteSpace(innerMostError.Message))
-                    SignatureInfo.Add("Message", innerMostError.Message);
+            // We haven't found a user method yet, try some alternatives using the inner most error that contains a stacktrace.
+            ErrorInfo fallBackError = null;
+            for (int i = 0; i < errorStack.Count; i++) {
+                fallBackError = errorStack[i];
+                if (fallBackError.StackTrace.Count > 0)
+                    break;
             }
 
-            AddSpecialCaseDetails(innerMostError);
+            if (fallBackError.TargetMethod != null) {
+                // Use the target method if it exists.
+                SignatureInfo.Add("ExceptionType", fallBackError.Type);
+                SignatureInfo.Add("Method", GetStackFrameSignature(fallBackError.TargetMethod));
+                if (ShouldFlagSignatureTarget)
+                    fallBackError.TargetMethod.IsSignatureTarget = true;
+            } else if (fallBackError.StackTrace != null && fallBackError.StackTrace.Count > 0) {
+                // Use the topmost stack frame.
+                SignatureInfo.Add("ExceptionType", fallBackError.Type);
+                SignatureInfo.Add("Method", GetStackFrameSignature(fallBackError.StackTrace[0]));
+                if (ShouldFlagSignatureTarget)
+                    fallBackError.StackTrace[0].IsSignatureTarget = true;
+            } else {
+                // All else failed, use the type and message.
+                if (!String.IsNullOrWhiteSpace(fallBackError.Type))
+                    SignatureInfo.Add("ExceptionType", fallBackError.Type);
+
+                if (!String.IsNullOrWhiteSpace(fallBackError.Message))
+                    SignatureInfo.Add("Message", fallBackError.Message);
+            }
+
+            AddSpecialCaseDetails(fallBackError);
             if (SignatureInfo.Count == 0)
                 SignatureInfo.Add("NoStackingInformation", Guid.NewGuid().ToString());
 

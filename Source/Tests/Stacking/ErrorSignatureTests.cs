@@ -10,10 +10,13 @@
 #endregion
 
 using System;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using MongoDB.Driver;
 using Samples;
+using ServiceStack.CacheAccess;
 using Xunit;
 
 namespace Exceptionless.Tests.Stacking {
@@ -169,6 +172,19 @@ namespace Exceptionless.Tests.Stacking {
 
             Assert.Equal("System.ApplicationException", sig.SignatureInfo["ExceptionType"]);
             Assert.Equal("Samples.SampleErrors.<ThrowExceptionFromLambda>b__0(String s, Int32 b)", sig.SignatureInfo["Method"]);
+        }
+
+        [Fact(Skip = "Test is only meant to be run manually to debug stacking issues.")]
+        public void DebugExistingError() {
+            const string connectionString = "mongodb://localhost/exceptionless";
+            var url = new MongoUrl(connectionString);
+            MongoServer server = new MongoClient(url).GetServer();
+            var mongoDb = server.GetDatabase("exceptionless");
+            var projectRepository = new ProjectRepository(mongoDb);
+            var organizationRepository = new OrganizationRepository(mongoDb);
+            var errorRepository = new ErrorRepository(mongoDb, projectRepository, organizationRepository);
+            var error = errorRepository.GetById("80000000d8f3e748e0887e0c");
+            var sig = new ErrorSignature(error, _userNamespaces, _commonMethods);
         }
 
         private void CommonMethodA(int x) {
