@@ -13,16 +13,28 @@ using System;
 using System.IO;
 using System.Text;
 using System.Windows.Forms;
-using Exceptionless.Models;
 using Tester;
 
 namespace Exceptionless.SampleWindows {
     public partial class MainForm : Form {
         public MainForm() {
             InitializeComponent();
-            ExceptionlessClient.Default.SendingError += OnFeedbackSubmitting;
-            ExceptionlessClient.Default.SendErrorCompleted += OnFeedbackCompleted;
+            ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
             ExceptionlessClient.Default.ConfigurationUpdated += OnConfigurationUpdated;
+        }
+
+        private void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
+            if (logTextBox.InvokeRequired) {
+                logTextBox.Invoke(new EventHandler<EventSubmittingEventArgs>(OnSubmittingEvent), sender, e);
+                return;
+            }
+
+            e.Event.Data["BaseDirectory"] = AppDomain.CurrentDomain.BaseDirectory;
+            if (e.Event.Message == "Important Exception")
+                e.Event.Tags.Add("Important");
+
+            logTextBox.AppendText(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
+            statusLabel.Text = "Submitting Message";
         }
 
         private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
@@ -33,51 +45,12 @@ namespace Exceptionless.SampleWindows {
 
             var sb = new StringBuilder();
 
-            if (e.Configuration != null) {
-                sb.AppendLine("Configuration Updated");
-                sb.AppendLine(String.Format("    Version: {0} ", e.Configuration.Version));
-                //if (!String.IsNullOrEmpty(e.Configuration.ExceptionMessage))
-                //    sb.AppendLine("    Error: " + e.Configuration.ExceptionMessage);
-            } else
+            if (e.Configuration != null)
+                sb.AppendLine(String.Format("Configuration updated.\tVersion: {0}", e.Configuration.Version));
+            else
                 sb.AppendLine("Configuration Updated: Response is {null}");
 
             logTextBox.AppendText(sb.ToString());
-        }
-
-        private void OnFeedbackCompleted(object sender, SendErrorCompletedEventArgs e) {
-            if (logTextBox.InvokeRequired) {
-                logTextBox.Invoke(new EventHandler<SendErrorCompletedEventArgs>(OnFeedbackCompleted), sender, e);
-                return;
-            }
-
-            var sb = new StringBuilder();
-
-            sb.AppendLine("Submit Completed: " + e.ErrorId);
-
-            if (e.Event != null)
-                sb.AppendLine("    Event: " + e.Event.Message);
-            //else if (e.ReportResponse.Status == ResponseStatusType.Event)
-            //    sb.AppendLine("    Event: " + e.ReportResponse.ExceptionMessage);
-
-            logTextBox.AppendText(sb.ToString());
-
-            statusLabel.Text = e.Event != null ? "Submit Event" : "Submit Completed";
-        }
-
-        private void OnFeedbackSubmitting(object sender, ErrorModelEventArgs e) {
-            if (logTextBox.InvokeRequired) {
-                logTextBox.Invoke(new EventHandler<ErrorModelEventArgs>(OnFeedbackSubmitting), sender, e);
-                return;
-            }
-
-            string message = "Submitting Message: " + e.Event.Id + Environment.NewLine;
-            logTextBox.AppendText(message);
-
-            e.Event.ExtendedData.Add("BaseDirectory", AppDomain.CurrentDomain.BaseDirectory);
-            statusLabel.Text = "Submitting Message";
-
-            if (e.Event.Message == "Important Exception")
-                e.Event.Tags.Add("Important");
         }
 
         private void generateExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -120,7 +93,7 @@ namespace Exceptionless.SampleWindows {
         }
 
         private void importantExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
-            using (ExceptionlessClient.Default.Tags.Add("Important")) {
+            using (ExceptionlessClient.Default.Configuration.DefaultTags.Add("Important")) {
                 // Doing really important work here like maybe processing an order.
                 throw new OverflowException("Bad things man.");
             }
@@ -133,12 +106,9 @@ namespace Exceptionless.SampleWindows {
             decimal count = multiple.NumericUpDown.Value;
 
             for (int i = 0; i < count; i++) {
-                Event r = ExceptionlessClient.Default.CreateError(new ApplicationException("Multiple Crash Test."));
-                r.Message = "Testing multiple crash reports. " + i;
+                new ApplicationException("Multiple Crash Test.").ToExceptionless().SetUserDescription("Testing multiple crash reports. " + i).Submit();
                 //r.Description = "Testing multiple crash reports.";
                 //r.EmailAddress = "my@email.com";
-
-                ExceptionlessClient.Default.SubmitError(r);
             }
         }
 

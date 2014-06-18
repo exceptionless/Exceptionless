@@ -16,6 +16,10 @@ namespace Exceptionless {
             client.UnregisterAppDomainUnhandledExceptionHandler(appDomain);
             client.UnregisterTaskSchedulerUnobservedTaskExceptionHandler();
         }
+
+        public static void UseTraceLogger(this ExceptionlessClient client) {
+            client.Configuration.Resolver.Register<IExceptionlessLog, TraceExceptionlessLog>();
+        }
     }
 }
 

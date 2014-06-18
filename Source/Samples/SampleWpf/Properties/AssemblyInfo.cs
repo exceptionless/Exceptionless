@@ -13,10 +13,11 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Windows;
+using Exceptionless.Configuration;
 
 [assembly: AssemblyTitle("SampleWpf")]
 [assembly: AssemblyCulture("")]
 [assembly: ComVisible(false)]
 [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
 
-[assembly: Exceptionless("http://localhost:40000", "e3d51ea621464280bbcb79c11fd6483e")]
+[assembly: Exceptionless("e3d51ea621464280bbcb79c11fd6483e", ServerUrl = "http://localhost:40000")]

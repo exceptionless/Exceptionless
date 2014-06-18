@@ -19,7 +19,7 @@ namespace Exceptionless.SampleWeb {
         protected void Page_Load(object sender, EventArgs e) {
             Response.Cookies.Add(new HttpCookie("Blah", "blah"));
             //ExceptionlessClient.Default.UpdateConfiguration(true);
-            ExceptionlessClient.Default.Tags.Add("Blah");
+            ExceptionlessClient.Default.Configuration.DefaultTags.Add("Blah");
             Trace.Write("Default.aspx load");
         }
 

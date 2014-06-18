@@ -72,20 +72,19 @@ namespace Exceptionless.SampleWindows {
 
             InitializeReport(report);
 
-            ExceptionlessClient.Default.SubmitError(report);
+            ExceptionlessClient.Default.SubmitEvent(report);
             Submitted++;
         }
 
         private void InitializeReport(Event report) {
-            if (report.ExtendedData == null)
-                report.ExtendedData = new DataDictionary();
+            if (report.Data == null)
+                report.Data = new DataDictionary();
             if (report.Tags == null)
                 report.Tags = new TagSet();
 
             // reset values
-            report.Id = String.Empty;
-            report.OccurrenceDate = DateTimeOffset.Now;
-            //report.ProjectId = ExceptionlessClient.Default.Configuration.ProjectId;
+            report.ReferenceId = String.Empty;
+            report.Date = DateTimeOffset.Now;
         }
     }
 }

@@ -21,8 +21,8 @@ namespace Exceptionless.SampleWebApi {
             var config = new HttpConfiguration();
             config.Routes.MapHttpRoute(name: "DefaultApi", routeTemplate: "api/{controller}/{id}", defaults: new { id = RouteParameter.Optional });
             app.UseWebApi(config);
+            ExceptionlessClient.Default.UseTraceLogger();
             ExceptionlessClient.Default.RegisterWebApi(config);
-            ExceptionlessClient.Default.Log = new TraceExceptionlessLog();
         }
     }
 
