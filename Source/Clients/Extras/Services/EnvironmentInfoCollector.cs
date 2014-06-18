@@ -75,7 +75,7 @@ namespace Exceptionless.Services {
             try {
                 IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
                 if (hostEntry != null && hostEntry.AddressList.Any())
-                    info.IpAddress = String.Join(",", hostEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).Select(a => a.ToString()).ToArray());
+                    info.IpAddress = String.Join(", ", hostEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).Select(a => a.ToString()).ToArray());
             } catch (Exception ex) {
                 _log.FormattedInfo(typeof(EnvironmentInfoCollector), "Unable to get ip address. Error message: {0}", ex.Message);
             }
