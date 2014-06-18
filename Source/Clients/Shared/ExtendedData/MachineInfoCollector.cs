@@ -78,7 +78,7 @@ namespace Exceptionless.ExtendedData {
             try {
                 IPHostEntry hostEntry = Dns.GetHostEntry(Dns.GetHostName());
                 if (hostEntry != null && hostEntry.AddressList.Any())
-                    machineInfo.IpAddress = String.Join(",", hostEntry.AddressList.Select(a => a.ToString()));
+                    machineInfo.IpAddress = String.Join(",", hostEntry.AddressList.Where(x => x.AddressFamily == AddressFamily.InterNetwork).Select(a => a.ToString()));
             } catch (Exception e) {
                 Trace.WriteLine(String.Format("Unable to get ip address. Error message: {0}", e.Message));
             }
