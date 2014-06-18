@@ -18,6 +18,8 @@ namespace Exceptionless.SampleNancy {
     public class ExceptionlessBootstrapper : DefaultNancyBootstrapper {
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines) {
             base.ApplicationStartup(container, pipelines);
+
+            ExceptionlessClient.Default.UseTraceLogger();
             ExceptionlessClient.Default.RegisterNancy(pipelines);
         }
     }

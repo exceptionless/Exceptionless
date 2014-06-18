@@ -71,6 +71,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Clients\Nancy\Exceptionless.Nancy.csproj">
       <Project>{47b49e88-42ec-44ff-b1c2-981699a354e3}</Project>
       <Name>Exceptionless.Nancy</Name>

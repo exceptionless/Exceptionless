@@ -20,8 +20,10 @@ namespace Exceptionless.SampleWindows {
         /// </summary>
         [STAThread]
         private static void Main() {
+            ExceptionlessClient.Default.UseTraceLogger();
             ExceptionlessClient.Default.Register();
             ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             try {

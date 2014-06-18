@@ -32,9 +32,9 @@ namespace SampleConsole {
                 ApiKey = "e3d51ea621464280bbcb79c11fd6483e",
                 ServerUrl = "http://localhost:50000"
             });
+            client.UseTraceLogger();
+            client.Startup();
 
-            //ExceptionlessClient.Default.Startup();
-            //ExceptionlessClient.Default.Log = new TraceExceptionlessLog();
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
