@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Exceptionless.Extras.Utility;
 using Exceptionless.Storage;
 using FileInfo = Exceptionless.Storage.FileInfo;
 
@@ -9,6 +10,8 @@ namespace Exceptionless.Extras.Storage {
         private readonly object _lockObject = new object();
 
         public FolderFileStorage(string folder) {
+            folder = PathHelper.ExpandPath(folder);
+
             if (!Path.IsPathRooted(folder))
                 folder = Path.GetFullPath(folder);
             if (!folder.EndsWith("\\"))

@@ -55,6 +55,7 @@
     <Compile Include="Storage\FolderKeyValueStorage.cs" />
     <Compile Include="Storage\IsolatedStorageKeyValueStorage.cs" />
     <Compile Include="Utility\ExceptionlessTraceListener.cs" />
+    <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Utility\SingleGlobalInstance.cs" />
   </ItemGroup>
   <ItemGroup>

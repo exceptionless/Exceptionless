@@ -65,7 +65,8 @@ namespace Exceptionless.SampleWindows {
         }
 
         private void updateConfigurationToolStripMenuItem_Click(object sender, EventArgs e) {
-            ExceptionlessClient.Default.UpdateConfigurationAsync(true);
+            // TODO: Implement updating the configuration.
+            //ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void randomExceptionToolStripMenuItem_Click(object sender, EventArgs e) {

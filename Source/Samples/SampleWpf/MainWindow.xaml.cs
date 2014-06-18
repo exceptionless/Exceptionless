@@ -95,7 +95,8 @@ namespace Exceptionless.SampleWpf {
         }
 
         private void OnUpdateConfiguration(object sender, RoutedEventArgs e) {
-            ExceptionlessClient.Default.UpdateConfigurationAsync(true);
+            // TODO: Implement updating the configuration.
+            //ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void OnGenerateThreadException(object sender, RoutedEventArgs e) {

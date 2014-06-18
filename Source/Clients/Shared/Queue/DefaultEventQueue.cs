@@ -107,6 +107,7 @@ namespace Exceptionless.Queue {
                 _processingQueue = false;
             }
 
+            //var config = _client.GetSettings(_config, _serializer);
             //if (response.ShouldUpdateConfiguration(LocalConfiguration.CurrentConfigurationVersion))
             //    UpdateConfiguration(true);
 
