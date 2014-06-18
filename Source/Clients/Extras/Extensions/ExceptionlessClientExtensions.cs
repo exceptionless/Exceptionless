@@ -4,10 +4,15 @@ using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
 using Exceptionless.Extras.Extensions;
 using Exceptionless.Logging;
+using Exceptionless.Services;
 
 namespace Exceptionless {
     public static class ExceptionlessClientExtensions {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
+            client.Configuration.ReadFromAttributes(AppDomain.CurrentDomain.GetAssemblies());
+            client.Configuration.ReadFromConfig();
+            client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
+
             client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
             client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
         }

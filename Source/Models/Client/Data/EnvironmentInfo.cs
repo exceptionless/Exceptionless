@@ -48,7 +48,7 @@ namespace Exceptionless.Models.Data {
         /// Gets the process id.
         /// </summary>
         /// <value>The process id.</value>
-        public int ProcessId { get; set; }
+        public string ProcessId { get; set; }
 
         /// <summary>
         /// Gets the amount of physical memory used by the process.
@@ -83,6 +83,11 @@ namespace Exceptionless.Models.Data {
         /// The OS version that the error occurred on.
         /// </summary>
         public string OSVersion { get; set; }
+
+        /// <summary>
+        /// The Ip Address of the machine that the error occurred on.
+        /// </summary>
+        public string IpAddress { get; set; }
 
         /// <summary>
         /// The name of the machine that the error occurred on.

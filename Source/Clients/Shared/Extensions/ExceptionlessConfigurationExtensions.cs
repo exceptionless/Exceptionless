@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Configuration;
@@ -20,6 +21,7 @@ namespace Exceptionless {
         }
 
         public static string GetQueueName(this ExceptionlessConfiguration config) {
+            // TODO: Ensure the api key has been set before this is called.
             return config.ApiKey.Substring(0, 8);
         }
 
@@ -33,7 +35,7 @@ namespace Exceptionless {
 
         /// <summary>
         /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
-        /// from the assembly.
+        /// from the passed in assembly.
         /// </summary>
         /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
         /// <param name="assembly">The assembly that contains the Exceptionless configuration attributes.</param>
@@ -41,11 +43,27 @@ namespace Exceptionless {
             if (configuration == null)
                 throw new ArgumentNullException("configuration");
 
-            if (assembly == null)
-                assembly = Assembly.GetCallingAssembly();
+            configuration.ReadFromAttributes(assembly != null ? new List<Assembly> { assembly } : null);
+        }
 
-            object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessAttribute), false);
-            if (attributes.Length > 0 && attributes[0] is ExceptionlessAttribute) {
+        /// <summary>
+        /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
+        /// from the passed in assemblies.
+        /// </summary>
+        /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
+        /// <param name="assemblies">A list of assemblies that should be checked for the Exceptionless configuration attributes.</param>
+        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration, ICollection<Assembly> assemblies = null) {
+            if (configuration == null)
+                throw new ArgumentNullException("configuration");
+
+            if (assemblies == null)
+                assemblies = new List<Assembly> { Assembly.GetCallingAssembly() };
+
+            foreach (var assembly in assemblies) {
+                object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessAttribute), false);
+                if (attributes.Length <= 0 || !(attributes[0] is ExceptionlessAttribute))
+                    continue;
+
                 var attr = attributes[0] as ExceptionlessAttribute;
 
                 configuration.Enabled = attr.Enabled;
@@ -54,14 +72,17 @@ namespace Exceptionless {
                     configuration.ApiKey = attr.ApiKey;
                 if (attr.ServerUrl != null)
                     configuration.ServerUrl = attr.ServerUrl;
-                
+
                 configuration.EnableSSL = attr.EnableSSL;
+                break;
             }
 
-            attributes = assembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);
-            foreach (ExceptionlessSettingAttribute attribute in attributes.OfType<ExceptionlessSettingAttribute>()) {
-                if (!String.IsNullOrEmpty(attribute.Name))
-                    configuration.Settings[attribute.Name] = attribute.Value;
+            foreach (var assembly in assemblies) {
+                object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);
+                foreach (ExceptionlessSettingAttribute attribute in attributes.OfType<ExceptionlessSettingAttribute>()) {
+                    if (!String.IsNullOrEmpty(attribute.Name))
+                        configuration.Settings[attribute.Name] = attribute.Value;
+                }
             }
         }
     }

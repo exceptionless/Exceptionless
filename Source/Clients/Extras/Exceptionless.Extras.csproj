@@ -31,6 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
@@ -49,6 +50,7 @@
     <Compile Include="Logging\IsolatedStorageFileExceptionlessLog.cs" />
     <Compile Include="Logging\TraceExceptionlessLog.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\EnvironmentInfoCollector.cs" />
     <Compile Include="Utility\AssemblyHelper.cs" />
     <Compile Include="Storage\FolderFileStorage.cs" />
     <Compile Include="Storage\IsolatedStorageFileStorage.cs" />

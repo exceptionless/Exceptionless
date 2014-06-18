@@ -56,7 +56,14 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
         public static void ReadFromConfig(this ExceptionlessConfiguration configuration) {
-            var section = ConfigurationManager.GetSection("exceptionless") as ExceptionlessSection;
+            ExceptionlessSection section = null;
+
+            try {
+                section = ConfigurationManager.GetSection("exceptionless") as ExceptionlessSection;
+            } catch (Exception ex) {
+                configuration.Resolver.GetLog().Error(typeof(ExceptionlessConfigurationExtensions), ex, String.Concat("An error occurred while retrieving the configuration section. Exception: ", ex.Message));
+            }
+
             if (section == null)
                 return;
 
