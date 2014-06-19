@@ -80,7 +80,7 @@ namespace Exceptionless.SampleMvc.Controllers {
                     throw new ApplicationException("Boom!");
                 } catch (Exception ex) {
                    ex.ToExceptionless()
-                        .SetUserEmail("some@email.com")
+                        .SetUserInfo("some@email.com")
                        //.AddRecentTraceLogEntries() // TODO: Add support for AddRecentTraceLogEntries
                         .AddDefaultInformation()
                         .AddRequestInfo()
@@ -94,7 +94,7 @@ namespace Exceptionless.SampleMvc.Controllers {
                     ex.ToExceptionless().Submit();
 
                     ex.ToExceptionless()
-                        .SetUserEmail("some@email.com")
+                        .SetUserInfo("some@email.com")
                         .SetUserDescription("Some description.")
                         .SetUserName("someusername")
                         //.AddRecentTraceLogEntries() // TODO: Add support for AddRecentTraceLogEntries
