@@ -32,6 +32,10 @@ namespace Exceptionless.Storage {
             }
         }
 
+        public bool Exists(string path) {
+            return _storage.ContainsKey(path);
+        }
+
         private static byte[] ReadBytes(Stream input) {
             using (var ms = new MemoryStream()) {
                 input.CopyTo(ms);

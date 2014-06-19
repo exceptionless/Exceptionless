@@ -29,6 +29,9 @@ namespace Exceptionless.Dependency {
         }
 
         public static void RegisterDefaultServices(IDependencyResolver resolver) {
+            var fileStorage = new Lazy<IFileStorage>(() => resolver.Resolve<InMemoryFileStorage>());
+            resolver.Register(typeof(IFileStorage), () => fileStorage.Value);
+
             var exceptionlessLog = new Lazy<IExceptionlessLog>(() => resolver.Resolve<NullExceptionlessLog>());
             resolver.Register(typeof(IExceptionlessLog), () => exceptionlessLog.Value);
 
@@ -41,12 +44,6 @@ namespace Exceptionless.Dependency {
             var submissionClient = new Lazy<ISubmissionClient>(() => resolver.Resolve<DefaultSubmissionClient>());
             resolver.Register(typeof(ISubmissionClient), () => submissionClient.Value);
 
-            var keyValueStorage = new Lazy<IKeyValueStorage>(() => resolver.Resolve<InMemoryKeyValueStorage>());
-            resolver.Register(typeof(IKeyValueStorage), () => keyValueStorage.Value);
-
-            var fileStorage = new Lazy<IFileStorage>(() => resolver.Resolve<InMemoryFileStorage>());
-            resolver.Register(typeof(IFileStorage), () => fileStorage.Value);
-
             var environmentInfoCollector = new Lazy<IEnvironmentInfoCollector>(() => resolver.Resolve<DefaultEnvironmentInfoCollector>());
             resolver.Register(typeof(IEnvironmentInfoCollector), () => environmentInfoCollector.Value);
 
@@ -55,6 +52,9 @@ namespace Exceptionless.Dependency {
 
             var duplicateChecker = new Lazy<IDuplicateChecker>(() => resolver.Resolve<DefaultDuplicateChecker>());
             resolver.Register(typeof(IDuplicateChecker), () => duplicateChecker.Value);
+
+            var persistedClientData = new Lazy<PersistedDictionary>(() => new PersistedDictionary("client-data.json", resolver.Resolve<IFileStorage>(), resolver.Resolve<IJsonSerializer>()));
+            resolver.Register(typeof(PersistedDictionary), () => persistedClientData.Value);
         }
     }
 }

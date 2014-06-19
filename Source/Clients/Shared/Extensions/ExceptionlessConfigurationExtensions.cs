@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Exceptionless.Configuration;
 using Exceptionless.Dependency;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 
 namespace Exceptionless {
@@ -18,6 +19,10 @@ namespace Exceptionless {
             }
 
             return builder.Uri;
+        }
+
+        public static void AddExclusions(this ExceptionlessConfiguration config, params string[] exclusions) {
+            config.DataExclusions.AddRange(exclusions);
         }
 
         public static string GetQueueName(this ExceptionlessConfiguration config) {

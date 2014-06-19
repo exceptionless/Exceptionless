@@ -120,7 +120,7 @@
     <Compile Include="Storage\FolderFileStorageTests.cs" />
     <Compile Include="Storage\InMemoryFileStorageTests.cs" />
     <Compile Include="Storage\IsolatedStorageFileStorageTests.cs" />
-    <Compile Include="Storage\KeyValueStorageTests.cs" />
+    <Compile Include="Storage\PersistedDictionaryTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
     <Compile Include="Utility\AsyncTests.cs" />
   </ItemGroup>

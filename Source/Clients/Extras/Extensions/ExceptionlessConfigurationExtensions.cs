@@ -23,12 +23,10 @@ namespace Exceptionless {
 
         public static void UseIsolatedStorage(this ExceptionlessConfiguration configuration) {
             configuration.Resolver.Register<IFileStorage, IsolatedStorageFileStorage>();
-            configuration.Resolver.Register<IKeyValueStorage, IsolatedStorageKeyValueStorage>();
         }
 
         public static void UseFolderStorage(this ExceptionlessConfiguration configuration, string folder) {
             configuration.Resolver.Register<IFileStorage>(new FolderFileStorage(folder));
-            configuration.Resolver.Register<IKeyValueStorage>(new FolderKeyValueStorage(folder));
         }
 
         public static void UseTraceLogger(this ExceptionlessConfiguration configuration) {

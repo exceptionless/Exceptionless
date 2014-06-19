@@ -36,6 +36,10 @@ namespace Exceptionless.Extras.Storage {
             }
         }
 
+        public bool Exists(string path) {
+            return File.Exists(Path.Combine(Folder, path));
+        }
+
         public bool SaveFile(string path, string contents) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");

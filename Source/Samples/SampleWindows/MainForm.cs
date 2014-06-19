@@ -10,9 +10,10 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Windows.Forms;
+using Exceptionless.Models.Collections;
 using Tester;
 
 namespace Exceptionless.SampleWindows {
@@ -20,7 +21,16 @@ namespace Exceptionless.SampleWindows {
         public MainForm() {
             InitializeComponent();
             ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
-            ExceptionlessClient.Default.ConfigurationUpdated += OnConfigurationUpdated;
+            ExceptionlessClient.Default.Configuration.Settings.Changed += SettingsOnChanged;
+        }
+
+        private void SettingsOnChanged(object sender, ChangedEventArgs<KeyValuePair<string, string>> args) {
+            if (logTextBox.InvokeRequired) {
+                logTextBox.Invoke(new EventHandler<ChangedEventArgs<KeyValuePair<string, string>>>(SettingsOnChanged), sender, args);
+                return;
+            }
+
+            logTextBox.AppendText("Configuration Updated.");
         }
 
         private void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
@@ -35,22 +45,6 @@ namespace Exceptionless.SampleWindows {
 
             logTextBox.AppendText(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
             statusLabel.Text = "Submitting Message";
-        }
-
-        private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
-            if (logTextBox.InvokeRequired) {
-                logTextBox.Invoke(new EventHandler<ConfigurationUpdatedEventArgs>(OnConfigurationUpdated), sender, e);
-                return;
-            }
-
-            var sb = new StringBuilder();
-
-            if (e.Configuration != null)
-                sb.AppendLine(String.Format("Configuration updated.\tVersion: {0}", e.Configuration.Version));
-            else
-                sb.AppendLine("Configuration Updated: Response is {null}");
-
-            logTextBox.AppendText(sb.ToString());
         }
 
         private void generateExceptionToolStripMenuItem_Click(object sender, EventArgs e) {

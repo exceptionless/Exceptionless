@@ -10,11 +10,13 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Exceptionless.Models.Collections;
 
 namespace Exceptionless.SampleWpf {
     /// <summary>
@@ -25,7 +27,11 @@ namespace Exceptionless.SampleWpf {
             InitializeComponent();
 
             ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
-            ExceptionlessClient.Default.ConfigurationUpdated += OnConfigurationUpdated;
+            ExceptionlessClient.Default.Configuration.Settings.Changed += SettingsOnChanged;
+        }
+
+        private void SettingsOnChanged(object sender, ChangedEventArgs<KeyValuePair<string, string>> args) {
+            WriteLog("Configuration updated.");
         }
 
         private void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
@@ -34,17 +40,6 @@ namespace Exceptionless.SampleWpf {
                 e.Event.Tags.Add("Important");
 
             WriteLog(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
-        }
-
-        private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
-            var sb = new StringBuilder();
-
-            if (e.Configuration != null)
-                sb.Append(String.Format("Configuration updated.\tVersion: {0}", e.Configuration.Version));
-            else
-                sb.AppendLine("Configuration was not updated: Response is {null}");
-
-            WriteLog(sb.ToString());
         }
 
         private void WriteLog(string message) {

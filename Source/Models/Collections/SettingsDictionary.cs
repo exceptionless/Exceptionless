@@ -11,9 +11,10 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Models.Collections;
 
 namespace Exceptionless.Models {
-    public class SettingsDictionary : Dictionary<string, string> {
+    public class SettingsDictionary : ObservableDictionary<string, string> {
         public SettingsDictionary() : base(StringComparer.OrdinalIgnoreCase) {}
 
         public SettingsDictionary(IEnumerable<KeyValuePair<string, string>> values) : base(StringComparer.OrdinalIgnoreCase) {
@@ -135,6 +136,11 @@ namespace Exceptionless.Models {
 
             bool result = TryGetValue(name, out temp);
             return result ? new Guid(temp) : @default;
+        }
+
+        public void Apply(IEnumerable<KeyValuePair<string, string>> values) {
+            foreach (var v in values)
+                this[v.Key] = v.Value;
         }
     }
 }

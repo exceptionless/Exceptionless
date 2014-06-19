@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using Exceptionless.Dependency;
 using Exceptionless.Duplicates;
@@ -137,25 +136,6 @@ namespace Exceptionless {
             return _lastReferenceIdManager.Value.GetLast();
         }
 
-        #region Events
-
-        /// <summary>
-        /// Occurs when the configuration updated.
-        /// </summary>
-        public event EventHandler<ConfigurationUpdatedEventArgs> ConfigurationUpdated;
-
-        /// <summary>
-        /// Raises the <see cref="ConfigurationUpdated" /> event.
-        /// </summary>
-        /// <param name="e">The <see cref="ConfigurationUpdatedEventArgs" /> instance containing the event data.</param>
-        protected void OnConfigurationUpdated(ConfigurationUpdatedEventArgs e) {
-            if (e.Configuration != null)
-                _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Updated configuration to version {0}.", e.Configuration.Version);
-
-            if (ConfigurationUpdated != null)
-                ConfigurationUpdated(this, e);
-        }
-
         /// <summary>
         /// Occurs when the event is being submitted.
         /// </summary>
@@ -186,8 +166,6 @@ namespace Exceptionless {
                 }
             }
         }
-
-        #endregion
 
         void IDisposable.Dispose() {
             Configuration.Resolver.Dispose();

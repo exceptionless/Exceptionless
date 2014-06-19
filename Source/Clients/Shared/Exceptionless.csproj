@@ -53,6 +53,7 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Configuration\SettingsManager.cs" />
     <Compile Include="Configuration\ExceptionlessAttribute.cs" />
     <Compile Include="Configuration\ExceptionlessConfiguration.cs" />
     <Compile Include="Configuration\ExceptionlessSettingAttribute.cs" />
@@ -294,9 +295,8 @@
     <Compile Include="Services\DefaultEnvironmentInfoCollector.cs" />
     <Compile Include="Services\IEnvironmentInfoCollector.cs" />
     <Compile Include="Storage\InMemoryFileStorage.cs" />
-    <Compile Include="Storage\InMemoryKeyValueStorage.cs" />
     <Compile Include="Storage\IFileStorage.cs" />
-    <Compile Include="Storage\IKeyValueStorage.cs" />
+    <Compile Include="Storage\PersistedDictionary.cs" />
     <Compile Include="Submission\DefaultSubmissionClient.cs" />
     <Compile Include="Submission\ISubmissionClient.cs" />
     <Compile Include="Submission\Net\AuthorizationHeader.cs" />

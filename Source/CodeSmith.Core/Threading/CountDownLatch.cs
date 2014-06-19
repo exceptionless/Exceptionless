@@ -28,5 +28,7 @@ namespace CodeSmith.Core.Threading {
         public bool Wait(int millisecondsTimeout) {
             return _event.WaitOne(millisecondsTimeout);
         }
+
+        public int Remaining { get { return _remaining; } }
     }
 }

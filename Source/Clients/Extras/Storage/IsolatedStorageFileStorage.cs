@@ -67,7 +67,7 @@ namespace Exceptionless.Extras.Storage {
             return result.Where(k => regex.IsMatch(k));
         }
 
-        public bool FileExists(string path) {
+        public bool Exists(string path) {
             return GetFiles(path).Any();
         }
 

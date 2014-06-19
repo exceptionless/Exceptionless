@@ -64,10 +64,6 @@ namespace Exceptionless.Dependency {
             return resolver.Resolve<ISubmissionClient>() ?? resolver.Resolve<DefaultSubmissionClient>();
         }
 
-        public static IKeyValueStorage GetKeyValueStorage(this IDependencyResolver resolver) {
-            return resolver.Resolve<IKeyValueStorage>() ?? resolver.Resolve<InMemoryKeyValueStorage>();
-        }
-
         public static IFileStorage GetFileStorage(this IDependencyResolver resolver) {
             return resolver.Resolve<IFileStorage>() ?? resolver.Resolve<InMemoryFileStorage>();
         }

@@ -68,6 +68,7 @@
     <Compile Include="Client\Legacy\StackFrame.cs" />
     <Compile Include="Admin\PersistentEvent.cs" />
     <Compile Include="Client\SessionInfo.cs" />
+    <Compile Include="Collections\ObservableDictionary.cs" />
     <Compile Include="Enums\NotificationMode.cs" />
     <Compile Include="Collections\ModuleCollection.cs" />
     <Compile Include="Collections\ParameterCollection.cs" />

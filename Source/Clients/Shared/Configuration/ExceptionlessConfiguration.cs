@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
 using Exceptionless.Models;
@@ -26,6 +27,9 @@ namespace Exceptionless {
             _resolver = resolver;
 
             EventEnrichmentManager.AddDefaultEnrichments(this);
+            var settingsManager = _resolver.Resolve<SettingsManager>();
+            if (settingsManager != null)
+                settingsManager.Init();
         }
 
         /// <summary>
@@ -82,6 +86,7 @@ namespace Exceptionless {
         /// parameters from the report.
         /// </summary>
         public ICollection<string> DataExclusions { get; set; }
+        // TODO: Need to figure out how to also include the exclusions from the server settings.
 
         /// <summary>
         /// The dependency resolver to use for this configuration.
