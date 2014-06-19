@@ -26,7 +26,6 @@ namespace Exceptionless.Core.Pipeline {
 
             if (!ctx.Event.Tags.Contains("Internal")) {
                 EventBuilder b = ex.ToExceptionless()
-                    .AddDefaultInformation()
                     .AddObject(ctx.Event)
                     .AddTags("Internal")
                     .SetUserDescription(message);

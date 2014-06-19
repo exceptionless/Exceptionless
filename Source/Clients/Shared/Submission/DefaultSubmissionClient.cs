@@ -10,16 +10,17 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
+using Exceptionless.Configuration;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        public SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration configuration, IJsonSerializer serializer) {
-            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(configuration.GetServiceEndPoint(), "events"));
-            client.SetUserAgent(configuration.UserAgent);
-            client.AddAuthorizationHeader(configuration);
+        public SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer) {
+            HttpWebRequest client = WebRequest.CreateHttp(String.Concat(config.GetServiceEndPoint(), "events"));
+            client.SetUserAgent(config.UserAgent);
+            client.AddAuthorizationHeader(config);
 
             var data = serializer.Serialize(events);
 
@@ -37,10 +38,10 @@ namespace Exceptionless.Submission {
             }
 
             int settingsVersion;
-            if (!Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
-                settingsVersion = -1;
+            if (Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
+                SettingsManager.CheckVersion(settingsVersion, config);
 
-            return new SubmissionResponse((int)response.StatusCode, settingsVersion, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
+            return new SubmissionResponse((int)response.StatusCode, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
         }
 
         public SettingsResponse GetSettings(ExceptionlessConfiguration configuration, IJsonSerializer serializer) {

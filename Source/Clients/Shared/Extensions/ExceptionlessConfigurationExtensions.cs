@@ -6,6 +6,7 @@ using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Logging;
+using Exceptionless.Storage;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
@@ -38,31 +39,41 @@ namespace Exceptionless {
             configuration.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(logger));
         }
 
+        public static void ApplySavedServerSettings(this ExceptionlessConfiguration config) {
+            SettingsManager.ApplySavedServerSettings(config);
+        }
+
+        public static void UseInMemoryStorage(this ExceptionlessConfiguration config) {
+            config.Resolver.Register<IFileStorage, InMemoryFileStorage>();
+        }
+
         /// <summary>
         /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
         /// from the passed in assembly.
         /// </summary>
-        /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
-        /// <param name="assembly">The assembly that contains the Exceptionless configuration attributes.</param>
-        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration, Assembly assembly = null) {
-            if (configuration == null)
-                throw new ArgumentNullException("configuration");
+        /// <param name="config">The configuration object you want to apply the attribute settings to.</param>
+        /// <param name="assemblies">The assembly that contains the Exceptionless configuration attributes.</param>
+        public static void ReadFromAttributes(this ExceptionlessConfiguration config, params Assembly[] assemblies) {
+            if (config == null)
+                throw new ArgumentNullException("config");
 
-            configuration.ReadFromAttributes(assembly != null ? new List<Assembly> { assembly } : null);
+            config.ReadFromAttributes(assemblies.ToList());
         }
 
         /// <summary>
         /// Reads the <see cref="ExceptionlessAttribute" /> and <see cref="ExceptionlessSettingAttribute" /> 
         /// from the passed in assemblies.
         /// </summary>
-        /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
+        /// <param name="config">The configuration object you want to apply the attribute settings to.</param>
         /// <param name="assemblies">A list of assemblies that should be checked for the Exceptionless configuration attributes.</param>
-        public static void ReadFromAttributes(this ExceptionlessConfiguration configuration, ICollection<Assembly> assemblies = null) {
-            if (configuration == null)
-                throw new ArgumentNullException("configuration");
+        public static void ReadFromAttributes(this ExceptionlessConfiguration config, ICollection<Assembly> assemblies = null) {
+            if (config == null)
+                throw new ArgumentNullException("config");
 
             if (assemblies == null)
                 assemblies = new List<Assembly> { Assembly.GetCallingAssembly() };
+
+            assemblies = assemblies.Where(a => a != null).Distinct().ToList();
 
             foreach (var assembly in assemblies) {
                 object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessAttribute), false);
@@ -71,14 +82,14 @@ namespace Exceptionless {
 
                 var attr = attributes[0] as ExceptionlessAttribute;
 
-                configuration.Enabled = attr.Enabled;
-
+                config.Enabled = attr.Enabled;
+                
                 if (attr.ApiKey != null)
-                    configuration.ApiKey = attr.ApiKey;
+                    config.ApiKey = attr.ApiKey;
                 if (attr.ServerUrl != null)
-                    configuration.ServerUrl = attr.ServerUrl;
-
-                configuration.EnableSSL = attr.EnableSSL;
+                    config.ServerUrl = attr.ServerUrl;
+                
+                config.EnableSSL = attr.EnableSSL;
                 break;
             }
 
@@ -86,7 +97,7 @@ namespace Exceptionless {
                 object[] attributes = assembly.GetCustomAttributes(typeof(ExceptionlessSettingAttribute), false);
                 foreach (ExceptionlessSettingAttribute attribute in attributes.OfType<ExceptionlessSettingAttribute>()) {
                     if (!String.IsNullOrEmpty(attribute.Name))
-                        configuration.Settings[attribute.Name] = attribute.Value;
+                        config.Settings[attribute.Name] = attribute.Value;
                 }
             }
         }

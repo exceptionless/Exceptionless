@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
@@ -19,8 +17,8 @@ using Xunit;
 
 namespace Client.Tests {
     public class ExceptionlessClientTests {
-        public ExceptionlessClientTests() {
-            ExceptionlessConfiguration.ConfigureDefaults.Add(c => {
+        private ExceptionlessClient CreateClient() {
+            return new ExceptionlessClient(c => {
                 c.ApiKey = DataHelper.SAMPLE_API_KEY;
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
@@ -40,8 +38,8 @@ namespace Client.Tests {
                 Assert.NotNull(statsCounter);
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.Count);
-                
-                var client = new ExceptionlessClient();
+
+                var client = CreateClient();
                 client.SubmitEvent(new Event { Message = "Test" });
 
                 var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
@@ -71,8 +69,8 @@ namespace Client.Tests {
                 Assert.NotNull(statsCounter);
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.Count);
-                
-                var client = new ExceptionlessClient();
+
+                var client = CreateClient();
                 try {
                     throw new Exception("Simple Exception");
                 } catch (Exception ex) {

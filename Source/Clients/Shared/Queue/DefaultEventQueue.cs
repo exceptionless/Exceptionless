@@ -106,16 +106,6 @@ namespace Exceptionless.Queue {
             } finally {
                 _processingQueue = false;
             }
-
-            //var config = _client.GetSettings(_config, _serializer);
-            //if (response.ShouldUpdateConfiguration(LocalConfiguration.CurrentConfigurationVersion))
-            //    UpdateConfiguration(true);
-
-            //completed = new SendErrorCompletedEventArgs(id, exception, false, error);
-            //OnSendErrorCompleted(completed);
-
-            // TODO: Check for max attempts and see if we should delete
-            // TODO: Check to see if the configuration needs to be updated.
         }
 
         private void OnProcessQueue(object state) {

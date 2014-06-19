@@ -12,9 +12,8 @@ using System.Net;
 
 namespace Exceptionless.Submission {
     public class SubmissionResponse {
-        public SubmissionResponse(int statusCode, int settingsVersion = -1, string message = null) {
+        public SubmissionResponse(int statusCode, string message = null) {
             StatusCode = statusCode;
-            SettingsVersion = settingsVersion;
             Message = message;
 
             Success = (HttpStatusCode)statusCode == HttpStatusCode.Accepted;
@@ -33,7 +32,6 @@ namespace Exceptionless.Submission {
         public bool NotFound { get; private set; }
 
         public int StatusCode { get; private set; }
-        public int SettingsVersion { get; private set; }
         public string Message { get; private set; }
     }
 }

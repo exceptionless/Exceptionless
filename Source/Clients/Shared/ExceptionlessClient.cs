@@ -14,9 +14,9 @@ namespace Exceptionless {
         private readonly Lazy<ILastReferenceIdManager> _lastReferenceIdManager;
         private readonly Lazy<IDuplicateChecker> _duplicateChecker;
 
-        public ExceptionlessClient() : this(ExceptionlessConfiguration.CreateDefault()) { }
+        public ExceptionlessClient() : this(new ExceptionlessConfiguration(DependencyResolver.CreateDefault())) { }
 
-        public ExceptionlessClient(string apiKey) : this() {
+        public ExceptionlessClient(string apiKey) {
             Configuration.ApiKey = apiKey;
         }
 
@@ -32,7 +32,11 @@ namespace Exceptionless {
             Configuration = configuration;
             configuration.Resolver.Register(typeof(ExceptionlessConfiguration), () => Configuration);
             _log = new Lazy<IExceptionlessLog>(() => Configuration.Resolver.GetLog());
-            _queue = new Lazy<IEventQueue>(() => Configuration.Resolver.GetEventQueue());
+            _queue = new Lazy<IEventQueue>(() => {
+                // config can't be changed after the queue starts up.
+                Configuration.LockConfig();
+                return Configuration.Resolver.GetEventQueue();
+            });
             _lastReferenceIdManager = new Lazy<ILastReferenceIdManager>(() => Configuration.Resolver.GetLastReferenceIdManager());
             _duplicateChecker = new Lazy<IDuplicateChecker>(() => Configuration.Resolver.GetDuplicateChecker());
         }
@@ -40,7 +44,7 @@ namespace Exceptionless {
         public ExceptionlessConfiguration Configuration { get; private set; }
 
         /// <summary>
-        /// Updates the user and description of an event for the specified reference id.
+        /// Updates the user's email address and description of an event for the specified reference id.
         /// </summary>
         /// <param name="referenceId">The reference id of the event to update.</param>
         /// <param name="email">The user's email address to set on the event.</param>
@@ -90,6 +94,13 @@ namespace Exceptionless {
             if (ev == null)
                 throw new ArgumentNullException("ev");
 
+            Configuration.LockConfig();
+            if (!Configuration.Validate().IsValid) {
+                Configuration.Enabled = false;
+                _log.Value.FormattedError(typeof(ExceptionlessClient), "Disabling client due to invalid configuration: {0}", String.Join(", ", Configuration.Validate().Messages));
+                return;
+            }
+
             var context = new EventEnrichmentContext(this, enrichmentContextData);
             EventEnrichmentManager.Enrich(context, ev);
 
@@ -114,8 +125,6 @@ namespace Exceptionless {
                 _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);
                 _lastReferenceIdManager.Value.SetLast(ev.ReferenceId);
             }
-
-            //LocalConfiguration.SubmitCount++;
         }
 
         /// <summary>Creates a new instance of <see cref="Event" />.</summary>

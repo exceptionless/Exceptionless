@@ -22,8 +22,8 @@ using Xunit;
 
 namespace Client.Tests.Submission {
     public class DefaultSubmissionClientTests {
-        public DefaultSubmissionClientTests() {
-            ExceptionlessConfiguration.ConfigureDefaults.Add(c => {
+        private ExceptionlessClient GetClient() {
+            return new ExceptionlessClient(c => {
                 c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
@@ -35,13 +35,12 @@ namespace Client.Tests.Submission {
         public void SubmitAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
-                var configuration = ExceptionlessConfiguration.CreateDefault();
+                var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
                 var response = client.Submit(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
-                Assert.NotEqual(-1, response.SettingsVersion);
                 Assert.Null(response.Message);
             }
         }
@@ -49,7 +48,7 @@ namespace Client.Tests.Submission {
         [Fact]
         public void GetSettingsAsync() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
-                var configuration = ExceptionlessConfiguration.CreateDefault();
+                var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();

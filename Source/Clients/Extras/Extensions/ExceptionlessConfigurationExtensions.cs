@@ -2,6 +2,8 @@
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
+using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Extras;
@@ -49,11 +51,21 @@ namespace Exceptionless {
             configuration.AddEnrichment<TraceLogEnrichment>();
         }
 
+        public static void ReadAllConfig(this ExceptionlessConfiguration config, params Assembly[] configAttributesAssemblies) {
+            config.UseIsolatedStorage();
+            if (configAttributesAssemblies == null || configAttributesAssemblies.Length == 0)
+                config.ReadFromAttributes(Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly());
+            else
+                config.ReadFromAttributes(configAttributesAssemblies);
+            config.ReadFromConfigSection();
+            config.ApplySavedServerSettings();
+        }
+
         /// <summary>
         /// Reads the Exceptionless configuration from the app.config or web.config file.
         /// </summary>
         /// <param name="configuration">The configuration object you want to apply the attribute settings to.</param>
-        public static void ReadFromConfig(this ExceptionlessConfiguration configuration) {
+        public static void ReadFromConfigSection(this ExceptionlessConfiguration configuration) {
             ExceptionlessSection section = null;
 
             try {

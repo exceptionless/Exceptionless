@@ -33,6 +33,12 @@ namespace Client.Tests.Storage {
             Assert.False(success, "Dictionary was saved multiple times.");
             Assert.Equal(1, latch.Remaining);
             Assert.True(storage.Exists("test.json"));
+
+            dict["test"] = "test";
+            Assert.Equal(11, dict.Count);
+            success = latch.Wait(250);
+            Assert.True(success, "Failed to save dictionary.");
+            Assert.True(storage.Exists("test.json"));
         }
     }
 }

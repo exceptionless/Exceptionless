@@ -9,12 +9,9 @@ using Exceptionless.Services;
 namespace Exceptionless {
     public static class ExceptionlessClientExtensions {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
-            client.Configuration.UseIsolatedStorage();
-            client.Configuration.ReadFromAttributes(AppDomain.CurrentDomain.GetAssemblies());
-            client.Configuration.ReadFromConfig();
+            client.Configuration.ReadAllConfig();
             client.Configuration.UseErrorEnrichment();
             client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
-            
             client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
             client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
         }

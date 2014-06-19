@@ -22,7 +22,6 @@ namespace Exceptionless {
         public static void RegisterWebApi(this ExceptionlessClient client, HttpConfiguration config) {
             client.Startup();
             client.Configuration.AddEnrichment<ExceptionlessWebApiEnrichment>();
-            client.Configuration.ReadFromConfig();
             client.Configuration.UseErrorEnrichment();
             client.Configuration.IncludePrivateInformation = true;
 

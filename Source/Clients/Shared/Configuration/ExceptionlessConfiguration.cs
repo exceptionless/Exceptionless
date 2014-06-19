@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
 using Exceptionless.Models;
@@ -12,6 +11,10 @@ namespace Exceptionless {
         private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.com";
         private const string DEFAULT_USER_AGENT = "exceptionless/" + ThisAssembly.AssemblyFileVersion;
         private readonly IDependencyResolver _resolver;
+        private bool _configLocked;
+        private string _apiKey;
+        private string _serverUrl;
+        private ValidationResult _validationResult;
 
         public ExceptionlessConfiguration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
@@ -27,15 +30,28 @@ namespace Exceptionless {
             _resolver = resolver;
 
             EventEnrichmentManager.AddDefaultEnrichments(this);
-            var settingsManager = _resolver.Resolve<SettingsManager>();
-            if (settingsManager != null)
-                settingsManager.Init();
+        }
+
+        internal void LockConfig() {
+            if (_configLocked)
+                return;
+
+            _configLocked = true;
+            _validationResult = Validate();
         }
 
         /// <summary>
         /// The server url that all events will be sent to.
         /// </summary>
-        public string ServerUrl { get; set; }
+        public string ServerUrl {
+            get { return _serverUrl; }
+            set {
+                if (_configLocked)
+                    throw new ArgumentException("ServerUrl can't be changed after the client has been initialized.");
+
+                _serverUrl = value;
+            }
+        }
 
         /// <summary>
         /// Used to identify the client that sent the events to the server.
@@ -45,7 +61,15 @@ namespace Exceptionless {
         /// <summary>
         /// The API key that will be used when sending events to the server.
         /// </summary>
-        public string ApiKey { get; set; }
+        public string ApiKey {
+            get { return _apiKey; }
+            set {
+                if (_configLocked)
+                    throw new ArgumentException("ApiKey can't be changed after the client has been initialized.");
+
+                _apiKey = value;
+            }
+        }
 
         /// <summary>
         /// Whether the client is currently enabled or not. If it is disabled, submitted errors will be discarded and no data will be sent to the server.
@@ -95,33 +119,6 @@ namespace Exceptionless {
             get { return _resolver; }
         }
 
-        internal bool HasValidApiKey {
-            get {
-                string key = ApiKey != null ? ApiKey.Trim() : null;
-                return !String.IsNullOrEmpty(key)
-                       && key.Length >= 10
-                       && !key.Contains(" ")
-                       && !String.Equals(key, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        public void ApplyDefaultConfiguration() {
-            foreach (var configurator in ConfigureDefaults)
-                configurator(this);
-        }
-
-        static ExceptionlessConfiguration() {
-            ConfigureDefaults = new List<Action<ExceptionlessConfiguration>>();
-        }
-
-        public static List<Action<ExceptionlessConfiguration>> ConfigureDefaults { get; private set; }
-
-        public static ExceptionlessConfiguration CreateDefault() {
-            var config = new ExceptionlessConfiguration(DependencyResolver.CreateDefault());
-            config.ApplyDefaultConfiguration();
-            return config;
-        }
-
         #region Enrichments
 
         private readonly Dictionary<string, Lazy<IEventEnrichment>> _enrichments = new Dictionary<string, Lazy<IEventEnrichment>>();
@@ -166,5 +163,34 @@ namespace Exceptionless {
         }
 
         #endregion
+
+        public ValidationResult Validate() {
+            if (_validationResult != null)
+                return _validationResult;
+
+            var result = new ValidationResult();
+
+            string key = ApiKey != null ? ApiKey.Trim() : null;
+            if (String.IsNullOrEmpty(key)
+                 || String.Equals(key, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase))
+                result.Messages.Add("ApiKey is not set.");
+
+            if (key != null && (key.Length < 10 || key.Contains(" ")))
+                result.Messages.Add(String.Format("ApiKey \"{0}\" is not valid.", key));
+
+            if (String.IsNullOrEmpty(ServerUrl))
+                result.Messages.Add("ServerUrl is not set.");
+
+            return result;
+        }
+
+        public class ValidationResult {
+            public ValidationResult() {
+                Messages = new List<string>();
+            }
+
+            public bool IsValid { get { return Messages.Count == 0; } }
+            public ICollection<string> Messages { get; private set; }
+        }
     }
 }
