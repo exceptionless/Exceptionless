@@ -9,14 +9,14 @@ using Exceptionless.Services;
 namespace Exceptionless {
     public static class ExceptionlessClientExtensions {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
-            ExceptionlessConfiguration.ConfigureDefaults.Add(config => {
-                config.ReadFromAttributes(AppDomain.CurrentDomain.GetAssemblies());
-                config.ReadFromConfig();
-                config.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
-
-                client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
-                client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
-            });
+            client.Configuration.UseIsolatedStorage();
+            client.Configuration.ReadFromAttributes(AppDomain.CurrentDomain.GetAssemblies());
+            client.Configuration.ReadFromConfig();
+            client.Configuration.UseErrorEnrichment();
+            client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
+            
+            client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
+            client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
         }
 
         public static void Shutdown(this ExceptionlessClient client, AppDomain appDomain = null) {
