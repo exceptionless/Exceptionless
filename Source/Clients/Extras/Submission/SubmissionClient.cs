@@ -9,21 +9,29 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
+using System.Runtime.CompilerServices;
 using Exceptionless.Configuration;
 using Exceptionless.Extensions;
+using Exceptionless.Extras.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Submission;
 using Exceptionless.Submission.Net;
 
-namespace Exceptionless.Submission {
-    public class DefaultSubmissionClient : ISubmissionClient {
+namespace Exceptionless.Extras.Submission {
+    public class SubmissionClient : ISubmissionClient {
+        static SubmissionClient() {
+            SafeConfigureSSLCertificateValidation();
+        }
+
         public SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer) {
             var data = serializer.Serialize(events);
 
             HttpWebResponse response;
             try {
                 var request = CreateHttpWebRequest(config, "events");
-                response = request.PostJsonAsync(data).Result;
+                response = request.PostJsonAsyncWithCompression(data).Result;
             } catch (AggregateException aex) {
                 var ex = aex.GetInnermostException() as WebException;
                 if (ex != null)
@@ -63,10 +71,31 @@ namespace Exceptionless.Submission {
         }
 
         private HttpWebRequest CreateHttpWebRequest(ExceptionlessConfiguration config, string endPoint) {
-            var request = WebRequest.CreateHttp(String.Concat(config.GetServiceEndPoint(), endPoint));
+            var request = (HttpWebRequest)WebRequest.Create(String.Concat(config.GetServiceEndPoint(), endPoint));
             request.AddAuthorizationHeader(config);
             request.SetUserAgent(config.UserAgent);
+            request.AllowAutoRedirect = true;
+            request.AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip | DecompressionMethods.None;
+
+            try {
+                request.UseDefaultCredentials = true;
+                //    if (Credentials != null)
+                //        request.Credentials = Credentials;
+            } catch (Exception) {}
+
             return request;
+        }
+
+        /// <summary>
+        /// Ignore invalid SSL certificate warnings.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void SafeConfigureSSLCertificateValidation() {
+            try {
+                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            } catch (Exception ex) {
+                Trace.WriteLine(String.Format("An error occurred while configuring SSL certificate validation. Exception: {0}", ex));
+            }
         }
     }
 }

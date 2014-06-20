@@ -10,7 +10,7 @@ namespace Client.Tests.Utility {
             return new SubmissionResponse(202, "Accepted");
         }
 
-        public SettingsResponse GetSettings(ExceptionlessConfiguration configuration, IJsonSerializer serializer) {
+        public SettingsResponse GetSettings(ExceptionlessConfiguration config, IJsonSerializer serializer) {
             return new SettingsResponse(true);
         }
     }

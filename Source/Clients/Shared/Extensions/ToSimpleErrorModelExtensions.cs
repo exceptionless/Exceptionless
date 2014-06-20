@@ -23,7 +23,7 @@ namespace Exceptionless.Extensions {
             Type type = exception.GetType();
 
             var error = new SimpleError {
-                Message = exception.GetMessage(),
+                Message = GetMessage(exception),
                 Type = type.FullName,
                 StackTrace = exception.StackTrace
             };
@@ -67,7 +67,7 @@ namespace Exceptionless.Extensions {
             return false;
         }
 
-        private static string GetMessage(this Exception exception) {
+        private static string GetMessage(Exception exception) {
             string defaultMessage = String.Format("Exception of type '{0}' was thrown.", exception.GetType().FullName);
             string message = !String.IsNullOrEmpty(exception.Message) ? String.Join(" ", exception.Message.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)).Trim() : null;
 

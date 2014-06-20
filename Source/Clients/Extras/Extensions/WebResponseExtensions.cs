@@ -11,7 +11,7 @@ using System;
 using System.IO;
 using System.Net;
 
-namespace Exceptionless.Extensions {
+namespace Exceptionless.Extras.Extensions {
     internal static class WebResponseExtensions {
         public static string GetResponseText(this WebResponse response) {
             try {

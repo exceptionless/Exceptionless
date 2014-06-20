@@ -10,18 +10,6 @@ using Exceptionless.Storage;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
-        internal static Uri GetServiceEndPoint(this ExceptionlessConfiguration config) {
-            var builder = new UriBuilder(config.ServerUrl) { Path = "/api/v2/" };
-
-            // EnableSSL
-            if (config.EnableSSL && builder.Port == 80 && !builder.Host.Contains("local")) {
-                builder.Port = 443;
-                builder.Scheme = "https";
-            }
-
-            return builder.Uri;
-        }
-
         public static void AddExclusions(this ExceptionlessConfiguration config, params string[] exclusions) {
             config.DataExclusions.AddRange(exclusions);
         }
@@ -100,6 +88,24 @@ namespace Exceptionless {
                         config.Settings[attribute.Name] = attribute.Value;
                 }
             }
+        }
+    }
+}
+
+namespace Exceptionless.Extensions {
+    public static class ExceptionlessConfigurationExtensions {
+        public static Uri GetServiceEndPoint(this ExceptionlessConfiguration config) {
+            var builder = new UriBuilder(config.ServerUrl) {
+                Path = "/api/v2/"
+            };
+
+            // EnableSSL
+            if (config.EnableSSL && builder.Port == 80 && !builder.Host.Contains("local")) {
+                builder.Port = 443;
+                builder.Scheme = "https";
+            }
+
+            return builder.Uri;
         }
     }
 }

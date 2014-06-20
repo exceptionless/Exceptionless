@@ -9,6 +9,7 @@
 
 using System;
 using System.IO;
+using System.IO.Compression;
 using System.Net;
 using System.Reflection;
 using System.Text;
@@ -16,8 +17,8 @@ using System.Threading.Tasks;
 using Exceptionless.Submission.Net;
 using Exceptionless.Threading.Tasks;
 
-namespace Exceptionless.Extensions {
-    internal static class WebRequestExtensions {
+namespace Exceptionless.Extras.Extensions {
+    public static class WebRequestExtensions {
         public const string JSON_CONTENT_TYPE = "application/json";
 
         public static Task<Stream> GetRequestStreamAsync(this WebRequest request) {
@@ -46,15 +47,18 @@ namespace Exceptionless.Extensions {
                 request.Headers[ExceptionlessHeaders.Client] = userAgent;
         }
 
-        public static Task<HttpWebResponse> PostJsonAsync(this HttpWebRequest request, string data) {
+        public static Task<HttpWebResponse> PostJsonAsyncWithCompression(this HttpWebRequest request, string data) {
             request.Accept = request.ContentType = JSON_CONTENT_TYPE;
             request.Method = "POST";
+            request.Headers["Content-Encoding"] = "gzip";
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
             return request.GetRequestStreamAsync().Then(t => {
-                    t.Result.Write(buffer, 0, buffer.Length);
+                using (var zipStream = new GZipStream(t.Result, CompressionMode.Compress)) {
+                    zipStream.Write(buffer, 0, buffer.Length);
                     return request.GetResponseAsync();
-                });
+                }
+            });
         }
 
         public static Task<HttpWebResponse> GetJsonAsync(this HttpWebRequest request) {

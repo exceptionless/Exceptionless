@@ -3,14 +3,17 @@ using System.Threading.Tasks;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
 using Exceptionless.Extras.Extensions;
+using Exceptionless.Extras.Submission;
 using Exceptionless.Logging;
 using Exceptionless.Services;
+using Exceptionless.Submission;
 
 namespace Exceptionless {
     public static class ExceptionlessClientExtensions {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
             client.Configuration.ReadAllConfig();
             client.Configuration.UseErrorEnrichment();
+            client.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
             client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
             client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
             client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();

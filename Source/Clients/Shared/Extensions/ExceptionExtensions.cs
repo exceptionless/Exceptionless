@@ -4,27 +4,6 @@ using Exceptionless.Enrichments;
 
 namespace Exceptionless {
     public static class ExceptionExtensions {
-        internal static Exception GetInnermostException(this Exception exception) {
-            if (exception == null)
-                return null;
-
-            Exception current = exception;
-            while (current.InnerException != null)
-                current = current.InnerException;
-
-            return current;
-        }
-
-        internal static string GetMessage(this Exception exception) {
-            if (exception == null)
-                return String.Empty;
-
-            if (exception is AggregateException)
-                return String.Join(Environment.NewLine, ((AggregateException)exception).InnerExceptions.Where(ex => !String.IsNullOrEmpty(ex.Message)).Select(ex => ex.Message));
-
-            return exception.Message;
-        }
-
         /// <summary>
         /// Creates a builder object for constructing error reports in a fluent api.
         /// </summary>
@@ -48,6 +27,31 @@ namespace Exceptionless {
             enrichmentContextData.SetException(exception);
 
             return client.CreateEventBuilder(enrichmentContextData);
+        }
+    }
+}
+
+namespace Exceptionless.Extensions {
+    public static class ExceptionExtensions {
+        public static Exception GetInnermostException(this Exception exception) {
+            if (exception == null)
+                return null;
+
+            Exception current = exception;
+            while (current.InnerException != null)
+                current = current.InnerException;
+
+            return current;
+        }
+
+        public static string GetMessage(this Exception exception) {
+            if (exception == null)
+                return String.Empty;
+
+            if (exception is AggregateException)
+                return String.Join(Environment.NewLine, ((AggregateException)exception).InnerExceptions.Where(ex => !String.IsNullOrEmpty(ex.Message)).Select(ex => ex.Message));
+
+            return exception.Message;
         }
     }
 }
