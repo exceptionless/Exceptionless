@@ -56,8 +56,10 @@ namespace Exceptionless.Extras.Extensions {
             return request.GetRequestStreamAsync().Then(t => {
                 using (var zipStream = new GZipStream(t.Result, CompressionMode.Compress)) {
                     zipStream.Write(buffer, 0, buffer.Length);
-                    return request.GetResponseAsync();
+                    zipStream.Close();
                 }
+
+                return request.GetResponseAsync();
             });
         }
 
