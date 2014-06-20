@@ -8,13 +8,13 @@ using Exceptionless.Storage;
 namespace Exceptionless.Configuration {
     public static class SettingsManager {
         public static void ApplySavedServerSettings(ExceptionlessConfiguration config) {
-            string configPath = config.GetQueueName() + "\\server-settings.json";
+            string configPath = GetConfigPath(config);
             var fileStorage = config.Resolver.GetFileStorage();
-            var serializer = config.Resolver.GetJsonSerializer();
             if (!fileStorage.Exists(configPath))
                 return;
 
             try {
+                var serializer = config.Resolver.GetJsonSerializer();
                 var savedServerSettings = fileStorage.GetObject<SettingsDictionary>(configPath, serializer);
                 config.Settings.Apply(savedServerSettings);
             } catch (Exception ex) {
@@ -23,21 +23,32 @@ namespace Exceptionless.Configuration {
         }
 
         public static void CheckVersion(int version, ExceptionlessConfiguration config) {
-            string configPath = config.GetQueueName() + "\\server-settings.json";
-            var fileStorage = config.Resolver.GetFileStorage();
-            var serializer = config.Resolver.GetJsonSerializer();
-            var client = config.Resolver.GetSubmissionClient();
             var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
             if (version <= persistedClientData.GetInt32("ServerConfigVersion", -1))
                 return;
+
+            UpdateSettings(config);
+        }
+
+        public static void UpdateSettings(ExceptionlessConfiguration config) {
+            var serializer = config.Resolver.GetJsonSerializer();
+            var client = config.Resolver.GetSubmissionClient();
 
             var response = client.GetSettings(config, serializer);
             if (!response.Success)
                 return;
 
             config.Settings.Apply(response.Settings);
+
+            var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
             persistedClientData["ServerConfigVersion"] = response.SettingsVersion.ToString();
-            fileStorage.SaveObject(configPath, response.Settings, serializer);
+
+            var fileStorage = config.Resolver.GetFileStorage();
+            fileStorage.SaveObject(GetConfigPath(config), response.Settings, serializer);
+        }
+
+        private static string GetConfigPath(ExceptionlessConfiguration config) {
+            return config.GetQueueName() + "\\server-settings.json";
         }
     }
 }

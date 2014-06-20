@@ -22,7 +22,7 @@ using Exceptionless.Submission.Net;
 namespace Exceptionless.Extras.Submission {
     public class SubmissionClient : ISubmissionClient {
         static SubmissionClient() {
-            SafeConfigureSSLCertificateValidation();
+            ConfigureServicePointManagerSettings();
         }
 
         public SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer) {
@@ -86,12 +86,10 @@ namespace Exceptionless.Extras.Submission {
             return request;
         }
 
-        /// <summary>
-        /// Ignore invalid SSL certificate warnings.
-        /// </summary>
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void SafeConfigureSSLCertificateValidation() {
+        private static void ConfigureServicePointManagerSettings() {
             try {
+                ServicePointManager.Expect100Continue = false;
                 ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
             } catch (Exception ex) {
                 Trace.WriteLine(String.Format("An error occurred while configuring SSL certificate validation. Exception: {0}", ex));
