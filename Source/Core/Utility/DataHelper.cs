@@ -10,11 +10,8 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -35,8 +32,9 @@ namespace Exceptionless.Core.Utility {
         private readonly IDayProjectStatsRepository _dayProjectStats;
         private readonly IMonthProjectStatsRepository _monthProjectStats;
         private readonly BillingManager _billingManager;
-
+        
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
+        public const string SAMPLE_USER_API_KEY = "d795c4406f6b4bc6ae8d787c65d0274d";
 
         public DataHelper(IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
@@ -139,6 +137,16 @@ namespace Exceptionless.Core.Utility {
                 Id = SAMPLE_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
+                ExpiresUtc = DateTime.UtcNow.AddYears(100),
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            _tokenRepository.Add(new Token {
+                Id = SAMPLE_USER_API_KEY,
+                OrganizationId = organization.Id,
+                UserId = user.Id,
                 ExpiresUtc = DateTime.UtcNow.AddYears(100),
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,

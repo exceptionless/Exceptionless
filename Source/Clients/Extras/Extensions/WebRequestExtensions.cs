@@ -48,16 +48,25 @@ namespace Exceptionless.Extras.Extensions {
         }
 
         public static Task<HttpWebResponse> PostJsonAsyncWithCompression(this HttpWebRequest request, string data) {
+            // don't compress data smaller than 4kb
+            bool shouldCompress = data.Length > 1024 * 4;
             request.Accept = request.ContentType = JSON_CONTENT_TYPE;
             request.Method = "POST";
-            request.Headers["Content-Encoding"] = "gzip";
+            if (shouldCompress)
+                request.Headers["Content-Encoding"] = "gzip";
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
             return request.GetRequestStreamAsync().Then(t => {
-                using (var zipStream = new GZipStream(t.Result, CompressionMode.Compress)) {
-                    zipStream.Write(buffer, 0, buffer.Length);
-                    zipStream.Close();
-                }
+                if (shouldCompress)
+                    using (var zipStream = new GZipStream(t.Result, CompressionMode.Compress)) {
+                        zipStream.Write(buffer, 0, buffer.Length);
+                        zipStream.Close();
+                    }
+                else
+                    using (var stream = new BinaryWriter(t.Result)) {
+                        stream.Write(buffer, 0, buffer.Length);
+                        stream.Close();
+                    }
 
                 return request.GetResponseAsync();
             });

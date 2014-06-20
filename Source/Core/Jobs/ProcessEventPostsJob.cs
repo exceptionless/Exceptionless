@@ -128,7 +128,9 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private List<PersistentEvent> ParseEventPost(EventPost ep) {
-            byte[] data = ep.Data.Decompress();
+            byte[] data = ep.Data;
+            if (!String.IsNullOrEmpty(ep.ContentEncoding))
+                data = data.Decompress(ep.ContentEncoding);
 
             var encoding = Encoding.UTF8;
             if (!String.IsNullOrEmpty(ep.CharSet))
