@@ -22,7 +22,9 @@ using System.Threading.Tasks;
 namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            if (request.Method != HttpMethod.Get && request.Content != null && request.Content.Headers.ContentEncoding.Any()) {
+            if (request.Method != HttpMethod.Get && request.Content != null
+                && !(request.RequestUri.AbsolutePath.EndsWith("/events") && request.Method == HttpMethod.Post)
+                && request.Content.Headers.ContentEncoding.Any()) {
                 string encodingType = request.Content.Headers.ContentEncoding.First().ToLowerInvariant();
                 if (encodingType == "gzip" || encodingType == "deflate")
                     request.Content = new CompressedContent(request.Content, encodingType);
@@ -65,6 +67,7 @@ namespace Exceptionless.Api.Utility {
             foreach (KeyValuePair<string, IEnumerable<string>> header in _originalContent.Headers)
                 Headers.TryAddWithoutValidation(header.Key, header.Value);
 
+            Headers.ContentEncoding.Clear();
             Headers.ContentEncoding.Add(encodingType);
         }
 
@@ -88,7 +91,7 @@ namespace Exceptionless.Api.Utility {
 
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) {
             Stream compressedStream = null;
-
+            
             switch (_encodingType) {
                 case "gzip":
                     compressedStream = new GZipStream(stream, CompressionMode.Compress, leaveOpen: true);

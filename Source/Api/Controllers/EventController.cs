@@ -92,9 +92,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            bool isCompressed = Request.Content.Headers.ContentEncoding.Contains("gzip");
-            if (!isCompressed)
+            string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
+            bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
+            if (!isCompressed && data.Length > 1000) {
                 data = data.Compress();
+                contentEncoding = "gzip";
+            }
 
             await _eventPostQueue.EnqueueAsync(new EventPost {
                 MediaType = Request.Content.Headers.ContentType.MediaType,
@@ -102,7 +105,8 @@ namespace Exceptionless.Api.Controllers {
                 ProjectId = projectId,
                 UserAgent = userAgent,
                 ApiVersion = version,
-                Data = data
+                Data = data,
+                ContentEncoding = contentEncoding
             });
             _statsClient.Counter(StatNames.PostsQueued);
 

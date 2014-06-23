@@ -8,5 +8,6 @@ namespace Exceptionless.Core.Models {
         public string MediaType { get; set; }
         public int ApiVersion { get; set; }
         public string UserAgent { get; set; }
+        public string ContentEncoding { get; set; }
     }
 }
