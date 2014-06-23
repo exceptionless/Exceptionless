@@ -4,8 +4,10 @@ using System.Linq;
 using System.Reflection;
 using Exceptionless.Configuration;
 using Exceptionless.Dependency;
+using Exceptionless.Enrichments.Default;
 using Exceptionless.Extensions;
 using Exceptionless.Logging;
+using Exceptionless.Models;
 using Exceptionless.Storage;
 
 namespace Exceptionless {
@@ -19,12 +21,12 @@ namespace Exceptionless {
             return config.ApiKey.Substring(0, 8);
         }
 
-        public static void UseDebugLogger(this ExceptionlessConfiguration configuration) {
-            configuration.Resolver.Register<IExceptionlessLog, DebugExceptionlessLog>();
+        public static void UseDebugLogger(this ExceptionlessConfiguration config) {
+            config.Resolver.Register<IExceptionlessLog, DebugExceptionlessLog>();
         }
 
-        public static void UseLogger(this ExceptionlessConfiguration configuration, IExceptionlessLog logger) {
-            configuration.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(logger));
+        public static void UseLogger(this ExceptionlessConfiguration config, IExceptionlessLog logger) {
+            config.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(logger));
         }
 
         public static void ApplySavedServerSettings(this ExceptionlessConfiguration config) {
@@ -33,6 +35,13 @@ namespace Exceptionless {
 
         public static void UseInMemoryStorage(this ExceptionlessConfiguration config) {
             config.Resolver.Register<IFileStorage, InMemoryFileStorage>();
+        }
+
+        /// <summary>
+        /// Automatically set a reference id for error events.
+        /// </summary>
+        public static void UseReferenceIds(this ExceptionlessConfiguration config) {
+            config.AddEnrichment<ReferenceIdEnrichment>();
         }
 
         /// <summary>
