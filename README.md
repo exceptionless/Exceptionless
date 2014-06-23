@@ -6,7 +6,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 _** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.com](http://exceptionless.com) and signup for a free account and you will be up and running in seconds._
 
-1. You will need to have Visual Studio 2013 installed. 
+1. You will need to have Visual Studio 2013 installed.
 2. Start MongoDB and Redis by opening `StartBackendServers.bat`.
 3. Open the `Exceptionless.sln` Visual Studio solution file.
 4. Select `Exceptionless.App` and `Exceptionless.SampleConsole` as startup projects.
