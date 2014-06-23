@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using Exceptionless.Models.Data;
 
-namespace Exceptionless.Api.Extensions {
+namespace Exceptionless.Extensions {
     public static class RequestInfoExtensions {
 
         /// <summary>

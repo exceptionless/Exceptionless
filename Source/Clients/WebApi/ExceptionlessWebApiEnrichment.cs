@@ -16,8 +16,10 @@ using System.Security.Principal;
 using System.Threading;
 using System.Web.Http.Controllers;
 using Exceptionless.Enrichments;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.WebApi {
     internal class ExceptionlessWebApiEnrichment : IEventEnrichment {
@@ -30,15 +32,28 @@ namespace Exceptionless.WebApi {
                 return;
 
             IPrincipal principal = GetPrincipal(actionContext.Request);
-            if (context.Client.Configuration.IncludePrivateInformation
-                && principal != null && principal.Identity.IsAuthenticated)
+            if (context.Client.Configuration.IncludePrivateInformation && principal != null && principal.Identity.IsAuthenticated)
                 ev.AddUserInfo(principal.Identity.Name);
 
+
+            RequestInfo requestInfo = null;
             try {
-                ev.AddHttpRequestInfo(actionContext);
+                requestInfo = actionContext.GetRequestInfo(context.Client.Configuration);
             } catch (Exception ex) {
                 context.Log.Error(typeof(ExceptionlessWebApiEnrichment), ex, "Error adding request info.");
             }
+
+            if (requestInfo == null)
+                return;
+
+            var error = ev.GetError();
+            if (error != null && error.Code == "404") {
+                ev.Type = Event.KnownTypes.NotFound;
+                ev.Source = String.Format("{0} {1}", requestInfo.HttpMethod, requestInfo.GetFullPath(includeQueryString: true));
+                ev.Data.Clear();
+            }
+
+            ev.AddRequestInfo(requestInfo);
         }
 
         private static IPrincipal GetPrincipal(HttpRequestMessage request) {

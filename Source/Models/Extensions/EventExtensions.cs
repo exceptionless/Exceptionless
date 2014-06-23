@@ -50,6 +50,9 @@ namespace Exceptionless {
         /// Adds the request info to the event.
         /// </summary>
         public static void AddRequestInfo(this Event ev, RequestInfo request) {
+            if (request == null)
+                return;
+
             ev.Data[Event.KnownDataKeys.RequestInfo] = request;
         }
         

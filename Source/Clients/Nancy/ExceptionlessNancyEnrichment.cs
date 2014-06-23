@@ -10,8 +10,10 @@
 using System;
 using Exceptionless.Enrichments;
 using Exceptionless.ExtendedData;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Nancy {
     internal class ExceptionlessNancyEnrichment : IEventEnrichment {
@@ -22,15 +24,25 @@ namespace Exceptionless.Nancy {
             if (nancyContext == null)
                 return;
 
-            try {
-                NancyRequestInfoCollector.Collect(nancyContext, context.Client.Configuration.DataExclusions);
-                ev.AddRequestInfo(nancyContext);
+            if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
+                ev.AddUserInfo(nancyContext.CurrentUser.UserName);
 
-                if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
-                    ev.AddUserInfo(nancyContext.CurrentUser.UserName);
+            RequestInfo requestInfo = null;
+            try {
+                requestInfo = nancyContext.GetRequestInfo(context.Client.Configuration);
             } catch (Exception ex) {
                 context.Log.Error(typeof(ExceptionlessNancyEnrichment), ex, "Error adding request info.");
             }
+
+            if (requestInfo == null)
+                return;
+
+            if (ev.Type == Event.KnownTypes.NotFound) {
+                ev.Source = String.Format("{0} {1}", requestInfo.HttpMethod, requestInfo.GetFullPath(includeQueryString: true));
+                ev.Data.Clear();
+            }
+
+            ev.AddRequestInfo(requestInfo);
         }
     }
 }

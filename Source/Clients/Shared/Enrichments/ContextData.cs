@@ -15,7 +15,10 @@ namespace Exceptionless.Enrichments {
         }
 
         public Exception GetException() {
-            return this[KnownKeys.Exception] as Exception;
+            if (!HasException())
+                return null;
+
+            return  this[KnownKeys.Exception] as Exception;
         }
 
         public void SetUnhandled() {
@@ -39,6 +42,9 @@ namespace Exceptionless.Enrichments {
         }
 
         public string GetSubmissionMethod() {
+            if (!ContainsKey(KnownKeys.SubmissionMethod))
+                return null;
+
             return this[KnownKeys.SubmissionMethod] as string;
         }
 

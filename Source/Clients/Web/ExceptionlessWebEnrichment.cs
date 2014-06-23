@@ -10,6 +10,7 @@
 using System;
 using System.Web;
 using Exceptionless.Enrichments;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
@@ -49,17 +50,16 @@ namespace Exceptionless.Web {
                 return;
 
             var httpException = context.Data.GetException() as HttpException;
-             if (httpException != null) {
+            if (httpException != null) {
                 int httpCode = httpException.GetHttpCode();
-                 if (httpCode == 404) {
-                     ev.Type = Event.KnownTypes.NotFound;
-                     ev.Source = String.Concat(requestInfo.HttpMethod, " ", requestInfo.Path);
-                     ev.Data.Clear();
-                     // TODO: Source needs to include the method.
-                     ev.AddRequestInfo(requestInfo);
-                 }
+                if (httpCode == 404) {
+                    ev.Type = Event.KnownTypes.NotFound;
+                    ev.Source = String.Format("{0} {1}", requestInfo.HttpMethod, requestInfo.GetFullPath(includeQueryString: true));
+                    ev.Data.Clear();
+                }
             }
 
+            ev.AddRequestInfo(requestInfo);
         }
     }
 }

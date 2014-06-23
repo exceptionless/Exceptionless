@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using Exceptionless.Enrichments;
 using Exceptionless.ExtendedData;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Nancy;
 using Nancy;
 using Nancy.Bootstrapper;
@@ -52,11 +53,20 @@ namespace Exceptionless {
             client.Configuration.RemoveEnrichment<ExceptionlessNancyEnrichment>();
         }
 
+        /// <summary>
+        /// Adds the current request info.
+        /// </summary>
+        /// <param name="context">The nancy context to gather information from.</param>
+        /// <param name="config">The config.</param>
+        public static RequestInfo GetRequestInfo(this NancyContext context, ExceptionlessConfiguration config) {
+            return NancyRequestInfoCollector.Collect(context, config.DataExclusions);
+        }
+
         public static Event AddRequestInfo(this Event ev, NancyContext context) {
             if (context == null)
                 return ev;
 
-            ev.AddRequestInfo(NancyRequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions));
+            ev.AddRequestInfo(context.GetRequestInfo(ExceptionlessClient.Default.Configuration));
 
             return ev;
         }

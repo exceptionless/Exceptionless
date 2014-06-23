@@ -27,7 +27,7 @@ namespace Exceptionless.ExtendedData {
                 HttpMethod = context.Request.Method
             };
 
-            if (context.Request.Headers.UserAgent != null)
+            if (!String.IsNullOrWhiteSpace(context.Request.Headers.UserAgent))
                 info.UserAgent = context.Request.Headers.UserAgent;
 
             if (context.Request.Url != null) {
@@ -37,7 +37,7 @@ namespace Exceptionless.ExtendedData {
                 info.Port = context.Request.Url.Port ?? 80;
             }
 
-            if (context.Request.Headers.Referrer != null)
+            if (!String.IsNullOrWhiteSpace(context.Request.Headers.Referrer))
                 info.Referrer = context.Request.Headers.Referrer;
 
             info.Cookies = context.Request.Cookies.ToDictionary(exclusions);

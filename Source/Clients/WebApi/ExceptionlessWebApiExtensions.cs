@@ -15,6 +15,7 @@ using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using Exceptionless.ExtendedData;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.WebApi;
 
 namespace Exceptionless {
@@ -50,6 +51,15 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Adds the current request info.
+        /// </summary>
+        /// <param name="context">The http action context to gather information from.</param>
+        /// <param name="config">The config.</param>
+        public static RequestInfo GetRequestInfo(this HttpActionContext context, ExceptionlessConfiguration config) {
+            return RequestInfoCollector.Collect(context, config.DataExclusions);
+        }
+
+        /// <summary>
         /// Adds the current request info as extended data to the event.
         /// </summary>
         /// <param name="ev">The event model.</param>
@@ -60,7 +70,7 @@ namespace Exceptionless {
 
             // TODO: Create HttpActionContext version of request info.
             //context.Request.Headers.GetCookies();
-            ev.AddRequestInfo(RequestInfoCollector.Collect(context, ExceptionlessClient.Default.Configuration.DataExclusions));
+            ev.AddRequestInfo(context.GetRequestInfo(ExceptionlessClient.Default.Configuration));
 
             return ev;
         }

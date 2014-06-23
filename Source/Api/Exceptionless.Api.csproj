@@ -176,7 +176,6 @@
     <Compile Include="Extensions\HttpClientExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
     <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />
-    <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Hubs\Notifier.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
