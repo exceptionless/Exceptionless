@@ -31,7 +31,7 @@ namespace Exceptionless.WebApi {
                 WrappedFilter.ExecuteExceptionFilterAsync(actionExecutedContext, cancellationToken);
 
             var contextData = new ContextData();
-            contextData.SetUnhandled();
+            contextData.MarkAsUnhandledError();
             contextData.SetSubmissionMethod("ExceptionHttpFilter");
             contextData.Add("HttpActionContext", actionExecutedContext.ActionContext);
 

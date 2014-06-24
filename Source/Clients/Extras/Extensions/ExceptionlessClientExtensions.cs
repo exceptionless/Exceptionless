@@ -44,7 +44,7 @@ namespace Exceptionless.Extras.Extensions {
                         return;
 
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("AppDomainUnhandledException");
 
                     exception.ToExceptionless(contextData, client).Submit();
@@ -74,7 +74,7 @@ namespace Exceptionless.Extras.Extensions {
             if (_onTaskSchedulerOnUnobservedTaskException == null)
                 _onTaskSchedulerOnUnobservedTaskException = (sender, args) => {
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("UnobservedTaskException");
 
                     args.Exception.ToExceptionless(contextData, client).Submit();

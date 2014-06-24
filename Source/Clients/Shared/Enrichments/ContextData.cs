@@ -21,19 +21,19 @@ namespace Exceptionless.Enrichments {
             return  this[KnownKeys.Exception] as Exception;
         }
 
-        public void SetUnhandled() {
-            this[KnownKeys.IsUnhandled] = true;
+        public void MarkAsUnhandledError() {
+            this[KnownKeys.IsUnhandledError] = true;
         }
 
-        public bool IsUnhandled {
+        public bool IsUnhandledError {
             get {
-                if (!ContainsKey(KnownKeys.IsUnhandled))
+                if (!ContainsKey(KnownKeys.IsUnhandledError))
                     return false;
 
-                if (!(this[KnownKeys.IsUnhandled] is bool))
+                if (!(this[KnownKeys.IsUnhandledError] is bool))
                     return false;
                 
-                return (bool)this[KnownKeys.IsUnhandled];
+                return (bool)this[KnownKeys.IsUnhandledError];
             }
         }
 
@@ -49,7 +49,7 @@ namespace Exceptionless.Enrichments {
         }
 
         public static class KnownKeys {
-            public const string IsUnhandled = "@@_IsUnhandled";
+            public const string IsUnhandledError = "@@_IsUnhandledError";
             public const string SubmissionMethod = "@@_SubmissionMethod";
             public const string Exception = "@@_Exception";
         }

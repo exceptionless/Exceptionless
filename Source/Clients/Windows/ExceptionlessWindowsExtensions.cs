@@ -18,10 +18,11 @@ namespace Exceptionless {
             client.Startup();
             client.RegisterApplicationThreadExceptionHandler();
 
-            if (showDialog) {
-                client.SubmittingEvent -= OnSubmittingEvent;
-                client.SubmittingEvent += OnSubmittingEvent;
-            }
+            if (!showDialog)
+                return;
+
+            client.SubmittingEvent -= OnSubmittingEvent;
+            client.SubmittingEvent += OnSubmittingEvent;
         }
 
         public static void Unregister(this ExceptionlessClient client) {
@@ -34,12 +35,11 @@ namespace Exceptionless {
         private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             // ev.ExceptionlessClientInfo.Platform = ".NET Windows";
 
-            if (!e.EnrichmentContextData.IsUnhandled)
+            if (!e.IsUnhandledError)
                 return;
 
             var dialog = new CrashReportForm(e.Event);
-            DialogResult result = dialog.ShowDialog();
-            e.Cancel = result == DialogResult.OK;
+            e.Cancel = dialog.ShowDialog() != DialogResult.OK;
         }
     }
 }

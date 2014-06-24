@@ -22,8 +22,8 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        ///     Any contextual data objects to be used by Exceptionless plugins to gather default
-        ///     information for inclusion in the event information.
+        ///     Any contextual data objects to be used by Exceptionless enrichments to gather additional
+        ///     information for inclusion in the event.
         /// </summary>
         public ContextData EnrichmentContextData { get; private set; }
 
@@ -32,20 +32,47 @@ namespace Exceptionless {
         public Event Target { get; private set; }
 
         /// <summary>
-        ///     Sets the user's email address or user name that the event happened to.
+        /// Sets the event type.
         /// </summary>
-        /// <param name="identity">The user's email adddress or user name that the event happened to.</param>
-        public EventBuilder SetUserInfo(string identity) {
-            Target.AddUserInfo(identity);
+        /// <param name="type">The event type.</param>
+        public EventBuilder SetType(string type) {
+            Target.Type = type;
             return this;
         }
 
         /// <summary>
-        ///     Sets the user's description of the event.
+        /// Sets the event source.
         /// </summary>
-        /// <param name="description">The user's name description of the event.</param>
-        public EventBuilder SetUserDescription(string description) {
-            Target.AddUserDescription(description);
+        /// <param name="source">The event source.</param>
+        public EventBuilder SetSource(string source) {
+            Target.Source = source;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the event session id.
+        /// </summary>
+        /// <param name="sessionId">The event session id.</param>
+        public EventBuilder SetSessionId(string sessionId) {
+            Target.SessionId = sessionId;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the event reference id.
+        /// </summary>
+        /// <param name="referenceId">The event reference id.</param>
+        public EventBuilder SetReferenceId(string referenceId) {
+            Target.ReferenceId = referenceId;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the event message.
+        /// </summary>
+        /// <param name="message">The event message.</param>
+        public EventBuilder SetMessage(string message) {
+            Target.Message = message;
             return this;
         }
 

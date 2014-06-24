@@ -67,6 +67,7 @@ namespace Exceptionless.Core.Jobs {
                         events = ParseEventPost(queueEntry.Value);
                     }, StatNames.PostsParsingTime);
                     _statsClient.Counter(StatNames.PostsParsed);
+                    _statsClient.Gauge(StatNames.PostsBatchSize, events.Count);
                 } catch (Exception ex) {
                     _statsClient.Counter(StatNames.PostsParseErrors);
                     queueEntry.AbandonAsync().Wait();

@@ -7,7 +7,7 @@ namespace Exceptionless.Mvc {
     public class ExceptionlessSendErrorsAttribute : FilterAttribute, IExceptionFilter {
         public void OnException(ExceptionContext filterContext) {
             var contextData = new ContextData();
-            contextData.SetUnhandled();
+            contextData.MarkAsUnhandledError();
             contextData.SetSubmissionMethod("SendErrorsAttribute");
             contextData.Add("HttpContext", filterContext.HttpContext);
 

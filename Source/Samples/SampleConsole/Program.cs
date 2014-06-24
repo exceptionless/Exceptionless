@@ -28,16 +28,17 @@ namespace SampleConsole {
         private static bool _sendingContinuous = false;
 
         private static void Main() {
-            var client = new ExceptionlessClient(new ExceptionlessConfiguration(DependencyResolver.CreateDefault()) {
-                ApiKey = "e3d51ea621464280bbcb79c11fd6483e",
-                ServerUrl = "http://localhost:50000"
-            });
-            client.UseTraceLogger();
-            client.Startup();
+
+            ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.UseTraceLogger();
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
+            ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }).Submit();
+            ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
+            ExceptionlessClient.Default.SubmitNotFound("/somepage");
+            ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
 
             while (true) {
                 if (!_sendingContinuous) {
@@ -59,7 +60,7 @@ namespace SampleConsole {
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D6)
-                    client.ProcessQueue();
+                    ExceptionlessClient.Default.ProcessQueue();
                 else if (keyInfo.Key == ConsoleKey.D7)
                     SendAllCapturedErrorsFromDisk();
                 else if (keyInfo.Key == ConsoleKey.Q)

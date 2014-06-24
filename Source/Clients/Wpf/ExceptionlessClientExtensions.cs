@@ -13,7 +13,7 @@ namespace Exceptionless.Wpf.Extensions {
             if (_onApplicationThreadException == null)
                 _onApplicationThreadException = (sender, args) => {
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("ApplicationThreadException");
 
                     args.Exception.ToExceptionless(contextData, client).Submit();
@@ -44,7 +44,7 @@ namespace Exceptionless.Wpf.Extensions {
             if (_onApplicationDispatcherUnhandledException == null)
                 _onApplicationDispatcherUnhandledException = (sender, args) => {
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("DispatcherUnhandledException");
 
                     args.Exception.ToExceptionless(contextData, client).Submit();

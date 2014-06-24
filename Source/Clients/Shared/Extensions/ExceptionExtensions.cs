@@ -26,7 +26,7 @@ namespace Exceptionless {
 
             enrichmentContextData.SetException(exception);
 
-            return client.CreateEventBuilder(enrichmentContextData);
+            return client.CreateEvent(enrichmentContextData);
         }
     }
 }

@@ -28,7 +28,7 @@ namespace Exceptionless.Web {
 
         public virtual bool HandleError(Exception exception) {
             var contextData = new ContextData();
-            contextData.SetUnhandled();
+            contextData.MarkAsUnhandledError();
             contextData.SetSubmissionMethod("WCFServiceError");
 
             if (HttpContext.Current != null)

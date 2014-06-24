@@ -121,10 +121,11 @@ namespace Exceptionless {
             _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: type={0}{1}", ev.Type, !String.IsNullOrEmpty(ev.ReferenceId) ? " refid=" + ev.ReferenceId : String.Empty);
             _queue.Value.Enqueue(ev);
 
-            if (!String.IsNullOrEmpty(ev.ReferenceId)) {
-                _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);
-                _lastReferenceIdManager.Value.SetLast(ev.ReferenceId);
-            }
+            if (String.IsNullOrEmpty(ev.ReferenceId))
+                return;
+
+            _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);
+            _lastReferenceIdManager.Value.SetLast(ev.ReferenceId);
         }
 
         /// <summary>Creates a new instance of <see cref="Event" />.</summary>
@@ -133,7 +134,7 @@ namespace Exceptionless {
         /// information to add to the event data.
         /// </param>
         /// <returns>A new instance of <see cref="EventBuilder" />.</returns>
-        public EventBuilder CreateEventBuilder(ContextData enrichmentContextData = null) {
+        public EventBuilder CreateEvent(ContextData enrichmentContextData = null) {
             return new EventBuilder(new Event { Date = DateTimeOffset.Now }, this, enrichmentContextData);
         }
 
@@ -151,7 +152,7 @@ namespace Exceptionless {
         public event EventHandler<EventSubmittingEventArgs> SubmittingEvent;
 
         private bool OnSubmittingEvent(Event ev, ContextData enrichmentContextData) {
-            var args = new EventSubmittingEventArgs(ev, enrichmentContextData);
+            var args = new EventSubmittingEventArgs(this, ev, enrichmentContextData);
             OnSubmittingEvent(args);
             return !args.Cancel;
         }

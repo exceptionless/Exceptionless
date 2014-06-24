@@ -19,7 +19,7 @@ namespace Exceptionless.Web.Extensions {
                         return;
 
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("HttpApplicationError");
                     contextData.Add("HttpContext", HttpContext.Current.ToWrapped());
 

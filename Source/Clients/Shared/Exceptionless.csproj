@@ -74,6 +74,7 @@
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventSubmittingEventArgs.cs" />
     <Compile Include="ExceptionlessClient.cs" />
+    <Compile Include="Extensions\EventBuilderExtensions.cs" />
     <Compile Include="Extensions\ExceptionlessConfigurationExtensions.cs" />
     <Compile Include="Extensions\EnumerableExtensions.cs" />
     <Compile Include="Extensions\DataDictionaryExtensions.cs" />

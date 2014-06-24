@@ -117,6 +117,7 @@ namespace Exceptionless {
         /// </summary>
         public IDependencyResolver Resolver {
             get { return _resolver; }
+            // TODO: Make dependency resolver read only after config is locked.
         }
 
         #region Enrichments

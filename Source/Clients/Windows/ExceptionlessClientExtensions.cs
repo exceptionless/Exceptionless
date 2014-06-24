@@ -13,7 +13,7 @@ namespace Exceptionless.Windows.Extensions {
             if (_onApplicationThreadException == null)
                 _onApplicationThreadException = (sender, args) => {
                     var contextData = new ContextData();
-                    contextData.SetUnhandled();
+                    contextData.MarkAsUnhandledError();
                     contextData.SetSubmissionMethod("ApplicationThreadException");
 
                     args.Exception.ToExceptionless(contextData, client).Submit();

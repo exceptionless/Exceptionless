@@ -32,7 +32,7 @@ namespace Exceptionless {
 
         private static Response OnError(NancyContext context, Exception exception) {
             var contextData = new ContextData();
-            contextData.SetUnhandled();
+            contextData.MarkAsUnhandledError();
             contextData.SetSubmissionMethod("NancyPipelineException");
             contextData.Add(NANCY_CONTEXT, context);
 

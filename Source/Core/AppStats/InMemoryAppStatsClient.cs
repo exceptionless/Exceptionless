@@ -19,7 +19,7 @@ using System.Threading;
 namespace Exceptionless.Core.AppStats {
     public class InMemoryAppStatsClient : IAppStatsClient {
         private readonly ConcurrentDictionary<string, long> _counters = new ConcurrentDictionary<string, long>();
-        private readonly ConcurrentDictionary<string, double> _gauges = new ConcurrentDictionary<string, double>();
+        private readonly ConcurrentDictionary<string, Stack<double>> _gauges = new ConcurrentDictionary<string, Stack<double>>();
         private readonly ConcurrentDictionary<string, Stack<long>> _timings = new ConcurrentDictionary<string, Stack<long>>();
         private readonly ConcurrentDictionary<string, EventWaitHandle> _counterEvents = new ConcurrentDictionary<string, EventWaitHandle>();
         private Timer _statsDisplayTimer;
@@ -31,14 +31,18 @@ namespace Exceptionless.Core.AppStats {
         private void OnDisplayStats(object state) {
             foreach (var key in _counters.Keys)
                 Debug.WriteLine("Counter: {0} Value: {1}", key, _counters[key]);
-            
-            foreach (var key in _gauges.Keys)
-                Debug.WriteLine("Gauge: {0} Value: {1}", key, _gauges[key]);
-            
+
+            foreach (var key in _gauges.Keys) {
+                Debug.WriteLine("Gauge: {0} Value: {1}", key, _gauges[key].Peek());
+                Debug.WriteLine("Gauge: {0} Avg Value: {1}", key, _gauges[key].Average());
+                Debug.WriteLine("Gauge: {0} Max Value: {1}", key, _gauges[key].Max());
+            }
+
             foreach (var key in _timings.Keys)
                 Debug.WriteLine("Timing: {0} Avg Value: {1}", key, _timings[key].Average());
             
-            Debug.WriteLine("-----");
+            if (_counters.Count > 0 || _gauges.Count > 0 || _timings.Count > 0)
+                Debug.WriteLine("-----");
         }
 
         public void Counter(string statName, int value = 1) {
@@ -61,7 +65,15 @@ namespace Exceptionless.Core.AppStats {
         }
 
         public void Gauge(string statName, double value) {
-            _gauges.AddOrUpdate(statName, value, (key, current) => value);
+            _gauges.AddOrUpdate(statName, key => new Stack<double>(new[] { value }), (key, values) => {
+                values.Push(value);
+
+                // only keep the last 20 values.
+                if (values.Count > 20)
+                    values.Pop();
+
+                return values;
+            });
         }
 
         public void Timer(string statName, long milliseconds) {

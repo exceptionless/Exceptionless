@@ -20,11 +20,12 @@ namespace Exceptionless {
             client.Startup();
             client.RegisterApplicationThreadExceptionHandler();
             client.RegisterApplicationDispatcherUnhandledExceptionHandler();
-            
-            if (showDialog) {
-                client.SubmittingEvent -= OnSubmittingEvent;
-                client.SubmittingEvent += OnSubmittingEvent;
-            }
+
+            if (!showDialog)
+                return;
+
+            client.SubmittingEvent -= OnSubmittingEvent;
+            client.SubmittingEvent += OnSubmittingEvent;
         }
 
         public static void Unregister(this ExceptionlessClient client) {
@@ -38,7 +39,7 @@ namespace Exceptionless {
         private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             //error.ExceptionlessClientInfo.Platform = ".NET WPF";
 
-            if (!e.EnrichmentContextData.IsUnhandled)
+            if (!e.IsUnhandledError)
                 return;
 
             if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
@@ -46,7 +47,7 @@ namespace Exceptionless {
             else
                 e.Cancel = ShowDialog(e.Event);
         }
-         
+        
         private static bool ShowDialog(Event e) {
             var dialog = new CrashReportDialog(e);
             bool? result = dialog.ShowDialog();

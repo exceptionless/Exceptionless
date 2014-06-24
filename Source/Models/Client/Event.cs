@@ -10,8 +10,7 @@
 using System;
 
 namespace Exceptionless.Models {
-    public class Event : IData
-    {
+    public class Event : IData {
         public Event() {
             Tags = new TagSet();
             Data = new DataDictionary();
@@ -78,7 +77,6 @@ namespace Exceptionless.Models {
             public const string EnvironmentInfo = "env";
             public const string UserInfo = "user";
             public const string UserDescription = "desc";
-            //public const string ExceptionInfo = "__ExceptionInfo";
         }
     }
 }
