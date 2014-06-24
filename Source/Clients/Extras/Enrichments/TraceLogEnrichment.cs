@@ -31,7 +31,7 @@ namespace Exceptionless.Enrichments.Default {
         /// </summary>
         /// <param name="ev">The event model.</param>
         /// <param name="maxEntriesToInclude"></param>
-        public static void AddRecentTraceLogEntries(Event ev, int maxEntriesToInclude) {
+        public static void AddRecentTraceLogEntries(Event ev, int maxEntriesToInclude = DefaultMaxEntriesToInclude) {
             if (ev.Data.ContainsKey(Event.KnownDataKeys.TraceLog))
                 return;
 

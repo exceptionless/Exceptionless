@@ -69,7 +69,6 @@
     <Compile Include="Enrichments\Default\ReferenceIdEnrichment.cs" />
     <Compile Include="Enrichments\Default\SimpleErrorEnrichment.cs" />
     <Compile Include="Enrichments\Default\EnvironmentInfoEnrichment.cs" />
-    <Compile Include="Enrichments\Default\PrivateInformationEnrichment.cs" />
     <Compile Include="EventBuilder.cs" />
     <Compile Include="Events\ConfigurationUpdatedEventArgs.cs" />
     <Compile Include="Events\EventSubmittingEventArgs.cs" />

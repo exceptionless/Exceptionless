@@ -7,6 +7,9 @@ namespace Exceptionless.Enrichments.Default {
             foreach (string tag in context.Client.Configuration.DefaultTags)
                 ev.Tags.Add(tag);
 
+            if (ev.Type != Event.KnownTypes.Error)
+                return;
+
             foreach (var data in context.Client.Configuration.DefaultData)
                 ev.Data[data.Key] = data.Value;
         }

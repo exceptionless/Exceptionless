@@ -42,8 +42,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enrichments\ErrorEnrichment.cs" />
+    <Compile Include="Enrichments\PrivateInformationEnrichment.cs" />
     <Compile Include="Enrichments\TraceLogEnrichment.cs" />
     <Compile Include="ExceptionlessSection.cs" />
+    <Compile Include="Extensions\EventBuilderExtensions.cs" />
     <Compile Include="Extensions\ExceptionlessClientExtensions.cs" />
     <Compile Include="Extensions\ExceptionlessConfigurationExtensions.cs" />
     <Compile Include="Extensions\ReflectionExtensions.cs" />

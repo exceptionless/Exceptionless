@@ -33,7 +33,7 @@ namespace Exceptionless.WebApi {
 
             IPrincipal principal = GetPrincipal(actionContext.Request);
             if (context.Client.Configuration.IncludePrivateInformation && principal != null && principal.Identity.IsAuthenticated)
-                ev.AddUserInfo(principal.Identity.Name);
+                ev.SetUserIdentity(principal.Identity.Name);
 
 
             RequestInfo requestInfo = null;

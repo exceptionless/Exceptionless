@@ -24,7 +24,7 @@ namespace Exceptionless.Dialogs {
             InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
             // TODO: Implement this once the client has persisted storage.
-            var userInfo = ev.GetUserInfo();
+            var userInfo = ev.GetUserIdentity();
             if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity))
                 EmailAddressTextBox.Text = userInfo.Identity;
             //else
@@ -42,7 +42,7 @@ namespace Exceptionless.Dialogs {
             SendReportButton.Enabled = false;
             ExitButton.Enabled = false;
 
-            Event.AddUserInfo(EmailAddressTextBox.Text);
+            Event.SetUserIdentity(EmailAddressTextBox.Text);
             Event.AddUserDescription(DescriptionTextBox.Text);
 
             Cursor = Cursors.Default;

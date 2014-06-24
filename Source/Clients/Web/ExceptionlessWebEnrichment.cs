@@ -33,7 +33,7 @@ namespace Exceptionless.Web {
             if (context.Client.Configuration.IncludePrivateInformation
                 && httpContext.User != null
                 && httpContext.User.Identity.IsAuthenticated)
-                ev.AddUserInfo(httpContext.User.Identity.Name);
+                ev.SetUserIdentity(httpContext.User.Identity.Name);
 
             var tags = httpContext.Items[TAGS_HTTP_CONTEXT_NAME] as TagSet;
             if (tags != null)

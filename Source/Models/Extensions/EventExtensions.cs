@@ -59,32 +59,32 @@ namespace Exceptionless {
         /// <summary>
         /// Gets the user info object from extended data.
         /// </summary>
-        public static UserInfo GetUserInfo(this Event ev) {
+        public static UserInfo GetUserIdentity(this Event ev) {
             object value;
             return ev.Data.TryGetValue(Event.KnownDataKeys.UserInfo, out value) ? value as UserInfo : null;
         }
 
         /// <summary>
-        /// Adds the user info to the event.
+        /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>
         /// <param name="ev">The event</param>
-        /// <param name="identity">A unique user identifier (E.G., email address, user name)</param>
-        public static void AddUserInfo(this Event ev, string identity) {
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        public static void SetUserIdentity(this Event ev, string identity) {
             if (String.IsNullOrWhiteSpace(identity))
                 return;
 
-            var userInfo = ev.GetUserInfo() ?? new UserInfo(identity);
+            var userInfo = ev.GetUserIdentity() ?? new UserInfo(identity);
             userInfo.Identity = identity;
 
-            ev.AddUserInfo(userInfo);
+            ev.SetUserIdentity(userInfo);
         }
 
         /// <summary>
-        /// Adds the user info to the event.
+        /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>
         /// <param name="ev">The event</param>
-        /// <param name="userInfo">The user info</param>
-        public static void AddUserInfo(this Event ev, UserInfo userInfo) {
+        /// <param name="userInfo">The user's identity that the event happened to.</param>
+        public static void SetUserIdentity(this Event ev, UserInfo userInfo) {
             if (userInfo == null)
                 return;
 

@@ -8,7 +8,7 @@ namespace Exceptionless {
         /// <param name="builder">The event builder object.</param>
         /// <param name="identity">The user's identity that the event happened to.</param>
         public static EventBuilder SetUserIdentity(this EventBuilder builder, string identity) {
-            builder.Target.AddUserInfo(identity);
+            builder.Target.SetUserIdentity(identity);
             return builder;
         }
 

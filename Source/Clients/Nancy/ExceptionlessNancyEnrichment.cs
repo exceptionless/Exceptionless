@@ -25,7 +25,7 @@ namespace Exceptionless.Nancy {
                 return;
 
             if (nancyContext.CurrentUser != null && context.Client.Configuration.IncludePrivateInformation)
-                ev.AddUserInfo(nancyContext.CurrentUser.UserName);
+                ev.SetUserIdentity(nancyContext.CurrentUser.UserName);
 
             RequestInfo requestInfo = null;
             try {
