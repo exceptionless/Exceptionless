@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -39,7 +38,10 @@ namespace Exceptionless.SampleWpf {
             if (e.Event.Message == "Important Exception")
                 e.Event.Tags.Add("Important");
 
-            WriteLog(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
+            if (!String.IsNullOrEmpty(e.Event.ReferenceId))
+                WriteLog(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
+            else
+                WriteLog("Submitting Event");
         }
 
         private void WriteLog(string message) {
@@ -80,18 +82,8 @@ namespace Exceptionless.SampleWpf {
 
         private void OnImportDemoReports(object sender, RoutedEventArgs e) {}
 
-        //private void OnSendFeedback(object sender, RoutedEventArgs e) {
-        //    var feedback = new ReportDialog();
-        //    var result = feedback.ShowDialog();
-        //}
-
         private void OnProcessQueue(object sender, RoutedEventArgs e) {
             ExceptionlessClient.Default.ProcessQueueAsync();
-        }
-
-        private void OnUpdateConfiguration(object sender, RoutedEventArgs e) {
-            // TODO: Implement updating the configuration.
-            //ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void OnGenerateThreadException(object sender, RoutedEventArgs e) {

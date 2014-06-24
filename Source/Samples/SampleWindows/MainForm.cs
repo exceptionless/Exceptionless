@@ -43,24 +43,21 @@ namespace Exceptionless.SampleWindows {
             if (e.Event.Message == "Important Exception")
                 e.Event.Tags.Add("Important");
 
-            logTextBox.AppendText(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
+            if (!String.IsNullOrEmpty(e.Event.ReferenceId))
+                logTextBox.AppendText(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
+            else
+                logTextBox.AppendText("Submitting Event");
+
             statusLabel.Text = "Submitting Message";
         }
 
         private void generateExceptionToolStripMenuItem_Click(object sender, EventArgs e) {
             //try to open a file
             string buffer = File.ReadAllText("somefile2.txt");
-            //simulate filenotfound exception
-            //throw new System.IO.FileNotFoundException("The file could not be found.", "SomeFile.txt");
         }
 
         private void processQueueToolStripMenuItem_Click(object sender, EventArgs e) {
             ExceptionlessClient.Default.ProcessQueueAsync();
-        }
-
-        private void updateConfigurationToolStripMenuItem_Click(object sender, EventArgs e) {
-            // TODO: Implement updating the configuration.
-            //ExceptionlessClient.Default.UpdateConfigurationAsync(true);
         }
 
         private void randomExceptionToolStripMenuItem_Click(object sender, EventArgs e) {

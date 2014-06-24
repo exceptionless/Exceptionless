@@ -55,15 +55,8 @@ namespace Exceptionless.SampleWindows
             this.importDemoReportsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem3 = new System.Windows.Forms.ToolStripSeparator();
             this.showFilterFormToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripMenuItem2 = new System.Windows.Forms.ToolStripSeparator();
-            this.sendFeedbackToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.sendLargeFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.viewOfflineDialogToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.viewQueueToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.processQueueToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.updateConfigurationToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusStrip.SuspendLayout();
             this.mainMenuStrip.SuspendLayout();
             this.SuspendLayout();
@@ -127,7 +120,7 @@ namespace Exceptionless.SampleWindows
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             // 
             // editToolStripMenuItem
@@ -214,15 +207,8 @@ namespace Exceptionless.SampleWindows
             this.importDemoReportsToolStripMenuItem,
             this.toolStripMenuItem3,
             this.showFilterFormToolStripMenuItem,
-            this.toolStripMenuItem2,
-            this.sendFeedbackToolStripMenuItem,
-            this.sendLargeFileToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.viewOfflineDialogToolStripMenuItem,
-            this.viewQueueToolStripMenuItem,
-            this.processQueueToolStripMenuItem,
             this.toolStripSeparator2,
-            this.updateConfigurationToolStripMenuItem});
+            this.processQueueToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(48, 20);
             this.toolsToolStripMenuItem.Text = "&Tools";
@@ -288,39 +274,6 @@ namespace Exceptionless.SampleWindows
             this.showFilterFormToolStripMenuItem.Text = "Show Filter Form";
             this.showFilterFormToolStripMenuItem.Click += new System.EventHandler(this.showFilterFormToolStripMenuItem_Click);
             // 
-            // toolStripMenuItem2
-            // 
-            this.toolStripMenuItem2.Name = "toolStripMenuItem2";
-            this.toolStripMenuItem2.Size = new System.Drawing.Size(212, 6);
-            // 
-            // sendFeedbackToolStripMenuItem
-            // 
-            this.sendFeedbackToolStripMenuItem.Name = "sendFeedbackToolStripMenuItem";
-            this.sendFeedbackToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.sendFeedbackToolStripMenuItem.Text = "Send Feedback";
-            // 
-            // sendLargeFileToolStripMenuItem
-            // 
-            this.sendLargeFileToolStripMenuItem.Name = "sendLargeFileToolStripMenuItem";
-            this.sendLargeFileToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            // 
-            // toolStripSeparator1
-            // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(212, 6);
-            // 
-            // viewOfflineDialogToolStripMenuItem
-            // 
-            this.viewOfflineDialogToolStripMenuItem.Name = "viewOfflineDialogToolStripMenuItem";
-            this.viewOfflineDialogToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.viewOfflineDialogToolStripMenuItem.Text = "View Offline Dialog";
-            // 
-            // viewQueueToolStripMenuItem
-            // 
-            this.viewQueueToolStripMenuItem.Name = "viewQueueToolStripMenuItem";
-            this.viewQueueToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.viewQueueToolStripMenuItem.Text = "View Queue";
-            // 
             // processQueueToolStripMenuItem
             // 
             this.processQueueToolStripMenuItem.Name = "processQueueToolStripMenuItem";
@@ -332,13 +285,6 @@ namespace Exceptionless.SampleWindows
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(212, 6);
-            // 
-            // updateConfigurationToolStripMenuItem
-            // 
-            this.updateConfigurationToolStripMenuItem.Name = "updateConfigurationToolStripMenuItem";
-            this.updateConfigurationToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.updateConfigurationToolStripMenuItem.Text = "Update Configuration";
-            this.updateConfigurationToolStripMenuItem.Click += new System.EventHandler(this.updateConfigurationToolStripMenuItem_Click);
             // 
             // MainForm
             // 
@@ -380,22 +326,15 @@ namespace Exceptionless.SampleWindows
         private System.Windows.Forms.ToolStripMenuItem selectAllToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem generateExceptionToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem sendFeedbackToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem sendLargeFileToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
-        private System.Windows.Forms.ToolStripMenuItem viewQueueToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem processQueueToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
-        private System.Windows.Forms.ToolStripMenuItem updateConfigurationToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem randomExceptionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
         private System.Windows.Forms.ToolStripMenuItem ignoredExceptionToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importantExceptionToolStripMenuItem;
-        private System.Windows.Forms.ToolStripSeparator toolStripMenuItem2;
         private System.Windows.Forms.ToolStripMenuItem multipleExceptionsToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem3;
         private System.Windows.Forms.ToolStripMenuItem showFilterFormToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem viewOfflineDialogToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importDemoReportsToolStripMenuItem;
     }
 }
