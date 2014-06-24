@@ -66,6 +66,7 @@
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
     <Compile Include="Enrichments\ContextData.cs" />
     <Compile Include="Enrichments\Default\ConfigurationDefaultsEnrichment.cs" />
+    <Compile Include="Enrichments\Default\ReferenceIdEnrichment.cs" />
     <Compile Include="Enrichments\Default\SimpleErrorEnrichment.cs" />
     <Compile Include="Enrichments\Default\EnvironmentInfoEnrichment.cs" />
     <Compile Include="Enrichments\Default\PrivateInformationEnrichment.cs" />
