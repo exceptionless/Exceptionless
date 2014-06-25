@@ -22,6 +22,8 @@ namespace Exceptionless.Client.Tests.Log {
 
         [Fact]
         public void CanWriteToLogFile() {
+            DeleteLog();
+
             FileExceptionlessLog log = GetLog(LOG_FILE);
             log.Info("Test");
             log.Flush();
@@ -56,6 +58,8 @@ namespace Exceptionless.Client.Tests.Log {
 
         [Fact]
         public void LogResetsAfter5mb() {
+            DeleteLog();
+
             FileExceptionlessLog log = GetLog(LOG_FILE);
 
             // write 3mb of content to the log
@@ -96,6 +100,8 @@ namespace Exceptionless.Client.Tests.Log {
 
         [Fact]
         public void LogIsThreadSafe() {
+            DeleteLog();
+
             FileExceptionlessLog log = GetLog(LOG_FILE);
 
             // write 3mb of content to the log in multiple threads
