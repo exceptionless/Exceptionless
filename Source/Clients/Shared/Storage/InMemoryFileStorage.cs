@@ -98,13 +98,13 @@ namespace Exceptionless.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null) {
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
             if (searchPattern == null)
                 searchPattern = "*";
 
             var regex = new Regex("^" + Regex.Escape(searchPattern).Replace("\\*", ".*?") + "$");
             lock (_lock)
-                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1).ToList();
+                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1).Take(limit ?? Int32.MaxValue).ToList();
         }
 
         public void Dispose() {

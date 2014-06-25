@@ -22,9 +22,13 @@ namespace Exceptionless.Storage {
             _timer = new Timer(OnSaveTimer, null, -1, -1);
         }
 
-        private void OnSaveTimer(object state) {
+        public void Save() {
             _fileStorage.SaveObject(_path, this, _serializer);
             OnSaved();
+        }
+
+        private void OnSaveTimer(object state) {
+            Save();
         }
 
         private void OnChanged(object sender, ChangedEventArgs<KeyValuePair<string, string>> changedEventArgs) {

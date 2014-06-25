@@ -84,7 +84,7 @@ namespace Client.Tests.Storage {
             Assert.NotNull(file);
             Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json.x")));
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
-            storage.ReleaseOldLocks(queueName, TimeSpan.Zero);
+            storage.ReleaseStaleLocks(queueName, TimeSpan.Zero);
             Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json")));
 
             batch = storage.GetEventBatch(queueName, serializer);
@@ -98,7 +98,7 @@ namespace Client.Tests.Storage {
             file = storage.GetFileList().FirstOrDefault();
             Assert.NotNull(file);
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
-            storage.DeleteOldQueueFiles(queueName, TimeSpan.Zero);
+            storage.CleanupQueueFiles(queueName, TimeSpan.Zero);
             Assert.Equal(0, storage.GetQueueFiles(queueName).Count());
         }
 

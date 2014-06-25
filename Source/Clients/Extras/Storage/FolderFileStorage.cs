@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Exceptionless.Extras.Utility;
 using Exceptionless.Storage;
 using FileInfo = Exceptionless.Storage.FileInfo;
@@ -87,13 +88,13 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null) {
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
             if (String.IsNullOrEmpty(searchPattern))
                 searchPattern = "*";
 
             var list = new List<FileInfo>();
 
-            foreach (var path in Directory.GetFiles(Folder, searchPattern, SearchOption.AllDirectories)) {
+            foreach (var path in Directory.GetFiles(Folder, searchPattern, SearchOption.AllDirectories).Take(limit ?? Int32.MaxValue)) {
                 var info = new System.IO.FileInfo(path);
                 if (!info.Exists)
                     continue;

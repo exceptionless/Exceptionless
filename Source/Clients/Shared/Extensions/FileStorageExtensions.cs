@@ -21,11 +21,11 @@ namespace Exceptionless.Extensions {
             return serializer.Deserialize<T>(json);
         }
 
-        public static void DeleteOldQueueFiles(this IFileStorage storage, string queueName, TimeSpan? maxAge = null, int? maxAttempts = 3) {
+        public static void CleanupQueueFiles(this IFileStorage storage, string queueName, TimeSpan? maxAge = null, int? maxAttempts = 3) {
             if (!maxAge.HasValue)
                 maxAge = TimeSpan.FromDays(1);
 
-            foreach (var file in storage.GetFileList(queueName + "\\q\\*").ToList()) {
+            foreach (var file in storage.GetFileList(queueName + "\\q\\*", 500).ToList()) {
                 if (file.Created < DateTime.Now.Subtract(maxAge.Value))
                     storage.DeleteFile(file.Path);
                 if (GetAttempts(file) >= 3)
@@ -34,7 +34,7 @@ namespace Exceptionless.Extensions {
         }
 
         public static ICollection<FileInfo> GetQueueFiles(this IFileStorage storage, string queueName, int? limit = null) {
-            var files = storage.GetFileList(queueName + "\\q\\*.json").OrderByDescending(f => f.Created);
+            var files = storage.GetFileList(queueName + "\\q\\*.json", limit.HasValue ? limit * 2 : null).OrderByDescending(f => f.Created);
             return limit.HasValue ? files.Take(limit.Value).ToList() : files.ToList();
         }
 
@@ -95,11 +95,11 @@ namespace Exceptionless.Extensions {
             return true;
         }
 
-        public static void ReleaseOldLocks(this IFileStorage storage, string queueName, TimeSpan? maxLockAge = null) {
+        public static void ReleaseStaleLocks(this IFileStorage storage, string queueName, TimeSpan? maxLockAge = null) {
             if (!maxLockAge.HasValue)
                 maxLockAge = TimeSpan.FromMinutes(60);
 
-            foreach (var file in storage.GetFileList(queueName + "\\q\\*.x").ToList().Where(f => f.Modified < DateTime.Now.Subtract(maxLockAge.Value)))
+            foreach (var file in storage.GetFileList(queueName + "\\q\\*.x", 500).ToList().Where(f => f.Modified < DateTime.Now.Subtract(maxLockAge.Value)))
                 storage.ReleaseFile(file);
         }
 
@@ -107,7 +107,7 @@ namespace Exceptionless.Extensions {
             var events = new List<Tuple<FileInfo, Event>>();
 
             lock (_lockObject) {
-                foreach (var file in storage.GetQueueFiles(queueName)) {
+                foreach (var file in storage.GetQueueFiles(queueName, batchSize * 5)) {
                     if (!storage.LockFile(file))
                         continue;
 

@@ -23,12 +23,10 @@ namespace Exceptionless.Duplicates {
 
             while (current != null) {
                 int hashCode = current.GetHashCode();
-                _log.FormattedTrace(typeof(ExceptionlessClient), "Checking for duplicate error: hash={0} type={1}", hashCode, current.Type);
-                _log.FormattedTrace(typeof(ExceptionlessClient), "Error contents: {0}", current.ToString());
 
                 // make sure that we don't process the same error multiple times within 2 seconds.
                 if (_recentlyProcessedErrors.Any(s => s.Item1 == hashCode && s.Item2 >= repeatWindow)) {
-                    _log.FormattedInfo(typeof(ExceptionlessClient), "Ignoring duplicate exception: type={0}", current.Type);
+                    _log.FormattedInfo(typeof(ExceptionlessClient), "Ignoring duplicate error event: hash={0}", hashCode);
                     return true;
                 }
 

@@ -33,7 +33,7 @@ namespace Exceptionless.SampleMvc {
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-            ExceptionlessClient.Default.UseTraceLogger();
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
             ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
         }
     }

@@ -139,6 +139,9 @@ namespace Exceptionless.Models {
         }
 
         public void Apply(IEnumerable<KeyValuePair<string, string>> values) {
+            if (values == null)
+                return;
+
             foreach (var v in values)
                 this[v.Key] = v.Value;
         }

@@ -19,7 +19,7 @@ namespace Exceptionless.SampleNancy {
         protected override void ApplicationStartup(TinyIoCContainer container, IPipelines pipelines) {
             base.ApplicationStartup(container, pipelines);
 
-            ExceptionlessClient.Default.UseTraceLogger();
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
             ExceptionlessClient.Default.RegisterNancy(pipelines);
         }
     }

@@ -3,7 +3,6 @@ using System.Net.Mail;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using RazorSharpEmail;
@@ -25,21 +24,24 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            throw new NotImplementedException();
+            // TODO: Actually implement GetStackSummaryHtml.
+            return ev.Message ?? "None";
         }
 
         public string GetEventSummaryHtml(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
-            throw new NotImplementedException();
+            // TODO: Actually implement GetEventSummaryHtml.
+            return ev.Message ?? "None";
         }
 
         public string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
-            throw new NotImplementedException();
+            // TODO: Actually implement GetStackTitle.
+            return ev.Message ?? "None";
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
@@ -74,7 +76,8 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            throw new NotImplementedException();
+            // TODO: Actually implement GetEventViewName.
+            return String.Empty;
         }
     }
 }

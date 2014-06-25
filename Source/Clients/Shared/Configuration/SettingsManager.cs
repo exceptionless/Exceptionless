@@ -24,7 +24,7 @@ namespace Exceptionless.Configuration {
 
         public static void CheckVersion(int version, ExceptionlessConfiguration config) {
             var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
-            if (version <= persistedClientData.GetInt32("ServerConfigVersion", -1))
+            if (version <= persistedClientData.GetInt32(String.Concat(config.GetQueueName(), "-ServerConfigVersion"), -1))
                 return;
 
             UpdateSettings(config);
@@ -41,7 +41,7 @@ namespace Exceptionless.Configuration {
             config.Settings.Apply(response.Settings);
 
             var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
-            persistedClientData["ServerConfigVersion"] = response.SettingsVersion.ToString();
+            persistedClientData[String.Concat(config.GetQueueName(), "-ServerConfigVersion")] = response.SettingsVersion.ToString();
 
             var fileStorage = config.Resolver.GetFileStorage();
             fileStorage.SaveObject(GetConfigPath(config), response.Settings, serializer);

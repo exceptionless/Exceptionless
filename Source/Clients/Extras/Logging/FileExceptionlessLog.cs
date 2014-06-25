@@ -21,6 +21,15 @@ namespace Exceptionless.Logging {
         private bool _firstWrite = true;
 
         public FileExceptionlessLog(string filePath, bool append = false) {
+            if (String.IsNullOrEmpty(filePath))
+                throw new ArgumentNullException("filePath");
+
+            if (!Path.IsPathRooted(filePath))
+                filePath = Path.GetFullPath(filePath);
+
+            if (!Directory.Exists(Path.GetDirectoryName(filePath)))
+                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
+
             FilePath = filePath;
             _append = append;
 
@@ -95,7 +104,7 @@ namespace Exceptionless.Logging {
                 CheckFileSize();
 
             try {
-                Retry(() => {
+                Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500)) {
                         bool append = _append || !_firstWrite;
                         _firstWrite = false;
@@ -121,7 +130,7 @@ namespace Exceptionless.Logging {
 
         private void WriteLine(string entry) {
             try {
-                Retry(() => {
+                Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500))
                         _buffer.Enqueue(entry);
                 });
@@ -142,7 +151,7 @@ namespace Exceptionless.Logging {
             // get the last X lines from the current file
             string lastLines = String.Empty;
             try {
-                Retry(() => {
+                Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500)) {
                         try {
                             lastLines = GetLastLinesFromFile(FilePath);
@@ -158,7 +167,7 @@ namespace Exceptionless.Logging {
 
             // overwrite the log file and initialize it with the last X lines it had
             try {
-                Retry(() => {
+                Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500)) {
                         using (StreamWriter writer = GetWriter(true))
                             writer.Write(lastLines);
@@ -214,22 +223,6 @@ namespace Exceptionless.Logging {
 
                 return Encoding.ASCII.GetString(buffer);
             }
-        }
-
-        private static void Retry(Action action, int attempts = 3, int msBeforeRetry = 100) {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            do {
-                try {
-                    action();
-                    return;
-                } catch {
-                    if (attempts <= 0)
-                        throw;
-                    Thread.Sleep(msBeforeRetry);
-                }
-            } while (attempts-- > 0);
         }
     }
 }

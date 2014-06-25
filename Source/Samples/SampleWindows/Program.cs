@@ -20,7 +20,7 @@ namespace Exceptionless.SampleWindows {
         /// </summary>
         [STAThread]
         private static void Main() {
-            ExceptionlessClient.Default.UseTraceLogger();
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
             ExceptionlessClient.Default.Register();
             ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
 

@@ -14,30 +14,36 @@ using Exceptionless.Extras.Storage;
 
 namespace Exceptionless.Logging {
     public class IsolatedStorageFileExceptionlessLog : FileExceptionlessLog {
-        private readonly IsolatedStorageFileStorage _storage;
+        public IsolatedStorageFileExceptionlessLog(string filePath, bool append = false) : base(filePath, append) {}
 
-        public IsolatedStorageFileExceptionlessLog(string filePath, bool append = false) : base(filePath, append) {
-            _storage = new IsolatedStorageFileStorage();
+        private IsolatedStorageFile GetIsolatedStorage() {
+            return IsolatedStorageFile.GetStore(IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly, typeof(IsolatedStorageFileStorage), null);
         }
 
         protected override StreamWriter GetWriter(bool append = false) {
-            IsolatedStorageFileStream stream = _storage.NewWriteStream(FilePath, append);
-            return new StreamWriter(stream);
+            using (var store = GetIsolatedStorage())
+            using (var stream = new IsolatedStorageFileStream(FilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read, store))
+                return new StreamWriter(stream);
         }
 
         protected override FileStream GetReader() {
-            return _storage.NewReadStream(FilePath);
+            using (var store = GetIsolatedStorage())
+            using (var stream = new IsolatedStorageFileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, store))
+                return stream;
         }
 
-        protected override long GetFileSize() {
-            return _storage.GetFileSize(FilePath);
-        }
+        public long GetFileSize(string path) {
+            using (var store = GetIsolatedStorage()) {
+                string fullPath = store.GetFullPath(FilePath);
+                try {
+                    if (File.Exists(fullPath))
+                        return new FileInfo(fullPath).Length;
+                } catch (IOException ex) {
+                    System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
+                }
 
-        public override void Dispose() {
-            base.Dispose();
-
-            if (_storage != null)
-                _storage.Dispose();
+                return -1;
+            }
         }
     }
 }

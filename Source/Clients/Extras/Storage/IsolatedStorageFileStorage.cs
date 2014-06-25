@@ -6,23 +6,20 @@ using System.IO.IsolatedStorage;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading;
 using Exceptionless.Storage;
+using Exceptionless.Utility;
 using FileInfo = Exceptionless.Storage.FileInfo;
 
 namespace Exceptionless.Extras.Storage {
     public class IsolatedStorageFileStorage : IFileStorage {
-        private readonly IsolatedStorageFile _isolatedStorage;
         private readonly object _lockObject = new object();
 
-        public IsolatedStorageFileStorage() {
-            _isolatedStorage = IsolatedStorageFile.GetStore(IsolatedStorageScope.Assembly | IsolatedStorageScope.Machine, typeof(IsolatedStorageFileStorage), null);
+        private IsolatedStorageFile GetIsolatedStorage() {
+            return Run.WithRetries(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly, typeof(IsolatedStorageFileStorage), null));
         }
 
-        public IsolatedStorageFile IsolatedStorage { get { return _isolatedStorage; } }
-
-        public long GetFileSize(string path) {
-            string fullPath = IsolatedStorage.GetFullPath(path);
+        private long GetFileSize(IsolatedStorageFile store, string path) {
+            string fullPath = store.GetFullPath(path);
             try {
                 if (File.Exists(fullPath))
                     return new System.IO.FileInfo(fullPath).Length;
@@ -33,12 +30,15 @@ namespace Exceptionless.Extras.Storage {
             return -1;
         }
 
-        public IEnumerable<string> GetFiles(string searchPattern = null) {
+        public IEnumerable<string> GetFiles(string searchPattern = null, int? limit = null) {
             var result = new List<string>();
             var stack = new Stack<string>();
 
             const string initialDirectory = "*";
             stack.Push(initialDirectory);
+            Regex searchPatternRegex = null;
+            if (!String.IsNullOrEmpty(searchPattern))
+                searchPatternRegex = new Regex("^" + Regex.Escape(searchPattern).Replace("\\*", ".*?") + "$");
 
             while (stack.Count > 0) {
                 string dir = stack.Pop();
@@ -49,22 +49,23 @@ namespace Exceptionless.Extras.Storage {
                 else
                     directoryPath = dir + @"\*";
 
-                var filesInCurrentDirectory = IsolatedStorage.GetFileNames(directoryPath).ToList();
-                var filesInCurrentDirectoryWithFolderName = filesInCurrentDirectory.Select(file => Path.Combine(dir, file)).ToList();
-                if (dir != "*")
-                    result.AddRange(filesInCurrentDirectoryWithFolderName);
-                else
-                    result.AddRange(filesInCurrentDirectory);
+                using (var store = GetIsolatedStorage()) {
+                    var filesInCurrentDirectory = store.GetFileNames(directoryPath).Take(limit ?? Int32.MaxValue).ToList();
+                    var filesInCurrentDirectoryWithFolderName = filesInCurrentDirectory.Select(file => Path.Combine(dir, file)).ToList();
+                    if (dir != "*")
+                        result.AddRange(searchPatternRegex != null ? filesInCurrentDirectoryWithFolderName.Where(k => searchPatternRegex.IsMatch(k)) : filesInCurrentDirectoryWithFolderName);
+                    else
+                        result.AddRange(searchPatternRegex != null ? filesInCurrentDirectory.Where(k => searchPatternRegex.IsMatch(k)) : filesInCurrentDirectory);
 
-                foreach (string directoryName in IsolatedStorage.GetDirectoryNames(directoryPath))
-                    stack.Push(dir == "*" ? directoryName : Path.Combine(dir, directoryName));
+                    if (limit.HasValue && result.Count >= limit)
+                        return result;
+
+                    foreach (string directoryName in store.GetDirectoryNames(directoryPath))
+                        stack.Push(dir == "*" ? directoryName : Path.Combine(dir, directoryName));
+                }
             }
 
-            if (String.IsNullOrEmpty(searchPattern))
-                return result;
-
-            var regex = new Regex("^" + Regex.Escape(searchPattern).Replace("\\*", ".*?") + "$");
-            return result.Where(k => regex.IsMatch(k));
+            return result;
         }
 
         public bool Exists(string path) {
@@ -76,13 +77,15 @@ namespace Exceptionless.Extras.Storage {
                 throw new ArgumentNullException("path");
 
             try {
-                using (IsolatedStorageFileStream isoStream = NewReadStream(path)) {
-                    using (var reader = new StreamReader(isoStream))
+                return Run.WithRetries(() => {
+                    using (var store = GetIsolatedStorage())
+                    using (var stream = new IsolatedStorageFileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, store))
+                    using (var reader = new StreamReader(stream))
                         return reader.ReadToEnd();
-                }
-            } catch (Exception) {
-                return null;
-            }
+                });
+            } catch (Exception) {}
+
+            return null;
         }
 
         public bool SaveFile(string path, string contents) {
@@ -93,9 +96,12 @@ namespace Exceptionless.Extras.Storage {
 
             try {
                 lock (_lockObject) {
-                    using (IsolatedStorageFileStream isoStream = NewWriteStream(path))
-                        using (var streamWriter = new StreamWriter(isoStream))
+                    Run.WithRetries(() => {
+                        using (var store = GetIsolatedStorage())
+                        using (var stream = new IsolatedStorageFileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, store))
+                        using (var streamWriter = new StreamWriter(stream))
                             streamWriter.Write(contents);
+                    });
                 }
             } catch (Exception) {
                 return false;
@@ -112,7 +118,11 @@ namespace Exceptionless.Extras.Storage {
 
             try {
                 lock (_lockObject) {
-                    IsolatedStorage.MoveFile(oldpath, newpath);
+                    Run.WithRetries(() => {
+                        using (var store = GetIsolatedStorage()) {
+                            store.MoveFile(oldpath, newpath);
+                        }
+                    });
                 }
             } catch (Exception) {
                 return false;
@@ -127,7 +137,11 @@ namespace Exceptionless.Extras.Storage {
 
             try {
                 lock (_lockObject) {
-                    IsolatedStorage.DeleteFile(path);
+                    Run.WithRetries(() => {
+                        using (var store = GetIsolatedStorage()) {
+                            store.DeleteFile(path);
+                        }
+                    });
                 }
             } catch (Exception) {
                 return false;
@@ -136,46 +150,16 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null) {
-            IEnumerable<string> files = GetFiles(searchPattern);
-            return files.Select(path => new FileInfo {
-                Path = path,
-                Modified = IsolatedStorage.GetLastWriteTime(path).LocalDateTime,
-                Created = IsolatedStorage.GetCreationTime(path).LocalDateTime,
-                Size = GetFileSize(path)
-            });
-        }
-
-        public IsolatedStorageFileStream NewReadStream(string path) {
-            return InternalCreateStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        }
-
-        public IsolatedStorageFileStream NewWriteStream(string path, bool append = false) {
-            FileMode mode = append ? FileMode.OpenOrCreate : FileMode.Create;
-            return InternalCreateStream(path, mode, FileAccess.Write, FileShare.Read);
-        }
-
-        public IsolatedStorageFileStream NewReadWriteStream(string path, bool append = false) {
-            FileMode mode = append ? FileMode.OpenOrCreate : FileMode.Create;
-            return InternalCreateStream(path, mode, FileAccess.ReadWrite, FileShare.Read);
-        }
-
-        private IsolatedStorageFileStream InternalCreateStream(string path, FileMode fileMode, FileAccess fileAccess, FileShare fileShare, int count = 0) {
-            const int MAX_ISO_STORE_FILE_OPEN_TRIES = 3;
-            IsolatedStorageFileStream stream;
-
-            try {
-                stream = new IsolatedStorageFileStream(path, fileMode, fileAccess, fileShare, IsolatedStorage);
-            } catch (IsolatedStorageException) {
-                Thread.Sleep(100);
-                count++;
-                if (count >= MAX_ISO_STORE_FILE_OPEN_TRIES)
-                    throw;
-
-                stream = InternalCreateStream(path, fileMode, fileAccess, fileShare, count);
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
+            IEnumerable<string> files = GetFiles(searchPattern, limit);
+            using (var store = GetIsolatedStorage()) {
+                return files.Select(path => new FileInfo {
+                    Path = path,
+                    Modified = store.GetLastWriteTime(path).LocalDateTime,
+                    Created = store.GetCreationTime(path).LocalDateTime,
+                    Size = GetFileSize(store, path)
+                }).ToList();
             }
-
-            return stream;
         }
 
         private readonly Collection<string> _ensuredDirectories = new Collection<string>(); 
@@ -187,25 +171,16 @@ namespace Exceptionless.Extras.Storage {
             if (_ensuredDirectories.Contains(directory))
                 return;
 
-            if (!IsolatedStorage.DirectoryExists(directory))
-                IsolatedStorage.CreateDirectory(directory);
+            Run.WithRetries(() => {
+                using (var store = GetIsolatedStorage()) {
+                    if (!store.DirectoryExists(directory))
+                        store.CreateDirectory(directory);
+                }
+            });
         }
 
-        private bool _disposed;
         public void Dispose() {
-            Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        protected void Dispose(bool disposing) {
-            if (_disposed)
-                return;
-
-            if (disposing) {
-                IsolatedStorage.Close();
-                IsolatedStorage.Dispose();
-            }
-            _disposed = true;
         }
     }
 
