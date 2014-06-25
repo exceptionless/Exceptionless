@@ -68,6 +68,20 @@ namespace Exceptionless.Extras.Storage {
             return result;
         }
 
+        public FileInfo GetFileInfo(string path) {
+            if (!Exists(path))
+                return null;
+
+            using (var store = GetIsolatedStorage()) {
+                return new FileInfo {
+                    Path = path,
+                    Modified = store.GetLastWriteTime(path).LocalDateTime,
+                    Created = store.GetCreationTime(path).LocalDateTime,
+                    Size = GetFileSize(store, path)
+                };
+            }
+        }
+
         public bool Exists(string path) {
             return GetFiles(path).Any();
         }

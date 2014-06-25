@@ -30,8 +30,8 @@ namespace SampleConsole {
         private static void Main() {
 
             ExceptionlessClient.Default.Startup();
-            ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
-            ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
+            //ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
+            //ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;

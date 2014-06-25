@@ -67,6 +67,7 @@
     <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\SingleGlobalInstance.cs" />
+    <Compile Include="Utility\WrappedDisposable.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">

@@ -37,6 +37,19 @@ namespace Exceptionless.Extras.Storage {
             }
         }
 
+        public FileInfo GetFileInfo(string path) {
+            var info = new System.IO.FileInfo(path);
+            if (!info.Exists)
+                return null;
+
+            return new FileInfo {
+                Path = path.Replace(Folder, String.Empty),
+                Created = info.CreationTime,
+                Modified = info.LastWriteTime,
+                Size = info.Length
+            };
+        }
+
         public bool Exists(string path) {
             return File.Exists(Path.Combine(Folder, path));
         }

@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading;
+using Exceptionless.Extras.Utility;
 using Exceptionless.Utility;
 
 namespace Exceptionless.Logging {
@@ -19,30 +20,36 @@ namespace Exceptionless.Logging {
         private Timer _flushTimer;
         private readonly bool _append;
         private bool _firstWrite = true;
+        private bool _isFlushing = false;
 
         public FileExceptionlessLog(string filePath, bool append = false) {
             if (String.IsNullOrEmpty(filePath))
                 throw new ArgumentNullException("filePath");
 
-            if (!Path.IsPathRooted(filePath))
-                filePath = Path.GetFullPath(filePath);
-
-            if (!Directory.Exists(Path.GetDirectoryName(filePath)))
-                Directory.CreateDirectory(Path.GetDirectoryName(filePath));
-
             FilePath = filePath;
             _append = append;
 
-            // flush the log every 2 seconds instead of on every write
+            Init();
+
+            // flush the log every 3 seconds instead of on every write
             _flushTimer = new Timer(OnFlushTimer, null, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(3));
         }
 
-        protected virtual StreamWriter GetWriter(bool append = false) {
-            return new StreamWriter(FilePath, append, Encoding.ASCII);
+        protected virtual void Init() {
+            if (!Path.IsPathRooted(FilePath))
+                FilePath = Path.GetFullPath(FilePath);
+
+            string dir = Path.GetDirectoryName(FilePath);
+            if (!String.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
         }
 
-        protected virtual FileStream GetReader() {
-            return new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        protected virtual WrappedDisposable<StreamWriter> GetWriter(bool append = false) {
+            return new WrappedDisposable<StreamWriter>(new StreamWriter(FilePath, append, Encoding.ASCII));
+        }
+
+        protected virtual WrappedDisposable<FileStream> GetReader() {
+            return new WrappedDisposable<FileStream>(new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
         }
 
         protected virtual long GetFileSize() {
@@ -97,22 +104,24 @@ namespace Exceptionless.Logging {
         }
 
         public void Flush() {
-            if (_buffer.Count == 0)
+            if (_isFlushing || _buffer.Count == 0)
                 return;
 
             if (DateTime.Now.Subtract(_lastSizeCheck).TotalSeconds > 120)
                 CheckFileSize();
 
             try {
+                _isFlushing = true;
+
                 Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500)) {
                         bool append = _append || !_firstWrite;
                         _firstWrite = false;
 
                         try {
-                            using (StreamWriter writer = GetWriter(append)) {
+                            using (var writer = GetWriter(append)) {
                                 while (_buffer.Count > 0)
-                                    writer.WriteLine(_buffer.Dequeue());
+                                    writer.Value.WriteLine(_buffer.Dequeue());
                             }
                         } catch (Exception ex) {
                             System.Diagnostics.Trace.TraceError("Unable flush the logs. " + ex.Message);
@@ -123,6 +132,8 @@ namespace Exceptionless.Logging {
                 });
             } catch (Exception ex) {
                 System.Diagnostics.Trace.WriteLine("Exceptionless: Error flushing log contents to disk: {0}", ex.Message);
+            } finally {
+                _isFlushing = false;
             }
         }
 
@@ -169,8 +180,8 @@ namespace Exceptionless.Logging {
             try {
                 Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500)) {
-                        using (StreamWriter writer = GetWriter(true))
-                            writer.Write(lastLines);
+                        using (var writer = GetWriter(true))
+                            writer.Value.Write(lastLines);
                     }
                 });
             } catch (Exception ex) {
@@ -195,13 +206,13 @@ namespace Exceptionless.Logging {
         protected string GetLastLinesFromFile(string path, int lines = 100) {
             byte[] buffer = Encoding.ASCII.GetBytes("\n");
 
-            using (FileStream fs = GetReader()) {
+            using (var fs = GetReader()) {
                 long lineCount = 0;
-                long endPosition = fs.Length;
+                long endPosition = fs.Value.Length;
 
                 for (long position = 1; position < endPosition; position++) {
-                    fs.Seek(-position, SeekOrigin.End);
-                    fs.Read(buffer, 0, 1);
+                    fs.Value.Seek(-position, SeekOrigin.End);
+                    fs.Value.Read(buffer, 0, 1);
 
                     if (buffer[0] != '\n')
                         continue;
@@ -210,16 +221,16 @@ namespace Exceptionless.Logging {
                     if (lineCount != lines)
                         continue;
 
-                    var returnBuffer = new byte[fs.Length - fs.Position];
-                    fs.Read(returnBuffer, 0, returnBuffer.Length);
+                    var returnBuffer = new byte[fs.Value.Length - fs.Value.Position];
+                    fs.Value.Read(returnBuffer, 0, returnBuffer.Length);
 
                     return Encoding.ASCII.GetString(returnBuffer);
                 }
 
                 // handle case where number of lines in file is less than desired line count
-                fs.Seek(0, SeekOrigin.Begin);
-                buffer = new byte[fs.Length];
-                fs.Read(buffer, 0, buffer.Length);
+                fs.Value.Seek(0, SeekOrigin.Begin);
+                buffer = new byte[fs.Value.Length];
+                fs.Value.Read(buffer, 0, buffer.Length);
 
                 return Encoding.ASCII.GetString(buffer);
             }

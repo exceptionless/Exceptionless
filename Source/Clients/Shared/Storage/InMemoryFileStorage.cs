@@ -32,6 +32,10 @@ namespace Exceptionless.Storage {
             }
         }
 
+        public FileInfo GetFileInfo(string path) {
+            return Exists(path) ? _storage[path].Item1 : null;
+        }
+
         public bool Exists(string path) {
             return _storage.ContainsKey(path);
         }

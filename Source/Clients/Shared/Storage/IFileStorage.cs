@@ -4,6 +4,7 @@ using System.Collections.Generic;
 namespace Exceptionless.Storage {
     public interface IFileStorage : IDisposable {
         string GetFileContents(string path);
+        FileInfo GetFileInfo(string path);
         bool Exists(string path);
         bool SaveFile(string path, string contents);
         bool RenameFile(string oldpath, string newpath);
