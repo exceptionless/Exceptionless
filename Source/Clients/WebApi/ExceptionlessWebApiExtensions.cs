@@ -68,8 +68,6 @@ namespace Exceptionless {
             if (context == null)
                 return ev;
 
-            // TODO: Create HttpActionContext version of request info.
-            //context.Request.Headers.GetCookies();
             ev.AddRequestInfo(context.GetRequestInfo(ExceptionlessClient.Default.Configuration));
 
             return ev;

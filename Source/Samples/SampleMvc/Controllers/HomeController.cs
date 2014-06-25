@@ -94,7 +94,7 @@ namespace Exceptionless.SampleMvc.Controllers {
 
                     ex.ToExceptionless()
                         .SetUserIdentity("some@email.com")
-                        .SetUserDescription("Some description.")
+                        .SetUserDescription("some@email.com", "Some description.")
                         .AddRecentTraceLogEntries()
                         .AddRequestInfo()
                         .AddObject(new {

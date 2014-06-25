@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Pipeline {
                 EventBuilder b = ex.ToExceptionless()
                     .AddObject(ctx.Event)
                     .AddTags("Internal")
-                    .SetUserDescription(message);
+                    .SetUserDescription("some@email.com", message);
 
                 b.AddTags(ErrorTags);
 

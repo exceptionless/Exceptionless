@@ -38,7 +38,7 @@ namespace Exceptionless {
             if (!e.IsUnhandledError)
                 return;
 
-            var dialog = new CrashReportForm(e.Event);
+            var dialog = new CrashReportForm(e.Client, e.Event);
             e.Cancel = dialog.ShowDialog() != DialogResult.OK;
         }
     }

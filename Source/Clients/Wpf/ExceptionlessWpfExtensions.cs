@@ -43,13 +43,13 @@ namespace Exceptionless {
                 return;
 
             if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
-                e.Cancel = (bool)Application.Current.Dispatcher.Invoke(new Func<Event, bool>(ShowDialog), DispatcherPriority.Send, e.Event);
+                e.Cancel = (bool)Application.Current.Dispatcher.Invoke(new Func<EventSubmittingEventArgs, bool>(ShowDialog), DispatcherPriority.Send, e);
             else
-                e.Cancel = ShowDialog(e.Event);
+                e.Cancel = ShowDialog(e);
         }
         
-        private static bool ShowDialog(Event e) {
-            var dialog = new CrashReportDialog(e);
+        private static bool ShowDialog(EventSubmittingEventArgs e) {
+            var dialog = new CrashReportDialog(e.Client, e.Event);
             bool? result = dialog.ShowDialog();
             return result.HasValue && result.Value;
         }

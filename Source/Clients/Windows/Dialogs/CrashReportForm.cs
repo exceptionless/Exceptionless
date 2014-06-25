@@ -9,28 +9,39 @@
 
 using System;
 using System.Windows.Forms;
+using Exceptionless.Dependency;
 using Exceptionless.Extras.Utility;
 using Exceptionless.Models;
+using Exceptionless.Storage;
 
 namespace Exceptionless.Dialogs {
     public sealed partial class CrashReportForm : Form {
-        public Event Event { get; private set; }
+        public ExceptionlessClient Client { get; internal set; }
+        public Event Event { get; internal set; }
 
-        public CrashReportForm(Event ev) {
+
+        public CrashReportForm(ExceptionlessClient client, Event ev) {
             InitializeComponent();
 
+            Client = client;
             Event = ev;
             Text = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
             InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
             // TODO: Implement this once the client has persisted storage.
             var userInfo = ev.GetUserIdentity();
-            if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity))
+            if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity)) {
                 EmailAddressTextBox.Text = userInfo.Identity;
-            //else
-            //    EmailAddressTextBox.Text = ExceptionlessClient.Default.LocalConfiguration.EmailAddress;
+            } else {
+                var storage = client.Configuration.Resolver.Resolve<PersistedDictionary>();
+                string emailAddress;
+                if (storage != null && storage.TryGetValue("EmailAddress", out emailAddress))
+                    EmailAddressTextBox.Text = emailAddress;
+            }
 
-            DescriptionTextBox.Text = Event.GetUserDescription();
+            var userDescription = Event.GetUserDescription();
+            if (userDescription != null)
+                DescriptionTextBox.Text = userDescription.Description;
         }
 
         private void ExitButton_Click(object sender, EventArgs e) {
@@ -42,8 +53,13 @@ namespace Exceptionless.Dialogs {
             SendReportButton.Enabled = false;
             ExitButton.Enabled = false;
 
-            Event.SetUserIdentity(EmailAddressTextBox.Text);
-            Event.AddUserDescription(DescriptionTextBox.Text);
+            if (!String.IsNullOrWhiteSpace(EmailAddressTextBox.Text)) {
+                var storage = Client.Configuration.Resolver.Resolve<PersistedDictionary>();
+                if (storage != null)
+                    storage["EmailAddress"] = EmailAddressTextBox.Text;
+            }
+
+            Event.SetUserDescription(EmailAddressTextBox.Text, DescriptionTextBox.Text);
 
             Cursor = Cursors.Default;
             SendReportButton.Enabled = true;

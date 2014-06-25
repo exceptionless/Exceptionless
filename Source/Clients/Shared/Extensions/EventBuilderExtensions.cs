@@ -16,9 +16,10 @@ namespace Exceptionless {
         /// Sets the user's description of the event.
         /// </summary>
         /// <param name="builder">The event builder object.</param>
-        /// <param name="description">The user's name description of the event.</param>
-        public static EventBuilder SetUserDescription(this EventBuilder builder, string description) {
-            builder.Target.AddUserDescription(description);
+        /// <param name="emailAddress">The user's email address.</param>
+        /// <param name="description">The user's description of the event.</param>
+        public static EventBuilder SetUserDescription(this EventBuilder builder, string emailAddress, string description) {
+            builder.Target.SetUserDescription(emailAddress, description);
             return builder;
         }
     }

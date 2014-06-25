@@ -94,21 +94,29 @@ namespace Exceptionless {
         /// <summary>
         /// Gets the user description from extended data.
         /// </summary>
-        public static string GetUserDescription(this Event ev) {
+        public static UserDescription GetUserDescription(this Event ev) {
             object value;
-            return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out value) ? value as string : null;
+            return ev.Data.TryGetValue(Event.KnownDataKeys.UserDescription, out value) ? value as UserDescription : null;
         }
 
         /// <summary>
-        /// Adds the user description to the event.
+        /// Sets the user's description of the event.
         /// </summary>
         /// <param name="ev">The event</param>
-        /// <param name="description">The description</param>
-        public static void AddUserDescription(this Event ev, string description) {
-            if (String.IsNullOrWhiteSpace(description))
+        /// <param name="emailAddress">The email address</param>
+        /// <param name="description">The user's description of the event.</param>
+        public static void SetUserDescription(this Event ev, string emailAddress, string description) {
+            if (String.IsNullOrWhiteSpace(emailAddress) && String.IsNullOrWhiteSpace(description))
                 return;
 
-            ev.Data[Event.KnownDataKeys.UserDescription] = description;
+            var userDescription = ev.GetUserDescription() ?? new UserDescription(emailAddress, description);
+            if (String.IsNullOrWhiteSpace(emailAddress))
+                userDescription.EmailAddress = emailAddress;
+
+            if (String.IsNullOrWhiteSpace(description))
+                userDescription.Description = description;
+
+            ev.Data[Event.KnownDataKeys.UserDescription] = userDescription;
         }
     }
 }

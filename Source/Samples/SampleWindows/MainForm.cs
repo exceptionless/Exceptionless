@@ -98,7 +98,7 @@ namespace Exceptionless.SampleWindows {
             decimal count = multiple.NumericUpDown.Value;
 
             for (int i = 0; i < count; i++) {
-                new ApplicationException("Multiple Crash Test.").ToExceptionless().SetUserDescription("Testing multiple crash reports. " + i).Submit();
+                new ApplicationException("Multiple Crash Test.").ToExceptionless().SetUserDescription("some@email.com", "Testing multiple crash reports. " + i).Submit();
                 //r.Description = "Testing multiple crash reports.";
                 //r.EmailAddress = "my@email.com";
             }
