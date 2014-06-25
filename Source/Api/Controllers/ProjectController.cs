@@ -106,7 +106,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest();
 
             project.Configuration.Settings[key] = value;
-            project.Configuration.Version++;
+            project.Configuration.IncrementVersion();
             _repository.Save(project);
 
             return Ok();

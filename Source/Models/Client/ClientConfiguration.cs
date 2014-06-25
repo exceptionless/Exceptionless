@@ -17,7 +17,11 @@ namespace Exceptionless.Models {
             Settings = new SettingsDictionary();
         }
 
-        public int Version { get; set; } // TODO: Make this private once we have better patching support.
-        public SettingsDictionary Settings { get; set; }
+        public int Version { get; private set; }
+        public SettingsDictionary Settings { get; private set; }
+
+        public void IncrementVersion() {
+            Version++;
+        }
     }
 }
