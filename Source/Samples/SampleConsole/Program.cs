@@ -40,6 +40,8 @@ namespace SampleConsole {
             ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
             ExceptionlessClient.Default.SubmitNotFound("/somepage");
             ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.SetUserIdentity("blah"));
+            ExceptionlessClient.Default.SubmittingEvent += (sender, args) => args.Cancel = true;
 
             while (true) {
                 if (!_sendingContinuous) {

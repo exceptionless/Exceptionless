@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
+using Exceptionless.Enrichments.Default;
 using Exceptionless.Models;
 
 namespace Exceptionless {
@@ -115,10 +116,7 @@ namespace Exceptionless {
         /// <summary>
         /// The dependency resolver to use for this configuration.
         /// </summary>
-        public IDependencyResolver Resolver {
-            get { return _resolver; }
-            // TODO: Make dependency resolver read only after config is locked.
-        }
+        public IDependencyResolver Resolver { get { return _resolver; } }
 
         #region Enrichments
 
@@ -144,6 +142,31 @@ namespace Exceptionless {
         /// <param name="enrichmentType">The enrichment type to be added.</param>
         public void AddEnrichment(string key, Type enrichmentType) {
             _enrichments[key] = new Lazy<IEventEnrichment>(() => Resolver.Resolve(enrichmentType) as IEventEnrichment);
+        }
+
+        /// <summary>
+        /// Register an enrichment to be used in this configuration.
+        /// </summary>
+        /// <param name="key">The key used to identify the enrichment.</param>
+        /// <param name="factory">A factory method to create the enrichment.</param>
+        public void AddEnrichment(string key, Func<ExceptionlessConfiguration, IEventEnrichment> factory) {
+            _enrichments[key] = new Lazy<IEventEnrichment>(() => factory(this));
+        }
+
+        /// <summary>
+        /// Register an enrichment to be used in this configuration.
+        /// </summary>
+        /// <param name="enrichmentAction">The action used to enrich the events.</param>
+        public void AddEnrichment(Action<EventEnrichmentContext, Event> enrichmentAction) {
+            _enrichments[Guid.NewGuid().ToString()] = new Lazy<IEventEnrichment>(() => new ActionEnrichment(enrichmentAction));
+        }
+
+        /// <summary>
+        /// Register an enrichment to be used in this configuration.
+        /// </summary>
+        /// <param name="enrichmentAction">The action used to enrich the events.</param>
+        public void AddEnrichment(Action<Event> enrichmentAction) {
+            _enrichments[Guid.NewGuid().ToString()] = new Lazy<IEventEnrichment>(() => new ActionEnrichment((context, ev) => enrichmentAction(ev)));
         }
 
         /// <summary>
