@@ -142,8 +142,10 @@ namespace Exceptionless.Models {
             if (values == null)
                 return;
 
-            foreach (var v in values)
-                this[v.Key] = v.Value;
+            foreach (var v in values) {
+                if (!ContainsKey(v.Key) || v.Value != this[v.Key])
+                    this[v.Key] = v.Value;
+            }
         }
     }
 }
