@@ -35,7 +35,6 @@ namespace Exceptionless.Core.Jobs {
             var page = 1;
             var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100));
             while (organizations.Count > 0) {
-                // TODO: Need to add overage days to the org when they went over their limit for the day.
                 foreach (var organization in organizations)
                     EnforceEventCountLimits(organization);
 

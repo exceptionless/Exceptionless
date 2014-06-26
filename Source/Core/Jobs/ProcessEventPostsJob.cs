@@ -109,6 +109,7 @@ namespace Exceptionless.Core.Jobs {
                             // Put this single event back into the queue so we can retry it separately.
                             _queue.EnqueueAsync(new EventPost {
                                 Data = Encoding.UTF8.GetBytes(ev.ToJson()).Compress(),
+                                ContentEncoding = "gzip",
                                 ProjectId = ev.ProjectId,
                                 CharSet = "utf-8",
                                 MediaType = "application/json",
