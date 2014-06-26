@@ -41,7 +41,7 @@ namespace SampleConsole {
             ExceptionlessClient.Default.SubmitNotFound("/somepage");
             ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
             ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data["TestKey"] = "Test");
-            ExceptionlessClient.Default.SubmittingEvent += (sender, args) => args.Cancel = true;
+            ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             while (true) {
                 if (!_sendingContinuous) {
