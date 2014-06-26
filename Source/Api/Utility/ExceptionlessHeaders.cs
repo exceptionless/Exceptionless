@@ -18,6 +18,7 @@ namespace Exceptionless.Submission.Net {
 #endif
     public static class ExceptionlessHeaders {
         public const string Bearer = "Bearer";
+        public const string LegacyConfigurationVersion = "v";
         public const string ConfigurationVersion = "X-Exceptionless-ConfigVersion";
         public const string Client = "X-Exceptionless-Client";
         public const string RateLimit = "X-RateLimit-Limit";

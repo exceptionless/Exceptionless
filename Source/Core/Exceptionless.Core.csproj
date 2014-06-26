@@ -157,12 +157,18 @@
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\RequestInfoPlugin.cs" />
+    <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="Extensions\IdentityUtils.cs" />
     <Compile Include="Plugins\EventParser\Default\JsonEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\EventParserPluginManager.cs" />
     <Compile Include="Plugins\EventParser\IEventParserPlugin.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\GetVersion.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R844_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V2_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R850_EventUpgrade.cs" />
+    <Compile Include="Plugins\EventUpgrader\Default\V1R500_EventUpgrade.cs" />
     <Compile Include="Plugins\Formatting\Default\ErrorFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\NotFoundFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginBase.cs" />
@@ -205,10 +211,19 @@
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
     <Compile Include="Pipeline\080_NotifySignalRAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\ThrottleBotsPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\EventContext.cs" />
-    <Compile Include="Plugins\EventPipeline\EventPluginBase.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\ThrottleBotsPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\EventContext.cs" />
+    <Compile Include="Plugins\EventProcessor\EventProcessorPluginBase.cs" />
     <Compile Include="Plugins\PluginManagerBase.cs" />
+    <Compile Include="Plugins\EventUpgrader\IEventUpgraderPlugin.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Plugins\EventUpgrader\EventUpgraderContext.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Plugins\EventUpgrader\EventUpgraderPluginManager.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\Models\WebHookNotification.cs" />
@@ -252,9 +267,9 @@
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
     <Compile Include="Serialization\RequestInfoConverter.cs" />
     <Compile Include="Settings.cs" />
-    <Compile Include="Plugins\EventPipeline\Default\ErrorPlugin.cs" />
-    <Compile Include="Plugins\EventPipeline\EventPluginManager.cs" />
-    <Compile Include="Plugins\EventPipeline\IEventPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\ErrorPlugin.cs" />
+    <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
+    <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
     <Compile Include="Utility\CompareObjects.cs" />
     <Compile Include="Utility\ExtensionContractResolver.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
@@ -264,8 +279,6 @@
     <Compile Include="Utility\SimpleInjectorCoreDependencyResolver.cs" />
     <Compile Include="Mail\IMailer.cs" />
     <Compile Include="Mail\Mailer.cs" />
-    <Compile Include="Migrations\Documents\DocumentUpgrader.cs" />
-    <Compile Include="Migrations\Documents\LegacyErrorDocumentUpgrader.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
     <Compile Include="Mail\Models\ErrorNotificationModel.cs" />

@@ -28,6 +28,46 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
+        public static bool RenameOrRemoveIfNull(this JObject target, string currentName, string newName) {
+            if (target[currentName] == null)
+                return false;
+
+            JProperty p = target.Property(currentName);
+            target.Remove(p.Name);
+
+            if (p.Value.Type != JTokenType.Null)
+                target.Add(newName, p.Value);
+
+            return true;
+        }
+        
+        public static bool CopyOrRemoveIfNull(this JObject target, JObject source, string name) {
+            if (source[name] == null)
+                return false;
+
+            JProperty p = source.Property(name);
+            source.Remove(p.Name);
+
+            if (p.Value.Type != JTokenType.Null)
+                target.Add(name, p.Value);
+
+            return true;
+        }
+
+        public static string GetPropertyStringValue(this JObject target, string name) {
+            if (target[name] == null)
+                return null;
+
+            return target.Property(name).Value != null ? target.Property(name).Value.ToString() : null;
+        }
+
+
+        public static string GetPropertyStringValueAndRemove(this JObject target, string name) {
+            var value = target.GetPropertyStringValue(name);
+            target.Remove(name);
+            return value;
+        }
+
         public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
             serializer.Formatting = formatting;

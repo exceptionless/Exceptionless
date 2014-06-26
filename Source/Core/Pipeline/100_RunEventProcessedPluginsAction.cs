@@ -11,7 +11,7 @@
 
 using System;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(100)]

@@ -16,7 +16,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
-using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;

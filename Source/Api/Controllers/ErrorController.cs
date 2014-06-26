@@ -36,21 +36,6 @@ namespace Exceptionless.Api.Controllers {
             _cacheClient = cacheClient;
             _stats = stats;
         }
-
-        [Route]
-        [HttpPost]
-        public IHttpActionResult Post(Error value) {
-            if (value == null)
-                return BadRequest("Invalid error posted.");
-
-            if (_cacheClient.TryGet("ApiDisabled", false))
-                return StatusCode(HttpStatusCode.ServiceUnavailable);
-
-            // TODO: Implement Post
-
-            return Ok();
-        }
-
         [Route]
         [HttpPatch]
         protected IHttpActionResult Patch(Error original, Error value) {

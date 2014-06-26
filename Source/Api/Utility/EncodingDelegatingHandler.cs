@@ -24,6 +24,7 @@ namespace Exceptionless.Api.Utility {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (request.Method != HttpMethod.Get && request.Content != null
                 && !(request.RequestUri.AbsolutePath.EndsWith("/events") && request.Method == HttpMethod.Post)
+                && !(request.RequestUri.AbsolutePath.EndsWith("/error") && request.Method == HttpMethod.Post)
                 && request.Content.Headers.ContentEncoding.Any()) {
                 string encodingType = request.Content.Headers.ContentEncoding.First().ToLowerInvariant();
                 if (encodingType == "gzip" || encodingType == "deflate")

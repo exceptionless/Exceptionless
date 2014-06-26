@@ -3,8 +3,8 @@ using System.Linq;
 using CodeSmith.Core.Dependency;
 using NLog.Fluent;
 
-namespace Exceptionless.Core.Plugins.EventPipeline {
-    public class EventPluginManager : PluginManagerBase<IEventPlugin> {
+namespace Exceptionless.Core.Plugins.EventProcessor {
+    public class EventPluginManager : PluginManagerBase<IEventProcessorPlugin> {
         public EventPluginManager(IDependencyResolver dependencyResolver = null) : base(dependencyResolver) { }
 
         /// <summary>

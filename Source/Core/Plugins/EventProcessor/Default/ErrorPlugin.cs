@@ -7,9 +7,9 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
 using MongoDB.Bson.Serialization;
 
-namespace Exceptionless.Core.Plugins.EventPipeline {
+namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(10)]
-    public class ErrorPlugin : EventPluginBase {
+    public class ErrorPlugin : EventProcessorPluginBase {
         public override void Startup() {
             if (!BsonClassMap.IsClassMapRegistered(typeof(Error))) {
                 BsonClassMap.RegisterClassMap<Error>(cmm => {

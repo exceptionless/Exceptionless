@@ -6,9 +6,9 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
 using NLog.Fluent;
 
-namespace Exceptionless.Core.Plugins.EventPipeline {
+namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
-    public class ThrottleBotsPlugin : EventPluginBase {
+    public class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);

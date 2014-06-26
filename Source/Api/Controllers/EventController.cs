@@ -74,6 +74,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
+        [Route("~/api/v{version:int=1}/error")]
         [Route("~/api/v{version:int=1}/events")]
         [Route("~/api/v{version:int=1}/projects/{projectId:objectid}/events")]
         [OverrideAuthorization]

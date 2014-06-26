@@ -42,8 +42,12 @@ namespace Exceptionless.Api.Utility {
             if (project == null)
                 return;
 
+            string headerName = ExceptionlessHeaders.ConfigurationVersion;
+            if (context.Request.RequestUri.AbsolutePath.StartsWith("/api/v1"))
+                headerName = ExceptionlessHeaders.LegacyConfigurationVersion;
+
             // add the current configuration version to the response headers so the client will know if it should update its config.
-            context.Response.Headers.Add(ExceptionlessHeaders.ConfigurationVersion, project.Configuration.Version.ToString());
+            context.Response.Headers.Add(headerName, project.Configuration.Version.ToString());
         }
     }
 }

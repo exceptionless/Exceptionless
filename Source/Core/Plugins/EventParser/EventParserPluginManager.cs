@@ -16,7 +16,6 @@ namespace Exceptionless.Core.Plugins.EventParser {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     // TODO: Ensure that an event isn't to big..
-
                     var events = plugin.ParseEvents(input, apiVersion, userAgent);
                     if (events == null)
                         continue;

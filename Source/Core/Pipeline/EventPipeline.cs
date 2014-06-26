@@ -16,7 +16,7 @@ using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Plugins.EventPipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 

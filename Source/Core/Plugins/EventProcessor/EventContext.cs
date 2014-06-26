@@ -16,7 +16,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core.Plugins.EventPipeline {
+namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventContext : ExtensibleObject, IPipelineContext {
         public EventContext(PersistentEvent ev) {
             Event = ev;
