@@ -15,14 +15,18 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Extensions;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly ICacheClient _cacheClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository) {
+        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient) {
             _organizationRepository = organizationRepository;
+            _cacheClient = cacheClient;
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
@@ -32,6 +36,9 @@ namespace Exceptionless.Api.Utility {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (!IsEventPost(request))
                 return base.SendAsync(request, cancellationToken);
+
+            if (_cacheClient.TryGet("ApiDisabled", false))
+                return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             string organizationId = request.GetDefaultOrganizationId();
             if (String.IsNullOrEmpty(organizationId))
