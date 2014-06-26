@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using Exceptionless;
+using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Extensions;
 using Xunit;
@@ -19,6 +20,17 @@ namespace Client.Tests.Serializer {
             string json = serializer.Serialize(data, new[] { "Date" });
             Assert.Equal(@"{""Message"":""Testing""}", json);
         }
+         
+        [Fact]
+        public void CanSerializeEvent() {
+            var ev = new Event { Date = DateTime.Now, Message = "Testing"};
+            ev.Data["FirstName"] = "Blake";
+
+            IJsonSerializer serializer = GetSerializer();
+            string json = serializer.Serialize(ev, new[] { "Date" });
+            Assert.Equal(@"{""Message"":""Testing"",""Data"":{""FirstName"":""Blake""}}", json);
+        }
+
 
         [Fact]
         public void CanExcludeProperties() {

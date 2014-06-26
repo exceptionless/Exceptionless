@@ -36,11 +36,11 @@ namespace SampleConsole {
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
-            ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }).Submit();
+            ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }, name: "Test Object").Submit();
             ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
             ExceptionlessClient.Default.SubmitNotFound("/somepage");
             ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
-            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.SetUserIdentity("blah"));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data["TestKey"] = "Test");
             ExceptionlessClient.Default.SubmittingEvent += (sender, args) => args.Cancel = true;
 
             while (true) {
