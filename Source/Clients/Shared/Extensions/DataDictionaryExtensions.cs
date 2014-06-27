@@ -52,7 +52,7 @@ namespace Exceptionless {
         /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
         /// ExceptionlessClient.Default.
         /// </param>
-        public static void AddObject(this IData data, object value, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false, ExceptionlessClient client = null) {
+        public static void AddObject(this IData data, object value, string name = null, int? maxDepth = null, IEnumerable<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false, ExceptionlessClient client = null) {
             if (client == null)
                 client = ExceptionlessClient.Default;
 
@@ -67,7 +67,7 @@ namespace Exceptionless {
                     Data = value,
                     Name = name,
                     MaxDepthToSerialize = maxDepth,
-                    ExcludedPropertyNames = excludedPropertyNames != null ? client.Configuration.DataExclusions.Union(excludedPropertyNames).ToArray() : client.Configuration.DataExclusions,
+                    ExcludedPropertyNames = excludedPropertyNames != null ? client.Configuration.DataExclusions.Union(excludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray(),
                     IgnoreSerializationErrors = ignoreSerializationErrors
                 };
             }

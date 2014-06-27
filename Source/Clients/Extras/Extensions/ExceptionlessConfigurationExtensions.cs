@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Configuration;
@@ -97,9 +98,11 @@ namespace Exceptionless {
             if (!String.IsNullOrEmpty(section.StoragePath))
                 config.UseFolderStorage(section.StoragePath);
 
-            if (!section.EnableLogging.HasValue || section.EnableLogging.Value) {
+            if (section.EnableLogging.HasValue && section.EnableLogging.Value) {
                 if (!String.IsNullOrEmpty(section.LogPath))
                     config.UseFileLogger(section.LogPath);
+                else if (!String.IsNullOrEmpty(section.StoragePath))
+                    config.UseFileLogger(Path.Combine(section.StoragePath, "exceptionless.log"));
                 else
                     config.UseIsolatedStorageLogger();
             }

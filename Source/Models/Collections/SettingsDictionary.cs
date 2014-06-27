@@ -138,6 +138,25 @@ namespace Exceptionless.Models {
             return result ? new Guid(temp) : @default;
         }
 
+        public IEnumerable<string> GetStringCollection(string name) {
+            return GetStringCollection(name, null);
+        }
+
+        public IEnumerable<string> GetStringCollection(string name, string @default) {
+            string value = GetString(name, @default);
+
+            if (String.IsNullOrEmpty(value))
+                return new List<string>();
+
+            string[] values = value.Split(new[] { ",", ";", Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < values.Length; i++)
+                values[i] = values[i].Trim();
+
+            var list = new List<string>(values);
+            return list;
+        }
+
         public void Apply(IEnumerable<KeyValuePair<string, string>> values) {
             if (values == null)
                 return;
@@ -146,6 +165,10 @@ namespace Exceptionless.Models {
                 if (!ContainsKey(v.Key) || v.Value != this[v.Key])
                     this[v.Key] = v.Value;
             }
+        }
+
+        public static class KnownKeys {
+            public const string DataExclusions = "@@DataExclusions";
         }
     }
 }

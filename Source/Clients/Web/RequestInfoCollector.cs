@@ -90,7 +90,7 @@ namespace Exceptionless.ExtendedData {
             "__LastErrorId"
         };
 
-        private static Dictionary<string, string> ToDictionary(this HttpCookieCollection cookies, ICollection<string> exclusions) {
+        private static Dictionary<string, string> ToDictionary(this HttpCookieCollection cookies, IEnumerable<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (string key in cookies.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !k.AnyWildcardMatches(_ignoredCookies, true) && !k.AnyWildcardMatches(exclusions, true))) {
@@ -107,11 +107,12 @@ namespace Exceptionless.ExtendedData {
             return d;
         }
 
-        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ICollection<string> exclusions) {
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, IEnumerable<string> exclusions) {
             var d = new Dictionary<string, string>();
 
+            var exclusionsArray = exclusions as string[] ?? exclusions.ToArray();
             foreach (string key in values.AllKeys) {
-                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusions, true))
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusionsArray, true))
                     continue;
 
                 try {

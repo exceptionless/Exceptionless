@@ -16,6 +16,7 @@ namespace Exceptionless {
         private string _apiKey;
         private string _serverUrl;
         private ValidationResult _validationResult;
+        private readonly List<string> _exclusions = new List<string>(); 
 
         public ExceptionlessConfiguration(IDependencyResolver resolver) {
             ServerUrl = DEFAULT_SERVER_URL;
@@ -25,7 +26,6 @@ namespace Exceptionless {
             DefaultTags = new TagSet();
             DefaultData = new DataDictionary();
             Settings = new SettingsDictionary();
-            DataExclusions = new Collection<string>();
             if (resolver == null)
                 throw new ArgumentNullException("resolver");
             _resolver = resolver;
@@ -110,8 +110,34 @@ namespace Exceptionless {
         /// For example, entering CreditCard will remove any extended data properties, form fields, cookies and query
         /// parameters from the report.
         /// </summary>
-        public ICollection<string> DataExclusions { get; set; }
-        // TODO: Need to figure out how to also include the exclusions from the server settings.
+        public IEnumerable<string> DataExclusions {
+            get {
+                if (Settings.ContainsKey(SettingsDictionary.KnownKeys.DataExclusions))
+                    return _exclusions.Union(Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions));
+                
+                return _exclusions.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Add items to the list of exclusion patterns that will automatically remove any data that matches them from any data submitted to the server.
+        /// For example, entering CreditCard will remove any extended data properties, form fields, cookies and query
+        /// parameters from the report.
+        /// </summary>
+        /// <param name="exclusions">The list of exclusion patterns to add.</param>
+        public void AddDataExclusions(params string[] exclusions) {
+            _exclusions.AddRange(exclusions);
+        }
+
+        /// <summary>
+        /// Add items to the list of exclusion patterns that will automatically remove any data that matches them from any data submitted to the server.
+        /// For example, entering CreditCard will remove any extended data properties, form fields, cookies and query
+        /// parameters from the report.
+        /// </summary>
+        /// <param name="exclusions">The list of exclusion patterns to add.</param>
+        public void AddDataExclusions(IEnumerable<string> exclusions) {
+            _exclusions.AddRange(exclusions);
+        }
 
         /// <summary>
         /// The dependency resolver to use for this configuration.

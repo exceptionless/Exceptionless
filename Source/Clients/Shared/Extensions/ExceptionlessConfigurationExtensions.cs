@@ -5,17 +5,11 @@ using System.Reflection;
 using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
-using Exceptionless.Extensions;
 using Exceptionless.Logging;
-using Exceptionless.Models;
 using Exceptionless.Storage;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
-        public static void AddExclusions(this ExceptionlessConfiguration config, params string[] exclusions) {
-            config.DataExclusions.AddRange(exclusions);
-        }
-
         public static string GetQueueName(this ExceptionlessConfiguration config) {
             // TODO: Ensure the api key has been set before this is called.
             return config.ApiKey.Substring(0, 8);
