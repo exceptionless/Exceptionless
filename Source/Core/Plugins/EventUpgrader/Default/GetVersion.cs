@@ -7,6 +7,9 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(0)]
     public class GetVersion : IEventUpgraderPlugin {
         public void Upgrade(EventUpgraderContext ctx) {
+            if (ctx.Version != null)
+                return;
+
             if (!ctx.Document.HasValues) {
                 ctx.Version = new Version();
                 return;

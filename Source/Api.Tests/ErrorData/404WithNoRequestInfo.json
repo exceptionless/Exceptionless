@@ -1,0 +1,39 @@
+﻿{
+  "OccurrenceDate": "2013-04-03T11:56:46.5505961-05:00",
+  "Tags": [],
+  "ExceptionlessClientInfo": {
+    "Version": "1.0.0.0",
+    "InstallIdentifier": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47",
+    "InstallDate": "2013-03-21T15:14:17-05:00",
+    "StartCount": 13,
+    "SubmitCount": 906,
+    "Platform": ".NET"
+  },
+  "Modules": [],
+  "EnvironmentInfo": {
+    "ProcessorCount": 1,
+    "TotalPhysicalMemory": 6441984000,
+    "AvailablePhysicalMemory": 516214784,
+    "CommandLine": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe -ap \"PublicSite\" -v \"v4.0\" -l \"webengine4.dll\" -a \\\\.\\pipe\\Example -h \"C:\\inetpub\\temp\\apppools\\PublicSite\\PublicSite.config\" -w \"\" -m 0 -t 20",
+    "ProcessName": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
+    "ProcessId": "19836",
+    "ProcessMemorySize": 156565504,
+    "ThreadId": "25312",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows Web Server 2008 R2 ",
+    "OSVersion": "6.1.7601.65536",
+    "MachineName": "Example",
+    "RuntimeVersion": "4.0.30319.544",
+    "IpAddress": "127.0.0.1",
+    "ExtendedData": {
+      "AppDomainName": "/LM/W3SVC/2/ROOT-1-130094782166854444"
+    }
+  },
+  "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown.",
+  "Type": "System.Web.HttpUnhandledException",
+  "Code": "404",
+  "ExtendedData": {
+    "ExtraExceptionProperties": "{\r\n  \"WebEventCode\": 0,\r\n  \"ErrorCode\": -2147467259,\r\n  \"Data\": {\r\n    \"ASPIMPERSONATING\": \"\"\r\n  }\r\n}"
+  },
+  "StackTrace": []
+}

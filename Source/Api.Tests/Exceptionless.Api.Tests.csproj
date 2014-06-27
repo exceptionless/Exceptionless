@@ -135,6 +135,7 @@
     <Compile Include="Miscellaneous\DeltaTests.cs" />
     <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
     <Compile Include="Miscellaneous\RunTests.cs" />
+    <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Queue\InMemoryQueueTests.cs" />
     <Compile Include="Queue\Samples.cs" />
     <Compile Include="Queue\ServiceBusQueueTests.cs" />

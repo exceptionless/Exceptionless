@@ -24,13 +24,14 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
             PersistentEvent ev;
             try { 
-                var serializerSettings = new JsonSerializerSettings {
+                var settings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore, 
                     ContractResolver = new ExtensionContractResolver()
                 };
 
-                ev = ctx.Document.ToObject<PersistentEvent>(JsonSerializer.CreateDefault(serializerSettings));
-            } catch (Exception) {
+                ev = ctx.Document.ToObject<PersistentEvent>(JsonSerializer.CreateDefault(settings));
+            } catch (Exception ex) {
+                ex.ToExceptionless().AddObject(input, "Error").AddObject(apiVersion, "Api Version").Submit();
                 return null;
             }
             return new List<PersistentEvent> { ev };

@@ -27,8 +27,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             ctx.Document.RenameOrRemoveIfNull("RequestInfo", "req");
             ctx.Document.RenameOrRemoveIfNull("EnvironmentInfo", "env");
 
-            // TODO: Rename all extended data fields.
-            //ctx.Document.SelectTokens("\\ExtendedData").ForEach(t => t.r);
+            ctx.Document.RenameAll("ExtendedData", "Data");
             ctx.Document.RenameOrRemoveIfNull("ExtendedData", "Data");
             var extendedData = ctx.Document.Property("Data") != null ? ctx.Document.Property("Data").Value as JObject : null;
             if (extendedData != null)

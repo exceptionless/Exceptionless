@@ -11,6 +11,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
@@ -37,6 +38,18 @@ namespace Exceptionless.Core.Extensions {
 
             if (p.Value.Type != JTokenType.Null)
                 target.Add(newName, p.Value);
+
+            return true;
+        }
+
+        public static bool RenameAll(this JObject target, string currentName, string newName) {
+            var tokens = target.SelectTokens(currentName);
+            if (!tokens.Any())
+                return false;
+
+            foreach (var token in tokens) {
+               // token.Remove();
+            }
 
             return true;
         }
