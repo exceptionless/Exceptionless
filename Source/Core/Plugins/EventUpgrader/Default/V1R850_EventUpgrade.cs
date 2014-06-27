@@ -7,7 +7,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(850)]
     public class V1R850EventUpgrade : IEventUpgraderPlugin {
         public void Upgrade(EventUpgraderContext ctx) {
-            if (ctx.Version > new Version(0, 9, 0, 850))
+            if (ctx.Version > new Version(1, 0, 0, 850))
                 return;
 
             JObject current = ctx.Document;

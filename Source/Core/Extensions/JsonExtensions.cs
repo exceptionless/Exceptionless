@@ -17,7 +17,22 @@ using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Extensions {
+    [System.Runtime.InteropServices.GuidAttribute("4186FC77-AF28-4D51-AAC3-49055DD855A4")]
     public static class JsonExtensions {
+        public static bool IsNullOrEmpty(this JToken target) {
+            return target == null 
+                || target.Type == JTokenType.Null 
+                || (target.Type == JTokenType.Array && !target.HasValues)
+                || (target.Type == JTokenType.Object && !target.HasValues);
+        }
+
+        public static bool IsNullOrEmpty(this JObject target, string name) {
+            if (target[name] == null)
+                return true;
+
+            return target.Property(name).Value.IsNullOrEmpty();
+        }
+
         public static bool Rename(this JObject target, string currentName, string newName) {
             if (target[currentName] == null)
                 return false;
@@ -29,16 +44,26 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
-        public static bool RenameOrRemoveIfNull(this JObject target, string currentName, string newName) {
+        public static bool RemoveIfNullOrEmpty(this JObject target, string name) {
+            if (!target.IsNullOrEmpty(name))
+                return false;
+
+            target.Remove(name);
+            return true;
+        }
+
+        public static bool RenameOrRemoveIfNullOrEmpty(this JObject target, string currentName, string newName) {
             if (target[currentName] == null)
                 return false;
 
+            bool isNullOrEmpty = target.IsNullOrEmpty(currentName);
             JProperty p = target.Property(currentName);
             target.Remove(p.Name);
 
-            if (p.Value.Type != JTokenType.Null)
-                target.Add(newName, p.Value);
+            if (isNullOrEmpty)
+                return false;
 
+            target.Add(newName, p.Value);
             return true;
         }
 
@@ -54,24 +79,26 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
         
-        public static bool CopyOrRemoveIfNull(this JObject target, JObject source, string name) {
+        public static bool CopyOrRemoveIfNullOrEmpty(this JObject target, JObject source, string name) {
             if (source[name] == null)
                 return false;
 
+            bool isNullOrEmpty = source.IsNullOrEmpty(name);
             JProperty p = source.Property(name);
             source.Remove(p.Name);
 
-            if (p.Value.Type != JTokenType.Null)
-                target.Add(name, p.Value);
+            if (isNullOrEmpty)
+                return false;
 
+            target.Add(name, p.Value);
             return true;
         }
 
         public static string GetPropertyStringValue(this JObject target, string name) {
-            if (target[name] == null)
+            if (target.IsNullOrEmpty(name)) 
                 return null;
 
-            return target.Property(name).Value != null ? target.Property(name).Value.ToString() : null;
+            return target.Property(name).Value.ToString();
         }
 
 

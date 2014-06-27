@@ -30,6 +30,13 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="ApprovalTests">
+      <HintPath>..\..\packages\ApprovalTests.3.0.6\lib\net40\ApprovalTests.dll</HintPath>
+    </Reference>
+    <Reference Include="ApprovalUtilities">
+      <HintPath>..\..\packages\ApprovalUtilities.3.0.6\lib\net35\ApprovalUtilities.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="AutoMapper, Version=3.2.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\AutoMapper.3.2.1\lib\net40\AutoMapper.dll</HintPath>
@@ -147,6 +154,7 @@
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
     <Compile Include="Repositories\BaseRepositoryTests.cs" />
     <Compile Include="SerializerTests.cs" />
+    <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />
@@ -175,6 +183,34 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+    <None Include="ErrorData\1477.expected.json" />
+    <None Include="ErrorData\1477.json" />
+    <None Include="ErrorData\1858.expected.json" />
+    <None Include="ErrorData\1858.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.expected.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.json" />
+    <None Include="ErrorData\444.expected.json" />
+    <None Include="ErrorData\444.json" />
+    <None Include="ErrorData\500.expected.json" />
+    <None Include="ErrorData\500.json" />
+    <None Include="ErrorData\550.expected.json" />
+    <None Include="ErrorData\550.json" />
+    <None Include="ErrorData\601.expected.json" />
+    <None Include="ErrorData\601.json" />
+    <None Include="ErrorData\667.expected.json" />
+    <None Include="ErrorData\667.json" />
+    <None Include="ErrorData\684.expected.json" />
+    <None Include="ErrorData\684.json" />
+    <None Include="ErrorData\700.expected.json" />
+    <None Include="ErrorData\700.json" />
+    <None Include="ErrorData\750.expected.json" />
+    <None Include="ErrorData\750.json" />
+    <None Include="ErrorData\818.expected.json" />
+    <None Include="ErrorData\818.json" />
+    <None Include="ErrorData\881.expected.json" />
+    <None Include="ErrorData\881.json" />
+    <None Include="ErrorData\977.expected.json" />
+    <None Include="ErrorData\977.json" />
     <None Include="nlog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

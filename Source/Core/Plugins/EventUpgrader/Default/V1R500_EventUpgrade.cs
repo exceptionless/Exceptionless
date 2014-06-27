@@ -9,7 +9,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
     [Priority(500)]
     public class V1R500EventUpgrade : IEventUpgraderPlugin {
         public void Upgrade(EventUpgraderContext ctx) {
-            if (ctx.Version > new Version(0, 9, 0, 500))
+            if (ctx.Version > new Version(1, 0, 0, 500))
                 return;
 
             var clientInfo = ctx.Document["ExceptionlessClientInfo"] as JObject;

@@ -15,23 +15,24 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (isNotFound)
                 ctx.Document.Remove("Id");
             else
-                ctx.Document.RenameOrRemoveIfNull("Id", "ReferenceId");
+                ctx.Document.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
 
-            ctx.Document.RenameOrRemoveIfNull("OccurrenceDate", "Date");
+            ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
             ctx.Document.Remove("OrganizationId");
             ctx.Document.Remove("ProjectId");
             ctx.Document.Remove("ErrorStackId");
             ctx.Document.Remove("ExceptionlessClientInfo");
             ctx.Document.Remove("IsFixed");
             ctx.Document.Remove("IsHidden");
-            ctx.Document.RenameOrRemoveIfNull("RequestInfo", "req");
-            ctx.Document.RenameOrRemoveIfNull("EnvironmentInfo", "env");
+            ctx.Document.RemoveIfNullOrEmpty("Tags");
+            ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
+            ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
 
+            ctx.Document.RenameOrRemoveIfNullOrEmpty("ExtendedData", "Data");
             ctx.Document.RenameAll("ExtendedData", "Data");
-            ctx.Document.RenameOrRemoveIfNull("ExtendedData", "Data");
             var extendedData = ctx.Document.Property("Data") != null ? ctx.Document.Property("Data").Value as JObject : null;
             if (extendedData != null)
-                extendedData.RenameOrRemoveIfNull("TraceLog", "trace");
+                extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "trace");
 
             string emailAddress = ctx.Document.GetPropertyStringValueAndRemove("UserEmail");
             string userDescription = ctx.Document.GetPropertyStringValueAndRemove("UserDescription");
@@ -43,13 +44,13 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 ctx.Document.Add("user", new JObject(new UserInfo(identity)));
 
             var error = new JObject();
-            error.CopyOrRemoveIfNull(ctx.Document, "Code");
-            error.CopyOrRemoveIfNull(ctx.Document, "Type");
-            error.CopyOrRemoveIfNull(ctx.Document, "Message");
-            error.CopyOrRemoveIfNull(ctx.Document, "Inner");
-            error.CopyOrRemoveIfNull(ctx.Document, "StackTrace");
-            error.CopyOrRemoveIfNull(ctx.Document, "TargetMethod");
-            error.CopyOrRemoveIfNull(ctx.Document, "Modules");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Code");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Type");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Message");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Inner");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "StackTrace");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "TargetMethod");
+            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Modules");
 
             MoveExtraExceptionProperties(error, extendedData);
             var inner = error["inner"] as JObject;
@@ -60,14 +61,15 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             ctx.Document.Add("err", error);
             ctx.Document.Add("Type", new JValue(isNotFound ? "404" : "error"));
+            ctx.Document.RemoveIfNullOrEmpty("Data");
         }
 
-        private void MoveExtraExceptionProperties(JObject obj, JObject extendedData = null) {
-            if (obj == null)
+        private void MoveExtraExceptionProperties(JObject doc, JObject extendedData = null) {
+            if (doc == null)
                 return;
 
             if (extendedData == null)
-                extendedData = obj["Data"] as JObject;
+                extendedData = doc["Data"] as JObject;
 
             string json = extendedData != null && extendedData["__ExceptionInfo"] != null ? extendedData["__ExceptionInfo"].ToString() : null;
             if (String.IsNullOrEmpty(json))
@@ -76,10 +78,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             try {
                 var extraProperties = JObject.Parse(json);
                 foreach (var property in extraProperties.Properties())
-                    obj.Add(property.Name, property.Value);
+                    doc.Add(property.Name, property.Value);
             } catch (Exception) {}
 
             extendedData.Remove("__ExceptionInfo");
+            doc.RemoveIfNullOrEmpty("Data");
         }
     }
 }

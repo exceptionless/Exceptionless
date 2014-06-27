@@ -2,13 +2,13 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
+using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Plugins.EventUpgrader;
-using Xunit;
 using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
+    [UseReporter(typeof(SmartReporter))]
     public class EventUpgraderTests {
         private readonly EventUpgraderPluginManager _eventUpgraderPluginManager = IoC.GetInstance<EventUpgraderPluginManager>();
 
@@ -20,15 +20,14 @@ namespace Exceptionless.Api.Tests.Plugins {
 
             _eventUpgraderPluginManager.Upgrade(ctx);
 
-            string expected = Regex.Replace(File.ReadAllText(Path.ChangeExtension(errorFilePath, ".expected.json")), @"\s", "");
-            Assert.Equal(Regex.Replace(ctx.Document.ToString(), @"\s", ""), expected);
+            ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Document.ToString());
         }
 
         public static IEnumerable<object[]> Errors {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
-                    result.Add(new object[] { file });
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "667.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                    result.Add(new object[] { Path.GetFullPath(file) });
 
                 return result.ToArray();
             }
