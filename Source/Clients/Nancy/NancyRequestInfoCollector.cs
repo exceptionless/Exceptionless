@@ -18,7 +18,7 @@ using Nancy.Helpers;
 
 namespace Exceptionless.ExtendedData {
     internal static class NancyRequestInfoCollector {
-        public static RequestInfo Collect(NancyContext context, ICollection<string> exclusions) {
+        public static RequestInfo Collect(NancyContext context, IEnumerable<string> exclusions) {
             if (context == null)
                 return null;
 
@@ -40,10 +40,11 @@ namespace Exceptionless.ExtendedData {
             if (!String.IsNullOrWhiteSpace(context.Request.Headers.Referrer))
                 info.Referrer = context.Request.Headers.Referrer;
 
-            info.Cookies = context.Request.Cookies.ToDictionary(exclusions);
+            var exclusionsArray = exclusions as string[] ?? exclusions.ToArray();
+            info.Cookies = context.Request.Cookies.ToDictionary(exclusionsArray);
 
             if (context.Request.Url != null && !String.IsNullOrWhiteSpace(context.Request.Url.Query))
-                info.QueryString = HttpUtility.ParseQueryString(context.Request.Url.Query).ToDictionary(exclusions);
+                info.QueryString = HttpUtility.ParseQueryString(context.Request.Url.Query).ToDictionary(exclusionsArray);
 
             return info;
         }
@@ -59,7 +60,7 @@ namespace Exceptionless.ExtendedData {
             "_ncfa"
         };
 
-        private static Dictionary<string, string> ToDictionary(this IEnumerable<KeyValuePair<string, string>> cookies, ICollection<string> exclusions) {
+        private static Dictionary<string, string> ToDictionary(this IEnumerable<KeyValuePair<string, string>> cookies, IEnumerable<string> exclusions) {
             var d = new Dictionary<string, string>();
 
             foreach (var kv in cookies.Where(pair => !String.IsNullOrEmpty(pair.Key) && !pair.Key.AnyWildcardMatches(_ignoredCookies, true) && !pair.Key.AnyWildcardMatches(exclusions, true)))
@@ -71,11 +72,12 @@ namespace Exceptionless.ExtendedData {
             return d;
         }
 
-        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, ICollection<string> exclusions) {
+        private static Dictionary<string, string> ToDictionary(this NameValueCollection values, IEnumerable<string> exclusions) {
             var d = new Dictionary<string, string>();
 
+            var exclusionsArray = exclusions as string[] ?? exclusions.ToArray();
             foreach (string key in values.AllKeys) {
-                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusions, true))
+                if (key.AnyWildcardMatches(_ignoredFormFields, true) || key.AnyWildcardMatches(exclusionsArray, true))
                     continue;
 
                 try {
