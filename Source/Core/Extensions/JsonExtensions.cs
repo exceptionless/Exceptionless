@@ -21,9 +21,10 @@ namespace Exceptionless.Core.Extensions {
     public static class JsonExtensions {
         public static bool IsNullOrEmpty(this JToken target) {
             return target == null 
-                || target.Type == JTokenType.Null 
-                || (target.Type == JTokenType.Array && !target.HasValues)
-                || (target.Type == JTokenType.Object && !target.HasValues);
+                || target.Type == JTokenType.Null
+                || (target.Type == JTokenType.Object && !target.HasValues)
+                || (target.Type == JTokenType.Property && !((JProperty)target).Value.HasValues)
+                || (target.Type == JTokenType.Array && !target.HasValues);
         }
 
         public static bool IsNullOrEmpty(this JObject target, string name) {
@@ -31,6 +32,25 @@ namespace Exceptionless.Core.Extensions {
                 return true;
 
             return target.Property(name).Value.IsNullOrEmpty();
+        }
+
+        public static bool RemoveIfNullOrEmpty(this JObject target, string name) {
+            if (!target.IsNullOrEmpty(name))
+                return false;
+
+            target.Remove(name);
+            return true;
+        }
+
+        public static bool RemoveAllIfNullOrEmpty(this JObject target, string path) {
+            if (target.IsNullOrEmpty())
+                return false;
+            
+            var properties = target.Descendants().OfType<JProperty>().Where(t => t.Name == path && t.IsNullOrEmpty()).ToList();
+            foreach(var p in properties)
+                p.Remove();
+            
+            return true;
         }
 
         public static bool Rename(this JObject target, string currentName, string newName) {
@@ -41,14 +61,6 @@ namespace Exceptionless.Core.Extensions {
             target.Remove(p.Name);
             target.Add(newName, p.Value);
 
-            return true;
-        }
-
-        public static bool RemoveIfNullOrEmpty(this JObject target, string name) {
-            if (!target.IsNullOrEmpty(name))
-                return false;
-
-            target.Remove(name);
             return true;
         }
 
@@ -68,12 +80,11 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool RenameAll(this JObject target, string currentName, string newName) {
-            var tokens = target.SelectTokens(currentName);
-            if (!tokens.Any())
-                return false;
-
-            foreach (var token in tokens) {
-               // token.Remove();
+            var properties = target.Descendants().OfType<JProperty>().Where(t => t.Name == currentName).ToList();
+            foreach (var p in properties) {
+                var parent = p.Parent as JObject;
+                if (parent != null)
+                    parent.Rename(currentName, newName);
             }
 
             return true;

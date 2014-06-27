@@ -28,7 +28,6 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
 
-            ctx.Document.RenameOrRemoveIfNullOrEmpty("ExtendedData", "Data");
             ctx.Document.RenameAll("ExtendedData", "Data");
             var extendedData = ctx.Document.Property("Data") != null ? ctx.Document.Property("Data").Value as JObject : null;
             if (extendedData != null)
@@ -37,11 +36,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             string emailAddress = ctx.Document.GetPropertyStringValueAndRemove("UserEmail");
             string userDescription = ctx.Document.GetPropertyStringValueAndRemove("UserDescription");
             if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                ctx.Document.Add("desc", new JObject(new UserDescription(emailAddress, userDescription)));
+                ctx.Document.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
 
             string identity = ctx.Document.GetPropertyStringValueAndRemove("UserName");
             if (!String.IsNullOrWhiteSpace(identity))
-                ctx.Document.Add("user", new JObject(new UserInfo(identity)));
+                ctx.Document.Add("user", JObject.FromObject(new UserInfo(identity)));
 
             var error = new JObject();
             error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Code");
@@ -61,7 +60,10 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             ctx.Document.Add("err", error);
             ctx.Document.Add("Type", new JValue(isNotFound ? "404" : "error"));
-            ctx.Document.RemoveIfNullOrEmpty("Data");
+
+            ctx.Document.RemoveAllIfNullOrEmpty("Data");
+            ctx.Document.RemoveAllIfNullOrEmpty("GenericArguments");
+            ctx.Document.RemoveAllIfNullOrEmpty("Parameters");
         }
 
         private void MoveExtraExceptionProperties(JObject doc, JObject extendedData = null) {
@@ -82,7 +84,6 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             } catch (Exception) {}
 
             extendedData.Remove("__ExceptionInfo");
-            doc.RemoveIfNullOrEmpty("Data");
         }
     }
 }
