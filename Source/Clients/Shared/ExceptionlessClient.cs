@@ -142,6 +142,11 @@ namespace Exceptionless {
         }
 
         #endregion
+        
+        static bool IsWinVistaOrHigher()
+        {
+            return Environment.OSVersion.Version.Major >= 6;
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ExceptionlessClient" /> class.
@@ -167,7 +172,8 @@ namespace Exceptionless {
 #if SILVERLIGHT
             NetworkChange.NetworkAddressChanged += NetworkChange_NetworkAddressChanged;
 #else
-            NetworkChange.NetworkAvailabilityChanged += NetworkChangeNetworkAvailabilityChanged;
+            if (IsWinVistaOrHigher())
+                NetworkChange.NetworkAvailabilityChanged += NetworkChangeNetworkAvailabilityChanged;
 #endif
         }
 
@@ -886,9 +892,14 @@ namespace Exceptionless {
 
         private static void UpdateNetworkConnectionStatus() {
             try {
-                _hasNetworkConnection = NetworkInterface.GetIsNetworkAvailable();
-                if (!_hasNetworkConnection.Value)
-                    _hasNetworkConnection = NetworkInterface.GetAllNetworkInterfaces().Any(x => x.OperationalStatus == OperationalStatus.Up);
+                if (!IsWinVistaOrHigher())
+                    _hasNetworkConnection = true;
+                else
+                {
+                    _hasNetworkConnection = NetworkInterface.GetIsNetworkAvailable();
+                    if (!_hasNetworkConnection.Value)
+                        _hasNetworkConnection = NetworkInterface.GetAllNetworkInterfaces().Any(x => x.OperationalStatus == OperationalStatus.Up);
+                }
             } catch (Exception ex) {
                 Current.Log.FormattedError(typeof(ExceptionlessClient), "Unable to retrieve network status. Exception: {0}", ex.ToString());
                 _hasNetworkConnection = true;
