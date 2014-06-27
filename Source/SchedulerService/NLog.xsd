@@ -1419,13 +1419,14 @@
           <xs:element name="encoding" minOccurs="0" maxOccurs="1" type="xs:string" />
           <xs:element name="addNewLines" minOccurs="0" maxOccurs="1" type="xs:boolean" />
           <xs:element name="bcc" minOccurs="0" maxOccurs="1" type="Layout" />
-          <xs:element name="cc" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="to" minOccurs="0" maxOccurs="1" type="Layout" />
+          <xs:element name="cc" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="body" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="subject" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="from" minOccurs="0" maxOccurs="1" type="Layout" />
-          <xs:element name="priority" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="replaceNewlineWithBrTagInHtml" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="priority" minOccurs="0" maxOccurs="1" type="Layout" />
+          <xs:element name="timeout" minOccurs="0" maxOccurs="1" type="xs:integer" />
           <xs:element name="smtpServer" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="smtpAuthentication" minOccurs="0" maxOccurs="1" type="NLog.Targets.SmtpAuthenticationMode" />
           <xs:element name="smtpUserName" minOccurs="0" maxOccurs="1" type="Layout" />
@@ -1474,14 +1475,14 @@
             <xs:documentation>BCC email addresses separated by semicolons (e.g. john@domain.com;jane@domain.com).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="cc" type="SimpleLayoutAttribute">
-          <xs:annotation>
-            <xs:documentation>CC email addresses separated by semicolons (e.g. john@domain.com;jane@domain.com).</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
         <xs:attribute name="to" type="SimpleLayoutAttribute">
           <xs:annotation>
             <xs:documentation>Recipients' email addresses separated by semicolons (e.g. john@domain.com;jane@domain.com).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="cc" type="SimpleLayoutAttribute">
+          <xs:annotation>
+            <xs:documentation>CC email addresses separated by semicolons (e.g. john@domain.com;jane@domain.com).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="body" type="SimpleLayoutAttribute">
@@ -1499,14 +1500,19 @@
             <xs:documentation>Sender's email address (e.g. joe@domain.com).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="replaceNewlineWithBrTagInHtml" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation>Indicates whether NewLine characters in the body should be replaced with  tags.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="priority" type="SimpleLayoutAttribute">
           <xs:annotation>
             <xs:documentation>Priority used for sending mails.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="replaceNewlineWithBrTagInHtml" type="xs:boolean">
+        <xs:attribute name="timeout" type="xs:integer">
           <xs:annotation>
-            <xs:documentation>Indicates whether NewLine characters in the body should be replaced with  tags.</xs:documentation>
+            <xs:documentation>Indicates the SMTP client timeout.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="smtpServer" type="SimpleLayoutAttribute">
