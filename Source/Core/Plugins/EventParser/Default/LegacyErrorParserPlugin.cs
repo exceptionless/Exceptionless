@@ -19,11 +19,11 @@ namespace Exceptionless.Core.Plugins.EventParser {
             if (apiVersion != 1)
                 return null;
 
-            var ctx = new EventUpgraderContext(input);
-            _manager.Upgrade(ctx);
-
             PersistentEvent ev;
-            try { 
+            try {
+                var ctx = new EventUpgraderContext(input);
+                _manager.Upgrade(ctx);
+
                 var settings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore, 
                     ContractResolver = new ExtensionContractResolver()

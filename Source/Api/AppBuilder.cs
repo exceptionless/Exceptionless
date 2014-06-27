@@ -79,7 +79,7 @@ namespace Exceptionless.Api {
                 throw;
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            //config.EnableSystemDiagnosticsTracing();
+            config.EnableSystemDiagnosticsTracing();
 
             var oauthProvider = container.GetInstance<ExceptionlessOAuthAuthorizationServerProvider>();
             var tokenProvider = container.GetInstance<ExceptionlessTokenProvider>();
@@ -134,17 +134,6 @@ namespace Exceptionless.Api {
             app.UseCors(CorsOptions.AllowAll);
             //app.MapSignalR();
             app.UseWebApi(config);
-
-            app.Use((context, next) => {
-                if (!context.Request.Uri.AbsolutePath.StartsWith("/api"))
-                    return next.Invoke();
-
-                context.Response.Write("{\r\n   \"message\": \"not found\"\r\n}");
-                context.Response.StatusCode = (int)HttpStatusCode.NotFound;
-
-                return Task.FromResult(0);
-            });
-            app.UseStageMarker(PipelineStage.PostMapHandler);
 
             PhysicalFileSystem fileSystem = null;
             var root = AppDomain.CurrentDomain.BaseDirectory;

@@ -85,6 +85,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("config")]
         [Route("{id:objectid}/config")]
+        [Route("~/api/v1/project/config")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult GetConfig(string id = null) {

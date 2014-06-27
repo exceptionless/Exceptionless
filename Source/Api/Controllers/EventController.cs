@@ -12,6 +12,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -71,6 +72,19 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
+        }
+
+        [Route("{id:objectid}")]
+        [Route("~/api/v1/error/{id:objectid}")]
+        [HttpPatch]
+        [HttpPost]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [ConfigurationResponseFilter]
+        public IHttpActionResult Patch(string id, Delta<UserDescription> description) {
+            // TODO: Add Patching and only let the client patch certain things.
+
+            return Ok();
         }
 
         [HttpPost]
