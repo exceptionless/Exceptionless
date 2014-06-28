@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -74,14 +74,21 @@ namespace Exceptionless.Api.Controllers {
             return base.GetById(id);
         }
 
+        [HttpPatch]
+        [HttpPut]
         [Route("{id:objectid}")]
         [Route("~/api/v1/error/{id:objectid}")]
-        [HttpPatch]
-        [HttpPost]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [ConfigurationResponseFilter]
-        public IHttpActionResult Patch(string id, Delta<UserDescription> description) {
+        public IHttpActionResult Patch(string id, Delta<UserDescription> changes) {
+            Trace.WriteLine(id);
+            if (changes != null) {
+                foreach (var p in changes.GetChangedPropertyNames())
+                    Trace.WriteLine(p);
+                foreach (var p in changes.UnknownProperties)
+                    Trace.WriteLine(String.Concat(p.Key, ": ", p.Value));
+            }
             // TODO: Add Patching and only let the client patch certain things.
 
             return Ok();

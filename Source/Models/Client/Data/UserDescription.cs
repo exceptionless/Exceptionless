@@ -11,6 +11,7 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class UserDescription : IData {
+        public UserDescription() {}
         public UserDescription(string emailAddress, string description) {
             EmailAddress = emailAddress;
             Description = description;
@@ -18,7 +19,6 @@ namespace Exceptionless.Models.Data {
         }
 
         public string EmailAddress { get; set; }
-
         public string Description { get; set; }
 
         /// <summary>
