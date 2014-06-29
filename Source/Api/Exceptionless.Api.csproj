@@ -153,6 +153,7 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="App_Start\AutoMapperConfig.cs" />
+    <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Providers\ExceptionlessOAuthBearerAuthenticationProvider.cs" />
     <Compile Include="Providers\ExceptionlessTokenProvider.cs" />
     <Compile Include="App_Start\IdentityConfig.cs" />
