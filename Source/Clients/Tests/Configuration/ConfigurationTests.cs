@@ -47,7 +47,7 @@ namespace Client.Tests.Configuration {
         [Fact]
         public void WillLockConfig() {
             var client = new ExceptionlessClient();
-            client.Configuration.Resolver.Register<ISubmissionClient, NullSubmissionClient>();
+            client.Configuration.Resolver.Register<ISubmissionClient, InMemorySubmissionClient>();
             client.Configuration.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
             client.SubmitEvent(new Event());
             Assert.Throws<ArgumentException>(() => client.Configuration.ApiKey = "blah");
@@ -62,7 +62,7 @@ namespace Client.Tests.Configuration {
             config.Settings["LocalSettingToOverride"] = "1";
 
             var submissionClient = new Mock<ISubmissionClient>();
-            submissionClient.Setup(m => m.Submit(It.IsAny<IEnumerable<Event>>(), config, It.IsAny<IJsonSerializer>()))
+            submissionClient.Setup(m => m.PostEvents(It.IsAny<IEnumerable<Event>>(), config, It.IsAny<IJsonSerializer>()))
                 .Callback(() => SettingsManager.CheckVersion(1, config))
                 .Returns(() => new SubmissionResponse(202, "Accepted"));
             submissionClient.Setup(m => m.GetSettings(config, It.IsAny<IJsonSerializer>()))

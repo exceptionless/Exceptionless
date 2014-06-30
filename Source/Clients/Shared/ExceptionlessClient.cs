@@ -63,8 +63,11 @@ namespace Exceptionless {
                 return true;
 
             try {
-                //var response = _submissionClient.Value.SubmitUserDescription(referenceId, new UserDescription(email, description), Configuration, Configuration.Resolver.GetJsonSerializer());
-                //return response.Success;
+                var response = _submissionClient.Value.PostUserDescription(referenceId, new UserDescription(email, description), Configuration, Configuration.Resolver.GetJsonSerializer());
+                if (!response.Success)
+                    _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Failed to submit user email and description for event: {0} {1}", response.StatusCode, response.Message);
+
+                return response.Success;
             } catch (Exception ex) {
                 _log.Value.FormattedError(typeof(ExceptionlessClient), ex, "An error occurred while updating the user email and description for event: {0}.", referenceId);
                 return false;

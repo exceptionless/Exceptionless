@@ -69,7 +69,7 @@ namespace Exceptionless.Queue {
                     bool deleteBatch = true;
 
                     try {
-                        var response = _client.Submit(batch.Select(b => b.Item2), _config, _serializer);
+                        var response = _client.PostEvents(batch.Select(b => b.Item2), _config, _serializer);
                         if (response.ServiceUnavailable) {
                             // You are currently over your rate limit or the servers are under stress.
                             _log.Error(typeof(DefaultEventQueue), "Server returned service unavailable.");

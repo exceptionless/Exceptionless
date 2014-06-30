@@ -10,10 +10,12 @@
 using System;
 using System.Collections.Generic;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Submission {
     public interface ISubmissionClient {
-        SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer);
+        SubmissionResponse PostEvents(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer);
+        SubmissionResponse PostUserDescription(string referenceId, UserDescription description, ExceptionlessConfiguration config, IJsonSerializer serializer);
         SettingsResponse GetSettings(ExceptionlessConfiguration config, IJsonSerializer serializer);
     }
 }

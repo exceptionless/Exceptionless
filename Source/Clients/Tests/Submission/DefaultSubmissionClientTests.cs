@@ -39,7 +39,7 @@ namespace Client.Tests.Submission {
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.Submit(events, configuration, serializer);
+                var response = client.PostEvents(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
             }

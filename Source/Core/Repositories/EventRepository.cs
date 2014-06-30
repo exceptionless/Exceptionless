@@ -293,7 +293,7 @@ namespace Exceptionless.Core.Repositories {
         protected override void InitializeCollection(MongoDatabase database) {
             base.InitializeCollection(database);
 
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.ReferenceId), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.Date_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Type), IndexOptions.SetBackground(true));

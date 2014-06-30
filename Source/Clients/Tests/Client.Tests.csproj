@@ -125,7 +125,7 @@
     <Compile Include="Storage\PersistedDictionaryTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
     <Compile Include="Utility\AsyncTests.cs" />
-    <Compile Include="Utility\NullSubmissionClient.cs" />
+    <Compile Include="Utility\InMemorySubmissionClient.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

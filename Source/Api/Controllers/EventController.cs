@@ -102,7 +102,6 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        [ConfigurationResponseFilter]
         public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();

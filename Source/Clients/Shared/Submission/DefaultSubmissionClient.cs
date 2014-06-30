@@ -13,11 +13,12 @@ using System.Net;
 using Exceptionless.Configuration;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Submission.Net;
 
 namespace Exceptionless.Submission {
     public class DefaultSubmissionClient : ISubmissionClient {
-        public SubmissionResponse Submit(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer) {
+        public SubmissionResponse PostEvents(IEnumerable<Event> events, ExceptionlessConfiguration config, IJsonSerializer serializer) {
             var data = serializer.Serialize(events);
 
             HttpWebResponse response;
@@ -37,6 +38,26 @@ namespace Exceptionless.Submission {
             int settingsVersion;
             if (Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
                 SettingsManager.CheckVersion(settingsVersion, config);
+
+            return new SubmissionResponse((int)response.StatusCode, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
+        }
+
+        public SubmissionResponse PostUserDescription(string referenceId, UserDescription description, ExceptionlessConfiguration config, IJsonSerializer serializer) {
+            var data = serializer.Serialize(description);
+
+            HttpWebResponse response;
+            try {
+                var request = CreateHttpWebRequest(config, String.Format("events/by-ref/{0}/user-description", referenceId));
+                response = request.PostJsonAsync(data).Result;
+            } catch (AggregateException aex) {
+                var ex = aex.GetInnermostException() as WebException;
+                if (ex != null)
+                    response = (HttpWebResponse)ex.Response;
+                else
+                    return new SubmissionResponse(500, message: aex.GetMessage());
+            } catch (Exception ex) {
+                return new SubmissionResponse(500, message: ex.Message);
+            }
 
             return new SubmissionResponse((int)response.StatusCode, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
         }
