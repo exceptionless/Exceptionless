@@ -113,6 +113,10 @@ namespace Exceptionless.Core.Repositories {
             return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
         }
 
+        public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {
+            return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(Query.EQ(FieldNames.ReferenceId, referenceId)).WithSort(SortBy.Descending(FieldNames.Date_UTC)).WithLimit(10));
+        }
+
         public void RemoveOldestEvents(string stackId, int maxEventsPerStack) {
             var options = new PagingOptions { Limit = maxEventsPerStack, Page = 2 };
             var events = GetOldestEvents(stackId, options);

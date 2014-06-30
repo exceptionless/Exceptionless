@@ -18,6 +18,7 @@ namespace Exceptionless.Core.Repositories {
     public interface IEventRepository : IRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent> {
         ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
         ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId);
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
         void MarkAsRegressedByStack(string id);

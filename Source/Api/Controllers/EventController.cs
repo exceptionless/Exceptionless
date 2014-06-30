@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -74,6 +73,62 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
+        }
+        
+        [HttpGet]
+        [Route("by-ref/{referenceId:minlength(8)}")]
+        [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
+        public IHttpActionResult GetByReferenceId(string referenceId, string projectId = null) {
+            if (String.IsNullOrEmpty(referenceId))
+                return NotFound();
+
+            if (projectId == null)
+                projectId = User.GetDefaultProjectId();
+
+            // must have a project id
+            if (String.IsNullOrEmpty(projectId))
+                return BadRequest("No project id specified and no default project was found.");
+
+            var project = _projectRepository.GetById(projectId, true);
+            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
+                return NotFound();
+
+            var results = _repository.GetByReferenceId(projectId, referenceId);
+            return Ok(results);
+        }
+
+        [HttpPost]
+        [Route("by-ref/{referenceId:minlength(8)}/user-description")]
+        [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [ConfigurationResponseFilter]
+        public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
+            if (String.IsNullOrEmpty(referenceId))
+                return NotFound();
+
+            if (description == null)
+                return BadRequest("Description must be specified.");
+
+            if (projectId == null)
+                projectId = User.GetDefaultProjectId();
+
+            // must have a project id
+            if (String.IsNullOrEmpty(projectId))
+                return BadRequest("No project id specified and no default project was found.");
+
+            var project = _projectRepository.GetById(projectId, true);
+            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
+                return NotFound();
+
+            var ev = _repository.GetByReferenceId(projectId, referenceId).FirstOrDefault();
+            if (ev == null)
+                return NotFound();
+
+            ev.Data[Event.KnownDataKeys.UserDescription] = description.ToJson();
+            _repository.Save(ev);
+
+            return Ok();
         }
 
         [HttpPatch]
