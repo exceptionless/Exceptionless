@@ -39,7 +39,7 @@ namespace Exceptionless.Submission {
             if (Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
                 SettingsManager.CheckVersion(settingsVersion, config);
 
-            return new SubmissionResponse((int)response.StatusCode, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
+            return new SubmissionResponse((int)response.StatusCode, response.IsSuccessful() ? null : response.GetResponseText());
         }
 
         public SubmissionResponse PostUserDescription(string referenceId, UserDescription description, ExceptionlessConfiguration config, IJsonSerializer serializer) {
@@ -59,7 +59,7 @@ namespace Exceptionless.Submission {
                 return new SubmissionResponse(500, message: ex.Message);
             }
 
-            return new SubmissionResponse((int)response.StatusCode, response.StatusCode == HttpStatusCode.Accepted ? null : response.GetResponseText());
+            return new SubmissionResponse((int)response.StatusCode, response.IsSuccessful() ? null : response.GetResponseText());
         }
 
         public SettingsResponse GetSettings(ExceptionlessConfiguration config, IJsonSerializer serializer) {

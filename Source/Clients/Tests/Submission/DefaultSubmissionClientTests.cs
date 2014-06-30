@@ -15,6 +15,7 @@ using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Serializer;
 using Exceptionless.Submission;
 using Microsoft.Owin.Hosting;
@@ -32,7 +33,7 @@ namespace Client.Tests.Submission {
         }
 
         [Fact]
-        public void SubmitAsync() {
+        public void PostEvents() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
                 var configuration = GetClient().Configuration;
@@ -46,7 +47,25 @@ namespace Client.Tests.Submission {
         }
 
         [Fact]
-        public void GetSettingsAsync() {
+        public void PostUserDescription() {
+            using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
+                const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";
+                var events = new List<Event> { new Event { Message = "Testing", ReferenceId = referenceId } };
+                var configuration = GetClient().Configuration;
+                var serializer = new DefaultJsonSerializer();
+
+                var client = new DefaultSubmissionClient();
+                var response = client.PostEvents(events, configuration, serializer);
+                Assert.True(response.Success, response.Message);
+                Assert.Null(response.Message);
+                response = client.PostUserDescription(referenceId, new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." }, configuration, serializer);
+                Assert.True(response.Success, response.Message);
+                Assert.Null(response.Message);
+            }
+        }
+
+        [Fact]
+        public void GetSettings() {
             using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();

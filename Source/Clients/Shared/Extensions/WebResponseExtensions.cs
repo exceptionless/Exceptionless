@@ -26,5 +26,9 @@ namespace Exceptionless.Extensions {
                 return null;
             }
         }
+
+        public static bool IsSuccessful(this HttpWebResponse response) {
+            return response != null && (int)response.StatusCode >= 200 && (int)response.StatusCode <= 299;
+        }
     }
 }

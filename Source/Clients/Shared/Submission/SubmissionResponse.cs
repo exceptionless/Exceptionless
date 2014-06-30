@@ -16,7 +16,7 @@ namespace Exceptionless.Submission {
             StatusCode = statusCode;
             Message = message;
 
-            Success = (HttpStatusCode)statusCode == HttpStatusCode.Accepted;
+            Success = statusCode >= 200 && statusCode <= 299;
             BadRequest = (HttpStatusCode)statusCode == HttpStatusCode.BadRequest;
             ServiceUnavailable = (HttpStatusCode)statusCode == HttpStatusCode.ServiceUnavailable;
             PaymentRequired = (HttpStatusCode)statusCode == HttpStatusCode.PaymentRequired;

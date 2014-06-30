@@ -131,13 +131,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPatch]
-        [HttpPut]
-        [Route("{id:objectid}")]
         [Route("~/api/v1/error/{id:objectid}")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [ConfigurationResponseFilter]
-        public override IHttpActionResult Patch(string id, Delta<UpdateEvent> changes) {
+        public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -146,24 +144,10 @@ namespace Exceptionless.Api.Controllers {
             if (changes.UnknownProperties.ContainsKey("UserDescription"))
                 changes.TrySetPropertyValue("Description", changes.UnknownProperties["UserDescription"]);
 
-            return base.Patch(id, changes);
-        }
-
-        protected override PersistentEvent UpdateModel(PersistentEvent original, Delta<UpdateEvent> changes) {
-            if (!changes.ContainsChangedProperty(e => e.EmailAddress) && !changes.ContainsChangedProperty(e => e.Description))
-                return original;
-
-            var userDescription = original.Data.ContainsKey(Event.KnownDataKeys.UserDescription) ? original.Data[Event.KnownDataKeys.UserDescription] : null;
-            if (userDescription == null) {
-                userDescription = new UserDescription();
-                original.Data.Add(Event.KnownDataKeys.UserDescription, userDescription);
-            }
+            var userDescription = new UserDescription();
             changes.Patch(userDescription);
-            original.Data[Event.KnownDataKeys.UserDescription] = original.Data[Event.KnownDataKeys.UserDescription].ToJson();
 
-            _repository.Save(original);
-
-            return original;
+            return SetUserDescription(id, userDescription);
         }
 
         [HttpPost]
