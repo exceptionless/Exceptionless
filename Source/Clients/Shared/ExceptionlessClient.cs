@@ -5,12 +5,15 @@ using Exceptionless.Duplicates;
 using Exceptionless.Enrichments;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Queue;
+using Exceptionless.Submission;
 
 namespace Exceptionless {
     public class ExceptionlessClient : IDisposable {
         private readonly Lazy<IExceptionlessLog> _log;
         private readonly Lazy<IEventQueue> _queue;
+        private readonly Lazy<ISubmissionClient> _submissionClient;
         private readonly Lazy<ILastReferenceIdManager> _lastReferenceIdManager;
         private readonly Lazy<IDuplicateChecker> _duplicateChecker;
 
@@ -37,6 +40,8 @@ namespace Exceptionless {
                 Configuration.LockConfig();
                 return Configuration.Resolver.GetEventQueue();
             });
+
+            _submissionClient = new Lazy<ISubmissionClient>(() => Configuration.Resolver.GetSubmissionClient());
             _lastReferenceIdManager = new Lazy<ILastReferenceIdManager>(() => Configuration.Resolver.GetLastReferenceIdManager());
             _duplicateChecker = new Lazy<IDuplicateChecker>(() => Configuration.Resolver.GetDuplicateChecker());
         }
@@ -53,14 +58,17 @@ namespace Exceptionless {
         public bool UpdateUserEmailAndDescription(string referenceId, string email, string description) {
             if (String.IsNullOrEmpty(referenceId))
                 throw new ArgumentNullException("referenceId");
+
             if (String.IsNullOrEmpty(email) && String.IsNullOrEmpty(description))
                 return true;
 
-            return true;
-            //return SubmitPatch(id, new {
-            //    UserEmail = email,
-            //    UserDescription = description
-            //});
+            try {
+                //var response = _submissionClient.Value.SubmitUserDescription(referenceId, new UserDescription(email, description), Configuration, Configuration.Resolver.GetJsonSerializer());
+                //return response.Success;
+            } catch (Exception ex) {
+                _log.Value.FormattedError(typeof(ExceptionlessClient), ex, "An error occurred while updating the user email and description for event: {0}.", referenceId);
+                return false;
+            }
         }
 
         /// <summary>
