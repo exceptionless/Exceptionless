@@ -12,12 +12,11 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Mvc;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Pipeline;
 using Microsoft.AspNet.SignalR;
+using NLog.Fluent;
 using ServiceStack.CacheAccess;
 using ServiceStack.Redis;
 
@@ -45,52 +44,71 @@ namespace Exceptionless.App.Hubs {
             _redisClientsManager = redisClientsManager;
         }
 
-        public event EventHandler Ping;
-
         public void Listen() {
             Task.Factory.StartNew(() => {
-                using (IRedisClient client = _redisClientsManager.GetReadOnlyClient()) {
-                    using (IRedisSubscription subscription = client.CreateSubscription()) {
-                        subscription.OnMessage = (channel, msg) => {
-                            string[] parts = msg.Split(':');
-                            if (parts.Length < 1)
-                                return;
-
-                            switch (parts[0]) {
-                                case "ping":
-                                    Ping(this, EventArgs.Empty);
-                                    break;
-                                case "overlimit":
-                                    if (parts.Length != 3)
-                                        return;
-
-                                    if (parts[1] == "hr")
-                                        WentOverHourlyLimit(parts[2]);
-                                    else
-                                        WentOverMonthlyLimit(parts[2]);
-                                        
-                                    break;
-                                default: // error occurred
-                                    if (parts.Length != 6)
-                                        return;
-
-                                    bool isHidden;
-                                    Boolean.TryParse(parts[3], out isHidden);
-
-                                    bool isFixed;
-                                    Boolean.TryParse(parts[4], out isFixed);
-
-                                    bool is404;
-                                    Boolean.TryParse(parts[5], out is404);
-
-                                    NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
-                                    break;
-                            }
-                        };
-                        RetryUtil.Retry(() => subscription.SubscribeToChannels(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY));
+                restart:
+                try {
+                    using (var client = _redisClientsManager.GetReadOnlyClient()) {
+                        using (var subscription = client.CreateSubscription()) {
+                            subscription.OnMessage = (ch, msg) => {
+                                try {
+                                    OnMessage(ch, msg);
+                                } catch (Exception ex) {
+                                    Log.Error().Exception(ex).Message("Error processing message \"{0}\": {1}", msg, ex.Message).Write();
+                                }
+                            };
+                            subscription.SubscribeToChannels(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY);
+                        }
                     }
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("Error in listener: {0}", ex.Message).Write();
+                    goto restart;
                 }
             });
+        }
+
+        private void OnMessage(string channel, string msg) {
+            string[] parts = msg.Split(':');
+            if (parts.Length < 1)
+                return;
+
+            switch (parts[0]) {
+            case "ping":
+                OnPing();
+                break;
+            case "overlimit":
+                if (parts.Length != 3)
+                    return;
+
+                if (parts[1] == "hr")
+                    WentOverHourlyLimit(parts[2]);
+                else
+                    WentOverMonthlyLimit(parts[2]);
+
+                break;
+            default: // error occurred
+                if (parts.Length != 6)
+                    return;
+
+                bool isHidden;
+                Boolean.TryParse(parts[3], out isHidden);
+
+                bool isFixed;
+                Boolean.TryParse(parts[4], out isFixed);
+
+                bool is404;
+                Boolean.TryParse(parts[5], out is404);
+
+                NewError(parts[0], parts[1], parts[2], isHidden, isFixed, is404);
+                break;
+            }
+        }
+
+        public event EventHandler Ping;
+
+        private void OnPing() {
+            if (Ping != null)
+                Ping(this, EventArgs.Empty);
         }
 
         private static DateTime _lastListenerCheck;
@@ -116,7 +134,7 @@ namespace Exceptionless.App.Hubs {
                 using (IRedisClient client = _redisClientsManager.GetClient())
                     client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, "ping");
 
-                bool success = resetEvent.WaitOne(500); 
+                bool success = resetEvent.WaitOne(2000);
                 Ping -= handler;
 
                 return success;
