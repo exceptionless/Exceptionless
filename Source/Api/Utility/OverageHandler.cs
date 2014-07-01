@@ -30,7 +30,11 @@ namespace Exceptionless.Api.Utility {
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
-            return request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.Contains("/events");
+            if (request.Method != HttpMethod.Post)
+                return false;
+
+            return request.RequestUri.AbsolutePath.Contains("/events") 
+                || String.Equals(request.RequestUri.AbsolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
         }
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {

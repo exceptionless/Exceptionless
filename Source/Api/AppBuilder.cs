@@ -79,7 +79,7 @@ namespace Exceptionless.Api {
                 throw;
             }
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            config.EnableSystemDiagnosticsTracing();
+            //config.EnableSystemDiagnosticsTracing();
 
             var oauthProvider = container.GetInstance<ExceptionlessOAuthAuthorizationServerProvider>();
             var tokenProvider = container.GetInstance<ExceptionlessTokenProvider>();
