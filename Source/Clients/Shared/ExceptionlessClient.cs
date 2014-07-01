@@ -231,7 +231,7 @@ namespace Exceptionless {
 
             try {
                 OnSendingError(error);
-                Log.FormattedInfo(typeof(ExceptionlessClient), "Submiting error {0}...", error.Id);
+                Log.FormattedInfo(typeof(ExceptionlessClient), "Submitting error {0}...", error.Id);
 
                 if (!Configuration.TestMode) {
                     RestClient client = CreateClient();
@@ -244,11 +244,11 @@ namespace Exceptionless {
 
             string id = null;
 
-            if (response == null && !Configuration.TestMode)
-                Log.FormattedError(typeof(ExceptionlessClient), "Error submit response was null: {0}", exception.Message);
-            else {
+            if (response == null && !Configuration.TestMode) {
+                Log.FormattedError(typeof(ExceptionlessClient), "Error submit response was null: {0}", exception != null ? exception.Message : String.Empty);
+            } else {
                 if (response.IsSuccessStatusCode() && !response.TryParseCreatedUri(out id))
-                    exception = new Exception("Unable to parse the error id from the response object.", exception);
+                    Log.Info(typeof(ExceptionlessClient), "Unable to parse the error id from the response object.");
 
                 if (response.ShouldUpdateConfiguration(LocalConfiguration.CurrentConfigurationVersion))
                     UpdateConfiguration(true);
@@ -257,43 +257,41 @@ namespace Exceptionless {
             completed = new SendErrorCompletedEventArgs(id, exception, false, error);
             OnSendErrorCompleted(completed);
 
-            if (response != null) {
-                // If there was a conflict, then the server already has the error and we should delete it locally
-                if (response.StatusCode == HttpStatusCode.Conflict) {
-                    Log.Info(typeof(ExceptionlessClient), "A duplicate error was submitted.");
-                    return true;
-                }
+            // You are currently over your rate limit or the servers are under stress.
+            if (response == null || response.StatusCode == HttpStatusCode.ServiceUnavailable) {
+                Log.Info(typeof(ExceptionlessClient), "Server returned service unavailable.");
+                SuspendProcessing();
+                return false;
+            }
 
-                // You are currently over your rate limit or the servers are under stress.
-                if (response.StatusCode == HttpStatusCode.ServiceUnavailable) {
-                    Log.Info(typeof(ExceptionlessClient), "Server returned service unavailable.");
-                    SuspendProcessing();
-                    return false;
-                }
+            // If there was a conflict, then the server already has the error and we should delete it locally
+            if (response.StatusCode == HttpStatusCode.Conflict) {
+                Log.Info(typeof(ExceptionlessClient), "A duplicate error was submitted.");
+                return true;
+            }
 
-                // If the organization over the rate limit then discard the error.
-                if (response.StatusCode == HttpStatusCode.PaymentRequired) {
-                    Log.Info(typeof(ExceptionlessClient), "Too many errors have been submitted, please upgrade your plan.");
-                    SuspendProcessing(suspendErrorSubmission: true, clearQueue: true);
+            // If the organization over the rate limit then discard the error.
+            if (response.StatusCode == HttpStatusCode.PaymentRequired) {
+                Log.Info(typeof(ExceptionlessClient), "Too many errors have been submitted, please upgrade your plan.");
+                SuspendProcessing(suspendErrorSubmission: true, clearQueue: true);
 
-                    return true;
-                }
+                return true;
+            }
 
-                // The api key was suspended or could not be authorized.
-                if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden) {
-                    Log.Info(typeof(ExceptionlessClient), "Unable to authenticate, please check your configuration. The error will not be submitted.");
-                    SuspendProcessing(TimeSpan.FromMinutes(15));
+            // The api key was suspended or could not be authorized.
+            if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden) {
+                Log.Info(typeof(ExceptionlessClient), "Unable to authenticate, please check your configuration. The error will not be submitted.");
+                SuspendProcessing(TimeSpan.FromMinutes(15));
 
-                    return true;
-                }
+                return true;
+            }
 
-                // The service end point could not be found.
-                if (response.StatusCode == HttpStatusCode.NotFound) {
-                    Log.Info(typeof(ExceptionlessClient), "Unable to reach the service end point, please check your configuration. The error will not be submitted.");
-                    SuspendProcessing(TimeSpan.FromHours(4));
+            // The service end point could not be found.
+            if (response.StatusCode == HttpStatusCode.NotFound) {
+                Log.Info(typeof(ExceptionlessClient), "Unable to reach the service end point, please check your configuration. The error will not be submitted.");
+                SuspendProcessing(TimeSpan.FromHours(4));
 
-                    return true;
-                }
+                return true;
             }
 
             return response.IsSuccessStatusCode() || Configuration.TestMode;
