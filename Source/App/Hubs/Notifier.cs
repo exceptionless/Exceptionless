@@ -108,17 +108,18 @@ namespace Exceptionless.App.Hubs {
 
         public bool IsListening() {
             try {
-                bool gotPing = false;
-                EventHandler handler = (sender, e) => gotPing = true;
+                var resetEvent = new AutoResetEvent(false);
+                EventHandler handler = (sender, e) => resetEvent.Set();
+                Ping -= handler;
                 Ping += handler;
 
                 using (IRedisClient client = _redisClientsManager.GetClient())
                     client.PublishMessage(NotifySignalRAction.NOTIFICATION_CHANNEL_KEY, "ping");
 
-                Thread.Sleep(50);
+                bool success = resetEvent.WaitOne(500); 
                 Ping -= handler;
 
-                return gotPing;
+                return success;
             } catch (Exception) {
                 return false;
             }
