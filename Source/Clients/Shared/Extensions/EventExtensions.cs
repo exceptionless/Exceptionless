@@ -25,6 +25,17 @@ namespace Exceptionless {
             return null;
         }
 
+        public static SimpleError GetSimpleError(this Event ev, IJsonSerializer serializer = null) {
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError))
+                return null;
+
+            try {
+                return ev.Data.GetValue<SimpleError>(Event.KnownDataKeys.SimpleError, serializer);
+            } catch (Exception) {}
+
+            return null;
+        }
+
         public static RequestInfo GetRequestInfo(this Event ev, IJsonSerializer serializer = null) {
             if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
                 return null;

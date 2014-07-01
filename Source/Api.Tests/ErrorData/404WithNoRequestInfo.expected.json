@@ -1,4 +1,5 @@
 ﻿{
+  "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown.",
   "Date": "2013-04-03T11:56:46.5505961-05:00",
   "env": {
     "ProcessorCount": 1,
@@ -19,6 +20,7 @@
       "AppDomainName": "/LM/W3SVC/2/ROOT-1-130094782166854444"
     }
   },
+  "Type": "404",
   "err": {
     "Code": "404",
     "Type": "System.Web.HttpUnhandledException",
@@ -28,6 +30,5 @@
     "Data": {
       "ASPIMPERSONATING": ""
     }
-  },
-  "Type": "404"
+  }
 }

@@ -8,7 +8,7 @@ using Exceptionless.Models.Data;
 using MongoDB.Bson.Serialization;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
-    [Priority(10)]
+    [Priority(20)]
     public class ErrorPlugin : EventProcessorPluginBase {
         public override void Startup() {
             if (!BsonClassMap.IsClassMapRegistered(typeof(Error))) {
@@ -24,10 +24,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfNull(true);
-                    cmm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type);
-                    cmm.GetMemberMap(c => c.Code).SetElementName(FieldNames.Code);
+                    cmm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type).SetIgnoreIfNull(true);
+                    cmm.GetMemberMap(c => c.Code).SetElementName(FieldNames.Code).SetIgnoreIfNull(true);
                     cmm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetShouldSerializeMethod(obj => ((InnerError)obj).Data.Any());
-                    cmm.GetMemberMap(c => c.Inner).SetElementName(FieldNames.Inner);
+                    cmm.GetMemberMap(c => c.Inner).SetElementName(FieldNames.Inner).SetIgnoreIfNull(true);
                     cmm.GetMemberMap(c => c.StackTrace).SetElementName(FieldNames.StackTrace).SetShouldSerializeMethod(obj => ((InnerError)obj).StackTrace.Any());
                     cmm.GetMemberMap(c => c.TargetMethod).SetElementName(FieldNames.TargetMethod).SetIgnoreIfNull(true);
                 });
@@ -55,6 +55,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             Error error = context.Event.GetError();
             if (error == null)
                 return;
+
+            if (String.IsNullOrWhiteSpace(context.Event.Message))
+                context.Event.Message = error.Message;
 
             string[] commonUserMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
             if (context.HasProperty("CommonMethods"))

@@ -1,4 +1,5 @@
 ﻿{
+  "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
   "ReferenceId": "800000003d538d628040bea0",
   "Date": "2014-01-17T14:37:02.739-06:00",
   "req": {
@@ -37,6 +38,7 @@
       "AppDomainName": "/LM/W3SVC/16/ROOT/stores-1-130343866428644447"
     }
   },
+  "Type": "error",
   "err": {
     "Code": "400",
     "Type": "System.Web.HttpException",
@@ -523,6 +525,5 @@
     ],
     "WebEventCode": 0,
     "ErrorCode": -2147467259
-  },
-  "Type": "error"
+  }
 }

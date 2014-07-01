@@ -7,7 +7,7 @@ using Exceptionless.Models.Data;
 using MongoDB.Bson.Serialization;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
-    [Priority(20)]
+    [Priority(40)]
     public class RequestInfoPlugin : EventProcessorPluginBase {
         public override void Startup() {
             if (!BsonClassMap.IsClassMapRegistered(typeof(RequestInfo))) {

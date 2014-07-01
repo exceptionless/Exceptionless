@@ -1,4 +1,5 @@
 ﻿{
+  "Message": "Exception of type 'System.Exception' was thrown.",
   "ReferenceId": "80000000b77efe1d4c2e5771",
   "Date": "2013-03-27T09:45:27.2849703-05:00",
   "env": {
@@ -20,9 +21,9 @@
       "AppDomainName": "ConsoleApplication1.vshost.exe"
     }
   },
+  "Type": "error",
   "err": {
     "Type": "System.Exception",
     "Message": "Exception of type 'System.Exception' was thrown."
-  },
-  "Type": "error"
+  }
 }

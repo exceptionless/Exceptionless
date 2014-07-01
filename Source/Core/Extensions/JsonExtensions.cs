@@ -79,6 +79,21 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
+        public static bool MoveOrRemoveIfNullOrEmpty(this JObject target, JObject source, string name) {
+            if (source[name] == null)
+                return false;
+
+            bool isNullOrEmpty = source.IsNullOrEmpty(name);
+            JProperty p = source.Property(name);
+            source.Remove(p.Name);
+
+            if (isNullOrEmpty)
+                return false;
+
+            target.Add(name, p.Value);
+            return true;
+        }
+
         public static bool RenameAll(this JObject target, string currentName, string newName) {
             var properties = target.Descendants().OfType<JProperty>().Where(t => t.Name == currentName).ToList();
             foreach (var p in properties) {
@@ -95,13 +110,10 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             bool isNullOrEmpty = source.IsNullOrEmpty(name);
-            JProperty p = source.Property(name);
-            source.Remove(p.Name);
-
             if (isNullOrEmpty)
                 return false;
 
-            target.Add(name, p.Value);
+            target.Add(name, source.Property(name).Value);
             return true;
         }
 

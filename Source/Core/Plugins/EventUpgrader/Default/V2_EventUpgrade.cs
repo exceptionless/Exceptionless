@@ -33,23 +33,14 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (extendedData != null)
                 extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "trace");
 
-            string emailAddress = ctx.Document.GetPropertyStringValueAndRemove("UserEmail");
-            string userDescription = ctx.Document.GetPropertyStringValueAndRemove("UserDescription");
-            if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                ctx.Document.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
-
-            string identity = ctx.Document.GetPropertyStringValueAndRemove("UserName");
-            if (!String.IsNullOrWhiteSpace(identity))
-                ctx.Document.Add("user", JObject.FromObject(new UserInfo(identity)));
-
             var error = new JObject();
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Code");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Type");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Code");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Type");
             error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Message");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Inner");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "StackTrace");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "TargetMethod");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Modules");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Inner");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "StackTrace");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "TargetMethod");
+            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Modules");
 
             MoveExtraExceptionProperties(error, extendedData);
             var inner = error["inner"] as JObject;
@@ -58,8 +49,17 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 inner = inner["inner"] as JObject;
             }
 
-            ctx.Document.Add("err", error);
             ctx.Document.Add("Type", new JValue(isNotFound ? "404" : "error"));
+            ctx.Document.Add("err", error);
+
+            string emailAddress = ctx.Document.GetPropertyStringValueAndRemove("UserEmail");
+            string userDescription = ctx.Document.GetPropertyStringValueAndRemove("UserDescription");
+            if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
+                ctx.Document.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
+
+            string identity = ctx.Document.GetPropertyStringValueAndRemove("UserName");
+            if (!String.IsNullOrWhiteSpace(identity))
+                ctx.Document.Add("user", JObject.FromObject(new UserInfo(identity)));
 
             ctx.Document.RemoveAllIfNullOrEmpty("Data");
             ctx.Document.RemoveAllIfNullOrEmpty("GenericArguments");

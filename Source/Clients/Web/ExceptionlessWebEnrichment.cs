@@ -54,7 +54,7 @@ namespace Exceptionless.Web {
                 int httpCode = httpException.GetHttpCode();
                 if (httpCode == 404) {
                     ev.Type = Event.KnownTypes.NotFound;
-                    ev.Source = String.Format("{0} {1}", requestInfo.HttpMethod, requestInfo.GetFullPath(includeQueryString: true));
+                    ev.Source = requestInfo.GetFullPath(includeHttpMethod: true, includeQueryString: false);
                     ev.Data.Clear();
                 }
             }
