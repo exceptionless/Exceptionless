@@ -261,7 +261,11 @@ namespace Exceptionless {
             if (response == null || response.StatusCode == HttpStatusCode.ServiceUnavailable) {
                 Log.Info(typeof(ExceptionlessClient), "Server returned service unavailable.");
                 SuspendProcessing();
-                return false;
+
+                if (response != null && response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                    return false;
+
+                return Configuration.TestMode;
             }
 
             // If there was a conflict, then the server already has the error and we should delete it locally
