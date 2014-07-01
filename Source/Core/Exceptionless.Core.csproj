@@ -144,7 +144,6 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
-    <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />

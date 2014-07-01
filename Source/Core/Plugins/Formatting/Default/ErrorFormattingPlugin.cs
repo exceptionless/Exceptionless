@@ -4,6 +4,7 @@ using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using RazorSharpEmail;
 
@@ -64,7 +65,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
                 NotificationType = notificationType,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true) : null,
+                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
                 Error = stackingTarget.Error,
                 Method = stackingTarget.Method,
             };

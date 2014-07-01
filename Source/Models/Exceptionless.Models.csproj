@@ -95,6 +95,7 @@
     <Compile Include="Admin\Stack.cs" />
     <Compile Include="Enums\SuspensionCode.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
+    <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Interfaces\IData.cs" />
     <Compile Include="Interfaces\IOwnedByProject.cs" />
     <Compile Include="Interfaces\IOwnedByStack.cs" />

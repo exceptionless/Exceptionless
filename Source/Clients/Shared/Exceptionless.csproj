@@ -83,7 +83,6 @@
     <Compile Include="Extensions\ClientExtensions.cs" />
     <Compile Include="Extensions\FileStorageExtensions.cs" />
     <Compile Include="Extensions\NumberExtensions.cs" />
-    <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\TaskFactoryExtensions.cs" />
     <Compile Include="Extensions\ToSimpleErrorModelExtensions.cs" />

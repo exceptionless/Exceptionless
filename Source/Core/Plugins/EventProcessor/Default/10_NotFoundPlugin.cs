@@ -1,6 +1,6 @@
 ﻿using System;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Extensions;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
             if (String.IsNullOrWhiteSpace(context.Event.Source)) {
                 context.Event.Message = null;
-                context.Event.Source = req.GetFullPath(includeHttpMethod: true, includeQueryString: false);
+                context.Event.Source = req.GetFullPath(includeHttpMethod: true, includeHost: false, includeQueryString: false);
             }
 
             context.Event.Data.Remove(Event.KnownDataKeys.Error);

@@ -4,20 +4,24 @@ using System.Linq;
 using System.Text;
 using Exceptionless.Models.Data;
 
-namespace Exceptionless.Core.Extensions {
+namespace Exceptionless.Extensions {
     public static class RequestInfoExtensions {
 
         /// <summary>
         /// The full path for the request including host, path and query String.
         /// </summary>
-        public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeQueryString = true) {
+        public static string GetFullPath(this RequestInfo requestInfo, bool includeHttpMethod = false, bool includeHost = true, bool includeQueryString = true) {
             var sb = new StringBuilder();
             if (includeHttpMethod)
                 sb.Append(requestInfo.HttpMethod).Append(" ");
-            sb.Append(requestInfo.IsSecure ? "https://" : "http://");
-            sb.Append(requestInfo.Host);
-            if (requestInfo.Port != 80 && requestInfo.Port != 443)
-                sb.Append(":").Append(requestInfo.Port);
+
+            if (includeHost) {
+                sb.Append(requestInfo.IsSecure ? "https://" : "http://");
+                sb.Append(requestInfo.Host);
+                if (requestInfo.Port != 80 && requestInfo.Port != 443)
+                    sb.Append(":").Append(requestInfo.Port);
+            }
+
             if (!requestInfo.Path.StartsWith("/"))
                 sb.Append("/");
             sb.Append(requestInfo.Path);

@@ -49,7 +49,7 @@ namespace Exceptionless.WebApi {
             var error = ev.GetError();
             if (error != null && error.Code == "404") {
                 ev.Type = Event.KnownTypes.NotFound;
-                ev.Source = requestInfo.GetFullPath(includeHttpMethod: true, includeQueryString: false);
+                ev.Source = requestInfo.GetFullPath(includeHttpMethod: true, includeHost: false, includeQueryString: false);
                 ev.Data.Clear();
             }
 
