@@ -32,6 +32,7 @@ namespace Exceptionless.Core.Pipeline {
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,
                 StackId = ctx.Event.StackId,
+                Type = ctx.Event.Type,
                 IsHidden = ctx.Event.IsHidden,
                 IsFixed = ctx.Event.IsFixed,
                 IsNotFound = ctx.Event.IsNotFound(),
