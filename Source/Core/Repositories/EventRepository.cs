@@ -263,6 +263,13 @@ namespace Exceptionless.Core.Repositories {
             //}
         }
 
+        protected override void AfterAdd(ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            bool enableNotifications = EnableNotifications;
+            EnableNotifications = false;
+            base.AfterAdd(documents, addToCache, expiresIn);
+            EnableNotifications = enableNotifications;
+        }
+
         #region Collection Setup
 
         public const string CollectionName = "event";
