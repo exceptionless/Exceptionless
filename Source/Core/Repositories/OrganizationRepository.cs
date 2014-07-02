@@ -241,12 +241,12 @@ namespace Exceptionless.Core.Repositories {
             monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
-            if (justWentOverHourly)
-                PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
-
             bool justWentOverMonthly = monthlyTotal > org.MaxEventsPerMonth && monthlyTotal <= org.MaxEventsPerMonth + count;
+
             if (justWentOverMonthly)
                 PublishMessageAsync(new PlanOverage { OrganizationId = org.Id });
+            else if (justWentOverHourly)
+                PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
 
             bool shouldSaveUsage = false;
             var lastCounterSavedDate = Cache.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));

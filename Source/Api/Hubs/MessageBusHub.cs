@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
-            Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged.ToJson().ToString());
+            Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged.ToJson());
         }
 
         private void OnEventOccurrence(EventOccurrence eventOccurrence) {
