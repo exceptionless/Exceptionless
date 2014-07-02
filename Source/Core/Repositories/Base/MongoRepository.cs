@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Repositories {
 
                 var orgEntity = document as IOwnedByOrganization;
                 if (EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
+                    PublishMessageAsync(new EntityChanged {
                         ChangeType = EntityChangeType.Added,
                         Id = document.Id,
                         OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
@@ -118,7 +118,7 @@ namespace Exceptionless.Core.Repositories {
 
                 var orgEntity = document as IOwnedByOrganization;
                 if (sendNotification && EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
+                    PublishMessageAsync(new EntityChanged {
                         ChangeType = EntityChangeType.Removed,
                         Id = document.Id,
                         OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
@@ -191,7 +191,7 @@ namespace Exceptionless.Core.Repositories {
 
                 var orgEntity = document as IOwnedByOrganization;
                 if (EnableNotifications)
-                    PublishMessageAsync(new EntityChange {
+                    PublishMessageAsync(new EntityChanged {
                         ChangeType = EntityChangeType.Saved,
                         Id = document.Id,
                         OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
@@ -207,14 +207,14 @@ namespace Exceptionless.Core.Repositories {
 
             if (options.OrganizationIds.Any()) {
                 foreach (var orgId in options.OrganizationIds) {
-                    PublishMessageAsync(new EntityChange {
+                    PublishMessageAsync(new EntityChanged {
                         ChangeType = EntityChangeType.UpdatedAll,
                         OrganizationId = orgId,
                         Type = _entityType
                     });
                 }
             } else {
-                PublishMessageAsync(new EntityChange {
+                PublishMessageAsync(new EntityChanged {
                     ChangeType = EntityChangeType.UpdatedAll,
                     Type = _entityType
                 });

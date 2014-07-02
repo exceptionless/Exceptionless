@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Core.Messaging.Models {
-    public class EntityChange {
+    public class EntityChanged {
         public string Type { get; set; }
         public string Id { get; set; }
         public string OrganizationId { get; set; }

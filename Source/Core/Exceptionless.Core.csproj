@@ -147,7 +147,7 @@
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
     <Compile Include="Messaging\Models\EventOccurrence.cs" />
-    <Compile Include="Messaging\Models\EntityChange.cs" />
+    <Compile Include="Messaging\Models\EntityChanged.cs" />
     <Compile Include="Messaging\Models\PlanChanged.cs" />
     <Compile Include="Messaging\Models\PlanOverage.cs" />
     <Compile Include="Messaging\Models\StackUpdated.cs" />

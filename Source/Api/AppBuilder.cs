@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -18,6 +19,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
+using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.Extensions;
@@ -132,8 +134,8 @@ namespace Exceptionless.Api {
 
             ExceptionlessClient.Default.RegisterWebApi(config);
             app.UseCors(CorsOptions.AllowAll);
-            //app.MapSignalR();
             app.UseWebApi(config);
+            app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
 
             PhysicalFileSystem fileSystem = null;
             var root = AppDomain.CurrentDomain.BaseDirectory;

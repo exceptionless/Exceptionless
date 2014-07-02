@@ -32,6 +32,8 @@ namespace Exceptionless.Core.Repositories {
             : base(database, cacheClient, messagePublisher) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
+
+            EnableNotifications = false;
         }
 
         public void UpdateFixedByStackId(string stackId, bool value) {

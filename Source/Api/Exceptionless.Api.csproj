@@ -42,6 +42,10 @@
     <Reference Include="Microsoft.AspNet.Identity.Owin">
       <HintPath>..\..\packages\Microsoft.AspNet.Identity.Owin.2.0.1\lib\net45\Microsoft.AspNet.Identity.Owin.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.SignalR.Core.2.1.0\lib\net45\Microsoft.AspNet.SignalR.Core.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Owin, Version=2.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -180,7 +184,7 @@
     <Compile Include="Extensions\HttpClientExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
     <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />
-    <Compile Include="Hubs\Notifier.cs" />
+    <Compile Include="Hubs\MessageBusHub.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
     <Compile Include="Models\Organization\ViewOrganization.cs" />
@@ -191,6 +195,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ExceptionlessOAuthAuthorizationServerProvider.cs" />
+    <Compile Include="Utility\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />
     <Compile Include="Utility\Delta\NonValidatingParameterBindingAttribute.cs" />
