@@ -3,7 +3,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
-using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
@@ -14,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
+using FluentValidation;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -23,12 +23,19 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IAppStatsClient _statsClient;
+        private readonly IValidator<UserDescription> _userDescriptionValidator;
 
-        public EventController(IEventRepository repository, IProjectRepository projectRepository, IStackRepository stackRepository, IQueue<EventPost> eventPostQueue, IAppStatsClient statsClient) : base(repository) {
+        public EventController(IEventRepository repository, 
+            IProjectRepository projectRepository, 
+            IStackRepository stackRepository, 
+            IQueue<EventPost> eventPostQueue, 
+            IAppStatsClient statsClient,
+            IValidator<UserDescription> userDescriptionValidator) : base(repository) {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _statsClient = statsClient;
+            _userDescriptionValidator = userDescriptionValidator;
         }
 
         [HttpGet]
@@ -108,6 +115,10 @@ namespace Exceptionless.Api.Controllers {
 
             if (description == null)
                 return BadRequest("Description must be specified.");
+
+            var result = _userDescriptionValidator.Validate(description);
+            if (!result.IsValid)
+                return BadRequest(result.Errors.ToErrorMessage());
 
             if (projectId == null)
                 projectId = User.GetDefaultProjectId();

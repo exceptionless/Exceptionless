@@ -39,6 +39,9 @@
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="FluentValidation">
+      <HintPath>..\..\packages\FluentValidation.5.4.0.0\lib\Net40\FluentValidation.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.ApplicationServer.Caching.AzureClientHelper, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.3.1.0\lib\net40-full\Microsoft.ApplicationServer.Caching.AzureClientHelper.dll</HintPath>
     </Reference>
@@ -143,6 +146,7 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
+    <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
@@ -195,6 +199,22 @@
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
+    <Compile Include="Validation\ApplicationValidator.cs" />
+    <Compile Include="Validation\DayProjectStatsValidator.cs" />
+    <Compile Include="Validation\DayStackStatsValidator.cs" />
+    <Compile Include="Validation\EventValidator.cs" />
+    <Compile Include="Validation\JobHistoryValidator.cs" />
+    <Compile Include="Validation\JobLockInfoValidator.cs" />
+    <Compile Include="Validation\MonthProjectStatsValidator.cs" />
+    <Compile Include="Validation\MonthStackStatsValidator.cs" />
+    <Compile Include="Validation\OrganizationValidator.cs" />
+    <Compile Include="Validation\PersistentEventValidator.cs" />
+    <Compile Include="Validation\ProjectValidator.cs" />
+    <Compile Include="Validation\StackValidator.cs" />
+    <Compile Include="Validation\TokenValidator.cs" />
+    <Compile Include="Validation\UserDescriptionValidator.cs" />
+    <Compile Include="Validation\UserValidator.cs" />
+    <Compile Include="Validation\WebHookValidator.cs" />
     <None Include="app.config" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

@@ -25,6 +25,11 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
+using Exceptionless.Models;
+using Exceptionless.Models.Admin;
+using Exceptionless.Models.Data;
+using FluentValidation;
 using MongoDB.Driver;
 using RazorSharpEmail;
 using SimpleInjector;
@@ -83,6 +88,23 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IDayStackStatsRepository, DayStackStatsRepository>();
             container.RegisterSingle<ITokenRepository, TokenRepository>();
             container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
+
+            container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
+            container.RegisterSingle<IValidator<DayProjectStats>, DayProjectStatsValidator>();
+            container.RegisterSingle<IValidator<DayStackStats>, DayStackStatsValidator>();
+            container.RegisterSingle<IValidator<Event>, EventValidator>();
+            container.RegisterSingle<IValidator<JobHistory>, JobHistoryValidator>();
+            container.RegisterSingle<IValidator<JobLockInfo>, JobLockInfoValidator>();
+            container.RegisterSingle<IValidator<MonthProjectStats>, MonthProjectStatsValidator>();
+            container.RegisterSingle<IValidator<MonthStackStats>, MonthStackStatsValidator>();
+            container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
+            container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
+            container.RegisterSingle<IValidator<Project>, ProjectValidator>();
+            container.RegisterSingle<IValidator<Stack>, StackValidator>();
+            container.RegisterSingle<IValidator<Token>, TokenValidator>();
+            container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
+            container.RegisterSingle<IValidator<User>, UserValidator>();
+            container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
