@@ -5,9 +5,9 @@ using FluentValidation;
 namespace Exceptionless.Core.Validation {
     public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
         public PersistentEventValidator() {
-            RuleFor(u => u.OrganizationId).NotEmpty().WithMessage("Please specify a valid organization id.");
-            RuleFor(u => u.ProjectId).NotEmpty().WithMessage("Please specify a valid project id.");
-            RuleFor(u => u.StackId).NotEmpty().WithMessage("Please specify a valid stack id.");
+            RuleFor(e => e.OrganizationId).NotEmpty().WithMessage("Please specify a valid organization id.");
+            RuleFor(e => e.ProjectId).NotEmpty().WithMessage("Please specify a valid project id.");
+            RuleFor(e => e.StackId).NotEmpty().WithMessage("Please specify a valid stack id.");
 
             RuleFor(e => e.Type)
                 .NotEmpty()

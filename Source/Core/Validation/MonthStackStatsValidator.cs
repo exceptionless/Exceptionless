@@ -5,8 +5,8 @@ using FluentValidation;
 namespace Exceptionless.Core.Validation {
     public class MonthStackStatsValidator : AbstractValidator<MonthStackStats> {
         public MonthStackStatsValidator() {
-            RuleFor(u => u.ProjectId).NotEmpty().WithMessage("Please specify a valid project id.");
-            RuleFor(u => u.StackId).NotEmpty().WithMessage("Please specify a valid stack id.");
+            RuleFor(m => m.ProjectId).NotEmpty().WithMessage("Please specify a valid project id.");
+            RuleFor(m => m.StackId).NotEmpty().WithMessage("Please specify a valid stack id.");
         }
     }
 }
