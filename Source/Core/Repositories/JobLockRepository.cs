@@ -13,13 +13,14 @@ using System;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Messaging;
+using FluentValidation;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockRepository {
-        public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+        public JobLockRepository(MongoDatabase database, IValidator<JobLockInfo> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 

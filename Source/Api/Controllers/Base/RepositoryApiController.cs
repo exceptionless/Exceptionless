@@ -4,9 +4,11 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Driver;
 
 namespace Exceptionless.Api.Controllers {
@@ -84,6 +86,8 @@ namespace Exceptionless.Api.Controllers {
                 model = AddModel(mapped);
             } catch (WriteConcernException) {
                 return Conflict();
+            } catch (ValidationException ex) {
+                return BadRequest(ex.Errors.ToErrorMessage());
             }
 
             var viewModel = Mapper.Map<TModel, TViewModel>(model);
@@ -126,7 +130,11 @@ namespace Exceptionless.Api.Controllers {
             if (!permission.Allowed)
                 return permission.HttpActionResult ?? BadRequest();
 
-            UpdateModel(original, changes);
+            try {
+                UpdateModel(original, changes);
+            } catch (ValidationException ex) {
+                return BadRequest(ex.Errors.ToErrorMessage());
+            }
 
             return Ok();
         }

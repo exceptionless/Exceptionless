@@ -15,6 +15,7 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -24,8 +25,8 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class MonthProjectStatsRepository : MongoRepositoryOwnedByProject<MonthProjectStats>, IMonthProjectStatsRepository {
-        public MonthProjectStatsRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+        public MonthProjectStatsRepository(MongoDatabase database, IValidator<MonthProjectStats> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -12,15 +13,8 @@ using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepositoryOwnedByOrganizationAndProjectAndStack<T> : MongoRepositoryOwnedByOrganizationAndProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, IOwnedByOrganization, new() {
-        public MongoRepositoryOwnedByOrganizationAndProjectAndStack(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {}
-
-        protected override void BeforeAdd(ICollection<T> documents) {
-            if (documents.Any(d => String.IsNullOrEmpty(d.StackId)))
-                throw new ArgumentException("StackIds must be set.");
-
-            base.BeforeAdd(documents);
-        }
+        public MongoRepositoryOwnedByOrganizationAndProjectAndStack(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {}
 
         public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()

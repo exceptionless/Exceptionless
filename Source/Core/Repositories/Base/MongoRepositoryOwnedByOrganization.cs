@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -12,15 +13,8 @@ using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepositoryOwnedByOrganization<T> : MongoRepository<T>, IRepositoryOwnedByOrganization<T> where T : class, IOwnedByOrganization, IIdentity, new() {
-        public MongoRepositoryOwnedByOrganization(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {}
-
-        protected override void BeforeAdd(ICollection<T> documents) {
-            if (documents.Any(d => String.IsNullOrEmpty(d.OrganizationId)))
-                throw new ArgumentException("OrganizationIds must be set.");
-
-            base.BeforeAdd(documents);
-        }
+        public MongoRepositoryOwnedByOrganization(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {}
 
         public virtual ICollection<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()

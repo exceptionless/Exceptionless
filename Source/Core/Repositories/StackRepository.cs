@@ -16,6 +16,7 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -27,8 +28,8 @@ namespace Exceptionless.Core.Repositories {
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+        public StackRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;

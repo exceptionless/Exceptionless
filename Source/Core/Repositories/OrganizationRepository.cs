@@ -22,6 +22,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -29,7 +30,7 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class OrganizationRepository : MongoRepository<Organization>, IOrganizationRepository {
-        public OrganizationRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient, messagePublisher) { }
+        public OrganizationRepository(MongoDatabase database, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
 
         public Organization GetByInviteToken(string token, out Invite invite) {
             invite = null;

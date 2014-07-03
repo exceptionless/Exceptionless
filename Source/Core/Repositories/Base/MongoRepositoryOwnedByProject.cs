@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -12,15 +13,8 @@ using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepositoryOwnedByProject<T> : MongoRepository<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, new() {
-        public MongoRepositoryOwnedByProject(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {}
-
-        protected override void BeforeAdd(ICollection<T> documents) {
-            if (documents.Any(d => String.IsNullOrEmpty(d.ProjectId)))
-                throw new ArgumentException("ProjectIds must be set.");
-
-            base.BeforeAdd(documents);
-        }
+        public MongoRepositoryOwnedByProject(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {}
 
         public virtual ICollection<T> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()

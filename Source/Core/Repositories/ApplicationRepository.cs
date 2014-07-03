@@ -2,12 +2,13 @@
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models.Admin;
+using FluentValidation;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public class ApplicationRepository  : MongoRepositoryOwnedByOrganization<Application>, IApplicationRepository {
-        public ApplicationRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, cacheClient, messagePublisher) {
+        public ApplicationRepository(MongoDatabase database, IValidator<Application> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 

@@ -13,15 +13,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
+        protected readonly IValidator<T> _validator;
         protected readonly IMessagePublisher _messagePublisher;
         protected readonly static string _entityType = typeof(T).Name;
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
@@ -29,7 +32,8 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
 
-        protected MongoRepository(MongoDatabase database, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+        protected MongoRepository(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+            _validator = validator;
             _messagePublisher = messagePublisher;
             EnableNotifications = true;
         }
@@ -44,22 +48,17 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeAdd(ICollection<T> documents) {
-            if (_isOwnedByOrganization && !_isOrganization && documents.Any(d => String.IsNullOrEmpty(((IOwnedByOrganization)d).OrganizationId)))
-                throw new ArgumentException("OrganizationIds must be set.", "documents");
-
-            if (_isOwnedByProject && documents.Any(d => String.IsNullOrEmpty(((IOwnedByProject)d).ProjectId)))
-                throw new ArgumentException("ProjectIds must be set.", "documents");
-
-            if (_isOwnedByStack && documents.Any(d => String.IsNullOrEmpty(((IOwnedByStack)d).StackId)))
-                throw new ArgumentException("StackIds must be set.", "documents");
-        }
+        protected virtual void BeforeAdd(ICollection<T> documents) { }
 
         public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to add.", "documents");
 
             BeforeAdd(documents);
+
+            if (_validator != null)
+                documents.ForEach(_validator.ValidateAndThrow);
+
             _collection.InsertBatch<T>(documents);
             AfterAdd(documents, addToCache, expiresIn);
         }
@@ -178,8 +177,13 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
             BeforeSave(documents);
+
+            if (_validator != null)
+                documents.ForEach(_validator.ValidateAndThrow);
+
             foreach (var document in documents)
                 _collection.Save(document);
+
             AfterSave(documents, addToCache, expiresIn);
         }
 
