@@ -181,7 +181,7 @@ namespace Exceptionless.Core.Repositories {
 
             var documents = Find<PersistentEvent>(new MultiOptions()
                 .WithStackId(data.StackId)
-                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithSort(SortBy.Ascending(FieldNames.Date_UTC))
                 .WithLimit(10)
                 .WithFields(FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));

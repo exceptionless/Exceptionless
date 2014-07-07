@@ -40,7 +40,9 @@ namespace Exceptionless.Tests.Utility {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
-                Title = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50))
+                Title = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50)),
+                SignatureHash = RandomHelper.GetPronouncableString(10),
+                SignatureInfo = new SettingsDictionary()
             };
 
             for (int i = 0; i < RandomHelper.GetRange(0, 5); i++) {
