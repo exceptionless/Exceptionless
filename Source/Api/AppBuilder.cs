@@ -160,7 +160,7 @@ namespace Exceptionless.Api {
             var userRepository = container.GetInstance<IUserRepository>();
             var user = userRepository.GetByEmailAddress("test@exceptionless.com");
             if (user == null)
-                user = userRepository.Add(new User { EmailAddress = "test@exceptionless.com" });
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue});
             _userId = user.Id;
             dataHelper.CreateSampleOrganizationAndProject(user.Id);
         }
