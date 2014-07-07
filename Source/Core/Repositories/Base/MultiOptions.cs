@@ -66,11 +66,21 @@ namespace Exceptionless.Core.Repositories {
             if (Page.HasValue)
                 return query;
 
-            if (!String.IsNullOrEmpty(BeforeValue) && BeforeQuery == null)
-                BeforeQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(BeforeValue));
+            if (!String.IsNullOrEmpty(BeforeValue) && BeforeQuery == null) {
+                try {
+                    BeforeQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(BeforeValue));
+                } catch (Exception ex) {
+                    ex.ToExceptionless().AddObject(BeforeQuery, "BeforeQuery").Submit();
+                }
+            }
 
-            if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null)
-                AfterQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(AfterValue));
+            if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null) {
+                try {
+                    AfterQuery = MongoDB.Driver.Builders.Query.GT(CommonFieldNames.Id, getIdValue(AfterValue));
+                } catch (Exception ex) {
+                    ex.ToExceptionless().AddObject(AfterQuery, "AfterQuery").Submit();
+                }
+            }
 
             query = query.And(BeforeQuery, AfterQuery);
             return query;

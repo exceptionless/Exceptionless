@@ -209,30 +209,19 @@ namespace Exceptionless.Core.Repositories {
 
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
             return base.GetByOrganizationIds(organizationIds, pagingWithSorting, useCache, expiresIn);
         }
 
         public override ICollection<PersistentEvent> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
             return base.GetByStackId(stackId, pagingWithSorting, useCache, expiresIn);
         }
 
         public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
             return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn);
         }
         
-        private void GetBeforeAndAfterQuery(PagingWithSortingOptions paging) {
-            DateTime beforeDate, afterDate;
-            if (DateTime.TryParse(paging.Before, out beforeDate))
-                paging.BeforeQuery = Query.LT(FieldNames.Date_UTC, beforeDate.Ticks);
-            if (DateTime.TryParse(paging.After, out afterDate))
-                paging.AfterQuery = Query.GT(FieldNames.Date_UTC, afterDate.Ticks);
-        }
-
         protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
             base.AfterRemove(documents, sendNotification);
 

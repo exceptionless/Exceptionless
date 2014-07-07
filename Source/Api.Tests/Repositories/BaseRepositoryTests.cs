@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
@@ -15,7 +16,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
-            var organization = new Organization();
+            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             _repository.Add(organization);
@@ -35,7 +36,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
-            _repository.Add(new []{ new Organization { RetentionDays = 0 }, new Organization { RetentionDays = 1 }, new Organization { RetentionDays = 2 } });
+            _repository.Add(new[] {
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 }, 
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 }, 
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
+            });
+
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Count);
@@ -62,7 +68,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(cache);
             cache.FlushAll();
             
-            var organization = new Organization();
+            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
             Assert.Null(organization.Id);
 
             Assert.Equal(0, cache.Count);

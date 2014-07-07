@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
@@ -23,7 +24,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(messages.Add);
 
-            var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750 });
+            var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
             Assert.False(_repository.IncrementUsage(o.Id, 4));
             Assert.Equal(0, messages.Count);
             Assert.Equal(4, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
@@ -38,7 +39,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
             Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
-            o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750 });
+            o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
             Assert.True(_repository.IncrementUsage(o.Id, 751));
             //Assert.Equal(2, messages.Count);
             Assert.Equal(751, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
