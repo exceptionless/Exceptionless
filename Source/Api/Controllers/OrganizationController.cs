@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models;
@@ -198,7 +199,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
-        public IHttpActionResult AddUser(string id, string email) {
+        public async Task<IHttpActionResult> AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return BadRequest();
 
@@ -217,7 +218,7 @@ namespace Exceptionless.Api.Controllers {
                     _userRepository.Save(user);
                 }
 
-                _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
+                await _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
             } else {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
@@ -230,7 +231,7 @@ namespace Exceptionless.Api.Controllers {
                     _repository.Save(organization);
                 }
 
-                _mailer.SendInviteAsync(currentUser, organization, invite);
+                await _mailer.SendInviteAsync(currentUser, organization, invite);
             }
 
             if (user != null)

@@ -5,6 +5,7 @@ using CodeSmith.Core.Dependency;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
+using MailMessage = System.Net.Mail.MailMessage;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {

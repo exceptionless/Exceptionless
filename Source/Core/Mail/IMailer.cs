@@ -17,31 +17,17 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Mail {
     public interface IMailer {
-        void SendPasswordReset(User user);
-
-        Task SendPasswordResetAsync(User sender);
-
-        void SendVerifyEmail(User user);
+        Task SendPasswordResetAsync(User user);
 
         Task SendVerifyEmailAsync(User user);
 
-        void SendInvite(User sender, Organization organization, Invite invite);
-
         Task SendInviteAsync(User sender, Organization organization, Invite invite);
-
-        void SendPaymentFailed(User owner, Organization organization);
 
         Task SendPaymentFailedAsync(User owner, Organization organization);
 
-        void SendAddedToOrganization(User sender, Organization organization, User user);
-
         Task SendAddedToOrganizationAsync(User sender, Organization organization, User user);
 
-        void SendNotice(string emailAddress, EventNotification model);
-
-        Task SendNoticeAsync(string emailAddress, EventNotification notification);
-
-        void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification);
+        Task SendNoticeAsync(string emailAddress, EventNotification model);
 
         Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification);
     }

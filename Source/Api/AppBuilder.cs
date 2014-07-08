@@ -152,6 +152,7 @@ namespace Exceptionless.Api {
             // TODO: Remove this as it's only for testing.
             EnsureSampleData(container);
             Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());
+            Task.Factory.StartNew(() => container.GetInstance<ProcessMailMessageJob>().Run());
         }
 
         private static string _userId;

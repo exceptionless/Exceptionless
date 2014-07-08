@@ -27,5 +27,9 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsBatchSize = "posts.batchsize";
         public const string PostsParseErrors = "posts.parse.errors";
         public const string PostsParsingTime = "posts.parsingtime";
+
+        public const string EmailsDequeued = "emails.dequeued";
+        public const string EmailsSent = "emails.sent";
+        public const string EmailsSendErrors = "emails.send.errors";
     }
 }

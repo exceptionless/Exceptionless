@@ -3,6 +3,7 @@ using System.Net.Mail;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
+using MailMessage = System.Net.Mail.MailMessage;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(20)]

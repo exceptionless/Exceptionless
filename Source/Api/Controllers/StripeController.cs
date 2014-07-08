@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
@@ -16,7 +17,7 @@ namespace Exceptionless.Api.Controllers {
 
         [Route]
         [HttpPost]
-        public IHttpActionResult Post([NakedBody]string json) {
+        public async Task<IHttpActionResult> Post([NakedBody]string json) {
             StripeEvent stripeEvent;
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
@@ -30,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Incoming event empty");
             }
 
-            _stripeEventHandler.HandleEvent(stripeEvent);
+            _stripeEventHandler.HandleEventAsync(stripeEvent);
 
             return Ok();
         }

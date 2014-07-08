@@ -7,6 +7,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using RazorSharpEmail;
+using MailMessage = System.Net.Mail.MailMessage;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(10)]

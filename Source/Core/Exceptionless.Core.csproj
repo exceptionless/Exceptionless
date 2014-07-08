@@ -145,8 +145,10 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
+    <Compile Include="Jobs\ProcessMailMessageJob.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
@@ -199,6 +201,7 @@
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
     <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
+    <Compile Include="Queues\Models\MailMessage.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\DayProjectStatsValidator.cs" />
     <Compile Include="Validation\DayStackStatsValidator.cs" />
