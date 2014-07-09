@@ -37,7 +37,7 @@ namespace Exceptionless.Api {
             BuildWithContainer(app, CreateContainer());
         }
 
-        public static void BuildWithContainer(IAppBuilder app, Container container) {
+        public static void BuildWithContainer(IAppBuilder app, Container container, bool registerExceptionlessClient = true) {
             if (container == null)
                 throw new ArgumentNullException("container");
 
@@ -132,7 +132,9 @@ namespace Exceptionless.Api {
                 });
             });
 
-            ExceptionlessClient.Default.RegisterWebApi(config);
+            if (registerExceptionlessClient)
+                ExceptionlessClient.Default.RegisterWebApi(config);
+            
             app.UseCors(CorsOptions.AllowAll);
             app.UseWebApi(config);
             app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });

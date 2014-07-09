@@ -30,7 +30,7 @@ namespace Client.Tests {
         [Fact]
         public void CanSubmitSimpleEvent() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 EnsureSampleData(container);
@@ -61,7 +61,7 @@ namespace Client.Tests {
         [Fact]
         public void CanSubmitSimpleException() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 EnsureSampleData(container);

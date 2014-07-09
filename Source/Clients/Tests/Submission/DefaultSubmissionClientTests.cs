@@ -34,7 +34,7 @@ namespace Client.Tests.Submission {
 
         [Fact]
         public void PostEvents() {
-            using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
                 var events = new List<Event> { new Event { Message = "Testing" } };
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
@@ -48,7 +48,7 @@ namespace Client.Tests.Submission {
 
         [Fact]
         public void PostUserDescription() {
-            using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
                 const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";
                 var events = new List<Event> { new Event { Message = "Testing", ReferenceId = referenceId } };
                 var configuration = GetClient().Configuration;
@@ -66,7 +66,7 @@ namespace Client.Tests.Submission {
 
         [Fact]
         public void GetSettings() {
-            using (WebApp.Start(Settings.Current.BaseURL, AppBuilder.Build)) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
 
