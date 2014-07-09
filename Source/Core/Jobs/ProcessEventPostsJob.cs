@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using FluentValidation;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
@@ -57,8 +59,8 @@ namespace Exceptionless.Core.Jobs {
                 }
                 if (queueEntry == null)
                     continue;
+  
                 _statsClient.Counter(StatNames.PostsDequeued);
-
                 Log.Info().Message("Processing EventPost '{0}'.", queueEntry.Id).Write();
                 
                 List<PersistentEvent> events = null;
@@ -76,6 +78,7 @@ namespace Exceptionless.Core.Jobs {
                     Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                     continue;
                 }
+       
                 if (events == null) {
                     queueEntry.AbandonAsync().Wait();
                     continue;
@@ -102,6 +105,9 @@ namespace Exceptionless.Core.Jobs {
                         totalEventsProcessed++;
                         if (totalEventsToProcess > 0 && totalEventsProcessed >= totalEventsToProcess)
                             break;
+                    } catch (ValidationException ex) {
+                        // TODO: Should we be requeuing the exception in case we redeploy with a validation fix?
+                        Log.Error().Exception(ex).Message("A validation error occurred while processing the EventPipeline: {0}", ex.Message).Write();
                     } catch (Exception ex) {
                         Log.Error().Exception(ex).Message("An error occurred while processing the EventPipeline: {0}", ex.Message).Write();
 

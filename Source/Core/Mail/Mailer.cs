@@ -15,6 +15,7 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail.Models;
@@ -29,11 +30,13 @@ namespace Exceptionless.Core.Mail {
         private readonly IEmailGenerator _emailGenerator;
         private readonly IQueue<Queues.Models.MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
+        private readonly IAppStatsClient _statsClient;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<Queues.Models.MailMessage> queue, FormattingPluginManager pluginManager) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<Queues.Models.MailMessage> queue, FormattingPluginManager pluginManager, IAppStatsClient statsClient) {
             _emailGenerator = emailGenerator;
             _queue = queue;
             _pluginManager = pluginManager;
+            _statsClient = statsClient;
         }
 
         public async Task SendPasswordResetAsync(User user) {
@@ -105,7 +108,9 @@ namespace Exceptionless.Core.Mail {
 
         private async Task QueueMessage(MailMessage message) {
             CleanAddresses(message);
+
             await _queue.EnqueueAsync(message.ToMailMessage());
+            _statsClient.Counter(StatNames.EmailsQueued);
         }
 
         private static void CleanAddresses(MailMessage msg) {

@@ -11,14 +11,24 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
+using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Serializer;
 using Exceptionless.Submission;
 using Microsoft.Owin.Hosting;
+using SimpleInjector;
 using Xunit;
 
 namespace Client.Tests.Submission {
@@ -34,7 +44,10 @@ namespace Client.Tests.Submission {
 
         [Fact]
         public void PostEvents() {
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+                EnsureSampleData(container);
+                
                 var events = new List<Event> { new Event { Message = "Testing" } };
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
@@ -48,8 +61,15 @@ namespace Client.Tests.Submission {
 
         [Fact]
         public void PostUserDescription() {
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";
+
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
+
+                EnsureSampleData(container);
+
                 var events = new List<Event> { new Event { Message = "Testing", ReferenceId = referenceId } };
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
@@ -58,15 +78,28 @@ namespace Client.Tests.Submission {
                 var response = client.PostEvents(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
-                response = client.PostUserDescription(referenceId, new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." }, configuration, serializer);
+
+                var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
+                response = client.PostUserDescription(referenceId, description, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
+
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, 5);
+
+                var eventRepository = container.GetInstance<IEventRepository>();
+                var ev = eventRepository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
+                Assert.NotNull(ev);
+                Assert.NotNull(ev.GetUserDescription());
+                Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
             }
         }
 
         [Fact]
         public void GetSettings() {
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, AppBuilder.CreateContainer(), false))) {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+                EnsureSampleData(container);
+                
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
 
@@ -77,6 +110,15 @@ namespace Client.Tests.Submission {
                 Assert.NotNull(response.Settings);
                 Assert.Null(response.Message);
             }
+        }
+
+        private void EnsureSampleData(Container container) {
+            var dataHelper = container.GetInstance<DataHelper>();
+            var userRepository = container.GetInstance<IUserRepository>();
+            var user = userRepository.GetByEmailAddress("test@test.com");
+            if (user == null)
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@test.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue});
+            dataHelper.CreateSampleOrganizationAndProject(user.Id);
         }
     }
 }

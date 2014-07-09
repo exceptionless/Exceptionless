@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Jobs {
 
                     // TODO: Add the MailMessageNotification to the logged exception.
                     Log.Error().Exception(ex).Message("An error occurred while processing the MailMessageNotification '{0}': {1}", queueEntry.Id, ex.Message).Write();
-                    continue;
+                    return JobResult.FromException(ex);
                 }
 
                 await queueEntry.CompleteAsync();

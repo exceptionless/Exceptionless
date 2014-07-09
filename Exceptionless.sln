@@ -87,6 +87,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{9AA4BD09-5
 		Source\JobRunner\RunDailyNotificationJob.bat = Source\JobRunner\RunDailyNotificationJob.bat
 		Source\JobRunner\RunEnforceRetentionLimitsJob.bat = Source\JobRunner\RunEnforceRetentionLimitsJob.bat
 		Source\JobRunner\RunProcessEventPostsJob.bat = Source\JobRunner\RunProcessEventPostsJob.bat
+		Source\JobRunner\RunProcessEventUserDescriptionsJob.bat = Source\JobRunner\RunProcessEventUserDescriptionsJob.bat
 		Source\JobRunner\RunProcessMailMessageJob.bat = Source\JobRunner\RunProcessMailMessageJob.bat
 		Source\JobRunner\RunRemoveStaleAccountsJob.bat = Source\JobRunner\RunRemoveStaleAccountsJob.bat
 	EndProjectSection

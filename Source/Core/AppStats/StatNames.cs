@@ -20,6 +20,12 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsProcessErrors = "events.processing.errors";
         public const string EventsBlocked = "events.blocked";
 
+        public const string EventsUserDescriptionSubmitted = "events.description.submitted";
+        public const string EventsUserDescriptionQueued = "events.description.queued";
+        public const string EventsUserDescriptionDequeued = "events.description.dequeued";
+        public const string EventsUserDescriptionProcessed = "events.description.processed";
+        public const string EventsUserDescriptionErrors = "events.description.errors";
+
         public const string PostsSubmitted = "posts.submitted";
         public const string PostsQueued = "posts.queued";
         public const string PostsDequeued = "posts.dequeued";
@@ -28,6 +34,7 @@ namespace Exceptionless.Core.AppStats {
         public const string PostsParseErrors = "posts.parse.errors";
         public const string PostsParsingTime = "posts.parsingtime";
 
+        public const string EmailsQueued = "emails.queued";
         public const string EmailsDequeued = "emails.dequeued";
         public const string EmailsSent = "emails.sent";
         public const string EmailsSendErrors = "emails.send.errors";

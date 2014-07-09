@@ -66,10 +66,11 @@ namespace Exceptionless.Core {
             });
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
+            container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(workItemTimeoutMilliseconds: 2 * 60 * 1000));
             container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
             container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
             container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>());
-
+            
             container.Register<EventStatsHelper>();
             container.RegisterSingle<InMemoryMessageBus>();
             container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);

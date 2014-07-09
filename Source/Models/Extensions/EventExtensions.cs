@@ -118,5 +118,19 @@ namespace Exceptionless {
 
             ev.Data[Event.KnownDataKeys.UserDescription] = userDescription;
         }
+
+        /// <summary>
+        /// Sets the user's description of the event.
+        /// </summary>
+        /// <param name="ev">The event.</param>
+        /// <param name="description">The user's description.</param>
+        public static void SetUserDescription(this Event ev, UserDescription description) {
+            if (description == null || (String.IsNullOrWhiteSpace(description.EmailAddress) && String.IsNullOrWhiteSpace(description.Description)))
+                return;
+
+            // TODO: Should we be merging existing user descriptions?
+
+            ev.Data[Event.KnownDataKeys.UserDescription] = description;
+        }
     }
 }

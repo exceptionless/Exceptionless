@@ -12,9 +12,9 @@ namespace Exceptionless.Core.Validation {
             
             RuleFor(e => e.ReferenceId)
                 .NotEmpty()
-                .Length(8, 16)
+                .Length(8, 32)
                 .Unless(u => String.IsNullOrEmpty(u.ReferenceId))
-                .WithMessage("ReferenceId must contain between 8 and 16 characters");
+                .WithMessage("ReferenceId must contain between 8 and 32 characters");
         }
 
         private bool BeAValidEventType(string type) {

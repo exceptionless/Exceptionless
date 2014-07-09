@@ -32,12 +32,13 @@ namespace Client.Tests {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
-                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
-                EnsureSampleData(container);
-
-                Assert.NotNull(statsCounter);
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.Count);
+                
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
+          
+                EnsureSampleData(container);
 
                 var client = CreateClient();
                 client.SubmitEvent(new Event { Message = "Test" });
@@ -63,12 +64,13 @@ namespace Client.Tests {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
-                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
-                EnsureSampleData(container);
-
-                Assert.NotNull(statsCounter);
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.Count);
+
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
+
+                EnsureSampleData(container);
 
                 var client = CreateClient();
                 try {

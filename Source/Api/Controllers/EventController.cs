@@ -3,12 +3,14 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
+using AutoMapper;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Models;
@@ -22,6 +24,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
+        private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
 
@@ -29,11 +32,13 @@ namespace Exceptionless.Api.Controllers {
             IProjectRepository projectRepository, 
             IStackRepository stackRepository, 
             IQueue<EventPost> eventPostQueue, 
+            IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator) : base(repository) {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
+            _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _statsClient = statsClient;
             _userDescriptionValidator = userDescriptionValidator;
         }
@@ -109,7 +114,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
+        public async Task<IHttpActionResult> SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
+            _statsClient.Counter(StatNames.EventsUserDescriptionSubmitted);
+            
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
 
@@ -131,12 +138,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            var ev = _repository.GetByReferenceId(projectId, referenceId).FirstOrDefault();
-            if (ev == null)
-                return NotFound();
+            var eventUserDescription = Mapper.Map<UserDescription, EventUserDescription>(description);
+            eventUserDescription.ProjectId = projectId;
+            eventUserDescription.ReferenceId = referenceId;
 
-            ev.Data[Event.KnownDataKeys.UserDescription] = description.ToJson();
-            _repository.Save(ev);
+            await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
+            _statsClient.Counter(StatNames.EventsUserDescriptionQueued);
 
             return Ok();
         }
@@ -146,7 +153,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [ConfigurationResponseFilter]
-        public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
+        public async Task<IHttpActionResult> LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -158,7 +165,7 @@ namespace Exceptionless.Api.Controllers {
             var userDescription = new UserDescription();
             changes.Patch(userDescription);
 
-            return SetUserDescription(id, userDescription);
+            return await SetUserDescription(id, userDescription);
         }
 
         [HttpPost]
@@ -200,6 +207,13 @@ namespace Exceptionless.Api.Controllers {
             _statsClient.Counter(StatNames.PostsQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
+        }
+
+        protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<UserDescription, EventUserDescription>() == null)
+                Mapper.CreateMap<UserDescription, EventUserDescription>();
+
+            base.CreateMaps();
         }
     }
 }
