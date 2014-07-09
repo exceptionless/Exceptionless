@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
@@ -21,11 +22,42 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
-    public class TokenRepository : MongoRepositoryOwnedByOrganization<Token>, ITokenRepository {
+    public class TokenRepository : MongoRepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
         public TokenRepository(MongoDatabase database, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, validator, cacheClient, messagePublisher)
         {
             _getIdValue = s => s;
+        }
+
+        public ICollection<Token> GetByTypeAndOrganizationId(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return Find<Token>(new MultiOptions()
+                .WithOrganizationId(organizationId)
+                .WithQuery(Query.EQ(FieldNames.Type, type))
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? String.Concat("type:", type, "-org:", organizationId) : null)
+                .WithExpiresIn(expiresIn));
+        }
+
+        public ICollection<Token> GetByTypeAndOrganizationIds(TokenType type, ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            if (organizationIds == null || organizationIds.Count == 0)
+                return new List<Token>();
+
+            string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
+            return Find<Token>(new MultiOptions()
+                .WithOrganizationIds(organizationIds)
+                .WithQuery(Query.EQ(FieldNames.Type, type))
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
+        }
+
+        public ICollection<Token> GetByTypeAndProjectId(TokenType type, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return Find<Token>(new MultiOptions()
+                .WithProjectId(projectId)
+                .WithQuery(Query.EQ(FieldNames.Type, type))
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? String.Concat("type:", type, "-project:", projectId) : null)
+                .WithExpiresIn(expiresIn));
         }
 
         public Token GetByRefreshToken(string refreshToken) {

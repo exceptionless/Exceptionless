@@ -27,6 +27,7 @@ namespace Exceptionless.Core.Migrations {
             // TODO: update field names in org and project for counts
             // TODO: rename error collection to event
             // TODO: migrate errors to events on demand as documents are requested
+            // TODO: migrate project api keys to the token repository.
 
             base.Update();
         }

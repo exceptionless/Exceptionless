@@ -67,12 +67,6 @@ namespace Exceptionless.Tests.Utility {
             for (int i = 0; i < RandomHelper.GetRange(0, 5); i++)
                 project.Configuration.Settings.Add(RandomHelper.GetPronouncableString(5), RandomHelper.GetPronouncableString(10));
 
-            if (apiKeys != null)
-                project.ApiKeys.AddRange(apiKeys);
-
-            for (int i = 0; i < RandomHelper.GetRange(0, 5); i++)
-                project.ApiKeys.Add(Guid.NewGuid().ToString());
-
             return project;
         }
     }

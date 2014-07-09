@@ -140,50 +140,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}/apikeys/default")]
-        public IHttpActionResult GetDefaultApiKey(string id) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            if (project.ApiKeys.Count > 0)
-                return Ok(new { Key = project.ApiKeys.First() });
-
-            return GetNewApiKey(id);
-        }
-
-        [HttpPost]
-        [Route("{id:objectid}/apikeys")]
-        public IHttpActionResult GetNewApiKey(string id) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            string apiKey = Guid.NewGuid().ToString("N").ToLower();
-            project.ApiKeys.Add(apiKey);
-
-            _repository.Save(project);
-
-            return Ok(new { Key = apiKey });
-        }
-
-        [HttpDelete]
-        [Route("{id:objectid}/apikeys/{apiKey:minlength(1)}")]
-        public IHttpActionResult DeleteApiKey(string id, string apiKey) {
-            var project = GetModel(id, false);
-            if (project == null)
-                return BadRequest();
-
-            if (!project.ApiKeys.Contains(apiKey))
-                return StatusCode(HttpStatusCode.NoContent);
-
-            if (project.ApiKeys.Remove(apiKey))
-                _repository.Save(project);
-
-            return StatusCode(HttpStatusCode.NoContent);
-        }
-
-        [HttpGet]
         [Route("{id:objectid}/notifications")]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);

@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 
 namespace Exceptionless.Models.Admin {
-    public class Token : IIdentity, IOwnedByOrganization {
+    public class Token : IIdentity, IOwnedByOrganization, IOwnedByProject {
         public Token() {
             Scopes = new HashSet<string>();
         }

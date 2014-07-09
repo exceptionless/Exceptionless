@@ -17,7 +17,6 @@ namespace Exceptionless.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
     public class Project : IOwnedByOrganization, IIdentity, IData {
         public Project() {
-            ApiKeys = new HashSet<string>();
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
@@ -34,8 +33,6 @@ namespace Exceptionless.Models {
         public string Name { get; set; }
 
         public string TimeZone { get; set; }
-
-        public HashSet<string> ApiKeys { get; set; }
 
         public ClientConfiguration Configuration { get; set; }
 

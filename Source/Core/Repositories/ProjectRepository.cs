@@ -18,7 +18,6 @@ using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
@@ -29,13 +28,6 @@ namespace Exceptionless.Core.Repositories {
         public ProjectRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, validator, cacheClient, messagePublisher) {
             _organizationRepository = organizationRepository;
-        }
-
-        public Project GetByApiKey(string apiKey) {
-            if (String.IsNullOrEmpty(apiKey))
-                throw new ArgumentNullException("apiKey");
-
-            return FindOne<Project>(new OneOptions().WithQuery(Query.EQ(FieldNames.ApiKeys, apiKey)).WithCacheKey(apiKey));
         }
 
         public void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null) {
@@ -128,13 +120,6 @@ namespace Exceptionless.Core.Repositories {
             base.AfterAdd(documents, addToCache, expiresIn);
         }
 
-        public override void InvalidateCache(Project entity) {
-            foreach (string key in entity.ApiKeys)
-                InvalidateCache(key);
-
-            base.InvalidateCache(entity);
-        }
-
         #region Collection Setup
 
         public const string CollectionName = "project";
@@ -148,7 +133,6 @@ namespace Exceptionless.Core.Repositories {
             public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string Name = "Name";
             public const string TimeZone = "TimeZone";
-            public const string ApiKeys = "ApiKeys";
             public const string Configuration = "Configuration";
             public const string Configuration_Version = "Configuration.Version";
             public const string NotificationSettings = "NotificationSettings";
@@ -160,17 +144,8 @@ namespace Exceptionless.Core.Repositories {
             public const string LastEventDate = "LastEventDate";
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
-            // TODO: Should we set an index on project and configuration key name.
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
-        }
+       
+        // TODO: Should we set an index on project and configuration key name.
         
         #endregion
     }
