@@ -84,13 +84,21 @@ namespace Client.Tests.Submission {
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
 
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, 5);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, 1);
 
                 var eventRepository = container.GetInstance<IEventRepository>();
                 var ev = eventRepository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
                 Assert.NotNull(ev);
                 Assert.NotNull(ev.GetUserDescription());
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
+
+                Assert.Equal(0, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
+                response = client.PostUserDescription(referenceId + 1, description, configuration, serializer);
+                Assert.True(response.Success, response.Message);
+                Assert.Null(response.Message);
+
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, 1);
+                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
             }
         }
 
