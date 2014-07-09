@@ -75,12 +75,12 @@ namespace Client.Tests.Submission {
                 var serializer = new DefaultJsonSerializer();
 
                 var client = new DefaultSubmissionClient();
-                var response = client.PostEvents(events, configuration, serializer);
+                var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
+                var response = client.PostUserDescription(referenceId, description, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
 
-                var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
-                response = client.PostUserDescription(referenceId, description, configuration, serializer);
+                response = client.PostEvents(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
 
