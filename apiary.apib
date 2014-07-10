@@ -819,6 +819,128 @@ Stack related resources of the **Stacks API**
 
 + Response 200
 
+# Group Tokens
+Token related resources of the **Tokens API**
+
+
+## Create [/tokens]
+### Create new token [POST]
+To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.
+
++ Request (application/json)
+
+        {
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "default_project_id": null,
+            "application_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2014-07-07T18:59:09.692Z",
+            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
+## Get, Remove [/tokens/{id}]
++ Parameters
+    + id (required, string, `e3d51ea621464280bbcb79c11fd6483e`) ... The identifier of the token.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2014-07-07T18:59:09.692Z",
+            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }
+
+### Remove web hook [DELETE]
++ Response 204
+
+## Get by organization [/organizations/{id}/tokens{?before,after,limit}]
+### List all tokens for a given organization [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2014-07-07T18:59:09.692Z",
+            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
+
+## Get by project [/projects/{id}/tokens{?before,after,limit}]
+### List all tokens for a given project [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2014-07-07T18:59:09.692Z",
+            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
+
+## Get a projects default token [/projects/{id}/tokens/default]
+### Get the default token for a specific project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2014-07-07T18:59:09.692Z",
+            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
 
 # Group Web Hooks
 Web Hook related resources of the **Web Hooks  API**
