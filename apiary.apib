@@ -204,7 +204,35 @@ Organizations related resources of the **Organization API**
 
 + Response 201 (application/json)
 
-        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
 
 ## Get all [/organizations{?before,after,limit}]
 ### List all organizations [GET]
@@ -215,7 +243,35 @@ Organizations related resources of the **Organization API**
 
 + Response 200 (application/json)
 
-        [{ "id": "537650f3b77efe23a47914f3", "name": "Acme" }]
+        [{
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }]
 
 ## Get, Update, Remove [/organizations/{id}]
 + Parameters
@@ -224,7 +280,35 @@ Organizations related resources of the **Organization API**
 ### Get by id [GET]
 + Response 200 (application/json)
     
-        { "id": "537650f3b77efe23a47914f3", "name": "Acme" }
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
 
 ### Update organization [PATCH]
 + Request (application/json)
@@ -233,7 +317,35 @@ Organizations related resources of the **Organization API**
 
 + Response 200 (application/json)
 
-        { "id": "537650f3b77efe23a47914f3", "name": "Updated Acme" }
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Updated Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
 
 ### Remove organization [DELETE]
 + Response 204
@@ -292,33 +404,20 @@ Project related resources of the **Projects API**
 
 + Response 201 (application/json)
 
-        { 
+        {
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "configuration": {
-              "version": 0,
-              "settings": {
-                "include_conditional_data": "true"
-              }
-            },
-            "notification_settings": {
-              "537b6e77b77efe102444053d": {
-                "mode": 1,
-                "send_daily_summary": true,
-                "report_critical_errors": true,
-                "report_regressions": true,
-                "report404_errors": false,
-                "report_known_bot_errors": false
-              }
-            },
+            "time_zone_offset": -21600000.0,
             "data": {},
             "promoted_tabs": [],
             "custom_content": null,
-            "stack_count": 1,
-            "event_count": 1,
-            "total_event_count": 1,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
         }
 
 ## Get all [/projects{?before,after,limit}]
@@ -330,33 +429,20 @@ Project related resources of the **Projects API**
 
 + Response 200 (application/json)
 
-        [{ 
+        [{
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "configuration": {
-              "version": 0,
-              "settings": {
-                "include_conditional_data": "true"
-              }
-            },
-            "notification_settings": {
-              "537b6e77b77efe102444053d": {
-                "mode": 1,
-                "send_daily_summary": true,
-                "report_critical_errors": true,
-                "report_regressions": true,
-                "report404_errors": false,
-                "report_known_bot_errors": false
-              }
-            },
+            "time_zone_offset": -21600000.0,
             "data": {},
             "promoted_tabs": [],
             "custom_content": null,
-            "stack_count": 1,
-            "event_count": 1,
-            "total_event_count": 1,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
         }]
 
 ## Get by organization [/organizations/{id}/projects{?before,after,limit}]
@@ -369,33 +455,20 @@ Project related resources of the **Projects API**
 
 + Response 200 (application/json)
 
-        [{ 
+        [{
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "configuration": {
-              "version": 0,
-              "settings": {
-                "include_conditional_data": "true"
-              }
-            },
-            "notification_settings": {
-              "537b6e77b77efe102444053d": {
-                "mode": 1,
-                "send_daily_summary": true,
-                "report_critical_errors": true,
-                "report_regressions": true,
-                "report404_errors": false,
-                "report_known_bot_errors": false
-              }
-            },
+            "time_zone_offset": -21600000.0,
             "data": {},
             "promoted_tabs": [],
             "custom_content": null,
-            "stack_count": 1,
-            "event_count": 1,
-            "total_event_count": 1,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
         }]
 
 ## Get, Update, Remove [/projects/{id}]
@@ -405,33 +478,20 @@ Project related resources of the **Projects API**
 ### Get by id [GET]
 + Response 200 (application/json)
 
-        { 
+        {
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "configuration": {
-              "version": 0,
-              "settings": {
-                "include_conditional_data": "true"
-              }
-            },
-            "notification_settings": {
-              "537b6e77b77efe102444053d": {
-                "mode": 1,
-                "send_daily_summary": true,
-                "report_critical_errors": true,
-                "report_regressions": true,
-                "report404_errors": false,
-                "report_known_bot_errors": false
-              }
-            },
+            "time_zone_offset": -21600000.0,
             "data": {},
             "promoted_tabs": [],
             "custom_content": null,
-            "stack_count": 1,
-            "event_count": 1,
-            "total_event_count": 1,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
         }
 
 ### Update project [PATCH]
@@ -441,33 +501,20 @@ Project related resources of the **Projects API**
 
 + Response 201 (application/json)
 
-        { 
+        {
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
             "name": "Updated Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "configuration": {
-              "version": 0,
-              "settings": {
-                "include_conditional_data": "true"
-              }
-            },
-            "notification_settings": {
-              "537b6e77b77efe102444053d": {
-                "mode": 1,
-                "send_daily_summary": true,
-                "report_critical_errors": true,
-                "report_regressions": true,
-                "report404_errors": false,
-                "report_known_bot_errors": false
-              }
-            },
+            "time_zone_offset": -21600000.0,
             "data": {},
             "promoted_tabs": [],
             "custom_content": null,
-            "stack_count": 1,
-            "event_count": 1,
-            "total_event_count": 1,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
         }
 
 ### Remove project [DELETE]
@@ -843,8 +890,8 @@ To create a new token, you must specify an organization_id. There are three vali
         {
             "id": "e3d51ea621464280bbcb79c11fd6483e",
             "refresh": null,
-            "created_utc": "2014-07-07T18:59:09.692Z",
-            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "application_id": null,
@@ -863,8 +910,8 @@ To create a new token, you must specify an organization_id. There are three vali
         {
             "id": "e3d51ea621464280bbcb79c11fd6483e",
             "refresh": null,
-            "created_utc": "2014-07-07T18:59:09.692Z",
-            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "application_id": null,
@@ -889,8 +936,8 @@ To create a new token, you must specify an organization_id. There are three vali
         [{
             "id": "e3d51ea621464280bbcb79c11fd6483e",
             "refresh": null,
-            "created_utc": "2014-07-07T18:59:09.692Z",
-            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "application_id": null,
@@ -912,8 +959,8 @@ To create a new token, you must specify an organization_id. There are three vali
         [{
             "id": "e3d51ea621464280bbcb79c11fd6483e",
             "refresh": null,
-            "created_utc": "2014-07-07T18:59:09.692Z",
-            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "application_id": null,
@@ -932,8 +979,8 @@ To create a new token, you must specify an organization_id. There are three vali
         [{
             "id": "e3d51ea621464280bbcb79c11fd6483e",
             "refresh": null,
-            "created_utc": "2014-07-07T18:59:09.692Z",
-            "modified_utc": "2014-07-07T18:59:09.692Z",
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "application_id": null,
@@ -1046,8 +1093,8 @@ Stat related resources of the **Stats API**
 ### Get stats for a given project [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
     + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
     + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
     + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
@@ -1060,426 +1107,426 @@ Stat related resources of the **Stats API**
           "most_frequent": null,
           "most_recent": null,
           "total_limited_by_plan": 0,
-          "start_date": "2014-05-20T09:15:00-05:00",
-          "end_date": "2014-05-21T00:00:00Z",
+          "start_date": "2020-10-16T09:15:00-05:00",
+          "end_date": "2020-10-17T00:00:00Z",
           "stats": [
             {
               "unique_total": 1,
               "new_total": 1,
-              "date": "2014-05-20T09:15:00",
+              "date": "2020-10-16T09:15:00",
               "per_hour_average": 0.0,
               "total": 1
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T09:30:00",
+              "date": "2020-10-16T09:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T09:45:00",
+              "date": "2020-10-16T09:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T10:00:00",
+              "date": "2020-10-16T10:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T10:15:00",
+              "date": "2020-10-16T10:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T10:30:00",
+              "date": "2020-10-16T10:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T10:45:00",
+              "date": "2020-10-16T10:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T11:00:00",
+              "date": "2020-10-16T11:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T11:15:00",
+              "date": "2020-10-16T11:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T11:30:00",
+              "date": "2020-10-16T11:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T11:45:00",
+              "date": "2020-10-16T11:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T12:00:00",
+              "date": "2020-10-16T12:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T12:15:00",
+              "date": "2020-10-16T12:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T12:30:00",
+              "date": "2020-10-16T12:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T12:45:00",
+              "date": "2020-10-16T12:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T13:00:00",
+              "date": "2020-10-16T13:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T13:15:00",
+              "date": "2020-10-16T13:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T13:30:00",
+              "date": "2020-10-16T13:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T13:45:00",
+              "date": "2020-10-16T13:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T14:00:00",
+              "date": "2020-10-16T14:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T14:15:00",
+              "date": "2020-10-16T14:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T14:30:00",
+              "date": "2020-10-16T14:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T14:45:00",
+              "date": "2020-10-16T14:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T15:00:00",
+              "date": "2020-10-16T15:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T15:15:00",
+              "date": "2020-10-16T15:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T15:30:00",
+              "date": "2020-10-16T15:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T15:45:00",
+              "date": "2020-10-16T15:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T16:00:00",
+              "date": "2020-10-16T16:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T16:15:00",
+              "date": "2020-10-16T16:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T16:30:00",
+              "date": "2020-10-16T16:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T16:45:00",
+              "date": "2020-10-16T16:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T17:00:00",
+              "date": "2020-10-16T17:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T17:15:00",
+              "date": "2020-10-16T17:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T17:30:00",
+              "date": "2020-10-16T17:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T17:45:00",
+              "date": "2020-10-16T17:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T18:00:00",
+              "date": "2020-10-16T18:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T18:15:00",
+              "date": "2020-10-16T18:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T18:30:00",
+              "date": "2020-10-16T18:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T18:45:00",
+              "date": "2020-10-16T18:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T19:00:00",
+              "date": "2020-10-16T19:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T19:15:00",
+              "date": "2020-10-16T19:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T19:30:00",
+              "date": "2020-10-16T19:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T19:45:00",
+              "date": "2020-10-16T19:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T20:00:00",
+              "date": "2020-10-16T20:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T20:15:00",
+              "date": "2020-10-16T20:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T20:30:00",
+              "date": "2020-10-16T20:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T20:45:00",
+              "date": "2020-10-16T20:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T21:00:00",
+              "date": "2020-10-16T21:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T21:15:00",
+              "date": "2020-10-16T21:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T21:30:00",
+              "date": "2020-10-16T21:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T21:45:00",
+              "date": "2020-10-16T21:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T22:00:00",
+              "date": "2020-10-16T22:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T22:15:00",
+              "date": "2020-10-16T22:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T22:30:00",
+              "date": "2020-10-16T22:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T22:45:00",
+              "date": "2020-10-16T22:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T23:00:00",
+              "date": "2020-10-16T23:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T23:15:00",
+              "date": "2020-10-16T23:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T23:30:00",
+              "date": "2020-10-16T23:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-20T23:45:00",
+              "date": "2020-10-16T23:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
               "unique_total": 0,
               "new_total": 0,
-              "date": "2014-05-21T00:00:00",
+              "date": "2020-10-17T00:00:00",
               "per_hour_average": 0.0,
               "total": 0
             }
@@ -1493,313 +1540,313 @@ Stat related resources of the **Stats API**
 ### Get stats for a given stack [GET]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
-    + start (optional, date, `2014-05-20T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2014-05-21T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
 
 + Response 200 (application/json)
 
         {
           "total_limited_by_plan": 0,
-          "start_date": "2014-05-20T09:15:00-05:00",
-          "end_date": "2014-05-21T00:00:00Z",
+          "start_date": "2020-10-16T09:15:00-05:00",
+          "end_date": "2020-10-17T00:00:00Z",
           "stats": [
             {
-              "date": "2014-05-20T09:15:00",
+              "date": "2020-10-16T09:15:00",
               "per_hour_average": 0.0,
               "total": 1
             },
             {
-              "date": "2014-05-20T09:30:00",
+              "date": "2020-10-16T09:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T09:45:00",
+              "date": "2020-10-16T09:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T10:00:00",
+              "date": "2020-10-16T10:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T10:15:00",
+              "date": "2020-10-16T10:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T10:30:00",
+              "date": "2020-10-16T10:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T10:45:00",
+              "date": "2020-10-16T10:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T11:00:00",
+              "date": "2020-10-16T11:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T11:15:00",
+              "date": "2020-10-16T11:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T11:30:00",
+              "date": "2020-10-16T11:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T11:45:00",
+              "date": "2020-10-16T11:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T12:00:00",
+              "date": "2020-10-16T12:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T12:15:00",
+              "date": "2020-10-16T12:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T12:30:00",
+              "date": "2020-10-16T12:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T12:45:00",
+              "date": "2020-10-16T12:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T13:00:00",
+              "date": "2020-10-16T13:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T13:15:00",
+              "date": "2020-10-16T13:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T13:30:00",
+              "date": "2020-10-16T13:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T13:45:00",
+              "date": "2020-10-16T13:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T14:00:00",
+              "date": "2020-10-16T14:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T14:15:00",
+              "date": "2020-10-16T14:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T14:30:00",
+              "date": "2020-10-16T14:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T14:45:00",
+              "date": "2020-10-16T14:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T15:00:00",
+              "date": "2020-10-16T15:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T15:15:00",
+              "date": "2020-10-16T15:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T15:30:00",
+              "date": "2020-10-16T15:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T15:45:00",
+              "date": "2020-10-16T15:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T16:00:00",
+              "date": "2020-10-16T16:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T16:15:00",
+              "date": "2020-10-16T16:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T16:30:00",
+              "date": "2020-10-16T16:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T16:45:00",
+              "date": "2020-10-16T16:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T17:00:00",
+              "date": "2020-10-16T17:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T17:15:00",
+              "date": "2020-10-16T17:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T17:30:00",
+              "date": "2020-10-16T17:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T17:45:00",
+              "date": "2020-10-16T17:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T18:00:00",
+              "date": "2020-10-16T18:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T18:15:00",
+              "date": "2020-10-16T18:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T18:30:00",
+              "date": "2020-10-16T18:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T18:45:00",
+              "date": "2020-10-16T18:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T19:00:00",
+              "date": "2020-10-16T19:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T19:15:00",
+              "date": "2020-10-16T19:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T19:30:00",
+              "date": "2020-10-16T19:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T19:45:00",
+              "date": "2020-10-16T19:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T20:00:00",
+              "date": "2020-10-16T20:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T20:15:00",
+              "date": "2020-10-16T20:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T20:30:00",
+              "date": "2020-10-16T20:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T20:45:00",
+              "date": "2020-10-16T20:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T21:00:00",
+              "date": "2020-10-16T21:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T21:15:00",
+              "date": "2020-10-16T21:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T21:30:00",
+              "date": "2020-10-16T21:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T21:45:00",
+              "date": "2020-10-16T21:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T22:00:00",
+              "date": "2020-10-16T22:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T22:15:00",
+              "date": "2020-10-16T22:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T22:30:00",
+              "date": "2020-10-16T22:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T22:45:00",
+              "date": "2020-10-16T22:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T23:00:00",
+              "date": "2020-10-16T23:00:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T23:15:00",
+              "date": "2020-10-16T23:15:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T23:30:00",
+              "date": "2020-10-16T23:30:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-20T23:45:00",
+              "date": "2020-10-16T23:45:00",
               "per_hour_average": 0.0,
               "total": 0
             },
             {
-              "date": "2014-05-21T00:00:00",
+              "date": "2020-10-17T00:00:00",
               "per_hour_average": 0.0,
               "total": 0
             }
@@ -1809,7 +1856,7 @@ Stat related resources of the **Stats API**
           "total": 1
         }
         
-# Group User
+# Group Users
 User related resources of the **Users API**
 
 ## Get by organization [/organizations/{id}/users{?page,limit}]
