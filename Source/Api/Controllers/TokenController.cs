@@ -11,14 +11,11 @@
 
 using System;
 using System.Linq;
-using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -28,15 +25,11 @@ namespace Exceptionless.App.Controllers.API {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IApplicationRepository _applicationRepository;
-        private readonly IOrganizationRepository _organizationRepository; 
         private readonly IProjectRepository _projectRepository;
-        private readonly BillingManager _billingManager;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, BillingManager billingManager) : base(repository) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository) : base(repository) {
             _applicationRepository = applicationRepository;
-            _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _billingManager = billingManager;
         }
 
         #region CRUD
@@ -48,7 +41,7 @@ namespace Exceptionless.App.Controllers.API {
                 return NotFound();
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options);
+            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
@@ -63,7 +56,7 @@ namespace Exceptionless.App.Controllers.API {
                 return NotFound();
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options);
+            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 

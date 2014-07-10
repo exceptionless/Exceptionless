@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options);
+            var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
@@ -52,7 +52,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, string before = null, string after = null, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
             var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var results = _repository.GetByCriteria(criteria, options, sort, paid, suspended);
+            var results = _repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
             return OkWithResourceLinks(results, options.HasMore, i => i.Id);
         }
 

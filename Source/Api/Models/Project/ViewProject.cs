@@ -10,7 +10,6 @@ namespace Exceptionless.Api.Models {
         public string Name { get; set; }
         public string TimeZone { get; set; }
         public double TimeZoneOffset { get; set; }
-        public HashSet<string> ApiKeys { get; set; }
         public DataDictionary Data { get; set; }
         public HashSet<string> PromotedTabs { get; set; }
         public string CustomContent { get; set; }

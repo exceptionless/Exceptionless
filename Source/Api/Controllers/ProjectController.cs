@@ -34,7 +34,7 @@ namespace Exceptionless.Api.Controllers {
         [Route]
         public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
+            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(organizationIds, options);
+            var results = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 

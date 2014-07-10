@@ -20,7 +20,7 @@ using FluentValidation;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, Event, UpdateEvent> {
+    public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
