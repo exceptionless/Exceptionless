@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
             await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
             _statsClient.Counter(StatNames.EventsUserDescriptionQueued);
 
-            return Ok();
+            return StatusCode(HttpStatusCode.Accepted);
         }
 
         [HttpPatch]
