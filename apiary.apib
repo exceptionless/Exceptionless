@@ -8,7 +8,7 @@ Discover errors in your .NET app you never knew were happening and use detailed 
 Event related resources of the **Events API**
 
 ## Create [/events]
-You can create an event by posting any string or json object.
+You can create an event by posting any uncompressed or compressed (`gzip` or `deflate`) string or json object.
 
 ### Create new event [POST]
 You can post any JSON object to create an event. If we know how to handle it we will create a new event. If none of the JSON properties match the `event` object then we will create a new event and place your JSON object into the events data collection.
@@ -24,7 +24,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
         Exceptionless is amazing!
         Exceptionless is really amazing!
 
-+ Response 200
++ Response 202
 
 ## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
 You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
@@ -37,12 +37,11 @@ You can also save an end users contact information and a description of the even
 + Request UserDescription from JSON (application/json)
 
         { 
-            "email_address": "test@test.com",
+            "email_address": "noreply@exceptionless.com",
             "description": "This product is amazing!"
         }
-
     
-+ Response 200
++ Response 202
 
 ## Get [/events/{id}]
 ### Get by id [GET]
@@ -298,9 +297,6 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "api_keys": [
-              "e3d51ea621464280bbcb79c11fd6483e"
-            ],
             "configuration": {
               "version": 0,
               "settings": {
@@ -339,9 +335,6 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "api_keys": [
-              "e3d51ea621464280bbcb79c11fd6483e"
-            ],
             "configuration": {
               "version": 0,
               "settings": {
@@ -381,9 +374,6 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "api_keys": [
-              "e3d51ea621464280bbcb79c11fd6483e"
-            ],
             "configuration": {
               "version": 0,
               "settings": {
@@ -420,9 +410,6 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "name": "Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "api_keys": [
-              "e3d51ea621464280bbcb79c11fd6483e"
-            ],
             "configuration": {
               "version": 0,
               "settings": {
@@ -459,9 +446,6 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "name": "Updated Disintegrating Pistol",
             "time_zone": "Central Standard Time",
-            "api_keys": [
-              "e3d51ea621464280bbcb79c11fd6483e"
-            ],
             "configuration": {
               "version": 0,
               "settings": {
@@ -488,32 +472,6 @@ Project related resources of the **Projects API**
 
 ### Remove project [DELETE]
 + Response 204
-
-## Get default api key [/projects/{id}/apikeys/default]
-### Get the default api key [GET]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    
-+ Response 200 (application/json)
-
-        { "key": "e3d51ea621464280bbcb79c11fd6483e" }
-
-## Create api key [/projects/{id}/apikeys]
-### Create a new api key [POST]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-
-+ Response 200 (application/json)
-
-        { "key": "100650f3b77efe23a4791411" }
-
-## Remove api key [/projects/{id}/apikeys/{apikey}]
-### Remove api key [DELETE]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + apikey (required, string, `100650f3b77efe23a4791411`) ... The api key that should be removed.
-
-+ Response 200
 
 ## Reset project data [/projects/{id}/reset-data]
 ### Reset project data [GET]
