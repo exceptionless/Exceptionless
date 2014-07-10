@@ -26,6 +26,24 @@ You can also post a multiline string. We automatically split strings by the `\n`
 
 + Response 200
 
+## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
+You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
+
+### Sets the user description for a specific event [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
+
++ Request UserDescription from JSON (application/json)
+
+        { 
+            "email_address": "test@test.com",
+            "description": "This product is amazing!"
+        }
+
+    
++ Response 200
+
 ## Get [/events/{id}]
 ### Get by id [GET]
 + Parameters
