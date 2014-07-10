@@ -82,6 +82,36 @@ You can also post a multiline string. We automatically split strings by the `\n`
             "is_error": false
           }]
 
+## Get by reference id [/projects/{id}/events/by-ref/{reference_id}]
+### List all events for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
+    
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": "1234567890",
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+
 ## Get by project [/projects/{id}/events{?before,after,limit}]
 ### List all events for a given project [GET]
 + Parameters
