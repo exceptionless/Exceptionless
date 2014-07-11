@@ -38,6 +38,12 @@
     <DocumentationFile>bin\Release\$(TargetFrameworkVersion)\Exceptionless.Web.xml</DocumentationFile>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET40' ">
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET45' ">
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>

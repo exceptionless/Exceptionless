@@ -25,19 +25,19 @@ properties {
     $sign_file = "$source_dir\Exceptionless.snk"
 
     $client_projects = @(
-        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	    ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; }
-        #@{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        #@{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        #@{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
-        #@{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        #@{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        #@{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
+        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
+        @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; }
+        @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; }
     )
 
     $client_build_configurations = @(
-        @{ Constants = "PORTABLE40;EMBEDDED";	TargetFrameworkVersion = "v4.0"; NuGetDir = "portable-net40+sl50+win+wpa81+wp80"; }
-        #@{ Constants = "EMBEDDED;NET40;"; 					TargetFrameworkVersion = "v4.0"; NuGetDir = "net40"; },
-        #@{ Constants = "EMBEDDED;NET45;"; 					TargetFrameworkVersion = "v4.5"; NuGetDir = "net45"; }
+        @{ Constants = "EMBEDDED;PORTABLE40";	TargetFrameworkVersionProperty="NET40";	NuGetDir = "portable-net40+sl50+win+wpa81+wp80"; }
+        @{ Constants = "EMBEDDED;PORTABLE40"; 	TargetFrameworkVersionProperty="NET40";	NuGetDir = "net40"; },
+        @{ Constants = "EMBEDDED;PORTABLE40"; 	TargetFrameworkVersionProperty="NET45";	NuGetDir = "net45"; }
     )
 
     $client_test_projects = @(
@@ -45,7 +45,7 @@ properties {
     )
 
     $server_test_projects = @(
-        @{ Name = "Exceptionless.Api.Tests";		BuildDir = "$source_dir\Api.Tests\bin\$configuration"; }
+        @{ Name = "Exceptionless.Api.Tests";	BuildDir = "$source_dir\Api.Tests\bin\$configuration"; }
     )
 }
 
@@ -82,25 +82,25 @@ task Init -depends Clean {
     Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version
 }
 
-task BuildClient -depends Init {			
+task BuildClient -depends Init {
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+			If ((($($p.Name) -eq "Exceptionless") -and ($($b.Constants) -ne "EMBEDDED;PORTABLE40")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.Constants) -eq "EMBEDDED;PORTABLE40"))) {
                 Continue;
             }
 
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
             
-            TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersion))" 
+            TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersionProperty))" 
             exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
                 /p:Configuration="$configuration" `
                 /p:Platform="AnyCPU" `
                 /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
                 /p:OutputPath="$outputDirectory" `
-                /p:TargetFrameworkVersion="$($b.TargetFrameworkVersion)" `
+                /p:TargetFrameworkVersionProperty="$($b.TargetFrameworkVersionProperty)" `
                 /t:"Rebuild" }
             
-            TeamCity-ReportBuildFinish "Finished building $($p.Name) ($($b.TargetFrameworkVersion))"
+            TeamCity-ReportBuildFinish "Finished building $($p.Name) ($($b.TargetFrameworkVersionProperty))"
         }
     }
 
@@ -156,7 +156,7 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.Nancy") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+			If ((($($p.Name) -eq "Exceptionless") -and ($($b.Constants) -ne "EMBEDDED;PORTABLE40")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.Constants) -eq "EMBEDDED;PORTABLE40"))) {
                 Continue;
             }
 
@@ -165,7 +165,7 @@ task PackageClient -depends TestClient {
             Create-Directory $workingLibDirectory
 
             #If ($($p.MergeDependencies) -ne $null) {
-            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersion)"
+            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersionProperty)"
             #} else {
             #	Copy-Item -Path "$buildDirectory\$($p.Name).dll" -Destination $workingLibDirectory
             #}

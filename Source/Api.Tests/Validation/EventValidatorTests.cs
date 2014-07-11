@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1234567", false)]
         [InlineData("12345678", true)]
         [InlineData("1234567890123456", true)]
-        [InlineData("12345678901234567", false)]
+        [InlineData("123456789012345678901234567890123", false)]
         public void ValidateReferenceId(string referenceId, bool isValid) {
             var result = _validator.Validate(new Event { Type = Event.KnownTypes.Error, ReferenceId = referenceId });
             Assert.Equal(isValid, result.IsValid);

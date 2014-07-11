@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Extras;
@@ -14,7 +13,7 @@ using Exceptionless.Storage;
 using Exceptionless.Utility;
 
 namespace Exceptionless {
-    public static class ExceptionlessConfigurationExtensions {
+    public static class ExceptionlessExtraConfigurationExtensions {
         /// <summary>
         /// Reads the Exceptionless configuration from the app.config or web.config file.
         /// </summary>
@@ -72,7 +71,7 @@ namespace Exceptionless {
             try {
                 section = ConfigurationManager.GetSection("exceptionless") as ExceptionlessSection;
             } catch (Exception ex) {
-                config.Resolver.GetLog().Error(typeof(ExceptionlessConfigurationExtensions), ex, String.Concat("An error occurred while retrieving the configuration section. Exception: ", ex.Message));
+                config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Concat("An error occurred while retrieving the configuration section. Exception: ", ex.Message));
             }
 
             if (section == null)

@@ -32,6 +32,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET40' ">
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET45' ">
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Nancy">
       <HintPath>..\..\..\packages\Nancy.0.23.0\lib\net40\Nancy.dll</HintPath>

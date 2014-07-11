@@ -30,6 +30,12 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET40' ">
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET45' ">
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
@@ -47,7 +53,7 @@
     <Compile Include="ExceptionlessSection.cs" />
     <Compile Include="Extensions\EventBuilderExtensions.cs" />
     <Compile Include="Extensions\ExceptionlessClientExtensions.cs" />
-    <Compile Include="Extensions\ExceptionlessConfigurationExtensions.cs" />
+    <Compile Include="Extensions\ExceptionlessExtraConfigurationExtensions.cs" />
     <Compile Include="Extensions\ReflectionExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Extensions\ToErrorModelExtensions.cs" />

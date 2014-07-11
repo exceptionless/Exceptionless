@@ -7,7 +7,6 @@
 
 #endregion
 
-#if !PORTABLE40
 using System.Configuration;
 using System;
 
@@ -44,5 +43,3 @@ namespace Exceptionless {
         public NameValueConfigurationCollection ExtendedData { get { return this["data"] as NameValueConfigurationCollection; } set { this["data"] = value; } }
     }
 }
-
-#endif
