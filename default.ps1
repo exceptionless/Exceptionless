@@ -85,7 +85,7 @@ task Init -depends Clean {
 task BuildClient -depends Init {
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-			If ((($($p.Name) -eq "Exceptionless") -and ($($b.Constants) -ne "EMBEDDED;PORTABLE40")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.Constants) -eq "EMBEDDED;PORTABLE40"))) {
+            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
 
@@ -156,7 +156,7 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-			If ((($($p.Name) -eq "Exceptionless") -and ($($b.Constants) -ne "EMBEDDED;PORTABLE40")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.Constants) -eq "EMBEDDED;PORTABLE40"))) {
+            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
 

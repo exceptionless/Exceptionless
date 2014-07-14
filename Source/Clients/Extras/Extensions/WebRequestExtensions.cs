@@ -25,8 +25,8 @@ namespace Exceptionless.Extras.Extensions {
             return Task.Factory.FromAsync<Stream>(request.BeginGetRequestStream, request.EndGetRequestStream, null);
         }
 
-        public static Task<HttpWebResponse> GetResponseAsync(this WebRequest request) {
-            return Task.Factory.FromAsync<WebResponse>(request.BeginGetResponse, request.EndGetResponse, null).Then(t => t.Result as HttpWebResponse);
+        public static Task<WebResponse> GetResponseAsync(this WebRequest request) {
+            return Task.Factory.FromAsync<WebResponse>(request.BeginGetResponse, request.EndGetResponse, null);
         }
 
         public static void AddAuthorizationHeader(this WebRequest request, ExceptionlessConfiguration configuration) {
@@ -47,7 +47,7 @@ namespace Exceptionless.Extras.Extensions {
                 request.Headers[ExceptionlessHeaders.Client] = userAgent;
         }
 
-        public static Task<HttpWebResponse> PostJsonAsyncWithCompression(this HttpWebRequest request, string data) {
+        public static Task<WebResponse> PostJsonAsyncWithCompression(this HttpWebRequest request, string data) {
             // don't compress data smaller than 4kb
             bool shouldCompress = data.Length > 1024 * 4;
             request.Accept = request.ContentType = JSON_CONTENT_TYPE;
@@ -72,7 +72,7 @@ namespace Exceptionless.Extras.Extensions {
             });
         }
 
-        public static Task<HttpWebResponse> GetJsonAsync(this HttpWebRequest request) {
+        public static Task<WebResponse> GetJsonAsync(this HttpWebRequest request) {
             request.Accept = JSON_CONTENT_TYPE;
             request.Method = "GET";
 

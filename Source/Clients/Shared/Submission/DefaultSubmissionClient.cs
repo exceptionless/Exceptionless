@@ -24,7 +24,7 @@ namespace Exceptionless.Submission {
             HttpWebResponse response;
             try {
                 var request = CreateHttpWebRequest(config, "events");
-                response = request.PostJsonAsync(data).Result;
+                response = request.PostJsonAsync(data).Result as HttpWebResponse;
             } catch (AggregateException aex) {
                 var ex = aex.GetInnermostException() as WebException;
                 if (ex != null)
@@ -48,7 +48,7 @@ namespace Exceptionless.Submission {
             HttpWebResponse response;
             try {
                 var request = CreateHttpWebRequest(config, String.Format("events/by-ref/{0}/user-description", referenceId));
-                response = request.PostJsonAsync(data).Result;
+                response = request.PostJsonAsync(data).Result as HttpWebResponse;
             } catch (AggregateException aex) {
                 var ex = aex.GetInnermostException() as WebException;
                 if (ex != null)
@@ -66,7 +66,7 @@ namespace Exceptionless.Submission {
             HttpWebResponse response;
             try {
                 var request = CreateHttpWebRequest(config, "projects/config");
-                response = request.GetJsonAsync().Result;
+                response = request.GetJsonAsync().Result as HttpWebResponse;
             } catch (Exception ex) {
                 var message = String.Concat("Unable to retrieve configuration settings. Exception: ", ex.GetMessage());
                 return new SettingsResponse(false, message: message);
