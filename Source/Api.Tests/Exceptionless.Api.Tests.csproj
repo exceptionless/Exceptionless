@@ -147,6 +147,7 @@
     <Compile Include="Miscellaneous\DeltaTests.cs" />
     <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
     <Compile Include="Miscellaneous\RunTests.cs" />
+    <Compile Include="Pipeline\EventPipelineTests.cs" />
     <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Queue\InMemoryQueueTests.cs" />
     <Compile Include="Queue\Samples.cs" />
@@ -169,6 +170,7 @@
     <Compile Include="Utility\TestConstants.cs" />
     <Compile Include="Utility\UserData.cs" />
     <Compile Include="Validation\EventValidatorTests.cs" />
+    <Compile Include="Plugins\WebHookDataTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
@@ -222,6 +224,10 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
+    <None Include="Plugins\WebHookData\v1.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

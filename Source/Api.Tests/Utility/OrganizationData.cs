@@ -33,13 +33,13 @@ namespace Exceptionless.Tests.Utility {
         }
 
         public static Organization GenerateSampleOrganization() {
-            return GenerateOrganization(id: TestConstants.OrganizationId, inviteEmail: TestConstants.InvitedOrganizationUserEmail);
+            return GenerateOrganization(id: TestConstants.OrganizationId, name: "Acme", inviteEmail: TestConstants.InvitedOrganizationUserEmail);
         }
 
-        public static Organization GenerateOrganization(bool generateId = false, string id = null, string inviteEmail = null, bool isSuspended = false) {
+        public static Organization GenerateOrganization(bool generateId = false, string name = null, string id = null, string inviteEmail = null, bool isSuspended = false) {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
-                Name = String.Concat("Organization ", ObjectId.GenerateNewId().ToString()),
+                Name = name ?? String.Format("Organization{0}", id),
                 IsSuspended = isSuspended
             };
 

@@ -20,6 +20,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -36,6 +37,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly EventStatsHelper _statsHelper;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
@@ -43,14 +45,15 @@ namespace Exceptionless.Api.Controllers {
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
-            EventStatsHelper statsHelper, IQueue<WebHookNotification> webHookNotificationQueue, 
-            BillingManager billingManager, DataHelper dataHelper) : base(stackRepository) {
+            WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
+            EventStatsHelper statsHelper, BillingManager billingManager, DataHelper dataHelper) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _webHookRepository = webHookRepository;
-            _statsHelper = statsHelper;
+            _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
+            _statsHelper = statsHelper;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
         }
@@ -174,10 +177,11 @@ namespace Exceptionless.Api.Controllers {
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
             foreach (WebHook hook in promotedProjectHooks) {
+                var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
                 _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     ProjectId = hook.ProjectId,
                     Url = hook.Url,
-                    Data = WebHookStack.FromStack(stack, _projectRepository, _organizationRepository)
+                    Data = _webHookDataPluginManager.CreateFromStack(context)
                 });
                 // TODO: Add stats metrics for webhooks.
             }

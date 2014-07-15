@@ -35,13 +35,13 @@ namespace Exceptionless.Tests.Utility {
             return GenerateStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
         }
 
-        public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
+        public static Stack GenerateStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string title = null, string signatureHash = null) {
             var stack = new Stack {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
-                Title = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50)),
-                SignatureHash = RandomHelper.GetPronouncableString(10),
+                Title = title ?? RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50)),
+                SignatureHash = signatureHash ?? RandomHelper.GetPronouncableString(10),
                 SignatureInfo = new SettingsDictionary()
             };
 

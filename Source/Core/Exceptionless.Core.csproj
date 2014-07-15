@@ -167,6 +167,13 @@
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
+    <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
+    <Compile Include="Plugins\WebHook\Default\V2_WebHookDataPlugin.cs" />
+    <Compile Include="Plugins\WebHook\Default\V1_WebHookDataPlugin.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataContext.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataPluginManager.cs" />
+    <Compile Include="Plugins\WebHook\WebHookDataPluginBase.cs" />
+    <Compile Include="Plugins\WebHook\IWebHookDataPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\30_SimpleErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\10_NotFoundPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />

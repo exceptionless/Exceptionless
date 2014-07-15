@@ -36,12 +36,24 @@ namespace Exceptionless {
             return null;
         }
 
+        // TODO: We have a bunch of extensions in the models project as well. These should be consolidated.
         public static RequestInfo GetRequestInfo(this Event ev, IJsonSerializer serializer = null) {
             if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.RequestInfo))
                 return null;
 
             try {
                 return ev.Data.GetValue<RequestInfo>(Event.KnownDataKeys.RequestInfo, serializer);
+            } catch (Exception) {}
+
+            return null;
+        }
+
+        public static EnvironmentInfo GetEnvironmentInfo(this Event ev, IJsonSerializer serializer = null) {
+            if (ev == null || !ev.Data.ContainsKey(Event.KnownDataKeys.EnvironmentInfo))
+                return null;
+
+            try {
+                return ev.Data.GetValue<EnvironmentInfo>(Event.KnownDataKeys.EnvironmentInfo, serializer);
             } catch (Exception) {}
 
             return null;

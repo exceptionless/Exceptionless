@@ -12,8 +12,8 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -26,18 +26,16 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly IStackRepository _stackRepository;
-        private readonly IOrganizationRepository _organizationRepository;
+        private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHookNotificationQueue, IWebHookRepository webHookRepository,
-            IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
+        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, 
+            IQueue<WebHookNotification> webHookNotificationQueue, 
+            IWebHookRepository webHookRepository,
+            WebHookDataPluginManager webHookDataPluginManager) {
             _notificationQueue = notificationQueue;
             _webHookNotificationQueue = webHookNotificationQueue;
             _webHookRepository = webHookRepository;
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
-            _stackRepository = stackRepository;
+            _webHookDataPluginManager = webHookDataPluginManager;
         }
 
         protected override bool ContinueOnError { get { return true; } }
@@ -67,10 +65,11 @@ namespace Exceptionless.Core.Pipeline {
 
                 Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
 
+                var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
                 _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
                     ProjectId = ctx.Event.ProjectId,
                     Url = hook.Url,
-                    Data = WebHookEvent.FromEvent(ctx, _projectRepository, _stackRepository, _organizationRepository)
+                    Data = _webHookDataPluginManager.CreateFromEvent(context)
                 }).Wait();
             }
         }

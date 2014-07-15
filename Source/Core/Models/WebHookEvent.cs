@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Plugins.EventProcessor;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Models {
@@ -39,54 +37,5 @@ namespace Exceptionless.Core.Models {
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
         public bool IsCritical { get { return Tags != null && Tags.Contains("Critical"); } }
-
-        public static WebHookEvent FromEvent(EventContext ctx, IProjectRepository projectRepository, IStackRepository stackRepository, IOrganizationRepository organizationRepository) {
-            if (ctx == null || ctx.Event == null)
-                throw new ArgumentNullException("ctx");
-
-            if (projectRepository == null)
-                throw new ArgumentNullException("projectRepository");
-
-            if (stackRepository == null)
-                throw new ArgumentNullException("stackRepository");
-
-            if (organizationRepository == null)
-                throw new ArgumentNullException("organizationRepository");
-
-            var project = projectRepository.GetById(ctx.Event.ProjectId);
-            if (project == null)
-                throw new ArgumentException("ProjectId not found.");
-
-            var organization = organizationRepository.GetById(ctx.Event.OrganizationId);
-            if (organization == null)
-                throw new ArgumentException("OrganizationId not found.");
-
-            var errorStack = stackRepository.GetById(ctx.Event.StackId);
-            if (errorStack == null)
-                throw new ArgumentException("ErrorStackId not found.");
-
-            return new WebHookEvent {
-                Id = ctx.Event.Id,
-                OccurrenceDate = ctx.Event.Date,
-                Tags = ctx.Event.Tags,
-                Message = ctx.Event.Message,
-                Type = ctx.Event.Type,
-                Source = ctx.Event.Source,
-                ProjectId = ctx.Event.ProjectId,
-                ProjectName = project.Name,
-                OrganizationId = ctx.Event.OrganizationId,
-                OrganizationName = organization.Name,
-                StackId = ctx.Event.StackId,
-                StackTitle = errorStack.Title,
-                StackDescription = errorStack.Description,
-                StackTags = errorStack.Tags,
-                TotalOccurrences = errorStack.TotalOccurrences,
-                FirstOccurrence = errorStack.FirstOccurrence,
-                LastOccurrence = errorStack.LastOccurrence,
-                DateFixed = errorStack.DateFixed,
-                IsRegression = ctx.IsRegression,
-                IsNew = ctx.IsNew
-            };
-        }
     }
 }
