@@ -47,7 +47,6 @@ namespace Exceptionless.Core.Pipeline {
 
                 string signatureHash = ctx.StackSignatureData.Values.Any(v => v != null) ? ctx.StackSignatureData.Values.ToSHA1() : null;
                 ctx.SetProperty("__SignatureHash", signatureHash);
-                ctx.Event.SummaryHtml = _pluginManager.GetEventSummaryHtml(ctx.Event);
 
                 ctx.StackInfo = _stackRepository.GetStackInfoBySignatureHash(ctx.Event.ProjectId, signatureHash);
                 if (ctx.StackInfo == null) {
@@ -89,6 +88,8 @@ namespace Exceptionless.Core.Pipeline {
                 if (ctx.Stack == null)
                     return;
 
+                ctx.SetProperty("__SignatureHash", ctx.Stack.SignatureHash);
+
                 if (ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
                     if (ctx.Stack.Tags == null)
                         ctx.Stack.Tags = new TagSet();
@@ -104,13 +105,15 @@ namespace Exceptionless.Core.Pipeline {
                     Id = ctx.Stack.Id,
                     DateFixed = ctx.Stack.DateFixed,
                     OccurrencesAreCritical = ctx.Stack.OccurrencesAreCritical,
-                    IsHidden = ctx.Stack.IsHidden
+                    IsHidden = ctx.Stack.IsHidden,
                 };
             }
 
             // sync the fixed and hidden flags to the error occurrence
             ctx.Event.IsFixed = ctx.StackInfo.DateFixed.HasValue;
             ctx.Event.IsHidden = ctx.StackInfo.IsHidden;
+
+            ctx.Event.SummaryHtml = _pluginManager.GetEventSummaryHtml(ctx.Event);
         }
     }
 }
