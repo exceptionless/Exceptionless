@@ -33,38 +33,40 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public void Run(PersistentEvent ev) {
+            Run(new EventContext(ev));
+        }
+
+        protected override void Run(EventContext context, IEnumerable<Type> actionTypes) {
             _statsClient.Counter(StatNames.EventsSubmitted);
             try {
-                _statsClient.Time(() => {
-                    if (String.IsNullOrEmpty(ev.ProjectId))
-                        throw new ArgumentException("ProjectId must be populated on the Event.");
+                if (String.IsNullOrEmpty(context.Event.ProjectId))
+                    throw new ArgumentException("ProjectId must be populated on the Event.");
 
-                    var project = _projectRepository.GetById(ev.ProjectId, true);
-                    if (project == null)
-                        throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", ev.ProjectId));
+                if (context.Project == null)
+                    context.Project = _projectRepository.GetById(context.Event.ProjectId, true);
 
-                    if (String.IsNullOrEmpty(ev.OrganizationId))
-                        ev.OrganizationId = project.OrganizationId;
+                if (context.Project == null)
+                    throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", context.Event.ProjectId));
 
-                    var ctx = new EventContext(ev) {
-                        Organization = _organizationRepository.GetById(ev.OrganizationId, true),
-                        Project = project
-                    };
+                if (String.IsNullOrEmpty(context.Event.OrganizationId))
+                    context.Event.OrganizationId = context.Project.OrganizationId;
 
-                    if (ctx.Organization == null)
-                        throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", ev.OrganizationId));
+                if (context.Organization == null)
+                    context.Organization = _organizationRepository.GetById(context.Event.OrganizationId, true);
 
-                    // load organization settings into the context
-                    foreach (var key in ctx.Organization.Data.Keys)
-                        ctx.SetProperty(key, ctx.Organization.Data[key]);
+                if (context.Organization == null)
+                    throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", context.Event.OrganizationId));
 
-                    // load project settings into the context, overriding any organization settings with the same name
-                    foreach (var key in ctx.Project.Data.Keys)
-                        ctx.SetProperty(key, ctx.Project.Data[key]);
+                // load organization settings into the context
+                foreach (var key in context.Organization.Data.Keys)
+                    context.SetProperty(key, context.Organization.Data[key]);
 
-                    Run(ctx);
-                }, StatNames.EventsProcessingTime);
-            } catch (Exception ex) {
+                // load project settings into the context, overriding any organization settings with the same name
+                foreach (var key in context.Project.Data.Keys)
+                    context.SetProperty(key, context.Project.Data[key]);
+
+                _statsClient.Time(() => base.Run(context, actionTypes), StatNames.EventsProcessingTime);
+            } catch (Exception) {
                 _statsClient.Counter(StatNames.EventsProcessErrors);
                 throw;
             }
