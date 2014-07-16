@@ -172,6 +172,7 @@
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
     <Compile Include="Models\Token\ViewToken.cs" />
+    <Compile Include="Models\WebHook\NewWebHook.cs" />
     <Compile Include="Providers\ExceptionlessOAuthBearerAuthenticationProvider.cs" />
     <Compile Include="Providers\ExceptionlessTokenProvider.cs" />
     <Compile Include="App_Start\IdentityConfig.cs" />

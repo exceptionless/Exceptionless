@@ -14,6 +14,7 @@ using System.Net;
 using System.Web.Http;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -26,7 +27,7 @@ using Newtonsoft.Json.Linq;
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/webhooks")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, WebHook, WebHook> {
+    public class WebHookController : RepositoryApiController<IWebHookRepository, WebHook, WebHook, NewWebHook, NewWebHook> {
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
 
@@ -60,14 +61,14 @@ namespace Exceptionless.App.Controllers.API {
 
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(WebHook value) {
+        public override IHttpActionResult Post(NewWebHook value) {
             return base.Post(value);
         }
 
         [HttpPut]
         [HttpPatch]
         [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<WebHook> changes) {
+        public override IHttpActionResult Patch(string id, Delta<NewWebHook> changes) {
             return base.Patch(id, changes);
         }
 
