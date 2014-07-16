@@ -86,6 +86,7 @@ namespace Exceptionless.App.Controllers.API {
         /// <returns></returns>
         [HttpPost]
         [Route("subscribe")]
+        [Route("~/api/v1/projecthook/subscribe")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Subscribe(JObject data) {
@@ -112,11 +113,10 @@ namespace Exceptionless.App.Controllers.API {
         /// <summary>
         /// This controller action is called by zapier to remove a hook subscription.
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
         [HttpPost]
         [AllowAnonymous]
         [Route("unsubscribe")]
+        [Route("~/api/v1/projecthook/unsubscribe")]
         public IHttpActionResult Unsubscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
 
@@ -133,10 +133,10 @@ namespace Exceptionless.App.Controllers.API {
         /// <summary>
         /// This controller action is called by zapier to test auth.
         /// </summary>
-        /// <returns></returns>
         [HttpGet]
         [HttpPost]
         [Route("test")]
+        [Route("~/api/v1/projecthook/test")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public IHttpActionResult Test() {

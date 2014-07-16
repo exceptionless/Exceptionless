@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Incoming event empty");
             }
 
-            _stripeEventHandler.HandleEventAsync(stripeEvent);
+            await _stripeEventHandler.HandleEventAsync(stripeEvent);
 
             return Ok();
         }

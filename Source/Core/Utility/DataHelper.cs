@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Utility {
             }
         }
 
-        public async Task ResetStackDataASync(string stackId) {
+        public async Task ResetStackDataAsync(string stackId) {
             if (String.IsNullOrEmpty(stackId))
                 return;
 

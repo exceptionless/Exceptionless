@@ -19,7 +19,6 @@ using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
@@ -93,11 +92,17 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// This controller action is called by zapier to mark the stack as fixed.
         /// </summary>
-        /// <param name="data"></param>
         [HttpPost]
-        [Route("{id:objectid}/mark-fixed")]
-        public IHttpActionResult MarkFixed(JObject data) {
-            var id = data.GetValue("ErrorStack").Value<string>();
+        [Route("~/api/v{version:int=1}/stack/mark-fixed")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        public IHttpActionResult MarkFixed(JObject data, int version = 1) {
+            string id = null;
+            if (version == 1)
+                id = data.GetValue("ErrorStack").Value<string>();
+            else if (version > 1)
+                id = data.GetValue("Stack").Value<string>();
+
             if (String.IsNullOrEmpty(id))
                 return BadRequest();
 
@@ -105,6 +110,49 @@ namespace Exceptionless.Api.Controllers {
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
             return MarkFixed(id);
+        }
+
+        // TODO: Add attribute validation for the url.
+        [HttpPost]
+        [Route("{id:objectid}/add-link/{url:minlength(3)}")]
+        public IHttpActionResult AddLink(string id, string url) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (String.IsNullOrEmpty(url))
+                return BadRequest();
+
+            if (!stack.References.Contains(url)) {
+                stack.References.Add(url);
+                _stackRepository.Save(stack);
+            }
+
+            return Ok();
+        }
+
+        /// <summary>
+        /// This controller action is called by zapier to add a reference link to a stack.
+        /// </summary>
+        [HttpPost]
+        [Route("~/api/v{version:int=1}/stack/add-link")]
+        [OverrideAuthorization]
+        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        public IHttpActionResult AddLink(JObject data, int version = 1) {
+            string id = null;
+            if (version == 1)
+                id = data.GetValue("ErrorStack").Value<string>();
+            else if (version > 1)
+                id = data.GetValue("Stack").Value<string>();
+
+            if (String.IsNullOrEmpty(id))
+                return BadRequest();
+
+            if (id.StartsWith("http"))
+                id = id.Substring(id.LastIndexOf('/') + 1);
+
+            var url = data.GetValue("Link").Value<string>();
+            return AddLink(id, url);
         }
 
         [HttpDelete]
@@ -184,37 +232,6 @@ namespace Exceptionless.Api.Controllers {
                     Data = _webHookDataPluginManager.CreateFromStack(context)
                 });
                 // TODO: Add stats metrics for webhooks.
-            }
-
-            return Ok();
-        }
-
-        // TODO: Look into refactoring this.
-        /// <summary>
-        /// This controller action is called by zapier to add a reference link to a stack.
-        /// </summary>
-        /// <param name="data"></param>
-        [HttpPost]
-        [Route("add-link")]
-        public IHttpActionResult AddLink(JObject data) {
-            var id = data.GetValue("stack").Value<string>();
-            if (String.IsNullOrEmpty(id))
-                return BadRequest();
-
-            if (id.StartsWith("http"))
-                id = id.Substring(id.LastIndexOf('/') + 1);
-
-            Stack stack = _stackRepository.GetById(id);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return BadRequest();
-
-            var url = data.GetValue("link").Value<string>();
-            if (String.IsNullOrEmpty(url))
-                return BadRequest();
-
-            if (!stack.References.Contains(url)) {
-                stack.References.Add(url);
-                _stackRepository.Save(stack);
             }
 
             return Ok();
@@ -342,7 +359,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            await _dataHelper.ResetStackDataASync(id);
+            await _dataHelper.ResetStackDataAsync(id);
             return Ok();
         }
 
