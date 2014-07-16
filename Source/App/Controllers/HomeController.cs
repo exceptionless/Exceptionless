@@ -90,8 +90,8 @@ namespace Exceptionless.App.Controllers {
                 return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo Not Working: " + ex.Message);
             }
 
-            if (!_notificationSender.IsListening())
-                return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
+            //if (!_notificationSender.IsListening())
+            //    return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
 
             return new ContentResult { Content = "All Systems Check" };
         }
