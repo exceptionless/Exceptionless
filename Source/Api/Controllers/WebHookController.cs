@@ -166,7 +166,7 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanAdd(value);
         }
 
-        protected override PermissionResult CanUpdate(WebHook original, Delta<WebHook> changes) {
+        protected override PermissionResult CanUpdate(WebHook original, Delta<NewWebHook> changes) {
             if (!IsInProject(original.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
             
