@@ -11,15 +11,21 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
     public class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
         private readonly IEventRepository _eventRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository, IProjectRepository projectRepository) {
             _cacheClient = cacheClient;
             _eventRepository = eventRepository;
+            _projectRepository = projectRepository;
         }
 
         public override void EventProcessing(EventContext context) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                return;
+
+            var project = _projectRepository.GetById(context.Event.ProjectId);
+            if (project == null || !project.DeleteBotDataEnabled)
                 return;
 
             // Throttle errors by client ip address to no more than X every 5 minutes.
