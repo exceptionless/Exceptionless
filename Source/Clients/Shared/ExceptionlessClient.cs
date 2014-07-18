@@ -36,6 +36,7 @@ namespace Exceptionless {
             configuration.Resolver.Register(typeof(ExceptionlessConfiguration), () => Configuration);
             _log = new Lazy<IExceptionlessLog>(() => Configuration.Resolver.GetLog());
             _queue = new Lazy<IEventQueue>(() => {
+                // TODO: Should the constructor of the IEventQueue lock configuration?
                 // config can't be changed after the queue starts up.
                 Configuration.LockConfig();
                 return Configuration.Resolver.GetEventQueue();

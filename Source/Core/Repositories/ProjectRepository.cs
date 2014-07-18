@@ -18,6 +18,7 @@ using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
@@ -145,8 +146,27 @@ namespace Exceptionless.Core.Repositories {
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
        
-        // TODO: Should we set an index on project and configuration key name.
-        
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
+            // TODO: Should we set an index on project and configuration key name.
+        }
+
+        protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
+            base.ConfigureClassMap(cm);
+            cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
+            cm.GetMemberMap(c => c.TimeZone).SetElementName(FieldNames.TimeZone);
+            cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
+            cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.StackCount).SetElementName(FieldNames.StackCount);
+            cm.GetMemberMap(c => c.EventCount).SetElementName(FieldNames.EventCount);
+            cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
+            cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
+            cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);
+
+            cm.GetMemberMap(c => c.PromotedTabs).SetElementName(FieldNames.PromotedTabs).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).PromotedTabs.Any());
+            cm.GetMemberMap(c => c.NotificationSettings).SetElementName(FieldNames.NotificationSettings).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).NotificationSettings.Any());
+        }
+
         #endregion
     }
 }

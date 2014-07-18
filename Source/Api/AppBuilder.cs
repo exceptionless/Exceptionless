@@ -1,9 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -12,20 +10,21 @@ using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Providers;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
-using Exceptionless.Serializer;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
-using Microsoft.Owin.Extensions;
 using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.Security.OAuth;
 using Microsoft.Owin.StaticFiles;
+using MongoDB.Driver;
 using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
@@ -40,6 +39,16 @@ namespace Exceptionless.Api {
         public static void BuildWithContainer(IAppBuilder app, Container container, bool registerExceptionlessClient = true) {
             if (container == null)
                 throw new ArgumentNullException("container");
+
+            // if enabled, auto upgrade the database
+            if (Settings.Current.ShouldAutoUpgradeDatabase) {
+                var url = new MongoUrl(Settings.Current.MongoConnectionString);
+                string databaseName = url.DatabaseName;
+                if (Settings.Current.AppendMachineNameToDatabase)
+                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
+
+                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
+            }
 
             var config = new HttpConfiguration();
             config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));

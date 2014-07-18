@@ -309,21 +309,21 @@ namespace Exceptionless.Core.Repositories {
             public const string BillingChangedByUserId = "BillingChangedByUserId";
             public const string BillingStatus = "BillingStatus";
             public const string BillingPrice = "BillingPrice";
+            public const string RetentionDays = "RetentionDays";
+            public const string HasPremiumFeatures = "HasPremiumFeatures";
+            public const string MaxUsers = "MaxUsers";
+            public const string MaxProjects = "MaxProjects";
+            public const string MaxEventsPerMonth = "MaxEventsPerMonth";
+            public const string ProjectCount = "ProjectCount";
+            public const string StackCount = "StackCount";
+            public const string EventCount = "EventCount";
+            public const string TotalEventCount = "TotalEventCount";
+            public const string LastEventDate = "LastEventDate";
             public const string IsSuspended = "IsSuspended";
             public const string SuspensionCode = "SuspensionCode";
             public const string SuspensionNotes = "SuspensionNotes";
             public const string SuspensionDate = "SuspensionDate";
             public const string SuspendedByUserId = "SuspendedByUserId";
-            public const string RetentionDays = "RetentionDays";
-            public const string HasPremiumFeatures = "HasPremiumFeatures";
-            public const string MaxUsers = "MaxUsers";
-            public const string MaxEventsPerDay = "MaxEventsPerDay";
-            public const string MaxProjects = "MaxProjects";
-            public const string ProjectCount = "ProjectCount";
-            public const string StackCount = "StackCount";
-            public const string EventCount = "EventCount";
-            public const string TotalEventCount = "TotalEventCount"; // TODO: Add a migration for TotalErrorCount.
-            public const string LastEventDate = "LastEventDate";
             public const string Invites = "Invites";
             public const string Invites_Token = "Invites.Token";
             public const string Invites_EmailAddress = "Invites.EmailAddress";
@@ -342,12 +342,33 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<Organization> cm) {
             base.ConfigureClassMap(cm);
+            cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
             cm.GetMemberMap(c => c.StripeCustomerId).SetElementName(FieldNames.StripeCustomerId).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.PlanId).SetElementName(FieldNames.PlanId).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.CardLast4).SetElementName(FieldNames.CardLast4).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.SubscribeDate).SetElementName(FieldNames.SubscribeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangeDate).SetElementName(FieldNames.BillingChangeDate).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.BillingStatus).SetElementName(FieldNames.BillingStatus);
+            cm.GetMemberMap(c => c.BillingPrice).SetElementName(FieldNames.BillingPrice);
+            cm.GetMemberMap(c => c.RetentionDays).SetElementName(FieldNames.RetentionDays);
+            cm.GetMemberMap(c => c.HasPremiumFeatures).SetElementName(FieldNames.HasPremiumFeatures);
+            cm.GetMemberMap(c => c.MaxUsers).SetElementName(FieldNames.MaxUsers);
+            cm.GetMemberMap(c => c.MaxProjects).SetElementName(FieldNames.MaxProjects);
+            cm.GetMemberMap(c => c.MaxEventsPerMonth).SetElementName(FieldNames.MaxEventsPerMonth);
+            cm.GetMemberMap(c => c.ProjectCount).SetElementName(FieldNames.ProjectCount);
+            cm.GetMemberMap(c => c.StackCount).SetElementName(FieldNames.StackCount);
+            cm.GetMemberMap(c => c.EventCount).SetElementName(FieldNames.EventCount);
+            cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
+            cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
+
+            cm.GetMemberMap(c => c.IsSuspended).SetElementName(FieldNames.IsSuspended);
+            cm.GetMemberMap(c => c.SuspensionCode).SetElementName(FieldNames.SuspensionCode).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.SuspensionNotes).SetElementName(FieldNames.SuspensionNotes).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.SuspensionDate).SetElementName(FieldNames.SuspensionDate).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.SuspendedByUserId).SetElementName(FieldNames.SuspendedByUserId).SetIgnoreIfNull(true);
+
+            cm.GetMemberMap(c => c.Invites).SetElementName(FieldNames.Invites).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Invites.Any());
             cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.Usage).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Usage.Any());
             cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).OverageHours.Any());
 
