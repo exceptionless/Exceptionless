@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Repositories {
 
         public const string CollectionName = "joblock";
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
             public const string CreatedDate = "CreatedDate";

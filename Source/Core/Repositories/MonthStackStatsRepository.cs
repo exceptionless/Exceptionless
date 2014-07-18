@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string DayStats_Format = "day.{0}";
             public const string Id = CommonFieldNames.Id;
             public const string ProjectId = CommonFieldNames.ProjectId;

@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             return requestInfo.PostData != null;
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string RequestInfo = "req";
 
             public const string Data = CommonFieldNames.Data;

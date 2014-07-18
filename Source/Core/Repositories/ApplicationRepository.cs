@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories {
 
         public const string CollectionName = "application";
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
         }

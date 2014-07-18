@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string SimpleError = "serr";
 
             public const string Message = "msg";

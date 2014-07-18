@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string IdsFormat = "ids.{0}";
             public const string ProjectId = CommonFieldNames.ProjectId;

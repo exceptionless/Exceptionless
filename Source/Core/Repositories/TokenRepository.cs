@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Repositories {
 
         public const string CollectionName = "token";
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string ProjectId = CommonFieldNames.ProjectId;

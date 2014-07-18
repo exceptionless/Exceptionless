@@ -75,7 +75,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Error = "err";
 
             public const string Message = "msg";

@@ -298,7 +298,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
             public const string StripeCustomerId = "StripeCustomerId";

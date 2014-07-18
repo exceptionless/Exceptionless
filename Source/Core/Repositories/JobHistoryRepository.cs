@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Repositories {
 
         #region Collection Setup
 
-        public static class FieldNames {
+        private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
             public const string StartTime = "StartTime";
