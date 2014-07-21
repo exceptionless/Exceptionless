@@ -54,8 +54,7 @@ namespace Exceptionless.Core.Pipeline {
                 ProjectName = ctx.Project.Name
             }).Wait();
 
-            // TODO: Get by organization id or project id.
-            foreach (WebHook hook in _webHookRepository.GetByProjectId(ctx.Event.ProjectId)) {
+            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
                 bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
                                   || hook.EventTypes.Contains(WebHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
                                   || hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
@@ -63,11 +62,13 @@ namespace Exceptionless.Core.Pipeline {
                 if (!shouldCall)
                     continue;
 
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write()
 
+                // TODO: Should we be using the hook's project id and organization id?
                 var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
                 _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
-                    ProjectId = ctx.Event.ProjectId,
+                    OrganizationId = ctx.Event.OrganizationId,
+                    ProjectId = ctx.Event.ProjectId, 
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromEvent(context)
                 }).Wait();

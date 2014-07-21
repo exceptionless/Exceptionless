@@ -17,23 +17,6 @@ namespace Exceptionless.Api.Tests.Plugins
     public class WebHookDataTests {
         private readonly WebHookDataPluginManager _webHookDataPluginManager = IoC.GetInstance<WebHookDataPluginManager>();
 
-        // Figure out what the hook payload will look like and how we will handle old clients. 
-        // I think we are going to need to have each webhook subscription have a schema version associated to it.
-
-        // Allow setting the schema for a web hook when creating it and also allow it to be changed.
-
-        [Fact]
-        public void CanHandleOrganizationWebHook() {
-            // Make sure that they work at both the project and org levels.
-            throw new NotImplementedException();
-        }
-
-        [Fact]
-        public void CanHandleProjectWebHook() {
-            // Make sure that they work at both the project and org levels.
-            throw new NotImplementedException();
-        }
-
         [Theory]
         [PropertyData("WebHookData")]
         public void CreateFromEvent(Version version, bool expectData) {

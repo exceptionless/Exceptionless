@@ -209,12 +209,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 else
                     _billingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
 
-                organization.StripeCustomerId = Guid.NewGuid().ToString();
+                organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";
                 organization.SubscribeDate = DateTime.Now;
 
                 if (organization.IsSuspended) {
-                    organization.SuspendedByUserId = Guid.NewGuid().ToString();
+                    organization.SuspendedByUserId = TestConstants.UserId;
                     organization.SuspensionCode = SuspensionCode.Billing;
                     organization.SuspensionDate = DateTime.Now;
                 }
