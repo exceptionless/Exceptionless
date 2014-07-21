@@ -277,7 +277,8 @@ namespace Exceptionless.Api.Controllers {
             var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, hidden, @fixed, notfound).ToList();
             List<EventStackResult> results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
 
-            return OkWithResourceLinks(results, options.HasMore, e => e.First.ToString("yyyy-MM-ddTHH:mm:ss.fffffffzzz"), GetLimitedByPlanHeader(stacks.Count - results.Count));
+            // TODO: Fix this paging
+            return OkWithResourceLinks(results, options.HasMore, e => e.First.UtcTicks.ToString(), GetLimitedByPlanHeader(stacks.Count - results.Count));
         }
 
         [HttpGet]

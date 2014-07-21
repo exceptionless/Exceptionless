@@ -67,6 +67,35 @@ namespace Exceptionless.Api.Tests.Repositories {
             }
         }
 
+        [Fact]
+        public void GetByOrganizationIdsPaged() {
+            Debug.WriteLine("Actual order:");
+            foreach (var t in _ids)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Sorted order:");
+            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            foreach (var t in sortedIds)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Tests:");
+            Assert.Equal(_ids.Count, _repository.Count());
+
+            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId).ToArray();
+            for (int i = 0; i < sortedIds.Count; i++) {
+                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
+                Assert.Equal(sortedIds[i].Item1, results[i].Id);
+            }
+
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithAfter(sortedIds[1].Item1)).ToArray();
+            for (int i = 0; i < sortedIds.Count; i++) {
+                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
+                Assert.Equal(sortedIds[i + 2].Item1, results[i].Id);
+            }
+        }
+
         private readonly List<Tuple<string, DateTimeOffset>> _ids = new List<Tuple<string, DateTimeOffset>>();
 
         protected void CreateData() {

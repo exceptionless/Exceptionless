@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Repositories {
         private readonly PagingOptions _options;
 
         public PagingWithSortingOptions(PagingOptions options) {
-            _options = options;
+            _options = options ?? new PagingOptions();
         }
 
         public IMongoQuery BeforeQuery { get; set; }

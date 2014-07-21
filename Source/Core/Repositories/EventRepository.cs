@@ -207,21 +207,26 @@ namespace Exceptionless.Core.Repositories {
             UpdateAll(new QueryOptions().WithStackId(id), Update.Unset(FieldNames.IsFixed));
         }
 
+        public override ICollection<PersistentEvent> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
+            return base.GetByOrganizationId(organizationId, pagingWithSorting, useCache, expiresIn);
+        }
+
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
             return base.GetByOrganizationIds(organizationIds, pagingWithSorting, useCache, expiresIn);
         }
 
         public override ICollection<PersistentEvent> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
             return base.GetByStackId(stackId, pagingWithSorting, useCache, expiresIn);
         }
 
         public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC) };
+            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
             return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn);
         }
-        
+
         protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
             base.AfterRemove(documents, sendNotification);
 
