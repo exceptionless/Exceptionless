@@ -52,11 +52,29 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Token> GetByTypeAndProjectId(TokenType type, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var query = Query.And(Query.Or(
+                            Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId))), 
+                            Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
+                        ), Query.EQ(FieldNames.Type, type));
+            
             return Find<Token>(new MultiOptions()
-                .WithProjectId(projectId)
-                .WithQuery(Query.EQ(FieldNames.Type, type))
+                .WithQuery(query)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-project:", projectId) : null)
+                .WithExpiresIn(expiresIn));
+        }
+
+        public ICollection<Token> GetByTypeAndOrganizationIdOrProjectId(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var query = Query.And(Query.Or(
+                Query.EQ(FieldNames.OrganizationId, new BsonObjectId(ObjectId.Parse(organizationId))), 
+                Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId))), 
+                Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
+            ), Query.EQ(FieldNames.Type, type));
+
+            return Find<Token>(new MultiOptions()
+                .WithQuery(query)
+                .WithPaging(paging)
+                .WithCacheKey(String.Concat("type:", type, "-org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(expiresIn));
         }
 
@@ -112,5 +130,15 @@ namespace Exceptionless.Core.Repositories {
         }
 
         #endregion
+
+        public override void InvalidateCache(Token token) {
+            if (Cache == null)
+                return;
+
+            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-org:", token.OrganizationId)));
+            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId)));
+            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId)));
+            base.InvalidateCache(token);
+        }
     }
 }

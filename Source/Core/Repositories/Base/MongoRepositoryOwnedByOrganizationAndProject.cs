@@ -31,5 +31,13 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
         }
+
+        public override void InvalidateCache(T document) {
+            if (Cache == null)
+                return;
+
+            Cache.Remove(GetScopedCacheKey(String.Concat("project:", document.ProjectId)));
+            base.InvalidateCache(document);
+        }
     }
 }

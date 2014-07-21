@@ -1,13 +1,14 @@
 using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using FluentValidation;
 
 namespace Exceptionless.Core.Validation {
     public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
         public PersistentEventValidator() {
-            RuleFor(e => e.OrganizationId).NotEmpty().WithMessage("Please specify a valid organization id.");
-            RuleFor(e => e.ProjectId).NotEmpty().WithMessage("Please specify a valid project id.");
-            RuleFor(e => e.StackId).NotEmpty().WithMessage("Please specify a valid stack id.");
+            RuleFor(e => e.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
+            RuleFor(e => e.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
+            RuleFor(e => e.StackId).IsObjectId().WithMessage("Please specify a valid stack id.");
 
             RuleFor(e => e.Type)
                 .NotEmpty()

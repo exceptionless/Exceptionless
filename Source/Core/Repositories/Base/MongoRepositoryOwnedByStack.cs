@@ -32,5 +32,13 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.StackId).SetElementName(CommonFieldNames.StackId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
         }
+
+        public override void InvalidateCache(T document) {
+            if (Cache == null)
+                return;
+
+            Cache.Remove(GetScopedCacheKey(String.Concat("stack:", document.StackId)));
+            base.InvalidateCache(document);
+        }
     }
 }

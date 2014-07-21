@@ -89,14 +89,15 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
         }
         
-        public override void InvalidateCache(User entity) {
+        public override void InvalidateCache(User user) {
             if (Cache == null)
                 return;
 
             //TODO: We should look into getting the original entity and reset the cache on the original email address as it might have changed.
-            InvalidateCache(entity.EmailAddress);
+            InvalidateCache(user.EmailAddress);
 
-            base.InvalidateCache(entity);
+            foreach (var organizationId in user.OrganizationIds)
+                InvalidateCache(String.Concat("org:", organizationId));
         }
 
         #endregion

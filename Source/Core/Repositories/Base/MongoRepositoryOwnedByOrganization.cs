@@ -44,5 +44,13 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.OrganizationId).SetElementName(CommonFieldNames.OrganizationId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
         }
+
+        public override void InvalidateCache(T document) {
+            if (Cache == null)
+                return;
+
+            Cache.Remove(GetScopedCacheKey(String.Concat("org:", document.OrganizationId)));
+            base.InvalidateCache(document);
+        }
     }
 }

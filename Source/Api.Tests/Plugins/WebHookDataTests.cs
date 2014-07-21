@@ -7,8 +7,6 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Tests.Utility;
-using MongoDB.Bson;
-using MongoDB.Bson.IO;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Extensions;
@@ -36,7 +34,6 @@ namespace Exceptionless.Api.Tests.Plugins
             throw new NotImplementedException();
         }
 
-        
         [Theory]
         [PropertyData("WebHookData")]
         public void CreateFromEvent(Version version, bool expectData) {

@@ -15,7 +15,9 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models.Admin;
 using FluentValidation;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 
@@ -28,15 +30,15 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
+            var query = Query.Or(
+                    Query.EQ(FieldNames.OrganizationId, new BsonObjectId(ObjectId.Parse(organizationId))), 
+                    Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
+                );
+
             return Find<WebHook>(new MultiOptions()
-                .WithOrganizationId(organizationId)
-                .WithQuery(Query.Or(Query.NotExists(FieldNames.ProjectId), Query.EQ(FieldNames.ProjectId, projectId)))
+                .WithQuery(query)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
-        }
-
-        void IReadOnlyRepository<WebHook>.InvalidateCache(WebHook document) {
-            InvalidateCache(document);
         }
 
         #region Collection Setup
@@ -73,14 +75,20 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void ConfigureClassMap(BsonClassMap<WebHook> cm) {
             base.ConfigureClassMap(cm);
+            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
             cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
         }
-        public override void InvalidateCache(WebHook entity) {
-            Cache.Remove(GetScopedCacheKey(entity.ProjectId));
-            base.InvalidateCache(entity);
-        }
 
         #endregion
+
+        public override void InvalidateCache(WebHook hook) {
+            if (Cache == null)
+                return;
+
+            Cache.Remove(GetScopedCacheKey(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)));
+            base.InvalidateCache(hook);
+        }
+
     }
 }

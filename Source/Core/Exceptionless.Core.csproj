@@ -222,6 +222,7 @@
     <Compile Include="Validation\DayProjectStatsValidator.cs" />
     <Compile Include="Validation\DayStackStatsValidator.cs" />
     <Compile Include="Validation\EventValidator.cs" />
+    <Compile Include="Validation\IsObjectIdValidator.cs" />
     <Compile Include="Validation\JobHistoryValidator.cs" />
     <Compile Include="Validation\JobLockInfoValidator.cs" />
     <Compile Include="Validation\MonthProjectStatsValidator.cs" />

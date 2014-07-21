@@ -1,0 +1,18 @@
+﻿using System;
+using FluentValidation.Validators;
+using MongoDB.Bson;
+
+namespace Exceptionless.Core.Validation {
+    public class IsObjectIdValidator : PropertyValidator {
+        public IsObjectIdValidator() : base(() => "Value is not a valid object id.") {}
+
+        protected override bool IsValid(PropertyValidatorContext context) {
+            var value = context.PropertyValue as string;
+            if (String.IsNullOrEmpty(value))
+                return false;
+
+            ObjectId id;
+            return ObjectId.TryParse(context.PropertyValue as string, out id);
+        }
+    }
+}

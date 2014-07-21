@@ -134,6 +134,9 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override void InvalidateCache(Stack entity) {
+            if (Cache == null)
+                return;
+
             var originalStack = GetById(entity.Id, true);
             if (originalStack != null) {
                 if (originalStack.DateFixed != entity.DateFixed) {
