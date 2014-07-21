@@ -48,7 +48,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.UtcTicks.ToString());
+            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id));
         }
 
         [HttpGet]
@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Controllers {
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByProjectId(projectId, options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.UtcTicks.ToString());
+            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id));
         }
 
         [HttpGet]
@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByStackId(stackId, options);
-            return OkWithResourceLinks(results, options.HasMore, e => e.Date.UtcTicks.ToString());
+            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id));
         }
 
         [HttpGet]
