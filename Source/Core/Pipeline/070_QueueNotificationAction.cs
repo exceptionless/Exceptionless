@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Pipeline {
                 if (!shouldCall)
                     continue;
 
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write()
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
 
                 // TODO: Should we be using the hook's project id and organization id?
                 var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
