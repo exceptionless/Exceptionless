@@ -228,7 +228,7 @@ namespace Exceptionless.Core.Repositories {
         public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
             GetBeforeAndAfterQuery(pagingWithSorting);
-            return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn);
+            return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn).OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
         private void GetBeforeAndAfterQuery(PagingWithSortingOptions paging) {

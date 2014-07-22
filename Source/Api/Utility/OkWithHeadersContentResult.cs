@@ -37,7 +37,7 @@ namespace Exceptionless.Api.Utility {
         where TEntity : class {
         public OkWithResourceLinks(ICollection<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null)
+        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false)
             : base(content, controller) {
             if (content == null)
                 return;
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Utility {
             if (page.HasValue)
                 links = GetPagedLinks(Request.RequestUri, page.Value, hasMore);
             else
-                links = GetBeforeAndAfterLinks(Request.RequestUri, content, hasMore, pagePropertyAccessor);
+                links = GetBeforeAndAfterLinks(Request.RequestUri, content, isDescending, hasMore, pagePropertyAccessor);
 
             var headerItems = new Dictionary<string, IEnumerable<string>>();
             if (links.Count > 0)
@@ -84,15 +84,15 @@ namespace Exceptionless.Api.Utility {
             return links;
         }
 
-        public static List<string> GetBeforeAndAfterLinks(Uri url, ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
+        public static List<string> GetBeforeAndAfterLinks(Uri url, ICollection<TEntity> content, bool isDescending, bool hasMore, Func<TEntity, string> pagePropertyAccessor) {
             if (pagePropertyAccessor == null && typeof(IIdentity).IsAssignableFrom(typeof(TEntity)))
                 pagePropertyAccessor = e => ((IIdentity)e).Id;
 
             if (pagePropertyAccessor == null)
                 return new List<string>();
 
-            string firstId = content.Any() ? pagePropertyAccessor(content.First()) : String.Empty;
-            string lastId = content.Any() ? pagePropertyAccessor(content.Last()) : String.Empty;
+            string firstId = content.Any() ? pagePropertyAccessor(!isDescending ? content.First() : content.Last()) : String.Empty;
+            string lastId = content.Any() ? pagePropertyAccessor(!isDescending ? content.Last() : content.First()) : String.Empty;
 
             bool hasBefore = false;
             bool hasAfter = false;

@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         public void CanBeforeAndAfterLinks(string url, bool hasMore, bool expectPrevious, bool expectNext){
             var data = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11" };
 
-            var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), data, hasMore, s => s);
+            var links = OkWithResourceLinks<string>.GetBeforeAndAfterLinks(new Uri(url), data, false, hasMore, s => s);
             int expectedLinkCount = 0;
             if (expectPrevious)
                 expectedLinkCount++;

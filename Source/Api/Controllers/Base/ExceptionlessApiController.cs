@@ -35,6 +35,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected const int DEFAULT_LIMIT = 10;
+
         protected int GetLimit(int limit) {
             if (limit < 1)
                 limit = DEFAULT_LIMIT;
@@ -96,8 +97,8 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor);
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
         public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
