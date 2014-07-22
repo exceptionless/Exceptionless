@@ -208,37 +208,41 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
-            return base.GetByOrganizationId(organizationId, pagingWithSorting, useCache, expiresIn);
+            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
+            var results = base.GetByOrganizationId(organizationId, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
+            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
-            return base.GetByOrganizationIds(organizationIds, pagingWithSorting, useCache, expiresIn);
+            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
+            var results = base.GetByOrganizationIds(organizationIds, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
+            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
         public override ICollection<PersistentEvent> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
-            GetBeforeAndAfterQuery(pagingWithSorting); 
-            return base.GetByStackId(stackId, pagingWithSorting, useCache, expiresIn);
+            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
+            var results = base.GetByStackId(stackId, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
+            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
         public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) { SortBy = SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id) };
-            GetBeforeAndAfterQuery(pagingWithSorting);
-            return base.GetByProjectId(projectId, pagingWithSorting, useCache, expiresIn).OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
+            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
+            var results = base.GetByProjectId(projectId, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
+            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
-        private void GetBeforeAndAfterQuery(PagingWithSortingOptions paging) {
+        private PagingWithSortingOptions GetPagingWithSortingOptions(PagingOptions paging, bool sortByAscending) {
+            var pagingWithSorting = new PagingWithSortingOptions(paging) {
+                SortBy = sortByAscending ? SortBy.Ascending(FieldNames.Date_UTC, FieldNames.Id) : SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id)
+            };
+
             if (!String.IsNullOrEmpty(paging.Before) && paging.Before.IndexOf('-') > 0) {
                 var parts = paging.Before.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
                 ObjectId id;
                 long beforeUtcTicks;
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out beforeUtcTicks) && ObjectId.TryParse(parts[1], out id))
-                    paging.BeforeQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, beforeUtcTicks), Query.LT(FieldNames.Id, new BsonObjectId(id))), Query.LT(FieldNames.Date_UTC, beforeUtcTicks));
+                    pagingWithSorting.BeforeQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, beforeUtcTicks), Query.LT(FieldNames.Id, new BsonObjectId(id))), Query.LT(FieldNames.Date_UTC, beforeUtcTicks));
             }
 
             if (!String.IsNullOrEmpty(paging.After) && paging.After.IndexOf('-') > 0) {
@@ -247,8 +251,10 @@ namespace Exceptionless.Core.Repositories {
                 ObjectId id;
                 long afterUtcTicks;
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out afterUtcTicks) && ObjectId.TryParse(parts[1], out id))
-                    paging.AfterQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, afterUtcTicks), Query.GT(FieldNames.Id, new BsonObjectId(id))), Query.GT(FieldNames.Date_UTC, afterUtcTicks));
+                    pagingWithSorting.AfterQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, afterUtcTicks), Query.GT(FieldNames.Id, new BsonObjectId(id))), Query.GT(FieldNames.Date_UTC, afterUtcTicks));
             }
+
+            return pagingWithSorting;
         }
 
         protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
