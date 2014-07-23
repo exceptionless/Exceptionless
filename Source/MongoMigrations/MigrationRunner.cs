@@ -76,11 +76,11 @@ namespace MongoMigrations {
 
         public virtual void UpdateTo(MigrationVersion updateToVersion) {
             var currentVersion = DatabaseStatus.GetLastAppliedMigration();
+            var migrations = MigrationLocator.GetMigrationsAfter(currentVersion).Where(m => m.Version <= updateToVersion).ToList();
+            if (migrations.Count == 0)
+                return;
+
             Trace.TraceInformation("Updating migration \"{0}\" for version {1} to database \"{2}\".", currentVersion, updateToVersion, Database.Name);
-
-            var migrations = MigrationLocator.GetMigrationsAfter(currentVersion)
-                .Where(m => m.Version <= updateToVersion);
-
             ApplyMigrations(migrations);
         }
     }
