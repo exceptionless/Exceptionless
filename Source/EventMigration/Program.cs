@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CodeSmith.Core.CommandLine;
+using CodeSmith.Core.Scheduler;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
@@ -16,6 +17,7 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SimpleInjector;
 using StackFrame = Exceptionless.EventMigration.Models.StackFrame;
 
@@ -53,22 +55,33 @@ namespace Exceptionless.EventMigration {
                 var container = CreateContainer();
                 var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                 var errorStackCollection = GetErrorStackCollection(container);
-                var errorCollection = GetErrorCollection(container);
 
                 var client = new ElasticsearchClient();
-                var stack = errorStackCollection.FindOneAs<ErrorStack>(new FindOneArgs { SortBy = SortBy.Descending(ErrorStackFieldNames.Id) });
-                while (stack != null) {
-                    client.Index("exceptionless", "stack", stack.Id, JsonConvert.SerializeObject(stack));
+                var stacks = errorStackCollection.FindAll().SetLimit(100).ToList();
+                while (stacks != null && stacks.Count > 0) {
+                    var lastId = stacks.Last().Id;
+                    //Console.WriteLine("Inserting {0} stacks", stacks.Count);
+                    client.Bulk("exceptionless", "stacks", stacks);
 
-                    var errors = errorCollection.Find(Query.EQ(ErrorFieldNames.ErrorStackId, new BsonObjectId(ObjectId.Parse(stack.Id)))).ToList();
+                    stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, new BsonObjectId(ObjectId.Parse(lastId)))).SetLimit(100).ToList();
+                }
+
+                var errorCollection = GetErrorCollection(container);
+                var errors = errorCollection.FindAll().SetLimit(100).ToList();
+                while (errors != null && errors.Count > 0) {
+                    var lastId = errors.Last().Id;
+
+                    var events = new List<JObject>();
                     foreach (var error in errors) {
                         var ctx = new EventUpgraderContext(JsonConvert.SerializeObject(error), new Version(1, 5), true);
                         eventUpgraderPluginManager.Upgrade(ctx);
-                        client.Index("exceptionless", "event", error.Id, ctx.Document.ToString());
+                        events.Add(ctx.Document);
                     }
 
-                    Console.WriteLine("Inserted 1 stack and {0} events", errors.Count);
-                    stack = errorStackCollection.FindOneAs<ErrorStack>(new FindOneArgs { Query = Query.LT("_id", new BsonObjectId(ObjectId.Parse(stack.Id))), SortBy = SortBy.Descending(ErrorStackFieldNames.Id) });
+                    //Console.WriteLine("Inserting {0} errors", errors.Count);
+                    var result = client.Bulk("exceptionless", "events", JsonConvert.SerializeObject(events));
+
+                    errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, new BsonObjectId(ObjectId.Parse(lastId)))).SetLimit(100).ToList();
                 }
 
                 PauseIfDebug();
