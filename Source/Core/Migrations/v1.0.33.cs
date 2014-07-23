@@ -21,15 +21,6 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void Update() {
-            if (Database.CollectionExists("errorstack"))
-                Database.RenameCollection("errorstack", "stack");
-
-            if (Database.CollectionExists("errorstack.stats.day"))
-                Database.RenameCollection("errorstack.stats.day", "stack.stats.day");
-
-            if (Database.CollectionExists("errorstack.stats.month"))
-                Database.RenameCollection("errorstack.stats.month", "stack.stats.month");
-
             if (Database.CollectionExists("project.hook"))
                 Database.RenameCollection("project.hook", "webhook");
 

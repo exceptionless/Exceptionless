@@ -10,12 +10,15 @@
 #endregion
 
 using System;
-using Exceptionless.Models;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using System.Text;
 
-namespace Exceptionless.Models.Legacy {
+namespace Exceptionless.EventMigration.Models {
     public class ErrorInfo {
         public ErrorInfo() {
-            ExtendedData = new DataDictionary();
+            ExtendedData = new ExtendedDataDictionary();
             StackTrace = new StackFrameCollection();
         }
 
@@ -37,7 +40,7 @@ namespace Exceptionless.Models.Legacy {
         /// <summary>
         /// Extended data entries for this error.
         /// </summary>
-        public DataDictionary ExtendedData { get; set; }
+        public ExtendedDataDictionary ExtendedData { get; set; }
 
         /// <summary>
         /// An inner (nested) error.
@@ -53,5 +56,13 @@ namespace Exceptionless.Models.Legacy {
         /// The target method.
         /// </summary>
         public Method TargetMethod { get; set; }
+
+        public override int GetHashCode() {
+#if !PFX_LEGACY_3_5
+            return String.Concat(Type, Code, Inner != null, String.Join("", StackTrace.Select(st => st.FullName))).GetHashCode();
+#else
+            return String.Concat(Type, Code, Inner != null, String.Join("", StackTrace.Select(st => st.FullName).ToArray())).GetHashCode();
+#endif
+        }
     }
 }

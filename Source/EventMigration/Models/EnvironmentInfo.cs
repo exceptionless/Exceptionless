@@ -1,19 +1,20 @@
 #region Copyright 2014 Exceptionless
 
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
+// This program is free software: you can redistribute it and/or modify it 
+// under the terms of the GNU Affero General Public License as published 
+// by the Free Software Foundation, either version 3 of the License, or 
+// (at your option) any later version.
 // 
-//     http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.gnu.org/licenses/agpl-3.0.html
 
 #endregion
 
 using System;
-using Exceptionless.Models;
 
-namespace Exceptionless.Models.Legacy {
+namespace Exceptionless.EventMigration.Models {
     public class EnvironmentInfo {
         public EnvironmentInfo() {
-            ExtendedData = new DataDictionary();
+            ExtendedData = new ExtendedDataDictionary();
         }
 
         /// <summary>
@@ -49,7 +50,7 @@ namespace Exceptionless.Models.Legacy {
         /// Gets the process id.
         /// </summary>
         /// <value>The process id.</value>
-        public int ProcessId { get; set; }
+        public string ProcessId { get; set; }
 
         /// <summary>
         /// Gets the amount of physical memory used by the process.
@@ -96,8 +97,13 @@ namespace Exceptionless.Models.Legacy {
         public string RuntimeVersion { get; set; }
 
         /// <summary>
+        /// The IP address of the machine the error occurred on.
+        /// </summary>
+        public string IpAddress { get; set; }
+
+        /// <summary>
         /// Extended data entries for this machine environment.
         /// </summary>
-        public DataDictionary ExtendedData { get; set; }
+        public ExtendedDataDictionary ExtendedData { get; set; }
     }
 }

@@ -12,15 +12,21 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             bool isNotFound = ctx.Document.GetPropertyStringValue("Code") == "404";
-            if (isNotFound)
-                ctx.Document.Remove("Id");
-            else
-                ctx.Document.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
+
+            if (ctx.IsMigration) {
+                ctx.Document.Rename("ErrorStackId", "StackId");
+            } else {
+                if (isNotFound)
+                    ctx.Document.Remove("Id");
+                else
+                    ctx.Document.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
+
+                ctx.Document.Remove("OrganizationId");
+                ctx.Document.Remove("ProjectId");
+                ctx.Document.Remove("ErrorStackId");
+            }
 
             ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
-            ctx.Document.Remove("OrganizationId");
-            ctx.Document.Remove("ProjectId");
-            ctx.Document.Remove("ErrorStackId");
             ctx.Document.Remove("ExceptionlessClientInfo");
             ctx.Document.Remove("IsFixed");
             ctx.Document.Remove("IsHidden");

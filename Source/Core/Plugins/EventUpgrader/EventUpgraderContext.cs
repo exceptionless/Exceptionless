@@ -15,14 +15,16 @@ using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     public class EventUpgraderContext : ExtensibleObject {
-        public EventUpgraderContext(string json, Version version = null) {
+        public EventUpgraderContext(string json, Version version = null, bool isMigration = false) {
             // TODO: Handle parsing errors.
             JObject document = JObject.Parse(json);
             Document = document;
             Version = version;
+            IsMigration = isMigration;
         }
 
         public JObject Document { get; set; }
         public Version Version { get; set; }
+        public bool IsMigration { get; set; }
     }
 }

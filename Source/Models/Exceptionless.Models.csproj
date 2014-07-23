@@ -61,12 +61,6 @@
     <Compile Include="Client\Data\SimpleError.cs" />
     <Compile Include="Client\Data\InnerError.cs" />
     <Compile Include="Client\Event.cs" />
-    <Compile Include="Client\Legacy\EnvironmentInfo.cs" />
-    <Compile Include="Client\Legacy\Method.cs" />
-    <Compile Include="Client\Legacy\Module.cs" />
-    <Compile Include="Client\Legacy\Parameter.cs" />
-    <Compile Include="Client\Legacy\RequestInfo.cs" />
-    <Compile Include="Client\Legacy\StackFrame.cs" />
     <Compile Include="Admin\PersistentEvent.cs" />
     <Compile Include="Client\SessionInfo.cs" />
     <Compile Include="Collections\ObservableDictionary.cs" />
@@ -90,8 +84,6 @@
     <Compile Include="Collections\TagSet.cs" />
     <Compile Include="Collections\SettingsDictionary.cs" />
     <Compile Include="Enums\ResponseStatusType.cs" />
-    <Compile Include="Client\Legacy\ErrorInfo.cs" />
-    <Compile Include="Client\Legacy\Error.cs" />
     <Compile Include="Admin\Stack.cs" />
     <Compile Include="Enums\SuspensionCode.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
@@ -116,7 +108,6 @@
     <Compile Include="Admin\Stats\Results\DateStackStatsResult.cs" />
     <Compile Include="Admin\Stats\Results\DateProjectStatsResult.cs" />
     <Compile Include="Admin\Stats\Results\TotalResultBase.cs" />
-    <Compile Include="Client\Legacy\ExceptionlessClientInfo.cs" />
     <Compile Include="Admin\User.cs" />
   </ItemGroup>
   <ItemGroup>

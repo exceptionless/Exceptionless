@@ -11,7 +11,7 @@
 
 using System;
 
-namespace Exceptionless.Models.Legacy {
+namespace Exceptionless.EventMigration.Models {
     public class ExceptionlessClientInfo {
         /// <summary>
         /// The version of the Exceptionless client that processed this error.
