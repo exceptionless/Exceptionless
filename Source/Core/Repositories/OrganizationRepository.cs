@@ -218,7 +218,7 @@ namespace Exceptionless.Core.Repositories {
             const int USAGE_SAVE_MINUTES = 5;
 
             var org = GetById(organizationId, true);
-            if (org.MaxEventsPerMonth < 0)
+            if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
 
             long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
@@ -279,7 +279,7 @@ namespace Exceptionless.Core.Repositories {
 
         public int GetRemainingEventLimit(string organizationId) {
             var org = GetById(organizationId, true);
-            if (org.MaxEventsPerMonth < 0)
+            if (org == null || org.MaxEventsPerMonth < 0)
                 return Int32.MaxValue;
 
             string monthlyCacheKey = GetMonthlyTotalCacheKey(organizationId);
