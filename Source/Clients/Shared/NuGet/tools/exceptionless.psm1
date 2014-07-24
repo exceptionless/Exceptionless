@@ -54,13 +54,30 @@ function update_config($configPath, $platform) {
 			$shouldSave = $true
 		}
 		
-		if ($configXml.SelectSingleNode("configuration/exceptionless") -eq $null) {
+		$exceptionlessConfig = $configXml.SelectSingleNode("configuration/exceptionless")
+		if ($exceptionlessConfig -eq $null) {
 			$exceptionlessNode = $configXml.CreateElement('exceptionless')
 			$exceptionlessNode.SetAttribute('apiKey', 'API_KEY_HERE')
 			
 			$target = $configXml.configuration['system.web']
 			$configXml.SelectSingleNode("configuration").InsertBefore($exceptionlessNode, $target)
 			$shouldSave = $true
+		} else {
+			if ($exceptionlessConfig.HasAttribute('queuePath')) {
+				$exceptionlessConfig.SetAttribute('storagePath', $exceptionlessConfig.GetAttribute('queuePath'))
+				$exceptionlessConfig.RemoveAttribute('queuePath')
+				$shouldSave = $true
+			}
+
+			$extendedData = $exceptionlessConfig.SelectSingleNode('extendedData')
+			if ($extendedData -ne $null) {
+				$data = $configXml.CreateElement('data')
+				$data.InnerXML = $extendedData.InnerXML
+				$exceptionlessConfig.AppendChild($data)
+				$exceptionlessConfig.RemoveChild($extendedData)
+
+				$shouldSave = $true
+			}
 		}
 		
 		if ($platform -ne $null -and $platform -ne 'WebApi') {
