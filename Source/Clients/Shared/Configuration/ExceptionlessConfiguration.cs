@@ -46,7 +46,7 @@ namespace Exceptionless {
         public string ServerUrl {
             get { return _serverUrl; }
             set {
-                if (_configLocked)
+                if (_configLocked && !_serverUrl.Equals(value))
                     throw new ArgumentException("ServerUrl can't be changed after the client has been initialized.");
 
                 _serverUrl = value;
@@ -64,7 +64,7 @@ namespace Exceptionless {
         public string ApiKey {
             get { return _apiKey; }
             set {
-                if (_configLocked)
+                if (_configLocked && !_apiKey.Equals(value))
                     throw new ArgumentException("ApiKey can't be changed after the client has been initialized.");
 
                 _apiKey = value;
