@@ -23,6 +23,12 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             IsMigration = isMigration;
         }
 
+        public EventUpgraderContext(JObject json, Version version = null, bool isMigration = false) {
+            Document = json;
+            Version = version;
+            IsMigration = isMigration;
+        }
+
         public JObject Document { get; set; }
         public Version Version { get; set; }
         public bool IsMigration { get; set; }

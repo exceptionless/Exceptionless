@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -139,6 +140,11 @@ namespace Exceptionless.Core.Extensions {
                 serializer.Serialize(sw, data, typeof(T));
                 return sw.ToString();
             }
+        }
+
+        public static List<T> FromJson<T>(this JArray data, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            return data.ToObject<List<T>>(serializer);
         }
 
         public static T FromJson<T>(this JObject data, JsonSerializerSettings settings = null) {

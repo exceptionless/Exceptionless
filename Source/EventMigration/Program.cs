@@ -56,8 +56,6 @@ namespace Exceptionless.EventMigration {
                 const int BatchSize = 100;
 
                 var container = CreateContainer();
-                var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
-                var errorStackCollection = GetErrorStackCollection(container);
                 var uri = new Uri("http://localhost:9200");
                 var settings = new ConnectionSettings(uri).SetDefaultIndex("exceptionless");
                 settings.SetJsonSerializerSettingsModifier(s => {
@@ -65,38 +63,60 @@ namespace Exceptionless.EventMigration {
                     // TODO: More serializer settings here.
                 });
                 var searchclient = new ElasticClient(settings);
-                
-                int batch = 0;
-                var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
-                while (stacks.Count > 0) {
-                    Console.WriteLine("Inserting stacks {0}-{1}...", BatchSize * batch, (BatchSize * batch) + stacks.Count);
-                    var result = searchclient.IndexMany(stacks);
-                    // TODO: Verify that we successfully submitted, retry if not.
-                    var lastId = stacks.Last().Id;
 
-                    stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
-                    batch++;
+                IBulkResponse response;
+                int total = 0;
+                var stopwatch = new Stopwatch();
+                if (false) {
+                    stopwatch.Start();
+                    var errorStackCollection = GetErrorStackCollection(container);
+                    var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    while (stacks.Count > 0) {
+                        Console.SetCursorPosition(0, 4);
+                        Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
+                        response = searchclient.IndexMany(stacks, type: "stacks");
+                        if (!response.IsValid)
+                            Debugger.Break();
+                        var lastId = stacks.Last().Id;
+
+                        stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
+                        total += stacks.Count;
+                    }
                 }
 
-                batch = 0;
-                var errorCollection = GetErrorCollection(container);
-                var errors = errorCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
-                while (errors.Count > 0) {
-                    Console.WriteLine("Converting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
-                    var events = new List<Event>();
-                    foreach (var error in errors) {
-                        var ctx = new EventUpgraderContext(JsonExtensions.ToJson(error), new Version(1, 5), true);
-                        eventUpgraderPluginManager.Upgrade(ctx);
-                        events.Add(ctx.Document.FromJson<Event>());
+                total = 0;
+                stopwatch.Reset();
+                if (true) {
+                    stopwatch.Start();
+                    var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
+                    var errorCollection = GetErrorCollection(container);
+                    var errors = errorCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    while (errors.Count > 0) {
+                        Console.SetCursorPosition(0, 5);
+                        Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
+
+                        var events = new JArray();
+                        foreach (var error in errors) {
+                            var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
+                            eventUpgraderPluginManager.Upgrade(ctx);
+                            events.Add(ctx.Document);
+                        }
+
+                        try {
+                            var ev = events.FromJson<Event>();
+                            response = searchclient.IndexMany(ev, type: "events");
+                        } catch (OutOfMemoryException) {
+                            var ev = events.FromJson<Event>();
+                            response = searchclient.IndexMany(ev.Take(50), type: "events");
+                            response = searchclient.IndexMany(ev.Skip(50), type: "events");
+                        }
+                        if (!response.IsValid)
+                            Debugger.Break();
+                        var lastId = errors.Last().Id;
+
+                        errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                        total += errors.Count;
                     }
-
-                    Console.WriteLine("Inserting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
-                    var result = searchclient.IndexMany(events);
-                    // TODO: Verify that we successfully submitted, retry if not.
-                    var lastId = errors.Last().Id;
-
-                    errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
-                    batch++;
                 }
 
                 PauseIfDebug();
