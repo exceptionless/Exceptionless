@@ -141,6 +141,11 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
+        public static T FromJson<T>(this JObject data, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+            return data.ToObject<T>(serializer);
+        }
+
         public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 

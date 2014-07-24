@@ -119,6 +119,10 @@
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
+      <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
+      <Name>Exceptionless.Models</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -8,6 +8,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Utility;
 using Exceptionless.EventMigration.Models;
+using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -59,8 +60,12 @@ namespace Exceptionless.EventMigration {
                 var errorStackCollection = GetErrorStackCollection(container);
                 var uri = new Uri("http://localhost:9200");
                 var settings = new ConnectionSettings(uri).SetDefaultIndex("exceptionless");
+                settings.SetJsonSerializerSettingsModifier(s => {
+                    s.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
+                    // TODO: More serializer settings here.
+                });
                 var searchclient = new ElasticClient(settings);
-
+                
                 int batch = 0;
                 var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
                 while (stacks.Count > 0) {
@@ -78,11 +83,11 @@ namespace Exceptionless.EventMigration {
                 var errors = errorCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                 while (errors.Count > 0) {
                     Console.WriteLine("Converting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
-                    var events = new List<JObject>();
+                    var events = new List<Event>();
                     foreach (var error in errors) {
-                        var ctx = new EventUpgraderContext(JsonConvert.SerializeObject(error), new Version(1, 5), true);
+                        var ctx = new EventUpgraderContext(JsonExtensions.ToJson(error), new Version(1, 5), true);
                         eventUpgraderPluginManager.Upgrade(ctx);
-                        events.Add(ctx.Document);
+                        events.Add(ctx.Document.FromJson<Event>());
                     }
 
                     Console.WriteLine("Inserting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
