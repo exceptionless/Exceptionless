@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Tests.Queue {
                 Id = i
             }));
 
-            bool success = latch.Wait(1000);
+            bool success = latch.Wait(1500);
             Assert.True(success, "Failed to receive all work items.");
             Task.Delay(50).Wait();
             Assert.Equal(workItemCount, queue.Completed + queue.DeadletterCount);
