@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using CodeSmith.Core.CommandLine;
-using CodeSmith.Core.Scheduler;
-using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Utility;
@@ -16,6 +14,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SimpleInjector;
@@ -30,6 +29,7 @@ namespace Exceptionless.EventMigration {
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
             try {
+                // TODO: Support starting from a date.
                 //var ca = new ConsoleArguments();
                 //if (Parser.ParseHelp(args)) {
                 //    OutputUsageHelp();
@@ -52,25 +52,32 @@ namespace Exceptionless.EventMigration {
                 //    return 1;
                 //}
 
+                const int BatchSize = 100;
+
                 var container = CreateContainer();
                 var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                 var errorStackCollection = GetErrorStackCollection(container);
+                var uri = new Uri("http://localhost:9200");
+                var settings = new ConnectionSettings(uri).SetDefaultIndex("exceptionless");
+                var searchclient = new ElasticClient(settings);
 
-                var client = new ElasticsearchClient();
-                var stacks = errorStackCollection.FindAll().SetLimit(100).ToList();
-                while (stacks != null && stacks.Count > 0) {
+                int batch = 0;
+                var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
+                while (stacks.Count > 0) {
+                    Console.WriteLine("Inserting stacks {0}-{1}...", BatchSize * batch, (BatchSize * batch) + stacks.Count);
+                    var result = searchclient.IndexMany(stacks);
+                    // TODO: Verify that we successfully submitted, retry if not.
                     var lastId = stacks.Last().Id;
-                    //Console.WriteLine("Inserting {0} stacks", stacks.Count);
-                    client.Bulk("exceptionless", "stacks", stacks);
 
-                    stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, new BsonObjectId(ObjectId.Parse(lastId)))).SetLimit(100).ToList();
+                    stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    batch++;
                 }
 
+                batch = 0;
                 var errorCollection = GetErrorCollection(container);
-                var errors = errorCollection.FindAll().SetLimit(100).ToList();
-                while (errors != null && errors.Count > 0) {
-                    var lastId = errors.Last().Id;
-
+                var errors = errorCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                while (errors.Count > 0) {
+                    Console.WriteLine("Converting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
                     var events = new List<JObject>();
                     foreach (var error in errors) {
                         var ctx = new EventUpgraderContext(JsonConvert.SerializeObject(error), new Version(1, 5), true);
@@ -78,10 +85,13 @@ namespace Exceptionless.EventMigration {
                         events.Add(ctx.Document);
                     }
 
-                    //Console.WriteLine("Inserting {0} errors", errors.Count);
-                    var result = client.Bulk("exceptionless", "events", JsonConvert.SerializeObject(events));
+                    Console.WriteLine("Inserting events {0}-{1}...", BatchSize * batch, (BatchSize * batch) + errors.Count);
+                    var result = searchclient.IndexMany(events);
+                    // TODO: Verify that we successfully submitted, retry if not.
+                    var lastId = errors.Last().Id;
 
-                    errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, new BsonObjectId(ObjectId.Parse(lastId)))).SetLimit(100).ToList();
+                    errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    batch++;
                 }
 
                 PauseIfDebug();
