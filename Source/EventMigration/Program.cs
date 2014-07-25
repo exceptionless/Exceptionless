@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -24,6 +25,8 @@ using StackFrame = Exceptionless.EventMigration.Models.StackFrame;
 
 namespace Exceptionless.EventMigration {
     internal class Program {
+        private static readonly object _lock = new object();
+
         private static int Main(string[] args) {
             OutputHeader();
 
@@ -68,7 +71,7 @@ namespace Exceptionless.EventMigration {
                 IBulkResponse response;
                 int total = 0;
                 var stopwatch = new Stopwatch();
-                if (false) {
+                if (true) {
                     stopwatch.Start();
                     var errorStackCollection = GetErrorStackCollection(container);
                     var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
@@ -78,8 +81,8 @@ namespace Exceptionless.EventMigration {
                         response = searchclient.IndexMany(stacks, type: "stacks");
                         if (!response.IsValid)
                             Debugger.Break();
-                        var lastId = stacks.Last().Id;
 
+                        var lastId = stacks.Last().Id;
                         stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
                         total += stacks.Count;
                     }
@@ -100,21 +103,22 @@ namespace Exceptionless.EventMigration {
                         Parallel.ForEach(errors, error => {
                             var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
                             eventUpgraderPluginManager.Upgrade(ctx);
-                            events.Add(ctx.Document);
+
+                            lock (_lock)
+                                events.Add(ctx.Document);
                         });
 
+                        var ev = events.FromJson<Event>();
                         try {
-                            var ev = events.FromJson<Event>();
                             response = searchclient.IndexMany(ev, type: "events");
                         } catch (OutOfMemoryException) {
-                            var ev = events.FromJson<Event>();
                             response = searchclient.IndexMany(ev.Take(50), type: "events");
                             response = searchclient.IndexMany(ev.Skip(50), type: "events");
                         }
                         if (!response.IsValid)
                             Debugger.Break();
-                        var lastId = errors.Last().Id;
 
+                        var lastId = errors.Last().Id;
                         errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                         total += errors.Count;
                     }
