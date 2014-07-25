@@ -17,7 +17,7 @@ namespace Exceptionless.EventMigration.Models {
             Settings = new ConfigurationDictionary();
         }
 
-        public int Version { get; set; } // TODO: Make this private once we have better patching support.
+        public int Version { get; set; }
         public ConfigurationDictionary Settings { get; set; }
     }
 }

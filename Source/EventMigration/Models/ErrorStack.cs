@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration.Models {
     public class ErrorStack {

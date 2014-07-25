@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Text;
 
 namespace Exceptionless.EventMigration.Models {
     public class Method {
@@ -33,72 +32,6 @@ namespace Exceptionless.EventMigration.Models {
                     return DeclaringType.Replace('+', '.');
 
                 return String.Empty;
-            }
-        }
-
-        public string FullName {
-            get {
-                var sb = new StringBuilder();
-                AppendMethod(sb, includeParameters: false);
-                return sb.ToString();
-            }
-        }
-
-        public string Signature {
-            get {
-                var sb = new StringBuilder();
-                AppendMethod(sb);
-                return sb.ToString();
-            }
-        }
-
-        internal void AppendMethod(StringBuilder sb, bool includeParameters = true) {
-            if (String.IsNullOrEmpty(Name)) {
-                sb.Append("<null>");
-                return;
-            }
-
-            if (!String.IsNullOrEmpty(DeclaringNamespace))
-                sb.Append(DeclaringNamespace).Append(".");
-
-            if (!String.IsNullOrEmpty(DeclaringType))
-                sb.Append(DeclaringType.Replace('+', '.')).Append(".");
-
-            sb.Append(Name);
-
-            if (GenericArguments.Count > 0) {
-                sb.Append("[");
-                bool first = true;
-                foreach (string arg in GenericArguments) {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(",");
-
-                    sb.Append(arg);
-                }
-
-                sb.Append("]");
-            }
-
-            if (includeParameters) {
-                sb.Append("(");
-                bool first = true;
-                foreach (Parameter p in Parameters) {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(", ");
-
-                    if (String.IsNullOrEmpty(p.Type))
-                        sb.Append("<UnknownType>");
-                    else
-                        sb.Append(p.Type.Replace('+', '.'));
-
-                    sb.Append(" ");
-                    sb.Append(p.Name);
-                }
-                sb.Append(")");
             }
         }
 

@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Text;
 
 namespace Exceptionless.EventMigration.Models {
     public class Module {
@@ -25,16 +24,5 @@ namespace Exceptionless.EventMigration.Models {
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
         public ExtendedDataDictionary ExtendedData { get; set; }
-
-        public override string ToString() {
-            var sb = new StringBuilder();
-            sb.Append(Name);
-            sb.Append(", Version=");
-            sb.Append(Version);
-            if (ExtendedData.ContainsKey("PublicKeyToken"))
-                sb.Append(", PublicKeyToken=").Append(ExtendedData["PublicKeyToken"]);
-
-            return sb.ToString();
-        }
     }
 }

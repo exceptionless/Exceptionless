@@ -56,13 +56,5 @@ namespace Exceptionless.EventMigration.Models {
         /// The target method.
         /// </summary>
         public Method TargetMethod { get; set; }
-
-        public override int GetHashCode() {
-#if !PFX_LEGACY_3_5
-            return String.Concat(Type, Code, Inner != null, String.Join("", StackTrace.Select(st => st.FullName))).GetHashCode();
-#else
-            return String.Concat(Type, Code, Inner != null, String.Join("", StackTrace.Select(st => st.FullName).ToArray())).GetHashCode();
-#endif
-        }
     }
 }
