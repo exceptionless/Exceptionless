@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.CommandLine;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
@@ -96,11 +97,11 @@ namespace Exceptionless.EventMigration {
                         Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
 
                         var events = new JArray();
-                        foreach (var error in errors) {
+                        Parallel.ForEach(errors, error => {
                             var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
                             eventUpgraderPluginManager.Upgrade(ctx);
                             events.Add(ctx.Document);
-                        }
+                        });
 
                         try {
                             var ev = events.FromJson<Event>();
