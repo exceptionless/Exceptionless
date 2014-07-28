@@ -51,12 +51,15 @@ namespace Exceptionless.EventMigration {
                 const int BatchSize = 25;
 
                 var container = CreateContainer();
-                var uri = new Uri("http://localhost:9200");
-                var settings = new ConnectionSettings(uri).SetDefaultIndex("exceptionless");
+                var serverUri = new Uri("http://localhost:9200");
+                EnsureIndex(serverUri, ca.DeleteExistingIndexes);
+
+                var settings = new ConnectionSettings(serverUri).SetDefaultIndex("exceptionless_v1");
                 settings.SetJsonSerializerSettingsModifier(s => {
                     s.MissingMemberHandling = MissingMemberHandling.Ignore;
                     s.ContractResolver = new ExtensionContractResolver();
                 });
+                
                 var searchclient = new ElasticClient(settings);
                 var serializerSettings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore,
@@ -170,6 +173,50 @@ namespace Exceptionless.EventMigration {
             Console.WriteLine("Usage samples:");
             Console.WriteLine();
             Console.WriteLine("  job /s:12-12-2022");
+        }
+
+        private static void EnsureIndex(Uri indexServer, bool deleteExistingIndexes = false) {
+            var settings = new ConnectionSettings(indexServer).SetDefaultIndex("exceptionless_v1");
+            //settings.SetJsonSerializerSettingsModifier(s => {
+            //    s.MissingMemberHandling = MissingMemberHandling.Ignore;
+            //    s.ContractResolver = new ExtensionContractResolver();
+            //});
+
+            var searchclient = new ElasticClient(settings);
+
+            bool shouldCreateIndex = false;
+            if (searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "exceptionless_v1" })).Exists) {
+                if (deleteExistingIndexes) {
+                    searchclient.DeleteIndex(new DeleteIndexRequest(new IndexNameMarker { Name = "exceptionless_v1" }));
+                    shouldCreateIndex = true;
+                }
+            } else {
+                shouldCreateIndex = true;
+            }
+
+            if (shouldCreateIndex)
+                searchclient.CreateIndex("exceptionless_v1", idx => idx
+                    .AddAlias("exceptionless")
+                    .AddMapping<PersistentEvent>(map => map
+                        .Type("events")
+                        .Dynamic(DynamicMappingOption.Ignore)
+                        .IncludeInAll(false)
+                        .IdField(id => id.Path("Id"))
+                        .Properties(p => p
+                            .String(f => f.Name(e => e.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.ProjectId).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.StackId).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.ReferenceId).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.SessionId).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.Type).Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.Source).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                            .Date(f => f.Name(e => e.Date))
+                            .String(f => f.Name(e => e.Message).Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name(e => e.Tags).Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(2))
+                        )
+                    )
+                );
+
         }
 
         #region Legacy mongo collections

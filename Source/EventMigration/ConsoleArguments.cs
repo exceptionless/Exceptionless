@@ -11,5 +11,8 @@ namespace Exceptionless.EventMigration {
 
         [Argument(ArgumentType.AtMostOnce, ShortName = "e", LongName = "skiperrors", HelpText = "Should skip error migration.")]
         public bool SkipErrors = false;
+
+        [Argument(ArgumentType.AtMostOnce, ShortName = "d", LongName = "deleteindexes", HelpText = "Delete the existing indexes and start from scratch.")]
+        public bool DeleteExistingIndexes = false;
     }
 }
