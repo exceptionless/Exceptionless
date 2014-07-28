@@ -177,11 +177,6 @@ namespace Exceptionless.EventMigration {
 
         private static void EnsureIndex(Uri indexServer, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(indexServer).SetDefaultIndex("exceptionless_v1");
-            //settings.SetJsonSerializerSettingsModifier(s => {
-            //    s.MissingMemberHandling = MissingMemberHandling.Ignore;
-            //    s.ContractResolver = new ExtensionContractResolver();
-            //});
-
             var searchclient = new ElasticClient(settings);
 
             bool shouldCreateIndex = false;
@@ -203,16 +198,31 @@ namespace Exceptionless.EventMigration {
                         .IncludeInAll(false)
                         .IdField(id => id.Path("Id"))
                         .Properties(p => p
-                            .String(f => f.Name(e => e.OrganizationId).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.ProjectId).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.StackId).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.ReferenceId).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.SessionId).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.Type).Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.Source).Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
-                            .Date(f => f.Name(e => e.Date))
-                            .String(f => f.Name(e => e.Message).Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f => f.Name(e => e.Tags).Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(2))
+                            .String(f => f.Name("OrganizationId").IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("ProjectId").IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("StackId").IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("ReferenceId").IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("SessionId").IndexName("session").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("Type").IndexName("type").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("Source").IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                            .Date(f => f.Name("Date").IndexName("date"))
+                            .String(f => f.Name("Message").IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name("Tags").IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                        )
+                    )
+                    .AddMapping<Stack>(map => map
+                        .Type("stacks")
+                        .Dynamic(DynamicMappingOption.Ignore)
+                        .IncludeInAll(false)
+                        .IdField(id => id.Path("Id"))
+                        .Properties(p => p
+                            .String(f => f.Name("OrganizationId").IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("ProjectId").IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name("SignatureHash").IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
+                            .Date(f => f.Name("FirstOccurrence").IndexName("first"))
+                            .Date(f => f.Name("LastOccurrence").IndexName("last"))
+                            .String(f => f.Name("Title").IndexName("title").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name("Tags").IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
                         )
                     )
                 );
