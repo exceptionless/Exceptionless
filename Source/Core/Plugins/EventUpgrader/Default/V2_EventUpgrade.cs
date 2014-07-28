@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Data;
@@ -28,7 +30,16 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
             ctx.Document.Remove("ExceptionlessClientInfo");
-            ctx.Document.RemoveIfNullOrEmpty("Tags");
+            if (!ctx.Document.RemoveIfNullOrEmpty("Tags")) {
+                var tags = ctx.Document.GetValue("Tags");
+                if (tags.Type == JTokenType.Array) {
+                    foreach (JToken tag in tags.Where(tag => tag.ToString().Length > 255)) {
+                        Debug.WriteLine("removing tag"); 
+                        tag.Remove();
+                    }
+                }
+            }
+
             ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
 

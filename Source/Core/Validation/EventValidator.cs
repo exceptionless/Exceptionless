@@ -15,6 +15,10 @@ namespace Exceptionless.Core.Validation {
                 .Length(8, 32)
                 .Unless(u => String.IsNullOrEmpty(u.ReferenceId))
                 .WithMessage("ReferenceId must contain between 8 and 32 characters");
+
+            RuleForEach(e => e.Tags)
+                .Length(1, 255)
+                .WithMessage("A tag must be less than 255 characters.");
         }
 
         private bool BeAValidEventType(string type) {

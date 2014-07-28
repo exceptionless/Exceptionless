@@ -16,6 +16,19 @@ namespace Exceptionless.Api.Tests.Validation {
         
         [Theory]
         [InlineData(null, true)]
+        [InlineData("", false)]
+        [InlineData("1", true)]
+        [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
+         public void ValidateTag(string tag, bool isValid) {
+            var ev = new Event { Type = Event.KnownTypes.Error };
+            ev.Tags.Add(tag);
+
+            var result = _validator.Validate(ev);
+            Assert.Equal(isValid, result.IsValid);
+        }
+
+        [Theory]
+        [InlineData(null, true)]
         [InlineData("1234567", false)]
         [InlineData("12345678", true)]
         [InlineData("1234567890123456", true)]
