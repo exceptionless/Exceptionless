@@ -12,9 +12,7 @@ using System.Text;
 
 namespace Exceptionless.Models.Data {
     public class Module : IData {
-        public Module() {
-            Data = new DataDictionary();
-        }
+        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
 
         public int ModuleId { get; set; }
         public string Name { get; set; }
@@ -22,7 +20,7 @@ namespace Exceptionless.Models.Data {
         public bool IsEntry { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
-        public DataDictionary Data { get; set; }
+        public DataDictionary Data { get { return _data.Value; } }
 
         public override string ToString() {
             var sb = new StringBuilder();

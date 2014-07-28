@@ -28,8 +28,8 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
             ctx.Document.Remove("ExceptionlessClientInfo");
-            ctx.Document.Remove("IsFixed");
-            ctx.Document.Remove("IsHidden");
+            //ctx.Document.Remove("IsFixed");
+            //ctx.Document.Remove("IsHidden");
             //ctx.Document.RemoveIfNullOrEmpty("Tags");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");

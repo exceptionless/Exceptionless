@@ -10,7 +10,9 @@
 #endregion
 
 using System;
-using Exceptionless.EventMigration.Models.Collections;
+using CodeSmith.Core.Extensions;
+using Exceptionless.Models;
+using ModuleCollection = Exceptionless.EventMigration.Models.Collections.ModuleCollection;
 
 namespace Exceptionless.EventMigration.Models {
     public class Error : ErrorInfo
@@ -106,6 +108,23 @@ namespace Exceptionless.EventMigration.Models {
                 Tags = new TagSet();
 
             Tags.Add("Critical");
+        }
+
+        public PersistentEvent ToEvent() {
+            var ev = new PersistentEvent {
+                Id = Id,
+                Date = OccurrenceDate,
+                IsFixed = IsFixed,
+                IsHidden = IsHidden,
+                Message = Message,
+                OrganizationId = OrganizationId,
+                StackId = ErrorStackId,
+                ProjectId = ProjectId
+            };
+            
+            ev.Tags.AddRange(Tags);
+
+            return ev;
         }
     }
 }

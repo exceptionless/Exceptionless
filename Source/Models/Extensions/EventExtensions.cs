@@ -26,9 +26,6 @@ namespace Exceptionless {
         /// Marks the event as being a critical occurrence.
         /// </summary>
         public static void MarkAsCritical(this Event ev) {
-            if (ev.Tags == null)
-                ev.Tags = new TagSet();
-
             ev.Tags.Add(Event.KnownTags.Critical);
         }
 

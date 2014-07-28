@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -68,10 +67,13 @@ namespace Exceptionless.EventMigration {
                 });
                 var searchclient = new ElasticClient(settings);
 
-                IBulkResponse response;
+                var mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending(d => d.Id).Take(1));
+                ISearchResponse<PersistentEvent> mostRecentEvent = null;//searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending(d => d.Id).Take(1));
+
+                IBulkResponse response = null;
                 int total = 0;
                 var stopwatch = new Stopwatch();
-                if (true) {
+                if (false) {
                     stopwatch.Start();
                     var errorStackCollection = GetErrorStackCollection(container);
                     var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
@@ -94,33 +96,34 @@ namespace Exceptionless.EventMigration {
                     stopwatch.Start();
                     var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                     var errorCollection = GetErrorCollection(container);
-                    var errors = errorCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    var query = mostRecentEvent != null && mostRecentEvent.Total > 0 ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Hits.First().Id)) : Query.Null;
+                    var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (errors.Count > 0) {
                         Console.SetCursorPosition(0, 5);
                         Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
 
-                        var events = new JArray();
-                        Parallel.ForEach(errors, error => {
-                            var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
-                            eventUpgraderPluginManager.Upgrade(ctx);
+                        //var events = new JArray();
+                        //Parallel.ForEach(errors, error => {
+                        //    var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
+                        //    eventUpgraderPluginManager.Upgrade(ctx);
 
-                            lock (_lock)
-                                events.Add(ctx.Document);
-                        });
+                        //    lock (_lock)
+                        //        events.Add(ctx.Document);
+                        //});
 
-                        var ev = events.FromJson<Event>();
+                        var events = errors.Select(e => e.ToEvent()).ToList();
                         try {
-                            response = searchclient.IndexMany(ev, type: "events");
+                            response = searchclient.IndexMany(events, type: "events");
                         } catch (OutOfMemoryException) {
-                            response = searchclient.IndexMany(ev.Take(50), type: "events");
-                            response = searchclient.IndexMany(ev.Skip(50), type: "events");
+                            response = searchclient.IndexMany(events.Take(BatchSize / 2), type: "events");
+                            response = searchclient.IndexMany(events.Skip(BatchSize / 2), type: "events");
                         }
                         if (!response.IsValid)
                             Debugger.Break();
 
-                        var lastId = errors.Last().Id;
+                        var lastId = events.Last().Id;
                         errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
-                        total += errors.Count;
+                        total += events.Count;
                     }
                 }
 

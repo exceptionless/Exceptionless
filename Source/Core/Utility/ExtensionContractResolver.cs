@@ -69,7 +69,7 @@ namespace Exceptionless.Serializer {
                     return;
 
                 if (dataObject.Data == null)
-                    dataObject.Data = new DataDictionary();
+                    return;
                 
                 if (IsPrimitiveType(value.GetType()))
                     dataObject.Data.Add(key, value.ToString());

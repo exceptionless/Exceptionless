@@ -11,9 +11,10 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class UserInfo : IData {
+        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
+
         public UserInfo(string identity) {
             Identity = identity;
-            Data = new DataDictionary();
         }
 
         public string Identity { get; set; }
@@ -21,6 +22,6 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this user.
         /// </summary>
-        public DataDictionary Data { get; set; }
+        public DataDictionary Data { get { return _data.Value; } }
     }
 }

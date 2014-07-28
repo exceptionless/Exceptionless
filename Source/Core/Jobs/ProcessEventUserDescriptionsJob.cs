@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -79,11 +80,14 @@ namespace Exceptionless.Core.Jobs {
                 throw new InvalidOperationException("An event with this reference id has not been processed yet or was deleted.");
 
             // TODO: Should this be storing it in json?
-            ev.SetUserDescription(new UserDescription {
+            var ud = new UserDescription {
                 EmailAddress = description.EmailAddress,
-                Description = description.Description,
-                Data = description.Data
-            });
+                Description = description.Description
+            };
+            if (description.Data.Count > 0)
+                ev.Data.AddRange(description.Data);
+
+            ev.SetUserDescription(ud);
 
             _eventRepository.Save(ev);
         }

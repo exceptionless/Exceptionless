@@ -12,8 +12,9 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Models.Data {
     public class RequestInfo : IData {
+        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
+
         public RequestInfo() {
-            Data = new DataDictionary();
             Cookies = new Dictionary<string, string>();
             QueryString = new Dictionary<string, string>();
         }
@@ -76,6 +77,6 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this request.
         /// </summary>
-        public DataDictionary Data { get; set; }
+        public DataDictionary Data { get { return _data.Value; } }
     }
 }
