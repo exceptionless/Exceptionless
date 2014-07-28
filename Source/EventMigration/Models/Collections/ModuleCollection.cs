@@ -13,5 +13,14 @@ using System;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.EventMigration.Models.Collections {
-    public class ModuleCollection : Collection<Module> {}
+    public class ModuleCollection : Collection<Module> {
+        public Exceptionless.Models.ModuleCollection ToModules() {
+            var modules = new Exceptionless.Models.ModuleCollection();
+            foreach (var item in Items) {
+                modules.Add(item.ToModule());
+            }
+
+            return modules;
+        }
+    }
 }

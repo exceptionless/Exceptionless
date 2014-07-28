@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Models;
 
 namespace Exceptionless.EventMigration.Models {
     public class ExtendedDataDictionary : Dictionary<string, object> {
@@ -32,6 +33,15 @@ namespace Exceptionless.EventMigration.Models {
         public object GetValueOrDefault(string key, Func<object> defaultValueProvider) {
             object value;
             return TryGetValue(key, out value) ? value : defaultValueProvider();
+        }
+
+        public DataDictionary ToData() {
+            var dictionary = new DataDictionary();
+            foreach (var item in this)
+                dictionary.Add(item.Key, item.Value);
+            // TODO: We should be converting strings to jobject.
+
+            return dictionary;
         }
     }
 }

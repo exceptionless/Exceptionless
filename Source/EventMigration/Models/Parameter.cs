@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class Parameter {
@@ -33,5 +34,21 @@ namespace Exceptionless.EventMigration.Models {
 
         public ExtendedDataDictionary ExtendedData { get; set; }
         public GenericArguments GenericArguments { get; set; }
+
+        public Exceptionless.Models.Data.Parameter ToParameter() {
+            var frame = new Exceptionless.Models.Data.Parameter {
+                Name = Name,
+                Type = Type,
+                TypeNamespace = TypeNamespace
+            };
+
+            if (GenericArguments != null && GenericArguments.Count > 0)
+                frame.GenericArguments = GenericArguments.ToGenericArguments();
+
+            if (ExtendedData != null && ExtendedData.Count > 0)
+                frame.Data.AddRange(ExtendedData.ToData());
+
+            return frame;
+        }
     }
 }

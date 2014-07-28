@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class RequestInfo {
@@ -81,5 +82,26 @@ namespace Exceptionless.EventMigration.Models {
         /// Extended data entries for this error.
         /// </summary>
         public ExtendedDataDictionary ExtendedData { get; set; }
+
+        public Exceptionless.Models.Data.RequestInfo ToRequestInfo() {
+            var requestInfo = new Exceptionless.Models.Data.RequestInfo() {
+                ClientIpAddress = ClientIpAddress,
+                Cookies = Cookies,
+                Host = Host,
+                HttpMethod = HttpMethod,
+                IsSecure = IsSecure,
+                Path = Path,
+                Port = Port,
+                PostData = PostData,
+                QueryString = QueryString,
+                Referrer = Referrer,
+                UserAgent = UserAgent
+            };
+
+            if (ExtendedData != null && ExtendedData.Count > 0)
+                requestInfo.Data.AddRange(ExtendedData.ToData());
+
+            return requestInfo;
+        }
     }
 }

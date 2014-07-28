@@ -11,9 +11,16 @@
 
 using System;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace Exceptionless.EventMigration.Models {
     public class StackFrameCollection : Collection<StackFrame> {
+        public Exceptionless.Models.StackFrameCollection ToStackTrace() {
+            var frames = new Exceptionless.Models.StackFrameCollection();
+            foreach (var item in Items) {
+                frames.Add(item.ToStackFrame());
+            }
+
+            return frames;
+        }
     }
 }

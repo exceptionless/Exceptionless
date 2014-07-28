@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class EnvironmentInfo {
@@ -105,5 +106,30 @@ namespace Exceptionless.EventMigration.Models {
         /// Extended data entries for this machine environment.
         /// </summary>
         public ExtendedDataDictionary ExtendedData { get; set; }
+
+        public Exceptionless.Models.Data.EnvironmentInfo ToEnvironmentInfo() {
+            var environmentInfo = new Exceptionless.Models.Data.EnvironmentInfo {
+                Architecture = Architecture,
+                AvailablePhysicalMemory = AvailablePhysicalMemory,
+                CommandLine = CommandLine,
+                IpAddress = IpAddress,
+                MachineName = MachineName,
+                OSName = OSName,
+                OSVersion = OSVersion,
+                ProcessId = ProcessId,
+                ProcessMemorySize = ProcessMemorySize,
+                ProcessName = ProcessName,
+                ProcessorCount = ProcessorCount,
+                RuntimeVersion = RuntimeVersion,
+                ThreadId = ThreadId,
+                ThreadName = ThreadName,
+                TotalPhysicalMemory = TotalPhysicalMemory
+            };
+
+            if (ExtendedData != null && ExtendedData.Count > 0)
+                environmentInfo.Data.AddRange(ExtendedData.ToData());
+
+            return environmentInfo;
+        }
     }
 }

@@ -28,9 +28,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
             ctx.Document.Remove("ExceptionlessClientInfo");
-            //ctx.Document.Remove("IsFixed");
-            //ctx.Document.Remove("IsHidden");
-            //ctx.Document.RemoveIfNullOrEmpty("Tags");
+            ctx.Document.RemoveIfNullOrEmpty("Tags");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
             ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
 
@@ -67,9 +65,9 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (!String.IsNullOrWhiteSpace(identity))
                 ctx.Document.Add("user", JObject.FromObject(new UserInfo(identity)));
 
-            //ctx.Document.RemoveAllIfNullOrEmpty("Data");
-            //ctx.Document.RemoveAllIfNullOrEmpty("GenericArguments");
-            //ctx.Document.RemoveAllIfNullOrEmpty("Parameters");
+            ctx.Document.RemoveAllIfNullOrEmpty("Data");
+            ctx.Document.RemoveAllIfNullOrEmpty("GenericArguments");
+            ctx.Document.RemoveAllIfNullOrEmpty("Parameters");
         }
 
         private void MoveExtraExceptionProperties(JObject doc, JObject extendedData = null) {

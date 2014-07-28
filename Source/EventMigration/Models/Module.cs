@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class Module {
@@ -24,5 +25,21 @@ namespace Exceptionless.EventMigration.Models {
         public DateTime CreatedDate { get; set; }
         public DateTime ModifiedDate { get; set; }
         public ExtendedDataDictionary ExtendedData { get; set; }
+
+        public Exceptionless.Models.Data.Module ToModule() {
+            var module = new Exceptionless.Models.Data.Module {
+                ModuleId = ModuleId,
+                Name = Name,
+                Version = Version,
+                IsEntry = IsEntry,
+                CreatedDate = CreatedDate,
+                ModifiedDate = ModifiedDate
+            };
+
+            if (ExtendedData != null && ExtendedData.Count > 0)
+                module.Data.AddRange(ExtendedData.ToData());
+
+            return module;
+        }
     }
 }

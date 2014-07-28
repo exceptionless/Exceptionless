@@ -10,10 +10,7 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Text;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class ErrorInfo {
@@ -56,5 +53,27 @@ namespace Exceptionless.EventMigration.Models {
         /// The target method.
         /// </summary>
         public Method TargetMethod { get; set; }
+
+        public Exceptionless.Models.Data.InnerError ToInnerError() {
+            var error = new Exceptionless.Models.Data.InnerError {
+                Message = Message,
+                Type = Type,
+                Code = Code,
+            };
+
+            if (StackTrace != null && StackTrace.Count > 0)
+                error.StackTrace = StackTrace.ToStackTrace();
+
+            if (TargetMethod != null)
+                error.TargetMethod = TargetMethod.ToMethod();
+
+            if (Inner != null)
+                error.Inner = Inner.ToInnerError();
+
+            if (ExtendedData != null && ExtendedData.Count > 0)
+                error.Data.AddRange(ExtendedData.ToData());
+
+            return error;
+        }
     }
 }
