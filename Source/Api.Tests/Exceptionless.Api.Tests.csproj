@@ -194,8 +194,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="ErrorData\1477_1.json" />
-    <None Include="ErrorData\1477_1.expected.json" />
     <None Include="ErrorData\1477.expected.json" />
     <None Include="ErrorData\1477.json" />
     <None Include="ErrorData\1858.expected.json" />
