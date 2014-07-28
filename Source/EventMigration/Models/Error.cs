@@ -10,11 +10,13 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
 using ModuleCollection = Exceptionless.EventMigration.Models.Collections.ModuleCollection;
 
 namespace Exceptionless.EventMigration.Models {
+    [DebuggerDisplay("{Id}, {OccurrenceDate}")]
     public class Error : ErrorInfo
     {
         public Error() {

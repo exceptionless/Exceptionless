@@ -3,7 +3,13 @@ using CodeSmith.Core.CommandLine;
 
 namespace Exceptionless.EventMigration {
     public class ConsoleArguments {
-        [Argument(ArgumentType.Required, ShortName = "s", LongName = "since", HelpText = "The last time that you ran the migration.")]
-        public DateTime Since;
+        [Argument(ArgumentType.AtMostOnce, ShortName = "r", LongName = "resume", HelpText = "Should resume from the most recent items in the index.")]
+        public bool Resume;
+
+        [Argument(ArgumentType.AtMostOnce, ShortName = "s", LongName = "skipstacks", HelpText = "Should skip stack migration.")]
+        public bool SkipStacks = false;
+
+        [Argument(ArgumentType.AtMostOnce, ShortName = "e", LongName = "skiperrors", HelpText = "Should skip error migration.")]
+        public bool SkipErrors = false;
     }
 }

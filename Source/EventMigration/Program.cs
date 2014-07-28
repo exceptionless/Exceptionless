@@ -10,6 +10,7 @@ using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Utility;
 using Exceptionless.EventMigration.Models;
 using Exceptionless.Models;
+using Exceptionless.Serializer;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -33,50 +34,50 @@ namespace Exceptionless.EventMigration {
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
             try {
-                // TODO: Support starting from a date.
-                //var ca = new ConsoleArguments();
-                //if (Parser.ParseHelp(args)) {
-                //    OutputUsageHelp();
-                //    PauseIfDebug();
-                //    return 0;
-                //}
+                var ca = new ConsoleArguments();
+                if (Parser.ParseHelp(args)) {
+                    OutputUsageHelp();
+                    PauseIfDebug();
+                    return 0;
+                }
 
-                //if (!Parser.ParseArguments(args, ca, Console.Error.WriteLine)) {
-                //    OutputUsageHelp();
-                //    PauseIfDebug();
-                //    return 1;
-                //}
+                if (!Parser.ParseArguments(args, ca, Console.Error.WriteLine)) {
+                    OutputUsageHelp();
+                    PauseIfDebug();
+                    return 1;
+                }
 
-                //Console.WriteLine();
-
-                //var since = DateTime.Parse(ca.Since);
-                //if (since == null) {
-                //    Console.Error.WriteLine("Unable to resolve type: \"{0}\".", ca.JobType);
-                //    PauseIfDebug();
-                //    return 1;
-                //}
-
-                const int BatchSize = 100;
+                Console.WriteLine();
+                const int BatchSize = 25;
 
                 var container = CreateContainer();
                 var uri = new Uri("http://localhost:9200");
                 var settings = new ConnectionSettings(uri).SetDefaultIndex("exceptionless");
                 settings.SetJsonSerializerSettingsModifier(s => {
-                    s.ReferenceLoopHandling = ReferenceLoopHandling.Ignore;
-                    // TODO: More serializer settings here.
+                    s.MissingMemberHandling = MissingMemberHandling.Ignore;
+                    s.ContractResolver = new ExtensionContractResolver();
                 });
                 var searchclient = new ElasticClient(settings);
+                var serializerSettings = new JsonSerializerSettings {
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    ContractResolver = new ExtensionContractResolver()
+                };
 
-                var mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending(d => d.Id).Take(1));
-                ISearchResponse<PersistentEvent> mostRecentEvent = null;//searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending(d => d.Id).Take(1));
+                ISearchResponse<Stack> mostRecentStack = null;
+                if (ca.Resume)
+                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending(d => d.Id).Take(1));
+                ISearchResponse<PersistentEvent> mostRecentEvent = null;
+                if (ca.Resume)
+                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending(d => d.Id).Take(1));
 
                 IBulkResponse response = null;
                 int total = 0;
                 var stopwatch = new Stopwatch();
-                if (false) {
+                if (!ca.SkipStacks) {
                     stopwatch.Start();
                     var errorStackCollection = GetErrorStackCollection(container);
-                    var stacks = errorStackCollection.FindAll().SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    var query = mostRecentStack != null && mostRecentStack.Total > 0 ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Hits.First().Id)) : Query.Null;
+                    var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (stacks.Count > 0) {
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
@@ -92,7 +93,7 @@ namespace Exceptionless.EventMigration {
 
                 total = 0;
                 stopwatch.Reset();
-                if (true) {
+                if (!ca.SkipErrors) {
                     stopwatch.Start();
                     var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                     var errorCollection = GetErrorCollection(container);
@@ -102,26 +103,26 @@ namespace Exceptionless.EventMigration {
                         Console.SetCursorPosition(0, 5);
                         Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
 
-                        //var events = new JArray();
-                        //Parallel.ForEach(errors, error => {
-                        //    var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
-                        //    eventUpgraderPluginManager.Upgrade(ctx);
+                        var events = new JArray();
+                        Parallel.ForEach(errors, error => {
+                            var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
+                            eventUpgraderPluginManager.Upgrade(ctx);
 
-                        //    lock (_lock)
-                        //        events.Add(ctx.Document);
-                        //});
+                            lock (_lock)
+                                events.Add(ctx.Document);
+                        });
 
-                        var events = errors.Select(e => e.ToEvent()).ToList();
+                        var ev = events.FromJson<PersistentEvent>(serializerSettings);
                         try {
-                            response = searchclient.IndexMany(events, type: "events");
+                            response = searchclient.IndexMany(ev, type: "events");
                         } catch (OutOfMemoryException) {
-                            response = searchclient.IndexMany(events.Take(BatchSize / 2), type: "events");
-                            response = searchclient.IndexMany(events.Skip(BatchSize / 2), type: "events");
+                            response = searchclient.IndexMany(ev.Take(BatchSize / 2), type: "events");
+                            response = searchclient.IndexMany(ev.Skip(BatchSize / 2), type: "events");
                         }
                         if (!response.IsValid)
                             Debugger.Break();
 
-                        var lastId = events.Last().Id;
+                        var lastId = ev.Last().Id;
                         errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                         total += events.Count;
                     }
