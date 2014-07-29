@@ -128,14 +128,9 @@ namespace Exceptionless.App.Controllers.API {
             pageSize = GetPageSize(pageSize);
             int skip = GetSkip(page, pageSize);
 
-            // TODO: implement proper paging once it's supported by the api.
-            var limit = pageSize * skip;
-            if (limit > 100)
-                limit = 100;
-
             var invoiceService = new StripeInvoiceService();
-            List<InvoiceGridModel> invoices = invoiceService.List(limit, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
-            return Ok(new PagedResult<InvoiceGridModel>(invoices.Skip(skip).Take(pageSize).ToList()) {
+            List<InvoiceGridModel> invoices = invoiceService.List(100, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
+            return Ok(new PagedResult<InvoiceGridModel>(invoices.Skip(skip).Take(pageSize).ToList(), invoices.Count) {
                 Page = page,
                 PageSize = pageSize
             });

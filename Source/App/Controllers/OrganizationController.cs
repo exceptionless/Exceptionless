@@ -95,7 +95,8 @@ namespace Exceptionless.App.Controllers {
                     StripeCustomer customer = customerService.Create(new StripeCustomerCreateOptions {
                         TokenId = stripeToken,
                         PlanId = planId,
-                        Description = organization.Name
+                        Description = organization.Name,
+                        Email = User.UserEntity.EmailAddress
                     });
 
                     organization.BillingStatus = BillingStatus.Active;
@@ -115,6 +116,9 @@ namespace Exceptionless.App.Controllers {
                     }
 
                     customerService.UpdateSubscription(organization.StripeCustomerId, update);
+                    customerService.Update(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
+                        Email = User.UserEntity.EmailAddress
+                    });
                     if (cardUpdated)
                         organization.CardLast4 = last4;
 
