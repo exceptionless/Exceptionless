@@ -11,6 +11,10 @@ module exceptionless.admin {
         mediumYearlyTotal = ko.observable<number>(0);
         largeTotal = ko.observable<number>(0);
         largeYearlyTotal = ko.observable<number>(0);
+        extraLargeTotal = ko.observable<number>(0);
+        extraLargeYearlyTotal = ko.observable<number>(0);
+        enterpriseTotal = ko.observable<number>(0);
+        enterpriseYearlyTotal = ko.observable<number>(0);
 
         monthlyTotal = ko.observable<number>(0);
         yearlyTotal = ko.observable<number>(0);
@@ -40,6 +44,10 @@ module exceptionless.admin {
             this.mediumYearlyTotal(data.MediumYearlyTotal);
             this.largeTotal(data.LargeTotal);
             this.largeYearlyTotal(data.LargeYearlyTotal);
+            this.extraLargeTotal(data.ExtraLargeTotal);
+            this.extraLargeYearlyTotal(data.ExtraLargeYearlyTotal);
+            this.enterpriseTotal(data.EnterpriseTotal);
+            this.enterpriseYearlyTotal(data.EnterpriseYearlyTotal);
 
             this.monthlyTotal(data.MonthlyTotal);
             this.yearlyTotal(data.YearlyTotal);

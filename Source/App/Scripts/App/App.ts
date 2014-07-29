@@ -163,7 +163,6 @@ module exceptionless {
             var plans: account.BillingPlan[] = [];
             $.each(data.BillingInfo, (index, p) => plans.push(new account.BillingPlan(p.Id, p.Name, p.Description, p.Price, p.HasPremiumFeatures, p.MaxProjects, p.MaxErrors, p.MaxPerStack, p.MaxUsers, p.StatRetention, p.IsHidden)));
             App.plans(plans);
-            App.plans.sort((a: account.BillingPlan, b: account.BillingPlan) => { return a.price > b.price ? 1 : -1; });
 
             var organizations: models.Organization[] = [];
             $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes, o.IsOverHourlyLimit, o.IsOverMonthlyLimit)));

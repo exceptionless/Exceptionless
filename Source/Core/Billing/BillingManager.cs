@@ -205,8 +205,8 @@ namespace Exceptionless.Core.Billing {
                     Price = 99,
                     MaxProjects = -1,
                     MaxUsers = -1,
-                    RetentionDays = 365,
-                    MaxErrorsPerMonth = 150000,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 250000,
                     HasPremiumFeatures = true
                 };
             }
@@ -221,8 +221,72 @@ namespace Exceptionless.Core.Billing {
                     Price = 1089,
                     MaxProjects = -1,
                     MaxUsers = -1,
-                    RetentionDays = 365,
-                    MaxErrorsPerMonth = 150000,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 250000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan ExtraLargePlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_XL",
+                    Name = "Extra Large",
+                    Description = "Extra Large ($199/month)",
+                    Price = 199,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 1000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan ExtraLargeYearlyPlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_XL_YEARLY",
+                    Name = "Extra Large (Yearly)",
+                    Description = "Extra Large Yearly ($2,189/year - Save $199)",
+                    Price = 2189,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 1000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan EnterprisePlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_ENT",
+                    Name = "Enterprise",
+                    Description = "Enterprise ($499/month)",
+                    Price = 499,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 3000000,
+                    HasPremiumFeatures = true
+                };
+            }
+        }
+
+        public static BillingPlan EnterpriseYearlyPlan {
+            get {
+                return new BillingPlan {
+                    Id = "EX_ENT_YEARLY",
+                    Name = "Enterprise (Yearly)",
+                    Description = "Enterprise Yearly ($5,489/year - Save $499)",
+                    Price = 5489,
+                    MaxProjects = -1,
+                    MaxUsers = -1,
+                    RetentionDays = 180,
+                    MaxErrorsPerMonth = 3000000,
                     HasPremiumFeatures = true
                 };
             }
@@ -245,6 +309,6 @@ namespace Exceptionless.Core.Billing {
             }
         }
 
-        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, SmallPlan, MediumPlan, LargePlan, UnlimitedPlan };
+        public static readonly BillingPlan[] Plans = { FreePlan, SmallYearlyPlan, MediumYearlyPlan, LargeYearlyPlan, ExtraLargeYearlyPlan, EnterpriseYearlyPlan, SmallPlan, MediumPlan, LargePlan, ExtraLargePlan, EnterprisePlan, UnlimitedPlan };
     }
 }

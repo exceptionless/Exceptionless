@@ -133,7 +133,8 @@ module exceptionless.account {
                 this.cardMode = !org.cardLast4 ? 'new' : 'existing';
 
                 var currentPlan: account.BillingPlan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.id === this.selectedOrganizationPlan.id);
-                var upsell: account.BillingPlan = ko.utils.arrayFirst(App.plans(), (plan: account.BillingPlan) => plan.price > this.selectedOrganizationPlan.price);
+                var currentPlanIndex: number = App.plans.indexOf(currentPlan);
+                var upsell: account.BillingPlan = App.plans().length > currentPlanIndex + 1 ? App.plans()[currentPlanIndex + 1] : currentPlan;
                 this.selectedPlan = upsell ? upsell : currentPlan ? currentPlan : this.plans[1];
             });
 

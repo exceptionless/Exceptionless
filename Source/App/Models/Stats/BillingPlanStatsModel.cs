@@ -19,6 +19,10 @@ namespace Exceptionless.App.Models.Stats {
         public int MediumYearlyTotal { get; set; }
         public int LargeTotal { get; set; }
         public int LargeYearlyTotal { get; set; }
+        public int ExtraLargeTotal { get; set; }
+        public int ExtraLargeYearlyTotal { get; set; }
+        public int EnterpriseTotal { get; set; }
+        public int EnterpriseYearlyTotal { get; set; }
         public decimal MonthlyTotal { get; set; }
         public decimal YearlyTotal { get; set; }
         public int MonthlyTotalAccounts { get; set; }

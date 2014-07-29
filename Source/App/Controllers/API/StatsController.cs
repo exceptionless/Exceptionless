@@ -198,16 +198,24 @@ namespace Exceptionless.App.Controllers.API {
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargePlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> extraLargeOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.ExtraLargePlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> enterpriseOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.EnterprisePlan.Id) && o.BillingPrice > 0).ToList();
             decimal monthlyTotalPaid = smallOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-                + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+                + largeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + extraLargeOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + enterpriseOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             List<Organization> smallYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> largeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.LargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> extraLargeYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.ExtraLargeYearlyPlan.Id) && o.BillingPrice > 0).ToList();
+            List<Organization> enterpriseYearlyOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.EnterpriseYearlyPlan.Id) && o.BillingPrice > 0).ToList();
             decimal yearlyTotalPaid = smallYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
                 + mediumYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
-                + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
+                + largeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + extraLargeYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice)
+                + enterpriseYearlyOrganizations.Where(o => !o.IsSuspended && o.BillingStatus == BillingStatus.Active).Sum(o => o.BillingPrice);
 
             return Ok(new BillingPlanStatsModel {
                 SmallTotal = smallOrganizations.Count,
@@ -216,10 +224,14 @@ namespace Exceptionless.App.Controllers.API {
                 MediumYearlyTotal = mediumYearlyOrganizations.Count,
                 LargeTotal = largeOrganizations.Count,
                 LargeYearlyTotal = largeYearlyOrganizations.Count,
+                ExtraLargeTotal = extraLargeOrganizations.Count,
+                ExtraLargeYearlyTotal = extraLargeYearlyOrganizations.Count,
+                EnterpriseTotal = enterpriseOrganizations.Count,
+                EnterpriseYearlyTotal = enterpriseYearlyOrganizations.Count,
                 MonthlyTotal = monthlyTotalPaid + (yearlyTotalPaid / 12),
                 YearlyTotal = (monthlyTotalPaid * 12) + yearlyTotalPaid,
-                MonthlyTotalAccounts = smallOrganizations.Count + mediumOrganizations.Count + largeOrganizations.Count,
-                YearlyTotalAccounts = smallYearlyOrganizations.Count + mediumYearlyOrganizations.Count + largeYearlyOrganizations.Count,
+                MonthlyTotalAccounts = smallOrganizations.Count + mediumOrganizations.Count + largeOrganizations.Count + extraLargeOrganizations.Count + enterpriseOrganizations.Count,
+                YearlyTotalAccounts = smallYearlyOrganizations.Count + mediumYearlyOrganizations.Count + largeYearlyOrganizations.Count + extraLargeYearlyOrganizations.Count + enterpriseYearlyOrganizations.Count,
                 FreeAccounts = results.Count(o => String.Equals(o.PlanId, BillingManager.FreePlan.Id)),
                 PaidAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice > 0),
                 FreeloaderAccounts = results.Count(o => !String.Equals(o.PlanId, BillingManager.FreePlan.Id) && o.BillingPrice <= 0),
