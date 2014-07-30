@@ -186,6 +186,10 @@ task PackageClient -depends TestClient {
         robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
         Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
 
+        If ($p.Name -ne "Exceptionless") {
+            robocopy "$base_dir\Source\Clients\Extras" "$workingDirectory\src\Source\Clients\Extras" *.cs /S /NP /XD obj
+        }
+
         If ($p.Name -eq "Exceptionless.Mvc") {
             robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
         }
