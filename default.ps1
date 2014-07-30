@@ -192,8 +192,10 @@ task PackageClient -depends TestClient {
 
         If ($p.Name -eq "Exceptionless.Mvc") {
             robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
+        } ElseIf ($p.Name -eq "Exceptionless.WebApi") {
+            robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         }
-        
+
         If ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
             Copy-Item "$($p.SourceDir)\NuGet\*" $workingDirectory -Recurse
         }
