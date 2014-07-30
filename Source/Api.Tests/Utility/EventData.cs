@@ -37,7 +37,7 @@ namespace Exceptionless.Tests.Utility {
             return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
         }
 
-        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true) {
             if (!startDate.HasValue)
                 startDate = DateTime.Now.AddDays(-90);
             if (!endDate.HasValue)
@@ -53,20 +53,24 @@ namespace Exceptionless.Tests.Utility {
             if (!stackId.IsNullOrEmpty())
                 ev.StackId = stackId;
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
-                string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-                while (ev.Data.ContainsKey(key))
-                    key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+            if (generateData) {
+                for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
+                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    while (ev.Data.ContainsKey(key))
+                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
 
-                ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                }
             }
 
-            for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
-                string tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
-                while (ev.Tags.Contains(tag))
-                    tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+            if (generateTags) {
+                for (int i = 0; i < RandomHelper.GetRange(minimiumNestingLevel, minimiumNestingLevel + 5); i++) {
+                    string tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    while (ev.Tags.Contains(tag))
+                        tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
 
-                ev.Tags.Add(tag);
+                    ev.Tags.Add(tag);
+                }
             }
 
             ev.Type = Event.KnownTypes.Error;

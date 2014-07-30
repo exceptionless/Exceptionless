@@ -33,10 +33,8 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (!ctx.Document.RemoveIfNullOrEmpty("Tags")) {
                 var tags = ctx.Document.GetValue("Tags");
                 if (tags.Type == JTokenType.Array) {
-                    foreach (JToken tag in tags.Where(tag => tag.ToString().Length > 255)) {
-                        Debug.WriteLine("removing tag"); 
+                    foreach (JToken tag in tags.Where(tag => tag.ToString().Length > 255))
                         tag.Remove();
-                    }
                 }
             }
 

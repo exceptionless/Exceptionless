@@ -115,7 +115,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             const string Tag2 = "Tag Two";
             const string Tag2_Lowercase = "tag two";
 
-            PersistentEvent ev = EventData.GenerateEvent(id: TestConstants.EventId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            PersistentEvent ev = EventData.GenerateEvent(id: TestConstants.EventId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1);
             ev.Tags.Add(Tag1);
 
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -128,14 +128,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = _stackRepository.GetById(ev.StackId);
             Assert.Equal(new TagSet { Tag1 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1);
             ev.Tags.Add(Tag2);
 
             Assert.DoesNotThrow(() => pipeline.Run(ev));
             stack = _stackRepository.GetById(ev.StackId);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1);
             ev.Tags.Add(Tag2_Lowercase);
 
             Assert.DoesNotThrow(() => pipeline.Run(ev));
