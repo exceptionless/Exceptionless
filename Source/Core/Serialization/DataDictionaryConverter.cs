@@ -1,8 +1,11 @@
 using System;
+using System.Linq.Expressions;
+using System.Reflection;
 #if EMBEDDED
 using Exceptionless.Json;
 using Exceptionless.Json.Converters;
 using Exceptionless.Json.Linq;
+using Exceptionless.Extensions;
 #else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;

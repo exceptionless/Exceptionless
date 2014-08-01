@@ -223,6 +223,7 @@
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
     <Compile Include="Queues\Models\EventUserDescription.cs" />
     <Compile Include="Queues\Models\MailMessage.cs" />
+    <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\DayProjectStatsValidator.cs" />
     <Compile Include="Validation\DayStackStatsValidator.cs" />

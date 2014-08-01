@@ -3,11 +3,12 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
         public static string ToLowerUnderscoredWords(this string value) {
-            var builder = new StringBuilder();
+            var builder = new StringBuilder(value.Length + 10);
             for (int index = 0; index < value.Length; index++) {
                 char c = value[index];
                 if (Char.IsUpper(c)) {
@@ -18,6 +19,23 @@ namespace Exceptionless.Core.Extensions {
                 } else {
                     builder.Append(c);
                 }
+            }
+
+            return builder.ToString();
+        }
+
+        public static string ToLowerFiltered(this string value, char[] charsToRemove) {
+            var builder = new StringBuilder(value.Length);
+
+            for (int index = 0; index < value.Length; index++) {
+                char c = value[index];
+                if (Char.IsUpper(c))
+                    c = Char.ToLower(c);
+
+                if (charsToRemove.Contains(v => v == c))
+                    continue;
+
+                builder.Append(c);
             }
 
             return builder.ToString();
