@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Json.Linq;
 using Exceptionless.Models;
 
 namespace Exceptionless {
@@ -29,6 +30,11 @@ namespace Exceptionless {
 
             if (data == null || data is T)
                 return (T)data;
+
+            if (data is JObject) {
+                serializer = serializer ?? DependencyResolver.Default.GetJsonSerializer();
+                return serializer.Deserialize<T>(data.ToString());
+            }
 
             var json = data as string;
             if (json != null) {

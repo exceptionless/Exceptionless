@@ -23,6 +23,9 @@ namespace Exceptionless.Serializer {
     class ExtensionContractResolver : DefaultContractResolver {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
+            if (!typeof(IData).IsAssignableFrom(member.DeclaringType))
+                return property;
+
             Predicate<object> shouldSerialize = property.ShouldSerialize;
             property.ShouldSerialize = obj => !IsDataProperty(property) && (shouldSerialize == null || shouldSerialize(obj)) && !IsEmptyCollection(property, obj);
             return property;

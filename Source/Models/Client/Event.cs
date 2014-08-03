@@ -12,7 +12,7 @@ using System;
 namespace Exceptionless.Models {
     public class Event : IData {
         private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
-        private readonly Lazy<TagSet> _tags = new Lazy<TagSet>(() => new TagSet());
+        private TagSet _tags = new TagSet();
 
         /// <summary>
         /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.
@@ -32,7 +32,17 @@ namespace Exceptionless.Models {
         /// <summary>
         /// A list of tags used to categorize this event.
         /// </summary>
-        public TagSet Tags { get { return _tags.Value; } }
+        public TagSet Tags {
+            get {
+                return _tags;
+            }
+            set {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+
+                _tags = value;
+            }
+        }
 
         /// <summary>
         /// The event message.
