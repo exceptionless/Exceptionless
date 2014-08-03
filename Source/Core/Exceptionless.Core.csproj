@@ -174,8 +174,11 @@
     <Compile Include="Migrations\v1.0.32.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
+    <Compile Include="Models\SummaryData.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\99_DefaultFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\20_SimpleErrorFormattingPlugin.cs" />
     <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
     <Compile Include="Plugins\WebHook\Default\V2_WebHookDataPlugin.cs" />
     <Compile Include="Plugins\WebHook\Default\V1_WebHookDataPlugin.cs" />
@@ -196,8 +199,8 @@
     <Compile Include="Plugins\EventUpgrader\Default\V2_EventUpgrade.cs" />
     <Compile Include="Plugins\EventUpgrader\Default\V1R850_EventUpgrade.cs" />
     <Compile Include="Plugins\EventUpgrader\Default\V1R500_EventUpgrade.cs" />
-    <Compile Include="Plugins\Formatting\Default\ErrorFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\NotFoundFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\10_ErrorFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\30_NotFoundFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginBase.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginManager.cs" />
     <Compile Include="Plugins\Formatting\IFormattingPlugin.cs" />
@@ -412,12 +415,6 @@
     <Content Include="Mail\Templates\Invite\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\Notice\Html.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Mail\Templates\Notice\PlainText.cshtml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Mail\Templates\PasswordReset\Html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -442,10 +439,16 @@
     <Content Include="Mail\Templates\PaymentFailed\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <None Include="Mail\Templates\Invite\Subject.cshtml">
+    <Content Include="Mail\Templates\Notice\Html.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Mail\Templates\Notice\PlainText.cshtml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="Mail\Templates\Notice\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Mail\Templates\Notice\Subject.cshtml">
+    <None Include="Mail\Templates\Invite\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Mail\Templates\PasswordReset\Subject.cshtml">

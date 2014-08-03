@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Mail;
 using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
-using MailMessage = System.Net.Mail.MailMessage;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public class FormattingPluginManager : PluginManagerBase<IFormattingPlugin> {
@@ -14,11 +13,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public string GetStackSummaryHtml(PersistentEvent ev) {
+        public SummaryData GetStackSummary(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    string result = plugin.GetStackSummaryHtml(ev);
-                    if (!String.IsNullOrEmpty(result))
+                    var result = plugin.GetStackSummary(ev);
+                    if (result != null)
                         return result;
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
@@ -31,11 +30,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the event.
         /// </summary>
-        public string GetEventSummaryHtml(PersistentEvent ev) {
+        public SummaryData GetEventSummary(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    string result = plugin.GetEventSummaryHtml(ev);
-                    if (!String.IsNullOrEmpty(result))
+                    var result = plugin.GetEventSummary(ev);
+                    if (result != null)
                         return result;
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
