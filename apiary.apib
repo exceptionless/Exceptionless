@@ -24,6 +24,18 @@ You can also post a multiline string. We automatically split strings by the `\n`
         Exceptionless is amazing!
         Exceptionless is really amazing!
 
++ Request Error from JSON (application/json)
+ 
+        {  
+            "type": "error",
+            "date": "2020-10-16T18:59:09.579Z",
+            "serr": {  
+                "message": "Simple Exception",
+                "type": "System.Exception",
+                "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in c:\\Code\\Exceptionless\\Source\\Clients\\Tests\\ExceptionlessClientTests.cs:line 77"
+            }
+        }
+
 + Response 202
 
 ## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
