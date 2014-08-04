@@ -29,14 +29,14 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.Source;
         }
 
-        public SummaryData GetStackSummary(PersistentEvent ev) {
+        public SummaryData GetStackSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
             return new SummaryData(ev.Id, "stack-notfound-summary", new { Id = ev.Id, StackId = ev.StackId, Source = ev.Source });
         }
 
-        public SummaryData GetEventSummary(PersistentEvent ev) {
+        public SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -47,20 +47,20 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(model.Event))
                 return null;
 
-           var requestInfo = model.Event.GetRequestInfo();
-            string notificationType = String.Concat(model.Event.Source, " Occurrence");
+            string notificationType = "Occurrence 404";
             if (model.IsNew)
-                notificationType = String.Concat("New ", model.Event.Source);
+                notificationType = "New 404";
             else if (model.IsRegression)
-                notificationType = String.Concat(model.Event.Source, " Regression");
+                notificationType = "Regression 404";
 
             if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType);
+                notificationType = String.Concat("Critical ", notificationType.ToLower());
 
+           var requestInfo = model.Event.GetRequestInfo();
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat(notificationType, ": ", model.Event.Source.Truncate(120)),
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
+                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : model.Event.Source
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();

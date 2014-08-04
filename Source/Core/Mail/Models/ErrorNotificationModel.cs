@@ -19,6 +19,7 @@ namespace Exceptionless.Core.Mail.Models {
 
         public EventNotificationModel(EventNotification notification) {
             Event = notification.Event;
+            ProjectName = notification.ProjectName;
             IsNew = notification.IsNew;
             IsCritical = notification.IsCritical;
             IsRegression = notification.IsRegression;
@@ -30,7 +31,6 @@ namespace Exceptionless.Core.Mail.Models {
         public string Subject { get; set; }
         public string Message { get; set; }
 
-        public string StackTrace { get; set; }
         public string MethodFullName { get; set; }
         public string TypeFullName { get; set; }
         public string TypeName {

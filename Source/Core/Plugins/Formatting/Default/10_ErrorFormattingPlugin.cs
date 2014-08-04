@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
         }
 
-        public override SummaryData GetStackSummary(PersistentEvent ev) {
+        public override SummaryData GetStackSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData(ev.Id, "stack-error-summary", data);
         }
 
-        public override SummaryData GetEventSummary(PersistentEvent ev) {
+        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -55,25 +55,25 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var stackingTarget = error.GetStackingTarget();
             var requestInfo = model.Event.GetRequestInfo();
 
-            string notificationType = String.Concat(stackingTarget.Error.Type, " Occurrence");
+            string notificationType = String.Concat(stackingTarget.Error.Type, " occurrence");
             if (model.IsNew)
-                notificationType = String.Concat("New ", error.Type);
+                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
             else if (model.IsRegression)
-                notificationType = String.Concat(stackingTarget.Error.Type, " Regression");
+                notificationType = String.Concat(stackingTarget.Error.Type, " regression");
 
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);
 
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", model.Event.Message.Truncate(120)),
+                Subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)),
                 Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
                 Message = stackingTarget.Error.Message,
                 TypeFullName = stackingTarget.Error.Type,
                 MethodFullName = stackingTarget.Method.GetFullName(),
             };
 
-            return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
+            return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

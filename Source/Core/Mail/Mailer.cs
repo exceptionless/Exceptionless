@@ -95,8 +95,11 @@ namespace Exceptionless.Core.Mail {
 
         public async Task SendNoticeAsync(string emailAddress, EventNotification model) {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
+            if (message == null)
+                return;
+
             message.To = emailAddress;
-            //await QueueMessage(message);
+            await QueueMessage(message.ToMailMessage());
         }
 
         public async Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {

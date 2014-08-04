@@ -22,25 +22,28 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.Message ?? "None";
         }
 
-        public SummaryData GetStackSummary(PersistentEvent ev) {
+        public SummaryData GetStackSummaryData(PersistentEvent ev) {
             return new SummaryData(ev.Id, "stack-summary", new { Id = ev.Id, StackId = ev.StackId, Message = ev.Message ?? "None" });
         }
 
-        public SummaryData GetEventSummary(PersistentEvent ev) {
+        public SummaryData GetEventSummaryData(PersistentEvent ev) {
             return new SummaryData(ev.Id, "event-summary", new { Id = ev.Id, Message = ev.Message ?? "None" });
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            var requestInfo = model.Event.GetRequestInfo();
-            string notificationType = String.Concat(model.Event.Message, " Occurrence");
+            if (String.IsNullOrEmpty(model.Event.Message))
+                return null;
+
+            string notificationType = "Occurrence event";
             if (model.IsNew)
-                notificationType = String.Concat("New ", model.Event.Message);
+                notificationType = "New event";
             else if (model.IsRegression)
-                notificationType = String.Concat(model.Event.Message, " Regression");
+                notificationType = "Regression event";
 
             if (model.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType);
+                notificationType = String.Concat("Critical ", notificationType.ToLower());
 
+            var requestInfo = model.Event.GetRequestInfo();
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat(notificationType, ": ", model.Event.Message.Truncate(120)),

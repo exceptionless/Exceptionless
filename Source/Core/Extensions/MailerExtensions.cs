@@ -31,7 +31,12 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static System.Net.Mail.MailMessage ToMailMessage(this MailMessage notification) {
-            var message = new System.Net.Mail.MailMessage(notification.From, notification.To) { Subject = notification.Subject };
+            var message = new System.Net.Mail.MailMessage { Subject = notification.Subject };
+            if (!String.IsNullOrEmpty(notification.To))
+                message.To.Add(notification.To);
+
+            if (!String.IsNullOrEmpty(notification.From))
+                message.From = new MailAddress(notification.From);
 
             if (!String.IsNullOrEmpty(notification.TextBody))
                 message.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(notification.TextBody, null, "text/plain"));

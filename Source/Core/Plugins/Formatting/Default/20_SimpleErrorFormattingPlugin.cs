@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }
         
-        public override SummaryData GetStackSummary(PersistentEvent ev) {
+        public override SummaryData GetStackSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData(ev.Id, "stack-simple-summary", data);
         }
 
-        public override SummaryData GetEventSummary(PersistentEvent ev) {
+        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             string notificationType = String.Concat(error.Type, " Occurrence");
             if (model.IsNew)
-                notificationType = String.Concat("New ", error.Type);
+                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
             else if (model.IsRegression)
                 notificationType = String.Concat(error.Type, " Regression");
 
@@ -64,13 +64,12 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", model.Event.Message.Truncate(120)),
+                Subject = String.Concat(notificationType, ": ", error.Message.Truncate(120)),
                 Message = error.Message,
-                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
-                StackTrace = error.StackTrace
+                Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
             };
 
-            return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
+            return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

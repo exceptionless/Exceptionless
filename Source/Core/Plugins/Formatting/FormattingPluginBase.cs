@@ -5,11 +5,11 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : IFormattingPlugin {
-        public virtual SummaryData GetStackSummary(PersistentEvent ev) {
+        public virtual SummaryData GetStackSummaryData(PersistentEvent ev) {
             return null;
         }
 
-        public virtual SummaryData GetEventSummary(PersistentEvent ev) {
+        public virtual SummaryData GetEventSummaryData(PersistentEvent ev) {
             return null;
         }
 

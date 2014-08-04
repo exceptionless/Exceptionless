@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public SummaryData GetStackSummary(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    var result = plugin.GetStackSummary(ev);
+                    var result = plugin.GetStackSummaryData(ev);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         public SummaryData GetEventSummary(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    var result = plugin.GetEventSummary(ev);
+                    var result = plugin.GetEventSummaryData(ev);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {

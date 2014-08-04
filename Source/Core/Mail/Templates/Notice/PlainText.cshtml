@@ -3,45 +3,31 @@
 @inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @if (Model.IsNew) {
 <text>
-A new @if (Model.IsCritical) { <text>critical </text> }error has occurred in the "@Model.ProjectName" project.
+A new @if (Model.IsCritical) { <text>critical </text> }event has occurred in the "@Model.ProjectName" project.
 </text>
 } else if (Model.IsRegression) {
 <text>
-@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has regressed in the "@Model.ProjectName" project.
+@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } event has regressed in the "@Model.ProjectName" project.
 </text>
 } else {
 <text>
-@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has reoccurred for the @Model.TotalOccurrences.ToOrdinal() time in the "@Model.ProjectName" project.
+@if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } event has reoccurred for the @Model.TotalOccurrences.ToOrdinal() time in the "@Model.ProjectName" project.
 </text>
 }
-
-@if (!String.IsNullOrEmpty(Model.TypeFullName)) {
-<text>
-Type:
-@Model.TypeFullName
-</text>
-}
-
 @if (!String.IsNullOrEmpty(Model.Message)) {
 <text>
+
 Message:
 @Model.Message
 </text>
 }
-
 @if (!String.IsNullOrEmpty(Model.Url)) {
 <text>
+
 Source:
 @Model.Url
 </text>
 }
 
-@if (!String.IsNullOrEmpty(Model.StackTrace)) {
-<text>
-Stack Trace:
-@Model.StackTrace
-</text>
-}
-
-View the error:
+View the event:
 @Model.BaseUrl/event/@Model.Event.StackId/@Model.Event.StackId

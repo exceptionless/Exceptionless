@@ -29,8 +29,7 @@ namespace Exceptionless.Api.Tests.Mail {
             Mapper.CreateMap<Event, PersistentEvent>();
         }
 
-        //[Fact(Skip = "Used for testing html formatting.")]
-        [Fact]
+        [Fact(Skip = "Used for testing html formatting.")]
         public void SendLogNotification() {
             var mailer = IoC.GetInstance<Mailer>();
             mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
@@ -50,7 +49,7 @@ namespace Exceptionless.Api.Tests.Mail {
             }).Wait();
         }
 
-        [Fact]
+        [Fact(Skip = "Used for testing html formatting.")]
         public void SendNotFoundNotification() {
             var mailer = IoC.GetInstance<Mailer>();
             mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
@@ -70,23 +69,22 @@ namespace Exceptionless.Api.Tests.Mail {
             }).Wait();
         }
 
-        [Fact]
+        [Fact(Skip = "Used for testing html formatting.")]
         public void SendSimpleErrorNotification() {
             PersistentEvent ev = null;
             var client = new ExceptionlessClient("123456789");
             try {
                 throw new Exception("Happy days are here again...");
             } catch (Exception ex) {
-                ev = Mapper.Map<PersistentEvent>(ex.ToExceptionless(client: client).Target);
+                var builder = ex.ToExceptionless(client: client);
+                EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
+                ev = Mapper.Map<PersistentEvent>(builder.Target);
             }
 
             ev.Id = "1";
             ev.OrganizationId = "1";
             ev.ProjectId = "1";
             ev.StackId = "1";
-
-            var context = new EventEnrichmentContext(client);
-            EventEnrichmentManager.Enrich(context, ev);
 
             var mailer = IoC.GetInstance<Mailer>();
             mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
@@ -99,7 +97,7 @@ namespace Exceptionless.Api.Tests.Mail {
             }).Wait();
         }
 
-        [Fact]
+        [Fact(Skip = "Used for testing html formatting.")]
         public void SendErrorNotification() {
             PersistentEvent ev = null;
             var client = new ExceptionlessClient(c => {
@@ -109,16 +107,15 @@ namespace Exceptionless.Api.Tests.Mail {
             try {
                 throw new Exception("Happy days are here again...");
             } catch (Exception ex) {
-                ev = Mapper.Map<PersistentEvent>(ex.ToExceptionless(client: client).Target);
+                var builder = ex.ToExceptionless(client: client);
+                EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
+                ev = Mapper.Map<PersistentEvent>(builder.Target);
             }
 
             ev.Id = "1";
             ev.OrganizationId = "1";
             ev.ProjectId = "1";
             ev.StackId = "1";
-
-            var context = new EventEnrichmentContext(client);
-            EventEnrichmentManager.Enrich(context, ev);
 
             var mailer = IoC.GetInstance<Mailer>();
             mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
