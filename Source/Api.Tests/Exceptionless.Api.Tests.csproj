@@ -145,6 +145,8 @@
     <Compile Include="Caching\InMemoryCachingClientTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Mail\MailerTests.cs" />
+    <Compile Include="Mail\NullMailer.cs" />
     <Compile Include="Miscellaneous\DeltaTests.cs" />
     <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
     <Compile Include="Miscellaneous\RunTests.cs" />
@@ -178,6 +180,14 @@
     <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
       <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
       <Name>Exceptionless.Api</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Name>Exceptionless</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
       <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>

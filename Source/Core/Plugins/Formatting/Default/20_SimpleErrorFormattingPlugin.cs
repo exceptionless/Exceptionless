@@ -11,7 +11,7 @@ using Exceptionless.Models;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
-    [Priority(30)]
+    [Priority(20)]
     public class SimpleErrorFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 

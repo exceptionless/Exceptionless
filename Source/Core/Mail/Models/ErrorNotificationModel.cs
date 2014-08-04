@@ -15,6 +15,8 @@ using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Mail.Models {
     public class EventNotificationModel : EventNotification, IMailModel {
+        public EventNotificationModel() { }
+
         public EventNotificationModel(EventNotification notification) {
             Event = notification.Event;
             IsNew = notification.IsNew;

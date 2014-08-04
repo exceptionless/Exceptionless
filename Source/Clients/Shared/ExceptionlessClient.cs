@@ -19,7 +19,7 @@ namespace Exceptionless {
 
         public ExceptionlessClient() : this(new ExceptionlessConfiguration(DependencyResolver.CreateDefault())) { }
 
-        public ExceptionlessClient(string apiKey) {
+        public ExceptionlessClient(string apiKey) : this(new ExceptionlessConfiguration(DependencyResolver.CreateDefault())) {
             Configuration.ApiKey = apiKey;
         }
 

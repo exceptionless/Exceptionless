@@ -11,37 +11,124 @@
 
 using System;
 using System.Collections.Generic;
+using AutoMapper;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.Enrichments;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Mail {
     public class MailerTests {
-        [Fact(Skip = "Used for testing html formatting.")]
-        public void SendNotification() {
+        public MailerTests() {
+            Mapper.CreateMap<Event, PersistentEvent>();
+        }
+
+        //[Fact(Skip = "Used for testing html formatting.")]
+        [Fact]
+        public void SendLogNotification() {
             var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new ErrorNotificationModel {
-                BaseUrl = "http://app.exceptionless.com",
-                Code = "500",
-                ErrorId = "1",
-                ErrorStackId = "1",
-                FullTypeName = "SomeError",
-                IsCritical = true,
+            mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = new PersistentEvent {
+                    Id = "1", 
+                    OrganizationId = "1",
+                    ProjectId = "1", 
+                    StackId = "1", 
+                    Message = "Happy days are here again...",
+                    Type = Event.KnownTypes.Log
+                },
                 IsNew = true,
+                IsCritical = true,
                 IsRegression = false,
-                Message = "Happy days are here again...",
-                ProjectId = "1",
-                ProjectName = "Test",
-                Subject = "An error has occurred.",
                 TotalOccurrences = 1,
-                Url = "http://app.exceptionless.com",
-                UserAgent = "eric"
+                ProjectName = "Testing"
+            }).Wait();
+        }
+
+        [Fact]
+        public void SendNotFoundNotification() {
+            var mailer = IoC.GetInstance<Mailer>();
+            mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = new PersistentEvent {
+                    Id = "1", 
+                    OrganizationId = "1",
+                    ProjectId = "1", 
+                    StackId = "1", 
+                    Source = "[GET] /not-found?page=20",
+                    Type = Event.KnownTypes.NotFound
+                },
+                IsNew = true,
+                IsCritical = true,
+                IsRegression = false,
+                TotalOccurrences = 1,
+                ProjectName = "Testing"
+            }).Wait();
+        }
+
+        [Fact]
+        public void SendSimpleErrorNotification() {
+            PersistentEvent ev = null;
+            var client = new ExceptionlessClient("123456789");
+            try {
+                throw new Exception("Happy days are here again...");
+            } catch (Exception ex) {
+                ev = Mapper.Map<PersistentEvent>(ex.ToExceptionless(client: client).Target);
+            }
+
+            ev.Id = "1";
+            ev.OrganizationId = "1";
+            ev.ProjectId = "1";
+            ev.StackId = "1";
+
+            var context = new EventEnrichmentContext(client);
+            EventEnrichmentManager.Enrich(context, ev);
+
+            var mailer = IoC.GetInstance<Mailer>();
+            mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = ev,
+                IsNew = true,
+                IsCritical = true,
+                IsRegression = false,
+                TotalOccurrences = 1,
+                ProjectName = "Testing"
+            }).Wait();
+        }
+
+        [Fact]
+        public void SendErrorNotification() {
+            PersistentEvent ev = null;
+            var client = new ExceptionlessClient(c => {
+                c.ApiKey = "123456789";
+                c.UseErrorEnrichment();
             });
+            try {
+                throw new Exception("Happy days are here again...");
+            } catch (Exception ex) {
+                ev = Mapper.Map<PersistentEvent>(ex.ToExceptionless(client: client).Target);
+            }
+
+            ev.Id = "1";
+            ev.OrganizationId = "1";
+            ev.ProjectId = "1";
+            ev.StackId = "1";
+
+            var context = new EventEnrichmentContext(client);
+            EventEnrichmentManager.Enrich(context, ev);
+
+            var mailer = IoC.GetInstance<Mailer>();
+            mailer.SendNoticeAsync(Settings.Current.TestEmailAddress, new EventNotification {
+                Event = ev,
+                IsNew = true,
+                IsCritical = true,
+                IsRegression = false,
+                TotalOccurrences = 1,
+                ProjectName = "Testing"
+            }).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -49,11 +136,11 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendInvite(user, organization, new Invite {
+            mailer.SendInviteAsync(user, organization, new Invite {
                 DateAdded = DateTime.Now,
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
-            });
+            }).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -61,31 +148,31 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendAddedToOrganization(user, organization, user);
+            mailer.SendAddedToOrganizationAsync(user, organization, user).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendPasswordReset() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
-            mailer.SendPasswordReset(user);
+            mailer.SendPasswordResetAsync(user).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendVerifyEmail() {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
-            mailer.SendVerifyEmail(user);
+            mailer.SendVerifyEmailAsync(user).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendSummaryNotification() {
             var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendSummaryNotification(Settings.Current.TestEmailAddress, new SummaryNotificationModel {
+            mailer.SendSummaryNotificationAsync(Settings.Current.TestEmailAddress, new SummaryNotificationModel {
                 ProjectId = "1",
                 BaseUrl = "http://app.exceptionless.com",
-                MostFrequent = new List<ErrorStackResult> {
-                    new ErrorStackResult {
+                MostFrequent = new List<EventStackResult> {
+                    new EventStackResult {
                         First = DateTime.Now,
                         Id = "1",
                         Last = DateTime.Now,
@@ -97,8 +184,8 @@ namespace Exceptionless.Api.Tests.Mail {
                         Type = "SomeError"
                     }
                 },
-                New = new List<ErrorStack> {
-                    new ErrorStack {
+                New = new List<Stack> {
+                    new Stack {
                         DateFixed = DateTime.Now,
                         Description = "Error 1",
                         FirstOccurrence = DateTime.Now,
@@ -117,7 +204,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 UniqueTotal = 1,
                 HasSubmittedErrors = true,
                 IsFreePlan = false
-            });
+            }).Wait();
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
@@ -125,7 +212,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
-            mailer.SendPaymentFailed(user, organization);
+            mailer.SendPaymentFailedAsync(user, organization).Wait();
         }
     }
 }
