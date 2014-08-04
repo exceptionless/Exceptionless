@@ -2,6 +2,6 @@
 
 namespace Exceptionless.Models {
     public interface IData {
-        DataDictionary Data { get; }
+        DataDictionary Data { get; set; }
     }
 }

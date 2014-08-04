@@ -8,12 +8,12 @@
 #endregion
 
 using System;
+using System.Text;
 
 namespace Exceptionless.Models.Data {
     public class Method : IData {
-        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
-
         public Method() {
+            Data = new DataDictionary();
             GenericArguments = new GenericArguments();
             Parameters = new ParameterCollection();
         }
@@ -34,10 +34,38 @@ namespace Exceptionless.Models.Data {
             }
         }
 
+        public string FullName {
+            get {
+                if (String.IsNullOrEmpty(Name))
+                    return "<null>";
+
+                var sb = new StringBuilder(DeclaringTypeFullName);
+                sb.Append(Name);
+
+                if (GenericArguments.Count <= 0)
+                    return sb.ToString();
+
+                sb.Append("[");
+                bool first = true;
+                foreach (string arg in GenericArguments) {
+                    if (first)
+                        first = false;
+                    else
+                        sb.Append(",");
+
+                    sb.Append(arg);
+                }
+
+                sb.Append("]");
+
+                return sb.ToString();
+            }
+        }
+
         public string Name { get; set; }
 
         public int ModuleId { get; set; }
-        public DataDictionary Data { get { return _data.Value; } }
+        public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
         public ParameterCollection Parameters { get; set; }
     }

@@ -11,9 +11,8 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class Parameter : IData {
-        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
-
         public Parameter() {
+            Data = new DataDictionary();
             GenericArguments = new GenericArguments();
         }
 
@@ -30,7 +29,7 @@ namespace Exceptionless.Models.Data {
             }
         }
 
-        public DataDictionary Data { get { return _data.Value; } }
+        public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
     }
 }

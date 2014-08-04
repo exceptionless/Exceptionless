@@ -13,7 +13,9 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class SimpleError : IData {
-        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
+        public SimpleError() {
+            Data = new DataDictionary();
+        }
 
         /// <summary>
         /// The error message.
@@ -33,7 +35,7 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this error.
         /// </summary>
-        public DataDictionary Data { get { return _data.Value; } }
+        public DataDictionary Data { get; set; }
 
         /// <summary>
         /// An inner (nested) error.
