@@ -11,12 +11,11 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class UserDescription : IData {
-        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
-
-        public UserDescription() { }
+        public UserDescription() {}
         public UserDescription(string emailAddress, string description) {
             EmailAddress = emailAddress;
             Description = description;
+            Data = new DataDictionary();
         }
 
         public string EmailAddress { get; set; }
@@ -25,6 +24,6 @@ namespace Exceptionless.Models.Data {
         /// <summary>
         /// Extended data entries for this user description.
         /// </summary>
-        public DataDictionary Data { get { return _data.Value; } }
+        public DataDictionary Data { get; set; }
     }
 }

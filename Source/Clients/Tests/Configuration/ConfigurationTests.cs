@@ -16,6 +16,13 @@ using Xunit;
 namespace Client.Tests.Configuration {
     public class ConfigurationTests {
         [Fact]
+        public void CanConfigureApiKeyFromClientConstructor() {
+            var client = new ExceptionlessClient("e3d51ea621464280bbcb79c11fd6483e");
+            Assert.NotNull(client);
+            Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", client.Configuration.ApiKey);
+        }
+
+        [Fact]
         public void CanConfigureClientUsingActionMethod() {
             var client = new ExceptionlessClient(c => {
                 c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";

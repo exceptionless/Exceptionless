@@ -25,11 +25,6 @@ namespace Exceptionless.Models {
         public string StackId { get; set; }
 
         /// <summary>
-        /// The event summary html.
-        /// </summary>
-        public string SummaryHtml { get; set; }
-
-        /// <summary>
         /// Wether the error has been marked as fixed or not.
         /// </summary>
         public bool IsFixed { get; set; }

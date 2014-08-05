@@ -1,5 +1,6 @@
 ﻿using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 
@@ -27,7 +28,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 Message = ctx.Event.Message,
                 Type = error.Type,
                 Code = error.Code,
-                TargetMethod = error.TargetMethod != null ? error.TargetMethod.FullName : null,
+                TargetMethod = error.TargetMethod != null ? error.TargetMethod.GetFullName() : null,
                 ProjectId = ctx.Event.ProjectId,
                 ProjectName = ctx.Project.Name,
                 OrganizationId = ctx.Event.OrganizationId,

@@ -10,42 +10,33 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Extensions;
+using System.Linq;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Mail.Models {
     public class EventNotificationModel : EventNotification, IMailModel {
-        public EventNotificationModel() {}
+        public EventNotificationModel() { }
 
         public EventNotificationModel(EventNotification notification) {
             Event = notification.Event;
+            ProjectName = notification.ProjectName;
             IsNew = notification.IsNew;
             IsCritical = notification.IsCritical;
             IsRegression = notification.IsRegression;
             TotalOccurrences = notification.TotalOccurrences;
         }
 
-        public string ProjectName { get; set; }
-        public string Subject { get; set; }
         public string BaseUrl { get; set; }
-        public string NotificationType { get; set; }
-        public InnerError Error { get; set; }
         public string Url { get; set; }
-        public Method Method { get; set; }
+        public string Subject { get; set; }
+        public string Message { get; set; }
 
+        public string MethodFullName { get; set; }
+        public string TypeFullName { get; set; }
         public string TypeName {
             get {
-                if (String.IsNullOrEmpty(FullTypeName))
-                    return String.Empty;
-
-                string[] parts = FullTypeName.Split('.');
-                return parts[parts.Length - 1];
+                return !String.IsNullOrEmpty(TypeFullName) ? TypeFullName.Split('.').Last() : String.Empty;
             }
         }
-
-        public string Message { get { return Error != null && !String.IsNullOrWhiteSpace(Error.Message) ? Error.Message : "(None)"; } }
-        public string FullTypeName { get { return Error != null && !String.IsNullOrWhiteSpace(Error.Type) ? Error.Type : "(None)"; } }
-        public string MethodName { get { return Method != null && !String.IsNullOrWhiteSpace(Method.GetFullName()) ? Method.GetFullName() : "(None)"; } }
     }
 }

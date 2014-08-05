@@ -10,10 +10,9 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Queues.Models {
-    public class MailMessage : ExtensibleObject {
+    public class MailMessage {
         public string To { get; set; }
         public string From { get; set; }
         public string Subject { get; set; }

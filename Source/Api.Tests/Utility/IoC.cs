@@ -10,11 +10,14 @@
 #endregion
 
 using System;
+using Exceptionless.Api.Tests.Mail;
+using Exceptionless.Core.Mail;
 using SimpleInjector;
 
 namespace Exceptionless.Api.Tests.Utility {
     public static class IoC {
         private static void RegisterServices(Container container) {
+            container.Register<IMailer, NullMailer>();
         }
 
         #region Bootstrap

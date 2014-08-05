@@ -77,6 +77,11 @@ namespace Exceptionless.SampleWindows {
         }
 
         private void InitializeReport(Event report) {
+            if (report.Data == null)
+                report.Data = new DataDictionary();
+            if (report.Tags == null)
+                report.Tags = new TagSet();
+
             // reset values
             report.ReferenceId = String.Empty;
             report.Date = DateTimeOffset.Now;

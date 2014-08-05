@@ -58,7 +58,6 @@ namespace Exceptionless.Core.Pipeline {
                         SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                         SignatureHash = signatureHash,
                         Title = _pluginManager.GetStackTitle(ctx.Event),
-                        SummaryHtml = _pluginManager.GetStackSummaryHtml(ctx.Event),
                         Tags = ctx.Event.Tags ?? new TagSet(),
                         TotalOccurrences = 1,
                         FirstOccurrence = ctx.Event.Date.UtcDateTime,
@@ -112,8 +111,6 @@ namespace Exceptionless.Core.Pipeline {
             // sync the fixed and hidden flags to the error occurrence
             ctx.Event.IsFixed = ctx.StackInfo.DateFixed.HasValue;
             ctx.Event.IsHidden = ctx.StackInfo.IsHidden;
-
-            ctx.Event.SummaryHtml = _pluginManager.GetEventSummaryHtml(ctx.Event);
         }
     }
 }

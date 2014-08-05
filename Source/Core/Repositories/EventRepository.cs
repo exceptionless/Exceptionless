@@ -338,7 +338,6 @@ namespace Exceptionless.Core.Repositories {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.SummaryHtml).SetElementName(FieldNames.SummaryHtml).SetIgnoreIfDefault(true);
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(Event))) {
                 BsonClassMap.RegisterClassMap<Event>(evcm => {

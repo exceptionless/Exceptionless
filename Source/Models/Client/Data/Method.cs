@@ -12,9 +12,8 @@ using System.Text;
 
 namespace Exceptionless.Models.Data {
     public class Method : IData {
-        private readonly Lazy<DataDictionary> _data = new Lazy<DataDictionary>(() => new DataDictionary());
-
         public Method() {
+            Data = new DataDictionary();
             GenericArguments = new GenericArguments();
             Parameters = new ParameterCollection();
         }
@@ -66,7 +65,7 @@ namespace Exceptionless.Models.Data {
         public string Name { get; set; }
 
         public int ModuleId { get; set; }
-        public DataDictionary Data { get { return _data.Value; } }
+        public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
         public ParameterCollection Parameters { get; set; }
     }
