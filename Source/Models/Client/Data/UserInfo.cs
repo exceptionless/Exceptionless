@@ -12,7 +12,6 @@ using System;
 namespace Exceptionless.Models.Data {
     public class UserInfo : IData {
         public UserInfo() {}
-
         public UserInfo(string identity) {
             Identity = identity;
             Data = new DataDictionary();
