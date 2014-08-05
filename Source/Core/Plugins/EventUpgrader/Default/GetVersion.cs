@@ -10,12 +10,13 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (ctx.Version != null)
                 return;
 
-            if (!ctx.Document.HasValues) {
+            if (ctx.Documents.Count == 0 || !ctx.Documents.First().HasValues) {
                 ctx.Version = new Version();
                 return;
             }
 
-            var clientInfo = ctx.Document["ExceptionlessClientInfo"] as JObject;
+            var doc = ctx.Documents.First();
+            var clientInfo = doc["ExceptionlessClientInfo"] as JObject;
             if (clientInfo == null || !clientInfo.HasValues || clientInfo["Version"] == null) {
                 ctx.Version = new Version();
                 return;

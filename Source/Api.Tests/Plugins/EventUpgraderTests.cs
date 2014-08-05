@@ -22,9 +22,9 @@ namespace Exceptionless.Api.Tests.Plugins {
             var ctx = new EventUpgraderContext(json);
 
             _eventUpgraderPluginManager.Upgrade(ctx);
-            ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Document.ToString());
+            ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Documents.ToString());
 
-            var events = _eventParserPluginManager.ParseEvents(ctx.Document.ToString(), 2, "exceptionless/2.0.0.0");
+            var events = _eventParserPluginManager.ParseEvents(ctx.Documents.ToString(), 2, "exceptionless/2.0.0.0");
             Assert.Equal(1, events.Count);
         }
 

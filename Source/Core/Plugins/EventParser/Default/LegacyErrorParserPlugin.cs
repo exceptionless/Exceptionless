@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
@@ -19,7 +20,6 @@ namespace Exceptionless.Core.Plugins.EventParser {
             if (apiVersion != 1)
                 return null;
 
-            PersistentEvent ev;
             try {
                 var ctx = new EventUpgraderContext(input);
                 _manager.Upgrade(ctx);
@@ -29,12 +29,11 @@ namespace Exceptionless.Core.Plugins.EventParser {
                     ContractResolver = new ExtensionContractResolver()
                 };
 
-                ev = ctx.Document.ToObject<PersistentEvent>(JsonSerializer.CreateDefault(settings));
+                return ctx.Documents.FromJson<PersistentEvent>(settings);
             } catch (Exception ex) {
                 ex.ToExceptionless().AddObject(input, "Error").AddObject(apiVersion, "Api Version").Submit();
                 return null;
             }
-            return new List<PersistentEvent> { ev };
         }
     }
 }

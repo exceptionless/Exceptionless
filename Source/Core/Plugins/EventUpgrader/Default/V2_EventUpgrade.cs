@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
@@ -13,70 +13,67 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (ctx.Version > new Version(2, 0))
                 return;
 
-            bool isNotFound = ctx.Document.GetPropertyStringValue("Code") == "404";
+            foreach (var doc in ctx.Documents.OfType<JObject>()) {
+                bool isNotFound = doc.GetPropertyStringValue("Code") == "404";
 
-            if (ctx.IsMigration) {
-                ctx.Document.Rename("ErrorStackId", "StackId");
-            } else {
-                if (isNotFound)
-                    ctx.Document.Remove("Id");
-                else
-                    ctx.Document.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
+                if (ctx.IsMigration) {
+                    doc.Rename("ErrorStackId", "StackId");
+                } else {
+                    if (isNotFound)
+                        doc.Remove("Id");
+                    else
+                        doc.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
 
-                ctx.Document.Remove("OrganizationId");
-                ctx.Document.Remove("ProjectId");
-                ctx.Document.Remove("ErrorStackId");
-            }
-
-            ctx.Document.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
-            ctx.Document.Remove("ExceptionlessClientInfo");
-            if (!ctx.Document.RemoveIfNullOrEmpty("Tags")) {
-                var tags = ctx.Document.GetValue("Tags");
-                if (tags.Type == JTokenType.Array) {
-                    foreach (JToken tag in tags.Where(tag => tag.ToString().Length > 255))
-                        tag.Remove();
+                    doc.Remove("OrganizationId");
+                    doc.Remove("ProjectId");
+                    doc.Remove("ErrorStackId");
                 }
+
+                doc.RenameOrRemoveIfNullOrEmpty("OccurrenceDate", "Date");
+                doc.Remove("ExceptionlessClientInfo");
+                if (!doc.RemoveIfNullOrEmpty("Tags")) {
+                    var tags = doc.GetValue("Tags");
+                    if (tags.Type == JTokenType.Array) {
+                        foreach (JToken tag in tags.Where(tag => tag.ToString().Length > 255))
+                            tag.Remove();
+                    }
+                }
+
+                doc.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
+                doc.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
+
+                var targetNames = new List<string>(new[] { "ExtendedData", "Data", "GenericArguments", "Parameters" });
+                var elements = doc.Descendants().OfType<JProperty>().Where(p => targetNames.Contains(p.Name)).ToList();
+                elements.RenameAll("ExtendedData", "Data");
+
+                var extendedData = doc.Property("Data") != null ? doc.Property("Data").Value as JObject : null;
+                if (extendedData != null)
+                    extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "trace");
+
+                var error = new JObject();
+                error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
+
+                MoveExtraExceptionProperties(error, extendedData);
+                var inner = error["inner"] as JObject;
+                while (inner != null) {
+                    MoveExtraExceptionProperties(inner);
+                    inner = inner["inner"] as JObject;
+                }
+
+                doc.Add("Type", new JValue(isNotFound ? "404" : "error"));
+                doc.Add("err", error);
+
+                string emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
+                string userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
+                if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
+                    doc.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
+
+                string identity = doc.GetPropertyStringValueAndRemove("UserName");
+                if (!String.IsNullOrWhiteSpace(identity))
+                    doc.Add("user", JObject.FromObject(new UserInfo(identity)));
+
+                doc.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
             }
-
-            ctx.Document.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
-            ctx.Document.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
-
-            ctx.Document.RenameAll("ExtendedData", "Data");
-            var extendedData = ctx.Document.Property("Data") != null ? ctx.Document.Property("Data").Value as JObject : null;
-            if (extendedData != null)
-                extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "trace");
-
-            var error = new JObject();
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Code");
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Type");
-            error.CopyOrRemoveIfNullOrEmpty(ctx.Document, "Message");
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Inner");
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "StackTrace");
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "TargetMethod");
-            error.MoveOrRemoveIfNullOrEmpty(ctx.Document, "Modules");
-
-            MoveExtraExceptionProperties(error, extendedData);
-            var inner = error["inner"] as JObject;
-            while (inner != null) {
-                MoveExtraExceptionProperties(inner);
-                inner = inner["inner"] as JObject;
-            }
-
-            ctx.Document.Add("Type", new JValue(isNotFound ? "404" : "error"));
-            ctx.Document.Add("err", error);
-
-            string emailAddress = ctx.Document.GetPropertyStringValueAndRemove("UserEmail");
-            string userDescription = ctx.Document.GetPropertyStringValueAndRemove("UserDescription");
-            if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                ctx.Document.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
-
-            string identity = ctx.Document.GetPropertyStringValueAndRemove("UserName");
-            if (!String.IsNullOrWhiteSpace(identity))
-                ctx.Document.Add("user", JObject.FromObject(new UserInfo(identity)));
-
-            ctx.Document.RemoveAllIfNullOrEmpty("Data");
-            ctx.Document.RemoveAllIfNullOrEmpty("GenericArguments");
-            ctx.Document.RemoveAllIfNullOrEmpty("Parameters");
         }
 
         private void MoveExtraExceptionProperties(JObject doc, JObject extendedData = null) {

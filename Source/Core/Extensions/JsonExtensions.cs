@@ -13,6 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Exceptionless.Models;
+using Exceptionless.Models.Data;
+using Exceptionless.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
@@ -43,11 +46,21 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
-        public static bool RemoveAllIfNullOrEmpty(this JObject target, string path) {
+        public static bool RemoveAllIfNullOrEmpty(this IEnumerable<JProperty> elements, params string[] names) {
+            if (elements == null)
+                return false;
+
+            foreach (var p in elements.Where(t => names.Contains(t.Name) && t.IsNullOrEmpty()))
+                p.Remove();
+
+            return true;
+        }
+
+        public static bool RemoveAllIfNullOrEmpty(this JObject target, params string[] names) {
             if (target.IsNullOrEmpty())
                 return false;
-            
-            var properties = target.Descendants().OfType<JProperty>().Where(t => t.Name == path && t.IsNullOrEmpty()).ToList();
+
+            var properties = target.Descendants().OfType<JProperty>().Where(t => names.Contains(t.Name) && t.IsNullOrEmpty()).ToList();
             foreach(var p in properties)
                 p.Remove();
             
@@ -80,18 +93,29 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
-        public static bool MoveOrRemoveIfNullOrEmpty(this JObject target, JObject source, string name) {
-            if (source[name] == null)
-                return false;
+        public static void MoveOrRemoveIfNullOrEmpty(this JObject target, JObject source, params string[] names) {
+            foreach (var name in names) {
+                if (source[name] == null)
+                    continue;
 
-            bool isNullOrEmpty = source.IsNullOrEmpty(name);
-            JProperty p = source.Property(name);
-            source.Remove(p.Name);
+                bool isNullOrEmpty = source.IsNullOrEmpty(name);
+                JProperty p = source.Property(name);
+                source.Remove(p.Name);
 
-            if (isNullOrEmpty)
-                return false;
+                if (isNullOrEmpty)
+                    continue;
 
-            target.Add(name, p.Value);
+                target.Add(name, p.Value);
+            }
+        }
+
+        public static bool RenameAll(this IEnumerable<JProperty> properties, string currentName, string newName) {
+            foreach (var p in properties.Where(t => t.Name == currentName)) {
+                var parent = p.Parent as JObject;
+                if (parent != null)
+                    parent.Rename(currentName, newName);
+            }
+
             return true;
         }
 
@@ -216,6 +240,31 @@ namespace Exceptionless.Core.Extensions {
                 value = null;
                 return false;
             }
+        }
+
+        public static void AddModelConverters(this JsonSerializerSettings settings) {
+            var knownDataTypes = new Dictionary<string, Type> {
+                { Event.KnownDataKeys.EnvironmentInfo, typeof(EnvironmentInfo) },
+                { Event.KnownDataKeys.RequestInfo, typeof(RequestInfo) },
+                { Event.KnownDataKeys.SimpleError, typeof(SimpleError) },
+                { Event.KnownDataKeys.UserDescription, typeof(UserDescription) },
+                { Event.KnownDataKeys.UserInfo, typeof(UserInfo) },
+                { Event.KnownDataKeys.Error, typeof(Error) }
+            };
+
+            settings.Converters.Add(new DataObjectConverter<PersistentEvent>(knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
+            settings.Converters.Add(new DataObjectConverter<EnvironmentInfo>());
+            settings.Converters.Add(new DataObjectConverter<Error>());
+            settings.Converters.Add(new DataObjectConverter<InnerError>());
+            settings.Converters.Add(new DataObjectConverter<Method>());
+            settings.Converters.Add(new DataObjectConverter<Module>());
+            settings.Converters.Add(new DataObjectConverter<Parameter>());
+            settings.Converters.Add(new DataObjectConverter<RequestInfo>());
+            settings.Converters.Add(new DataObjectConverter<SimpleError>());
+            settings.Converters.Add(new DataObjectConverter<StackFrame>());
+            settings.Converters.Add(new DataObjectConverter<UserDescription>());
+            settings.Converters.Add(new DataObjectConverter<UserInfo>());
         }
     }
 }

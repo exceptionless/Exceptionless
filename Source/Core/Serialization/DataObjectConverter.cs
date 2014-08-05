@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Reflection;
@@ -20,7 +21,7 @@ namespace Exceptionless.Serializer {
             if (knownDataTypes != null)
                 _dataTypeRegistry.AddRange(knownDataTypes);
 
-            foreach (var prop in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public))
+            foreach (var prop in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public).Where(p => p.CanWrite))
                 _propertyAccessors.Add(prop.Name, LateBinder.GetPropertyAccessor(prop));
         }
 
@@ -41,32 +42,41 @@ namespace Exceptionless.Serializer {
                     continue;
                 }
 
-                // when adding items to data, see if they are a known type and deserialize to the registered type
-                if (_dataTypeRegistry.ContainsKey(p.Name)) {
-                    try {
-                        if (p.Value is JValue && p.Value.Type == JTokenType.String) {
-                            target.Data.Add(p.Name, serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]));
-                        } else {
-                            target.Data.Add(p.Name, p.Value.ToObject(_dataTypeRegistry[p.Name], serializer));
-                        }
-                        continue;
-                    } catch (Exception ex) {
-                        Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, ex.Message).Write();
-                    }
+                if (propertyName == "data" && p.Value is JObject) {
+                    foreach (var dataProp in ((JObject)p.Value).Properties())
+                        AddDataEntry(serializer, dataProp, target);
+                    continue;
                 }
 
-                // add item to data as a JObject, JArray or native type.
-                if (p.Value is JObject)
-                    target.Data.Add(p.Name, p.Value.ToObject<JObject>());
-                else if (p.Value is JArray)
-                    target.Data.Add(p.Name, p.Value.ToObject<JArray>());
-                else if (p.Value is JValue)
-                    target.Data.Add(p.Name, ((JValue)p.Value).Value);
-                else
-                    target.Data.Add(p.Name, p.Value.ToString());
+                AddDataEntry(serializer, p, target);
             }
 
             return target;
+        }
+
+        private void AddDataEntry(JsonSerializer serializer, JProperty p, T target) {
+            // when adding items to data, see if they are a known type and deserialize to the registered type
+            if (_dataTypeRegistry.ContainsKey(p.Name)) {
+                try {
+                    if (p.Value is JValue && p.Value.Type == JTokenType.String)
+                        target.Data.Add(p.Name, serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]));
+                    else
+                        target.Data.Add(p.Name, p.Value.ToObject(_dataTypeRegistry[p.Name], serializer));
+                    return;
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, ex.Message).Write();
+                }
+            }
+
+            // add item to data as a JObject, JArray or native type.
+            if (p.Value is JObject)
+                target.Data.Add(p.Name, p.Value.ToObject<JObject>());
+            else if (p.Value is JArray)
+                target.Data.Add(p.Name, p.Value.ToObject<JArray>());
+            else if (p.Value is JValue)
+                target.Data.Add(p.Name, ((JValue)p.Value).Value);
+            else
+                target.Data.Add(p.Name, p.Value.ToString());
         }
 
         public override T Create(Type objectType) {

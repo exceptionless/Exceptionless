@@ -8,9 +8,8 @@ using CodeSmith.Core.CommandLine;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Utility;
-using Exceptionless.EventMigration.Models;
 using Exceptionless.Models;
-using Exceptionless.Serializer;
+using Exceptionless.Models.Data;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -21,7 +20,7 @@ using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SimpleInjector;
-using StackFrame = Exceptionless.EventMigration.Models.StackFrame;
+using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
     internal class Program {
@@ -55,16 +54,9 @@ namespace Exceptionless.EventMigration {
                 EnsureIndex(serverUri, ca.DeleteExistingIndexes);
 
                 var settings = new ConnectionSettings(serverUri).SetDefaultIndex("exceptionless_v1");
-                settings.SetJsonSerializerSettingsModifier(s => {
-                    s.MissingMemberHandling = MissingMemberHandling.Ignore;
-                    s.ContractResolver = new ExtensionContractResolver();
-                });
-                
                 var searchclient = new ElasticClient(settings);
-                var serializerSettings = new JsonSerializerSettings {
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    ContractResolver = new ExtensionContractResolver()
-                };
+                var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
+                serializerSettings.AddModelConverters();
 
                 ISearchResponse<Stack> mostRecentStack = null;
                 if (ca.Resume)
@@ -106,14 +98,9 @@ namespace Exceptionless.EventMigration {
                         Console.SetCursorPosition(0, 5);
                         Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
 
-                        var events = new JArray();
-                        Parallel.ForEach(errors, error => {
-                            var ctx = new EventUpgraderContext(JObject.FromObject(error), new Version(1, 5), true);
-                            eventUpgraderPluginManager.Upgrade(ctx);
-
-                            lock (_lock)
-                                events.Add(ctx.Document);
-                        });
+                        var events = JArray.FromObject(errors);
+                        var ctx = new EventUpgraderContext(events, new Version(1, 5), true);
+                        eventUpgraderPluginManager.Upgrade(ctx);
 
                         var ev = events.FromJson<PersistentEvent>(serializerSettings);
                         try {
@@ -231,22 +218,22 @@ namespace Exceptionless.EventMigration {
 
         #region Legacy mongo collections
 
-        private static MongoCollection<Error> GetErrorCollection(Container container) {
+        private static MongoCollection<OldModels.Error> GetErrorCollection(Container container) {
             var database = container.GetInstance<MongoDatabase>();
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Error)))
-                BsonClassMap.RegisterClassMap<Error>(ConfigureErrorClassMap);
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.Error)))
+                BsonClassMap.RegisterClassMap<OldModels.Error>(ConfigureErrorClassMap);
 
-            return database.GetCollection<Error>("error");
+            return database.GetCollection<OldModels.Error>("error");
         }
 
-        private static MongoCollection<ErrorStack> GetErrorStackCollection(Container container) {
+        private static MongoCollection<OldModels.ErrorStack> GetErrorStackCollection(Container container) {
             var database = container.GetInstance<MongoDatabase>();
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(ErrorStack)))
-                BsonClassMap.RegisterClassMap<ErrorStack>(ConfigureErrorStackClassMap);
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.ErrorStack)))
+                BsonClassMap.RegisterClassMap<OldModels.ErrorStack>(ConfigureErrorStackClassMap);
 
-            return database.GetCollection<ErrorStack>("errorstack");
+            return database.GetCollection<OldModels.ErrorStack>("errorstack");
         }
 
         private static class ErrorFieldNames {
@@ -325,7 +312,7 @@ namespace Exceptionless.EventMigration {
             public const string IsHidden = "hid";
         }
 
-        private static void ConfigureErrorClassMap(BsonClassMap<Error> cm) {
+        private static void ConfigureErrorClassMap(BsonClassMap<OldModels.Error> cm) {
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()));
@@ -333,7 +320,7 @@ namespace Exceptionless.EventMigration {
             cm.GetMemberMap(c => c.ErrorStackId).SetElementName(ErrorFieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.ProjectId).SetElementName(ErrorFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
             cm.GetMemberMap(c => c.OccurrenceDate).SetElementName(ErrorFieldNames.OccurrenceDate).SetSerializer(new UtcDateTimeOffsetSerializer());
-            cm.GetMemberMap(c => c.Tags).SetElementName(ErrorFieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Error)obj).Tags.Any());
+            cm.GetMemberMap(c => c.Tags).SetElementName(ErrorFieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((OldModels.Error)obj).Tags.Any());
             cm.GetMemberMap(c => c.UserEmail).SetElementName(ErrorFieldNames.UserEmail).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.UserName).SetElementName(ErrorFieldNames.UserName).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.UserDescription).SetElementName(ErrorFieldNames.UserDescription).SetIgnoreIfNull(true);
@@ -344,22 +331,22 @@ namespace Exceptionless.EventMigration {
             cm.GetMemberMap(c => c.IsFixed).SetElementName(ErrorFieldNames.IsFixed).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.IsHidden).SetElementName(ErrorFieldNames.IsHidden).SetIgnoreIfDefault(true);
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(ErrorInfo))) {
-                BsonClassMap.RegisterClassMap<ErrorInfo>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.ErrorInfo))) {
+                BsonClassMap.RegisterClassMap<OldModels.ErrorInfo>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.Message).SetElementName(ErrorFieldNames.Message).SetIgnoreIfNull(true);
                     cmm.GetMemberMap(c => c.Type).SetElementName(ErrorFieldNames.Type);
                     cmm.GetMemberMap(c => c.Code).SetElementName(ErrorFieldNames.Code);
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((ErrorInfo)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.ErrorInfo)obj).ExtendedData.Any());
                     cmm.GetMemberMap(c => c.Inner).SetElementName(ErrorFieldNames.Inner);
-                    cmm.GetMemberMap(c => c.StackTrace).SetElementName(ErrorFieldNames.StackTrace).SetShouldSerializeMethod(obj => ((ErrorInfo)obj).StackTrace.Any());
+                    cmm.GetMemberMap(c => c.StackTrace).SetElementName(ErrorFieldNames.StackTrace).SetShouldSerializeMethod(obj => ((OldModels.ErrorInfo)obj).StackTrace.Any());
                     cmm.GetMemberMap(c => c.TargetMethod).SetElementName(ErrorFieldNames.TargetMethod).SetIgnoreIfNull(true);
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(RequestInfo))) {
-                BsonClassMap.RegisterClassMap<RequestInfo>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.RequestInfo))) {
+                BsonClassMap.RegisterClassMap<OldModels.RequestInfo>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.UserAgent).SetElementName(ErrorFieldNames.UserAgent);
@@ -372,13 +359,13 @@ namespace Exceptionless.EventMigration {
                     cmm.GetMemberMap(c => c.ClientIpAddress).SetElementName(ErrorFieldNames.ClientIpAddress);
                     cmm.GetMemberMap(c => c.Cookies).SetElementName(ErrorFieldNames.Cookies).SetShouldSerializeMethod(obj => ((RequestInfo)obj).Cookies.Any());
                     cmm.GetMemberMap(c => c.PostData).SetElementName(ErrorFieldNames.PostData).SetShouldSerializeMethod(obj => ShouldSerializePostData(obj as RequestInfo));
-                    cmm.GetMemberMap(c => c.QueryString).SetElementName(ErrorFieldNames.QueryString).SetShouldSerializeMethod(obj => ((RequestInfo)obj).QueryString.Any());
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((RequestInfo)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.QueryString).SetElementName(ErrorFieldNames.QueryString).SetShouldSerializeMethod(obj => ((OldModels.RequestInfo)obj).QueryString.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.RequestInfo)obj).ExtendedData.Any());
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(ExceptionlessClientInfo))) {
-                BsonClassMap.RegisterClassMap<ExceptionlessClientInfo>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.ExceptionlessClientInfo))) {
+                BsonClassMap.RegisterClassMap<OldModels.ExceptionlessClientInfo>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.Version).SetElementName(ErrorFieldNames.Version);
@@ -391,8 +378,8 @@ namespace Exceptionless.EventMigration {
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(EnvironmentInfo))) {
-                BsonClassMap.RegisterClassMap<EnvironmentInfo>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.EnvironmentInfo))) {
+                BsonClassMap.RegisterClassMap<OldModels.EnvironmentInfo>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.ProcessorCount).SetElementName(ErrorFieldNames.ProcessorCount);
@@ -410,12 +397,12 @@ namespace Exceptionless.EventMigration {
                     cmm.GetMemberMap(c => c.MachineName).SetElementName(ErrorFieldNames.MachineName);
                     cmm.GetMemberMap(c => c.RuntimeVersion).SetElementName(ErrorFieldNames.RuntimeVersion);
                     cmm.GetMemberMap(c => c.IpAddress).SetElementName(ErrorFieldNames.IpAddress);
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((EnvironmentInfo)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.EnvironmentInfo)obj).ExtendedData.Any());
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Method))) {
-                BsonClassMap.RegisterClassMap<Method>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.Method))) {
+                BsonClassMap.RegisterClassMap<OldModels.Method>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.DeclaringNamespace).SetElementName(ErrorFieldNames.DeclaringNamespace);
@@ -423,26 +410,26 @@ namespace Exceptionless.EventMigration {
                     cmm.GetMemberMap(c => c.Name).SetElementName(ErrorFieldNames.Name);
                     cmm.GetMemberMap(c => c.ModuleId).SetElementName(ErrorFieldNames.ModuleId);
                     cmm.GetMemberMap(c => c.IsSignatureTarget).SetElementName(ErrorFieldNames.IsSignatureTarget);
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((Method)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.Method)obj).ExtendedData.Any());
                     cmm.GetMemberMap(c => c.GenericArguments).SetElementName(ErrorFieldNames.GenericArguments).SetShouldSerializeMethod(obj => ((Method)obj).GenericArguments.Any());
-                    cmm.GetMemberMap(c => c.Parameters).SetElementName(ErrorFieldNames.Parameters).SetShouldSerializeMethod(obj => ((Method)obj).Parameters.Any());
+                    cmm.GetMemberMap(c => c.Parameters).SetElementName(ErrorFieldNames.Parameters).SetShouldSerializeMethod(obj => ((OldModels.Method)obj).Parameters.Any());
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Parameter))) {
-                BsonClassMap.RegisterClassMap<Parameter>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.Parameter))) {
+                BsonClassMap.RegisterClassMap<OldModels.Parameter>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.Name).SetElementName(ErrorFieldNames.Name);
                     cmm.GetMemberMap(c => c.Type).SetElementName(ErrorFieldNames.Type);
                     cmm.GetMemberMap(c => c.TypeNamespace).SetElementName(ErrorFieldNames.TypeNamespace);
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((Parameter)obj).ExtendedData.Any());
-                    cmm.GetMemberMap(c => c.GenericArguments).SetElementName(ErrorFieldNames.GenericArguments).SetShouldSerializeMethod(obj => ((Parameter)obj).GenericArguments.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.Parameter)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.GenericArguments).SetElementName(ErrorFieldNames.GenericArguments).SetShouldSerializeMethod(obj => ((OldModels.Parameter)obj).GenericArguments.Any());
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(StackFrame))) {
-                BsonClassMap.RegisterClassMap<StackFrame>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.StackFrame))) {
+                BsonClassMap.RegisterClassMap<OldModels.StackFrame>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.FileName).SetElementName(ErrorFieldNames.FileName).SetIgnoreIfNull(true);
@@ -451,8 +438,8 @@ namespace Exceptionless.EventMigration {
                 });
             }
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Module))) {
-                BsonClassMap.RegisterClassMap<Module>(cmm => {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.Module))) {
+                BsonClassMap.RegisterClassMap<OldModels.Module>(cmm => {
                     cmm.AutoMap();
                     cmm.SetIgnoreExtraElements(true);
                     cmm.GetMemberMap(c => c.ModuleId).SetElementName(ErrorFieldNames.ModuleId).SetIgnoreIfDefault(true);
@@ -461,7 +448,7 @@ namespace Exceptionless.EventMigration {
                     cmm.GetMemberMap(c => c.IsEntry).SetElementName(ErrorFieldNames.IsEntry).SetIgnoreIfDefault(true);
                     cmm.GetMemberMap(c => c.CreatedDate).SetElementName(ErrorFieldNames.CreatedDate);
                     cmm.GetMemberMap(c => c.ModifiedDate).SetElementName(ErrorFieldNames.ModifiedDate);
-                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((Module)obj).ExtendedData.Any());
+                    cmm.GetMemberMap(c => c.ExtendedData).SetElementName(ErrorFieldNames.ExtendedData).SetShouldSerializeMethod(obj => ((OldModels.Module)obj).ExtendedData.Any());
                 });
             }
         }
@@ -488,7 +475,7 @@ namespace Exceptionless.EventMigration {
             public const string Tags = "tag";
         }
 
-        private static void ConfigureErrorStackClassMap(BsonClassMap<ErrorStack> cm) {
+        private static void ConfigureErrorStackClassMap(BsonClassMap<OldModels.ErrorStack> cm) {
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()));
@@ -507,8 +494,8 @@ namespace Exceptionless.EventMigration {
             cm.GetMemberMap(c => c.IsRegressed).SetElementName(ErrorStackFieldNames.IsRegressed).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.DisableNotifications).SetElementName(ErrorStackFieldNames.DisableNotifications).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.OccurrencesAreCritical).SetElementName(ErrorStackFieldNames.OccurrencesAreCritical).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.References).SetElementName(ErrorStackFieldNames.References).SetShouldSerializeMethod(obj => ((ErrorStack)obj).References.Any());
-            cm.GetMemberMap(c => c.Tags).SetElementName(ErrorStackFieldNames.Tags).SetShouldSerializeMethod(obj => ((ErrorStack)obj).Tags.Any());
+            cm.GetMemberMap(c => c.References).SetElementName(ErrorStackFieldNames.References).SetShouldSerializeMethod(obj => ((OldModels.ErrorStack)obj).References.Any());
+            cm.GetMemberMap(c => c.Tags).SetElementName(ErrorStackFieldNames.Tags).SetShouldSerializeMethod(obj => ((OldModels.ErrorStack)obj).Tags.Any());
         }
 
         private static bool ShouldSerializePostData(RequestInfo requestInfo) {

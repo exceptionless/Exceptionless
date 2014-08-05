@@ -48,6 +48,18 @@ namespace Exceptionless.Api.Tests {
             string newjson = ev.ToJson(Formatting.None, new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore });
             Assert.Equal(expectedjson, newjson);
         }
+
+        [Fact]
+        public void CanDeserializeEventWithData() {
+            const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
+            var settings = new JsonSerializerSettings();
+            settings.Converters.Add(new DataObjectConverter<Event>());
+
+            var ev = json.FromJson<Event>(settings);
+            Assert.Equal(1, ev.Data.Count);
+            Assert.Equal("Hello", ev.Message);
+            Assert.Equal("SomeVal", ev.Data["Blah"]);
+        }
     }
 
     public class SomeModel {

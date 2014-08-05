@@ -9,27 +9,29 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             if (ctx.Version > new Version(1, 0, 0, 844))
                 return;
 
-            var requestInfo = ctx.Document["RequestInfo"] as JObject;
+            foreach (var doc in ctx.Documents) {
+                var requestInfo = doc["RequestInfo"] as JObject;
 
-            if (requestInfo == null || !requestInfo.HasValues)
-                return;
+                if (requestInfo == null || !requestInfo.HasValues)
+                    return;
 
-            if (requestInfo["Cookies"] != null && requestInfo["Cookies"].HasValues) {
-                var cookies = requestInfo["Cookies"] as JObject;
-                if (cookies != null)
-                    cookies.Remove("");
-            }
+                if (requestInfo["Cookies"] != null && requestInfo["Cookies"].HasValues) {
+                    var cookies = requestInfo["Cookies"] as JObject;
+                    if (cookies != null)
+                        cookies.Remove("");
+                }
 
-            if (requestInfo["Form"] != null && requestInfo["Form"].HasValues) {
-                var form = requestInfo["Form"] as JObject;
-                if (form != null)
-                    form.Remove("");
-            }
+                if (requestInfo["Form"] != null && requestInfo["Form"].HasValues) {
+                    var form = requestInfo["Form"] as JObject;
+                    if (form != null)
+                        form.Remove("");
+                }
 
-            if (requestInfo["QueryString"] != null && requestInfo["QueryString"].HasValues) {
-                var queryString = requestInfo["QueryString"] as JObject;
-                if (queryString != null)
-                    queryString.Remove("");
+                if (requestInfo["QueryString"] != null && requestInfo["QueryString"].HasValues) {
+                    var queryString = requestInfo["QueryString"] as JObject;
+                    if (queryString != null)
+                        queryString.Remove("");
+                }
             }
         }
     }
