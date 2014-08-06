@@ -9,6 +9,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -27,6 +28,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
+        private readonly FormattingPluginManager _formattingPluginManager;
 
         public EventController(IEventRepository repository, 
             IProjectRepository projectRepository, 
@@ -34,26 +36,32 @@ namespace Exceptionless.Api.Controllers {
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
-            IValidator<UserDescription> userDescriptionValidator) : base(repository) {
+            IValidator<UserDescription> userDescriptionValidator,
+            FormattingPluginManager formattingPluginManager) : base(repository) {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _statsClient = statsClient;
             _userDescriptionValidator = userDescriptionValidator;
+            _formattingPluginManager = formattingPluginManager;
         }
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult Get(string before = null, string after = null, int limit = 10, string mode = null) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -63,12 +71,16 @@ namespace Exceptionless.Api.Controllers {
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByProjectId(projectId, options);
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10, string mode = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
@@ -78,6 +90,10 @@ namespace Exceptionless.Api.Controllers {
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByStackId(stackId, options);
+
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }
 

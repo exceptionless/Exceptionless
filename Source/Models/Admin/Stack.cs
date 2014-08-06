@@ -61,11 +61,6 @@ namespace Exceptionless.Models {
         public string Title { get; set; }
 
         /// <summary>
-        /// The stack summary html.
-        /// </summary>
-        public string SummaryHtml { get; set; }
-
-        /// <summary>
         /// The total number of occurrences in the stack.
         /// </summary>
         public int TotalOccurrences { get; set; }

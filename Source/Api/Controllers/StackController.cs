@@ -19,6 +19,8 @@ using AutoMapper;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
@@ -41,11 +43,13 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
+        private readonly FormattingPluginManager _formattingPluginManager;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
-            EventStatsHelper statsHelper, BillingManager billingManager, DataHelper dataHelper) : base(stackRepository) {
+            EventStatsHelper statsHelper, BillingManager billingManager, DataHelper dataHelper,
+            FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -55,6 +59,7 @@ namespace Exceptionless.Api.Controllers {
             _statsHelper = statsHelper;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
+            _formattingPluginManager = formattingPluginManager;
         }
 
         [HttpGet]
@@ -240,7 +245,8 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10) {
+        [Route("summary/{summary:bool=true}")]
+        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10, bool summary = false) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -252,12 +258,16 @@ namespace Exceptionless.Api.Controllers {
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
+
+            if (summary)
+                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
-        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, bool summary = false) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -277,13 +287,17 @@ namespace Exceptionless.Api.Controllers {
             var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, hidden, @fixed, notfound).ToList();
             List<EventStackResult> results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
 
+            // TODO: Finish this once we finish elastic search.
+            //if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+
             // TODO: Fix this paging
             return OkWithResourceLinks(results, options.HasMore, e => e.First.UtcTicks.ToString(), GetLimitedByPlanHeader(stacks.Count - results.Count));
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
-        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -303,12 +317,16 @@ namespace Exceptionless.Api.Controllers {
             var results = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound);
             var stacks = results.Where(es => es.LastOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack,EventStackResult>).ToList();
 
+            // TODO: Finish this once we finish elastic search.
+            //if (summary)
+            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+
             return OkWithResourceLinks(results, paging.HasMore, e => e.Id, GetLimitedByPlanHeader(stacks.Count - results.Count));
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
-        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -347,6 +365,10 @@ namespace Exceptionless.Api.Controllers {
             Dictionary<string, IEnumerable<string>> header = null;
             if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
                 header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
+
+            // TODO: Finish this once we finish elastic search.
+            //if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
 
             return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
         }

@@ -5,7 +5,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public abstract class FormattingPluginBase : IFormattingPlugin {
-        public virtual SummaryData GetStackSummaryData(PersistentEvent ev) {
+        public virtual SummaryData GetStackSummaryData(Stack stack) {
             return null;
         }
 

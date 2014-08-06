@@ -13,10 +13,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the stack based on the event data.
         /// </summary>
-        public SummaryData GetStackSummary(PersistentEvent ev) {
+        public SummaryData GetStackSummaryData(Stack stack) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    var result = plugin.GetStackSummaryData(ev);
+                    var result = plugin.GetStackSummaryData(stack);
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         /// <summary>
         /// Runs through the formatting plugins to calculate an html summary for the event.
         /// </summary>
-        public SummaryData GetEventSummary(PersistentEvent ev) {
+        public SummaryData GetEventSummaryData(PersistentEvent ev) {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
                     var result = plugin.GetEventSummaryData(ev);

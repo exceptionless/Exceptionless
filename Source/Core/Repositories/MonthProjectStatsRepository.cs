@@ -28,6 +28,7 @@ namespace Exceptionless.Core.Repositories {
         public MonthProjectStatsRepository(MongoDatabase database, IValidator<MonthProjectStats> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, validator, cacheClient, messagePublisher) {
             _getIdValue = s => s;
+            EnableNotifications = false;
         }
 
         public ICollection<MonthProjectStats> GetRange(string start, string end) {

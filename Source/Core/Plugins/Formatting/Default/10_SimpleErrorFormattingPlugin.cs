@@ -11,7 +11,7 @@ using Exceptionless.Models;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
-    [Priority(20)]
+    [Priority(10)]
     public class SimpleErrorFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 
@@ -23,27 +23,32 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.SimpleError);
         }
         
-        public override SummaryData GetStackSummaryData(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
+        public override SummaryData GetStackSummaryData(Stack stack) {
+            if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
 
-            dynamic data = GetSummaryData(ev);
-            if (data == null)
-                return null;
-
-            data.StackId = ev.StackId;
-            return new SummaryData(ev.Id, "stack-simple-summary", data);
+            return new SummaryData("stack-simple-summary", new { ExceptionType = stack.SignatureInfo["ExceptionType"] });
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
-            dynamic data = GetSummaryData(ev);
-            if (data == null)
+            var error = ev.GetSimpleError();
+            if (error == null)
                 return null;
 
-            return new SummaryData(ev.Id, "event-simple-summary", data);
+            dynamic data = new {
+                Message = ev.Message,
+                Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last(),
+                TypeFullName = error.Type,
+            };
+
+            var requestInfo = ev.GetRequestInfo();
+            if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
+                data.Path = requestInfo.Path;
+
+            return new SummaryData("event-simple-summary", data);
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
@@ -77,25 +82,6 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             return "Event-Simple";
-        }
-
-        private dynamic GetSummaryData(PersistentEvent ev) {
-            var error = ev.GetSimpleError();
-            if (error == null)
-                return null;
-
-            dynamic data = new {
-                Id = ev.Id,
-                Message = ev.Message,
-                Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last(),
-                TypeFullName = error.Type,
-            };
-
-            var requestInfo = ev.GetRequestInfo();
-            if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
-                data.Path = requestInfo.Path;
-
-            return data;
         }
     }
 }

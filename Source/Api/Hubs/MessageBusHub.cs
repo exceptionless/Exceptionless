@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
@@ -29,6 +30,9 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
+            if (String.IsNullOrEmpty(entityChanged.OrganizationId))
+                return;
+
             Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged.ToJson());
         }
 

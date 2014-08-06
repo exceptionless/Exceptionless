@@ -11,7 +11,7 @@ using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     [Priority(30)]
-    public class NotFoundFormattingPlugin : IFormattingPlugin {
+    public class NotFoundFormattingPlugin : FormattingPluginBase {
         private readonly IEmailGenerator _emailGenerator;
 
         public NotFoundFormattingPlugin(IEmailGenerator emailGenerator) {
@@ -22,28 +22,21 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsNotFound();
         }
 
-        public string GetStackTitle(PersistentEvent ev) {
+        public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
             return ev.Source;
         }
 
-        public SummaryData GetStackSummaryData(PersistentEvent ev) {
+        public override SummaryData GetEventSummaryData(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData(ev.Id, "stack-notfound-summary", new { Id = ev.Id, StackId = ev.StackId, Source = ev.Source });
+            return new SummaryData("event-notfound-summary", new { Source = ev.Source });
         }
 
-        public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            if (!ShouldHandle(ev))
-                return null;
-
-            return new SummaryData(ev.Id, "event-notfound-summary", new { Id = ev.Id, Source = ev.Source });
-        }
-
-        public MailMessage GetEventNotificationMailMessage(EventNotification model) {
+        public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
             if (!ShouldHandle(model.Event))
                 return null;
 
@@ -66,7 +59,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
         }
 
-        public string GetEventViewName(PersistentEvent ev) {
+        public override string GetEventViewName(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 

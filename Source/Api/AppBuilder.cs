@@ -89,6 +89,7 @@ namespace Exceptionless.Api {
                 Debug.WriteLine(ex.Message);
                 throw;
             }
+
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             //config.EnableSystemDiagnosticsTracing();
 

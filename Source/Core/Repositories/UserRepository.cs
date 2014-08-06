@@ -11,8 +11,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Bson;
@@ -89,6 +92,8 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
         }
         
+        #endregion
+
         public override void InvalidateCache(User user) {
             if (Cache == null)
                 return;
@@ -100,6 +105,21 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(String.Concat("org:", organizationId));
         }
 
-        #endregion
+        protected override async Task PublishMessageAsync(EntityChangeType changeType, User user) {
+            if (user.OrganizationIds.Any()) {
+                foreach (var organizationId in user.OrganizationIds) {
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        Id = user.Id,
+                        OrganizationId = organizationId,
+                        Type = _entityType
+                    };
+
+                    await _messagePublisher.PublishAsync(message);
+                }
+            } else {
+                await base.PublishMessageAsync(changeType, user);
+            }
+        }
     }
 }

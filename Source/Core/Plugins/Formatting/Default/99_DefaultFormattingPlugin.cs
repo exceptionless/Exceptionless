@@ -22,12 +22,12 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.Message ?? "None";
         }
 
-        public SummaryData GetStackSummaryData(PersistentEvent ev) {
-            return new SummaryData(ev.Id, "stack-summary", new { Id = ev.Id, StackId = ev.StackId, Message = ev.Message ?? "None" });
+        public SummaryData GetStackSummaryData(Stack stack) {
+            return new SummaryData("stack-summary");
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData(ev.Id, "event-summary", new { Id = ev.Id, Message = ev.Message ?? "None" });
+            return new SummaryData("event-summary", new { Message = ev.Message ?? "None" });
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {

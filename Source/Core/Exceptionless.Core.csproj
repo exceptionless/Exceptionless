@@ -176,12 +176,14 @@
     <Compile Include="Migrations\v1.0.33.cs" />
     <Compile Include="Migrations\v1.0.32.cs" />
     <Compile Include="Models\Billing\BillingPlanStats.cs" />
+    <Compile Include="Models\EventSummaryModel.cs" />
     <Compile Include="Models\Organization\InvoiceModel.cs" />
+    <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\99_DefaultFormattingPlugin.cs" />
-    <Compile Include="Plugins\Formatting\Default\20_SimpleErrorFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\10_SimpleErrorFormattingPlugin.cs" />
     <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
     <Compile Include="Plugins\WebHook\Default\V2_WebHookDataPlugin.cs" />
     <Compile Include="Plugins\WebHook\Default\V1_WebHookDataPlugin.cs" />
@@ -202,7 +204,7 @@
     <Compile Include="Plugins\EventUpgrader\Default\V2_EventUpgrade.cs" />
     <Compile Include="Plugins\EventUpgrader\Default\V1R850_EventUpgrade.cs" />
     <Compile Include="Plugins\EventUpgrader\Default\V1R500_EventUpgrade.cs" />
-    <Compile Include="Plugins\Formatting\Default\10_ErrorFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\20_ErrorFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\30_NotFoundFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginBase.cs" />
     <Compile Include="Plugins\Formatting\FormattingPluginManager.cs" />
