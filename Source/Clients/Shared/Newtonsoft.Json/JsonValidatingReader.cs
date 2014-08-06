@@ -57,7 +57,6 @@ namespace Exceptionless.Json
             public string CurrentPropertyName { get; set; }
             public int ArrayItemCount { get; set; }
             public bool IsUniqueArray { get; set; }
-            public bool IsEnum { get; set; }
             public IList<JToken> UniqueArrayItems { get; set; }
             public JTokenWriter CurrentItemWriter { get; set; }
 
@@ -575,7 +574,7 @@ namespace Exceptionless.Json
             {
                 bool isInUniqueArray = (schemaScope.TokenType == JTokenType.Array && schemaScope.IsUniqueArray && schemaScope.ArrayItemCount > 0);
 
-                if (isInUniqueArray || schemaScope.IsEnum || schemas.Any(s => s.Enum != null))
+                if (isInUniqueArray || schemas.Any(s => s.Enum != null))
                 {
                     if (schemaScope.CurrentItemWriter == null)
                     {
@@ -602,7 +601,7 @@ namespace Exceptionless.Json
 
                             schemaScope.UniqueArrayItems.Add(finishedItem);
                         }
-                        else if (schemaScope.IsEnum || schemas.Any(s => s.Enum != null))
+                        else if (schemas.Any(s => s.Enum != null))
                         {
                             foreach (JsonSchemaModel schema in schemas)
                             {
@@ -822,7 +821,7 @@ namespace Exceptionless.Json
         {
             const double epsilon = 2.2204460492503131e-016;
 
-            return Math.Abs(value) < 10.0 * epsilon;
+            return Math.Abs(value) < 20.0 * epsilon;
         }
 
         private void ValidatePropertyName(JsonSchemaModel schema)

@@ -71,5 +71,4 @@ namespace Exceptionless.Json.Utilities
         }
     }
 }
-
 #endif

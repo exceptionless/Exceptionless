@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 if (!String.IsNullOrWhiteSpace(identity))
                     doc.Add("user", JObject.FromObject(new UserInfo(identity)));
 
-                doc.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
+                elements.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
             }
         }
 

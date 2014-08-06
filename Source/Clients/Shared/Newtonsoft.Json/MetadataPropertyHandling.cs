@@ -23,15 +23,30 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-using System.Collections.ObjectModel;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace Exceptionless.Json.Utilities
+namespace Exceptionless.Json
 {
-    internal class EnumValues<T> : KeyedCollection<string, EnumValue<T>> where T : struct
+    /// <summary>
+    /// Specifies metadata property handling options for the <see cref="JsonSerializer"/>.
+    /// </summary>
+    public enum MetadataPropertyHandling
     {
-        protected override string GetKeyForItem(EnumValue<T> item)
-        {
-            return item.Name;
-        }
+        /// <summary>
+        /// Read metadata properties located at the start of a JSON object.
+        /// </summary>
+        Default = 0,
+
+        /// <summary>
+        /// Read metadata properties located anywhere in a JSON object. Note that this setting will impact performance.
+        /// </summary>
+        ReadAhead = 1,
+
+        /// <summary>
+        /// Do not try to read metadata properties.
+        /// </summary>
+        Ignore = 2
     }
 }

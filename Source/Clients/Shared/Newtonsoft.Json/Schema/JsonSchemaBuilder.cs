@@ -25,6 +25,7 @@
 
 using System;
 using System.Collections.Generic;
+using Exceptionless.Json.Serialization;
 #if NET20
 using Exceptionless.Json.Utilities.LinqBridge;
 #else
@@ -97,7 +98,7 @@ namespace Exceptionless.Json.Schema
             {
                 string reference = schema.DeferredReference;
 
-                bool locationReference = (reference.StartsWith("#", StringComparison.OrdinalIgnoreCase));
+                bool locationReference = (reference.StartsWith("#", StringComparison.Ordinal));
                 if (locationReference)
                     reference = UnescapeReference(reference);
 
@@ -194,7 +195,7 @@ namespace Exceptionless.Json.Schema
                 throw JsonException.Create(token, token.Path, "Expected object while parsing schema object, got {0}.".FormatWith(CultureInfo.InvariantCulture, token.Type));
 
             JToken referenceToken;
-            if (schemaObject.TryGetValue(JsonSchemaConstants.ReferencePropertyName, out referenceToken))
+            if (schemaObject.TryGetValue(JsonTypeReflector.RefPropertyName, out referenceToken))
             {
                 JsonSchema deferredSchema = new JsonSchema();
                 deferredSchema.DeferredReference = (string)referenceToken;

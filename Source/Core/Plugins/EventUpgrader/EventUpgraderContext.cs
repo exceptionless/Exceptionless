@@ -21,12 +21,12 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             try {
                 JObject doc = JObject.Parse(json);
                 Documents = new JArray(doc);
-            } catch {}
-
-            try {
-                JArray docs = JArray.Parse(json);
-                Documents = docs;
-            } catch { }
+            } catch {
+                try {
+                    JArray docs = JArray.Parse(json);
+                    Documents = docs;
+                } catch { }
+            }
 
             Version = version;
             IsMigration = isMigration;

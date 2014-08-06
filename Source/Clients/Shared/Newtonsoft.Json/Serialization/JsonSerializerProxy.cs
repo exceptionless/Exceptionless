@@ -108,6 +108,12 @@ namespace Exceptionless.Json.Serialization
             set { _serializer.TypeNameHandling = value; }
         }
 
+        public override MetadataPropertyHandling MetadataPropertyHandling
+        {
+            get { return _serializer.MetadataPropertyHandling; }
+            set { _serializer.MetadataPropertyHandling = value; }
+        }
+
         public override FormatterAssemblyStyle TypeNameAssemblyFormat
         {
             get { return _serializer.TypeNameAssemblyFormat; }

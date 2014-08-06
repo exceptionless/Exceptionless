@@ -25,6 +25,7 @@
 
 using System.Collections.Generic;
 using Exceptionless.Json.Linq;
+using Exceptionless.Json.Serialization;
 using Exceptionless.Json.Utilities;
 #if NET20
 using Exceptionless.Json.Utilities.LinqBridge;
@@ -52,7 +53,7 @@ namespace Exceptionless.Json.Schema
             if (schema.Id != null && _resolver.GetSchema(schema.Id) != null)
             {
                 _writer.WriteStartObject();
-                _writer.WritePropertyName(JsonSchemaConstants.ReferencePropertyName);
+                _writer.WritePropertyName(JsonTypeReflector.RefPropertyName);
                 _writer.WriteValue(schema.Id);
                 _writer.WriteEndObject();
             }
