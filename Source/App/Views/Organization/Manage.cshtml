@@ -131,7 +131,7 @@
                                         <td data-bind="formatWithMonthDayYear: date, click: $parent.rowClick"></td>
                                         <td data-bind="text: paid ? 'Paid' : 'Unpaid', click: $parent.rowClick"></td>
                                         <td>
-                                            <a data-bind="attr: { href: '/organization/payment/in_' + id, target: '_blank' }" title="View Payment" class="btn btn-small">
+                                            <a data-bind="attr: { href: '/organization/payment/' + id, target: '_blank' }" title="View Payment" class="btn btn-small">
                                                 <i class="fa fa-file"></i>
                                             </a>
                                             <a data-bind="visible: id && exceptionless.App.user().hasAdminRole,  attr: { href: 'https://manage.stripe.com/invoices/in_' + id, target: '_blank' }" title="View Stripe Invoice" class="btn btn-small">

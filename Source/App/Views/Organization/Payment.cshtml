@@ -61,9 +61,17 @@
                             @foreach (var line in Model.Invoice.StripeInvoiceLines.StripeInvoiceItems)
                             {
                                 <tr>
-                                    <td>Exceptionless - @line.Plan.Name Plan ($@((line.Plan.Amount / 100).ToString())/@line.Plan.Interval)</td>
-                                    <td>@line.Period.Start.Value.ToShortDateString() - @line.Period.End.Value.ToShortDateString()</td>
-                                    <td>$@((line.Amount / 100).ToString())</td>
+                                    @if (line.Plan != null) {
+                                    <td>Exceptionless - @line.Plan.Name Plan (@((line.Plan.Amount.GetValueOrDefault() / 100.0).ToString("c"))/@line.Plan.Interval)</td>
+                                    } else {
+                                    <td>@line.Description</td>
+                                    }
+                                    @if (@line.Period.Start.GetValueOrDefault() == @line.Period.End.GetValueOrDefault()) {
+                                    <td>@line.Period.Start.GetValueOrDefault().ToShortDateString()</td>
+                                    } else {
+                                    <td>@line.Period.Start.GetValueOrDefault().ToShortDateString() - @line.Period.End.GetValueOrDefault().ToShortDateString()</td>
+                                    }
+                                    <td><strong>@((line.Amount.GetValueOrDefault() / 100.0).ToString("c"))</strong></td>
                                 </tr>
                             }
 
@@ -72,13 +80,13 @@
                                 <tr>
                                     <td>@Model.Invoice.StripeDiscount.StripeCoupon.Id (@Model.Invoice.StripeDiscount.StripeCoupon.PercentOff%)</td>
                                     <td>&nbsp;</td>
-                                    <td>-$@(Model.Invoice.Total * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff / 100))</td>
+                                    <td><strong>-@((Model.Invoice.Total.GetValueOrDefault() * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff.GetValueOrDefault() / 100.0)).ToString("C"))</strong></td>
                                 </tr>
                             }
                             <tr>
                                 <td>&nbsp;</td>
                                 <td><strong>Total</strong></td>
-                                <td><strong>$@((Model.Invoice.Total / 100).ToString())</strong></td>
+                                <td><strong>@((Model.Invoice.Total.GetValueOrDefault() / 100.0).ToString("c"))</strong></td>
                             </tr>
                         </tbody>
                     </table>
