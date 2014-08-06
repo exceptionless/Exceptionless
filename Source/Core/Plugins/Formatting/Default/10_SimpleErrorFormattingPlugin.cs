@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
@@ -38,11 +39,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (error == null)
                 return null;
 
-            dynamic data = new {
-                Message = ev.Message,
-                Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last(),
-                TypeFullName = error.Type,
-            };
+            dynamic data = new ExpandoObject();
+            data.Message = ev.Message;
+            data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+            data.TypeFullName = error.Type;
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))

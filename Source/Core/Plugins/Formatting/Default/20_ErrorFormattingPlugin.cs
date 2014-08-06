@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using CodeSmith.Core.Component;
@@ -52,12 +53,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stackingTarget == null)
                 return null;
 
-            dynamic data = new {
-                Id = ev.Id,
-                Message = ev.Message,
-                Type = stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last(),
-                TypeFullName = stackingTarget.Error.Type,
-            };
+            dynamic data = new ExpandoObject();
+            data.Id = ev.Id;
+            data.Message = ev.Message;
+            data.Type = stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+            data.TypeFullName = stackingTarget.Error.Type;
 
             if (stackingTarget.Method != null) {
                 data.Method = stackingTarget.Method.Name;

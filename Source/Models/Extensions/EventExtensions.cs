@@ -47,6 +47,34 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Returns true if the event type is log.
+        /// </summary>
+        public static bool IsLog(this Event ev) {
+            return ev.Type == Event.KnownTypes.Log;
+        }
+
+        /// <summary>
+        /// Returns true if the event type is feature usage.
+        /// </summary>
+        public static bool IsFeatureUsage(this Event ev) {
+            return ev.Type == Event.KnownTypes.FeatureUsage;
+        }
+
+        /// <summary>
+        /// Returns true if the event type is session start.
+        /// </summary>
+        public static bool IsSessionStart(this Event ev) {
+            return ev.Type == Event.KnownTypes.SessionStart;
+        }
+        
+        /// <summary>
+        /// Returns true if the event type is session end.
+        /// </summary>
+        public static bool IsSessionEnd(this Event ev) {
+            return ev.Type == Event.KnownTypes.SessionEnd;
+        }
+
+        /// <summary>
         /// Adds the request info to the event.
         /// </summary>
         public static void AddRequestInfo(this Event ev, RequestInfo request) {

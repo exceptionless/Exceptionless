@@ -182,6 +182,8 @@
     <Compile Include="Models\SummaryData.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\50_SessionFormattingPlugin.cs" />
+    <Compile Include="Plugins\Formatting\Default\40_UsageFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\99_DefaultFormattingPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\10_SimpleErrorFormattingPlugin.cs" />
     <Compile Include="Plugins\WebHook\Default\LoadDefaults.cs" />
