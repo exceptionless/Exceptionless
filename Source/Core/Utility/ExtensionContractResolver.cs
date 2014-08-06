@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using CodeSmith.Core.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 #if EMBEDDED
@@ -103,6 +104,16 @@ namespace Exceptionless.Serializer {
                 return IsPrimitiveType(Nullable.GetUnderlyingType(type));
 
             return false;
+        }
+    }
+
+    class EmptyCollectionContractResolver : DefaultContractResolver {
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
+            JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+            Predicate<object> shouldSerialize = property.ShouldSerialize;
+            property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
+            return property;
         }
     }
 }

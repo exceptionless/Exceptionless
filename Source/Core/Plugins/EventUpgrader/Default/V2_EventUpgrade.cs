@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Extensions;
@@ -42,9 +41,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 doc.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
                 doc.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
 
-                var targetNames = new List<string>(new[] { "ExtendedData", "Data", "GenericArguments", "Parameters" });
-                var elements = doc.Descendants().OfType<JProperty>().Where(p => targetNames.Contains(p.Name)).ToList();
-                elements.RenameAll("ExtendedData", "Data");
+                doc.RenameAll("ExtendedData", "Data");
 
                 var extendedData = doc.Property("Data") != null ? doc.Property("Data").Value as JObject : null;
                 if (extendedData != null)
@@ -54,10 +51,10 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                 MoveExtraExceptionProperties(error, extendedData);
-                var inner = error["inner"] as JObject;
+                var inner = error["Inner"] as JObject;
                 while (inner != null) {
                     MoveExtraExceptionProperties(inner);
-                    inner = inner["inner"] as JObject;
+                    inner = inner["Inner"] as JObject;
                 }
 
                 doc.Add("Type", new JValue(isNotFound ? "404" : "error"));
@@ -72,7 +69,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 if (!String.IsNullOrWhiteSpace(identity))
                     doc.Add("user", JObject.FromObject(new UserInfo(identity)));
 
-                elements.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
+                doc.RemoveAllIfNullOrEmpty("Data", "GenericArguments", "Parameters");
             }
         }
 

@@ -215,6 +215,7 @@
     <None Include="ErrorData\1477.json" />
     <None Include="ErrorData\1858.expected.json" />
     <None Include="ErrorData\1858.json" />
+    <None Include="ErrorData\1954.json" />
     <None Include="ErrorData\404WithNoRequestInfo.expected.json" />
     <None Include="ErrorData\404WithNoRequestInfo.json" />
     <None Include="ErrorData\444.expected.json" />

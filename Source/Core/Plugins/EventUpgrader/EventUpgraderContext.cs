@@ -10,22 +10,22 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {
     public class EventUpgraderContext : ExtensibleObject {
         public EventUpgraderContext(string json, Version version = null, bool isMigration = false) {
-            try {
+            var jsonType = json.GetJsonType();
+            if (jsonType == JsonType.Object) {
                 JObject doc = JObject.Parse(json);
                 Documents = new JArray(doc);
-            } catch {
-                try {
-                    JArray docs = JArray.Parse(json);
-                    Documents = docs;
-                } catch { }
+            } else if (jsonType == JsonType.Array) {
+                JArray docs = JArray.Parse(json);
+                Documents = docs;
+            } else {
+                throw new ArgumentException("Invalid json data specified.", "");
             }
 
             Version = version;

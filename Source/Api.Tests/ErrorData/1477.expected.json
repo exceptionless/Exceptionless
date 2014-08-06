@@ -1,5 +1,4 @@
 ﻿{
-  "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
   "ReferenceId": "800000003d538d628040bea0",
   "Date": "2014-01-17T14:37:02.739-06:00",
   "req": {

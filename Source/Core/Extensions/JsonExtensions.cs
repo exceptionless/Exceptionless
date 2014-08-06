@@ -10,15 +10,18 @@
 #endregion
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CodeSmith.Core.Reflection;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Serializer;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Bson;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Extensions {
     [System.Runtime.InteropServices.GuidAttribute("4186FC77-AF28-4D51-AAC3-49055DD855A4")]
@@ -240,6 +243,35 @@ namespace Exceptionless.Core.Extensions {
                 value = null;
                 return false;
             }
+        }
+
+        private static readonly Dictionary<Type, IMemberAccessor> _countAccessors = new Dictionary<Type, IMemberAccessor>();
+        public static bool IsValueEmptyCollection(this JsonProperty property, object target) {
+            var value = property.ValueProvider.GetValue(target);
+            if (value == null)
+                return true;
+
+            var collection = value as ICollection;
+            if (collection != null && collection.Count == 0)
+                return true;
+
+            if (!_countAccessors.ContainsKey(property.PropertyType)) {
+                if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType)) {
+                    var countProperty = property.PropertyType.GetProperty("Count");
+                    if (countProperty != null)
+                        _countAccessors.Add(property.PropertyType, LateBinder.GetPropertyAccessor(countProperty));
+                    else
+                        _countAccessors.Add(property.PropertyType, null);
+                } else
+                    _countAccessors.Add(property.PropertyType, null);
+            }
+
+            var countAccessor = _countAccessors[property.PropertyType];
+            if (countAccessor == null)
+                return false;
+
+            var count = (int)countAccessor.GetValue(value);
+            return count == 0;
         }
 
         public static void AddModelConverters(this JsonSerializerSettings settings) {
