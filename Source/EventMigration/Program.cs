@@ -68,10 +68,10 @@ namespace Exceptionless.EventMigration {
 
                 ISearchResponse<Stack> mostRecentStack = null;
                 if (ca.Resume)
-                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending(d => d.Id).Take(1));
+                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending("_id").Take(1));
                 ISearchResponse<PersistentEvent> mostRecentEvent = null;
                 if (ca.Resume)
-                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending(d => d.Id).Take(1));
+                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending("_id").Take(1));
 
                 const bool validate = false;
 
@@ -192,9 +192,6 @@ namespace Exceptionless.EventMigration {
             Console.WriteLine("     - Exceptionless Event Migration -");
             Console.WriteLine();
             Console.WriteLine(Parser.ArgumentsUsage(typeof(ConsoleArguments)));
-            Console.WriteLine("Usage samples:");
-            Console.WriteLine();
-            Console.WriteLine("  job /s:12-12-2022");
         }
 
         private static void EnsureIndex(Uri indexServer, bool deleteExistingIndexes = false) {
