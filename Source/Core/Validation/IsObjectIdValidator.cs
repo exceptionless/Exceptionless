@@ -1,6 +1,5 @@
 ﻿using System;
 using FluentValidation.Validators;
-using MongoDB.Bson;
 
 namespace Exceptionless.Core.Validation {
     public class IsObjectIdValidator : PropertyValidator {
@@ -11,8 +10,7 @@ namespace Exceptionless.Core.Validation {
             if (String.IsNullOrEmpty(value))
                 return false;
 
-            ObjectId id;
-            return ObjectId.TryParse(context.PropertyValue as string, out id);
+            return value.Length == 32;
         }
     }
 }

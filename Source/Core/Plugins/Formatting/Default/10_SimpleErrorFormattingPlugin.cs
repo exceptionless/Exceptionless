@@ -28,7 +28,21 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
 
-            return new SummaryData("stack-simple-summary", new { ExceptionType = stack.SignatureInfo["ExceptionType"] });
+            return new SummaryData("stack-simple-summary", new {
+                Title = stack.Title,
+                ExceptionType = stack.SignatureInfo["ExceptionType"]
+            });
+        }
+
+        public override string GetStackTitle(PersistentEvent ev) {
+            if (!ShouldHandle(ev))
+                return null;
+
+            var error = ev.GetSimpleError();
+            if (error == null)
+                return null;
+
+            return error.Message;
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {

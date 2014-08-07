@@ -22,6 +22,15 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsNotFound();
         }
 
+        
+        public override SummaryData GetStackSummaryData(Stack stack) {
+            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
+                return null;
+
+            return new SummaryData("stack-notfound-summary", new { Title = stack.Title });
+        }
+
+
         public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;

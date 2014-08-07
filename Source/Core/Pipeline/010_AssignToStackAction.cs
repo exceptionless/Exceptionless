@@ -52,12 +52,14 @@ namespace Exceptionless.Core.Pipeline {
                 if (ctx.StackInfo == null) {
                     Log.Trace().Message("Creating new error stack.").Write();
                     ctx.IsNew = true;
+
+                    string title = _pluginManager.GetStackTitle(ctx.Event);
                     var stack = new Stack {
                         OrganizationId = ctx.Event.OrganizationId,
                         ProjectId = ctx.Event.ProjectId,
                         SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
                         SignatureHash = signatureHash,
-                        Title = _pluginManager.GetStackTitle(ctx.Event),
+                        Title = title != null ? title.Truncate(1000) : null,
                         Tags = ctx.Event.Tags ?? new TagSet(),
                         TotalOccurrences = 1,
                         FirstOccurrence = ctx.Event.Date.UtcDateTime,

@@ -24,6 +24,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
                     events.ForEach(e => {
                         if (e.Date == DateTimeOffset.MinValue)
                             e.Date = DateTimeOffset.Now;
+
                         if (String.IsNullOrWhiteSpace(e.Type))
                             e.Type = e.Data.ContainsKey(Event.KnownDataKeys.Error) || e.Data.ContainsKey(Event.KnownDataKeys.SimpleError) ? Event.KnownTypes.Error : Event.KnownTypes.Log;
                     });

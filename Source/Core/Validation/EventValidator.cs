@@ -5,11 +5,10 @@ using FluentValidation;
 namespace Exceptionless.Core.Validation {
     public class EventValidator : AbstractValidator<Event> {
         public EventValidator() {
-            RuleFor(e => e.Type)
-                .NotEmpty()
-                .Must(BeAValidEventType)
-                .WithMessage("Please specify a valid event type.");
-            
+            RuleFor(s => s.Type).Length(1, 100).WithMessage("Type cannot be longer than 100 characters.");
+            RuleFor(s => s.Message).Length(1, 2000).When(s => s.Message != null).WithMessage("Message cannot be longer than 2000 characters.");
+            RuleFor(s => s.Source).Length(1, 2000).When(s => s.Source != null).WithMessage("Source cannot be longer than 2000 characters.");
+    
             RuleFor(e => e.ReferenceId)
                 .NotEmpty()
                 .Length(8, 32)
@@ -19,22 +18,6 @@ namespace Exceptionless.Core.Validation {
             RuleForEach(e => e.Tags)
                 .Length(1, 255)
                 .WithMessage("A tag must be less than 255 characters.");
-        }
-
-        private bool BeAValidEventType(string type) {
-            switch (type.ToLower()) {
-                case Event.KnownTypes.Error:
-                case Event.KnownTypes.NotFound:
-                case Event.KnownTypes.Log:
-                case Event.KnownTypes.FeatureUsage:
-                case Event.KnownTypes.SessionStart:
-                case Event.KnownTypes.SessionEnd:
-                    break;
-                default:
-                    return false;
-            }
-
-            return true;
-        }
+       }
     }
 }

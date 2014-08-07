@@ -180,6 +180,7 @@
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
+    <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\50_SessionFormattingPlugin.cs" />

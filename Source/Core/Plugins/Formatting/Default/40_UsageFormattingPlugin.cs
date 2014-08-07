@@ -21,6 +21,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsFeatureUsage();
         }
 
+        public override SummaryData GetStackSummaryData(Stack stack) {
+            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.FeatureUsage))
+                return null;
+
+            return new SummaryData("stack-feature-summary", new { Title = stack.Title });
+        }
+
         public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;

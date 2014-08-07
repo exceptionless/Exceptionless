@@ -25,6 +25,17 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsError() && ev.Data.ContainsKey(Event.KnownDataKeys.Error);
         }
 
+        public override string GetStackTitle(PersistentEvent ev) {
+            if (!ShouldHandle(ev))
+                return null;
+
+            var error = ev.GetError();
+            if (error == null)
+                return null;
+
+            return error.Message;
+        }
+
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;

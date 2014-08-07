@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public string GetStackTitle(PersistentEvent ev) {
-            return ev.Message ?? "None";
+            return ev.Message;
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData("event-summary", new { Message = ev.Message ?? "None" });
+            return new SummaryData("event-summary", new { Message = ev.Message });
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {

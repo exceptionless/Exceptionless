@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using CodeSmith.Core.Component;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Data;
 using Newtonsoft.Json.Linq;
@@ -51,7 +52,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     extendedData.RenameOrRemoveIfNullOrEmpty("TraceLog", "trace");
 
                 var error = new JObject();
-                error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
+                error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules"); 
 
                 MoveExtraExceptionProperties(error, extendedData);
                 var inner = error["Inner"] as JObject;
