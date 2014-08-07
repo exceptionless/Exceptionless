@@ -9,8 +9,11 @@ using CodeSmith.Core.CommandLine;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
+using FluentValidation;
+using FluentValidation.Results;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -69,15 +72,29 @@ namespace Exceptionless.EventMigration {
                 if (ca.Resume)
                     mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending(d => d.Id).Take(1));
 
+                const bool validate = false;
+
                 IBulkResponse response = null;
                 int total = 0;
                 var stopwatch = new Stopwatch();
                 if (!ca.SkipStacks) {
+                    var validator = new ErrorStackValidator();
                     stopwatch.Start();
                     var errorStackCollection = GetErrorStackCollection(container);
                     var query = mostRecentStack != null && mostRecentStack.Total > 0 ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Hits.First().Id)) : Query.Null;
                     var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (stacks.Count > 0) {
+                        stacks.ForEach(s => {
+                            if (s.Tags != null)
+                                s.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
+                        });
+
+                        if (validate) {
+                            var invalidStacks = stacks.Where(s => !validator.Validate(s).IsValid).Select(s => new Tuple<OldModels.ErrorStack, IList<ValidationFailure>>(s, validator.Validate(s).Errors));
+                            if (invalidStacks.Any())
+                                Debugger.Break();
+                        }
+
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
                         response = searchclient.IndexMany(stacks, type: "stacks");
@@ -93,6 +110,7 @@ namespace Exceptionless.EventMigration {
                 total = 0;
                 stopwatch.Reset();
                 if (!ca.SkipErrors) {
+                    var validator = new PersistentEventValidator();
                     stopwatch.Start();
                     var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                     var errorCollection = GetErrorCollection(container);
@@ -107,8 +125,17 @@ namespace Exceptionless.EventMigration {
                         eventUpgraderPluginManager.Upgrade(ctx);
 
                         var ev = events.FromJson<PersistentEvent>(serializerSettings);
+
+                        if (validate) {
+                            var invalidEvents = ev.Where(e => !validator.Validate(e).IsValid).Select(e => new Tuple<PersistentEvent, IList<ValidationFailure>>(e, validator.Validate(e).Errors));
+                            if (invalidEvents.Any())
+                                Debugger.Break();
+                        }
+
                         try {
                             response = searchclient.IndexMany(ev, type: "events");
+                            if (!response.IsValid)
+                                Debugger.Break();
                         } catch (OutOfMemoryException) {
                             response = searchclient.IndexMany(ev.Take(BatchSize / 2), type: "events");
                             response = searchclient.IndexMany(ev.Skip(BatchSize / 2), type: "events");
@@ -513,6 +540,20 @@ namespace Exceptionless.EventMigration {
         }
 
         #endregion
+    }
+
+    internal class ErrorStackValidator : AbstractValidator<OldModels.ErrorStack> {
+        public ErrorStackValidator() {
+            RuleFor(s => s.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
+            RuleFor(s => s.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
+
+            RuleForEach(s => s.Tags).Length(1, 255).WithMessage("A tag must be less than 255 characters.");
+
+            // TODO: Should we require that title be set? If so, we need a default plugin.
+            //RuleFor(s => s.Title).NotEmpty().WithMessage("Please specify a valid title.");
+            RuleFor(s => s.SignatureHash).NotEmpty().WithMessage("Please specify a valid signature hash.");
+            RuleFor(s => s.SignatureInfo).NotNull().WithMessage("Please specify a valid signature info.");
+        }
     }
 
     public class EmptyCollectionContractResolver : ElasticContractResolver {
