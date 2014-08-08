@@ -6,8 +6,12 @@
       "AppDomainName": "/LM/W3SVC/4/ROOT/blah"
     }
   },
+  "Data": {
+    "WebEventCode": 3002,
+    "ErrorCode": -2147467259
+  },
   "Type": "error",
-  "err": {
+  "error": {
     "Code": "500",
     "Type": "System.Web.HttpException",
     "Message": "The client disconnected.",
@@ -18,11 +22,13 @@
       "Inner": null,
       "StackTrace": [],
       "TargetMethod": null,
-      "RemoteAddress": "172.21.0.1",
-      "RemotePort": "58663",
-      "UserAgent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-      "Referer": "http://www.sample.com/",
-      "IsConnected": false
+      "Data": {
+        "RemoteAddress": "172.21.0.1",
+        "RemotePort": "58663",
+        "UserAgent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+        "Referer": "http://www.sample.com/",
+        "IsConnected": false
+      }
     },
     "StackTrace": [
       {
@@ -69,8 +75,6 @@
           "FileVersion": "213.42.0.6"
         }
       }
-    ],
-    "WebEventCode": 3002,
-    "ErrorCode": -2147467259
+    ]
   }
 }

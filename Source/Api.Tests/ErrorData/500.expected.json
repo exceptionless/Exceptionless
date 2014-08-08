@@ -21,7 +21,7 @@
     }
   },
   "Type": "error",
-  "err": {
+  "error": {
     "Type": "System.Exception",
     "Message": "Exception of type 'System.Exception' was thrown."
   }

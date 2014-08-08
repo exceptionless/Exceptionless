@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public static IEnumerable<object[]> Errors {
             get {
                 var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "1954.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
+                foreach (var file in Directory.GetFiles(@"..\..\ErrorData\", "*.json", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
                     result.Add(new object[] { Path.GetFullPath(file) });
 
                 return result.ToArray();

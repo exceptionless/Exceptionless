@@ -70,13 +70,13 @@ namespace Exceptionless.Models {
         }
 
         public static class KnownDataKeys {
-            public const string Error = "err";
-            public const string SimpleError = "serr";
-            public const string RequestInfo = "req";
+            public const string Error = "error";
+            public const string SimpleError = "simple_error";
+            public const string RequestInfo = "request";
             public const string TraceLog = "trace";
-            public const string EnvironmentInfo = "env";
+            public const string EnvironmentInfo = "environment";
             public const string UserInfo = "user";
-            public const string UserDescription = "desc";
+            public const string UserDescription = "user_description";
         }
     }
 }

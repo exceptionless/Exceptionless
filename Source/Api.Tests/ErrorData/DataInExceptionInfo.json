@@ -1,0 +1,10 @@
+{
+  "ExtendedData": {
+    "User": "\"You\"",
+  },
+  "Inner": {
+    "ExtendedData": {
+      "__ExceptionInfo": "{\"Data\": {\"Blah\": \"Blah\"}}"
+    }
+  }
+}

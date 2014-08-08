@@ -58,10 +58,13 @@ namespace Exceptionless.Serializer {
             // when adding items to data, see if they are a known type and deserialize to the registered type
             if (_dataTypeRegistry.ContainsKey(p.Name)) {
                 try {
+                    string dataKey = p.Name;
+                    if (target.Data.ContainsKey(dataKey))
+                        dataKey = "_" + dataKey;
                     if (p.Value is JValue && p.Value.Type == JTokenType.String)
-                        target.Data.Add(p.Name, serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]));
+                        target.Data.Add(dataKey, serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]));
                     else
-                        target.Data.Add(p.Name, p.Value.ToObject(_dataTypeRegistry[p.Name], serializer));
+                        target.Data.Add(dataKey, p.Value.ToObject(_dataTypeRegistry[p.Name], serializer));
                     return;
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, ex.Message).Write();

@@ -41,8 +41,12 @@
       "AppDomainName": "/LM/W3SVC/819060847/ROOT-1-13013139602206444"
     }
   },
+  "Data": {
+    "WebEventCode": 0,
+    "ErrorCode": -2147467259
+  },
   "Type": "error",
-  "err": {
+  "error": {
     "Code": "500",
     "Type": "System.Web.HttpRequestValidationException",
     "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
@@ -243,8 +247,6 @@
           "TypeFullName": "System.Web.Util.RequestValidationSource"
         }
       ]
-    },
-    "WebEventCode": 0,
-    "ErrorCode": -2147467259
+    }
   }
 }

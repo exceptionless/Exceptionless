@@ -43,7 +43,7 @@
     }
   },
   "Type": "error",
-  "err": {
+  "error": {
     "Type": "CodeSmith.Data.Rules.BrokenRuleException",
     "Message": "1 broken rule. All rules must pass. Type: Employees - LastName is a required field. State: { EmployeeId = 0 FirstName = Example LastName = <null> Email = <null> ManagerId = <null> CreatedBy = 1 UpdatedBy = 0 }",
     "StackTrace": [

@@ -14,6 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Reflection;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
@@ -27,14 +28,23 @@ namespace Exceptionless.Core.Extensions {
     [System.Runtime.InteropServices.GuidAttribute("4186FC77-AF28-4D51-AAC3-49055DD855A4")]
     public static class JsonExtensions {
         public static bool IsNullOrEmpty(this JToken target) {
-            return target == null 
-                || target.Type == JTokenType.Null
-                || (target.Type == JTokenType.Object && !target.HasValues)
-                || (target.Type == JTokenType.Property && !((JProperty)target).Value.HasValues)
-                || (target.Type == JTokenType.Array && !target.HasValues);
+            if (target == null || target.Type == JTokenType.Null)
+                return true;
+
+            if (target.Type == JTokenType.Object || target.Type == JTokenType.Array)
+                return !target.HasValues;
+
+            if (target.Type != JTokenType.Property)
+                return false;
+
+            var value = ((JProperty)target).Value;
+            if (value.Type == JTokenType.String)
+                return value.ToString().IsNullOrEmpty();
+
+            return IsNullOrEmpty(value);
         }
 
-        public static bool IsNullOrEmpty(this JObject target, string name) {
+        public static bool IsPropertyNullOrEmpty(this JObject target, string name) {
             if (target[name] == null)
                 return true;
 
@@ -42,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool RemoveIfNullOrEmpty(this JObject target, string name) {
-            if (!target.IsNullOrEmpty(name))
+            if (!target.IsPropertyNullOrEmpty(name))
                 return false;
 
             target.Remove(name);
@@ -85,7 +95,7 @@ namespace Exceptionless.Core.Extensions {
             if (target[currentName] == null)
                 return false;
 
-            bool isNullOrEmpty = target.IsNullOrEmpty(currentName);
+            bool isNullOrEmpty = target.IsPropertyNullOrEmpty(currentName);
             JProperty p = target.Property(currentName);
             target.Remove(p.Name);
 
@@ -101,7 +111,7 @@ namespace Exceptionless.Core.Extensions {
                 if (source[name] == null)
                     continue;
 
-                bool isNullOrEmpty = source.IsNullOrEmpty(name);
+                bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
                 JProperty p = source.Property(name);
                 source.Remove(p.Name);
 
@@ -137,7 +147,7 @@ namespace Exceptionless.Core.Extensions {
             if (source[name] == null)
                 return false;
 
-            bool isNullOrEmpty = source.IsNullOrEmpty(name);
+            bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
             if (isNullOrEmpty)
                 return false;
 
@@ -146,7 +156,7 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string GetPropertyStringValue(this JObject target, string name) {
-            if (target.IsNullOrEmpty(name)) 
+            if (target.IsPropertyNullOrEmpty(name)) 
                 return null;
 
             return target.Property(name).Value.ToString();

@@ -62,12 +62,12 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 }
 
                 doc.Add("Type", new JValue(isNotFound ? "404" : "error"));
-                doc.Add("err", error);
+                doc.Add("error", error);
 
                 string emailAddress = doc.GetPropertyStringValueAndRemove("UserEmail");
                 string userDescription = doc.GetPropertyStringValueAndRemove("UserDescription");
                 if (!String.IsNullOrWhiteSpace(emailAddress) && !String.IsNullOrWhiteSpace(userDescription))
-                    doc.Add("desc", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
+                    doc.Add("user_description", JObject.FromObject(new UserDescription(emailAddress, userDescription)));
 
                 string identity = doc.GetPropertyStringValueAndRemove("UserName");
                 if (!String.IsNullOrWhiteSpace(identity))
@@ -90,8 +90,16 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
 
             try {
                 var extraProperties = JObject.Parse(json);
-                foreach (var property in extraProperties.Properties())
-                    doc.Add(property.Name, property.Value);
+                foreach (var property in extraProperties.Properties()) {
+                    string dataKey = property.Name;
+                    if (extendedData[dataKey] != null)
+                        dataKey = "_" + dataKey;
+
+                    if (property.IsNullOrEmpty())
+                        continue;
+
+                    extendedData.Add(dataKey, property.Value);
+                }
             } catch (Exception) {}
 
             extendedData.Remove("__ExceptionInfo");

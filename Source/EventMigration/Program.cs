@@ -68,10 +68,10 @@ namespace Exceptionless.EventMigration {
 
                 ISearchResponse<Stack> mostRecentStack = null;
                 if (ca.Resume)
-                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending("_id").Take(1));
+                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending("_uid").Take(1));
                 ISearchResponse<PersistentEvent> mostRecentEvent = null;
                 if (ca.Resume)
-                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending("_id").Take(1));
+                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending("_uid").Take(1));
 
                 const bool validate = false;
 
@@ -122,7 +122,7 @@ namespace Exceptionless.EventMigration {
                     var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (errors.Count > 0) {
                         Console.SetCursorPosition(0, 5);
-                        Console.WriteLine("Migrating events {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
+                        Console.WriteLine("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
 
                         var events = JArray.FromObject(errors);
                         var ctx = new EventUpgraderContext(events, new Version(1, 5), true);

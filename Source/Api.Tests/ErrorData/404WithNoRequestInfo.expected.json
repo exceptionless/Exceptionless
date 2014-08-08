@@ -19,15 +19,17 @@
       "AppDomainName": "/LM/W3SVC/2/ROOT-1-130094782166854444"
     }
   },
-  "Type": "404",
-  "err": {
-    "Code": "404",
-    "Type": "System.Web.HttpUnhandledException",
-    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown.",
+  "Data": {
     "WebEventCode": 0,
     "ErrorCode": -2147467259,
     "Data": {
       "ASPIMPERSONATING": ""
     }
+  },
+  "Type": "404",
+  "error": {
+    "Code": "404",
+    "Type": "System.Web.HttpUnhandledException",
+    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
   }
 }
