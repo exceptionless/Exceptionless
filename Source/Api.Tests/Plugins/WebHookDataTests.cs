@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
@@ -16,6 +17,7 @@ namespace Exceptionless.Api.Tests.Plugins
     [UseReporter(typeof(SmartReporter))]
     public class WebHookDataTests {
         private readonly WebHookDataPluginManager _webHookDataPluginManager = IoC.GetInstance<WebHookDataPluginManager>();
+        private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
 
         [Theory]
         [PropertyData("WebHookData")]
@@ -67,7 +69,7 @@ namespace Exceptionless.Api.Tests.Plugins
             ev.StackId = TestConstants.StackId;
 
             var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
-            context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: ev.Message, signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
+            context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formattingPluginManager.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");
             context.Stack.Tags = new TagSet { "Test" };
             context.Stack.FirstOccurrence = context.Stack.LastOccurrence = ev.Date.DateTime;
 

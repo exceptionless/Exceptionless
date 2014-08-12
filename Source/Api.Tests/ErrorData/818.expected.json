@@ -5,7 +5,7 @@
     "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
   },
   "Date": "2013-04-08T13:47:46.21851-05:00",
-  "req": {
+  "request": {
     "UserAgent": "Mozilla/4.0 (compatible; Synapse)",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -17,7 +17,7 @@
     "Form": {},
     "QueryString": {}
   },
-  "env": {
+  "environment": {
     "ProcessorCount": 1,
     "TotalPhysicalMemory": 6441984000,
     "AvailablePhysicalMemory": 358043648,

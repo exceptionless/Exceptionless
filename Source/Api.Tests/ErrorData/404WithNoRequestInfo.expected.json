@@ -1,6 +1,6 @@
 ﻿{
   "Date": "2013-04-03T11:56:46.5505961-05:00",
-  "env": {
+  "environment": {
     "ProcessorCount": 1,
     "TotalPhysicalMemory": 6441984000,
     "AvailablePhysicalMemory": 516214784,

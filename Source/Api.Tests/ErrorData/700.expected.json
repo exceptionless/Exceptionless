@@ -1,7 +1,7 @@
 ﻿{
   "ReferenceId": "80000000b77efe2374a7eed3",
   "Date": "2013-03-27T09:52:12.8451806-05:00",
-  "env": {
+  "environment": {
     "ProcessorCount": 12,
     "TotalPhysicalMemory": 17120079872,
     "AvailablePhysicalMemory": 10076049408,

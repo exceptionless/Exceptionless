@@ -42,8 +42,8 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     }
                 }
 
-                doc.RenameOrRemoveIfNullOrEmpty("RequestInfo", "req");
-                doc.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "env");
+                doc.RenameOrRemoveIfNullOrEmpty("RequestInfo", "request");
+                doc.RenameOrRemoveIfNullOrEmpty("EnvironmentInfo", "environment");
 
                 doc.RenameAll("ExtendedData", "Data");
 

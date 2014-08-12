@@ -1,7 +1,7 @@
 ﻿{
   "ReferenceId": "80000000b77efe1fc4cf9e2d",
   "Date": "2013-05-03T07:41:43.86797-05:00",
-  "req": {
+  "request": {
     "UserAgent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.64 Safari/537.31",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -23,7 +23,7 @@
     "Form": {},
     "QueryString": {}
   },
-  "env": {
+  "environment": {
     "ProcessorCount": 12,
     "TotalPhysicalMemory": 17120079872,
     "AvailablePhysicalMemory": 9523634176,

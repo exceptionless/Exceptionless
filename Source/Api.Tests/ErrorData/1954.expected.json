@@ -1,6 +1,6 @@
 ﻿{
   "Date": "2014-05-15T17:51:24.871-05:00",
-  "env": {
+  "environment": {
     "ProcessorCount": 24,
     "Data": {
       "AppDomainName": "/LM/W3SVC/4/ROOT/blah"

@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 MachineName = environmentInfo != null ? environmentInfo.MachineName : null,
                 RequestPath = requestInfo != null ? requestInfo.GetFullPath() : null,
                 IpAddress = requestInfo != null ? requestInfo.ClientIpAddress : environmentInfo != null ? environmentInfo.IpAddress : null,
-                Message = ctx.Event.Message,
+                Message = error.Message,
                 Type = error.Type,
                 Code = error.Code,
                 TargetMethod = error.TargetMethod != null ? error.TargetMethod.GetFullName() : null,
