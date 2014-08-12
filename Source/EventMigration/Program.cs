@@ -58,20 +58,23 @@ namespace Exceptionless.EventMigration {
 
                 var container = CreateContainer();
                 var serverUri = new Uri("http://localhost:9200");
-                EnsureIndex(serverUri, ca.DeleteExistingIndexes);
 
                 var settings = new ConnectionSettings(serverUri).SetDefaultIndex("exceptionless_v1");
                 settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionContractResolver(settings); });
+                settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
+                settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
+                
                 var searchclient = new ElasticClient(settings);
+                EnsureIndex(searchclient, ca.DeleteExistingIndexes);
                 var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
                 serializerSettings.AddModelConverters();
 
                 ISearchResponse<Stack> mostRecentStack = null;
                 if (ca.Resume)
-                    mostRecentStack = searchclient.Search<Stack>(s => s.Type("stacks").SortDescending("_uid").Take(1));
+                    mostRecentStack = searchclient.Search<Stack>(d => d.AllIndices().Type(typeof(Stack)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Take(1));
                 ISearchResponse<PersistentEvent> mostRecentEvent = null;
                 if (ca.Resume)
-                    mostRecentEvent = searchclient.Search<PersistentEvent>(s => s.Type("events").SortDescending("_uid").Take(1));
+                    mostRecentEvent = searchclient.Search<PersistentEvent>(d => d.AllIndices().Type(typeof(PersistentEvent)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Take(1));
 
                 const bool validate = false;
 
@@ -101,7 +104,7 @@ namespace Exceptionless.EventMigration {
 
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
-                        response = searchclient.IndexMany(stacks, type: "stacks");
+                        response = searchclient.IndexMany(stacks);
                         if (!response.IsValid)
                             Debugger.Break();
 
@@ -141,8 +144,8 @@ namespace Exceptionless.EventMigration {
                             if (!response.IsValid)
                                 Debugger.Break();
                         } catch (OutOfMemoryException) {
-                            response = searchclient.IndexMany(ev.Take(BatchSize / 2), type: "events");
-                            response = searchclient.IndexMany(ev.Skip(BatchSize / 2), type: "events");
+                            response = searchclient.IndexMany(ev.Take(BatchSize / 2));
+                            response = searchclient.IndexMany(ev.Skip(BatchSize / 2));
                         }
                         if (!response.IsValid)
                             Debugger.Break();
@@ -194,10 +197,7 @@ namespace Exceptionless.EventMigration {
             Console.WriteLine(Parser.ArgumentsUsage(typeof(ConsoleArguments)));
         }
 
-        private static void EnsureIndex(Uri indexServer, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(indexServer).SetDefaultIndex("exceptionless_v1");
-            var searchclient = new ElasticClient(settings);
-
+        private static void EnsureIndex(ElasticClient searchclient, bool deleteExistingIndexes = false) {
             bool shouldCreateIndex = false;
             if (searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "exceptionless_v1" })).Exists) {
                 if (deleteExistingIndexes) {
@@ -212,36 +212,41 @@ namespace Exceptionless.EventMigration {
                 searchclient.CreateIndex("exceptionless_v1", idx => idx
                     .AddAlias("exceptionless")
                     .AddMapping<PersistentEvent>(map => map
-                        .Type("events")
                         .Dynamic(DynamicMappingOption.Ignore)
                         .IncludeInAll(false)
-                        .IdField(id => id.Path("id"))
                         .Properties(p => p
-                            .String(f => f.Name("organization_id").IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("project_id").IndexName("project").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("stack_id").IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("reference_id").IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("session_id").IndexName("session").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("type").IndexName("type").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("source").IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
-                            .Date(f => f.Name("date").IndexName("date"))
-                            .String(f => f.Name("message").IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f => f.Name("tags").IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                            .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                            .Date(f => f.Name(e => e.Date).IndexName("date"))
+                            .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                            .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
+                            .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         )
                     )
                     .AddMapping<Stack>(map => map
-                        .Type("stacks")
                         .Dynamic(DynamicMappingOption.Ignore)
                         .IncludeInAll(false)
-                        .IdField(id => id.Path("id"))
                         .Properties(p => p
-                            .String(f => f.Name("organization_id").IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("project_id").IndexName("project").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name("signature_hash").IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
-                            .Date(f => f.Name("first_occurrence").IndexName("first"))
-                            .Date(f => f.Name("last_occurrence").IndexName("last"))
-                            .String(f => f.Name("title").IndexName("title").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f => f.Name("tags").IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                            .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(s => s.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(s => s.SignatureHash).IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
+                            .Date(f => f.Name(s => s.FirstOccurrence).IndexName("first"))
+                            .Date(f => f.Name(s => s.LastOccurrence).IndexName("last"))
+                            .String(f => f.Name(s => s.Title).IndexName("title").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
+                            .String(f => f.Name(s => s.Description).IndexName("description").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name(s => s.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.2))
+                            .String(f => f.Name(s => s.References).IndexName("references").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .Date(f => f.Name(s => s.DateFixed).IndexName("fixed"))
+                            .Boolean(f => f.Name(s => s.IsHidden).IndexName("hidden"))
+                            .Boolean(f => f.Name(s => s.IsRegressed).IndexName("regressed"))
+                            .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName("critical"))
+                            .Number(f => f.Name(s => s.TotalOccurrences).IndexName("occurrences"))
                         )
                     )
                 );
