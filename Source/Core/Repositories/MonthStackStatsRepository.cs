@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
 
         public ICollection<MonthStackStats> GetRange(string start, string end) {
             var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
-            return Find<MonthStackStats>(new MultiOptions().WithQuery(query));
+            return Find<MonthStackStats>(new MongoOptions().WithQuery(query));
         }
 
         public long IncrementStats(string id, DateTime localDate) {

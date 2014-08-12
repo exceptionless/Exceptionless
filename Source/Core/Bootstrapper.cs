@@ -11,10 +11,12 @@
 
 using System;
 using System.Configuration;
+using System.Reflection;
 using CodeSmith.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
@@ -31,9 +33,14 @@ using Exceptionless.Models.Admin;
 using Exceptionless.Models.Data;
 using FluentValidation;
 using MongoDB.Driver;
+using Nest;
+using Nest.Resolvers;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
+using Token = Exceptionless.Models.Admin.Token;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
@@ -63,6 +70,15 @@ namespace Exceptionless.Core {
 
                 MongoServer server = new MongoClient(url).GetServer();
                 return server.GetDatabase(databaseName);
+            });
+
+            container.RegisterSingle<ElasticClient>(() => {
+                var settings = new ConnectionSettings(new Uri("http://localhost:9200")).SetDefaultIndex("exceptionless_v1");
+                settings.EnableTrace();
+                settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionContractResolver(settings); });
+                settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
+                settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
+                return new ElasticClient(settings);
             });
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
@@ -119,6 +135,31 @@ namespace Exceptionless.Core {
             container.RegisterSingle<DataHelper>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
+        }
+    }
+
+    public class EmptyCollectionContractResolver : ElasticContractResolver {
+        public EmptyCollectionContractResolver(IConnectionSettingsValues connectionSettings) : base(connectionSettings) {}
+
+        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
+            JsonProperty property = base.CreateProperty(member, memberSerialization);
+
+            Predicate<object> shouldSerialize = property.ShouldSerialize;
+            property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
+            return property;
+        }
+
+        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
+            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
+                return base.CreateDictionaryContract(objectType);
+
+            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
+            contract.PropertyNameResolver = propertyName => propertyName;
+            return contract;
+        }
+
+        protected override string ResolvePropertyName(string propertyName) {
+            return propertyName.ToLowerUnderscoredWords();
         }
     }
 }

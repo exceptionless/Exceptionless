@@ -10,7 +10,7 @@ namespace Exceptionless.Core.Validation {
             if (String.IsNullOrEmpty(value))
                 return false;
 
-            return value.Length == 32;
+            return value.Length == 24;
         }
     }
 }

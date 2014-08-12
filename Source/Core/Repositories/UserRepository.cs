@@ -32,14 +32,14 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(emailAddress))
                 return null;
 
-            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
         }
 
         public User GetByVerifyEmailAddressToken(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return FindOne<User>(new OneOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
         }
 
         // TODO: Have this return a limited subset of user data.
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<User>();
 
             var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
-            return Find<User>(new MultiOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
+            return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
         }
 
         #region Collection Setup

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public class OneOptions : QueryOptions {
@@ -9,7 +8,6 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public List<string> Fields { get; set; }
-        public IMongoSortBy SortBy { get; set; }
         public string CacheKey { get; set; }
         public TimeSpan? ExpiresIn { get; set; }
         public DateTime? ExpiresAt { get; set; }

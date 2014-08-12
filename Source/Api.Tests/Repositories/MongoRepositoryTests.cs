@@ -8,7 +8,7 @@ using Exceptionless.Models;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class BaseRepositoryTests {
+    public class MongoRepositoryTests {
         public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
 
         [Fact]

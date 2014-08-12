@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Token> GetByTypeAndOrganizationId(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<Token>(new MultiOptions()
+            return Find<Token>(new MongoOptions()
                 .WithOrganizationId(organizationId)
                 .WithQuery(Query.EQ(FieldNames.Type, type))
                 .WithPaging(paging)
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<Token>();
 
             string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return Find<Token>(new MultiOptions()
+            return Find<Token>(new MongoOptions()
                 .WithOrganizationIds(organizationIds)
                 .WithQuery(Query.EQ(FieldNames.Type, type))
                 .WithPaging(paging)
@@ -56,8 +56,8 @@ namespace Exceptionless.Core.Repositories {
                             Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId))), 
                             Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
                         ), Query.EQ(FieldNames.Type, type));
-            
-            return Find<Token>(new MultiOptions()
+
+            return Find<Token>(new MongoOptions()
                 .WithQuery(query)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-project:", projectId) : null)
@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Repositories {
                 Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
             ), Query.EQ(FieldNames.Type, type));
 
-            return Find<Token>(new MultiOptions()
+            return Find<Token>(new MongoOptions()
                 .WithQuery(query)
                 .WithPaging(paging)
                 .WithCacheKey(String.Concat("type:", type, "-org:", organizationId, "-project:", projectId))
@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException("refreshToken");
 
-            return FindOne<Token>(new OneOptions().WithQuery(Query.EQ(FieldNames.Refresh, refreshToken)));
+            return FindOne<Token>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Refresh, refreshToken)));
         }
 
         #region Collection Setup

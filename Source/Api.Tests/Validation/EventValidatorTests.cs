@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(Event.KnownTypes.NotFound, true)]
         [InlineData(Event.KnownTypes.SessionEnd, true)]
         [InlineData(Event.KnownTypes.SessionStart, true)]
-        [InlineData("invalid-type", false)]
+        [InlineData("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", false)]
         public void ValidateType(string type, bool isValid) {
             var result = _validator.Validate(new Event { Type = type });
             Assert.Equal(isValid, result.IsValid);

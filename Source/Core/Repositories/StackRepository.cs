@@ -37,11 +37,11 @@ namespace Exceptionless.Core.Repositories {
 
         public void IncrementStats(string stackId, DateTime occurrenceDate) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
-            UpdateAll(new QueryOptions().WithId(stackId).WithQuery(Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))), Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
+            UpdateAll(new MongoOptions().WithId(stackId).WithQuery(Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))), Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
 
             // Only update the LastOccurrence if the new date is greater then the existing date.
             UpdateBuilder update = Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
-            var documentsAffected = UpdateAll(new QueryOptions().WithId(stackId).WithQuery(Query.LT(FieldNames.LastOccurrence, occurrenceDate)), update);
+            var documentsAffected = UpdateAll(new MongoOptions().WithId(stackId).WithQuery(Query.LT(FieldNames.LastOccurrence, occurrenceDate)), update);
             if (documentsAffected > 0)
                 return;
 
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
-            return FindOne<StackInfo>(new OneOptions()
+            return FindOne<StackInfo>(new MongoOptions()
                 .WithProjectId(projectId)
                 .WithQuery(Query.EQ(FieldNames.SignatureHash, signatureHash))
                 .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string[] GetHiddenIds(string projectId) {
-            return Find<Stack>(new MultiOptions()
+            return Find<Stack>(new MongoOptions()
                 .WithProjectId(projectId)
                 .WithQuery(Query.EQ(FieldNames.IsHidden, BsonBoolean.True))
                 .WithFields(FieldNames.Id)
@@ -72,7 +72,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string[] GetFixedIds(string projectId) {
-            return Find<Stack>(new MultiOptions()
+            return Find<Stack>(new MongoOptions()
                 .WithProjectId(projectId)
                 .WithQuery(Query.Exists(FieldNames.DateFixed))
                 .WithFields(FieldNames.Id)
@@ -85,7 +85,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string[] GetNotFoundIds(string projectId) {
-            return Find<Stack>(new MultiOptions()
+            return Find<Stack>(new MongoOptions()
                 .WithProjectId(projectId)
                 .WithQuery(Query.Exists(FieldNames.SignatureInfo_Path))
                 .WithFields(FieldNames.Id)
@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.LastOccurrence)).WithPaging(paging);
+            var options = new MongoOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.LastOccurrence)).WithPaging(paging);
             options.Query = options.Query.And(Query.GTE(FieldNames.LastOccurrence, utcStart), Query.LTE(FieldNames.LastOccurrence, utcEnd));
 
             if (!includeFixed)
@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new MultiOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.FirstOccurrence)).WithPaging(paging);
+            var options = new MongoOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.FirstOccurrence)).WithPaging(paging);
             options.Query = options.Query.And(Query.GTE(FieldNames.FirstOccurrence, utcStart), Query.LTE(FieldNames.FirstOccurrence, utcEnd));
 
             if (!includeFixed)

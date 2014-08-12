@@ -1,8 +1,5 @@
 using System;
 using CodeSmith.Core.Events;
-using Exceptionless.Core.Extensions;
-using MongoDB.Bson;
-using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {
@@ -19,9 +16,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string BeforeValue { get; set; }
-        public IMongoQuery BeforeQuery { get; set; }
         public string AfterValue { get; set; }
-        public IMongoQuery AfterQuery { get; set; }
         public int? Limit { get; set; }
         public int? Page { get; set; }
 
@@ -56,34 +51,6 @@ namespace Exceptionless.Core.Repositories {
                 skip = 0;
 
             return skip;
-        }
-
-        public override IMongoQuery GetQuery(Func<string, BsonValue> getIdValue = null) {
-            IMongoQuery query = base.GetQuery(getIdValue);
-            if (getIdValue == null)
-                getIdValue = id => new BsonObjectId(new ObjectId(id));
-
-            if (Page.HasValue)
-                return query;
-
-            if (!String.IsNullOrEmpty(BeforeValue) && BeforeQuery == null) {
-                try {
-                    BeforeQuery = MongoDB.Driver.Builders.Query.LT(CommonFieldNames.Id, getIdValue(BeforeValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(BeforeQuery, "BeforeQuery").Submit();
-                }
-            }
-
-            if (!String.IsNullOrEmpty(AfterValue) && AfterQuery == null) {
-                try {
-                    AfterQuery = MongoDB.Driver.Builders.Query.GT(CommonFieldNames.Id, getIdValue(AfterValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(AfterQuery, "AfterQuery").Submit();
-                }
-            }
-
-            query = query.And(BeforeQuery, AfterQuery);
-            return query;
         }
     }
 }

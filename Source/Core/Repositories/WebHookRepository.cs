@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Repositories {
         public WebHookRepository(MongoDatabase database, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
 
         public void RemoveByUrl(string targetUrl) {
-            RemoveAll(new QueryOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
+            RemoveAll(new MongoOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
         }
 
         public ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Repositories {
                     Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
                 );
 
-            return Find<WebHook>(new MultiOptions()
+            return Find<WebHook>(new MongoOptions()
                 .WithQuery(query)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));

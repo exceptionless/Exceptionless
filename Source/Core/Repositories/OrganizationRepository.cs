@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var organization = FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
+            var organization = FindOne<Organization>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
             if (organization != null)
                 invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
 
@@ -48,11 +48,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException("customerId");
 
-            return FindOne<Organization>(new OneOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
+            return FindOne<Organization>(new MongoOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
         }
 
         public ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
-            return Find<Organization>(new MultiOptions()
+            return Find<Organization>(new MongoOptions()
                 .WithQuery(Query.GT(FieldNames.RetentionDays, 0))
                 .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
                 .WithPaging(paging));
@@ -66,7 +66,7 @@ namespace Exceptionless.Core.Repositories {
                 Query.GTE(FieldNames.LastEventDate, DateTime.Now.SubtractDays(90)),
                 Query.NotExists(FieldNames.StripeCustomerId));
 
-            return Find<Organization>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
+            return Find<Organization>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
         public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {
@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
-            var options = new MultiOptions().WithPaging(paging);
+            var options = new MongoOptions().WithPaging(paging);
             if (!String.IsNullOrWhiteSpace(criteria))
                 options.Query = options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
             
@@ -158,7 +158,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public BillingPlanStats GetBillingPlanStats() {
-            var results = Find<Organization>(new MultiOptions()
+            var results = Find<Organization>(new MongoOptions()
                 .WithFields(FieldNames.PlanId, FieldNames.IsSuspended, FieldNames.BillingPrice, FieldNames.BillingStatus)
                 .WithSort(SortBy.Descending(FieldNames.PlanId)));
 

@@ -1,17 +1,16 @@
 ﻿using System;
-using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {
-    internal class PagingWithSortingOptions : PagingOptions {
+    internal class PagingWtihBeforeAfterSortByOptions<TQuery, TSortBy> : PagingOptions {
         private readonly PagingOptions _options;
 
-        public PagingWithSortingOptions(PagingOptions options) {
+        public PagingWtihBeforeAfterSortByOptions(PagingOptions options) {
             _options = options ?? new PagingOptions();
         }
 
-        public IMongoQuery BeforeQuery { get; set; }
-        public IMongoQuery AfterQuery { get; set; }
-        public IMongoSortBy SortBy { get; set; }
+        public TQuery BeforeQuery { get; set; }
+        public TQuery AfterQuery { get; set; }
+        public TSortBy SortBy { get; set; }
 
         public override string Before {
             get { return _options.Before; }

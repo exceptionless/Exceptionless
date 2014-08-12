@@ -14,66 +14,59 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Serializers;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class EventRepository : MongoRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
+    public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
 
-        public EventRepository(MongoDatabase database, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, validator, cacheClient, messagePublisher) {
+        public EventRepository(ElasticClient elasticClient, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(elasticClient, validator, cacheClient, messagePublisher) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
 
             EnableNotifications = false;
         }
 
+        protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
+            // TODO: Remove this dependency on the mongo lib.
+            foreach (var ev in documents.Where(ev => ev.Id == null))
+                ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+
+            base.BeforeAdd(documents);
+        }
+
         public void UpdateFixedByStackId(string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException("stackId");
 
-            var update = new UpdateBuilder();
-            if (value)
-                update.Set(FieldNames.IsFixed, true);
-            else
-                update.Unset(FieldNames.IsFixed);
-
-            UpdateAll(new QueryOptions().WithStackId(stackId), update);
+            UpdateAll(new QueryOptions().WithStackId(stackId), String.Concat("ctx._source.is_fixed = ", value ? "true" : "false"));
         }
 
         public void UpdateHiddenByStackId(string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException("stackId");
 
-            var update = new UpdateBuilder();
-            if (value)
-                update.Set(FieldNames.IsHidden, true);
-            else
-                update.Unset(FieldNames.IsHidden);
-
-            UpdateAll(new QueryOptions().WithStackId(stackId), update);
+            UpdateAll(new QueryOptions().WithStackId(stackId), String.Concat("ctx._source.is_hidden = ", value ? "true" : "false"));
         }
 
         public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
-            var query = Query.LT(FieldNames.Date_UTC, utcCutoffDate.Ticks);
-            RemoveAll(new QueryOptions().WithOrganizationId(organizationId).WithQuery(query));
+            var query = Query<PersistentEvent>.Range(r => r.OnField("date").Lower(utcCutoffDate));
+            RemoveAll(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId).WithQuery(query));
         }
 
         public void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
-            var query = Query.And(
-                Query.EQ(FieldNames.RequestInfo_ClientIpAddress, new BsonString(clientIp)),
-                Query.GTE(FieldNames.Date_UTC, utcStartDate.Ticks),
-                Query.LTE(FieldNames.Date_UTC, utcEndDate.Ticks));
-            RemoveAll(new QueryOptions().WithQuery(query));
+            // TODO Verify this query.
+            var query = Query<PersistentEvent>.Bool(b => 
+                b.Must(m => m.Term("data.request.clientipaddress", clientIp) 
+                && m.Range(r => r.OnField("date").GreaterOrEquals(utcStartDate))
+                && m.Range(r => r.OnField("date").LowerOrEquals(utcEndDate))));
+
+            RemoveAll(new ElasticSearchOptions<PersistentEvent>().WithQuery(query));
         }
 
         public async Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
@@ -86,38 +79,43 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            IMongoQuery query = Query.Null;
-            
-            if (utcStart != DateTime.MinValue)
-                query = query.And(Query.GTE(FieldNames.Date_UTC, utcStart.Ticks));
-            if (utcEnd != DateTime.MaxValue)
-                query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
+            var query = new QueryContainer();
 
             if (!includeHidden)
-                query = query.And(Query.NE(FieldNames.IsHidden, true));
+                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("is_hidden", true)));
 
             if (!includeFixed)
-                query = query.And(Query.NE(FieldNames.IsFixed, true));
+                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("is_fixed", true)));
 
             if (!includeNotFound)
-                query = query.And(Query.NE(FieldNames.Type, "404"));
+                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("type", "404")));
 
-            return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            if (utcStart != DateTime.MinValue)
+                query &= Query<PersistentEvent>.Range(r => r.OnField("date").GreaterOrEquals(utcStart));
+            if (utcEnd != DateTime.MaxValue)
+                query &= Query<PersistentEvent>.Range(r => r.OnField("date").LowerOrEquals(utcEnd));
+
+            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField("date").Descending()));
         }
 
         public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            IMongoQuery query = Query.Null;
+            var query = new QueryContainer();
 
             if (utcStart != DateTime.MinValue)
-                query = query.And(Query.GTE(FieldNames.Date_UTC, utcStart.Ticks));
+                query &= Query<PersistentEvent>.Range(r => r.OnField("date").GreaterOrEquals(utcStart));
             if (utcEnd != DateTime.MaxValue)
-                query = query.And(Query.LTE(FieldNames.Date_UTC, utcEnd.Ticks));
+                query &= Query<PersistentEvent>.Range(r => r.OnField("date").LowerOrEquals(utcEnd));
 
-            return Find<PersistentEvent>(new MultiOptions().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(SortBy.Descending(FieldNames.Date_UTC)));
+            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField("date").Descending()));
         }
 
         public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {
-            return Find<PersistentEvent>(new MultiOptions().WithProjectId(projectId).WithQuery(Query.EQ(FieldNames.ReferenceId, referenceId)).WithSort(SortBy.Descending(FieldNames.Date_UTC)).WithLimit(10));
+            var query = Query<PersistentEvent>.Bool(b => b.Must(m => m.Term("reference_id", referenceId)));
+            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
+                .WithProjectId(projectId)
+                .WithQuery(query)
+                .WithSort(s => s.OnField("date").Descending())
+                .WithLimit(10));
         }
 
         public void RemoveOldestEvents(string stackId, int maxEventsPerStack) {
@@ -134,10 +132,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private ICollection<PersistentEvent> GetOldestEvents(string stackId, PagingOptions options) {
-            return Find<PersistentEvent>(new MultiOptions()
+            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(stackId)
                 .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
-                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithSort(s => s.OnField("date").Descending())
                 .WithPaging(options));
         }
 
@@ -146,13 +144,12 @@ namespace Exceptionless.Core.Repositories {
             if (data == null)
                 return null;
 
-            IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.LTE(FieldNames.Date_UTC, data.Date.UtcTicks));
-
-            var documents = Find<PersistentEvent>(new MultiOptions()
+            var query = Query<PersistentEvent>.Bool(b => b.Must(m => !m.Term("id", id) && m.Range(r => r.OnField("date").LowerOrEquals(data.Date.DateTime))));
+            var documents = Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(data.StackId)
-                .WithSort(SortBy.Descending(FieldNames.Date_UTC))
+                .WithSort(s => s.OnField("date").Descending())
                 .WithLimit(10)
-                .WithFields(FieldNames.Id, FieldNames.Date)
+                .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));
 
             if (documents.Count == 0)
@@ -177,13 +174,12 @@ namespace Exceptionless.Core.Repositories {
             if (data == null)
                 return null;
 
-            IMongoQuery query = Query.And(Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(data.Id))), Query.GTE(FieldNames.Date_UTC, data.Date.UtcTicks));
-
-            var documents = Find<PersistentEvent>(new MultiOptions()
+            var query = Query<PersistentEvent>.Bool(b => b.Must(m => !m.Term("id", id) && m.Range(r => r.OnField("date").GreaterOrEquals(data.Date.DateTime))));
+            var documents = Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(data.StackId)
-                .WithSort(SortBy.Ascending(FieldNames.Date_UTC))
+                .WithSort(s => s.OnField("date").Descending())
                 .WithLimit(10)
-                .WithFields(FieldNames.Id, FieldNames.Date)
+                .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));
 
             if (documents.Count == 0)
@@ -204,7 +200,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void MarkAsRegressedByStack(string id) {
-            UpdateAll(new QueryOptions().WithStackId(id), Update.Unset(FieldNames.IsFixed));
+            UpdateAll(new QueryOptions().WithStackId(id), "ctx._source.is_fixed = false");
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -231,30 +227,30 @@ namespace Exceptionless.Core.Repositories {
             return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 
-        private PagingWithSortingOptions GetPagingWithSortingOptions(PagingOptions paging, bool sortByAscending) {
-            var pagingWithSorting = new PagingWithSortingOptions(paging) {
-                SortBy = sortByAscending ? SortBy.Ascending(FieldNames.Date_UTC, FieldNames.Id) : SortBy.Descending(FieldNames.Date_UTC, FieldNames.Id)
+        private ElasticSearchPagingOptions<PersistentEvent> GetPagingWithSortingOptions(PagingOptions paging, bool sortByAscending) {
+            var pagingOptions = new ElasticSearchPagingOptions<PersistentEvent>(paging) {
+                SortBy = sortByAscending 
+                ? new Func<SortFieldDescriptor<PersistentEvent>, IFieldSort>(s => s.Ascending().OnField(f => f.Date).OnField(f => f.Id))
+                : new Func<SortFieldDescriptor<PersistentEvent>, IFieldSort>(s => s.Descending().OnField(f => f.Date).OnField(f => f.Id))
             };
 
-            if (!String.IsNullOrEmpty(paging.Before) && paging.Before.IndexOf('-') > 0) {
-                var parts = paging.Before.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (!String.IsNullOrEmpty(pagingOptions.Before) && pagingOptions.Before.IndexOf('-') > 0) {
+                var parts = pagingOptions.Before.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
-                ObjectId id;
                 long beforeUtcTicks;
-                if (parts.Length == 2 && Int64.TryParse(parts[0], out beforeUtcTicks) && ObjectId.TryParse(parts[1], out id))
-                    pagingWithSorting.BeforeQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, beforeUtcTicks), Query.LT(FieldNames.Id, new BsonObjectId(id))), Query.LT(FieldNames.Date_UTC, beforeUtcTicks));
+                if (parts.Length == 2 && Int64.TryParse(parts[0], out beforeUtcTicks) && !String.IsNullOrEmpty(parts[1]))
+                    pagingOptions.BeforeQuery = Query<PersistentEvent>.Bool(b => b.Must(m => (m.Term("date", beforeUtcTicks) && m.Range(r => r.OnField("id").Lower(parts[1]))) || m.Range(r => r.OnField("date").Lower(beforeUtcTicks))));
             }
 
-            if (!String.IsNullOrEmpty(paging.After) && paging.After.IndexOf('-') > 0) {
-                var parts = paging.After.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (!String.IsNullOrEmpty(pagingOptions.After) && pagingOptions.After.IndexOf('-') > 0) {
+                var parts = pagingOptions.After.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
-                ObjectId id;
                 long afterUtcTicks;
-                if (parts.Length == 2 && Int64.TryParse(parts[0], out afterUtcTicks) && ObjectId.TryParse(parts[1], out id))
-                    pagingWithSorting.AfterQuery = Query.Or(Query.And(Query.EQ(FieldNames.Date_UTC, afterUtcTicks), Query.GT(FieldNames.Id, new BsonObjectId(id))), Query.GT(FieldNames.Date_UTC, afterUtcTicks));
+                if (parts.Length == 2 && Int64.TryParse(parts[0], out afterUtcTicks) && !String.IsNullOrEmpty(parts[1]))
+                    pagingOptions.AfterQuery = Query<PersistentEvent>.Bool(b => b.Must(m => (m.Term("date", afterUtcTicks) && m.Range(r => r.OnField("id").Greater(parts[1]))) || m.Range(r => r.OnField("date").Greater(afterUtcTicks))));
             }
 
-            return pagingWithSorting;
+            return pagingOptions;
         }
 
         protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
@@ -295,14 +291,6 @@ namespace Exceptionless.Core.Repositories {
             EnableNotifications = enableNotifications;
         }
 
-        #region Collection Setup
-
-        public const string CollectionName = "event";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
-        }
-
         private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
@@ -323,40 +311,5 @@ namespace Exceptionless.Core.Repositories {
             public const string RequestInfo = "req";
             public const string RequestInfo_ClientIpAddress = RequestInfo + ".ip";
         }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.ReferenceId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.Date_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Type), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.StackId, FieldNames.Date_UTC), IndexOptions.SetBackground(true));
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<PersistentEvent> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
-
-            if (!BsonClassMap.IsClassMapRegistered(typeof(Event))) {
-                BsonClassMap.RegisterClassMap<Event>(evcm => {
-                    evcm.AutoMap();
-                    evcm.SetIgnoreExtraElements(false);
-                    evcm.SetIgnoreExtraElementsIsInherited(true);
-                    evcm.MapExtraElementsProperty(c => c.Data);
-                    evcm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.Source).SetElementName(FieldNames.Source).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.Message).SetElementName(FieldNames.Message).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.ReferenceId).SetElementName(FieldNames.ReferenceId).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.SessionId).SetElementName(FieldNames.SessionId).SetIgnoreIfDefault(true);
-                    evcm.GetMemberMap(c => c.Date).SetElementName(FieldNames.Date).SetSerializer(new UtcDateTimeOffsetSerializer());
-                    evcm.GetMemberMap(c => c.Data).SetElementName(FieldNames.Data).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Data.Any());
-                    evcm.MapMember(c => c.Tags).SetElementName(FieldNames.Tags).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Event)obj).Tags.Any());
-                });
-            }
-        }
-        
-        #endregion
     }
 }

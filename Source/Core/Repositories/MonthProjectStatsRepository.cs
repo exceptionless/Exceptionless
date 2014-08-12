@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Repositories {
 
         public ICollection<MonthProjectStats> GetRange(string start, string end) {
             var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
-            return Find<MonthProjectStats>(new MultiOptions().WithQuery(query));
+            return Find<MonthProjectStats>(new MongoOptions().WithQuery(query));
         }
         
         public long IncrementStats(string id, string stackId, DateTime localDate, bool isNew) {

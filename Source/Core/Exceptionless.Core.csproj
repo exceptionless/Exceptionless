@@ -234,6 +234,18 @@
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
     <Compile Include="Queues\Models\EventUserDescription.cs" />
     <Compile Include="Queues\Models\MailMessage.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchOptions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchPagingOptions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchReadOnlyRepository.cs" />
+    <Compile Include="Repositories\Base\MongoOptions.cs" />
+    <Compile Include="Repositories\Base\MongoOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepository.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganization.cs" />
+    <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Repositories\Base\PagingWtihBeforeAfterSortByOptions.cs" />
+    <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\DayProjectStatsValidator.cs" />
@@ -304,7 +316,7 @@
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\PagingOptions.cs" />
     <Compile Include="Repositories\Base\PagingOptionsExtensions.cs" />
-    <Compile Include="Repositories\Base\PagingWithSortingOptions.cs" />
+    <Compile Include="Repositories\Base\MongoPagingOptions.cs" />
     <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\QueryOptions.cs" />
     <Compile Include="Repositories\Base\RepositoryConstants.cs" />
@@ -378,7 +390,6 @@
     <Compile Include="Repositories\Base\IRepository.cs" />
     <Compile Include="Repositories\Base\MongoRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Repositories\StackRepository.cs" />
     <Compile Include="Repositories\OrganizationRepository.cs" />
     <Compile Include="Repositories\JobLockRepository.cs" />

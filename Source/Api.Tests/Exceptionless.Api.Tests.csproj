@@ -44,6 +44,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\AutoMapper.3.2.1\lib\net40\AutoMapper.Net4.dll</HintPath>
     </Reference>
+    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.0.1\lib\Elasticsearch.Net.dll</HintPath>
+    </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.4.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
@@ -92,6 +96,10 @@
     <Reference Include="MongoDB.Driver">
       <HintPath>..\..\packages\mongocsharpdriver.1.9.2\lib\net35\MongoDB.Driver.dll</HintPath>
       <Private>True</Private>
+    </Reference>
+    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NEST.1.0.1\lib\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -167,10 +175,11 @@
     <Compile Include="Messaging\InMemoryMessagingTests.cs" />
     <Compile Include="Plugins\EventParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\ElasticSearchRepositoryTests.cs" />
     <Compile Include="Repositories\WebHookRepositoryTests.cs" />
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
-    <Compile Include="Repositories\BaseRepositoryTests.cs" />
+    <Compile Include="Repositories\MongoRepositoryTests.cs" />
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\StackData.cs" />

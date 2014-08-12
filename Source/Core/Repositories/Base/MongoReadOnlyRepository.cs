@@ -103,12 +103,16 @@ namespace Exceptionless.Core.Repositories {
             if (result != null)
                 return result;
 
-            var findArgs = new FindOneArgs { Query = options.GetQuery(_getIdValue), Fields = Fields.Include(options.Fields.ToArray()), SortBy = options.SortBy };
-            if (options.ReadPreference != null)
-                findArgs.ReadPreference = options.ReadPreference;
+            var findArgs = new FindOneArgs { Query = options.GetMongoQuery(_getIdValue), Fields = Fields.Include(options.Fields.ToArray()) };
+            
+            var mongoOptions = options as MongoOptions;
+            if (mongoOptions != null && mongoOptions.SortBy != null)
+                findArgs.SortBy = mongoOptions.SortBy;
+            
+            if (mongoOptions != null && mongoOptions.ReadPreference != null)
+                findArgs.ReadPreference = mongoOptions.ReadPreference;
 
             result = _collection.FindOneAs<TModel>(findArgs);
-
             if (result != null && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
@@ -120,7 +124,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("options");
 
             var findArgs = new FindOneArgs {
-                Query = options.GetQuery(_getIdValue),
+                Query = options.GetMongoQuery(_getIdValue),
                 Fields = Fields.Include(CommonFieldNames.Id),
                 ReadPreference = ReadPreference.Primary
             };
@@ -139,17 +143,18 @@ namespace Exceptionless.Core.Repositories {
             if (result != null)
                 return result;
 
-            var cursor = _collection.FindAs<TModel>(options.GetQuery(_getIdValue));
-            if (options.ReadPreference != null)
-                cursor.SetReadPreference(options.ReadPreference);
+            var cursor = _collection.FindAs<TModel>(options.GetMongoQuery(_getIdValue));
+            var mongoOptions = options as MongoOptions;
+            if (mongoOptions != null && mongoOptions.ReadPreference != null)
+                cursor.SetReadPreference(mongoOptions.ReadPreference);
             if (options.UsePaging)
                 cursor.SetSkip(options.GetSkip());
             if (options.UseLimit)
                 cursor.SetLimit(options.GetLimit() + 1);
             if (options.Fields.Count > 0)
                 cursor.SetFields(Fields.Include(options.Fields.ToArray()));
-            if (options.SortBy != null)
-                cursor.SetSortOrder(options.SortBy);
+            if (mongoOptions != null && mongoOptions.SortBy != null)
+                cursor.SetSortOrder(mongoOptions.SortBy);
 
             result = cursor.ToList();
             if (options.UseLimit) {

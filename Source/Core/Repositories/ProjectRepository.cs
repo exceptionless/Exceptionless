@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Repositories {
 
         public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return Find<Project>(new MultiOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+            return Find<Project>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
         }
 
         public long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids) {

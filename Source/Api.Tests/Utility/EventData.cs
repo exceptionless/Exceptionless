@@ -74,7 +74,7 @@ namespace Exceptionless.Tests.Utility {
             }
 
             ev.Type = Event.KnownTypes.Error;
-            ev.Data[Event.KnownDataKeys.Error] = GenerateError(nestingLevel, minimiumNestingLevel).ToJson();
+            ev.Data[Event.KnownDataKeys.Error] = GenerateError(nestingLevel, minimiumNestingLevel);
 
             return ev;
         }

@@ -19,11 +19,10 @@ using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
+    public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
         protected readonly IValidator<T> _validator;
         protected readonly IMessagePublisher _messagePublisher;
         protected readonly static string _entityType = typeof(T).Name;
@@ -32,7 +31,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
 
-        protected MongoRepository(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
+        protected ElasticSearchRepository(ElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
             _messagePublisher = messagePublisher;
             EnableNotifications = true;
@@ -59,7 +58,7 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            _collection.InsertBatch<T>(documents);
+            _elasticClient.IndexMany(documents);
             AfterAdd(documents, addToCache, expiresIn);
         }
 
@@ -97,7 +96,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
             BeforeRemove(documents);
-            _collection.Remove(Query.In(CommonFieldNames.Id, documents.Select(d => _getIdValue(d.Id))));
+            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))));
             AfterRemove(documents, sendNotification);
         }
 
@@ -118,29 +117,23 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            var fields = new List<string>(new[] { CommonFieldNames.Id });
+            var fields = new List<string>(new[] { "id" });//CommonFieldNames.Id });
             if (_isOwnedByOrganization)
-                fields.Add(CommonFieldNames.OrganizationId);
+                fields.Add("organization_id");//CommonFieldNames.OrganizationId);
             if (_isOwnedByProject)
-                fields.Add(CommonFieldNames.ProjectId);
+                fields.Add("project_id");//CommonFieldNames.ProjectId);
             if (_isOwnedByStack)
-                fields.Add(CommonFieldNames.StackId);
+                fields.Add("stack_id");//CommonFieldNames.StackId);
 
             long recordsAffected = 0;
 
-            var documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
-                .SetFields(fields.ToArray())
-                .ToList();
-
+            var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>() ?? Query<T>.MatchAll()).Source(s => s.Include(fields.ToArray())).Take(RepositoryConstants.BATCH_SIZE);
+            var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             while (documents.Count > 0) {
                 recordsAffected += documents.Count;
                 Remove(documents, sendNotifications);
 
-                documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
-                .SetFields(fields.ToArray())
-                .ToList();
+                documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             }
 
             return recordsAffected;
@@ -165,9 +158,7 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            foreach (var document in documents)
-                _collection.Save(document);
-
+            _elasticClient.IndexMany(documents);
             AfterSave(documents, addToCache, expiresIn);
         }
 
@@ -182,27 +173,29 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        protected long UpdateAll(QueryOptions options, IMongoUpdate update, bool sendNotifications = true) {
-            var result = _collection.Update(options.GetMongoQuery(_getIdValue), update, UpdateFlags.Multi);
-            if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
-                return result.DocumentsAffected;
+        protected long UpdateAll(QueryOptions options, string update, bool sendNotifications = true) {
+            //var result = _collection.Update(options.GetMongoQuery(_getIdValue), update, UpdateFlags.Multi);
+            //if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
+            //    return result.DocumentsAffected;
 
-            if (options.OrganizationIds.Any()) {
-                foreach (var orgId in options.OrganizationIds) {
-                    PublishMessageAsync(new EntityChanged {
-                        ChangeType = EntityChangeType.UpdatedAll,
-                        OrganizationId = orgId,
-                        Type = _entityType
-                    });
-                }
-            } else {
-                PublishMessageAsync(new EntityChanged {
-                    ChangeType = EntityChangeType.UpdatedAll,
-                    Type = _entityType
-                });
-            }
+            //if (options.OrganizationIds.Any()) {
+            //    foreach (var orgId in options.OrganizationIds) {
+            //        PublishMessageAsync(new EntityChanged {
+            //            ChangeType = EntityChangeType.UpdatedAll,
+            //            OrganizationId = orgId,
+            //            Type = _entityType
+            //        });
+            //    }
+            //} else {
+            //    PublishMessageAsync(new EntityChanged {
+            //        ChangeType = EntityChangeType.UpdatedAll,
+            //        Type = _entityType
+            //    });
+            //}
 
-            return result.DocumentsAffected;
+            //return result.DocumentsAffected;
+
+            return 0;
         }
 
         protected virtual async Task PublishMessageAsync(EntityChangeType changeType, T document) {
