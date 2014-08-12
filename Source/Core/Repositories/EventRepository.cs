@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
@@ -55,16 +56,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
-            var query = Query<PersistentEvent>.Range(r => r.OnField("date").Lower(utcCutoffDate));
+            var query = Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(utcCutoffDate));
             RemoveAll(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId).WithQuery(query));
         }
 
         public void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate) {
-            // TODO Verify this query.
-            var query = Query<PersistentEvent>.Bool(b => 
-                b.Must(m => m.Term("data.request.clientipaddress", clientIp) 
-                && m.Range(r => r.OnField("date").GreaterOrEquals(utcStartDate))
-                && m.Range(r => r.OnField("date").LowerOrEquals(utcEndDate))));
+            var query = Query<PersistentEvent>.Term("data.request.client_ip_address", clientIp) 
+                && Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(utcStartDate))
+                && Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEndDate));
 
             RemoveAll(new ElasticSearchOptions<PersistentEvent>().WithQuery(query));
         }
@@ -82,39 +81,39 @@ namespace Exceptionless.Core.Repositories {
             var query = new QueryContainer();
 
             if (!includeHidden)
-                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("is_hidden", true)));
+                query &= !Query<PersistentEvent>.Term(e => e.IsHidden, true);
 
             if (!includeFixed)
-                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("is_fixed", true)));
+                query &= !Query<PersistentEvent>.Term(e => e.IsFixed, true);
 
             if (!includeNotFound)
-                query &= Query<PersistentEvent>.Bool(b => b.MustNot(m => m.Term("type", "404")));
+                query &= !Query<PersistentEvent>.Term(e => e.Type, "404");
 
             if (utcStart != DateTime.MinValue)
-                query &= Query<PersistentEvent>.Range(r => r.OnField("date").GreaterOrEquals(utcStart));
+                query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(utcStart));
             if (utcEnd != DateTime.MaxValue)
-                query &= Query<PersistentEvent>.Range(r => r.OnField("date").LowerOrEquals(utcEnd));
+                query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField("date").Descending()));
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             var query = new QueryContainer();
 
             if (utcStart != DateTime.MinValue)
-                query &= Query<PersistentEvent>.Range(r => r.OnField("date").GreaterOrEquals(utcStart));
+                query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(utcStart));
             if (utcEnd != DateTime.MaxValue)
-                query &= Query<PersistentEvent>.Range(r => r.OnField("date").LowerOrEquals(utcEnd));
+                query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField("date").Descending()));
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {
-            var query = Query<PersistentEvent>.Bool(b => b.Must(m => m.Term("reference_id", referenceId)));
-            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
+            var query = Query<PersistentEvent>.Bool(b => b.Must(m => m.Term(e => e.ReferenceId, referenceId)));
+            return Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithProjectId(projectId)
                 .WithQuery(query)
-                .WithSort(s => s.OnField("date").Descending())
+                .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithLimit(10));
         }
 
@@ -132,10 +131,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private ICollection<PersistentEvent> GetOldestEvents(string stackId, PagingOptions options) {
-            return Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
+            return Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(stackId)
                 .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
-                .WithSort(s => s.OnField("date").Descending())
+                .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithPaging(options));
         }
 
@@ -144,14 +143,16 @@ namespace Exceptionless.Core.Repositories {
             if (data == null)
                 return null;
 
-            var query = Query<PersistentEvent>.Bool(b => b.Must(m => !m.Term("id", id) && m.Range(r => r.OnField("date").LowerOrEquals(data.Date.DateTime))));
-            var documents = Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
+            var query = !Query<PersistentEvent>.Ids(new[] { id })
+                && Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(data.Date.ToUniversalTime().DateTime));
+            var documents = Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(data.StackId)
-                .WithSort(s => s.OnField("date").Descending())
+                .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithLimit(10)
                 .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));
 
+            Trace.WriteLine("HERE!!");
             if (documents.Count == 0)
                 return null;
 
@@ -174,10 +175,11 @@ namespace Exceptionless.Core.Repositories {
             if (data == null)
                 return null;
 
-            var query = Query<PersistentEvent>.Bool(b => b.Must(m => !m.Term("id", id) && m.Range(r => r.OnField("date").GreaterOrEquals(data.Date.DateTime))));
-            var documents = Find<PersistentEvent>(new ElasticSearchOptions<PersistentEvent>()
+            var query = !Query<PersistentEvent>.Ids(new[] { id })
+                && Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(data.Date.ToUniversalTime().DateTime));
+            var documents = Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(data.StackId)
-                .WithSort(s => s.OnField("date").Descending())
+                .WithSort(s => s.OnField(e => e.Date).Ascending())
                 .WithLimit(10)
                 .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));
@@ -228,26 +230,35 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private ElasticSearchPagingOptions<PersistentEvent> GetPagingWithSortingOptions(PagingOptions paging, bool sortByAscending) {
-            var pagingOptions = new ElasticSearchPagingOptions<PersistentEvent>(paging) {
-                SortBy = sortByAscending 
-                ? new Func<SortFieldDescriptor<PersistentEvent>, IFieldSort>(s => s.Ascending().OnField(f => f.Date).OnField(f => f.Id))
-                : new Func<SortFieldDescriptor<PersistentEvent>, IFieldSort>(s => s.Descending().OnField(f => f.Date).OnField(f => f.Id))
-            };
+            var pagingOptions = new ElasticSearchPagingOptions<PersistentEvent>(paging);
+            if (sortByAscending) {
+                pagingOptions.SortBy.Add(s => s.OnField(f => f.Date).Ascending());
+                pagingOptions.SortBy.Add(s => s.OnField(f => f.Id).Ascending());
+            } else {
+                pagingOptions.SortBy.Add(s => s.OnField(f => f.Date).Descending());
+                pagingOptions.SortBy.Add(s => s.OnField(f => f.Id).Descending());
+            }
 
             if (!String.IsNullOrEmpty(pagingOptions.Before) && pagingOptions.Before.IndexOf('-') > 0) {
                 var parts = pagingOptions.Before.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
                 long beforeUtcTicks;
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out beforeUtcTicks) && !String.IsNullOrEmpty(parts[1]))
-                    pagingOptions.BeforeQuery = Query<PersistentEvent>.Bool(b => b.Must(m => (m.Term("date", beforeUtcTicks) && m.Range(r => r.OnField("id").Lower(parts[1]))) || m.Range(r => r.OnField("date").Lower(beforeUtcTicks))));
+                    pagingOptions.BeforeQuery = (
+                            Query<PersistentEvent>.Term(e => e.Date, new DateTime(beforeUtcTicks, DateTimeKind.Utc))
+                            && Query<PersistentEvent>.Range(r => r.OnField(e => e.Id).Lower(parts[1]))
+                        ) || Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(new DateTime(beforeUtcTicks, DateTimeKind.Utc)));
             }
-
+            
             if (!String.IsNullOrEmpty(pagingOptions.After) && pagingOptions.After.IndexOf('-') > 0) {
                 var parts = pagingOptions.After.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
 
                 long afterUtcTicks;
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out afterUtcTicks) && !String.IsNullOrEmpty(parts[1]))
-                    pagingOptions.AfterQuery = Query<PersistentEvent>.Bool(b => b.Must(m => (m.Term("date", afterUtcTicks) && m.Range(r => r.OnField("id").Greater(parts[1]))) || m.Range(r => r.OnField("date").Greater(afterUtcTicks))));
+                    pagingOptions.AfterQuery = (
+                            Query<PersistentEvent>.Term(e => e.Date, new DateTime(afterUtcTicks, DateTimeKind.Utc))
+                            && Query<PersistentEvent>.Range(r => r.OnField(e => e.Id).Greater(parts[1]))
+                        ) || Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).Greater(new DateTime(afterUtcTicks, DateTimeKind.Utc)));
             }
 
             return pagingOptions;

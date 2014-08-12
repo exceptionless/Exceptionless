@@ -6,12 +6,14 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
 using MongoDB.Bson;
+using Nest;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventRepositoryTests : IDisposable {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
+        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
 
         public EventRepositoryTests() {
             RemoveData();
@@ -32,6 +34,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Tests:");
+            _client.Refresh(r => r.Force(false));
             Assert.Equal(_ids.Count, _repository.Count());
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
@@ -56,6 +59,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Tests:");
+            _client.Refresh(r => r.Force(false));
             Assert.Equal(_ids.Count, _repository.Count());
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
@@ -76,7 +80,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.LocalDateTime.ToLongTimeString());
-            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithBefore(String.Concat(sortedIds[2].Item2.UtcTicks.ToString(), "-", sortedIds[2].Item1))).ToArray();
+            _client.Refresh(r => r.Force(false));
+            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithBefore(String.Concat(sortedIds[2].Item2.UtcTicks.ToString(), "-", sortedIds[2].Item1))).ToArray();
             Assert.True(results.Length > 0);
 
             for (int i = 0; i < sortedIds.Count - 3; i++) {
@@ -86,7 +91,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("After {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.LocalDateTime.ToLongTimeString());
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithAfter(String.Concat(sortedIds[2].Item2.UtcTicks.ToString(), "-", sortedIds[2].Item1))).ToArray();
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithAfter(String.Concat(sortedIds[2].Item2.UtcTicks.ToString(), "-", sortedIds[2].Item1))).ToArray();
             Assert.True(results.Length > 0);
 
             for (int i = 0; i < results.Length; i++) {
@@ -96,7 +101,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             Debug.WriteLine("");
             Debug.WriteLine("Between {0}: {1} and {2}: {3}", sortedIds[4].Item1, sortedIds[4].Item2.LocalDateTime.ToLongTimeString(), sortedIds[1].Item1, sortedIds[1].Item2.LocalDateTime.ToLongTimeString());
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithAfter(String.Concat(sortedIds[4].Item2.UtcTicks.ToString(), "-", sortedIds[4].Item1)).WithBefore(String.Concat(sortedIds[1].Item2.UtcTicks.ToString(), "-", sortedIds[1].Item1))).ToArray();
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithAfter(String.Concat(sortedIds[4].Item2.UtcTicks.ToString(), "-", sortedIds[4].Item1)).WithBefore(String.Concat(sortedIds[1].Item2.UtcTicks.ToString(), "-", sortedIds[1].Item1))).ToArray();
             Assert.True(results.Length > 0);
 
             for (int i = 0; i < results.Length; i++) {

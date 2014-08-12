@@ -66,8 +66,9 @@ namespace Exceptionless.Core.Repositories {
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
 
             var elasticSearchOptions = options as ElasticSearchOptions<TModel>;
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy != null)
-                searchDescriptor.Sort(elasticSearchOptions.SortBy);
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
+                foreach (var sort in elasticSearchOptions.SortBy)
+                    searchDescriptor.Sort(sort);
            
             result = _elasticClient.Search<TModel>(searchDescriptor).Documents.FirstOrDefault();
             if (result != null && options.UseCache)
@@ -84,8 +85,9 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>()).Take(0);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy != null)
-                searchDescriptor.Sort(elasticSearchOptions.SortBy);
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
+                foreach (var sort in elasticSearchOptions.SortBy)
+                    searchDescriptor.Sort(sort);
 
             return _elasticClient.Search<T>(searchDescriptor).HitsMetaData.Total > 0;
         }
@@ -104,14 +106,14 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<TModel>().Query(options.GetElasticSearchQuery<TModel>());
             if (options.UsePaging)
                 searchDescriptor.Skip(options.GetSkip());
-            if (options.UseLimit)
-                searchDescriptor.Take(options.GetLimit());
+            searchDescriptor.Size(options.GetLimit());
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
-            if (options.SortBy != null)
-                searchDescriptor.Sort(options.SortBy);
+            if (options.SortBy.Count > 0)
+                foreach (var sort in options.SortBy)
+                    searchDescriptor.Sort(sort);
 
-           var results = _elasticClient.Search<TModel>(searchDescriptor);
+            var results = _elasticClient.Search<TModel>(searchDescriptor);
             options.HasMore = options.UseLimit && results.HitsMetaData.Total > options.GetLimit();
 
             result = results.Documents.ToList();

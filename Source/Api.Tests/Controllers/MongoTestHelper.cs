@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using MongoDB.Driver;
+using Nest;
 
 namespace Exceptionless.Api.Tests.Controllers {
     public class MongoTestHelper {
         private readonly MongoDatabase _database = IoC.GetInstance<MongoDatabase>();
         private readonly MongoRepositoryManager _manager = IoC.GetInstance<MongoRepositoryManager>();
+        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
 
         private static bool _databaseReset = false;
         public void ResetDatabase(bool force = false) {
@@ -54,11 +57,12 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         public void RemoveAllEvents() {
-            RemoveAll(EventRepository.CollectionName);
+            _client.DeleteByQuery<PersistentEvent>(c => c.Type(typeof(PersistentEvent)).Query(q => q.MatchAll()));
         }
 
         public long EventCount() {
-            return Count(EventRepository.CollectionName);
+            _client.Refresh(r => r.Force(false));
+            return _client.Count<PersistentEvent>(c => c.Query(q => q.MatchAll())).Count;
         }
 
         public void AddData(string collectionName, IEnumerable<object> entities) {
