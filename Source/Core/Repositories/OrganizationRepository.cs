@@ -69,39 +69,16 @@ namespace Exceptionless.Core.Repositories {
             return Find<Organization>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
-        public void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null) {
+        public void IncrementEventCounter(string organizationId, long eventCount = 1) {
             if (String.IsNullOrEmpty(organizationId))
                 throw new ArgumentNullException("organizationId");
 
             var update = new UpdateBuilder();
-            if (projectCount.HasValue && projectCount.Value != 0)
-                update.Inc(FieldNames.ProjectCount, projectCount.Value);
-            if (eventCount.HasValue && eventCount.Value != 0) {
-                update.Inc(FieldNames.EventCount, eventCount.Value);
-                if (eventCount.Value > 0) {
-                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
-                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
-                }
-            }
+            if (eventCount < 0)
+                return;
 
-            if (stackCount.HasValue && stackCount.Value != 0)
-                update.Inc(FieldNames.StackCount, stackCount.Value);
-
-            UpdateAll(new QueryOptions().WithId(organizationId), update);
-            InvalidateCache(organizationId);
-        }
-
-        public void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException("organizationId");
-
-            var update = new UpdateBuilder();
-            if (projectCount.HasValue)
-                update.Set(FieldNames.ProjectCount, projectCount.Value);
-            if (errorCount.HasValue)
-                update.Set(FieldNames.EventCount, errorCount.Value);
-            if (stackCount.HasValue)
-                update.Set(FieldNames.StackCount, stackCount.Value);
+            update.Inc(FieldNames.TotalEventCount, eventCount);
+            update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
 
             UpdateAll(new QueryOptions().WithId(organizationId), update);
             InvalidateCache(organizationId);
@@ -314,9 +291,6 @@ namespace Exceptionless.Core.Repositories {
             public const string MaxUsers = "MaxUsers";
             public const string MaxProjects = "MaxProjects";
             public const string MaxEventsPerMonth = "MaxEventsPerMonth";
-            public const string ProjectCount = "ProjectCount";
-            public const string StackCount = "StackCount";
-            public const string EventCount = "EventCount";
             public const string TotalEventCount = "TotalEventCount";
             public const string LastEventDate = "LastEventDate";
             public const string IsSuspended = "IsSuspended";
@@ -356,9 +330,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.MaxUsers).SetElementName(FieldNames.MaxUsers);
             cm.GetMemberMap(c => c.MaxProjects).SetElementName(FieldNames.MaxProjects);
             cm.GetMemberMap(c => c.MaxEventsPerMonth).SetElementName(FieldNames.MaxEventsPerMonth);
-            cm.GetMemberMap(c => c.ProjectCount).SetElementName(FieldNames.ProjectCount);
-            cm.GetMemberMap(c => c.StackCount).SetElementName(FieldNames.StackCount);
-            cm.GetMemberMap(c => c.EventCount).SetElementName(FieldNames.EventCount);
             cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
             cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
 

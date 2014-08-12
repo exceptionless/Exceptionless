@@ -72,11 +72,6 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => RemoveAllByClientIpAndDate(clientIp, utcStartDate, utcEndDate));
         }
 
-        private void IncrementOrganizationAndProjectEventCounts(string organizationId, string projectId, long count) {
-            _organizationRepository.IncrementStats(organizationId, eventCount: -count);
-            _projectRepository.IncrementStats(projectId, eventCount: -count);
-        }
-
         public ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var query = new QueryContainer();
 
@@ -262,37 +257,6 @@ namespace Exceptionless.Core.Repositories {
             }
 
             return pagingOptions;
-        }
-
-        protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
-            base.AfterRemove(documents, sendNotification);
-
-            var groups = documents.GroupBy(e => new {
-                    e.OrganizationId,
-                    e.ProjectId
-                }).ToList();
-
-            foreach (var grouping in groups) {
-                if (!grouping.Any())
-                    continue;
-
-                IncrementOrganizationAndProjectEventCounts(grouping.Key.OrganizationId, grouping.Key.ProjectId, grouping.Count());
-                // TODO: Should be updating stack
-            }
-
-            // TODO: Need to decrement stats time bucket by the number of errors we removed. Add flag to delete to tell it to decrement stats docs.
-
-            //var groups = errors.GroupBy(e => new {
-            //    e.OrganizationId,
-            //    e.ProjectId,
-            //    e.ErrorStackId
-            //}).ToList();
-            //foreach (var grouping in groups) {
-            //    if (_statsHelper == null)
-            //        continue;
-
-            //    _statsHelper.DecrementDayProjectStatsForTimeBucket(grouping.Key.ErrorStackId, grouping.Count());
-            //}
         }
 
         protected override void AfterAdd(ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null) {

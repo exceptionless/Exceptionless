@@ -21,6 +21,9 @@ namespace Exceptionless.Serializer {
             if (knownDataTypes != null)
                 _dataTypeRegistry.AddRange(knownDataTypes);
 
+            if (_propertyAccessors.Count != 0)
+                return;
+
             foreach (var prop in typeof(T).GetProperties(BindingFlags.Instance | BindingFlags.FlattenHierarchy | BindingFlags.Public).Where(p => p.CanWrite))
                 _propertyAccessors.Add(prop.Name, LateBinder.GetPropertyAccessor(prop));
         }

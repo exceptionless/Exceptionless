@@ -124,21 +124,6 @@ namespace Exceptionless.Models {
         public int MaxProjects { get; set; }
 
         /// <summary>
-        /// Total number of projects.
-        /// </summary>
-        public int ProjectCount { get; set; }
-
-        /// <summary>
-        /// Current number of stacks in the system.
-        /// </summary>
-        public long StackCount { get; set; }
-
-        /// <summary>
-        /// Current number of event occurrences in the system.
-        /// </summary>
-        public long EventCount { get; set; }
-
-        /// <summary>
         /// The date that the latest event occurred.
         /// </summary>
         public DateTime LastEventDate { get; set; }

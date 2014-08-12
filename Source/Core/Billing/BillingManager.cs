@@ -50,7 +50,9 @@ namespace Exceptionless.Core.Billing {
             if (organization == null)
                 return false;
 
-            return organization.MaxProjects == -1 || organization.ProjectCount < organization.MaxProjects;
+            // TODO: New way of getting current project count
+            int projectCount = 0;
+            return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
         public bool CanAddIntegration(Project project) {
@@ -82,8 +84,10 @@ namespace Exceptionless.Core.Billing {
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
-            if (organization.ProjectCount > maxProjects) {
-                message = String.Format("Please remove {0} project{1} and try again.", organization.ProjectCount - maxProjects, (organization.ProjectCount - maxProjects) > 0 ? "s" : String.Empty);
+            // TODO: New way of getting project count.
+            var projectCount = 0;
+            if (projectCount > maxProjects) {
+                message = String.Format("Please remove {0} project{1} and try again.", projectCount - maxProjects, (projectCount - maxProjects) > 0 ? "s" : String.Empty);
                 return false;
             }
 

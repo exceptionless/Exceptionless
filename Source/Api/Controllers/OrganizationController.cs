@@ -390,7 +390,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override void DeleteModel(Organization value) {
             var currentUser = ExceptionlessUser;
-            Log.Info().Message("User {0} deleting organization {1} with {2} errors.", currentUser.Id, value.Id, value.EventCount).Write();
+            Log.Info().Message("User {0} deleting organization {1} with {2} total events.", currentUser.Id, value.Id, value.TotalEventCount).Write();
 
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
                 Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();

@@ -20,8 +20,7 @@ namespace Exceptionless.Core.Repositories {
         Organization GetByStripeCustomerId(string customerId);
         ICollection<Organization> GetAbandoned(int? limit = 20);
         ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
-        void SetStats(string organizationId, long? projectCount = null, long? errorCount = null, long? stackCount = null);
-        void IncrementStats(string organizationId, long? projectCount = null, long? eventCount = null, long? stackCount = null);
+        void IncrementEventCounter(string organizationId, long eventCount = 1);
         ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         BillingPlanStats GetBillingPlanStats();
         bool IncrementUsage(string organizationId, int count = 1);

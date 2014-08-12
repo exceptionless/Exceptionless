@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
         string[] GetFixedIds(string projectId);
         string[] GetNotFoundIds(string projectId);
         void MarkAsRegressed(string id);
-        void IncrementStats(string stackId, DateTime occurrenceDate);
+        void IncrementEventCounter(string stackId, DateTime occurrenceDate);
         void InvalidateHiddenIdsCache(string projectId);
         void InvalidateFixedIdsCache(string projectId);
         void InvalidateNotFoundIdsCache(string projectId);

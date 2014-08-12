@@ -76,16 +76,7 @@ namespace Exceptionless.Core.Utility {
                 await _dayProjectStats.RemoveAllByProjectIdAsync(projectId);
                 await _monthProjectStats.RemoveAllByProjectIdAsync(projectId);
 
-                project.EventCount = 0;
-                project.StackCount = 0;
-
                 _projectRepository.Save(project);
-
-                var orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
-                Organization organization = _organizationRepository.GetById(project.OrganizationId);
-                organization.EventCount = orgProjects.Sum(p => p.EventCount);
-                organization.StackCount = orgProjects.Sum(p => p.StackCount);
-                _organizationRepository.Save(organization);
             } catch (Exception e) {
                 Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Report().Write();
                 throw;
@@ -152,8 +143,6 @@ namespace Exceptionless.Core.Utility {
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
             });
-
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
 
             user.OrganizationIds.Add(organization.Id);
             _userRepository.Save(user);

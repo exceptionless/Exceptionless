@@ -34,13 +34,10 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool IsCritical { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _organizationRepository.IncrementStats(ctx.Event.OrganizationId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
-            _projectRepository.IncrementStats(ctx.Event.ProjectId, eventCount: 1, stackCount: ctx.IsNew ? 1 : 0);
+            _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
+            _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
             if (!ctx.IsNew)
-                _stackRepository.IncrementStats(ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
-
-            IEnumerable<TimeSpan> offsets = _projectRepository.GetTargetTimeOffsetsForStats(ctx.Event.ProjectId);
-            _statsHelper.Process(ctx.Event, ctx.IsNew, offsets);
+                _stackRepository.IncrementEventCounter(ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
         }
     }
 }

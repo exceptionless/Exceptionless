@@ -51,16 +51,6 @@ namespace Exceptionless.Models {
         public bool DeleteBotDataEnabled { get; set; }
 
         /// <summary>
-        /// Current number of stacks in the system.
-        /// </summary>
-        public long StackCount { get; set; }
-
-        /// <summary>
-        /// Current number of event occurrences in the system.
-        /// </summary>
-        public long EventCount { get; set; }
-
-        /// <summary>
         /// Total events logged by our system.
         /// </summary>
         public long TotalEventCount { get; set; }

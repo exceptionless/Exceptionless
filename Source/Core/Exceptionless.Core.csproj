@@ -234,6 +234,7 @@
     <Compile Include="Jobs\CacheJobLockProvider.cs" />
     <Compile Include="Queues\Models\EventUserDescription.cs" />
     <Compile Include="Queues\Models\MailMessage.cs" />
+    <Compile Include="Repositories\Base\DuplicateDocumentException.cs" />
     <Compile Include="Repositories\Base\ElasticSearchOptions.cs" />
     <Compile Include="Repositories\Base\ElasticSearchOptionsExtensions.cs" />
     <Compile Include="Repositories\Base\ElasticSearchPagingOptions.cs" />

@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Repositories {
             _eventRepository = eventRepository;
         }
 
-        public void IncrementStats(string stackId, DateTime occurrenceDate) {
+        public void IncrementEventCounter(string stackId, DateTime occurrenceDate) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             UpdateAll(new MongoOptions().WithId(stackId).WithQuery(Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))), Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
 
@@ -162,16 +162,6 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
-            var organizations = documents.GroupBy(s => new {
-                s.OrganizationId,
-                s.ProjectId
-            });
-
-            foreach (var grouping in organizations) {
-                _organizationRepository.IncrementStats(grouping.Key.OrganizationId, stackCount: grouping.Count() * -1);
-                _projectRepository.IncrementStats(grouping.Key.ProjectId, stackCount: grouping.Count() * -1);
-            }
-
             foreach (Stack document in documents)
                 InvalidateCache(String.Concat(document.ProjectId, document.SignatureHash));
 

@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Odbc;
 using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
@@ -31,35 +32,16 @@ namespace Exceptionless.Core.Repositories {
             _organizationRepository = organizationRepository;
         }
 
-        public void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null) {
+        public void IncrementEventCounter(string projectId, long eventCount = 1) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException("projectId");
 
-            var update = new UpdateBuilder();
-            if (eventCount.HasValue && eventCount.Value != 0) {
-                update.Inc(FieldNames.EventCount, eventCount.Value);
-                if (eventCount.Value > 0) {
-                    update.Inc(FieldNames.TotalEventCount, eventCount.Value);
-                    update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
-                }
-            }
-
-            if (stackCount.HasValue && stackCount.Value != 0)
-                update.Inc(FieldNames.StackCount, stackCount.Value);
-
-            UpdateAll(new QueryOptions().WithId(projectId), update);
-            InvalidateCache(projectId);
-        }
-
-        public void SetStats(string projectId, long? eventCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId");
+            if (eventCount < 1)
+                return;
 
             var update = new UpdateBuilder();
-            if (eventCount.HasValue)
-                update.Set(FieldNames.EventCount, eventCount.Value);
-            if (stackCount.HasValue)
-                update.Set(FieldNames.StackCount, stackCount.Value);
+            update.Inc(FieldNames.TotalEventCount, eventCount);
+            update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
 
             UpdateAll(new QueryOptions().WithId(projectId), update);
             InvalidateCache(projectId);
@@ -107,20 +89,6 @@ namespace Exceptionless.Core.Repositories {
             return UpdateAll(new QueryOptions().WithIds(ids), update);
         }
 
-        protected override void AfterRemove(ICollection<Project> documents, bool sendNotification = true) {
-            foreach (var project in documents)
-                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: -1);
-
-            base.AfterRemove(documents, sendNotification);
-        }
-
-        protected override void AfterAdd(ICollection<Project> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            foreach (var project in documents)
-                _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
-
-            base.AfterAdd(documents, addToCache, expiresIn);
-        }
-
         #region Collection Setup
 
         public const string CollectionName = "project";
@@ -139,8 +107,6 @@ namespace Exceptionless.Core.Repositories {
             public const string NotificationSettings = "NotificationSettings";
             public const string PromotedTabs = "PromotedTabs";
             public const string CustomContent = "CustomContent";
-            public const string StackCount = "StackCount";
-            public const string EventCount = "EventCount";
             public const string TotalEventCount = "TotalEventCount";
             public const string LastEventDate = "LastEventDate";
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
@@ -157,8 +123,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.TimeZone).SetElementName(FieldNames.TimeZone);
             cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
             cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.StackCount).SetElementName(FieldNames.StackCount);
-            cm.GetMemberMap(c => c.EventCount).SetElementName(FieldNames.EventCount);
             cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
             cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);

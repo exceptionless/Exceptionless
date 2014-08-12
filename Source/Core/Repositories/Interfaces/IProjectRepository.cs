@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
         ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
         long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids);
-        void IncrementStats(string projectId, long? eventCount = null, long? stackCount = null);
+        void IncrementEventCounter(string projectId, long eventCount = 1);
         ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId);
         TimeSpan GetDefaultTimeOffset(string projectId);
         TimeZoneInfo GetDefaultTimeZone(string projectId);

@@ -13,6 +13,7 @@ using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Base;
 using MongoDB.Driver;
 using NLog.Fluent;
 
@@ -30,13 +31,9 @@ namespace Exceptionless.Core.Pipeline {
         public override void Process(EventContext ctx) {
             try {
                 ctx.Event = _eventRepository.Add(ctx.Event);
-            } catch (WriteConcernException ex) {
-                // ignore errors being submitted multiple times
-                if (ex.Message.Contains("E11000")) {
-                    Log.Info().Project(ctx.Event.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Event.Id).Write();
-                    ctx.IsCancelled = true;
-                } else
-                    throw;
+            } catch (DuplicateDocumentException ex) {
+                Log.Info().Project(ctx.Event.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Event.Id).Write();
+                ctx.IsCancelled = true;
             }
         }
     }

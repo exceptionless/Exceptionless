@@ -14,11 +14,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Elasticsearch.Net;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Models;
 using FluentValidation;
+using MongoDB.Driver;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -43,7 +46,10 @@ namespace Exceptionless.Core.Repositories {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Add(new[] { document }, addToCache, expiresIn);
+            var res = _elasticClient.Index(document, i => i.OpType(OpType.Create));
+            if (!res.Created)
+                throw new DuplicateDocumentException();
+
             return document;
         }
 
