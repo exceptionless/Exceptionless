@@ -6,7 +6,7 @@ using FluentValidation;
 namespace Exceptionless.Core.Validation {
     public class StackValidator : AbstractValidator<Stack> {
         public StackValidator() {
-            RuleFor(e => e.Id).IsObjectId().WithMessage("Please specify a valid id.");
+            //RuleFor(e => e.Id).IsObjectId().WithMessage("Please specify a valid id.");
             RuleFor(s => s.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
             RuleFor(s => s.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
             RuleFor(s => s.Title).Length(1, 1000).When(s => s.Title != null).WithMessage("Title cannot be longer than 1000 characters.");

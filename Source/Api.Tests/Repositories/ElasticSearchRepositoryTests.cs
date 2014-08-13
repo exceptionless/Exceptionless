@@ -10,6 +10,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchRepositoryTests {
         public readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
+        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
 
         [Fact]
         public void CanCreateUpdateRemove() {
@@ -21,7 +22,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _repository.Add(ev);
             Assert.NotNull(ev.Id);
-            
+            _client.Refresh();
+
             ev = _repository.GetById(ev.Id);
             Assert.NotNull(ev);
 
@@ -42,8 +44,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 EventData.GenerateEvent(id: TestConstants.EventId4, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1)
             });
 
-            var client = IoC.GetInstance<ElasticClient>();
-            client.Refresh(r => r.Force(false));
+            _client.Refresh();
 
             var events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(events);
@@ -78,11 +79,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.Add(ev, true);
             Assert.NotNull(ev.Id);
             Assert.Equal(1, cache.Count);
+            _client.Refresh();
 
             cache.FlushAll();
             Assert.Equal(0, cache.Count);
-            _repository.GetById(ev.Id, true);
-            Assert.NotNull(ev.Id);
+            Assert.NotNull(_repository.GetById(ev.Id, true));
             Assert.Equal(1, cache.Count);
 
             _repository.RemoveAll();

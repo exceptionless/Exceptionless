@@ -61,7 +61,10 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            _elasticClient.IndexMany(documents);
+            var result = _elasticClient.IndexMany(documents);
+            if (!result.IsValid)
+                throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+
             AfterAdd(documents, addToCache, expiresIn);
         }
 
@@ -130,7 +133,11 @@ namespace Exceptionless.Core.Repositories {
 
             long recordsAffected = 0;
 
-            var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>() ?? Query<T>.MatchAll()).Source(s => s.Include(fields.ToArray())).Take(RepositoryConstants.BATCH_SIZE);
+            var searchDescriptor = new SearchDescriptor<T>()
+                .Query(options.GetElasticSearchQuery<T>() ?? Query<T>.MatchAll())
+                .Source(s => s.Include(fields.ToArray()))
+                .Take(RepositoryConstants.BATCH_SIZE);
+
             var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             while (documents.Count > 0) {
                 recordsAffected += documents.Count;
@@ -161,7 +168,10 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            _elasticClient.IndexMany(documents);
+            var result = _elasticClient.IndexMany(documents);
+            if (!result.IsValid)
+                throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+
             AfterSave(documents, addToCache, expiresIn);
         }
 

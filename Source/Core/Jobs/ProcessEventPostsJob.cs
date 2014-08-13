@@ -106,10 +106,9 @@ namespace Exceptionless.Core.Jobs {
                         if (totalEventsToProcess > 0 && totalEventsProcessed >= totalEventsToProcess)
                             break;
                     } catch (ValidationException ex) {
-                        // TODO: Should we be requeuing the exception in case we redeploy with a validation fix?
-                        Log.Error().Exception(ex).Message("A validation error occurred while processing the EventPipeline: {0}", ex.Message).Write();
+                        Log.Error().Exception(ex).Project(queueEntry.Value.ProjectId).Message("Event validation error occurred: {0}", ex.Message).Write();
                     } catch (Exception ex) {
-                        Log.Error().Exception(ex).Message("An error occurred while processing the EventPipeline: {0}", ex.Message).Write();
+                        Log.Error().Exception(ex).Project(queueEntry.Value.ProjectId).Message("Error while processing event: {0}", ex.Message).Write();
 
                         if (!isSingleEvent) {
                             // Put this single event back into the queue so we can retry it separately.
