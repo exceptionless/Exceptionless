@@ -21,6 +21,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using MongoDB.Driver.Linq;
 using Nest;
 using Nest.Resolvers;
 using Newtonsoft.Json;
@@ -53,19 +54,14 @@ namespace Exceptionless.EventMigration {
                     return 1;
                 }
 
-                Console.WriteLine();
+                Console.Clear();
+                OutputHeader();
                 const int BatchSize = 25;
 
                 var container = CreateContainer();
                 var serverUri = new Uri("http://localhost:9200");
 
-                var settings = new ConnectionSettings(serverUri).SetDefaultIndex("exceptionless_v1");
-                settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionContractResolver(settings); });
-                settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
-                settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
-                
-                var searchclient = new ElasticClient(settings);
-                EnsureIndex(searchclient, ca.DeleteExistingIndexes);
+                var searchclient = GetElasticClient(serverUri, ca.DeleteExistingIndexes);
                 var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
                 serializerSettings.AddModelConverters();
 
@@ -140,7 +136,8 @@ namespace Exceptionless.EventMigration {
                         }
 
                         try {
-                            response = searchclient.IndexMany(ev, type: "events");
+                            foreach (var group in ev.GroupBy(e => e.Date.ToUniversalTime().Date))
+                                response = searchclient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
                             if (!response.IsValid)
                                 Debugger.Break();
                         } catch (OutOfMemoryException) {
@@ -197,38 +194,25 @@ namespace Exceptionless.EventMigration {
             Console.WriteLine(Parser.ArgumentsUsage(typeof(ConsoleArguments)));
         }
 
-        private static void EnsureIndex(ElasticClient searchclient, bool deleteExistingIndexes = false) {
-            bool shouldCreateIndex = false;
-            if (searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "exceptionless_v1" })).Exists) {
-                if (deleteExistingIndexes) {
-                    searchclient.DeleteIndex(new DeleteIndexRequest(new IndexNameMarker { Name = "exceptionless_v1" }));
-                    shouldCreateIndex = true;
-                }
-            } else {
-                shouldCreateIndex = true;
-            }
+        private static ElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes) {
+            var settings = new ConnectionSettings(serverUri).SetDefaultIndex("stacks_v1");
+            settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionContractResolver(settings); });
+            settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks").Add(typeof(OldModels.ErrorStack), "stacks"));
+            settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
-            if (shouldCreateIndex)
-                searchclient.CreateIndex("exceptionless_v1", idx => idx
-                    .AddAlias("exceptionless")
-                    .AddMapping<PersistentEvent>(map => map
-                        .Dynamic(DynamicMappingOption.Ignore)
-                        .IncludeInAll(false)
-                        .Properties(p => p
-                            .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
-                            .Date(f => f.Name(e => e.Date).IndexName("date"))
-                            .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
-                            .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
-                            .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
-                        )
-                    )
+            var client = new ElasticClient(settings);
+            ConfigureMapping(client, deleteExistingIndexes);
+
+            return client;
+        }
+
+        private static void ConfigureMapping(ElasticClient searchclient, bool deleteExistingIndexes = false) {
+            if (deleteExistingIndexes)
+                searchclient.DeleteIndex(i => i.AllIndices());
+
+            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "stacks_v1" })).Exists)
+                searchclient.CreateIndex("stacks_v1", d => d
+                    .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
                         .IncludeInAll(false)
@@ -251,6 +235,27 @@ namespace Exceptionless.EventMigration {
                     )
                 );
 
+            searchclient.PutTemplate("events_v1", d => d
+                .Template("events_v1_*")
+                .AddMapping<PersistentEvent>(map => map
+                    .Dynamic(DynamicMappingOption.Ignore)
+                    .IncludeInAll(false)
+                    .Properties(p => p
+                        .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                        .Date(f => f.Name(e => e.Date).IndexName("date"))
+                        .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                        .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                        .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
+                        .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
+                    )
+                )
+            );
         }
 
         #region Legacy mongo collections
