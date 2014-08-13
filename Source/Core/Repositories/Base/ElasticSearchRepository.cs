@@ -46,10 +46,7 @@ namespace Exceptionless.Core.Repositories {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            var res = _elasticClient.Index(document, i => i.OpType(OpType.Create));
-            if (!res.Created)
-                throw new DuplicateDocumentException();
-
+            Add(new[] { document }, addToCache, expiresIn);
             return document;
         }
 
