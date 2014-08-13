@@ -32,6 +32,10 @@ namespace Exceptionless.Core.Repositories {
             _organizationRepository = organizationRepository;
         }
 
+        public long GetCountByOrganizationId(string organizationId) {
+            return _collection.Count(new OneOptions().WithOrganizationId(organizationId).GetMongoQuery(_getIdValue));
+        }
+
         public void IncrementEventCounter(string projectId, long eventCount = 1) {
             if (String.IsNullOrEmpty(projectId))
                 throw new ArgumentNullException("projectId");

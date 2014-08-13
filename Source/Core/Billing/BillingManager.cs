@@ -19,10 +19,12 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Billing {
     public class BillingManager {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
 
-        public BillingManager(IOrganizationRepository organizationRepository, IUserRepository userRepository) {
+        public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _userRepository = userRepository;
         }
 
@@ -50,8 +52,7 @@ namespace Exceptionless.Core.Billing {
             if (organization == null)
                 return false;
 
-            // TODO: New way of getting current project count
-            int projectCount = 0;
+            long projectCount = _projectRepository.GetCountByOrganizationId(project.OrganizationId);
             return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
@@ -84,8 +85,7 @@ namespace Exceptionless.Core.Billing {
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
-            // TODO: New way of getting project count.
-            var projectCount = 0;
+            long projectCount = _projectRepository.GetCountByOrganizationId(organization.Id);
             if (projectCount > maxProjects) {
                 message = String.Format("Please remove {0} project{1} and try again.", projectCount - maxProjects, (projectCount - maxProjects) > 0 ? "s" : String.Empty);
                 return false;

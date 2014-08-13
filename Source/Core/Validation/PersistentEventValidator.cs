@@ -11,6 +11,7 @@ namespace Exceptionless.Core.Validation {
             RuleFor(e => e.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
             RuleFor(e => e.StackId).IsObjectId().WithMessage("Please specify a valid stack id.");
 
+            RuleFor(e => e.Date).NotEmpty().Must(date => date.UtcDateTime <= DateTime.UtcNow.AddHours(1)).WithMessage("Date cannot be in the future. ");
             RuleFor(s => s.Type).Length(1, 100).WithMessage("Type cannot be longer than 100 characters.");
             RuleFor(s => s.Message).Length(1, 2000).When(s => s.Message != null).WithMessage("Message cannot be longer than 2000 characters.");
             RuleFor(s => s.Source).Length(1, 2000).When(s => s.Source != null).WithMessage("Source cannot be longer than 2000 characters.");

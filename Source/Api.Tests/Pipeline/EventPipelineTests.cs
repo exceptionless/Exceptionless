@@ -34,9 +34,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = EventData.GenerateEvent(id: TestConstants.EventId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
 
             var organization = _organizationRepository.GetById(TestConstants.OrganizationId);
+            Assert.NotNull(organization);
             Assert.Equal(0, organization.TotalEventCount);
 
+            Assert.Equal(1, _projectRepository.GetCountByOrganizationId(organization.Id));
             var project = _projectRepository.GetById(TestConstants.ProjectId);
+            Assert.NotNull(project);
             Assert.Equal(0, project.TotalEventCount);
 
             var pipeline = IoC.GetInstance<EventPipeline>();

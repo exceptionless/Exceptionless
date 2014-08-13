@@ -180,6 +180,7 @@
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
+    <Compile Include="Pipeline\001_DiscardEventsOutsideOfRetentionAction.cs" />
     <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
@@ -196,7 +197,6 @@
     <Compile Include="Plugins\WebHook\IWebHookDataPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\30_SimpleErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\Default\10_NotFoundPlugin.cs" />
-    <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
     <Compile Include="Extensions\ByteArrayExtensions.cs" />
     <Compile Include="Extensions\IdentityUtils.cs" />
     <Compile Include="Plugins\EventParser\Default\JsonEventParserPlugin.cs" />
