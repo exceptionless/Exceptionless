@@ -58,8 +58,8 @@ In appreciation for anyone who submits a non-trivial pull request, we will give 
 This is a list of high level things that we are planning to do:
 - Refactor client so that the base client is a PCL library thus supporting WinRT and Mono. **(In Progress)**
 - Refactor the API to be MUCH simpler and allow for clients to be easily developed while at the same time making the entire sytem much more flexible and able to gather additional data like log messages and feature usage. **(In Progress)**
-- Implement search features using ElasticSearch.
+- Implement search features using ElasticSearch. **(In Progress)**
 - JavaScript client for reporting client side errors.
-- Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS.
+- Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS. **(In Progress)**
   - **We are looking for an AngularJS consultant to work on rewriting our UI layer.**
 - Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications. **(In Progress)**
