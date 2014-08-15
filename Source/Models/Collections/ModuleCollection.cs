@@ -11,7 +11,8 @@
 
 using System;
 using System.Collections.ObjectModel;
+using Exceptionless.Models.Data;
 
-namespace Exceptionless.Models.Collections {
-    public class ModuleCollection : Collection<Module> {}
+namespace Exceptionless.Models {
+    public class ModuleCollection : Collection<Module> { }
 }

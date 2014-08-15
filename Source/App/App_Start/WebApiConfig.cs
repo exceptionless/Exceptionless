@@ -12,32 +12,31 @@
 using System;
 using System.Net.Http.Formatting;
 using System.Web.Http;
-using System.Web.Mvc;
+using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Utility;
+using Exceptionless.App.Controllers;
 using Exceptionless.Core;
-using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Web;
-using ServiceStack.Redis;
+using Exceptionless.Core.Caching;
 
 namespace Exceptionless.App {
     public static class WebApiConfig {
         public const string SERVICE_URL_VERISON1 = "api/v1/";
 
         public static void Register(HttpConfiguration config) {
-            var clientsManager = DependencyResolver.Current.GetService(typeof(IRedisClientsManager)) as IRedisClientsManager;
-            GlobalConfiguration.Configuration.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
-            GlobalConfiguration.Configuration.MessageHandlers.Add(new EncodingDelegatingHandler());
-            // throttle api calls to X every 15 minutes by IP
-            GlobalConfiguration.Configuration.MessageHandlers.Add(new ThrottlingHandler(clientsManager, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
+            config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
+            config.MessageHandlers.Add(new EncodingDelegatingHandler());
 
-            // remove all formatters except json
-            GlobalConfiguration.Configuration.Formatters.Clear();
-            GlobalConfiguration.Configuration.Formatters.Remove(GlobalConfiguration.Configuration.Formatters.JsonFormatter);
-            GlobalConfiguration.Configuration.Formatters.Add(new UpgradableJsonMediaTypeFormatter());
-            GlobalConfiguration.Configuration.Services.Replace(typeof(IContentNegotiator), new JsonContentNegotiator());
+            // Throttle api calls to X every 15 minutes by IP address.
+            var cacheClient = config.DependencyResolver.GetService(typeof(ICacheClient)) as ICacheClient;
+            config.MessageHandlers.Add(new ThrottlingHandler(cacheClient, userIdentifier => Settings.Current.ApiThrottleLimit, TimeSpan.FromMinutes(15)));
 
-            // log all api usages
-            //GlobalConfiguration.Configuration.MessageHandlers.Add(new UsageHandler());
+            config.Formatters.Clear();
+            //config.Formatters.Remove(config.Formatters.JsonFormatter);
+            config.Formatters.Add(new UpgradableJsonMediaTypeFormatter());
+            config.Services.Replace(typeof(IContentNegotiator), new JsonContentNegotiator());
+
+            // Log all api usages.
+            //config.MessageHandlers.Add(new UsageHandler());
             //config.EnableSystemDiagnosticsTracing();
 
             config.Routes.MapHttpRouteLowercase(

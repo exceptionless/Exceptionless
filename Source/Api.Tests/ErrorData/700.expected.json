@@ -1,0 +1,28 @@
+﻿{
+  "ReferenceId": "80000000b77efe2374a7eed3",
+  "Date": "2013-03-27T09:52:12.8451806-05:00",
+  "environment": {
+    "ProcessorCount": 12,
+    "TotalPhysicalMemory": 17120079872,
+    "AvailablePhysicalMemory": 10076049408,
+    "CommandLine": "\"C:\\Users\\Example\\Documents\\Visual Studio 2012\\Projects\\MvcApplication5\\ConsoleApplication1\\bin\\Debug\\ConsoleApplication1.vshost.exe\" ",
+    "ProcessName": "C:\\Users\\Example\\Documents\\Visual Studio 2012\\Projects\\MvcApplication5\\ConsoleApplication1\\bin\\Debug\\ConsoleApplication1.vshost.exe",
+    "ProcessId": "9076",
+    "ProcessMemorySize": 19075072,
+    "ThreadId": "14940",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows 8 Enterprise",
+    "OSVersion": "6.2.9200.0",
+    "MachineName": "Example",
+    "RuntimeVersion": "4.0.30319.18033",
+    "IpAddress": "127.0.0.1",
+    "Data": {
+      "AppDomainName": "ConsoleApplication1.vshost.exe"
+    }
+  },
+  "Type": "error",
+  "error": {
+    "Type": "System.Exception",
+    "Message": "Exception of type 'System.Exception' was thrown."
+  }
+}

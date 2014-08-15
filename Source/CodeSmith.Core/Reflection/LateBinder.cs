@@ -65,6 +65,35 @@ namespace CodeSmith.Core.Reflection
         }
 
         /// <summary>
+        /// Searches for the specified property, using the specified binding constraints.
+        /// </summary>
+        /// <param name="property">The property to create an accessor for.</param>
+        /// <returns>
+        /// An <see cref="IMemberAccessor"/> instance for the property.
+        /// </returns>
+        public static IMemberAccessor GetPropertyAccessor(PropertyInfo property) {
+            if (property == null)
+                throw new ArgumentNullException("property");
+
+            return new PropertyAccessor(property);
+        }
+
+        /// <summary>
+        /// Searches for the specified property, using the specified binding constraints.
+        /// </summary>
+        /// <param name="field">The field to create an accessor for.</param>
+        /// <returns>
+        /// An <see cref="IMemberAccessor"/> instance for the property.
+        /// </returns>
+        public static IMemberAccessor GetFieldAccessor(FieldInfo field) {
+            if (field == null)
+                throw new ArgumentNullException("field");
+
+            return new FieldAccessor(field);
+        }
+
+
+        /// <summary>
         /// Searches for the field with the specified name.
         /// </summary>
         /// <param name="type">The <see cref="Type"/> to search for the field in.</param>

@@ -110,5 +110,4 @@ namespace Exceptionless.Json.Serialization
         }
     }
 }
-
 #endif

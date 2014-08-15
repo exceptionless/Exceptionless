@@ -21,9 +21,9 @@
     <TargetFrameworkProfile />
     <UseIISExpress>true</UseIISExpress>
     <IISExpressSSLPort />
-    <IISExpressAnonymousAuthentication />
-    <IISExpressWindowsAuthentication />
-    <IISExpressUseClassicPipelineMode />
+    <IISExpressAnonymousAuthentication>enabled</IISExpressAnonymousAuthentication>
+    <IISExpressWindowsAuthentication>disabled</IISExpressWindowsAuthentication>
+    <IISExpressUseClassicPipelineMode>false</IISExpressUseClassicPipelineMode>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
@@ -108,8 +108,12 @@
     <Content Include="Configuration.aspx" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{E2087C42-6C65-49B7-9E64-B5E69A684220}</Project>
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
       <Name>Exceptionless</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Clients\Web\Exceptionless.Web.csproj">
@@ -152,5 +156,4 @@
   </ProjectExtensions>
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
 </Project>

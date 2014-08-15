@@ -95,6 +95,16 @@ namespace Exceptionless.Core {
 
         public string StripePublishableApiKey { get; private set; }
 
+        public bool UseAzureServiceBus { get { return !String.IsNullOrEmpty(AzureServiceBusConnectionString); } }
+
+        public string AzureServiceBusConnectionString { get; private set; }
+
+        public bool UseAzureCache { get { return !String.IsNullOrEmpty(AzureCacheEndpoint); } }
+
+        public string AzureCacheEndpoint { get; private set; }
+
+        public string AzureCacheAuthorizationToken { get; private set; }
+        
         private static Settings Init() {
             var settings = new Settings();
 
@@ -143,7 +153,10 @@ namespace Exceptionless.Core {
             settings.GitHubAppSecret = ConfigurationManager.AppSettings["GitHubAppSecret"];
             settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
             settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
-
+            settings.AzureServiceBusConnectionString = ConfigurationManager.AppSettings["AzureServiceBusConnectionString"] ?? Environment.GetEnvironmentVariable("AzureServiceBusConnectionString");
+            settings.AzureCacheEndpoint = ConfigurationManager.AppSettings["AzureCacheEndpoint"] ?? Environment.GetEnvironmentVariable("AzureCacheEndpoint");
+            settings.AzureCacheAuthorizationToken = ConfigurationManager.AppSettings["AzureCacheAuthorizationToken"] ?? Environment.GetEnvironmentVariable("AzureCacheAuthorizationToken");
+            
             ConnectionStringSettings redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
             if (redisConnectionInfo != null)
                 settings.RedisConnectionInfo = String.IsNullOrEmpty(redisConnectionInfo.ConnectionString) ? null : RedisConnectionInfo.Parse(redisConnectionInfo.ConnectionString);

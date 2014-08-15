@@ -15,20 +15,21 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core;
+using DotNetOpenAuth.Messaging;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
 using Moq;
-using ServiceStack.Messaging;
 using Xunit;
 
 namespace Exceptionless.Tests.Jobs {
     public class DailyNotificationJobTests : MongoRepositoryTestBase<Project, IProjectRepository> {
         private readonly List<SummaryNotification> _messages = new List<SummaryNotification>();
         private readonly Mock<IMessageFactory> _messageFactoryMock = new Mock<IMessageFactory>();
-        private readonly Mock<IMessageProducer> _messageProducerMock = new Mock<IMessageProducer>();
+        private readonly Mock<IMessageSubscriber> _messageSubscriberMock = new Mock<IMessageSubscriber>();
 
         public DailyNotificationJobTests() : base(IoC.GetInstance<IProjectRepository>(), true) {}
 
@@ -44,21 +45,21 @@ namespace Exceptionless.Tests.Jobs {
             Project project2 = ProjectData.GenerateProject(generateId: true, name: "Project2", nextSummaryEndOfDayTicks: DateTime.UtcNow.AddHours(OFFSET).AddMilliseconds(250).Ticks);
             Repository.Add(project2);
 
-            var job = new DailyNotificationJob(Repository as ProjectRepository, _messageFactoryMock.Object);
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            var job = new DailyNotificationJob(Repository, _messageFactoryMock.Object);
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(1, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
             Assert.Equal(project2.NextSummaryEndOfDayTicks, Repository.GetById(project2.Id).NextSummaryEndOfDayTicks);
 
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(1, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
             Assert.Equal(project2.NextSummaryEndOfDayTicks, Repository.GetById(project2.Id).NextSummaryEndOfDayTicks);
 
             Thread.Sleep(250);
-            job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+            job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
 
             Assert.Equal(2, _messages.Count);
             Assert.Equal(project.NextSummaryEndOfDayTicks + TimeSpan.TicksPerDay, Repository.GetById(project.Id).NextSummaryEndOfDayTicks);
@@ -78,8 +79,8 @@ namespace Exceptionless.Tests.Jobs {
 
             // TODO: We need to have some kind of lock to where we can unit test this.
             Parallel.For(0, 5, (i) => {
-                var job = new DailyNotificationJob(Repository as ProjectRepository, _messageFactoryMock.Object);
-                job.Run(new JobContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
+                var job = new DailyNotificationJob(Repository, _messageFactoryMock.Object);
+                job.Run(new JobRunContext("Daily Summary", "", DateTime.Now, JobStatus.None, null, null, null));
             });
 
             Assert.Equal(numberOfProjects, _messages.Count);
@@ -97,8 +98,8 @@ namespace Exceptionless.Tests.Jobs {
         }
 
         protected override void SetUp() {
-            _messageProducerMock.Setup(m => m.Publish(It.IsAny<SummaryNotification>())).Callback<SummaryNotification>(_messages.Add);
-            _messageFactoryMock.Setup(m => m.CreateMessageProducer()).Returns(_messageProducerMock.Object);
+            _messageSubscriberMock.Setup(m => m.Publish(It.IsAny<SummaryNotification>())).Callback<SummaryNotification>(_messages.Add);
+            _messageFactoryMock.Setup(m => m.CreateMessageProducer()).Returns(_messageSubscriberMock.Object);
         }
 
         protected override void TearDown() {

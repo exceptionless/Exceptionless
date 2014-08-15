@@ -10,16 +10,19 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Exceptionless;
 
 namespace NLog.Fluent {
     public static class LogBuilderExtensions {
-        public static LogBuilder Report(this LogBuilder builder, Action<ErrorBuilder> errorBuilderAction = null) {
+        public static LogBuilder Report(this LogBuilder builder, Action<EventBuilder> errorBuilderAction = null) {
             if (builder.LogEventInfo.Exception != null) {
-                ErrorBuilder exBuilder = builder.LogEventInfo.Exception.ToExceptionless();
+                EventBuilder exBuilder = builder.LogEventInfo.Exception.ToExceptionless();
 
                 if (errorBuilderAction != null)
                     errorBuilderAction(exBuilder);
+
+                exBuilder.AddObject(builder.LogEventInfo, name: "Log Info", excludedPropertyNames: new List<string> { "Exception", "Message", "LoggerShortName", "SequenceID", "TimeStamp" });
 
                 exBuilder.Submit();
             }

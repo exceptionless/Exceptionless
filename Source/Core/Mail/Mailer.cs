@@ -15,20 +15,31 @@ using System.Net;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
-using NLog.Fluent;
 using RazorSharpEmail;
+using MailMessage = System.Net.Mail.MailMessage;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
         private readonly IEmailGenerator _emailGenerator;
+        private readonly IQueue<Queues.Models.MailMessage> _queue;
+        private readonly FormattingPluginManager _pluginManager;
+        private readonly IAppStatsClient _statsClient;
 
-        public Mailer(IEmailGenerator emailGenerator) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<Queues.Models.MailMessage> queue, FormattingPluginManager pluginManager, IAppStatsClient statsClient) {
             _emailGenerator = emailGenerator;
+            _queue = queue;
+            _pluginManager = pluginManager;
+            _statsClient = statsClient;
         }
 
-        public void SendPasswordReset(User user) {
+        public async Task SendPasswordResetAsync(User user) {
             if (user == null || String.IsNullOrEmpty(user.PasswordResetToken))
                 return;
 
@@ -37,27 +48,19 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "PasswordReset");
             msg.To.Add(user.EmailAddress);
-            SendMessage(msg);
+            await QueueMessage(msg);
         }
 
-        public Task SendPasswordResetAsync(User sender) {
-            return Task.Run(() => SendPasswordReset(sender));
-        }
-
-        public void SendVerifyEmail(User user) {
+        public async Task SendVerifyEmailAsync(User user) {
             MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
             }, "VerifyEmail");
             msg.To.Add(user.EmailAddress);
-            SendMessage(msg);
+            await QueueMessage(msg);
         }
 
-        public Task SendVerifyEmailAsync(User user) {
-            return Task.Run(() => SendVerifyEmail(user));
-        }
-
-        public void SendInvite(User sender, Organization organization, Invite invite) {
+        public async Task SendInviteAsync(User sender, Organization organization, Invite invite) {
             MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
                 Sender = sender,
                 Organization = organization,
@@ -65,28 +68,20 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "Invite");
             msg.To.Add(invite.EmailAddress);
-            SendMessage(msg);
+            await QueueMessage(msg);
         }
 
-        public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
-            return Task.Run(() => SendInvite(sender, organization, invite));
-        }
-
-        public void SendPaymentFailed(User owner, Organization organization) {
+        public async Task SendPaymentFailedAsync(User owner, Organization organization) {
             MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
                 Owner = owner,
                 Organization = organization,
                 BaseUrl = Settings.Current.BaseURL
             }, "PaymentFailed");
             msg.To.Add(owner.EmailAddress);
-            SendMessage(msg);
+            await QueueMessage(msg);
         }
 
-        public Task SendPaymentFailedAsync(User owner, Organization organization) {
-            return Task.Run(() => SendPaymentFailed(owner, organization));
-        }
-
-        public void SendAddedToOrganization(User sender, Organization organization, User user) {
+        public async Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
             MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
                 Sender = sender,
                 Organization = organization,
@@ -94,63 +89,31 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "AddedToOrganization");
             msg.To.Add(user.EmailAddress);
-            SendMessage(msg);
+
+            await QueueMessage(msg);
         }
 
-        public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
-            return Task.Run(() => SendAddedToOrganization(sender, organization, user));
+        public async Task SendNoticeAsync(string emailAddress, EventNotification model) {
+            var message = _pluginManager.GetEventNotificationMailMessage(model);
+            if (message == null)
+                return;
+
+            message.To = emailAddress;
+            await QueueMessage(message.ToMailMessage());
         }
 
-        public void SendNotice(string emailAddress, ErrorNotificationModel notification) {
-            string notificationType = String.Concat(notification.TypeName, " Occurrence");
-            if (notification.IsNew)
-                notificationType = String.Concat("New ", notification.TypeName);
-            else if (notification.IsRegression)
-                notificationType = String.Concat(notification.TypeName, " Regression");
-
-            if (notification.IsCritical)
-                notificationType = String.Concat("Critical ", notificationType);
-
-            notification.BaseUrl = Settings.Current.BaseURL;
-            notification.NotificationType = notificationType;
-
-            MailMessage msg = _emailGenerator.GenerateMessage(notification, "Notice");
-            msg.To.Add(emailAddress);
-            msg.Headers.Add("X-Mailer-Machine", Environment.MachineName);
-            msg.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());
-            SendMessage(msg);
-        }
-
-        public Task SendNoticeAsync(string emailAddress, ErrorNotificationModel notification) {
-            return Task.Run(() => SendNotice(emailAddress, notification));
-        }
-
-        public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {
+        public async Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {
             notification.BaseUrl = Settings.Current.BaseURL;
             MailMessage msg = _emailGenerator.GenerateMessage(notification, "SummaryNotification");
             msg.To.Add(emailAddress);
-            msg.Headers.Add("X-Mailer-Machine", Environment.MachineName);
-            msg.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());
-            SendMessage(msg);
+            await QueueMessage(msg);
         }
 
-        public Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {
-            return Task.Run(() => SendSummaryNotification(emailAddress, notification));
-        }
-
-        private void SendMessage(MailMessage message) {
-            var client = new SmtpClient();
+        private async Task QueueMessage(MailMessage message) {
             CleanAddresses(message);
 
-            try {
-                client.Send(message);
-            } catch (SmtpException ex) {
-                var wex = ex.InnerException as WebException;
-                if (ex.StatusCode == SmtpStatusCode.GeneralFailure && wex != null && wex.Status == WebExceptionStatus.ConnectFailure)
-                    Log.Error().Exception(ex).Message(String.Format("Unable to connect to the mail server. Exception: {0}", wex.Message)).Write();
-                else
-                    throw;
-            }
+            await _queue.EnqueueAsync(message.ToMailMessage());
+            _statsClient.Counter(StatNames.EmailsQueued);
         }
 
         private static void CleanAddresses(MailMessage msg) {

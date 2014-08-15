@@ -10,28 +10,62 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Jobs;
-using MongoDB.Bson.Serialization;
+using Exceptionless.Core.Messaging;
+using FluentValidation;
 using MongoDB.Driver;
-using ServiceStack.CacheAccess;
+using MongoDB.Driver.Builders;
 
-namespace Exceptionless.Core {
-    public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockInfoRepository {
-        public JobLockRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
-
-        protected override string GetId(JobLockInfo jobLock) {
-            return jobLock.Name;
+namespace Exceptionless.Core.Repositories {
+    public class JobLockRepository : MongoRepository<JobLockInfo>, IJobLockRepository {
+        public JobLockRepository(MongoDatabase database, IValidator<JobLockInfo> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
+            _getIdValue = s => s;
         }
 
+        public JobLockInfo GetByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            return FindOne<JobLockInfo>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
+        }
+
+        public void RemoveByAge(string name, TimeSpan age) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            RemoveAll(new MongoOptions().WithQuery(Query.And(Query.EQ(FieldNames.Name, name), Query.LT(FieldNames.CreatedDate, DateTime.Now.Subtract(age)))));
+        }
+
+        public void RemoveByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            RemoveAll(new MongoOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
+        }
+
+        public bool ExistsByName(string name) {
+            if (String.IsNullOrEmpty(name))
+                throw new ArgumentNullException("name");
+
+            return Exists(new MongoOptions().WithQuery(Query.EQ(FieldNames.Name, name)));
+        }
+
+        #region Collection Setup
+
         public const string CollectionName = "joblock";
+
+        private static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string Name = "Name";
+            public const string CreatedDate = "CreatedDate";
+        }
 
         protected override string GetCollectionName() {
             return CollectionName;
         }
 
-        protected override void ConfigureClassMap(BsonClassMap<JobLockInfo> cm) {
-            base.ConfigureClassMap(cm);
-            cm.SetIdMember(cm.GetMemberMap(c => c.Name));
-        }
+        #endregion
     }
 }

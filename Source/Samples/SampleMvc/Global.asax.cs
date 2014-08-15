@@ -15,7 +15,6 @@ using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Routing;
-using Exceptionless.Core.Utility;
 using Exceptionless.SampleMvc.App_Start;
 using NLog;
 
@@ -26,7 +25,7 @@ namespace Exceptionless.SampleMvc {
     public class MvcApplication : HttpApplication {
         protected void Application_Start() {
             Trace.Listeners.Add(new NLogTraceListener());
-            ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
+            //ExceptionlessClient.Default.Log = new NLogExceptionlessLog();
 
             AreaRegistration.RegisterAllAreas();
 
@@ -34,7 +33,8 @@ namespace Exceptionless.SampleMvc {
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
-            ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
+            ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
         }
     }
 }

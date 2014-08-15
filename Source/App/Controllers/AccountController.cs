@@ -16,22 +16,17 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Web.Mvc;
-using AutoMapper;
 using DotNetOpenAuth.AspNet;
-using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Account;
 using Exceptionless.App.Models.Common;
-using Exceptionless.App.Models.Project;
-using Exceptionless.App.Models.User;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Membership;
 using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 using Newtonsoft.Json;
 
 namespace Exceptionless.App.Controllers {
@@ -40,62 +35,20 @@ namespace Exceptionless.App.Controllers {
         private readonly IMembershipProvider _membershipProvider;
         private readonly IMembershipSecurity _encoder = new DefaultMembershipSecurity();
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly BillingManager _billingManager;
-        private readonly NotificationSender _notificationSender;
         private readonly IMailer _mailer;
         private readonly DataHelper _dataHelper;
 
         private static bool _isFirstUserChecked;
 
-        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository, BillingManager billingManager, NotificationSender notificationSender, IMailer mailer, DataHelper dataHelper) {
+        public AccountController(IMembershipProvider membership, IOrganizationRepository organizationRepository, IUserRepository userRepository, BillingManager billingManager, IMailer mailer, DataHelper dataHelper) {
             _membershipProvider = membership;
             _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
             _userRepository = userRepository;
             _billingManager = billingManager;
-            _notificationSender = notificationSender;
             _mailer = mailer;
             _dataHelper = dataHelper;
-        }
-
-        [Authorize(Roles = AuthorizationRoles.User)]
-        public ActionResult Init(string projectId = null, string organizationId = null) {
-            List<Organization> organizations = _organizationRepository.GetByIds(User.GetAssociatedOrganizationIds()).ToList();
-            List<Project> projects = _projectRepository.GetByOrganizationIds(User.GetAssociatedOrganizationIds()).ToList();
-
-            if (User.IsInRole(AuthorizationRoles.GlobalAdmin)) {
-                if (!String.IsNullOrWhiteSpace(projectId) && !projects.Any(p => String.Equals(p.Id, projectId))) {
-                    Project project = _projectRepository.GetById(projectId);
-                    if (project != null) {
-                        projects.Add(project);
-
-                        if (!organizations.Any(o => String.Equals(o.Id, project.OrganizationId)))
-                            organizations.Add(_organizationRepository.GetById(project.OrganizationId));
-                    }
-                }
-
-                if (!String.IsNullOrWhiteSpace(organizationId) && !organizations.Any(o => String.Equals(o.Id, organizationId))) {
-                    Organization organization = _organizationRepository.GetById(organizationId);
-                    if (organization != null)
-                        organizations.Add(organization);
-                }
-            }
-
-            return Json(new {
-                User = new UserModel {
-                    Id = User.UserEntity.Id,
-                    FullName = User.UserEntity.FullName,
-                    EmailAddress = User.UserEntity.EmailAddress,
-                    IsEmailAddressVerified = User.UserEntity.IsEmailAddressVerified,
-                    HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin)
-                },
-                EnableBilling = Settings.Current.EnableBilling,
-                BillingInfo = BillingManager.Plans,
-                Organizations = organizations,
-                Projects = projects.Select(Mapper.Map<Project, ProjectInfoModel>),
-            }, JsonRequestBehavior.AllowGet);
         }
 
         [AllowAnonymous]
@@ -177,7 +130,7 @@ namespace Exceptionless.App.Controllers {
                     if (!_isFirstUserChecked) {
                         _isFirstUserChecked = true;
 
-                        if (_userRepository.All().FirstOrDefault() == null)
+                        if (_userRepository.Count() == 0)
                             user.Roles.Add(AuthorizationRoles.GlobalAdmin);
                     }
 
@@ -208,26 +161,29 @@ namespace Exceptionless.App.Controllers {
         }
 
         private void AddInvitedUserToOrganization(string token, User user) {
+            if (user == null)
+                return;
+
             Invite invite;
             Organization organization = _organizationRepository.GetByInviteToken(token, out invite);
-            if (organization != null) {
-                if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                    user.IsEmailAddressVerified = true;
-                    _userRepository.Update(user);
-                }
+            if (organization == null)
+                return;
 
-                if (!_billingManager.CanAddUser(organization)) {
-                    ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
-                    return;
-                }
-
-                user.OrganizationIds.Add(organization.Id);
-                _userRepository.Update(user);
-
-                organization.Invites.Remove(invite);
-                _organizationRepository.Update(organization);
-                _notificationSender.OrganizationUpdated(organization.Id);
+            if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
+                user.IsEmailAddressVerified = true;
+                _userRepository.Save(user);
             }
+
+            if (!_billingManager.CanAddUser(organization)) {
+                ModelState.AddModelError(String.Empty, "Please upgrade your plan to add an additional user.");
+                return;
+            }
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Save(user);
+
+            organization.Invites.Remove(invite);
+            _organizationRepository.Save(organization);
         }
 
         [HttpPost]
@@ -274,7 +230,7 @@ namespace Exceptionless.App.Controllers {
             if (state != null)
                 state.Errors.Clear();
 
-            User user = User.UserEntity;
+            User user = GetUser();
             if (ModelState.IsValid) {
                 try {
                     _userRepository.InvalidateCache(user);
@@ -298,10 +254,7 @@ namespace Exceptionless.App.Controllers {
                         _mailer.SendVerifyEmailAsync(user);
                     }
 
-                    var principal = new ExceptionlessPrincipal(user);
-                    Thread.CurrentPrincipal = principal;
-                    if (System.Web.HttpContext.Current != null)
-                        System.Web.HttpContext.Current.User = principal;
+                    // TODO: Update the current user..
                 } catch (Exception e) {
                     ModelState.AddModelError("", e.Message);
                 }
@@ -309,7 +262,7 @@ namespace Exceptionless.App.Controllers {
 
             if (!ModelState.IsValid) {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return Json(ModelState.ToDictionary());
+                return Json(ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
             }
 
             return Json(new { IsVerified = user.IsEmailAddressVerified });
@@ -350,7 +303,7 @@ namespace Exceptionless.App.Controllers {
 
             if (!ModelState.IsValid) {
                 Response.StatusCode = (int)HttpStatusCode.BadRequest;
-                return Json(ModelState.ToDictionary());
+                return Json(ModelState.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()));
             }
 
             return Json(true);
@@ -426,6 +379,9 @@ namespace Exceptionless.App.Controllers {
         public ActionResult ExternalLoginCallback(string returnUrl, string token) {
             AuthenticationResult result = _membershipProvider.VerifyOAuthAuthentication(Url.Action("ExternalLoginCallback", new { ReturnUrl = returnUrl, Token = token }));
             if (!result.IsSuccessful) {
+                if (result.Error != null)
+                    result.Error.ToExceptionless().AddObject(result).AddTags("Login").SetUserDescription("An error occurred while trying to login.").Submit();
+
                 SetErrorAlert(result.Error != null ? result.Error.Message : "An error occurred while trying to login.");
                 return RedirectToAction("ExternalLoginFailure");
             }
@@ -433,8 +389,19 @@ namespace Exceptionless.App.Controllers {
             // TODO: Need to check to see if we have a user with the specified email address already.
             OAuthAccount account = result.ToOAuthAccount();
             if (_membershipProvider.OAuthLogin(account, remember: true)) {
-                if (!String.IsNullOrEmpty(token))
-                    AddInvitedUserToOrganization(token, _membershipProvider.GetUserByEmailAddress(account.EmailAddress() ?? account.Username));
+                if (!String.IsNullOrEmpty(token)) {
+                    User user = null;
+                    if (!String.IsNullOrEmpty(account.EmailAddress()))
+                        user = _membershipProvider.GetUserByEmailAddress(account.EmailAddress());
+
+                    if (user == null && !String.IsNullOrEmpty(account.Username))
+                        user = _membershipProvider.GetUserByEmailAddress(account.Username);
+
+                    if (user != null)
+                        AddInvitedUserToOrganization(token, user);
+
+                    // TODO: should we notify the user that they couldn't be invited to the organization?
+                }
 
                 return RedirectToLocal(returnUrl);
             }
@@ -480,7 +447,7 @@ namespace Exceptionless.App.Controllers {
                     // Add the GlobalAdmin role to the first user of the system.
                     if (!_isFirstUserChecked) {
                         _isFirstUserChecked = true;
-                        if (_userRepository.All().FirstOrDefault() == null)
+                        if (_userRepository.Count() == 0)
                             roles.Add(AuthorizationRoles.GlobalAdmin);
                     }
 
@@ -561,30 +528,9 @@ namespace Exceptionless.App.Controllers {
             user.IsEmailAddressVerified = true;
             user.VerifyEmailAddressToken = null;
             user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
-            _userRepository.Update(user);
+            _userRepository.Save(user);
 
             return RedirectToAction("Manage", "Account");
-        }
-
-        [ActionName("resend-verification-email")]
-        public ActionResult ResendVerificationEmail() {
-            User user = User.UserEntity;
-            if (!user.IsEmailAddressVerified) {
-                user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
-                _mailer.SendVerifyEmailAsync(user);
-            }
-
-            return Json(true, JsonRequestBehavior.AllowGet);
-        }
-
-        [HttpGet]
-        [AllowAnonymous]
-        public JsonResult IsEmailAddressAvaliable(string emailAddress) {
-            User user = _membershipProvider.GetUserByEmailAddress(emailAddress);
-            if (User != null && User.UserEntity != null && String.Equals(User.UserEntity.EmailAddress, emailAddress, StringComparison.OrdinalIgnoreCase))
-                return Json(true, JsonRequestBehavior.AllowGet);
-
-            return Json(user == null, JsonRequestBehavior.AllowGet);
         }
 
         #region Helpers

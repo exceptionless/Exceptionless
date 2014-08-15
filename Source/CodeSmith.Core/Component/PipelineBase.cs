@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using CodeSmith.Core.Helpers;
 #if PFX_LEGACY_3_5 || SILVERLIGHT
 using CodeSmith.Core.Collections;
 #else
@@ -27,7 +27,7 @@ namespace CodeSmith.Core.Component
         where TAction : class, IPipelineAction<TContext>
         where TContext : IPipelineContext
     {
-        private static readonly ConcurrentDictionary<Type, List<Type>> _actionTypeCache;
+        protected static readonly ConcurrentDictionary<Type, List<Type>> _actionTypeCache;
         private readonly IDependencyResolver _dependencyResolver;
 
         static PipelineBase()
@@ -40,30 +40,30 @@ namespace CodeSmith.Core.Component
         }
 
         /// <summary>
-        /// Runs all the modules of pipeline with the specified context list.
+        /// Runs all the actions of the pipeline with the specified context list.
         /// </summary>
-        /// <param name="contexts">The context list to run the modules with.</param>
+        /// <param name="contexts">The context list to run the actions with.</param>
         public virtual void Run(IEnumerable<TContext> contexts)
         {
-            var modules = GetActionTypes();
+            var actionTypes = GetActionTypes();
             foreach (var context in contexts)
-                Run(context, modules);
+                Run(context, actionTypes);
         }
 
         /// <summary>
-        /// Runs all the modules of pipeline with the specified context.
+        /// Runs all the actions of the pipeline with the specified context.
         /// </summary>
-        /// <param name="context">The context to run the modules with.</param>
+        /// <param name="context">The context to run the actions with.</param>
         public virtual void Run(TContext context)
         {
-            var modules = GetActionTypes();
-            Run(context, modules);
+            var actionTypes = GetActionTypes();
+            Run(context, actionTypes);
         }
 
         /// <summary>
         /// Runs all the specified actions with the specified context.
         /// </summary>
-        /// <param name="context">The context to run the modules with.</param>
+        /// <param name="context">The context to run the actions with.</param>
         /// <param name="actionTypes">The ordered list of action types to run on the context.</param>
         protected virtual void Run(TContext context, IEnumerable<Type> actionTypes)
         {
@@ -106,20 +106,9 @@ namespace CodeSmith.Core.Component
         /// Gets the types that are subclasses of <typeparamref name="TAction"/>.
         /// </summary>
         /// <returns>An enumerable list of action types in priority order to run for the pipeline.</returns>
-        protected static IList<Type> GetActionTypes()
+        protected virtual IList<Type> GetActionTypes()
         {
-            return _actionTypeCache.GetOrAdd(typeof(TAction), t =>
-            {
-                var modules = (from type in t.Assembly.GetTypes()
-                               where (type.IsClass && !type.IsNotPublic)
-                                    && !type.IsAbstract
-                                    && type.IsSubclassOf(t)
-                               select Tuple.Create(type, type.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute))
-                               .OrderBy(i => i.Item2 != null ? i.Item2.Priority : 0)
-                               .ToList();
-
-                return modules.Select(i => i.Item1).ToList();
-            });
+            return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().ToList());
         }
     }
 }

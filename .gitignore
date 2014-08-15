@@ -84,6 +84,7 @@ ipch/
 *.gpState
 
 # ReSharper is a .NET coding add-in
+_dotTrace*/
 _ReSharper*/
 *.[Rr]e[Ss]harper
 

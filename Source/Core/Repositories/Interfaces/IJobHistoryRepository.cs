@@ -12,6 +12,8 @@
 using System;
 using Exceptionless.Core.Jobs;
 
-namespace Exceptionless.Core {
-    public interface IJobHistoryRepository : IRepository<JobHistory> {}
+namespace Exceptionless.Core.Repositories {
+    public interface IJobHistoryRepository : IRepository<JobHistory> {
+        JobHistory GetMostRecent(string jobName);
+    }
 }

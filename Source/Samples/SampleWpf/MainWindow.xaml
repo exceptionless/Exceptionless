@@ -41,16 +41,9 @@
                 <Separator />
                 <MenuItem Header="Import Demo Reports"
                           Click="OnImportDemoReports" />
-                <!--<Separator />
-                <MenuItem Header="Send Feedback"
-                          Click="OnSendFeedback" />-->
-                <Separator />
-                <MenuItem Header="Pending Reports" />
                 <Separator />
                 <MenuItem Header="Process Queue"
                           Click="OnProcessQueue" />
-                <MenuItem Header="Update Configuration"
-                          Click="OnUpdateConfiguration" />
             </MenuItem>
         </Menu>
         <TextBox Name="logTextBox"

@@ -31,7 +31,7 @@ assembly attribute and your own Exceptionless api key to your project (E.G., Ass
 
 Finally, you must call the following line of code to start reporting unhandled exceptions.
 
-Exceptionless.ExceptionlessClient.Current.Startup()
+Exceptionless.ExceptionlessClient.Default.Startup()
 
 -------------------------------------
    Manually reporting an exception

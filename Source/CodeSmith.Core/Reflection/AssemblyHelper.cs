@@ -2,18 +2,14 @@
 using System.Collections.Generic;
 using System.Reflection;
 
-#if !EMBEDDED
 namespace CodeSmith.Core.Reflection {
-#else
-namespace Exceptionless.Utility {
-#endif
     public class AssemblyHelper {
         public static Assembly GetRootAssembly() {
             Assembly assembly;
 #if SILVERLIGHT
             assembly = GetAssemblies().FirstOrDefault();
 #else
-            assembly = Assembly.GetEntryAssembly();
+            assembly = Assembly.GetCallingAssembly();
 #endif
             if (assembly == null)
                 assembly = Assembly.GetCallingAssembly();

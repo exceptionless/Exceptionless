@@ -12,33 +12,32 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
-    public class UpdateStatsAction : ErrorPipelineActionBase {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
-        private readonly ErrorStackRepository _errorStackRepository;
-        private readonly ErrorStatsHelper _statsHelper;
+    public class UpdateStatsAction : EventPipelineActionBase {
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly EventStatsHelper _statsHelper;
 
-        public UpdateStatsAction(ErrorStatsHelper statsHelper, OrganizationRepository organizationRepository, ProjectRepository projectRepository, ErrorStackRepository errorStackRepository) {
+        public UpdateStatsAction(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
-            _errorStackRepository = errorStackRepository;
+            _stackRepository = stackRepository;
             _statsHelper = statsHelper;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            _organizationRepository.IncrementStats(ctx.Error.OrganizationId, errorCount: 1, stackCount: ctx.IsNew ? 1 : 0);
-            _projectRepository.IncrementStats(ctx.Error.ProjectId, errorCount: 1, stackCount: ctx.IsNew ? 1 : 0);
+        public override void Process(EventContext ctx) {
+            _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
+            _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
             if (!ctx.IsNew)
-                _errorStackRepository.IncrementStats(ctx.Error.ErrorStackId, ctx.Error.OccurrenceDate.UtcDateTime);
-
-            IEnumerable<TimeSpan> offsets = _projectRepository.GetTargetTimeOffsetsForStats(ctx.Error.ProjectId);
-            _statsHelper.Process(ctx.Error, ctx.IsNew, offsets);
+                _stackRepository.IncrementEventCounter(ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
         }
     }
 }

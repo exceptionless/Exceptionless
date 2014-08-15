@@ -11,52 +11,41 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class EnforceRetentionLimitsJob : JobBase {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ErrorRepository _errorRepository;
+    public class EnforceRetentionLimitsJob : Job {
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IEventRepository _eventRepository;
 
-        public EnforceRetentionLimitsJob(OrganizationRepository organizationRepository, ErrorRepository errorRepository) {
+        public EnforceRetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository) {
             _organizationRepository = organizationRepository;
-            _errorRepository = errorRepository;
+            _eventRepository = eventRepository;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Enforce retention limits job starting").Write();
 
-            int skip = 0;
-            var organizations = _organizationRepository.Collection.FindAs<Organization>(Query.Null)
-                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.RetentionDays)
-                .SetLimit(100).SetSkip(skip).ToList();
-
+            var page = 1;
+            var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100));
             while (organizations.Count > 0) {
-                // TODO: Need to add overage days to the org when they went over their limit for the day.
                 foreach (var organization in organizations)
-                    EnforceErrorCountLimits(organization);
+                    EnforceEventCountLimits(organization);
 
-                skip += 100;
-                organizations = _organizationRepository.Collection.FindAs<Organization>(Query.Null)
-                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.RetentionDays)
-                    .SetLimit(100).SetSkip(skip).ToList();
+                organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(++page).WithLimit(100));
             }
 
-            return new JobResult {
-                Result = "Successfully enforced all retention limits."
-            };
+            return Task.FromResult(new JobResult { Message = "Successfully enforced all retention limits." });
         }
 
-        private void EnforceErrorCountLimits(Organization organization) {
-            if (organization.RetentionDays <= 0)
-                return;
-
-            Log.Info().Message("Enforcing error count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
+        private void EnforceEventCountLimits(Organization organization) {
+            Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {
                 // use the next higher plans retention days to enable us to upsell them
@@ -70,7 +59,7 @@ namespace Exceptionless.Core.Jobs {
                     retentionDays = nextPlan.RetentionDays;
 
                 DateTime cutoff = DateTime.UtcNow.Date.AddDays(-retentionDays);
-                _errorRepository.RemoveAllByDate(organization.Id, cutoff);
+                _eventRepository.RemoveAllByDate(organization.Id, cutoff);
             } catch (Exception ex) {
                 ex.ToExceptionless().MarkAsCritical().AddTags("Enforce Limits").AddObject(organization).Submit();
             }

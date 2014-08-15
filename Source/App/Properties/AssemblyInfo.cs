@@ -13,7 +13,7 @@ using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("Exceptionless.Web")]
-[assembly: AssemblyDescription("Exceptionless Web")]
+[assembly: AssemblyTitle("Exceptionless.App")]
+[assembly: AssemblyDescription("Exceptionless App")]
 [assembly: ComVisible(false)]
 [assembly: Guid("65df1b75-5660-4445-8d8b-8651c7fddf1b")]

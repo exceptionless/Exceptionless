@@ -11,18 +11,89 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.Odbc;
 using System.Linq;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
-namespace Exceptionless.Core {
+namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
-        public ProjectRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+        private readonly IOrganizationRepository _organizationRepository;
+
+        public ProjectRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
+            _organizationRepository = organizationRepository;
+        }
+
+        public long GetCountByOrganizationId(string organizationId) {
+            return _collection.Count(new OneOptions().WithOrganizationId(organizationId).GetMongoQuery(_getIdValue));
+        }
+
+        public void IncrementEventCounter(string projectId, long eventCount = 1) {
+            if (String.IsNullOrEmpty(projectId))
+                throw new ArgumentNullException("projectId");
+
+            if (eventCount < 1)
+                return;
+
+            var update = new UpdateBuilder();
+            update.Inc(FieldNames.TotalEventCount, eventCount);
+            update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
+
+            UpdateAll(new QueryOptions().WithId(projectId), update);
+            InvalidateCache(projectId);
+        }
+        
+        public ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
+            return new[] { GetDefaultTimeOffset(projectId) };
+        }
+
+        public TimeSpan GetDefaultTimeOffset(string projectId) {
+            return GetById(projectId, true).DefaultTimeZoneOffset();
+        }
+
+        public TimeZoneInfo GetDefaultTimeZone(string projectId) {
+            return GetById(projectId, true).DefaultTimeZone();
+        }
+
+        public DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime) {
+            TimeSpan offset = GetDefaultTimeOffset(id);
+            return utcDateTime.Add(offset);
+        }
+
+        public DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset) {
+            return TimeZoneInfo.ConvertTime(dateTimeOffset, GetDefaultTimeZone(id));
+        }
+
+        public DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime) {
+            if (dateTime == DateTime.MinValue || dateTime == DateTime.MaxValue)
+                return dateTime;
+
+            TimeSpan offset = GetDefaultTimeOffset(id);
+            return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
+        }
+
+        public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
+            IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
+            return Find<Project>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+        }
+
+        public long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids) {
+            if (ids == null || !ids.Any())
+                throw new ArgumentNullException("ids");
+
+            UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
+            return UpdateAll(new QueryOptions().WithIds(ids), update);
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "project";
 
@@ -30,133 +101,40 @@ namespace Exceptionless.Core {
             return CollectionName;
         }
 
-        public new static class FieldNames {
-            public const string Id = "_id";
-            public const string OrganizationId = "oid";
+        private static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string Name = "Name";
             public const string TimeZone = "TimeZone";
-            public const string ApiKeys = "ApiKeys";
             public const string Configuration = "Configuration";
             public const string Configuration_Version = "Configuration.Version";
             public const string NotificationSettings = "NotificationSettings";
             public const string PromotedTabs = "PromotedTabs";
             public const string CustomContent = "CustomContent";
-            public const string StackCount = "StackCount";
-            public const string ErrorCount = "ErrorCount";
-            public const string TotalErrorCount = "TotalErrorCount";
-            public const string LastErrorDate = "LastErrorDate";
+            public const string TotalEventCount = "TotalEventCount";
+            public const string LastEventDate = "LastEventDate";
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
-
-        protected override void InitializeCollection(MongoCollection<Project> collection) {
-            base.InitializeCollection(collection);
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ApiKeys), IndexOptions.SetUnique(true).SetSparse(true));
+       
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
             // TODO: Should we set an index on project and configuration key name.
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
             base.ConfigureClassMap(cm);
-            cm.GetMemberMap(p => p.ApiKeys).SetShouldSerializeMethod(obj => ((Project)obj).ApiKeys.Any()); // Only serialize API keys if it is populated.
+            cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
+            cm.GetMemberMap(c => c.TimeZone).SetElementName(FieldNames.TimeZone);
+            cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
+            cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
+            cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
+            cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
+            cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);
+
+            cm.GetMemberMap(c => c.PromotedTabs).SetElementName(FieldNames.PromotedTabs).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).PromotedTabs.Any());
+            cm.GetMemberMap(c => c.NotificationSettings).SetElementName(FieldNames.NotificationSettings).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).NotificationSettings.Any());
         }
 
-        public override Project Add(Project entity) {
-            foreach (string key in entity.ApiKeys)
-                InvalidateCache(key);
-
-            return base.Add(entity);
-        }
-
-        public override Project Update(Project entity) {
-            entity.Configuration.Version++;
-            entity = base.Update(entity);
-
-            return GetById(entity.Id);
-        }
-
-        public override void InvalidateCache(Project entity) {
-            foreach (string key in entity.ApiKeys)
-                InvalidateCache(key);
-            base.InvalidateCache(entity);
-        }
-
-        public Project GetByApiKey(string apiKey) {
-            if (Cache == null)
-                return _collection.FindOneAs<Project>(Query.EQ(FieldNames.ApiKeys, apiKey));
-
-            var result = Cache.Get<Project>(GetScopedCacheKey(apiKey));
-            if (result == null) {
-                result = _collection.FindOneAs<Project>(Query.EQ(FieldNames.ApiKeys, apiKey));
-                if (result != null)
-                    Cache.Set(GetScopedCacheKey(apiKey), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public IEnumerable<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
-            return new[] { GetDefaultTimeOffset(projectId) };
-        }
-
-        public TimeSpan GetDefaultTimeOffset(string projectId) {
-            return GetByIdCached(projectId).DefaultTimeZoneOffset();
-        }
-
-        public TimeZoneInfo GetDefaultTimeZone(string projectId) {
-            return GetByIdCached(projectId).DefaultTimeZone();
-        }
-
-        public DateTime UtcToDefaultProjectLocalTime(string projectId, DateTime utcDateTime) {
-            TimeSpan offset = GetDefaultTimeOffset(projectId);
-            return utcDateTime.Add(offset);
-        }
-
-        public DateTimeOffset UtcToDefaultProjectLocalTime(string projectId, DateTimeOffset dateTimeOffset) {
-            return TimeZoneInfo.ConvertTime(dateTimeOffset, GetDefaultTimeZone(projectId));
-        }
-
-        public DateTime DefaultProjectLocalTimeToUtc(string projectId, DateTime dateTime) {
-            if (dateTime == DateTime.MinValue || dateTime == DateTime.MaxValue)
-                return dateTime;
-
-            TimeSpan offset = GetDefaultTimeOffset(projectId);
-            return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
-        }
-
-        public void IncrementStats(string projectId, long? errorCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId");
-
-            IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(projectId)));
-
-            var update = new UpdateBuilder();
-            if (errorCount.HasValue && errorCount.Value != 0) {
-                update.Inc(FieldNames.ErrorCount, errorCount.Value);
-                if (errorCount.Value > 0) {
-                    update.Inc(FieldNames.TotalErrorCount, errorCount.Value);
-                    update.Set(FieldNames.LastErrorDate, new BsonDateTime(DateTime.UtcNow));
-                }
-            }
-            if (stackCount.HasValue && stackCount.Value != 0)
-                update.Inc(FieldNames.StackCount, stackCount.Value);
-
-            Collection.Update(query, update);
-            InvalidateCache(projectId);
-        }
-
-        public void SetStats(string projectId, long? errorCount = null, long? stackCount = null) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId");
-
-            IMongoQuery query = Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(projectId)));
-
-            var update = new UpdateBuilder();
-            if (errorCount.HasValue)
-                update.Set(FieldNames.ErrorCount, errorCount.Value);
-            if (stackCount.HasValue)
-                update.Set(FieldNames.StackCount, stackCount.Value);
-
-            Collection.Update(query, update);
-            InvalidateCache(projectId);
-        }
+        #endregion
     }
 }

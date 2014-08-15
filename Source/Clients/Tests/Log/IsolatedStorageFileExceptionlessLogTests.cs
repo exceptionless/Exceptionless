@@ -10,46 +10,50 @@
 #endregion
 
 using System;
+using Exceptionless.Extras.Storage;
 using Exceptionless.Logging;
-using Exceptionless.Utility;
 
 namespace Exceptionless.Client.Tests.Log {
     public class IsolatedStorageFileExceptionlessLogTests : FileExceptionlessLogTests {
-        private readonly IsolatedStorageDirectory _directory;
+        private readonly IsolatedStorageFileStorage _storage;
 
         public IsolatedStorageFileExceptionlessLogTests() {
-            _directory = new IsolatedStorageDirectory("test");
+            _storage = new IsolatedStorageFileStorage();
         }
 
         protected override FileExceptionlessLog GetLog(string filePath) {
-            return new IsolatedStorageFileExceptionlessLog("test", filePath);
+            return new IsolatedStorageFileExceptionlessLog(filePath);
         }
 
         protected override bool LogExists(string path = LOG_FILE) {
-            return _directory.FileExists(path);
+            return _storage.Exists(path);
         }
 
         protected override void DeleteLog(string path = LOG_FILE) {
             if (LogExists(path))
-                _directory.DeleteFile(path);
+                _storage.DeleteFile(path);
         }
 
         protected override string GetLogContent(string path = LOG_FILE) {
             if (!LogExists(path))
                 return String.Empty;
 
-            return _directory.ReadFileAsString(path);
+            return _storage.GetFileContents(path);
         }
 
         protected override long GetLogSize(string path = LOG_FILE) {
-            return _directory.GetFileSize(path);
+            var info = _storage.GetFileInfo(path);
+            if (info != null)
+                return info.Size;
+
+            return -1;
         }
 
         public override void Dispose() {
             base.Dispose();
 
-            if (_directory != null)
-                _directory.Dispose();
+            if (_storage != null)
+                _storage.Dispose();
         }
     }
 }

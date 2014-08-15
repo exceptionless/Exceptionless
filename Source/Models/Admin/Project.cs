@@ -15,12 +15,13 @@ using System.Diagnostics;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganization {
+    public class Project : IOwnedByOrganization, IIdentity, IData {
         public Project() {
-            ApiKeys = new HashSet<string>();
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
             PromotedTabs = new HashSet<string>();
+            DeleteBotDataEnabled = true;
+            Data = new DataDictionary();
         }
 
         /// <summary>
@@ -34,35 +35,30 @@ namespace Exceptionless.Models {
 
         public string TimeZone { get; set; }
 
-        public HashSet<string> ApiKeys { get; set; }
-
         public ClientConfiguration Configuration { get; set; }
 
         public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }
+
+        /// <summary>
+        /// Optional data entries that contain additional configuration information for this project.
+        /// </summary>
+        public DataDictionary Data { get; set; }
 
         public HashSet<string> PromotedTabs { get; set; }
 
         public string CustomContent { get; set; }
 
-        /// <summary>
-        /// Current number of error stacks in the system.
-        /// </summary>
-        public long StackCount { get; set; }
+        public bool DeleteBotDataEnabled { get; set; }
 
         /// <summary>
-        /// Current number of error occurrences in the system.
+        /// Total events logged by our system.
         /// </summary>
-        public long ErrorCount { get; set; }
+        public long TotalEventCount { get; set; }
 
         /// <summary>
-        /// Total errors logged by our system.
+        /// The date that the latest event occurred.
         /// </summary>
-        public long TotalErrorCount { get; set; }
-
-        /// <summary>
-        /// The date that the latest error occurred.
-        /// </summary>
-        public DateTime LastErrorDate { get; set; }
+        public DateTime LastEventDate { get; set; }
 
         /// <summary>
         /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the

@@ -1,6 +1,12 @@
-﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:bt27\)/statusIcon)](http://teamcity.codesmithtools.com/project.html?projectId=Exceptionless)
+﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:Exceptionless_Master\)/statusIcon)](http://teamcity.codesmithtools.com/viewType.html?buildTypeId=Exceptionless_Master)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time .NET error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
+
+***
+ 
+_This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Exceptionless/wiki/Exceptionless-2.0-Overview) which is a work in progress. Please switch to the 1.x branch if you are looking for the stable version._
+
+***
 
 ## Getting Started
 
@@ -28,6 +34,7 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   2. Setup IIS and add the Exceptionless website.
   3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
   4. Change the WebsiteMode to Production in the Web.config appSettings section.
+  5. [Configure your clients](http://docs.exceptionless.com/contents/configuration/#self-hosted-options) to send errors to your installation.
 
 
 ##  How is Exceptionless licensed?
@@ -40,12 +47,19 @@ The server is licensed under the AGPL license to ensure that any modifications t
 
 We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
 
+## Contributing
+
+Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
+
+In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.com with the name of your organization and we will upgrade you to a paid plan.
+
 ## Roadmap
 
 This is a list of high level things that we are planning to do:
-- Refactor client so that the base client is a PCL library thus supporting WinRT and Mono.
-- Implement search features using ElasticSearch.
+- Refactor client so that the base client is a PCL library thus supporting WinRT and Mono. **(In Progress)**
+- Refactor the API to be MUCH simpler and allow for clients to be easily developed while at the same time making the entire sytem much more flexible and able to gather additional data like log messages and feature usage. **(In Progress)**
+- Implement search features using ElasticSearch. **(In Progress)**
 - JavaScript client for reporting client side errors.
-- Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS.
+- Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS. **(In Progress)**
   - **We are looking for an AngularJS consultant to work on rewriting our UI layer.**
-- Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications.
+- Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications. **(In Progress)**

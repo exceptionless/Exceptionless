@@ -1,0 +1,78 @@
+{
+    "OccurrenceDate": "2014-05-15T22:51:24.871+00:00",
+    "Modules": [
+        {
+            "ModuleId": 3,
+            "Name": "query-lang-2.13",
+            "Version": "2.13.0.0",
+            "IsEntry": false,
+            "CreatedDate": "2013-09-11T14:49:54.218Z",
+            "ModifiedDate": "2014-03-03T11:10:56Z",
+            "ExtendedData": {
+                "PublicKeyToken": "zzzzzzzz",
+                "FileVersion": "213.42.0.6"
+            }
+        }
+    ],
+    "EnvironmentInfo": {
+        "ProcessorCount": 24,
+        "ExtendedData": {
+            "AppDomainName": "/LM/W3SVC/4/ROOT/blah"
+        }
+    },
+    "Message": "The client disconnected.",
+    "Type": "System.Web.HttpException",
+    "Code": "500",
+    "ExtendedData": {
+        "__ExceptionInfo": "{\r\n  \"WebEventCode\": 3002,\r\n  \"ErrorCode\": -2147467259\r\n}"
+    },
+    "Inner": {
+        "Message": "Invalid viewstate. Client IP: 127.0.0.1 Port: 58663 Referer: http://www.sample.com/",
+        "Type": "System.Web.UI.ViewStateException",
+        "Code": "-2146233088",
+        "ExtendedData": {
+            "__ExceptionInfo": "{\r\n  \"RemoteAddress\": \"172.21.0.1\",\r\n  \"RemotePort\": \"58663\",\r\n  \"UserAgent\": \"Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko\",\r\n  \"Referer\": \"http://www.sample.com/\",\r\n\"IsConnected\": false\r\n}"
+        },
+        "Inner": null,
+        "StackTrace": [],
+        "TargetMethod": null
+    },
+    "StackTrace": [
+        {
+            "DeclaringNamespace": "System.Web.UI",
+            "DeclaringType": "ViewStateException",
+            "DeclaringTypeFullName": "System.Web.UI.ViewStateException",
+            "Name": "ThrowError",
+            "Parameters": [
+                {
+                    "Name": "inner",
+                    "Type": "Exception",
+                    "TypeNamespace": "System",
+                    "TypeFullName": "System.Exception",
+                    "ExtendedData": {},
+                    "GenericArguments": []
+                }
+            ]
+        }
+    ],
+    "TargetMethod": {
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Web.UI",
+        "DeclaringType": "ViewStateException",
+        "DeclaringTypeFullName": "System.Web.UI.ViewStateException",
+        "Name": "ThrowError",
+        "ModuleId": -1,
+        "ExtendedData": {},
+        "GenericArguments": [],
+        "Parameters": [
+            {
+                "Name": "inner",
+                "Type": "Exception",
+                "TypeNamespace": "System",
+                "TypeFullName": "System.Exception",
+                "ExtendedData": {},
+                "GenericArguments": []
+            }
+        ]
+    }
+}

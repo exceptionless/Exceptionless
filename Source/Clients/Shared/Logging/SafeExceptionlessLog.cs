@@ -10,13 +10,13 @@
 using System;
 
 namespace Exceptionless.Logging {
-    internal class SafeExceptionlessLog : IExceptionlessLog, IDisposable {
+    public class SafeExceptionlessLog : IExceptionlessLog, IDisposable {
         private readonly IExceptionlessLog _log;
         private readonly IExceptionlessLog _fallbackLog;
 
         public SafeExceptionlessLog(IExceptionlessLog log, IExceptionlessLog fallbackLog = null) {
             _log = log;
-            _fallbackLog = fallbackLog ?? new TraceExceptionlessLog();
+            _fallbackLog = fallbackLog ?? new NullExceptionlessLog();
         }
 
         public void Error(string message, string source = null, Exception exception = null) {

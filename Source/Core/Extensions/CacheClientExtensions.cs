@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using ServiceStack.CacheAccess;
+using Exceptionless.Core.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
@@ -24,6 +24,35 @@ namespace Exceptionless.Extensions {
             } catch (Exception) {
                 return defaultValue;
             }
+        }
+
+        public static long IncrementIf(this ICacheClient client, string key, uint value, TimeSpan timeToLive, bool shouldIncrement, long? startingValue = null) {
+            if (!startingValue.HasValue)
+                startingValue = 0;
+
+            var count = client.Get<long?>(key);
+            if (!shouldIncrement)
+                return count.HasValue ? count.Value : startingValue.Value;
+
+            if (count.HasValue)
+                return client.Increment(key, value);
+
+            long newValue = startingValue.Value + value;
+            client.Set(key, newValue, timeToLive);
+            return newValue;
+        }
+
+        public static long Increment(this ICacheClient client, string key, uint value, TimeSpan timeToLive, long? startingValue = null) {
+            if (!startingValue.HasValue)
+                startingValue = 0;
+
+            var count = client.Get<long?>(key);
+            if (count.HasValue)
+                return client.Increment(key, value);
+
+            long newValue = startingValue.Value + value;
+            client.Set(key, newValue, timeToLive);
+            return newValue;
         }
     }
 }

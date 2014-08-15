@@ -13,29 +13,23 @@ using System;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
-    public class IncrementCountersAction : ErrorPipelineActionBase {
-        private readonly IOrganizationRepository _organizationRepository;
+    public class IncrementCountersAction : EventPipelineActionBase {
         private readonly IAppStatsClient _stats;
 
-        public IncrementCountersAction(IOrganizationRepository organizationRepository, IAppStatsClient stats) {
-            _organizationRepository = organizationRepository;
+        public IncrementCountersAction(IAppStatsClient stats) {
             _stats = stats;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            var organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
-
-            if (organization == null)
-                return;
-
-            _stats.Counter(StatNames.ErrorsProcessed);
-            if (organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(StatNames.ErrorsPaidProcessed);
+        public override void Process(EventContext ctx) {
+            _stats.Counter(StatNames.EventsProcessed);
+            if (ctx.Organization.PlanId != BillingManager.FreePlan.Id)
+                _stats.Counter(StatNames.EventsPaidProcessed);
         }
     }
 }

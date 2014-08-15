@@ -10,51 +10,42 @@
 #endregion
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Queues;
-using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using NLog.Fluent;
-using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Jobs {
-    public class DailyNotificationJob : JobBase {
-        private readonly ProjectRepository _projectRepository;
-        private readonly IMessageFactory _messageFactory;
+    public class DailyNotificationJob : Job {
+        private readonly IProjectRepository _projectRepository;
+        private readonly IQueue<SummaryNotification> _summaryNotificationQueue;
 
-        public DailyNotificationJob(ProjectRepository projectRepository, IMessageFactory messageFactory) {
+        public DailyNotificationJob(IProjectRepository projectRepository, IQueue<SummaryNotification> summaryNotificationQueue) {
             _projectRepository = projectRepository;
-            _messageFactory = messageFactory;
+            _summaryNotificationQueue = summaryNotificationQueue;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Daily Notification job starting").Write();
 
-            if (!Settings.Current.EnableSummaryNotifications) {
-                return new JobResult {
-                    Result = "Summary Notifications are disabled.",
-                    Cancelled = true
-                };
-            }
+            if (!Settings.Current.EnableSummaryNotifications)
+                return Task.FromResult(new JobResult { Message = "Summary Notifications are disabled.", IsCancelled = true });
 
             const int BATCH_SIZE = 25;
 
-            // Send an email at 9:00am in the projects local time.
-            IMongoQuery query = Query.LT(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * 9)));
-            UpdateBuilder update = Update.Inc(ProjectRepository.FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
-
-            var projects = _projectRepository.Collection.FindAs<Project>(query).SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks).SetLimit(BATCH_SIZE).ToList();
+            // Get all project id's that should be sent at 9:00am in the projects local time.
+            var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             while (projects.Count > 0) {
-                IMongoQuery queryWithProjectIds = Query.And(Query.In(ProjectRepository.FieldNames.Id, projects.Select(p => new BsonObjectId(new ObjectId(p.Id)))), query);
-                var result = _projectRepository.Collection.Update(queryWithProjectIds, update, UpdateFlags.Multi);
-                Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, result.DocumentsAffected);
-
-                Debug.Assert(projects.Count == result.DocumentsAffected);
+                var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
+                Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, documentsUpdated);
+                Debug.Assert(projects.Count == documentsUpdated);
 
                 foreach (var project in projects) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
@@ -63,27 +54,23 @@ namespace Exceptionless.Core.Jobs {
                         continue;
                     }
 
-                    if (_messageFactory != null) {
-                        using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
-                            var notification = new SummaryNotification {
-                                Id = project.Id,
-                                UtcStartTime = utcStartTime,
-                                UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
-                            };
+                    if (_summaryNotificationQueue != null) {
+                        var notification = new SummaryNotification {
+                            Id = project.Id,
+                            UtcStartTime = utcStartTime,
+                            UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
+                        };
 
-                            Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
-                            messageProducer.Publish(notification);
-                        }
+                        Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
+                        _summaryNotificationQueue.EnqueueAsync(notification);
                     } else
                         Log.Error().Message("Message Factory is null").Write();
                 }
 
-                projects = _projectRepository.Collection.FindAs<Project>(query).SetFields(ProjectRepository.FieldNames.Id, ProjectRepository.FieldNames.NextSummaryEndOfDayTicks).SetLimit(BATCH_SIZE).ToList();
+                projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             }
 
-            return new JobResult {
-                Result = "Successfully enforced all retention limits."
-            };
+            return Task.FromResult(new JobResult { Message = "Successfully enforced all retention limits." });
         }
     }
 }

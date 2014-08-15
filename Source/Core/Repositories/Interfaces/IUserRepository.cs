@@ -10,15 +10,13 @@
 #endregion
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
-    public interface IUserRepository : IRepositoryWithIdentity<User> {
+namespace Exceptionless.Core.Repositories {
+    public interface IUserRepository : IRepository<User> {
         User GetByEmailAddress(string emailAddress);
-
         User GetByVerifyEmailAddressToken(string token);
-
-        IQueryable<User> GetByOrganizationId(string id);
+        ICollection<User> GetByOrganizationId(string id);
     }
 }

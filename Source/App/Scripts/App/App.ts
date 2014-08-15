@@ -11,8 +11,10 @@ module exceptionless {
         public static onPlanChanged = ko.observable<{ organizationId: string; }>();
         public static onOrganizationUpdated = ko.observable<{ organizationId: string; }>();
         public static onProjectUpdated = ko.observable<{ projectId: string; }>();
-        public static onStackUpdated = ko.observable<{ stackId: string; }>();
-        public static onErrorOccurred = ko.observable<{ projectId: string; }>();
+        public static onStackUpdated = ko.observable<{ projectId: string; id: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
+        public static onNewError = ko.observable<{ projectId: string; stackId: string; isHidden: boolean; isFixed: boolean; is404: boolean; }>();
+        public static onWentOverHourlyLimit = ko.observable<{ organizationId: string; }>();
+        public static onWentOverMonthlyLimit = ko.observable<{ organizationId: string; }>();
 
         public static organizations = ko.observableArray<models.Organization>([]);
         private static _previousOrganization: models.Organization;
@@ -67,7 +69,7 @@ module exceptionless {
                 App.updateTrunk8();
             });
 
-            ZeroClipboard.setDefaults({ moviePath: '/scripts/zeroclipboard.swf' });
+            ZeroClipboard.config({ moviePath: '/scripts/zeroclipboard.swf', forceHandCursor: true });
 
             moment.lang('en', {
                 relativeTime: {
@@ -87,8 +89,8 @@ module exceptionless {
                 }
             });
 
-            (<any>App).selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
-            (<any>App).selectedOrganization.subscribe((o)=> {
+            App.selectedOrganization.subscribe(o => App._previousOrganization = o, null, 'beforeChange');
+            App.selectedOrganization.subscribe((o)=> {
                 if (App._previousOrganization
                     && !StringUtil.isNullOrEmpty(App._previousOrganization.id)
                     && o
@@ -97,11 +99,29 @@ module exceptionless {
                     && (App._previousOrganization.isSuspended !== o.isSuspended)) {
                     location.reload();
                 }
+
+                $('#free-plan-notification').hide();
+                $('#monthly-limit-notification').hide();
+                $('#hourly-limit-notification').hide();
+
+                if (o.isOverMonthlyLimit)
+                    $('#monthly-limit-notification').show();
+                else if (o.isOverHourlyLimit)
+                    $('#hourly-limit-notification').show();
+                else if (o.planId === Constants.FREE_PLAN_ID)
+                    $('#free-plan-notification').show();
+            });
+
+            App.onNewError.subscribe(() => {
+                $('#hourly-limit-notification').hide();
+                $('#monthly-limit-notification').hide();
             });
 
             App.onPlanChanged.subscribe(() => App.refreshViewModelData());
             App.onOrganizationUpdated.subscribe(() => App.refreshViewModelData());
             App.onProjectUpdated.subscribe(() => App.refreshViewModelData());
+            App.onWentOverHourlyLimit.subscribe(() => App.refreshViewModelData());
+            App.onWentOverMonthlyLimit.subscribe(() => App.refreshViewModelData());
 
             App.refreshViewModelData();
 
@@ -146,7 +166,7 @@ module exceptionless {
             App.plans.sort((a: account.BillingPlan, b: account.BillingPlan) => { return a.price > b.price ? 1 : -1; });
 
             var organizations: models.Organization[] = [];
-            $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes)));
+            $.each(data.Organizations, (index, o) => organizations.push(new models.Organization(o.Id, o.Name, o.ProjectCount, o.StackCount, o.ErrorCount, o.TotalErrorCount, o.LastErrorDate, o.SubscribeDate, o.BillingChangeDate, o.BillingChangedByUserId, o.BillingStatus, o.BillingPrice, o.PlanId, o.CardLast4, o.StripeCustomerId, o.IsSuspended, o.SuspensionCode, o.SuspensionDate, o.SuspendedByUserId, o.SuspensionNotes, o.IsOverHourlyLimit, o.IsOverMonthlyLimit)));
             App.organizations(organizations);
             App.organizations.sort((a: models.Organization, b: models.Organization) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
@@ -156,7 +176,12 @@ module exceptionless {
             App.projects.sort((a: models.ProjectInfo, b: models.ProjectInfo) => { return a.name.toLowerCase() > b.name.toLowerCase() ? 1 : -1; });
 
             if (StringUtil.isNullOrEmpty(App.selectedProject().id)) {
-                var project = ko.utils.arrayFirst(App.projects(), (project: models.Project)=> project.id === DataUtil.getProjectId());
+                var project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.id === DataUtil.getProjectId());
+
+                var organizationId = DataUtil.getOrganizationId();
+                if (!StringUtil.isNullOrEmpty(organizationId) && (!project || project.organizationId !== organizationId))
+                    project = ko.utils.arrayFirst(App.projects(), (p: models.ProjectInfo) => p.organizationId === organizationId);
+
                 if (!project && App.projects().length > 0)
                     project = App.projects()[0];
 
@@ -172,25 +197,24 @@ module exceptionless {
             return ko.computed(() => App.selectedProject() && App.selectedProject().organization ? App.selectedProject().organization : new models.Organization('', 'Loading...', 0, 0, 0, 0));
         }
 
-        public static showChangePlanDialog(organization?: { id: string; name: string; planId: string }) {
+        public static showChangePlanDialog(org?: { id: string; name: string; planId: string }) {
             if (!App.enableBilling()) {
                 App.showErrorNotification('Plans cannot be changed while billing is disabled.');
                 return;
             }
 
-            if (!organization || StringUtil.isNullOrEmpty(organization.id))
-                organization = App.selectedOrganization();
+            if (!org || StringUtil.isNullOrEmpty(org.id))
+                org = App.selectedOrganization();
 
             // Detect if the current organization exists.
-            var org = ko.utils.arrayFirst(App.organizations(), o=> o.id === organization.id);
-            if (org == null) {
-                if (organization instanceof models.Organization)
-                    App.organizations.push(<models.Organization>organization);
+            if (ko.utils.arrayFirst(App.organizations(), o=> o.id === org.id) == null) {
+                if (org instanceof models.Organization)
+                    App.organizations.push(<models.Organization>org);
                 else
-                    App.organizations.push(new models.Organization(organization.id, organization.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, organization.name, '', ''));
+                    App.organizations.push(new models.Organization(org.id, org.name, 0, 0, 0, 0, new Date(), new Date(), new Date(), '', 0, 0, org.name, '', ''));
             }
 
-            $('#plan-modal').data('organizationId', organization.id).modal('show');
+            $('#plan-modal').data('organizationId', org.id).modal('show');
         }
 
         public static showConfirmDangerDialog(message: string, dangerButtonText: string, callback: (result: boolean) => void) {
@@ -265,7 +289,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.format(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDate'] = true;
@@ -277,7 +301,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDayYear(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithMonthDayYear'] = true;
@@ -289,7 +313,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithMonthDay(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithMonthDay'] = true;
@@ -301,7 +325,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFullDateAndTime(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatDateWithFullDateAndTime'] = true;
@@ -330,7 +354,7 @@ module exceptionless {
                             $(element).text(date.fromNow()).livestamp(date);
                         }
                     } else {
-                        $(element).text(value).livestamp('destroy');
+                        $(element).text(<any>value).livestamp('destroy');
                     }
                 }
             };
@@ -343,7 +367,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyFullDate(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyFullDate'] = true;
@@ -355,7 +379,7 @@ module exceptionless {
                     if (value)
                         $(element).text(DateUtil.formatWithFriendlyMonthDayYear(moment(value)));
                     else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['formatWithFriendlyMonthDayYear'] = true;
@@ -371,7 +395,7 @@ module exceptionless {
                             $(element).text((<any>value.start()).twix(value.end()).format());
                         }
                     } else
-                        $(element).text(value);
+                        $(element).text(<any>value);
                 }
             };
             ko.virtualElements.allowedBindings['customDateRangeFriendlyName'] = true;
@@ -510,14 +534,24 @@ module exceptionless {
                 App.onProjectUpdated({ projectId: projectId });
             };
 
-            notifier.client.stackUpdated = (projectId: string, stackId: string) => {
+            notifier.client.stackUpdated = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onStackUpdated({ stackId: stackId });
+                    App.onStackUpdated({ projectId: projectId, id: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
             };
 
-            notifier.client.newError = (projectId: string) => {
+            notifier.client.newError = (projectId: string, stackId: string, isHidden: boolean, isFixed: boolean, is404: boolean) => {
                 if (projectId === App.selectedProject().id)
-                    App.onErrorOccurred({ projectId: App.selectedProject().id });
+                    App.onNewError({ projectId: projectId, stackId: stackId, isHidden: isHidden, isFixed: isFixed, is404: is404 });
+            };
+
+
+            notifier.client.wentOverHourlyLimit = (organizationId: string) => {
+                App.onWentOverHourlyLimit({ organizationId: organizationId });
+            };
+
+
+            notifier.client.wentOverMonthlyLimit = (organizationId: string) => {
+                App.onWentOverMonthlyLimit({ organizationId: organizationId });
             };
 
             $.connection.hub.start();

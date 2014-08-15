@@ -24,11 +24,11 @@ namespace Exceptionless.Tests.Utility {
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendNotification() {
             var mailer = new Mailer(IoC.GetInstance<IEmailGenerator>());
-            mailer.SendNotice(Settings.Current.TestEmailAddress, new ErrorNotificationModel {
+            mailer.SendNotice(Settings.Current.TestEmailAddress, new EventNotificationModel {
                 BaseUrl = "http://app.exceptionless.com",
                 Code = "500",
-                ErrorId = "1",
-                ErrorStackId = "1",
+                EventId = "1",
+                StackId = "1",
                 FullTypeName = "SomeError",
                 IsCritical = true,
                 IsNew = true,
@@ -96,8 +96,8 @@ namespace Exceptionless.Tests.Utility {
                         Type = "SomeError"
                     }
                 },
-                New = new List<ErrorStack> {
-                    new ErrorStack {
+                New = new List<Stack> {
+                    new Stack {
                         DateFixed = DateTime.Now,
                         Description = "Error 1",
                         FirstOccurrence = DateTime.Now,

@@ -12,82 +12,117 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Utility;
-using Exceptionless.Models;
-using Newtonsoft.Json;
+using System.Text;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
     public static class ErrorExtensions {
-        public static Error ToProjectLocalTime(this Error error, Project project) {
-            if (error == null)
-                return null;
-
-            error.OccurrenceDate = TimeZoneInfo.ConvertTime(error.OccurrenceDate, project.DefaultTimeZone());
-            return error;
-        }
-
-        public static Error ToProjectLocalTime(this Error error, IProjectRepository repository) {
-            if (error == null)
-                return null;
-
-            return error.ToProjectLocalTime(repository.GetByIdCached(error.ProjectId));
-        }
-
-        public static T GetValue<T>(this ExtendedDataDictionary extendedData, string key) {
-            if (!extendedData.ContainsKey(key))
-                throw new KeyNotFoundException(String.Format("Key \"{0}\" not found in the dictionary.", key));
-
-            object data = extendedData[key];
-            if (data is T)
-                return (T)data;
-
-            if (data is string) {
-                try {
-                    return JsonConvert.DeserializeObject<T>((string)data);
-                } catch {}
-            }
-
-            try {
-                return data.ToType<T>();
-            } catch {}
-
-            return default(T);
-        }
-
-        public static Tuple<ErrorInfo, Method> GetStackingTarget(this Error error) {
-            ErrorInfo targetError = error;
+        public static StackingTarget GetStackingTarget(this Error error) {
+            InnerError targetError = error;
             while (targetError != null) {
                 StackFrame m = targetError.StackTrace.FirstOrDefault(st => st.IsSignatureTarget);
                 if (m != null)
-                    return Tuple.Create(targetError, m as Method);
+                    return new StackingTarget {
+                        Error = targetError,
+                        Method = m
+                    };
 
                 if (targetError.TargetMethod != null && targetError.TargetMethod.IsSignatureTarget)
-                    return Tuple.Create(targetError, targetError.TargetMethod);
+                    return new StackingTarget {
+                        Error = targetError,
+                        Method = targetError.TargetMethod
+                    };
 
                 targetError = targetError.Inner;
             }
 
-            return null;
+            // fallback to default
+            InnerError defaultError = error.GetInnermostError();
+            Method defaultMethod = defaultError.StackTrace != null ? defaultError.StackTrace.FirstOrDefault() : null;
+            if (defaultMethod == null && error.StackTrace != null) {
+                defaultMethod = error.StackTrace.FirstOrDefault();
+                defaultError = error;
+            }
+
+            return new StackingTarget {
+                Error = defaultError,
+                Method = defaultMethod
+            };
         }
 
-        public static ErrorInfo GetInnermostError(this Error error) {
+        public static InnerError GetInnermostError(this InnerError error) {
             if (error == null)
                 throw new ArgumentNullException("error");
 
-            ErrorInfo current = error;
+            InnerError current = error;
             while (current.Inner != null)
                 current = current.Inner;
 
             return current;
         }
 
-        public static StackingInfo GetStackingInfo(this Error error, ErrorSignatureFactory errorSignatureFactory = null) {
-            if (errorSignatureFactory == null)
-                errorSignatureFactory = new ErrorSignatureFactory();
-
-            return error == null ? null : new StackingInfo(error, errorSignatureFactory);
+        public static string ToExceptionStackString(this Error error) {
+            var sb = new StringBuilder(2048);
+            AppendError(error, sb);
+            return sb.ToString().Trim();
         }
+
+        public static string ToHtmlExceptionStackString(this Error error) {
+            var sb = new StringBuilder(4096);
+            AppendError(error, sb, true, traceIndentValue: " ");
+            return sb.ToString().Trim();
+        }
+
+        internal static void AppendError(Error error, StringBuilder sb, bool html = false, string traceIndentValue = "   ") {
+            var exList = new List<InnerError>();
+            InnerError currentEx = error;
+            if (html)
+                sb.Append("<span class=\"ex-header\">");
+            while (currentEx != null) {
+                if (html)
+                    sb.Append("<span class=\"ex-type\">");
+                sb.Append(html ? currentEx.Type.HtmlEntityEncode() : currentEx.Type);
+                if (html)
+                    sb.Append("</span>");
+
+                if (!String.IsNullOrEmpty(currentEx.Message)) {
+                    if (html)
+                        sb.Append("<span class=\"ex-message\">");
+                    sb.Append(": ").Append(html ? currentEx.Message.HtmlEntityEncode() : currentEx.Message);
+                    if (html)
+                        sb.Append("</span>");
+                }
+
+                if (currentEx.Inner != null) {
+                    if (html)
+                        sb.Append("</span><span class=\"ex-header\"><span class=\"ex-innersep\">");
+                    sb.Append(" ---> ");
+                    if (html)
+                        sb.Append("</span>");
+                }
+
+                exList.Add(currentEx);
+                currentEx = currentEx.Inner;
+            }
+            if (html)
+                sb.Append("</span>");
+            else
+                sb.AppendLine();
+
+            exList.Reverse();
+            foreach (InnerError ex in exList) {
+                if (ex.StackTrace != null && ex.StackTrace.Count > 0) {
+                    StackFrameCollectionExtensions.AppendStackFrames(ex.StackTrace, sb, true, linkFilePath: html, traceIndentValue: traceIndentValue);
+
+                    if (exList.Count > 1)
+                        sb.Append(traceIndentValue).AppendLine("--- End of inner exception stack trace ---");
+                }
+            }
+        }
+    }
+
+    public class StackingTarget {
+        public Method Method { get; set; }
+        public InnerError Error { get; set; }
     }
 }

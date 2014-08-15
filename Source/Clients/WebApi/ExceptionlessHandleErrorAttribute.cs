@@ -8,13 +8,13 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http.Filters;
+using Exceptionless.Dependency;
+using Exceptionless.Enrichments;
 #if !EMBEDDED
 using CodeSmith.Core.Component;
-
 #else
 using Exceptionless.Utility;
 #endif
@@ -30,14 +30,16 @@ namespace Exceptionless.WebApi {
             if (HasWrappedFilter)
                 WrappedFilter.ExecuteExceptionFilterAsync(actionExecutedContext, cancellationToken);
 
-            var contextData = new Dictionary<string, object> {
-                { "HttpActionContext", actionExecutedContext.ActionContext }
-            };
-            ExceptionlessClient.Current.ProcessUnhandledException(actionExecutedContext.Exception, "ExceptionHttpFilter", true, contextData);
+            var contextData = new ContextData();
+            contextData.MarkAsUnhandledError();
+            contextData.SetSubmissionMethod("ExceptionHttpFilter");
+            contextData.Add("HttpActionContext", actionExecutedContext.ActionContext);
+
+            actionExecutedContext.Exception.ToExceptionless(contextData).Submit();
         }
 
         public Task ExecuteExceptionFilterAsync(HttpActionExecutedContext actionExecutedContext, CancellationToken cancellationToken) {
-            ExceptionlessClient.Current.Log.Trace("ExecuteExceptionFilterAsync executing...");
+            ExceptionlessClient.Default.Configuration.Resolver.GetLog().Trace("ExecuteExceptionFilterAsync executing...");
             if (actionExecutedContext == null)
                 throw new ArgumentNullException("actionExecutedContext");
 

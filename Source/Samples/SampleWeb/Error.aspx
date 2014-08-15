@@ -5,11 +5,11 @@
 <script runat="server">
 
     protected void SendButton_Click(object sender, EventArgs e) {
-        string errorId = ExceptionlessClient.Current.GetLastErrorId();
+        string errorId = ExceptionlessClient.Default.GetLastErrorId();
         string emailAddress = EmailAddressTextBox.Text;
         string description = DetailTextBox.Text;
 
-        bool success = ExceptionlessClient.Current.UpdateUserEmailAndDescription(errorId, emailAddress, description);
+        bool success = ExceptionlessClient.Default.UpdateUserEmailAndDescription(errorId, emailAddress, description);
 
         if (!success) {
             GenericPanel.Visible = true;
@@ -24,7 +24,7 @@
 
     protected void Page_Load(object sender, EventArgs e) {
         if (!IsPostBack) {
-            if (String.IsNullOrEmpty(ExceptionlessClient.Current.GetLastErrorId())) {
+            if (String.IsNullOrEmpty(ExceptionlessClient.Default.GetLastErrorId())) {
                 GenericPanel.Visible = true;
                 AddDetailPanel.Visible = false;
                 DetailSubmitedPanel.Visible = false;

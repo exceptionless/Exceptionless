@@ -8,17 +8,13 @@ module exceptionless {
 
         errors: any;
         loading = ko.observable<boolean>(false);
-        updating = ko.observable<boolean>(false);
 
         constructor(elementId: string, url?: string, autoUpdate?: boolean) {
             this._elementId = elementId;
             this._url = url;
 
-            this.loading.subscribe((isLoading)=> {
-                if (this.updating())
-                    return;
-
-                var element = $(StringUtil.format('#{elementId} .loading-spinner', { elementId: this._elementId }));
+            this.loading.subscribe((isLoading) => {
+                var element = $(StringUtil.format('#{elementId} .loading-indicator', { elementId: this._elementId }));
                 if (element.length <= 0)
                     element = $(StringUtil.format('#{elementId}', { elementId: this._elementId }));
 
@@ -33,10 +29,8 @@ module exceptionless {
 
             if (!$.connection && autoUpdate) {
                 window.setInterval(() => {
-                    if (this.canRetrieve) {
-                        this.updating(true);
+                    if (this.canRetrieve)
                         this.refreshViewModelData();
-                    }
                 }, 10000);
             }
 
@@ -77,7 +71,7 @@ module exceptionless {
 
             $.ajax(resource, {
                 dataType: 'json',
-                success: (data: any) => {
+                success: (data: any)=> {
                     if (!success)
                         this.populateViewModel(data);
                     else if (success instanceof Function)
@@ -85,7 +79,7 @@ module exceptionless {
                     else
                         App.showSuccessNotification(success);
                 },
-                error: (jqXHR: JQueryXHR, status: string, errorThrown: string) => {
+                error: (jqXHR: JQueryXHR, status: string, errorThrown: string)=> {
                     if (!error)
                         return;
 
@@ -94,10 +88,7 @@ module exceptionless {
                     else
                         App.showErrorNotification(error);
                 },
-                complete: (jqXHR: JQueryXHR, textStatus: string) => {
-                    this.loading(false);
-                    this.updating(false);
-                }
+                complete: (jqXHR: JQueryXHR, textStatus: string) => this.loading(false)
             });
         }
 

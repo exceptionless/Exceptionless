@@ -1,0 +1,273 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Exceptionless.Api.Tests</RootNamespace>
+    <AssemblyName>Exceptionless.Api.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ApprovalTests">
+      <HintPath>..\..\packages\ApprovalTests.3.0.7\lib\net40\ApprovalTests.dll</HintPath>
+    </Reference>
+    <Reference Include="ApprovalUtilities">
+      <HintPath>..\..\packages\ApprovalUtilities.3.0.7\lib\net35\ApprovalUtilities.dll</HintPath>
+    </Reference>
+    <Reference Include="AutoMapper, Version=3.2.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\AutoMapper.3.2.1\lib\net40\AutoMapper.dll</HintPath>
+    </Reference>
+    <Reference Include="AutoMapper.Net4, Version=3.2.1.0, Culture=neutral, PublicKeyToken=be96cd2c38ef1005, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\AutoMapper.3.2.1\lib\net40\AutoMapper.Net4.dll</HintPath>
+    </Reference>
+    <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.0.1\lib\Elasticsearch.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="FluentValidation">
+      <HintPath>..\..\packages\FluentValidation.5.4.0.0\lib\Net40\FluentValidation.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Caching.AzureClientHelper">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.ApplicationServer.Caching.AzureClientHelper.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Caching.AzureCommon">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.ApplicationServer.Caching.AzureCommon.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Caching.Client">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.ApplicationServer.Caching.Client.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.ApplicationServer.Caching.Core">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.ApplicationServer.Caching.Core.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Owin">
+      <HintPath>..\..\packages\Microsoft.Owin.2.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.ServiceBus, Version=2.4.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\WindowsAzure.ServiceBus.2.4.2.0\lib\net40-full\Microsoft.ServiceBus.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.DistributedCache">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.Web.DistributedCache.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Configuration, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.2.0.3\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsFabric.Common">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.WindowsFabric.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.WindowsFabric.Data.Common">
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.Caching.2.4.0.0\lib\net40-full\Microsoft.WindowsFabric.Data.Common.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MongoDB.Bson">
+      <HintPath>..\..\packages\mongocsharpdriver.1.9.2\lib\net35\MongoDB.Bson.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="MongoDB.Driver">
+      <HintPath>..\..\packages\mongocsharpdriver.1.9.2\lib\net35\MongoDB.Driver.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NEST.1.0.1\lib\Nest.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.4\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Owin">
+      <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector">
+      <HintPath>..\..\packages\SimpleInjector.2.5.2\lib\net45\SimpleInjector.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SimpleInjector.Diagnostics">
+      <HintPath>..\..\packages\SimpleInjector.2.5.2\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping">
+      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.2.5.2\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SimpleInjector.Integration.WebApi">
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.2.5.2\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="SimpleInjector.Packaging">
+      <HintPath>..\..\packages\SimpleInjector.Packaging.2.5.2\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting">
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.2.0\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Web.Http">
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Core.5.2.0\lib\net45\System.Web.Http.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Http.Owin">
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Owin.5.2.0\lib\net45\System.Web.Http.Owin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="xunit">
+      <HintPath>..\..\packages\xunit.1.9.2\lib\net20\xunit.dll</HintPath>
+    </Reference>
+    <Reference Include="xunit.extensions">
+      <HintPath>..\..\packages\xunit.extensions.1.9.2\lib\net20\xunit.extensions.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Caching\AzureCacheClientTests.cs" />
+    <Compile Include="Caching\InMemoryCachingClientTests.cs" />
+    <Compile Include="Controllers\EventControllerTests.cs" />
+    <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Mail\MailerTests.cs" />
+    <Compile Include="Mail\NullMailer.cs" />
+    <Compile Include="Miscellaneous\DeltaTests.cs" />
+    <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
+    <Compile Include="Miscellaneous\RunTests.cs" />
+    <Compile Include="Pipeline\EventPipelineTests.cs" />
+    <Compile Include="Plugins\EventUpgraderTests.cs" />
+    <Compile Include="Queue\InMemoryQueueTests.cs" />
+    <Compile Include="Queue\Samples.cs" />
+    <Compile Include="Queue\ServiceBusQueueTests.cs" />
+    <Compile Include="Messaging\Samples.cs" />
+    <Compile Include="Messaging\ServiceBusMessagingTests.cs" />
+    <Compile Include="Messaging\InMemoryMessagingTests.cs" />
+    <Compile Include="Plugins\EventParserTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\ElasticSearchRepositoryTests.cs" />
+    <Compile Include="Repositories\WebHookRepositoryTests.cs" />
+    <Compile Include="Repositories\EventRepositoryTests.cs" />
+    <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
+    <Compile Include="Repositories\MongoRepositoryTests.cs" />
+    <Compile Include="SerializerTests.cs" />
+    <Compile Include="Utility\Approvals.cs" />
+    <Compile Include="Utility\StackData.cs" />
+    <Compile Include="Utility\EventData.cs" />
+    <Compile Include="Utility\IoC.cs" />
+    <Compile Include="Utility\OrganizationData.cs" />
+    <Compile Include="Utility\ProjectData.cs" />
+    <Compile Include="Utility\TestConstants.cs" />
+    <Compile Include="Utility\UserData.cs" />
+    <Compile Include="Validation\EventValidatorTests.cs" />
+    <Compile Include="Plugins\WebHookDataTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Api\Exceptionless.Api.csproj">
+      <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
+      <Name>Exceptionless.Api</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Clients\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
+      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Name>Exceptionless</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
+      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
+      <Name>CodeSmith.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
+      <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
+      <Name>Exceptionless.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
+      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
+      <Name>Exceptionless.Models</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="ErrorData\1477.expected.json" />
+    <None Include="ErrorData\1477.json" />
+    <None Include="ErrorData\1858.expected.json" />
+    <None Include="ErrorData\1858.json" />
+    <None Include="ErrorData\1954.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.expected.json" />
+    <None Include="ErrorData\404WithNoRequestInfo.json" />
+    <None Include="ErrorData\444.expected.json" />
+    <None Include="ErrorData\444.json" />
+    <None Include="ErrorData\500.expected.json" />
+    <None Include="ErrorData\500.json" />
+    <None Include="ErrorData\550.expected.json" />
+    <None Include="ErrorData\550.json" />
+    <None Include="ErrorData\601.expected.json" />
+    <None Include="ErrorData\601.json" />
+    <None Include="ErrorData\667.expected.json" />
+    <None Include="ErrorData\667.json" />
+    <None Include="ErrorData\684.expected.json" />
+    <None Include="ErrorData\684.json" />
+    <None Include="ErrorData\700.expected.json" />
+    <None Include="ErrorData\700.json" />
+    <None Include="ErrorData\750.expected.json" />
+    <None Include="ErrorData\750.json" />
+    <None Include="ErrorData\818.expected.json" />
+    <None Include="ErrorData\818.json" />
+    <None Include="ErrorData\881.expected.json" />
+    <None Include="ErrorData\881.json" />
+    <None Include="ErrorData\977.expected.json" />
+    <None Include="ErrorData\977.json" />
+    <None Include="nlog.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Plugins\WebHookData\v1.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
+    <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets')" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

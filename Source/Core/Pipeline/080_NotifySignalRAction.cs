@@ -11,24 +11,33 @@
 
 using System;
 using CodeSmith.Core.Component;
-using ServiceStack.Redis;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(80)]
-    public class NotifySignalRAction : ErrorPipelineActionBase {
-        public const string NOTIFICATION_CHANNEL_KEY = "notifications:signalr";
+    public class NotifySignalRAction : EventPipelineActionBase {
+        private readonly IMessagePublisher _publisher;
 
-        private readonly IRedisClientsManager _clientsManager;
-
-        public NotifySignalRAction(IRedisClientsManager clientsManager) {
-            _clientsManager = clientsManager;
+        public NotifySignalRAction(IMessagePublisher publisher) {
+            _publisher = publisher;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            using (IRedisClient client = _clientsManager.GetClient())
-                client.PublishMessage(NOTIFICATION_CHANNEL_KEY, String.Concat(ctx.Error.OrganizationId, ":", ctx.Error.ProjectId));
+        public override void Process(EventContext ctx) {
+            _publisher.PublishAsync(new EventOccurrence {
+                Id = ctx.Event.Id,
+                OrganizationId = ctx.Event.OrganizationId,
+                ProjectId = ctx.Event.ProjectId,
+                StackId = ctx.Event.StackId,
+                Type = ctx.Event.Type,
+                IsHidden = ctx.Event.IsHidden,
+                IsFixed = ctx.Event.IsFixed,
+                IsNotFound = ctx.Event.IsNotFound(),
+                IsRegression = ctx.IsRegression
+            });
         }
     }
 }

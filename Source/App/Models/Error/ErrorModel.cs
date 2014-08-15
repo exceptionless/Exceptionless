@@ -17,18 +17,18 @@ using Exceptionless.Models;
 using UAParser;
 
 namespace Exceptionless.App.Models.Error {
-    public class ErrorModel : Exceptionless.Models.Error {
+    public class ErrorModel : Exceptionless.Models.Data.Error {
         public virtual void PopulateExtraInfo() {
-            if (RequestInfo != null && RequestInfo.UserAgent != null) {
-                Parser parser = Parser.GetDefault();
-                UserAgentInfo = parser.Parse(RequestInfo.UserAgent);
-            }
+            //if (RequestInfo != null && RequestInfo.UserAgent != null) {
+            //    Parser parser = Parser.GetDefault();
+            //    UserAgentInfo = parser.Parse(RequestInfo.UserAgent);
+            //}
 
-            StackingInfo st = this.GetStackingInfo();
-            StackingType = st.FullTypeName;
-            StackingMethod = st.MethodName;
-            StackingMessage = st.Message;
-            StackingExtendedData = st.Error.ExtendedData;
+            //StackingInfo st = this.GetStackingInfo();
+            //StackingType = st.FullTypeName;
+            //StackingMethod = st.MethodName;
+            //StackingMessage = st.Message;
+            //StackingExtendedData = st.Error.Data;
         }
 
         public DateTimeOffset ClientTime { get; set; }
@@ -40,6 +40,6 @@ namespace Exceptionless.App.Models.Error {
         public string StackingType { get; set; }
         public string StackingMethod { get; set; }
         public string StackingMessage { get; set; }
-        public ExtendedDataDictionary StackingExtendedData { get; set; }
+        public DataDictionary StackingExtendedData { get; set; }
     }
 }

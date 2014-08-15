@@ -1,192 +1,107 @@
-﻿#region Copyright 2014 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
+﻿using System;
 using System.Linq;
-using System.Threading;
-using Exceptionless.Logging;
+using Exceptionless;
+using Exceptionless.Api;
+using Exceptionless.Core;
+using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
+using Exceptionless.Dependency;
 using Exceptionless.Models;
-using Exceptionless.Queue;
+using Exceptionless.Storage;
+using Microsoft.Owin.Hosting;
+using SimpleInjector;
 using Xunit;
-using Xunit.Helpers;
 
-namespace Exceptionless.Client.Tests {
-    public class ExceptionlessClientTests : MarshalByRefObject {
-        [Fact]
-        public void CanSubmit() {
-            ExceptionlessClient client = GetClient();
-
-            try {
-                throw new ApplicationException();
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-            }
-
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
-            Error error = client.Queue.GetError(manifests[0].Id);
-            Assert.NotNull(error);
-
-            client.ProcessQueue();
-            manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(0, manifests.Count);
-        }
-
-        [PartialTrustFact]
-        public void CanSubmitInMediumTrust() {
-            ExceptionlessClient client = GetClient();
-
-            try {
-                throw new ApplicationException();
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-            }
-
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
-            Error error = client.Queue.GetError(manifests[0].Id);
-            Assert.NotNull(error);
-
-            client.ProcessQueue();
-            manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(0, manifests.Count);
+namespace Client.Tests {
+    public class ExceptionlessClientTests {
+        private ExceptionlessClient CreateClient() {
+            return new ExceptionlessClient(c => {
+                c.ApiKey = DataHelper.SAMPLE_API_KEY;
+                c.ServerUrl = Settings.Current.BaseURL;
+                c.EnableSSL = false;
+                c.UseDebugLogger();
+                c.UserAgent = "testclient/1.0.0.0";
+            });
         }
 
         [Fact]
-        public void IgnoreDuplicate() {
-            ExceptionlessClient client = GetClient();
+        public void CanSubmitSimpleEvent() {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                Assert.NotNull(queue);
+                Assert.Equal(0, queue.Count);
+                
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
+          
+                EnsureSampleData(container);
 
-            try {
-                throw new ApplicationException();
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-                client.SubmitError(ex);
+                var client = CreateClient();
+                client.SubmitEvent(new Event { Message = "Test" });
+
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
+                Assert.NotNull(storage);
+                Assert.Equal(1, storage.GetFileList().Count());
+
+                client.ProcessQueue();
+                statsCounter.WaitForCounter(StatNames.EventsProcessed);
+
+                Assert.Equal(0, queue.Count);
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
             }
-
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
         }
 
         [Fact]
-        public void DuplicatesAllowedAfter2Seconds() {
-            ExceptionlessClient client = GetClient();
+        public void CanSubmitSimpleException() {
+            var container = AppBuilder.CreateContainer();
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                Assert.NotNull(queue);
+                Assert.Equal(0, queue.Count);
 
-            try {
-                throw new ApplicationException();
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-                Thread.Sleep(TimeSpan.FromSeconds(2));
-                client.SubmitError(ex);
-            }
+                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
 
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(2, manifests.Count);
-        }
+                EnsureSampleData(container);
 
-        [Fact]
-        public void IgnoresDuplicateWrappedErrors() {
-            ExceptionlessClient client = GetClient();
+                var client = CreateClient();
+                try {
+                    throw new Exception("Simple Exception");
+                } catch (Exception ex) {
+                    client.SubmitException(ex);
+                }
 
-            try {
-                ThrowAndReportAndRethrowWrappedException(client);
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-            }
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage; 
+                Assert.NotNull(storage);
+                Assert.Equal(1, storage.GetFileList().Count());
+                
+                client.ProcessQueue();
+                statsCounter.WaitForCounter(StatNames.EventsProcessed);
 
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
-        }
-
-        [Fact(Skip = "We do not currently support this because the stack traces aren't the same.")]
-        public void IgnoreDuplicateErrorsWithSimilarStackTrace() {
-            ExceptionlessClient client = GetClient();
-
-            try {
-                ThrowAndReportAndRethrowException(client);
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-            }
-
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
-        }
-
-        [Fact(Skip = "This is not working yet.")]
-        public void CanSubmitFromAppDomain() {
-            var client = new ExceptionlessClient();
-
-            var domainSetup = new AppDomainSetup {
-                ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
-                ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile,
-                ApplicationName = AppDomain.CurrentDomain.SetupInformation.ApplicationName,
-                LoaderOptimization = LoaderOptimization.MultiDomainHost
-            };
-            AppDomain domain = AppDomain.CreateDomain("test", null, domainSetup);
-            domain.UnhandledException += (sender, args) => Debug.WriteLine("Hello");
-
-            client.Startup(domain);
-            var remoteClass = new RemoteClass();
-            try {
-                domain.DoCallBack(() => {
-                    try {
-                        throw new ApplicationException();
-                    } catch (Exception ex) {
-                        client.SubmitError(ex);
-                        throw;
-                    }
-                });
-            } catch {}
-
-            List<Manifest> manifests = client.Queue.GetManifests().ToList();
-            Assert.Equal(1, manifests.Count);
-        }
-
-        private ExceptionlessClient GetClient() {
-            var client = new ExceptionlessClient();
-            client.Log = new TraceExceptionlessLog();
-            client.Configuration.TestMode = true;
-
-            return client;
-        }
-
-        private void ThrowAndReportAndRethrowException(ExceptionlessClient client) {
-            try {
-                throw new ApplicationException(Guid.NewGuid().ToString());
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-                throw;
+                Assert.Equal(0, queue.Count);
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
+                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
             }
         }
 
-        private void ThrowAndReportAndRethrowWrappedException(ExceptionlessClient client) {
-            try {
-                throw new ApplicationException(Guid.NewGuid().ToString());
-            } catch (Exception ex) {
-                client.SubmitError(ex);
-                throw new Exception("Wrapped", ex);
-            }
-        }
-    }
-
-    [Serializable]
-    public class RemoteClass {
-        public void SomeMethod() {
-            try {
-                throw new ApplicationException();
-            } catch (Exception ex) {
-                ExceptionlessClient.Current.SubmitError(ex);
-                throw;
-            }
+        private void EnsureSampleData(Container container) {
+            var dataHelper = container.GetInstance<DataHelper>();
+            var userRepository = container.GetInstance<IUserRepository>();
+            var user = userRepository.GetByEmailAddress("test@test.com");
+            if (user == null)
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@test.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue});
+            dataHelper.CreateSampleOrganizationAndProject(user.Id);
         }
     }
 }

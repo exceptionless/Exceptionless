@@ -10,12 +10,20 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 
-namespace Exceptionless.Core {
-    public interface IOrganizationRepository : IRepositoryWithIdentity<Organization> {
+namespace Exceptionless.Core.Repositories {
+    public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
-
         Organization GetByStripeCustomerId(string customerId);
+        ICollection<Organization> GetAbandoned(int? limit = 20);
+        ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
+        void IncrementEventCounter(string organizationId, long eventCount = 1);
+        ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
+        BillingPlanStats GetBillingPlanStats();
+        bool IncrementUsage(string organizationId, int count = 1);
+        int GetRemainingEventLimit(string organizationId);
     }
 }

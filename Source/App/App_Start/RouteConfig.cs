@@ -12,8 +12,8 @@
 using System;
 using System.Web.Mvc;
 using System.Web.Routing;
-using Exceptionless.Core.Controllers;
-using Exceptionless.Core.Extensions;
+using Exceptionless.App.Controllers;
+using Exceptionless.App.Extensions;
 
 namespace Exceptionless.App {
     public static class RouteConfig {

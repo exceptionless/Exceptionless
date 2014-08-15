@@ -4,17 +4,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
-#if !EMBEDDED
 namespace CodeSmith.Core.Extensions {
-    public
-#else
-namespace Exceptionless.Extensions {
-    internal
-#endif
-    static class TypeExtensions
-    {
-        public static bool IsNullable(this Type type)
-        {
+    public static class TypeExtensions {
+        public static bool IsNullable(this Type type) {
             if (type.IsValueType)
                 return false;
 
@@ -25,8 +17,7 @@ namespace Exceptionless.Extensions {
             if (type.IsArray)
                 return false;
 
-            switch (Type.GetTypeCode(type))
-            {
+            switch (Type.GetTypeCode(type)) {
                 case TypeCode.Byte:
                 case TypeCode.Decimal:
                 case TypeCode.Double:
@@ -43,7 +34,7 @@ namespace Exceptionless.Extensions {
 
             return false;
         }
-        
+
         public static T ToType<T>(this object value) {
             if (value == null)
                 throw new ArgumentNullException("value");
@@ -51,10 +42,10 @@ namespace Exceptionless.Extensions {
             Type targetType = typeof(T);
             TypeConverter converter = TypeDescriptor.GetConverter(targetType);
             Type valueType = value.GetType();
-            
+
             if (targetType.IsAssignableFrom(valueType))
                 return (T)value;
-            
+
             if ((valueType.IsEnum || value is string) && targetType.IsEnum) {
                 // attempt to match enum by name.
                 if (EnumHelper.TryEnumIsDefined(targetType, value.ToString())) {
@@ -65,7 +56,7 @@ namespace Exceptionless.Extensions {
                 var message = String.Format("The Enum value of '{0}' is not defined as a valid value for '{1}'.", value, targetType.FullName);
                 throw new ArgumentException(message);
             }
-            
+
             if (valueType.IsNumeric() && targetType.IsEnum)
                 return (T)Enum.ToObject(targetType, value);
 
@@ -79,16 +70,11 @@ namespace Exceptionless.Extensions {
                     object convertedValue = Convert.ChangeType(value, targetType);
                     return (T)convertedValue;
                 } catch (Exception e) {
-                    throw new ArgumentException(
-                        String.Format(
-                            "An incompatible value specified.  Target Type: {0} Value Type: {1}",
-                            targetType.FullName, value.GetType().FullName), "value", e);
+                    throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value", e);
                 }
             }
 
-            throw new ArgumentException(
-                String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}",
-                    targetType.FullName, value.GetType().FullName), "value");
+            throw new ArgumentException(String.Format("An incompatible value specified.  Target Type: {0} Value Type: {1}", targetType.FullName, value.GetType().FullName), "value");
         }
 
         public static PropertyInfo[] GetPublicProperties(this Type type) {
@@ -109,13 +95,9 @@ namespace Exceptionless.Extensions {
                         queue.Enqueue(subInterface);
                     }
 
-                    var typeProperties = subType.GetProperties(
-                        BindingFlags.FlattenHierarchy
-                        | BindingFlags.Public
-                        | BindingFlags.Instance);
+                    var typeProperties = subType.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
 
-                    var newPropertyInfos = typeProperties
-                        .Where(x => !propertyInfos.Contains(x));
+                    var newPropertyInfos = typeProperties.Where(x => !propertyInfos.Contains(x));
 
                     propertyInfos.InsertRange(0, newPropertyInfos);
                 }
@@ -123,8 +105,7 @@ namespace Exceptionless.Extensions {
                 return propertyInfos.ToArray();
             }
 
-            return type.GetProperties(BindingFlags.FlattenHierarchy
-                | BindingFlags.Public | BindingFlags.Instance);
+            return type.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
         }
     }
 }

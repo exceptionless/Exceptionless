@@ -1,0 +1,15 @@
+﻿{
+  "Data": {
+    "User": "\"You\""
+  },
+  "Type": "error",
+  "error": {
+    "Inner": {
+      "Data": {
+        "Data": {
+          "Blah": "Blah"
+        }
+      }
+    }
+  }
+}

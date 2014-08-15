@@ -1,0 +1,160 @@
+﻿{
+  "Id": "80000000b77efe1fc4cf9e2d",
+  "OccurrenceDate": "2013-05-03T07:41:43.86797-05:00",
+  "Tags": [],
+  "UserName": "Example\\Example",
+  "RequestInfo": {
+    "UserAgent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.64 Safari/537.31",
+    "HttpMethod": "GET",
+    "IsSecure": false,
+    "Host": "localhost",
+    "Port": 65508,
+    "Path": "/default.aspx",
+    "ClientIpAddress": "::1",
+    "Cookies": {
+      "__AntiXsrfToken": "7332d5254d4b43738d20d947c8323248",
+      "Blah": "blah",
+      "uvf": "1",
+      "_extads1": "438",
+      "_extad6": "2:3T2T4T1T5T6",
+      "_expvnum1": "15",
+      "_expermvid1": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47-46933791134506464",
+      "__atuvc": "14%7C18",
+      "_exuc2_668": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47:1367157376.790807"
+    },
+    "Form": {},
+    "QueryString": {},
+    "ExtendedData": {}
+  },
+  "ExceptionlessClientInfo": {
+    "Version": "0.9.0.977",
+    "InstallIdentifier": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47",
+    "InstallDate": "2013-03-14T11:54:17-05:00",
+    "StartCount": 496,
+    "SubmitCount": 296700,
+    "Platform": ".NET Web",
+    "SubmissionMethod": "Manual"
+  },
+  "Modules": [],
+  "EnvironmentInfo": {
+    "ProcessorCount": 12,
+    "TotalPhysicalMemory": 17120079872,
+    "AvailablePhysicalMemory": 9523634176,
+    "CommandLine": "\"C:\\Program Files (x86)\\Common Files\\Microsoft Shared\\DevServer\\11.0\\WebDev.WebServer40.exe\" /port:65508 /path:\"D:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Web\" /vpath:\"/\"",
+    "ProcessName": "C:\\Program Files (x86)\\Common Files\\Microsoft Shared\\DevServer\\11.0\\WebDev.WebServer40.exe",
+    "ProcessId": "8132",
+    "ProcessMemorySize": 63827968,
+    "ThreadId": "13552",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows 8 Enterprise",
+    "OSVersion": "6.2.9200.0",
+    "MachineName": "Example",
+    "RuntimeVersion": "4.0.30319.18033",
+    "IpAddress": "127.0.0.1",
+    "ExtendedData": {
+      "AppDomainName": "dea050bf-8-130120585010002944"
+    }
+  },
+  "Message": "1 broken rule. All rules must pass. Type: Employees - LastName is a required field. State: { EmployeeId = 0 FirstName = Example LastName = <null> Email = <null> ManagerId = <null> CreatedBy = 1 UpdatedBy = 0 }",
+  "Type": "CodeSmith.Data.Rules.BrokenRuleException",
+  "ExtendedData": {
+    "__ExceptionInfo": "Unable to serialize extended data key \"__ExceptionInfo\" of type \"System.Collections.Generic.Dictionary`2[System.String,System.Object]\". System.Resources.MissingManifestResourceException: Should have Exceptionless.Json.Dynamic.snk as an embedded resource.\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.GetStrongKey()\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.Init()\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.get_ModuleBuilder()\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.GenerateWrapperType(Type interfaceType, Type underlyingType)\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.GetWrapper(Type interfaceType, Type realObjectType)\r\n   at Exceptionless.Json.Utilities.DynamicWrapper.CreateWrapper[T](Object realObject)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetAssociateMetadataTypeFromAttribute(Type type)\r\n   at Exceptionless.Json.Utilities.ThreadSafeStore`2.AddValue(TKey key)\r\n   at Exceptionless.Json.Utilities.ThreadSafeStore`2.Get(TKey key)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetAssociatedMetadataType(Type type)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetAttribute[T](Type type)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetAttribute[T](Object provider)\r\n   at Exceptionless.Json.Utilities.ThreadSafeStore`2.AddValue(TKey key)\r\n   at Exceptionless.Json.Utilities.ThreadSafeStore`2.Get(TKey key)\r\n   at Exceptionless.Json.Serialization.CachedAttributeGetter`1.GetAttribute(Object type)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetJsonContainerAttribute(Type type)\r\n   at Exceptionless.Json.Serialization.JsonTypeReflector.GetJsonObjectAttribute(Type type)\r\n   at Exceptionless.Json.Serialization.DefaultContractResolver.CreateContract(Type objectType)\r\n   at Exceptionless.Json.Serialization.DefaultContractResolver.ResolveContract(Type type)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.GetContractSafe(Object value)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.CalculatePropertyValues(JsonWriter writer, Object value, JsonContainerContract contract, JsonProperty member, JsonProperty property, JsonContract& memberContract, Object& memberValue)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeObject(JsonWriter writer, Object value, JsonObjectContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeValue(JsonWriter writer, Object value, JsonContract valueContract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeObject(JsonWriter writer, Object value, JsonObjectContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeValue(JsonWriter writer, Object value, JsonContract valueContract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeObject(JsonWriter writer, Object value, JsonObjectContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeValue(JsonWriter writer, Object value, JsonContract valueContract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeList(JsonWriter writer, IEnumerable values, JsonArrayContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeValue(JsonWriter writer, Object value, JsonContract valueContract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeDictionary(JsonWriter writer, IDictionary values, JsonDictionaryContract contract, JsonProperty member, JsonContainerContract collectionContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.SerializeValue(JsonWriter writer, Object value, JsonContract valueContract, JsonProperty member, JsonContainerContract containerContract, JsonProperty containerProperty)\r\n   at Exceptionless.Json.Serialization.JsonSerializerInternalWriter.Serialize(JsonWriter jsonWriter, Object value, Type objectType)\r\n   at Exceptionless.Json.JsonSerializer.SerializeInternal(JsonWriter jsonWriter, Object value, Type objectType)\r\n   at Exceptionless.Json.JsonSerializer.Serialize(JsonWriter jsonWriter, Object value)\r\n   at Exceptionless.Serialization.ModelSerializer.SerializeToString(Object data, Nullable`1 maxDepth, ICollection`1 excludedPropertyNames, Boolean ignoreSerializationErrors)\r\n   at Exceptionless.Queue.QueueManager.SerializeExtendedDataObjectsToStrings(String id, ExtendedDataDictionary extendedData)"
+  },
+  "StackTrace": [
+    {
+      "FileName": "d:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Data\\UglyDataContext.Generated.cs",
+      "LineNumber": 1474,
+      "Column": 17,
+      "IsSignatureTarget": false,
+      "DeclaringNamespace": "Ugly.Data",
+      "DeclaringType": "UglyDataContext",
+      "DeclaringTypeFullName": "Ugly.Data.UglyDataContext",
+      "FullName": "Ugly.Data.UglyDataContext.SubmitChanges",
+      "Signature": "Ugly.Data.UglyDataContext.SubmitChanges(ConflictMode failureMode)",
+      "Name": "SubmitChanges",
+      "ModuleId": -1,
+      "ExtendedData": {},
+      "GenericArguments": [],
+      "Parameters": [
+        {
+          "Name": "failureMode",
+          "Type": "ConflictMode",
+          "TypeNamespace": "System.Data.Linq",
+          "TypeFullName": "System.Data.Linq.ConflictMode",
+          "ExtendedData": {},
+          "GenericArguments": []
+        }
+      ]
+    },
+    {
+      "LineNumber": 0,
+      "Column": 0,
+      "IsSignatureTarget": false,
+      "DeclaringNamespace": "System.Data.Linq",
+      "DeclaringType": "DataContext",
+      "DeclaringTypeFullName": "System.Data.Linq.DataContext",
+      "FullName": "System.Data.Linq.DataContext.SubmitChanges",
+      "Signature": "System.Data.Linq.DataContext.SubmitChanges()",
+      "Name": "SubmitChanges",
+      "ModuleId": -1,
+      "ExtendedData": {},
+      "GenericArguments": [],
+      "Parameters": []
+    },
+    {
+      "FileName": "d:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Web\\Default.aspx.cs",
+      "LineNumber": 20,
+      "Column": 17,
+      "IsSignatureTarget": false,
+      "DeclaringNamespace": "Ugly.Web",
+      "DeclaringType": "_Default",
+      "DeclaringTypeFullName": "Ugly.Web._Default",
+      "FullName": "Ugly.Web._Default.Page_Load",
+      "Signature": "Ugly.Web._Default.Page_Load(Object sender, EventArgs e)",
+      "Name": "Page_Load",
+      "ModuleId": -1,
+      "ExtendedData": {},
+      "GenericArguments": [],
+      "Parameters": [
+        {
+          "Name": "sender",
+          "Type": "Object",
+          "TypeNamespace": "System",
+          "TypeFullName": "System.Object",
+          "ExtendedData": {},
+          "GenericArguments": []
+        },
+        {
+          "Name": "e",
+          "Type": "EventArgs",
+          "TypeNamespace": "System",
+          "TypeFullName": "System.EventArgs",
+          "ExtendedData": {},
+          "GenericArguments": []
+        }
+      ]
+    }
+  ],
+  "TargetMethod": {
+    "IsSignatureTarget": false,
+    "DeclaringNamespace": "Ugly.Data",
+    "DeclaringType": "UglyDataContext",
+    "DeclaringTypeFullName": "Ugly.Data.UglyDataContext",
+    "FullName": "Ugly.Data.UglyDataContext.SubmitChanges",
+    "Signature": "Ugly.Data.UglyDataContext.SubmitChanges(ConflictMode failureMode)",
+    "Name": "SubmitChanges",
+    "ModuleId": -1,
+    "ExtendedData": {},
+    "GenericArguments": [],
+    "Parameters": [
+      {
+        "Name": "failureMode",
+        "Type": "ConflictMode",
+        "TypeNamespace": "System.Data.Linq",
+        "TypeFullName": "System.Data.Linq.ConflictMode",
+        "ExtendedData": {},
+        "GenericArguments": []
+      }
+    ]
+  }
+}

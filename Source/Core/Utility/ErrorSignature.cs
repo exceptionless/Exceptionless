@@ -16,15 +16,16 @@ using System.Text;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignature {
         private readonly HashSet<string> _userNamespaces = new HashSet<string>();
         private readonly HashSet<string> _userCommonMethods = new HashSet<string>();
-        private static readonly string[] _defaultNonUserNamespaces = new[] { "System", "Microsoft" };
+        private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
         // TODO: Add support for user public key token on signed assemblies
 
-        public ErrorSignature(ErrorInfo error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
+        public ErrorSignature(Error error, IEnumerable<string> userNamespaces = null, IEnumerable<string> userCommonMethods = null, bool emptyNamespaceIsUserMethod = true, bool shouldFlagSignatureTarget = true) {
             if (error == null)
                 throw new ArgumentNullException("error");
 
@@ -40,7 +41,7 @@ namespace Exceptionless.Core.Utility {
 
             EmptyNamespaceIsUserMethod = emptyNamespaceIsUserMethod;
 
-            SignatureInfo = new ConfigurationDictionary();
+            SignatureInfo = new SettingsDictionary();
             ShouldFlagSignatureTarget = shouldFlagSignatureTarget;
 
             Parse();
@@ -50,11 +51,11 @@ namespace Exceptionless.Core.Utility {
 
         public string[] UserCommonMethods { get { return _userCommonMethods.ToArray(); } }
 
-        public ErrorInfo Error { get; private set; }
+        public Error Error { get; private set; }
 
         public bool EmptyNamespaceIsUserMethod { get; private set; }
 
-        public ConfigurationDictionary SignatureInfo { get; private set; }
+        public SettingsDictionary SignatureInfo { get; private set; }
 
         public string SignatureHash { get; private set; }
 
@@ -65,10 +66,8 @@ namespace Exceptionless.Core.Utility {
             SignatureInfo.Clear();
 
             // start at the inner most exception and work our way out until we find a user method
-            ErrorInfo current = Error;
-            var errorStack = new List<ErrorInfo> {
-                current
-            };
+            InnerError current = Error;
+            var errorStack = new List<InnerError> { current };
             while (current.Inner != null) {
                 current = current.Inner;
                 errorStack.Add(current);
@@ -80,7 +79,7 @@ namespace Exceptionless.Core.Utility {
             if (ShouldFlagSignatureTarget)
                 errorStack.ForEach(es => es.StackTrace.ForEach(st => st.IsSignatureTarget = false));
 
-            foreach (ErrorInfo e in errorStack) {
+            foreach (InnerError e in errorStack) {
                 StackFrameCollection stackTrace = e.StackTrace;
                 if (stackTrace == null)
                     continue;
@@ -96,29 +95,33 @@ namespace Exceptionless.Core.Utility {
                 }
             }
 
-            // we haven't found a user method yet, try some alternatives with the inner most error
-            ErrorInfo innerMostError = errorStack[0];
+            // We haven't found a user method yet, try some alternatives with the inner most error.
+            InnerError innerMostError = errorStack[0];
 
             if (innerMostError.TargetMethod != null) {
-                // use the target method if it exists
+                // Use the target method if it exists.
                 SignatureInfo.Add("ExceptionType", innerMostError.Type);
                 SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.TargetMethod));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.TargetMethod.IsSignatureTarget = true;
-                AddSpecialCaseDetails(innerMostError);
             } else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0) {
-                // use the topmost stack frame
+                // Use the topmost stack frame.
                 SignatureInfo.Add("ExceptionType", innerMostError.Type);
                 SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.StackTrace[0].IsSignatureTarget = true;
-                AddSpecialCaseDetails(innerMostError);
             } else {
-                // all else failed, use the type and message
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Message", innerMostError.Message);
-                AddSpecialCaseDetails(innerMostError);
+                // All else failed, use the type and message.
+                if (!String.IsNullOrWhiteSpace(innerMostError.Type))
+                    SignatureInfo.Add("ExceptionType", innerMostError.Type);
+
+                if (!String.IsNullOrWhiteSpace(innerMostError.Message))
+                    SignatureInfo.Add("Message", innerMostError.Message);
             }
+
+            AddSpecialCaseDetails(innerMostError);
+            if (SignatureInfo.Count == 0)
+                SignatureInfo.Add("NoStackingInformation", Guid.NewGuid().ToString());
 
             UpdateInfo(false);
         }
@@ -129,7 +132,7 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void RecalculateHash() {
-            SignatureHash = SignatureInfo.Values.ToSHA1();
+            SignatureHash = SignatureInfo.Values.Any(v => v != null) ? SignatureInfo.Values.ToSHA1() : null;
         }
 
         private string GetStackFrameSignature(Method method) {
@@ -138,7 +141,7 @@ namespace Exceptionless.Core.Utility {
             if (method == null)
                 return builder.ToString();
 
-            builder.Append(method.Signature);
+            builder.Append(method.GetSignature());
 
             return builder.ToString();
         }
@@ -158,7 +161,7 @@ namespace Exceptionless.Core.Utility {
                     return false;
             }
 
-            return !UserCommonMethods.Any(frame.Signature.Contains);
+            return !UserCommonMethods.Any(frame.GetSignature().Contains);
         }
 
         private bool IsUserNamespace(string fullName) {
@@ -169,11 +172,11 @@ namespace Exceptionless.Core.Utility {
             return UserNamespaces.Any(fullName.StartsWith);
         }
 
-        private void AddSpecialCaseDetails(ErrorInfo error) {
-            if (!error.ExtendedData.ContainsKey(ExtendedDataDictionary.EXCEPTION_INFO_KEY))
+        private void AddSpecialCaseDetails(InnerError error) {
+            if (!error.Data.ContainsKey(Error.KnownDataKeys.ExtraProperties))
                 return;
 
-            var extraProperties = error.ExtendedData.GetValue<Dictionary<string, object>>(ExtendedDataDictionary.EXCEPTION_INFO_KEY);
+            var extraProperties = error.Data.GetValue<Dictionary<string, object>>(Error.KnownDataKeys.ExtraProperties);
             if (extraProperties == null)
                 return;
 

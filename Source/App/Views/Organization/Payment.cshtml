@@ -7,7 +7,7 @@
 <div class="container invoice">
     <div class="row">
         <div class="span4">
-            <img src="/images/exceptionless-logo.png" title="logo">
+            <img src="/images/exceptionless.png" title="logo">
             <address>
                 <strong>Exceptionless</strong><br>
                 5250 Hwy 78, Suite 750-324<br>
@@ -61,9 +61,9 @@
                             @foreach (var line in Model.Invoice.StripeInvoiceLines.StripeInvoiceItems)
                             {
                                 <tr>
-                                    <td>Exceptionless - @line.Plan.Name Plan ($@((line.Plan.AmountInCents / 100).ToString())/@line.Plan.Interval)</td>
+                                    <td>Exceptionless - @line.Plan.Name Plan ($@((line.Plan.Amount / 100).ToString())/@line.Plan.Interval)</td>
                                     <td>@line.Period.Start.Value.ToShortDateString() - @line.Period.End.Value.ToShortDateString()</td>
-                                    <td>$@((line.AmountInCents / 100).ToString())</td>
+                                    <td>$@((line.Amount / 100).ToString())</td>
                                 </tr>
                             }
 
@@ -72,13 +72,13 @@
                                 <tr>
                                     <td>@Model.Invoice.StripeDiscount.StripeCoupon.Id (@Model.Invoice.StripeDiscount.StripeCoupon.PercentOff%)</td>
                                     <td>&nbsp;</td>
-                                    <td>-$@(Model.Invoice.TotalInCents * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff / 100))</td>
+                                    <td>-$@(Model.Invoice.Total * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff / 100))</td>
                                 </tr>
                             }
                             <tr>
                                 <td>&nbsp;</td>
                                 <td><strong>Total</strong></td>
-                                <td><strong>$@((Model.Invoice.TotalInCents / 100).ToString())</strong></td>
+                                <td><strong>$@((Model.Invoice.Total / 100).ToString())</strong></td>
                             </tr>
                         </tbody>
                     </table>
@@ -87,11 +87,8 @@
         </div>
     </div>
     <div class="row">
-        <div class="span3">
-            <strong>Phone:</strong> <a href="tel:800-719-3309">800-719-3309</a>
-        </div>
-        <div class="span3">
-            <strong>Email:</strong> <a href="mailto:sales@exceptionless.com">sales@exceptionless.com</a>
+        <div class="span5">
+            <strong>Email:</strong> <a href="mailto:team@exceptionless.com">sales@exceptionless.com</a>
         </div>
         <div class="span3">
             <strong>Website:</strong> <a href="http://exceptionless.com">http://exceptionless.com</a>

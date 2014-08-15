@@ -10,7 +10,7 @@
 Framework "4.5.1"
 
 properties {
-    $version =  "1.3"
+    $version =  "2.0"
     $configuration = "Release"
 
     $base_dir = Resolve-Path "."
@@ -26,25 +26,26 @@ properties {
 
     $client_projects = @(
         @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
-        @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = $null; },
-        @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
+        @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; }
+        @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; }
     )
 
     $client_build_configurations = @(
-        @{ Constants = "PFX_LEGACY_3_5;NET35;EMBEDDED;";	TargetFrameworkVersion = "v3.5"; NuGetDir = "net35"; },
-        @{ Constants = "EMBEDDED;NET40;"; 					TargetFrameworkVersion = "v4.0"; NuGetDir = "net40"; },
-        @{ Constants = "EMBEDDED;NET45;"; 					TargetFrameworkVersion = "v4.5"; NuGetDir = "net45"; }
+        @{ Constants = "EMBEDDED;PORTABLE40";	TargetFrameworkVersionProperty="NET40";	NuGetDir = "portable-net40+sl50+win+wpa81+wp80"; }
+        @{ Constants = "EMBEDDED;PORTABLE40"; 	TargetFrameworkVersionProperty="NET40";	NuGetDir = "net40"; },
+        @{ Constants = "EMBEDDED;PORTABLE40"; 	TargetFrameworkVersionProperty="NET45";	NuGetDir = "net45"; }
     )
 
     $client_test_projects = @(
-        @{ Name = "Exceptionless.Client.Tests";	BuildDir = "$source_dir\Clients\Tests\bin\$configuration"; }
+        @{ Name = "Client.Tests";	BuildDir = "$source_dir\Clients\Tests\bin\$configuration"; }
     )
 
     $server_test_projects = @(
-        @{ Name = "Exceptionless.Tests";		BuildDir = "$source_dir\Tests\bin\$configuration"; }
+        @{ Name = "Exceptionless.Api.Tests";	BuildDir = "$source_dir\Api.Tests\bin\$configuration"; }
     )
 }
 
@@ -81,32 +82,30 @@ task Init -depends Clean {
     Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version
 }
 
-task BuildClient -depends Init {			
+task BuildClient -depends Init {
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
-            
+
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
             
-            TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersion))" 
+            TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersionProperty))" 
             exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
-                /p:AssemblyOriginatorKeyFile="$sign_file" `
                 /p:Configuration="$configuration" `
                 /p:Platform="AnyCPU" `
                 /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
                 /p:OutputPath="$outputDirectory" `
-                /p:SignAssembly=true `
-                /p:TargetFrameworkVersion="$($b.TargetFrameworkVersion)" `
+                /p:TargetFrameworkVersionProperty="$($b.TargetFrameworkVersionProperty)" `
                 /t:"Rebuild" }
             
-            TeamCity-ReportBuildFinish "Finished building $($p.Name) ($($b.TargetFrameworkVersion))"
+            TeamCity-ReportBuildFinish "Finished building $($p.Name) ($($b.TargetFrameworkVersionProperty))"
         }
     }
 
     TeamCity-ReportBuildStart "Building Client Tests" 
-    exec { & msbuild "$source_dir\Clients\Tests\Exceptionless.Client.Tests.csproj" `
+    exec { & msbuild "$source_dir\Clients\Tests\Client.Tests.csproj" `
         /p:Configuration="$configuration" `
         /t:"Rebuild" }
     TeamCity-ReportBuildFinish "Finished building Client Tests"
@@ -157,7 +156,7 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless.Mvc") -or ($($p.Name) -eq "Exceptionless.WebApi")) -and ($($b.TargetFrameworkVersion) -eq "v3.5")) {
+            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
 
@@ -166,7 +165,7 @@ task PackageClient -depends TestClient {
             Create-Directory $workingLibDirectory
 
             #If ($($p.MergeDependencies) -ne $null) {
-            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersion)"
+            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersionProperty)"
             #} else {
             #	Copy-Item -Path "$buildDirectory\$($p.Name).dll" -Destination $workingLibDirectory
             #}
@@ -183,15 +182,20 @@ task PackageClient -depends TestClient {
 
         # Copy the source code for Symbol Source.
         robocopy $($p.SourceDir) $workingDirectory\src\$($p.SourceDir.Replace($base_dir, """")) *.cs *.xaml /S /NP
-        robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         robocopy "$base_dir\Source\Core" "$workingDirectory\src\Source\Core" *.cs /S /NP /XD obj
         robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
         Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
 
+        If ($p.Name -ne "Exceptionless") {
+            robocopy "$base_dir\Source\Clients\Extras" "$workingDirectory\src\Source\Clients\Extras" *.cs /S /NP /XD obj
+        }
+
         If ($p.Name -eq "Exceptionless.Mvc") {
             robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
+        } ElseIf ($p.Name -eq "Exceptionless.WebApi") {
+            robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         }
-        
+
         If ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
             Copy-Item "$($p.SourceDir)\NuGet\*" $workingDirectory -Recurse
         }
@@ -221,7 +225,7 @@ task PackageClient -depends TestClient {
         $packageDir = "$deploy_dir\ClientPackages"
         Create-Directory $packageDir
 
-        exec { & $base_dir\.nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
+        exec { & $base_dir\nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
     }
 
     Delete-Directory "$build_dir\$configuration"
@@ -236,10 +240,10 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
-    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.App"
-    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\App\Exceptionless.App.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api.IIS"
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.IIS.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
     TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
-    exec { & $base_dir\.nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 
     TeamCity-ReportBuildProgress ""
 }

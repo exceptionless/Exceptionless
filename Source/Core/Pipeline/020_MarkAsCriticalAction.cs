@@ -11,19 +11,20 @@
 
 using System;
 using CodeSmith.Core.Component;
+using Exceptionless.Core.Plugins.EventProcessor;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(20)]
-    public class MarkAsCriticalAction : ErrorPipelineActionBase {
+    public class MarkAsCriticalAction : EventPipelineActionBase {
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
+        public override void Process(EventContext ctx) {
             if (ctx.StackInfo == null || !ctx.StackInfo.OccurrencesAreCritical)
                 return;
 
             Log.Trace().Message("Marking error as critical.").Write();
-            ctx.Error.MarkAsCritical();
+            ctx.Event.MarkAsCritical();
         }
     }
 }

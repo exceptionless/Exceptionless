@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Models {
             CompanyCreated = GetTimestamp(organization.Id);
             Plan = organization.PlanId;
             BillingPrice = organization.BillingPrice;
-            TotalErrors = organization.TotalErrorCount;
+            TotalErrors = organization.TotalEventCount;
             if (organization.SubscribeDate.HasValue)
                 SubscribeDate = organization.SubscribeDate.Value.ToEpoch();
         }

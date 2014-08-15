@@ -12,132 +12,96 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Extensions;
+using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.Core.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using MongoDB.Bson;
-using MongoDB.Driver.Builders;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class RemoveStaleAccountsJob : JobBase {
-        private readonly OrganizationRepository _organizationRepository;
+    public class RemoveStaleAccountsJob : Job {
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
-        private readonly IErrorRepository _errorRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
-        private readonly DayStackStatsRepository _dayStackStats;
-        private readonly MonthStackStatsRepository _monthStackStats;
-        private readonly DayProjectStatsRepository _dayProjectStats;
-        private readonly MonthProjectStatsRepository _monthProjectStats;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IDayStackStatsRepository _dayStackStats;
+        private readonly IMonthStackStatsRepository _monthStackStats;
+        private readonly IDayProjectStatsRepository _dayProjectStats;
+        private readonly IMonthProjectStatsRepository _monthProjectStats;
 
         public RemoveStaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
-            IErrorRepository errorRepository,
-            IErrorStackRepository errorStackRepository,
-            DayStackStatsRepository dayStackStats,
-            MonthStackStatsRepository monthStackStats,
-            DayProjectStatsRepository dayProjectStats,
-            MonthProjectStatsRepository monthProjectStats) {
+            IEventRepository eventRepository,
+            IStackRepository stackRepository,
+            IDayStackStatsRepository dayStackStats,
+            IMonthStackStatsRepository monthStackStats,
+            IDayProjectStatsRepository dayProjectStats,
+            IMonthProjectStatsRepository monthProjectStats)
+        {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _errorRepository = errorRepository;
-            _errorStackRepository = errorStackRepository;
+            _eventRepository = eventRepository;
+            _stackRepository = stackRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
             _monthProjectStats = monthProjectStats;
         }
 
-        public override JobResult Run(JobContext context) {
+        public override Task<JobResult> RunAsync(JobRunContext context) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
-            int skip = 0;
-            var organizations = _organizationRepository.Collection.FindAs<Organization>(
-                                                                                        Query.And(Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
-                .SetLimit(20).SetSkip(skip).ToList();
-
+            var organizations = _organizationRepository.GetAbandoned();
             while (organizations.Count > 0) {
                 foreach (var organization in organizations)
                     TryDeleteOrganization(organization);
 
-                skip += 20;
-                organizations = _organizationRepository.Collection.FindAs<Organization>(
-                                                                                        Query.And(Query.LTE(OrganizationRepository.FieldNames.TotalErrorCount, new BsonInt64(0)), Query.EQ(OrganizationRepository.FieldNames.PlanId, BillingManager.FreePlan.Id)))
-                    .SetFields(OrganizationRepository.FieldNames.Id, OrganizationRepository.FieldNames.Name, OrganizationRepository.FieldNames.StripeCustomerId, OrganizationRepository.FieldNames.LastErrorDate)
-                    .SetLimit(20).SetSkip(skip).ToList();
+                organizations = _organizationRepository.GetAbandoned();
             }
 
-            return new JobResult {
-                Result = "Successfully removed all stale accounts."
-            };
+            return Task.FromResult(new JobResult { Message = "Successfully removed all stale accounts." });
         }
 
         private void TryDeleteOrganization(Organization organization) {
             try {
-                Log.Info().Message("Checking to see if organization '{0}' with Id: '{1}' can be deleted.", organization.Name, organization.Id).Write();
-
-                ObjectId id;
-                if (String.IsNullOrWhiteSpace(organization.Id) || !ObjectId.TryParse(organization.Id, out id)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has an invalid id.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (id.CreationTime >= DateTime.Now.SubtractDays(90)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has been created less than 90 days ago.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (organization.LastErrorDate >= DateTime.Now.SubtractDays(90)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has had an exception newer than 90 days.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
-                if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has a stripe customer id and cannot be deleted.", organization.Name, organization.Id).Write();
-                    return;
-                }
-
                 Log.Info().Message("Removing existing empty projects for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
-                if (projects.Any(project => project.TotalErrorCount > 0)) {
+                if (projects.Any(project => project.TotalEventCount > 0)) {
                     Log.Info().Message("Organization '{0}' with Id: '{1}' has a project with existing data. This organization will not be deleted.", organization.Name, organization.Id).Write();
                     return;
                 }
 
                 foreach (Project project in projects) {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _errorStackRepository.RemoveAllByProjectId(project.Id);
-                    _errorRepository.RemoveAllByProjectId(project.Id);
-                    _dayStackStats.RemoveAllByProjectId(project.Id);
-                    _monthStackStats.RemoveAllByProjectId(project.Id);
-                    _dayProjectStats.RemoveAllByProjectId(project.Id);
-                    _monthProjectStats.RemoveAllByProjectId(project.Id);
+                    _stackRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _eventRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _dayStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _monthStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _dayProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
+                    _monthProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                _projectRepository.Delete(projects);
+                _projectRepository.Remove(projects);
 
                 Log.Info().Message("Removing users from organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
                 foreach (User user in users) {
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id))) {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();
-                        _userRepository.Delete(user.Id);
+                        _userRepository.Remove(user.Id);
                     } else {
                         Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
                         user.OrganizationIds.Remove(organization.Id);
-                        _userRepository.Update(user);
+                        _userRepository.Save(user);
                     }
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                _organizationRepository.Delete(organization);
+                _organizationRepository.Remove(organization);
 
                 // TODO: Send notifications that the organization and projects have been updated.
             } catch (Exception ex) {

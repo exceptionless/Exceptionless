@@ -4,7 +4,7 @@
         Title="[AppName] Error" Height="500" Width="425" 
         WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" ResizeMode="NoResize"        
         Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"
-        FocusManager.FocusedElement="{Binding ElementName=descriptionTextBox}"
+        FocusManager.FocusedElement="{Binding ElementName=DescriptionTextBox}"
         Icon="../Images/ErrorFeedback.png">
     <Grid>
         <Grid.RowDefinitions>
@@ -18,7 +18,7 @@
                 <ColumnDefinition Width="363*" />
                 <ColumnDefinition Width="56" />
             </Grid.ColumnDefinitions>
-            <TextBlock Name="headerText" TextWrapping="WrapWithOverflow" Margin="6" FontWeight="Bold">
+            <TextBlock Name="InformationHeaderLabel" TextWrapping="WrapWithOverflow" Margin="6" FontWeight="Bold">
                 [AppName] has encountered a problem and needs to close.  We are sorry for the inconvenience.
             </TextBlock>
             <Image Name="errorImage" Grid.Column="2" Stretch="Fill" 
@@ -39,7 +39,7 @@
                    HorizontalAlignment="Left" 
                    VerticalAlignment="Top" 
                    Content="Your _email address (optional):" />
-            <TextBox Name="emailAddressTextBox" 
+            <TextBox Name="EmailAddressTextBox" 
                      HorizontalAlignment="Left" 
                      VerticalAlignment="Top" 
                      Width="358" 
@@ -50,7 +50,7 @@
                    VerticalAlignment="Top" 
                    Margin="6,0" 
                    Content="_Describe what you were doing when the error occurred (optional): " />
-            <TextBox Name="descriptionTextBox" 
+            <TextBox Name="DescriptionTextBox" 
                      Height="120" Width="358" 
                      HorizontalAlignment="Left" 
                      VerticalAlignment="Top" 
@@ -69,21 +69,21 @@
             </TextBlock>-->
         </StackPanel>
         <DockPanel Grid.Row="2" Margin="6">
-            <Button Name="cancelButton"
+            <Button Name="CancelButton"
                     DockPanel.Dock="Right"
                     Height="23" Width="75" 
                     HorizontalAlignment="Right" 
                     Margin="4" 
                     IsCancel="True" 
                     Content="_Cancel" />
-            <Button Name="sendReportButton" 
+            <Button Name="SubmitReportButton" 
                     DockPanel.Dock="Right"
                     Height="23" Width="100" 
                     HorizontalAlignment="Right" 
                     Margin="4" 
                     IsDefault="True" 
-                    Content="_Send Report" 
-                    Click="sendReportButton_Click" />
+                    Content="_Submit Report" 
+                    Click="OnSubmitReportButtonClick" />
         </DockPanel>
     </Grid>
 

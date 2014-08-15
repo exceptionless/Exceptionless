@@ -43,7 +43,6 @@ namespace Exceptionless.Json
     /// </summary>
     public class JsonSerializer
     {
-        #region Properties_binder
         internal TypeNameHandling _typeNameHandling;
         internal FormatterAssemblyStyle _typeNameAssemblyFormat;
         internal PreserveReferencesHandling _preserveReferencesHandling;
@@ -53,6 +52,7 @@ namespace Exceptionless.Json
         internal NullValueHandling _nullValueHandling;
         internal DefaultValueHandling _defaultValueHandling;
         internal ConstructorHandling _constructorHandling;
+        internal MetadataPropertyHandling _metadataPropertyHandling;
         internal JsonConverterCollection _converters;
         internal IContractResolver _contractResolver;
         internal ITraceWriter _traceWriter;
@@ -258,6 +258,22 @@ namespace Exceptionless.Json
         }
 
         /// <summary>
+        /// Gets or sets how metadata properties are used during deserialization.
+        /// </summary>
+        /// <value>The metadata properties handling.</value>
+        public virtual MetadataPropertyHandling MetadataPropertyHandling
+        {
+            get { return _metadataPropertyHandling; }
+            set
+            {
+                if (value < MetadataPropertyHandling.Default || value > MetadataPropertyHandling.Ignore)
+                    throw new ArgumentOutOfRangeException("value");
+
+                _metadataPropertyHandling = value;
+            }
+        }
+
+        /// <summary>
         /// Gets a collection <see cref="JsonConverter"/> that will be used during serialization.
         /// </summary>
         /// <value>Collection <see cref="JsonConverter"/> that will be used during serialization.</value>
@@ -411,7 +427,6 @@ namespace Exceptionless.Json
         {
             return (_checkAdditionalContent != null);
         }
-        #endregion
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonSerializer"/> class.
@@ -426,6 +441,7 @@ namespace Exceptionless.Json
             _preserveReferencesHandling = JsonSerializerSettings.DefaultPreserveReferencesHandling;
             _constructorHandling = JsonSerializerSettings.DefaultConstructorHandling;
             _typeNameHandling = JsonSerializerSettings.DefaultTypeNameHandling;
+            _metadataPropertyHandling = JsonSerializerSettings.DefaultMetadataPropertyHandling;
             _context = JsonSerializerSettings.DefaultContext;
             _binder = DefaultSerializationBinder.Instance;
 
@@ -515,6 +531,8 @@ namespace Exceptionless.Json
             // serializer specific
             if (settings._typeNameHandling != null)
                 serializer.TypeNameHandling = settings.TypeNameHandling;
+            if (settings._metadataPropertyHandling != null)
+                serializer.MetadataPropertyHandling = settings.MetadataPropertyHandling;
             if (settings._typeNameAssemblyFormat != null)
                 serializer.TypeNameAssemblyFormat = settings.TypeNameAssemblyFormat;
             if (settings._preserveReferencesHandling != null)
@@ -603,8 +621,26 @@ namespace Exceptionless.Json
             ValidationUtils.ArgumentNotNull(reader, "reader");
             ValidationUtils.ArgumentNotNull(target, "target");
 
+            // set serialization options onto reader
+            CultureInfo previousCulture;
+            DateTimeZoneHandling? previousDateTimeZoneHandling;
+            DateParseHandling? previousDateParseHandling;
+            FloatParseHandling? previousFloatParseHandling;
+            int? previousMaxDepth;
+            string previousDateFormatString;
+            SetupReader(reader, out previousCulture, out previousDateTimeZoneHandling, out previousDateParseHandling, out previousFloatParseHandling, out previousMaxDepth, out previousDateFormatString);
+
+            TraceJsonReader traceJsonReader = (TraceWriter != null && TraceWriter.LevelFilter >= TraceLevel.Verbose)
+                ? new TraceJsonReader(reader)
+                : null;
+
             JsonSerializerInternalReader serializerReader = new JsonSerializerInternalReader(this);
-            serializerReader.Populate(reader, target);
+            serializerReader.Populate(traceJsonReader ?? reader, target);
+
+            if (traceJsonReader != null)
+                TraceWriter.Trace(TraceLevel.Verbose, "Deserialized JSON: " + Environment.NewLine + traceJsonReader.GetJson(), null);
+
+            ResetReader(reader, previousCulture, previousDateTimeZoneHandling, previousDateParseHandling, previousFloatParseHandling, previousMaxDepth, previousDateFormatString);
         }
 
         /// <summary>
@@ -658,40 +694,13 @@ namespace Exceptionless.Json
             ValidationUtils.ArgumentNotNull(reader, "reader");
 
             // set serialization options onto reader
-            CultureInfo previousCulture = null;
-            if (_culture != null && !_culture.Equals(reader.Culture))
-            {
-                previousCulture = reader.Culture;
-                reader.Culture = _culture;
-            }
-
-            DateTimeZoneHandling? previousDateTimeZoneHandling = null;
-            if (_dateTimeZoneHandling != null && reader.DateTimeZoneHandling != _dateTimeZoneHandling)
-            {
-                previousDateTimeZoneHandling = reader.DateTimeZoneHandling;
-                reader.DateTimeZoneHandling = _dateTimeZoneHandling.Value;
-            }
-
-            DateParseHandling? previousDateParseHandling = null;
-            if (_dateParseHandling != null && reader.DateParseHandling != _dateParseHandling)
-            {
-                previousDateParseHandling = reader.DateParseHandling;
-                reader.DateParseHandling = _dateParseHandling.Value;
-            }
-
-            FloatParseHandling? previousFloatParseHandling = null;
-            if (_floatParseHandling != null && reader.FloatParseHandling != _floatParseHandling)
-            {
-                previousFloatParseHandling = reader.FloatParseHandling;
-                reader.FloatParseHandling = _floatParseHandling.Value;
-            }
-
-            int? previousMaxDepth = null;
-            if (_maxDepthSet && reader.MaxDepth != _maxDepth)
-            {
-                previousMaxDepth = reader.MaxDepth;
-                reader.MaxDepth = _maxDepth;
-            }
+            CultureInfo previousCulture;
+            DateTimeZoneHandling? previousDateTimeZoneHandling;
+            DateParseHandling? previousDateParseHandling;
+            FloatParseHandling? previousFloatParseHandling;
+            int? previousMaxDepth;
+            string previousDateFormatString;
+            SetupReader(reader, out previousCulture, out previousDateTimeZoneHandling, out previousDateParseHandling, out previousFloatParseHandling, out previousMaxDepth, out previousDateFormatString);
 
             TraceJsonReader traceJsonReader = (TraceWriter != null && TraceWriter.LevelFilter >= TraceLevel.Verbose)
                 ? new TraceJsonReader(reader)
@@ -703,6 +712,76 @@ namespace Exceptionless.Json
             if (traceJsonReader != null)
                 TraceWriter.Trace(TraceLevel.Verbose, "Deserialized JSON: " + Environment.NewLine + traceJsonReader.GetJson(), null);
 
+            ResetReader(reader, previousCulture, previousDateTimeZoneHandling, previousDateParseHandling, previousFloatParseHandling, previousMaxDepth, previousDateFormatString);
+
+            return value;
+        }
+
+        private void SetupReader(JsonReader reader, out CultureInfo previousCulture, out DateTimeZoneHandling? previousDateTimeZoneHandling, out DateParseHandling? previousDateParseHandling, out FloatParseHandling? previousFloatParseHandling, out int? previousMaxDepth, out string previousDateFormatString)
+        {
+            if (_culture != null && !_culture.Equals(reader.Culture))
+            {
+                previousCulture = reader.Culture;
+                reader.Culture = _culture;
+            }
+            else
+            {
+                previousCulture = null;
+            }
+
+            if (_dateTimeZoneHandling != null && reader.DateTimeZoneHandling != _dateTimeZoneHandling)
+            {
+                previousDateTimeZoneHandling = reader.DateTimeZoneHandling;
+                reader.DateTimeZoneHandling = _dateTimeZoneHandling.Value;
+            }
+            else
+            {
+                previousDateTimeZoneHandling = null;
+            }
+
+            if (_dateParseHandling != null && reader.DateParseHandling != _dateParseHandling)
+            {
+                previousDateParseHandling = reader.DateParseHandling;
+                reader.DateParseHandling = _dateParseHandling.Value;
+            }
+            else
+            {
+                previousDateParseHandling = null;
+            }
+
+            if (_floatParseHandling != null && reader.FloatParseHandling != _floatParseHandling)
+            {
+                previousFloatParseHandling = reader.FloatParseHandling;
+                reader.FloatParseHandling = _floatParseHandling.Value;
+            }
+            else
+            {
+                previousFloatParseHandling = null;
+            }
+
+            if (_maxDepthSet && reader.MaxDepth != _maxDepth)
+            {
+                previousMaxDepth = reader.MaxDepth;
+                reader.MaxDepth = _maxDepth;
+            }
+            else
+            {
+                previousMaxDepth = null;
+            }
+
+            if (_dateFormatStringSet && reader.DateFormatString != _dateFormatString)
+            {
+                previousDateFormatString = reader.DateFormatString;
+                reader.DateFormatString = _dateFormatString;
+            }
+            else
+            {
+                previousDateFormatString = null;
+            }
+        }
+
+        private void ResetReader(JsonReader reader, CultureInfo previousCulture, DateTimeZoneHandling? previousDateTimeZoneHandling, DateParseHandling? previousDateParseHandling, FloatParseHandling? previousFloatParseHandling, int? previousMaxDepth, string previousDateFormatString)
+        {
             // reset reader back to previous options
             if (previousCulture != null)
                 reader.Culture = previousCulture;
@@ -714,8 +793,8 @@ namespace Exceptionless.Json
                 reader.FloatParseHandling = previousFloatParseHandling.Value;
             if (_maxDepthSet)
                 reader.MaxDepth = previousMaxDepth;
-
-            return value;
+            if (_dateFormatStringSet)
+                reader.DateFormatString = previousDateFormatString;
         }
 
         /// <summary>

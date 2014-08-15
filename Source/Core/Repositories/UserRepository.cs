@@ -12,17 +12,46 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
-namespace Exceptionless.Core {
-    public class UserRepository : MongoRepositoryWithIdentity<User>, IUserRepository {
-        public UserRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+namespace Exceptionless.Core.Repositories {
+    public class UserRepository : MongoRepository<User>, IUserRepository {
+        public UserRepository(MongoDatabase database, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
+
+        public User GetByEmailAddress(string emailAddress) {
+            if (String.IsNullOrEmpty(emailAddress))
+                return null;
+
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+        }
+
+        public User GetByVerifyEmailAddressToken(string token) {
+            if (String.IsNullOrEmpty(token))
+                return null;
+
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+        }
+
+        // TODO: Have this return a limited subset of user data.
+        public ICollection<User> GetByOrganizationId(string id) {
+            if (String.IsNullOrEmpty(id))
+                return new List<User>();
+
+            var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
+            return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
+        }
+
+        #region Collection Setup
 
         public const string CollectionName = "user";
 
@@ -31,21 +60,23 @@ namespace Exceptionless.Core {
         }
 
         public new static class FieldNames {
-            public const string Id = "_id";
+            public const string Id = CommonFieldNames.Id;
+            public const string EmailAddress = "EmailAddress";
             public const string IsEmailAddressVerified = "IsEmailAddressVerified";
             public const string EmailNotificationsEnabled = "EmailNotificationsEnabled";
+            public const string VerifyEmailAddressToken = "VerifyEmailAddressToken";
             public const string OrganizationIds = "OrganizationIds";
             public const string OAuthAccounts_Provider = "OAuthAccounts.Provider";
             public const string OAuthAccounts_ProviderUserId = "OAuthAccounts.ProviderUserId";
         }
 
-        protected override void InitializeCollection(MongoCollection<User> collection) {
-            base.InitializeCollection(collection);
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds));
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true));
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true));
-            collection.EnsureIndex(IndexKeys<User>.Ascending(u => u.Roles));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.Roles), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<User> cm) {
@@ -60,44 +91,35 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.VerifyEmailAddressToken).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
         }
+        
+        #endregion
 
-        public User GetByEmailAddress(string emailAddress) {
-            if (Cache == null)
-                return FirstOrDefault(u => u.EmailAddress == emailAddress);
-
-            var result = Cache.Get<User>(GetScopedCacheKey(emailAddress));
-            if (result == null) {
-                result = FirstOrDefault(u => u.EmailAddress == emailAddress);
-                if (result != null)
-                    Cache.Set(GetScopedCacheKey(emailAddress), result, TimeSpan.FromMinutes(5));
-            }
-
-            return result;
-        }
-
-        public User GetByVerifyEmailAddressToken(string token) {
-            if (String.IsNullOrEmpty(token))
-                return null;
-
-            return Where(Query<User>.EQ(u => u.VerifyEmailAddressToken, token)).FirstOrDefault();
-        }
-
-        // TODO: Have this return a limited subset of user data.
-        public IQueryable<User> GetByOrganizationId(string id) {
-            // TODO Cache this.
-            return Where(Query.In(FieldNames.OrganizationIds, new List<BsonValue> {
-                new BsonObjectId(new ObjectId(id))
-            }));
-        }
-
-        public override void InvalidateCache(User entity) {
+        public override void InvalidateCache(User user) {
             if (Cache == null)
                 return;
 
             //TODO: We should look into getting the original entity and reset the cache on the original email address as it might have changed.
-            InvalidateCache(entity.EmailAddress);
+            InvalidateCache(user.EmailAddress);
 
-            base.InvalidateCache(entity);
+            foreach (var organizationId in user.OrganizationIds)
+                InvalidateCache(String.Concat("org:", organizationId));
+        }
+
+        protected override async Task PublishMessageAsync(EntityChangeType changeType, User user) {
+            if (user.OrganizationIds.Any()) {
+                foreach (var organizationId in user.OrganizationIds) {
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        Id = user.Id,
+                        OrganizationId = organizationId,
+                        Type = _entityType
+                    };
+
+                    await _messagePublisher.PublishAsync(message);
+                }
+            } else {
+                await base.PublishMessageAsync(changeType, user);
+            }
         }
     }
 }

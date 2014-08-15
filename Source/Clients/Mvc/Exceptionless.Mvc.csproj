@@ -36,8 +36,14 @@
     <DocumentationFile>bin\Release\$(TargetFrameworkVersion)\Exceptionless.Mvc.xml</DocumentationFile>
     <NoWarn>1591</NoWarn>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET40' ">
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(TargetFrameworkVersionProperty)' == 'NET45' ">
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+  </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
     <AssemblyOriginatorKeyFile>..\..\Exceptionless.snk</AssemblyOriginatorKeyFile>
@@ -56,21 +62,24 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="..\Web\ExceptionlessClientExtensions.cs">
+      <Link>ExceptionlessClientExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\Web\ExceptionlessWebEnrichment.cs">
+      <Link>ExceptionlessWebEnrichment.cs</Link>
+    </Compile>
     <Compile Include="..\Web\ExceptionlessWebExtensions.cs">
       <Link>ExceptionlessWebExtensions.cs</Link>
-    </Compile>
-    <Compile Include="..\Web\ExceptionlessWebPlugin.cs">
-      <Link>ExceptionlessWebPlugin.cs</Link>
     </Compile>
     <Compile Include="..\Web\RequestInfoCollector.cs">
       <Link>RequestInfoCollector.cs</Link>
     </Compile>
-    <Compile Include="..\Web\WebLastErrorIdManager.cs">
-      <Link>WebLastErrorIdManager.cs</Link>
+    <Compile Include="..\Web\WebLastReferenceIdManager.cs">
+      <Link>WebLastReferenceIdManager.cs</Link>
     </Compile>
-    <Compile Include="ExceptionlessHandleErrorAttribute.cs" />
     <Compile Include="ExceptionlessModule.cs" />
-    <Compile Include="ExceptionlessMvcPlugin.cs" />
+    <Compile Include="ExceptionlessMvcEnrichment.cs" />
+    <Compile Include="ExceptionlessSendErrorsAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -78,15 +87,16 @@
       <Project>{A14E78DE-A085-4647-BA2D-E6237D7D8057}</Project>
       <Name>Exceptionless.Models</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Extras\Exceptionless.Extras.csproj">
+      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
+      <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
+      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
       <Name>Exceptionless</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Exceptionless.snk">
-      <Link>Exceptionless.snk</Link>
-    </None>
     <None Include="NuGet\tools\install.ps1" />
     <None Include="NuGet\tools\uninstall.ps1" />
     <None Include="NuGet\Exceptionless.Mvc.nuspec" />
@@ -95,5 +105,4 @@
     <Content Include="NuGet\readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
 </Project>

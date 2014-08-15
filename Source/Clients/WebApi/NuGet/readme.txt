@@ -24,14 +24,15 @@ the web.config Exceptionless section.
 <exceptionless apiKey="API_KEY_HERE" />
 
 Finally, you must import the "Exceptionless" namespace and call the following line
-of code to start reporting unhandled exceptions. You will need to pass an
-HttpConfiguration instance.
+of code to start reporting unhandled exceptions. You will need to run code during 
+application startup and pass it an HttpConfiguration instance. Please note that this
+code is normally placed inside of the WebApiConfig classes Register method.
 
-Exceptionless.ExceptionlessClient.Current.RegisterWebApi(config)
+Exceptionless.ExceptionlessClient.Default.RegisterWebApi(config)
 
 If you are hosting Web API inside of ASP.NET, you would register Exceptionless like:
 
-Exceptionless.ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration)
+Exceptionless.ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration)
 
 -------------------------------------
    Manually reporting an exception

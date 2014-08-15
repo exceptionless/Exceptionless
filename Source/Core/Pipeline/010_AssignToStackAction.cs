@@ -14,102 +14,105 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Utility;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.Formatting;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
-    public class AssignToStackAction : ErrorPipelineActionBase {
-        private readonly ErrorStackRepository _stackRepository;
-        private readonly ErrorSignatureFactory _signatureFactory;
+    public class AssignToStackAction : EventPipelineActionBase {
+        private readonly IStackRepository _stackRepository;
+        private readonly FormattingPluginManager _pluginManager;
 
-        public AssignToStackAction(ErrorStackRepository stackRepository, ErrorSignatureFactory signatureFactory) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager pluginManager) {
             _stackRepository = stackRepository;
-            _signatureFactory = signatureFactory;
+            _pluginManager = pluginManager;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            ctx.StackingInfo = ctx.Error.GetStackingInfo();
-            if (String.IsNullOrEmpty(ctx.Error.ErrorStackId)) {
+        public override void Process(EventContext ctx) {
+            if (String.IsNullOrEmpty(ctx.Event.StackId)) {
                 if (_stackRepository == null)
                     throw new InvalidOperationException("You must pass a non-null stackRepository parameter to the constructor.");
 
-                Log.Trace().Message("Error did not specify an ErrorStackId.").Write();
-                var signature = _signatureFactory.GetSignature(ctx.Error);
-                ctx.StackingInfo = ctx.Error.GetStackingInfo();
-                Log.Trace().Message("Created Error Signature. Error is null: {0}", ctx.Error == null).Write();
-
-                // Set Path to be the only thing we stack on for 404 errors
-                if (ctx.Error.Code == "404" && ctx.Error.RequestInfo != null) {
-                    Log.Trace().Message("Updating SignatureInfo for 404 error.").Write();
-                    signature.SignatureInfo.Clear();
-                    signature.SignatureInfo.Add("HttpMethod", ctx.Error.RequestInfo.HttpMethod);
-                    signature.SignatureInfo.Add("Path", ctx.Error.RequestInfo.Path);
-                    signature.RecalculateHash();
+                // only add default signature info if no other signature info has been added
+                if (ctx.StackSignatureData.Count == 0) {
+                    ctx.StackSignatureData.Add("Type", ctx.Event.Type);
+                    if (!String.IsNullOrEmpty(ctx.Event.Source))
+                        ctx.StackSignatureData.Add("Source", ctx.Event.Source);
                 }
 
-                ctx.StackInfo = _stackRepository.GetErrorStackInfoBySignatureHash(ctx.Error.ProjectId, signature.SignatureHash);
+                string signatureHash = ctx.StackSignatureData.Values.Any(v => v != null) ? ctx.StackSignatureData.Values.ToSHA1() : null;
+                ctx.SetProperty("__SignatureHash", signatureHash);
+
+                ctx.StackInfo = _stackRepository.GetStackInfoBySignatureHash(ctx.Event.ProjectId, signatureHash);
                 if (ctx.StackInfo == null) {
                     Log.Trace().Message("Creating new error stack.").Write();
                     ctx.IsNew = true;
-                    var stack = new ErrorStack {
-                        OrganizationId = ctx.Error.OrganizationId,
-                        ProjectId = ctx.Error.ProjectId,
-                        SignatureInfo = signature.SignatureInfo,
-                        SignatureHash = signature.SignatureHash,
-                        Title = ctx.StackingInfo.Message,
-                        Tags = ctx.Error.Tags ?? new TagSet(),
+
+                    string title = _pluginManager.GetStackTitle(ctx.Event);
+                    var stack = new Stack {
+                        OrganizationId = ctx.Event.OrganizationId,
+                        ProjectId = ctx.Event.ProjectId,
+                        SignatureInfo = new SettingsDictionary(ctx.StackSignatureData),
+                        SignatureHash = signatureHash,
+                        Title = title != null ? title.Truncate(1000) : null,
+                        Tags = ctx.Event.Tags ?? new TagSet(),
                         TotalOccurrences = 1,
-                        FirstOccurrence = ctx.Error.OccurrenceDate.UtcDateTime,
-                        LastOccurrence = ctx.Error.OccurrenceDate.UtcDateTime
+                        FirstOccurrence = ctx.Event.Date.UtcDateTime,
+                        LastOccurrence = ctx.Event.Date.UtcDateTime
                     };
 
-                    _stackRepository.Add(stack);
-                    ctx.StackInfo = new ErrorStackInfo {
+                    ctx.Stack = _stackRepository.Add(stack, true);
+                    ctx.StackInfo = new StackInfo {
                         Id = stack.Id,
                         DateFixed = stack.DateFixed,
-                        OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                        SignatureHash = stack.SignatureHash
+                        OccurrencesAreCritical = stack.OccurrencesAreCritical
                     };
 
                     // new 404 stack id added, invalidate 404 id cache
-                    if (signature.SignatureInfo.ContainsKey("Path"))
-                        _stackRepository.InvalidateNotFoundIdsCache(ctx.Error.ProjectId);
+                    if (ctx.Event.IsNotFound())
+                        _stackRepository.InvalidateNotFoundIdsCache(ctx.Event.ProjectId);
                 }
 
                 Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.StackInfo.Id).Write();
-                ctx.Error.ErrorStackId = ctx.StackInfo.Id;
+                ctx.Event.StackId = ctx.StackInfo.Id;
             } else {
-                var stack = _stackRepository.GetByIdCached(ctx.Error.ErrorStackId);
+                ctx.Stack = _stackRepository.GetById(ctx.Event.StackId);
 
                 // TODO: Update unit tests to work with this check.
                 //if (stack == null || stack.ProjectId != error.ProjectId)
                 //    throw new InvalidOperationException("Invalid ErrorStackId.");
-                if (stack == null)
+                if (ctx.Stack == null)
                     return;
 
-                if (ctx.Error.Tags != null && ctx.Error.Tags.Count > 0) {
-                    if(stack.Tags == null)
-                        stack.Tags = new TagSet();
+                ctx.SetProperty("__SignatureHash", ctx.Stack.SignatureHash);
 
-                    List<string> newTags = ctx.Error.Tags.Where(t => !stack.Tags.Contains(t)).ToList();
+                if (ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
+                    if (ctx.Stack.Tags == null)
+                        ctx.Stack.Tags = new TagSet();
+
+                    List<string> newTags = ctx.Event.Tags.Where(t => !ctx.Stack.Tags.Contains(t)).ToList();
                     if (newTags.Count > 0) {
-                        stack.Tags.AddRange(newTags);
-                        _stackRepository.Update(stack);
+                        ctx.Stack.Tags.AddRange(newTags);
+                        _stackRepository.Save(ctx.Stack);
                     }
                 }
 
-                ctx.StackInfo = new ErrorStackInfo {
-                    Id = stack.Id,
-                    DateFixed = stack.DateFixed,
-                    OccurrencesAreCritical = stack.OccurrencesAreCritical,
-                    SignatureHash = stack.SignatureHash
+                ctx.StackInfo = new StackInfo {
+                    Id = ctx.Stack.Id,
+                    DateFixed = ctx.Stack.DateFixed,
+                    OccurrencesAreCritical = ctx.Stack.OccurrencesAreCritical,
+                    IsHidden = ctx.Stack.IsHidden,
                 };
             }
+
+            // sync the fixed and hidden flags to the error occurrence
+            ctx.Event.IsFixed = ctx.StackInfo.DateFixed.HasValue;
+            ctx.Event.IsHidden = ctx.StackInfo.IsHidden;
         }
     }
 }

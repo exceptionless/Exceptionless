@@ -14,11 +14,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Models {
-    public class Organization : IIdentity {
+    public class Organization : IIdentity, IData, IOwnedByOrganization {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
-            OverageDays = new Collection<OverageInfo>();
+            Usage = new Collection<UsageInfo>();
+            OverageHours = new Collection<UsageInfo>();
+            Data = new DataDictionary();
         }
 
         /// <summary>
@@ -72,9 +74,9 @@ namespace Exceptionless.Models {
         public decimal BillingPrice { get; set; }
 
         /// <summary>
-        /// Maximum number of error occurrences allowed per day.
+        /// Maximum number of event occurrences allowed per month.
         /// </summary>
-        public int MaxErrorsPerDay { get; set; }
+        public int MaxEventsPerMonth { get; set; }
 
         /// <summary>
         /// Number of days stats data is retained.
@@ -89,7 +91,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// The code indicating why the account was suspended.
         /// </summary>
-        public string SuspensionCode { get; set; }
+        public SuspensionCode? SuspensionCode { get; set; }
 
         /// <summary>
         /// Any notes on why the account was suspended.
@@ -122,29 +124,14 @@ namespace Exceptionless.Models {
         public int MaxProjects { get; set; }
 
         /// <summary>
-        /// Total number of projects.
+        /// The date that the latest event occurred.
         /// </summary>
-        public int ProjectCount { get; set; }
+        public DateTime LastEventDate { get; set; }
 
         /// <summary>
-        /// Current number of error stacks in the system.
+        /// Total events logged by our system.
         /// </summary>
-        public long StackCount { get; set; }
-
-        /// <summary>
-        /// Current number of error occurrences in the system.
-        /// </summary>
-        public long ErrorCount { get; set; }
-
-        /// <summary>
-        /// The date that the latest error occurred.
-        /// </summary>
-        public DateTime LastErrorDate { get; set; }
-
-        /// <summary>
-        /// Total errors logged by our system.
-        /// </summary>
-        public long TotalErrorCount { get; set; }
+        public long TotalEventCount { get; set; }
 
         /// <summary>
         /// Organization invites.
@@ -152,14 +139,27 @@ namespace Exceptionless.Models {
         public ICollection<Invite> Invites { get; set; }
 
         /// <summary>
-        /// Days over daily error limit.
+        /// Hours over event limit.
         /// </summary>
-        public ICollection<OverageInfo> OverageDays { get; set; }
+        public ICollection<UsageInfo> OverageHours { get; set; }
+
+        /// <summary>
+        /// Account event usage information.
+        /// </summary>
+        public ICollection<UsageInfo> Usage { get; set; }
+
+        /// <summary>
+        /// Optional data entries that contain additional configuration information for this organization.
+        /// </summary>
+        public DataDictionary Data { get; set; }
+
+        string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }
 
-    public class OverageInfo {
-        public DateTime Day { get; set; }
-        public int Count { get; set; }
+    public class UsageInfo {
+        public DateTime Date { get; set; }
+        public int Total { get; set; }
+        public int Blocked { get; set; }
         public int Limit { get; set; }
     }
 

@@ -367,21 +367,19 @@ namespace Exceptionless.Json.Utilities
             {
                 return type.GetElementType();
             }
-            else if (ImplementsGenericDefinition(type, typeof(IEnumerable<>), out genericListType))
+            if (ImplementsGenericDefinition(type, typeof(IEnumerable<>), out genericListType))
             {
                 if (genericListType.IsGenericTypeDefinition())
                     throw new Exception("Type {0} is not a collection.".FormatWith(CultureInfo.InvariantCulture, type));
 
                 return genericListType.GetGenericArguments()[0];
             }
-            else if (typeof(IEnumerable).IsAssignableFrom(type))
+            if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 return null;
             }
-            else
-            {
-                throw new Exception("Type {0} is not a collection.".FormatWith(CultureInfo.InvariantCulture, type));
-            }
+            
+            throw new Exception("Type {0} is not a collection.".FormatWith(CultureInfo.InvariantCulture, type));
         }
 
         public static void GetDictionaryKeyValueTypes(Type dictionaryType, out Type keyType, out Type valueType)
@@ -400,16 +398,14 @@ namespace Exceptionless.Json.Utilities
                 valueType = dictionaryGenericArguments[1];
                 return;
             }
-            else if (typeof(IDictionary).IsAssignableFrom(dictionaryType))
+            if (typeof(IDictionary).IsAssignableFrom(dictionaryType))
             {
                 keyType = null;
                 valueType = null;
                 return;
             }
-            else
-            {
-                throw new Exception("Type {0} is not a dictionary.".FormatWith(CultureInfo.InvariantCulture, dictionaryType));
-            }
+
+            throw new Exception("Type {0} is not a dictionary.".FormatWith(CultureInfo.InvariantCulture, dictionaryType));
         }
 
         /// <summary>
@@ -429,8 +425,10 @@ namespace Exceptionless.Json.Utilities
                     return ((PropertyInfo)member).PropertyType;
                 case MemberTypes.Event:
                     return ((EventInfo)member).EventHandlerType;
+                case MemberTypes.Method:
+                    return ((MethodInfo)member).ReturnType;
                 default:
-                    throw new ArgumentException("MemberInfo must be of type FieldInfo, PropertyInfo or EventInfo", "member");
+                    throw new ArgumentException("MemberInfo must be of type FieldInfo, PropertyInfo, EventInfo or MethodInfo", "member");
             }
         }
 
@@ -597,7 +595,7 @@ namespace Exceptionless.Json.Utilities
             targetMembers.AddRange(GetProperties(type, bindingAttr));
 
             // for some reason .NET returns multiple members when overriding a generic member on a base class
-            // http://forums.msdn.microsoft.com/en-US/netfxbcl/thread/b5abbfee-e292-4a64-8907-4e3f0fb90cd9/
+            // http://social.msdn.microsoft.com/Forums/en-US/b5abbfee-e292-4a64-8907-4e3f0fb90cd9/reflection-overriden-abstract-generic-properties?forum=netfxbcl
             // filter members to only return the override on the topmost class
             // update: I think this is fixed in .NET 3.5 SP1 - leave this in for now...
             List<MemberInfo> distinctMembers = new List<MemberInfo>(targetMembers.Count);
@@ -613,7 +611,17 @@ namespace Exceptionless.Json.Utilities
                 }
                 else
                 {
-                    var resolvedMembers = members.Where(m => !IsOverridenGenericMember(m, bindingAttr) || m.Name == "Item");
+                    IList<MemberInfo> resolvedMembers = new List<MemberInfo>();
+                    foreach (MemberInfo memberInfo in members)
+                    {
+                        // this is a bit hacky
+                        // if the hiding property is hiding a base property and it is virtual
+                        // then this ensures the derived property gets used
+                        if (resolvedMembers.Count == 0)
+                            resolvedMembers.Add(memberInfo);
+                        else if (!IsOverridenGenericMember(memberInfo, bindingAttr) || memberInfo.Name == "Item")
+                            resolvedMembers.Add(memberInfo);
+                    }
 
                     distinctMembers.AddRange(resolvedMembers);
                 }
@@ -622,20 +630,22 @@ namespace Exceptionless.Json.Utilities
             return distinctMembers;
         }
 
-
         private static bool IsOverridenGenericMember(MemberInfo memberInfo, BindingFlags bindingAttr)
         {
-            MemberTypes memberType = memberInfo.MemberType();
-            if (memberType != MemberTypes.Field && memberType != MemberTypes.Property)
-                throw new ArgumentException("Member must be a field or property.");
+            if (memberInfo.MemberType() != MemberTypes.Property)
+                return false;
 
-            Type declaringType = memberInfo.DeclaringType;
+            PropertyInfo propertyInfo = (PropertyInfo)memberInfo;
+            if (!IsVirtual(propertyInfo))
+                return false;
+
+            Type declaringType = propertyInfo.DeclaringType;
             if (!declaringType.IsGenericType())
                 return false;
             Type genericTypeDefinition = declaringType.GetGenericTypeDefinition();
             if (genericTypeDefinition == null)
                 return false;
-            MemberInfo[] members = genericTypeDefinition.GetMember(memberInfo.Name, bindingAttr);
+            MemberInfo[] members = genericTypeDefinition.GetMember(propertyInfo.Name, bindingAttr);
             if (members.Length == 0)
                 return false;
             Type memberUnderlyingType = GetMemberUnderlyingType(members[0]);
@@ -660,6 +670,11 @@ namespace Exceptionless.Json.Utilities
 #if !(NETFX_CORE || PORTABLE)
         public static T[] GetAttributes<T>(object attributeProvider, bool inherit) where T : Attribute
         {
+            return (T[])GetAttributes(attributeProvider, typeof(T), inherit);
+        }
+
+        public static Attribute[] GetAttributes(object attributeProvider, Type attributeType, bool inherit)
+        {
             ValidationUtils.ArgumentNotNull(attributeProvider, "attributeProvider");
 
             object provider = attributeProvider;
@@ -668,44 +683,50 @@ namespace Exceptionless.Json.Utilities
             // ICustomAttributeProvider doesn't do inheritance
 
             if (provider is Type)
-                return (T[])((Type)provider).GetCustomAttributes(typeof(T), inherit);
+                return (Attribute[])((Type)provider).GetCustomAttributes(attributeType, inherit);
 
             if (provider is Assembly)
-                return (T[])Attribute.GetCustomAttributes((Assembly)provider, typeof(T));
+                return Attribute.GetCustomAttributes((Assembly)provider, attributeType);
 
             if (provider is MemberInfo)
-                return (T[])Attribute.GetCustomAttributes((MemberInfo)provider, typeof(T), inherit);
+                return Attribute.GetCustomAttributes((MemberInfo)provider, attributeType, inherit);
 
 #if !PORTABLE40
             if (provider is Module)
-                return (T[])Attribute.GetCustomAttributes((Module)provider, typeof(T), inherit);
+                return Attribute.GetCustomAttributes((Module)provider, attributeType, inherit);
 #endif
 
             if (provider is ParameterInfo)
-                return (T[])Attribute.GetCustomAttributes((ParameterInfo)provider, typeof(T), inherit);
+                return Attribute.GetCustomAttributes((ParameterInfo)provider, attributeType, inherit);
 
 #if !PORTABLE40
-            return (T[])((ICustomAttributeProvider)attributeProvider).GetCustomAttributes(typeof(T), inherit);
-#endif
+            return (Attribute[])((ICustomAttributeProvider)attributeProvider).GetCustomAttributes(attributeType, inherit);
+#else
             throw new Exception("Cannot get attributes from '{0}'.".FormatWith(CultureInfo.InvariantCulture, provider));
+#endif
         }
 #else
-        public static T[] GetAttributes<T>(object provider, bool inherit) where T : Attribute
+        public static T[] GetAttributes<T>(object attributeProvider, bool inherit) where T : Attribute
+        {
+            return GetAttributes(attributeProvider, typeof(T), inherit).Cast<T>().ToArray();
+        }
+
+        public static Attribute[] GetAttributes(object provider, Type attributeType, bool inherit)
         {
             if (provider is Type)
-                return ((Type) provider).GetTypeInfo().GetCustomAttributes<T>(inherit).ToArray();
+                return ((Type) provider).GetTypeInfo().GetCustomAttributes(attributeType, inherit).ToArray();
 
             if (provider is Assembly)
-                return ((Assembly) provider).GetCustomAttributes<T>().ToArray();
+                return ((Assembly) provider).GetCustomAttributes(attributeType).ToArray();
 
             if (provider is MemberInfo)
-                return ((MemberInfo) provider).GetCustomAttributes<T>(inherit).ToArray();
+                return ((MemberInfo) provider).GetCustomAttributes(attributeType, inherit).ToArray();
 
             if (provider is Module)
-                return ((Module) provider).GetCustomAttributes<T>().ToArray();
+                return ((Module) provider).GetCustomAttributes(attributeType).ToArray();
 
             if (provider is ParameterInfo)
-                return ((ParameterInfo) provider).GetCustomAttributes<T>(inherit).ToArray();
+                return ((ParameterInfo) provider).GetCustomAttributes(attributeType, inherit).ToArray();
 
             throw new Exception("Cannot get attributes from '{0}'.".FormatWith(CultureInfo.InvariantCulture, provider));
         }
@@ -784,6 +805,7 @@ namespace Exceptionless.Json.Utilities
             return fieldInfos.Cast<FieldInfo>();
         }
 
+#if !(NETFX_CORE || PORTABLE)
         private static void GetChildPrivateFields(IList<MemberInfo> initialFields, Type targetType, BindingFlags bindingAttr)
         {
             // fix weirdness with private FieldInfos only being returned for the current Type
@@ -803,6 +825,7 @@ namespace Exceptionless.Json.Utilities
                 }
             }
         }
+#endif
 
         public static IEnumerable<PropertyInfo> GetProperties(Type targetType, BindingFlags bindingAttr)
         {
@@ -856,10 +879,15 @@ namespace Exceptionless.Json.Utilities
                         }
                         else
                         {
-                            // replace nonpublic properties for a child, but gotten from
-                            // the parent with the one from the child
-                            // the property gotten from the child will have access to private getter/setter
-                            initialProperties[index] = subTypeProperty;
+                            PropertyInfo childProperty = initialProperties[index];
+                            // don't replace public child with private base
+                            if (!IsPublic(childProperty))
+                            {
+                                // replace nonpublic properties for a child, but gotten from
+                                // the parent with the one from the child
+                                // the property gotten from the child will have access to private getter/setter
+                                initialProperties[index] = subTypeProperty;
+                            }
                         }
                     }
                     else

@@ -12,13 +12,14 @@
 using System;
 using System.Diagnostics;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Repositories;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class MongoJobLockProvider : JobLockProvider {
-        private readonly IJobLockInfoRepository _jobLockRepository;
+        private readonly IJobLockRepository _jobLockRepository;
 
-        public MongoJobLockProvider(IJobLockInfoRepository repository) {
+        public MongoJobLockProvider(IJobLockRepository repository) {
             _jobLockRepository = repository;
         }
 
@@ -27,14 +28,14 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 // timeout locks older than 20 minutes.
-                _jobLockRepository.Delete(l => l.Name == lockName && l.CreatedDate <= DateTime.UtcNow.AddMinutes(-20));
+                _jobLockRepository.RemoveByAge(lockName, TimeSpan.FromMinutes(20));
 
-                if (_jobLockRepository.Exists(l => l.Name == lockName))
+                if (_jobLockRepository.ExistsByName(lockName))
                     return new JobLock(this, lockName, false);
 
                 _jobLockRepository.Add(new JobLockInfo {
-                    Name = lockName,
-                    MachineName = Environment.MachineName,
+                    Id = lockName,
+                    Name = Environment.MachineName,
                     CreatedDate = DateTime.UtcNow
                 });
 
@@ -78,7 +79,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             try {
-                _jobLockRepository.Delete(l => l.Name == jobLock.LockName);
+                _jobLockRepository.RemoveByName(jobLock.LockName);
             } catch (Exception e) {
                 Log.Error().Message("Error attempting to release job lock '{0}' on {1}.", jobLock.LockName, Environment.MachineName).Exception(e).Report().Write();
             }

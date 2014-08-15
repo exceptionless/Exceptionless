@@ -44,8 +44,8 @@ namespace MongoMigrations {
         protected virtual void ApplyMigration(Migration migration) {
             Trace.TraceInformation("Applying migration \"{0}\" for version {1} to database \"{2}\".", migration.Description, migration.Version, Database.Name);
 
-            var appliedMigration = DatabaseStatus.StartMigration(migration);
             migration.Database = Database;
+            var appliedMigration = DatabaseStatus.StartMigration(migration);
             try {
                 var m = migration as CollectionMigration;
                 if (m != null) {
@@ -76,11 +76,11 @@ namespace MongoMigrations {
 
         public virtual void UpdateTo(MigrationVersion updateToVersion) {
             var currentVersion = DatabaseStatus.GetLastAppliedMigration();
+            var migrations = MigrationLocator.GetMigrationsAfter(currentVersion).Where(m => m.Version <= updateToVersion).ToList();
+            if (migrations.Count == 0)
+                return;
+
             Trace.TraceInformation("Updating migration \"{0}\" for version {1} to database \"{2}\".", currentVersion, updateToVersion, Database.Name);
-
-            var migrations = MigrationLocator.GetMigrationsAfter(currentVersion)
-                .Where(m => m.Version <= updateToVersion);
-
             ApplyMigrations(migrations);
         }
     }

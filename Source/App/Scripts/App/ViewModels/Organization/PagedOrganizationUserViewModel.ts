@@ -19,8 +19,8 @@ module exceptionless.organization {
 
         public get name(): KnockoutComputed<string> {
             return ko.computed(() => {
-                var organization = ko.utils.arrayFirst(App.organizations(), (organization: models.Organization) => organization.id === this._organizationId);
-                return organization != null ? organization.name : App.selectedOrganization().name;
+                var org = ko.utils.arrayFirst(App.organizations(), (o: models.Organization) => o.id === this._organizationId);
+                return org != null ? org.name : App.selectedOrganization().name;
             }, this);
         }
 

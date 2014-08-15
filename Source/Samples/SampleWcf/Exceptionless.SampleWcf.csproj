@@ -88,12 +88,8 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
-      <Project>{e2087c42-6c65-49b7-9e64-b5e69a684220}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
     <ProjectReference Include="..\..\Clients\Web\Exceptionless.Web.csproj">
-      <Project>{de06edb4-5d81-4b49-989d-a2c5a1db6cec}</Project>
+      <Project>{DE06EDB4-5D81-4B49-989D-A2C5A1DB6CEC}</Project>
       <Name>Exceptionless.Web</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Models\Exceptionless.Models.csproj">
@@ -126,12 +122,4 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
-  <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

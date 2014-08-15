@@ -1,0 +1,1 @@
+job.exe /jobtype:"Exceptionless.Core.Jobs.ProcessEventPostsJob, Exceptionless.Core"

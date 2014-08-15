@@ -11,10 +11,11 @@
 
 using System;
 using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Core.Jobs {
     public class MongoMachineJobLockProvider : MongoJobLockProvider {
-        public MongoMachineJobLockProvider(IJobLockInfoRepository repository) : base(repository) {}
+        public MongoMachineJobLockProvider(IJobLockRepository repository) : base(repository) {}
 
         public override JobLock Acquire(string lockName) {
             lockName = String.Format("{0} {1}", lockName, Environment.MachineName);

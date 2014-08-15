@@ -8,60 +8,32 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using Exceptionless.Dependency;
+using Exceptionless.Web.Extensions;
 
 namespace Exceptionless.Mvc {
     public class ExceptionlessModule : IHttpModule {
-        private HttpApplication _context;
+        private HttpApplication _app;
+
+        public virtual void Init(HttpApplication app) {
+            ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.RegisterHttpApplicationErrorHandler(app);
+            ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
+            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessMvcEnrichment>();
+            ExceptionlessClient.Default.Configuration.Resolver.Register<ILastReferenceIdManager, WebLastReferenceIdManager>();
+            
+            _app = app;
+
+            if (!GlobalFilters.Filters.Any(f => f.Instance is ExceptionlessSendErrorsAttribute))
+                GlobalFilters.Filters.Add(new ExceptionlessSendErrorsAttribute());
+        }
 
         public void Dispose() {
-            ExceptionlessClient.Current.Shutdown();
-            _context.Error -= OnError;
-        }
-
-        public virtual void Init(HttpApplication context) {
-            ExceptionlessClient.Current.LastErrorIdManager = new WebLastErrorIdManager(ExceptionlessClient.Current);
-            ExceptionlessClient.Current.RegisterPlugin(new ExceptionlessMvcPlugin());
-            ExceptionlessClient.Current.Startup();
-            ExceptionlessClient.Current.Configuration.IncludePrivateInformation = true;
-            _context = context;
-            _context.Error += OnError;
-
-            ReplaceErrorHandler();
-        }
-
-        private void ReplaceErrorHandler() {
-            Filter filter = GlobalFilters.Filters.FirstOrDefault(f => f.Instance is IExceptionFilter);
-            var handler = new ExceptionlessHandleErrorAttribute();
-
-            if (filter != null) {
-                if (filter.Instance is ExceptionlessHandleErrorAttribute)
-                    return;
-
-                GlobalFilters.Filters.Remove(filter.Instance);
-
-                handler.WrappedHandler = (IExceptionFilter)filter.Instance;
-            }
-
-            GlobalFilters.Filters.Add(handler);
-        }
-
-        private void OnError(object sender, EventArgs e) {
-            HttpContext context = HttpContext.Current;
-            if (context == null)
-                return;
-
-            Exception exception = context.Server.GetLastError();
-            if (exception == null)
-                return;
-
-            var contextData = new Dictionary<string, object> {
-                { "HttpContext", new HttpContextWrapper(context) }
-            };
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "HttpApplicationError", true, contextData);
+            ExceptionlessClient.Default.Shutdown();
+            ExceptionlessClient.Default.UnregisterHttpApplicationErrorExceptionHandler(_app);
         }
     }
 }

@@ -1,5 +1,6 @@
-﻿@using CodeSmith.Core.Extensions
-@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.ErrorNotificationModel>
+﻿@using System
+@using CodeSmith.Core.Extensions
+@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @{ Layout = "_Layout.html.cshtml"; }
 
 <!-- BODY -->
@@ -15,49 +16,48 @@
                             <p class="lead" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 17px; line-height: 1.6;">
                                 @if (Model.IsNew) {
                                     <text>
-                                    A new @if (Model.IsCritical) { <text>critical </text> }error has occurred in the "@Model.ProjectName" project.
+                                        A new @if (Model.IsCritical){<text>critical </text>}event has occurred in the "@Model.ProjectName" project.
                                     </text>
                                 } else if (Model.IsRegression) {
                                     <text>
-                                    @if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has regressed in the "@Model.ProjectName" project.
+                                        @if (Model.IsCritical) {<text>A critical</text>} else {<text>An</text>} event has regressed in the "@Model.ProjectName" project.
                                     </text>
                                 } else {
                                     <text>
-                                    @if (Model.IsCritical) { <text>A critical</text> } else { <text>An</text> } error has reoccurred for the @Model.TotalOccurrences.ToOrdinal() time in the "@Model.ProjectName" project.
+                                        @if (Model.IsCritical) {<text>A critical</text>} else {<text>An</text>} event has reoccurred for the @Model.TotalOccurrences.ToOrdinal() time in the "@Model.ProjectName" project.
                                     </text>
                                 }
                             </p>
 
                             <div class="fieldset" style="margin: 0; padding: 15px; font-family: 'Open Sans', arial, sans-serif; font-size: 13px; background-color: #ffffff; margin-bottom: 15px; border: 1px solid #D5D5D5; border-radius: 4px;">
-                                <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
-                                    <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Type</h5>
-                                    @Model.FullTypeName
-                                </div>
-                                <div class="hr" style="margin: 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; height: 0px; border-bottom: 1px solid #D5D5D5; font-size: 1px;"></div>
+                                @if (!String.IsNullOrEmpty(Model.Message)) {
                                 <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                                     <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Message</h5>
                                     @Model.Message
                                 </div>
-                            @if (!String.IsNullOrEmpty(Model.Url)) {
-                                <div class="hr" style="margin: 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; height: 0px; border-bottom: 1px solid #D5D5D5; font-size: 1px;"></div>
-                                <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
-                                    <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Source</h5>
-                                    @Model.Url
-                                </div>
-                            }
+                                }
+                                @if (!String.IsNullOrEmpty(Model.Url)) {
+                                    if (!String.IsNullOrEmpty(Model.Message)) {
+                                    <div class="hr" style="margin: 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; height: 0px; border-bottom: 1px solid #D5D5D5; font-size: 1px;"></div>
+                                    }
+                                    <div class="field" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
+                                        <h5 style="margin: 0 0 8px 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 15px; color: #000; font-weight: 900; font-size: 13px;">Source</h5>
+                                        @Model.Url
+                                    </div>
+                                }
                             </div>
 
                             <!-- Button -->
                             <p class="center" style="margin: 10px auto 0 auto; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 14px; line-height: 1.6; text-align: center;">
-                                <a class="btn" href="@Model.BaseUrl/error/@Model.ErrorStackId/@Model.ErrorId" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">View Error Details</a>
+                                <a class="btn" href="@Model.BaseUrl/event/@Model.Event.StackId/@Model.Event.Id" rel="notrack" target="_blank" style="margin: 10px auto 24px;padding: 10px 15px;min-width:200px;font-family: 'Open Sans', arial, sans-serif;color: #FFF;text-decoration: none;background-color: #6b991c;font-weight: bold;margin-right: 10px;text-align: center;cursor: pointer;display: inline-block;border-radius: 3px;">View Error Details</a>
                             </p>
 
                             <div class="other" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                                 <h5 style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 5px; color: #939393; font-weight: 900; font-size: 17px;">Other Actions</h5>
                                 <ul style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 20px; font-weight: normal; font-size: 14px; line-height: 1.6;">
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.ErrorStackId/mark-fixed" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Mark error as fixed</a></li>
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.ErrorStackId/stop-notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Stop sending notifications for this error</a></li>
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/project/@Model.ProjectId/manage#notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Change your notification settings for this project</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.Event.StackId/mark-fixed" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Mark event as fixed</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/stack/@Model.Event.StackId/stop-notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Stop sending notifications for this event</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/project/@Model.Event.ProjectId/manage#notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Change your notification settings for this project</a></li>
                                 </ul>
                             </div>
 

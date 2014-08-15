@@ -11,18 +11,19 @@
 
 using System;
 using System.Linq;
+using Exceptionless.Models;
 
 namespace Exceptionless.Models {
     public class OAuthAccount : IEquatable<OAuthAccount> {
         public OAuthAccount() {
-            ExtraData = new ConfigurationDictionary();
+            ExtraData = new SettingsDictionary();
         }
 
         public string Provider { get; set; }
         public string ProviderUserId { get; set; }
         public string Username { get; set; }
 
-        public ConfigurationDictionary ExtraData { get; private set; }
+        public SettingsDictionary ExtraData { get; private set; }
 
         public bool Equals(OAuthAccount other) {
             if (ReferenceEquals(null, other))
@@ -54,7 +55,7 @@ namespace Exceptionless.Models {
         }
 
         public string EmailAddress() {
-            if (Username.Contains("@"))
+            if (!String.IsNullOrEmpty(Username) && Username.Contains("@"))
                 return Username;
 
             foreach (var kvp in ExtraData) {
@@ -69,7 +70,7 @@ namespace Exceptionless.Models {
             foreach (var kvp in ExtraData.Where(kvp => String.Equals(kvp.Key, "name") && !String.IsNullOrEmpty(kvp.Value)))
                 return kvp.Value;
 
-            return Username.Contains(" ") ? Username : null;
+            return !String.IsNullOrEmpty(Username) && Username.Contains(" ") ? Username : null;
         }
     }
 }

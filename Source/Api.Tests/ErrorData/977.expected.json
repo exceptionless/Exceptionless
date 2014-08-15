@@ -1,0 +1,133 @@
+﻿{
+  "ReferenceId": "80000000b77efe1fc4cf9e2d",
+  "Date": "2013-05-03T07:41:43.86797-05:00",
+  "request": {
+    "UserAgent": "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.64 Safari/537.31",
+    "HttpMethod": "GET",
+    "IsSecure": false,
+    "Host": "localhost",
+    "Port": 65508,
+    "Path": "/default.aspx",
+    "ClientIpAddress": "::1",
+    "Cookies": {
+      "__AntiXsrfToken": "7332d5254d4b43738d20d947c8323248",
+      "Blah": "blah",
+      "uvf": "1",
+      "_extads1": "438",
+      "_extad6": "2:3T2T4T1T5T6",
+      "_expvnum1": "15",
+      "_expermvid1": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47-46933791134506464",
+      "__atuvc": "14%7C18",
+      "_exuc2_668": "C0020A4F-EF86-45B3-ACA9-A61F5C3AED47:1367157376.790807"
+    },
+    "Form": {},
+    "QueryString": {}
+  },
+  "environment": {
+    "ProcessorCount": 12,
+    "TotalPhysicalMemory": 17120079872,
+    "AvailablePhysicalMemory": 9523634176,
+    "CommandLine": "\"C:\\Program Files (x86)\\Common Files\\Microsoft Shared\\DevServer\\11.0\\WebDev.WebServer40.exe\" /port:65508 /path:\"D:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Web\" /vpath:\"/\"",
+    "ProcessName": "C:\\Program Files (x86)\\Common Files\\Microsoft Shared\\DevServer\\11.0\\WebDev.WebServer40.exe",
+    "ProcessId": "8132",
+    "ProcessMemorySize": 63827968,
+    "ThreadId": "13552",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows 8 Enterprise",
+    "OSVersion": "6.2.9200.0",
+    "MachineName": "Example",
+    "RuntimeVersion": "4.0.30319.18033",
+    "IpAddress": "127.0.0.1",
+    "Data": {
+      "AppDomainName": "dea050bf-8-130120585010002944"
+    }
+  },
+  "Type": "error",
+  "error": {
+    "Type": "CodeSmith.Data.Rules.BrokenRuleException",
+    "Message": "1 broken rule. All rules must pass. Type: Employees - LastName is a required field. State: { EmployeeId = 0 FirstName = Example LastName = <null> Email = <null> ManagerId = <null> CreatedBy = 1 UpdatedBy = 0 }",
+    "StackTrace": [
+      {
+        "FileName": "d:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Data\\UglyDataContext.Generated.cs",
+        "LineNumber": 1474,
+        "Column": 17,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "Ugly.Data",
+        "DeclaringType": "UglyDataContext",
+        "DeclaringTypeFullName": "Ugly.Data.UglyDataContext",
+        "FullName": "Ugly.Data.UglyDataContext.SubmitChanges",
+        "Signature": "Ugly.Data.UglyDataContext.SubmitChanges(ConflictMode failureMode)",
+        "Name": "SubmitChanges",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "failureMode",
+            "Type": "ConflictMode",
+            "TypeNamespace": "System.Data.Linq",
+            "TypeFullName": "System.Data.Linq.ConflictMode"
+          }
+        ]
+      },
+      {
+        "LineNumber": 0,
+        "Column": 0,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "System.Data.Linq",
+        "DeclaringType": "DataContext",
+        "DeclaringTypeFullName": "System.Data.Linq.DataContext",
+        "FullName": "System.Data.Linq.DataContext.SubmitChanges",
+        "Signature": "System.Data.Linq.DataContext.SubmitChanges()",
+        "Name": "SubmitChanges",
+        "ModuleId": -1
+      },
+      {
+        "FileName": "d:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Web\\Default.aspx.cs",
+        "LineNumber": 20,
+        "Column": 17,
+        "IsSignatureTarget": false,
+        "DeclaringNamespace": "Ugly.Web",
+        "DeclaringType": "_Default",
+        "DeclaringTypeFullName": "Ugly.Web._Default",
+        "FullName": "Ugly.Web._Default.Page_Load",
+        "Signature": "Ugly.Web._Default.Page_Load(Object sender, EventArgs e)",
+        "Name": "Page_Load",
+        "ModuleId": -1,
+        "Parameters": [
+          {
+            "Name": "sender",
+            "Type": "Object",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.Object"
+          },
+          {
+            "Name": "e",
+            "Type": "EventArgs",
+            "TypeNamespace": "System",
+            "TypeFullName": "System.EventArgs"
+          }
+        ]
+      }
+    ],
+    "TargetMethod": {
+      "IsSignatureTarget": false,
+      "DeclaringNamespace": "Ugly.Data",
+      "DeclaringType": "UglyDataContext",
+      "DeclaringTypeFullName": "Ugly.Data.UglyDataContext",
+      "FullName": "Ugly.Data.UglyDataContext.SubmitChanges",
+      "Signature": "Ugly.Data.UglyDataContext.SubmitChanges(ConflictMode failureMode)",
+      "Name": "SubmitChanges",
+      "ModuleId": -1,
+      "Parameters": [
+        {
+          "Name": "failureMode",
+          "Type": "ConflictMode",
+          "TypeNamespace": "System.Data.Linq",
+          "TypeFullName": "System.Data.Linq.ConflictMode"
+        }
+      ]
+    }
+  },
+  "user": {
+    "Identity": "Example\\Example"
+  }
+}

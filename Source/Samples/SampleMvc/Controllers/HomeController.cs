@@ -19,6 +19,7 @@ namespace Exceptionless.SampleMvc.Controllers {
         public string Blah { get; set; }
     }
 
+    [HandleError(View = "CustomError", ExceptionType = typeof(ArgumentException))]
     public class HomeController : Controller {
         public ActionResult Index() {
             return View();
@@ -34,6 +35,11 @@ namespace Exceptionless.SampleMvc.Controllers {
             return View("Error");
         }
 
+        [HttpGet]
+        public ViewResult CustomError() {
+            return View("CustomError");
+        }
+
         [HttpPost]
         public JsonResult AjaxMethod(SomeModel model) {
             throw new ApplicationException("Error on AJAX call.");
@@ -47,7 +53,7 @@ namespace Exceptionless.SampleMvc.Controllers {
             if (String.IsNullOrEmpty(emailaddress) && String.IsNullOrEmpty(description))
                 return RedirectToAction("Index", "Home");
 
-            ExceptionlessClient.Current.UpdateUserEmailAndDescription(identifier, emailaddress, description);
+            ExceptionlessClient.Default.UpdateUserEmailAndDescription(identifier, emailaddress, description);
 
             return View("ErrorSubmitted");
         }
@@ -63,15 +69,19 @@ namespace Exceptionless.SampleMvc.Controllers {
         }
 
         [HttpGet]
+        public ActionResult CustomBoom() {
+            throw new ArgumentException("Boom!");
+        }
+
+        [HttpGet]
         public ActionResult Boom25() {
             for (int i = 0; i < 25; i++) {
                 try {
                     throw new ApplicationException("Boom!");
                 } catch (Exception ex) {
-                    ExceptionlessClient.Create(ex)
-                        .SetUserEmail("some@email.com")
+                   ex.ToExceptionless()
+                        .SetUserIdentity("some@email.com")
                         .AddRecentTraceLogEntries()
-                        .AddDefaultInformation()
                         .AddRequestInfo()
                         .AddObject(new {
                             Blah = "Hello"
@@ -83,11 +93,9 @@ namespace Exceptionless.SampleMvc.Controllers {
                     ex.ToExceptionless().Submit();
 
                     ex.ToExceptionless()
-                        .SetUserEmail("some@email.com")
-                        .SetUserDescription("Some description.")
-                        .SetUserName("someusername")
+                        .SetUserIdentity("some@email.com")
+                        .SetUserDescription("some@email.com", "Some description.")
                         .AddRecentTraceLogEntries()
-                        .AddDefaultInformation()
                         .AddRequestInfo()
                         .AddObject(new {
                             Blah = "Hello"

@@ -10,99 +10,73 @@
 #endregion
 
 using System;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Collections.Generic;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
+using FluentValidation;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Core.Repositories {
-    public class DayStackStatsRepository : MongoRepository<DayStackStats> {
-        public DayStackStatsRepository(MongoDatabase database, ICacheClient cacheClient = null) : base(database, cacheClient) {}
+    public class DayStackStatsRepository : MongoRepositoryOwnedByProjectAndStack<DayStackStats>, IDayStackStatsRepository {
+        public DayStackStatsRepository(MongoDatabase database, IValidator<DayStackStats> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(database, validator, cacheClient, messagePublisher) {
+            _getIdValue = s => s;
+            EnableNotifications = false;
+        }
 
-        public const string CollectionName = "errorstack.stats.day";
+        public ICollection<DayStackStats> GetRange(string start, string end) {
+            var query = Query.And(Query.GTE(FieldNames.Id, start), Query.LTE(FieldNames.Id, end));
+            return Find<DayStackStats>(new MongoOptions().WithQuery(query));
+        }
+
+        public long IncrementStats(string id, long getTimeBucket) {
+            UpdateBuilder update = Update
+                .Inc(FieldNames.Total, 1)
+                .Inc(String.Format(FieldNames.MinuteStats_Format, getTimeBucket.ToString("0000")), 1);
+
+            return UpdateAll(new QueryOptions().WithId(id), update);
+        }
+
+        #region Collection Setup
+
+        public const string CollectionName = "stack.stats.day";
 
         protected override string GetCollectionName() {
             return CollectionName;
         }
 
-        public static class FieldNames {
-            public const string MinuteStats_Format = "mn.{0}";
-            public const string Id = "_id";
-            public const string ProjectId = "pid";
-            public const string ErrorStackId = "sid";
+        private static class FieldNames {
+            public const string Id = CommonFieldNames.Id;
+            public const string ProjectId = CommonFieldNames.ProjectId;
+            public const string StackId = CommonFieldNames.StackId;
             public const string Total = "tot";
             public const string MinuteStats = "mn";
+            public const string MinuteStats_Format = "mn.{0}";
         }
 
-        protected override string GetId(DayStackStats entity) {
-            return entity.Id;
-        }
+        protected override void InitializeCollection(MongoDatabase database) {
+            base.InitializeCollection(database);
 
-        protected override void InitializeCollection(MongoCollection<DayStackStats> collection) {
-            base.InitializeCollection(collection);
-
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ProjectId));
-            collection.EnsureIndex(IndexKeys.Ascending(FieldNames.ErrorStackId));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StackId), IndexOptions.SetBackground(true));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<DayStackStats> cm) {
-            base.ConfigureClassMap(cm);
+            cm.AutoMap();
+            cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));
-            cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId);
-            cm.GetMemberMap(c => c.ErrorStackId).SetElementName(FieldNames.ErrorStackId).SetRepresentation(BsonType.ObjectId);
+            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
+            cm.GetMemberMap(c => c.StackId).SetElementName(CommonFieldNames.StackId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator());
             cm.GetMemberMap(c => c.Total).SetElementName(FieldNames.Total);
             cm.GetMemberMap(c => c.MinuteStats).SetElementName(FieldNames.MinuteStats).SetSerializationOptions(DictionarySerializationOptions.Document);
         }
 
-        public void RemoveAllByProjectId(string projectId) {
-            const int batchSize = 150;
-
-            var ids = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id)
-                .Select(es => new BsonString(es.Id))
-                .ToArray();
-
-            while (ids.Length > 0) {
-                Collection.Remove(Query.In(FieldNames.Id, ids));
-                ids = Collection.Find(Query.EQ(FieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id)
-                    .Select(es => new BsonString(es.Id))
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByProjectIdAsync(string projectId) {
-            await Task.Run(() => RemoveAllByProjectId(projectId));
-        }
-
-        public void RemoveAllByErrorStackId(string errorStackId) {
-            const int batchSize = 150;
-
-            var ids = Collection.Find(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))))
-                .SetLimit(batchSize)
-                .SetFields(FieldNames.Id)
-                .Select(es => new BsonString(es.Id))
-                .ToArray();
-
-            while (ids.Length > 0) {
-                Collection.Remove(Query.In(FieldNames.Id, ids));
-                ids = Collection.Find(Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(errorStackId))))
-                    .SetLimit(batchSize)
-                    .SetFields(FieldNames.Id)
-                    .Select(es => new BsonString(es.Id))
-                    .ToArray();
-            }
-        }
-
-        public async Task RemoveAllByErrorStackIdAsync(string errorStackId) {
-            await Task.Run(() => RemoveAllByErrorStackId(errorStackId));
-        }
+        #endregion\
     }
 }

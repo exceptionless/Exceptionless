@@ -4,7 +4,7 @@
 #define CDS_COMPILE_JUST_THIS
 #define FEATURE_CORECLR
 
-#if PFX_LEGACY_3_5
+#if PFX_LEGACY_3_5 || PORTABLE40
 
 // ==++== 
 //
@@ -32,7 +32,9 @@ using System.Diagnostics;
 using System.Collections;
 using System.Runtime.Serialization;
 using System.Security;
-using System.Security.Permissions; 
+#if !PORTABLE40
+using System.Security.Permissions;
+#endif
 using System.Collections.ObjectModel;
  
 #if !CDS_COMPILE_JUST_THIS 
@@ -56,9 +58,11 @@ namespace System.Collections.Concurrent
 #if !FEATURE_CORECLR 
     [Serializable]
 #endif 
+#if !PORTABLE40
     [ComVisible(false)]
-    [DebuggerDisplay("Count = {Count}")]
     [HostProtection(Synchronization = true, ExternalThreading = true)] 
+#endif
+    [DebuggerDisplay("Count = {Count}")]
     public class ConcurrentDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDictionary
     { 
         /// <summary> 
@@ -1209,7 +1213,7 @@ namespace System.Collections.Concurrent
         {
             get { return GetValues(); } 
         }
-        #endregion 
+#endregion 
  
 #region ICollection<KeyValuePair<TKey,TValue>> Members
  
@@ -1282,7 +1286,7 @@ namespace System.Collections.Concurrent
             return TryRemoveInternal(keyValuePair.Key, out throwAwayValue, true, keyValuePair.Value); 
         }
  
-        #endregion 
+#endregion 
 
 #region IEnumerable Members 
 
@@ -1300,7 +1304,7 @@ namespace System.Collections.Concurrent
             return ((ConcurrentDictionary<TKey, TValue>)this).GetEnumerator(); 
         }
  
-        #endregion 
+#endregion 
 
 #region IDictionary Members 
 
@@ -1474,7 +1478,7 @@ namespace System.Collections.Concurrent
             } 
         }
  
-        #endregion
+#endregion
 
 #region ICollection Members
  
@@ -1581,7 +1585,7 @@ namespace System.Collections.Concurrent
             } 
         } 
 
-        #endregion 
+#endregion 
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the

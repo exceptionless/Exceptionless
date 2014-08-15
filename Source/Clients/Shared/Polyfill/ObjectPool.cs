@@ -1,4 +1,4 @@
-﻿#if PFX_LEGACY_3_5
+﻿#if PFX_LEGACY_3_5 || PORTABLE40
 
 using System;
 using System.Threading;

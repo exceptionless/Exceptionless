@@ -8,13 +8,13 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ServiceModel;
 using System.ServiceModel.Channels;
 using System.ServiceModel.Description;
 using System.ServiceModel.Dispatcher;
 using System.Web;
+using Exceptionless.Enrichments;
 
 namespace Exceptionless.Web {
     // TODO: Research this more: http://www.olegsych.com/2008/07/simplifying-wcf-using-exceptions-as-faults/
@@ -27,20 +27,14 @@ namespace Exceptionless.Web {
         }
 
         public virtual bool HandleError(Exception exception) {
-            Dictionary<string, object> contextData = null;
+            var contextData = new ContextData();
+            contextData.MarkAsUnhandledError();
+            contextData.SetSubmissionMethod("WCFServiceError");
 
-            HttpContext context = HttpContext.Current;
-            if (context != null) {
-                //Exception exception = context.Server.GetLastError();
-                //if (exception == null)
-                //    return true;
+            if (HttpContext.Current != null)
+                contextData.Add("HttpContext", HttpContext.Current.ToWrapped());
 
-                contextData = new Dictionary<string, object> {
-                    { "HttpContext", new HttpContextWrapper(context) }
-                };
-            }
-
-            ExceptionlessClient.Current.ProcessUnhandledException(exception, "WCFServiceError", true, contextData);
+            exception.ToExceptionless(contextData).Submit();
 
             return true;
         }

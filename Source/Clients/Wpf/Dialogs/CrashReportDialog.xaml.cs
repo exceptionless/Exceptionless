@@ -10,44 +10,59 @@
 using System;
 using System.Windows;
 using System.Windows.Input;
+using Exceptionless.Dependency;
+using Exceptionless.Extras.Utility;
 using Exceptionless.Models;
-using Exceptionless.Utility;
+using Exceptionless.Storage;
 
 namespace Exceptionless.Dialogs {
     /// <summary>
     /// Interaction logic for CrashReportDialog.xaml
     /// </summary>
     public partial class CrashReportDialog : Window {
-        public Error Error { get; internal set; }
+        public ExceptionlessClient Client { get; internal set; }
+        public Event Event { get; internal set; }
 
-        public CrashReportDialog(Error error) {
+        public CrashReportDialog(ExceptionlessClient client, Event ev) {
             InitializeComponent();
 
-            Error = error;
+            Client = client;
+            Event = ev;
             Title = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
-            headerText.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
+            InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
-            emailAddressTextBox.Text = String.IsNullOrEmpty(error.UserEmail)
-                ? ExceptionlessClient.Current.LocalConfiguration.EmailAddress
-                : error.UserEmail;
+            var userInfo = ev.GetUserIdentity();
+            if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity)) {
+                EmailAddressTextBox.Text = userInfo.Identity;
+            } else {
+                var storage = client.Configuration.Resolver.Resolve<PersistedDictionary>();
+                string emailAddress;
+                if (storage != null && storage.TryGetValue("EmailAddress", out emailAddress))
+                    EmailAddressTextBox.Text = emailAddress;
+            }
 
-            descriptionTextBox.Text = error.UserDescription;
+            var userDescription = Event.GetUserDescription();
+            if (userDescription != null)
+                DescriptionTextBox.Text = userDescription.Description;
         }
 
-        private void sendReportButton_Click(object sender, RoutedEventArgs e) {
+        private void OnSubmitReportButtonClick(object sender, RoutedEventArgs e) {
             Cursor = Cursors.Wait;
 
-            sendReportButton.IsEnabled = false;
-            cancelButton.IsEnabled = false;
+            SubmitReportButton.IsEnabled = false;
+            CancelButton.IsEnabled = false;
 
-            Error.UserEmail = emailAddressTextBox.Text;
-            Error.UserDescription = descriptionTextBox.Text;
+            if (!String.IsNullOrWhiteSpace(EmailAddressTextBox.Text)) {
+                var storage = Client.Configuration.Resolver.Resolve<PersistedDictionary>();
+                if (storage != null)
+                    storage["EmailAddress"] = EmailAddressTextBox.Text;
+            }
 
-            ExceptionlessClient.Current.SubmitError(Error);
+            Event.SetUserDescription(EmailAddressTextBox.Text, DescriptionTextBox.Text);
 
             Cursor = Cursors.Arrow;
-            sendReportButton.IsEnabled = true;
-            cancelButton.IsEnabled = true;
+            SubmitReportButton.IsEnabled = true;
+            CancelButton.IsEnabled = true;
 
             DialogResult = true;
             Close();

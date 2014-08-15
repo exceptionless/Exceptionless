@@ -45,6 +45,7 @@ namespace Exceptionless.Json
         internal const PreserveReferencesHandling DefaultPreserveReferencesHandling = PreserveReferencesHandling.None;
         internal const ConstructorHandling DefaultConstructorHandling = ConstructorHandling.Default;
         internal const TypeNameHandling DefaultTypeNameHandling = TypeNameHandling.None;
+        internal const MetadataPropertyHandling DefaultMetadataPropertyHandling = MetadataPropertyHandling.Default;
         internal const FormatterAssemblyStyle DefaultTypeNameAssemblyFormat = FormatterAssemblyStyle.Simple;
         internal static readonly StreamingContext DefaultContext;
 
@@ -83,6 +84,7 @@ namespace Exceptionless.Json
         internal StreamingContext? _context;
         internal ConstructorHandling? _constructorHandling;
         internal TypeNameHandling? _typeNameHandling;
+        internal MetadataPropertyHandling? _metadataPropertyHandling;
 
         /// <summary>
         /// Gets or sets how reference loops (e.g. a class referencing itself) is handled.
@@ -158,6 +160,16 @@ namespace Exceptionless.Json
         {
             get { return _typeNameHandling ?? DefaultTypeNameHandling; }
             set { _typeNameHandling = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets how metadata properties are used during deserialization.
+        /// </summary>
+        /// <value>The metadata properties handling.</value>
+        public MetadataPropertyHandling MetadataPropertyHandling
+        {
+            get { return _metadataPropertyHandling ?? DefaultMetadataPropertyHandling; }
+            set { _metadataPropertyHandling = value; }
         }
 
         /// <summary>

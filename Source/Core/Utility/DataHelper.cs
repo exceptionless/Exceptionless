@@ -11,89 +11,83 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Exceptionless.Models.Admin;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class DataHelper {
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly ProjectRepository _projectRepository;
-        private readonly UserRepository _userRepository;
-        private readonly ErrorRepository _errorRepository;
-        private readonly ErrorStackRepository _errorStackRepository;
-        private readonly DayStackStatsRepository _dayStackStats;
-        private readonly MonthStackStatsRepository _monthStackStats;
-        private readonly DayProjectStatsRepository _dayProjectStats;
-        private readonly MonthProjectStatsRepository _monthProjectStats;
-        private readonly ErrorStatsHelper _statsHelper;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IEventRepository _eventRepository;
+        private readonly IStackRepository _stackRepository;
+        private readonly IDayStackStatsRepository _dayStackStats;
+        private readonly IMonthStackStatsRepository _monthStackStats;
+        private readonly IDayProjectStatsRepository _dayProjectStats;
+        private readonly IMonthProjectStatsRepository _monthProjectStats;
         private readonly BillingManager _billingManager;
-
+        
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
+        public const string SAMPLE_USER_API_KEY = "d795c4406f6b4bc6ae8d787c65d0274d";
 
-        public DataHelper(OrganizationRepository organizationRepository,
-            ProjectRepository projectRepository,
-            UserRepository userRepository,
-            ErrorRepository errorRepository,
-            ErrorStackRepository errorStackRepository,
-            DayStackStatsRepository dayStackStats,
-            MonthStackStatsRepository monthStackStats,
-            DayProjectStatsRepository dayProjectStats,
-            MonthProjectStatsRepository monthProjectStats,
-            ErrorStatsHelper errorStatsHelper,
+        public DataHelper(IOrganizationRepository organizationRepository,
+            IProjectRepository projectRepository,
+            IUserRepository userRepository,
+            IEventRepository eventRepository,
+            IStackRepository stackRepository,
+            ITokenRepository tokenRepository,
+            IDayStackStatsRepository dayStackStats,
+            IMonthStackStatsRepository monthStackStats,
+            IDayProjectStatsRepository dayProjectStats,
+            IMonthProjectStatsRepository monthProjectStats,
             BillingManager billingManager) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
-            _errorRepository = errorRepository;
-            _errorStackRepository = errorStackRepository;
+            _eventRepository = eventRepository;
+            _stackRepository = stackRepository;
+            _tokenRepository = tokenRepository;
             _dayStackStats = dayStackStats;
             _monthStackStats = monthStackStats;
             _dayProjectStats = dayProjectStats;
             _monthProjectStats = monthProjectStats;
-            _statsHelper = errorStatsHelper;
             _billingManager = billingManager;
         }
 
-        public void ResetProjectData(string projectId) {
+        public async Task ResetProjectDataAsync(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            Project project = _projectRepository.GetByIdCached(projectId);
+            Project project = _projectRepository.GetById(projectId);
             if (project == null)
                 return;
 
             try {
-                _errorStackRepository.RemoveAllByProjectId(projectId);
-                _errorRepository.RemoveAllByProjectId(projectId);
-                _dayStackStats.RemoveAllByProjectId(projectId);
-                _monthStackStats.RemoveAllByProjectId(projectId);
-                _dayProjectStats.RemoveAllByProjectId(projectId);
-                _monthProjectStats.RemoveAllByProjectId(projectId);
+                await _stackRepository.RemoveAllByProjectIdAsync(projectId);
+                await _eventRepository.RemoveAllByProjectIdAsync(projectId);
+                await _dayStackStats.RemoveAllByProjectIdAsync(projectId);
+                await _monthStackStats.RemoveAllByProjectIdAsync(projectId);
+                await _dayProjectStats.RemoveAllByProjectIdAsync(projectId);
+                await _monthProjectStats.RemoveAllByProjectIdAsync(projectId);
 
-                project.ErrorCount = 0;
-                project.StackCount = 0;
-
-                _projectRepository.Update(project);
-
-                IQueryable<Project> orgProjects = _projectRepository.GetByOrganizationId(project.OrganizationId);
-                Organization organization = _organizationRepository.GetById(project.OrganizationId);
-                organization.ErrorCount = orgProjects.Sum(p => p.ErrorCount);
-                organization.StackCount = orgProjects.Sum(p => p.StackCount);
-                _organizationRepository.Update(organization);
+                _projectRepository.Save(project);
             } catch (Exception e) {
                 Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Report().Write();
                 throw;
             }
         }
 
-        public void ResetStackData(string errorStackId) {
-            if (String.IsNullOrEmpty(errorStackId))
+        public async Task ResetStackDataAsync(string stackId) {
+            if (String.IsNullOrEmpty(stackId))
                 return;
 
-            ErrorStack stack = _errorStackRepository.GetById(errorStackId);
+            Stack stack = _stackRepository.GetById(stackId);
             if (stack == null)
                 return;
 
@@ -101,14 +95,14 @@ namespace Exceptionless.Core.Utility {
                 stack.TotalOccurrences = 0;
                 stack.LastOccurrence = DateTime.MinValue.ToUniversalTime();
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
-                _errorStackRepository.Update(stack);
+                _stackRepository.Save(stack);
 
-                _statsHelper.DecrementDayProjectStatsByStackId(stack.ProjectId, errorStackId);
-                _statsHelper.DecrementMonthProjectStatsByStackId(stack.ProjectId, errorStackId);
+                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
+                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
 
-                _errorRepository.RemoveAllByErrorStackId(errorStackId);
-                _dayStackStats.RemoveAllByErrorStackId(errorStackId);
-                _monthStackStats.RemoveAllByErrorStackId(errorStackId);
+                await _eventRepository.RemoveAllByStackIdAsync(stackId);
+                await _dayStackStats.RemoveAllByStackIdAsync(stackId);
+                await _monthStackStats.RemoveAllByStackIdAsync(stackId);
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;
@@ -116,25 +110,42 @@ namespace Exceptionless.Core.Utility {
         }
 
         public void CreateSampleOrganizationAndProject(string userId) {
-            if (_projectRepository.GetByApiKey(SAMPLE_API_KEY) != null)
+            if (_tokenRepository.GetById(SAMPLE_API_KEY) != null)
                 return;
 
-            User user = _userRepository.GetByIdCached(userId);
-            var organization = new Organization { Name = "Acme" };
+            User user = _userRepository.GetById(userId, true);
+            var organization = new Organization { Id = "537650f3b77efe23a47914f3", Name = "Acme" };
             _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
-            var project = new Project { Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
+            var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", TimeZone = TimeZone.CurrentTimeZone.StandardName, OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), project.DefaultTimeZone()).ToUniversalTime().Ticks;
-            project.ApiKeys.Add(SAMPLE_API_KEY);
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = _projectRepository.Add(project);
 
-            _organizationRepository.IncrementStats(project.OrganizationId, projectCount: 1);
+            _tokenRepository.Add(new Token {
+                Id = SAMPLE_API_KEY,
+                OrganizationId = organization.Id,
+                ProjectId = project.Id,
+                ExpiresUtc = DateTime.UtcNow.AddYears(100),
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            _tokenRepository.Add(new Token {
+                Id = SAMPLE_USER_API_KEY,
+                OrganizationId = organization.Id,
+                UserId = user.Id,
+                ExpiresUtc = DateTime.UtcNow.AddYears(100),
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Update(user);
+            _userRepository.Save(user);
         }
     }
 }

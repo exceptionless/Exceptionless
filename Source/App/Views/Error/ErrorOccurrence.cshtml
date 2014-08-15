@@ -7,15 +7,12 @@
     Layout = "~/Views/Shared/_AppLayout.cshtml";
 }
 
-<div id="free-plan-notification" class="alert in fade alert-success" style="display: none;">
-    <strong>You are on a free plan.</strong>
-    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable premium features and extra storage!
-</div>
+@Html.Partial("_Notifications")
 
 <div class="widget" id="error-@Model.Id">
     <div class="widget-header">
         <h3>Error Occurrence</h3>
-        <div class="pull-right">
+        <div class="pull-right hidden-print">
             <a href="/stack/@Model.ErrorStackId" title="Go To Stack" class="btn btn-gray fa fa-caret-up"></a>
             <a id="previousErrorLink" data-bind="attr: { href: previousErrorLink() + currentTabHash() }" title="Previous Occurrence" class="btn btn-gray fa fa-caret-left @(String.IsNullOrEmpty(Model.PreviousErrorId) ? "disabled" : null)"></a>
             <a id="nextErrorLink" data-bind="attr: { href: nextErrorLink() + currentTabHash() }" title="Next Occurrence" class="btn btn-gray fa fa-caret-right @(String.IsNullOrEmpty(Model.NextErrorId) ? "disabled" : null)"></a>
@@ -23,7 +20,7 @@
     </div> <!-- /widget-header -->
     <div class="widget-content">
         <div class="tabbable">
-            <ul class="nav nav-tabs" data-tabs="tabs" id="error-tabs">
+            <ul class="nav nav-tabs hidden-print" data-tabs="tabs" id="error-tabs">
                 <li class="active">
                     <a data-toggle="tab" href="#overview">Overview</a>
                 </li>
@@ -34,10 +31,10 @@
 @if (Model.EnvironmentInfo != null) {
                 <li><a data-toggle="tab" href="#environment">Environment</a></li>
 }
-@foreach (var ex in Model.ExtendedData.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
+@foreach (var ex in Model.Data.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
                 <li><a data-toggle="tab" href="#ex-@ex.Key.ToHtmlIdentifier().ToLower()">@ex.Key.ToSpacedWords()</a></li>
 }
-@if (Model.ExtendedData.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
+@if (Model.Data.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
                 <li><a data-toggle="tab" href="#extended">Extended Data</a></li>
 }
             </ul>
@@ -60,9 +57,10 @@
                     @Html.Partial("_EnvironmentInfo", Model)
                 </div>
 }
-@foreach (var ex in Model.ExtendedData.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
+@foreach (var ex in Model.Data.Where(kvp => Model.PromotedTabs.Contains(kvp.Key))) {
                 <div id="ex-@ex.Key.ToHtmlIdentifier().ToLower()" class="tab-pane">
-                    <table class="table table-bordered table-striped table-fixed keyvalue" style="margin-bottom: 15px;">
+                    <h3 class="visible-print">@ex.Key.ToSpacedWords()</h3>
+                    <table class="table table-bordered table-striped table-fixed keyvalue hidden-print" style="margin-bottom: 15px;">
                         <tr>
                             <th>Occurred On</th>
                             <td>@Model.OccurrenceDate.ToString("MMMM d, yyyy h:mm:ss tt") (<span data-bind="livestamp: occurrence, hideTitle: true"></span>)</td>
@@ -71,7 +69,7 @@
                     @Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = ex, IsPromoted = true })
                 </div>
 }
-@if (Model.ExtendedData.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
+@if (Model.Data.Any(kvp => !Model.PromotedTabs.Contains(kvp.Key) && !kvp.Key.StartsWith("__"))) {
                 <div class="tab-pane" id="extended">
                     @Html.Partial("_ExtendedData", Model)
                 </div>

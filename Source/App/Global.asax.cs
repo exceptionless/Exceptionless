@@ -12,27 +12,22 @@
 using System;
 using System.Configuration;
 using System.Diagnostics;
-using System.Net.Sockets;
-using System.Threading;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
-using System.Web.Security;
 using CodeSmith.Core.Scheduler;
-using Exceptionless.App.Hubs;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Repositories;
 using Microsoft.AspNet.SignalR;
 using MongoDB.Driver;
 using NLog;
 using NLog.Fluent;
-using ServiceStack.CacheAccess;
-using ServiceStack.Redis;
 
 namespace Exceptionless.App {
     public class GlobalApplication : HttpApplication {
@@ -55,30 +50,37 @@ namespace Exceptionless.App {
             AutoMapperConfig.CreateMappings();
 
             Trace.Listeners.Add(new NLogTraceListener());
-            if (ExceptionlessClient.Current.Configuration.Enabled) {
-                ExceptionlessClient.Current.Log = new NLogExceptionlessLog();
-                ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration);
-                ExceptionlessClient.Current.UnhandledExceptionReporting += CurrentOnUnhandledExceptionReporting;
+            if (ExceptionlessClient.Default.Configuration.Enabled) {
+                //ExceptionlessClient.Default.Log = new NLogExceptionlessLog();
+                //ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
+                ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
             }
 
             // startup the message queue
             JobManager.Current.JobManagerStarted += (sender, args) => JobManager.Current.RunJob("StartMq");
 
             // make the notification sender listen for messages
-            var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
-            notificationSender.Listen();
+            //var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
+            //notificationSender.Listen();
         }
 
-        private void CurrentOnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs unhandledExceptionReportingEventArgs) {
-            var p = Thread.CurrentPrincipal as ExceptionlessPrincipal;
-            if (p == null)
-                return;
+        private void OnSubmittingEvent(object sender, EventSubmittingEventArgs args) {
+            // TODO: Should we be doing this for only unhandled exceptions or all events?
+            //if (args.Event.Exception.GetType() == typeof(OperationCanceledException) || args.Event.Exception.GetType() == typeof(TaskCanceledException)) {
+            //    args.Cancel = true;
+            //    return;
+            //}
 
-            if (p.Project != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.Project, "Project");
+            // TODO: We should get these from the owin context.
+            //var projectId = User.GetProjectId();
+            //if (!String.IsNullOrEmpty(projectId)) {
+            //    var projectRepository = DependencyResolver.Current.GetService<IProjectRepository>();
+            //    args.Event.AddObject(projectRepository.GetById(projectId), "Project");
+            //}
 
-            if (p.UserEntity != null)
-                unhandledExceptionReportingEventArgs.Error.AddObject(p.UserEntity, "User");
+            //var user = User.GetClaimsPrincipal();
+            //if (user != null)
+            //    args.Event.AddObject(user, "User");
         }
 
         private static bool? _dbIsUpToDate;
@@ -87,7 +89,7 @@ namespace Exceptionless.App {
 
         public static bool IsDbUpToDate() {
             lock (_dbIsUpToDateLock) {
-                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds > 10))
+                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds < 10))
                     return _dbIsUpToDate.Value;
 
                 _lastDbUpToDateCheck = DateTime.Now;
@@ -101,28 +103,16 @@ namespace Exceptionless.App {
                 if (Settings.Current.AppendMachineNameToDatabase)
                     databaseName += String.Concat("-", Environment.MachineName.ToLower());
 
-                try {
-                    _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
-                } catch (Exception e) {
-                    Log.Error().Exception(e).Message("Error checking db version: {0}", e.Message).Report().Write();
-                }
+                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(connectionString, databaseName);
+                if (_dbIsUpToDate.Value)
+                    return true;
 
-                if (!_dbIsUpToDate.HasValue || !_dbIsUpToDate.Value) {
-                    // if enabled, auto upgrade the database
-                    if (Settings.Current.ShouldAutoUpgradeDatabase) {
-                        try {
-                            MongoMigrationChecker.EnsureLatest(connectionString, databaseName);
-                        } catch (Exception e) {
-                            Log.Error().Exception(e).Message("Error ensuring latest db version: {0}", e.Message).Report().Write();
-                        }
-                        _dbIsUpToDate = true;
-                        return true;
-                    }
+                // if enabled, auto upgrade the database
+                if (Settings.Current.ShouldAutoUpgradeDatabase)
+                    Task.Factory.StartNew(() => MongoMigrationChecker.EnsureLatest(connectionString, databaseName))
+                        .ContinueWith(_ => { _dbIsUpToDate = false; });
 
-                    return false;
-                }
-
-                return true;
+                return false;
             }
         }
 
@@ -138,8 +128,8 @@ namespace Exceptionless.App {
 
         private void CheckDbOrCacheDown() {
             // make sure we are still listening for events
-            var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
-            notificationSender.EnsureListening();
+            //var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
+            //notificationSender.EnsureListening();
 
             // check if the cache is down every 5 seconds or every request if it's currently marked as down
             if (_isCacheDown || DateTime.Now.Subtract(_lastCacheCheck).TotalSeconds > 5) {
@@ -148,7 +138,7 @@ namespace Exceptionless.App {
                     var ping = cache.Get<string>("__PING__");
                     _isCacheDown = false;
                     _lastCacheCheck = DateTime.Now;
-                } catch (RedisException) {
+                } catch (Exception) {
                     _isCacheDown = true;
                     _lastCacheCheck = DateTime.Now;
                 }
@@ -173,6 +163,9 @@ namespace Exceptionless.App {
 
         private void RedirectToMaintenancePage() {
             string path = Request.Path.ToLower();
+            if (path.Equals("/status"))
+                return;
+
             if (path.StartsWith("/api")) {
                 Response.Clear();
                 Response.StatusCode = 503;
@@ -204,46 +197,19 @@ namespace Exceptionless.App {
                 CheckDbOrCacheDown();
         }
 
-        protected void Application_PostAuthenticateRequest(Object sender, EventArgs e) {
-            if (!RequestRequiresAuth())
-                return;
-
-            if (!User.Identity.IsAuthenticated)
-                return;
-
-            if (User is ExceptionlessPrincipal)
-                return;
-
-            CheckDbOrCacheDown();
-
-            try {
-                var userRepository = DependencyResolver.Current.GetService<IUserRepository>();
-                User user = userRepository.GetByEmailAddress(User.Identity.Name);
-                if (user == null) {
-                    FormsAuthentication.SignOut();
-                    FormsAuthentication.RedirectToLoginPage();
-                    return;
-                }
-
-                var principal = new ExceptionlessPrincipal(user);
-                Thread.CurrentPrincipal = principal;
-                if (HttpContext.Current != null)
-                    HttpContext.Current.User = principal;
-            } catch (MongoConnectionException ex) {
-                Log.Error().Exception(ex).Message("Error getting user: {0}", ex.Message).Report().Write();
-                MarkDbDown();
-                RedirectToMaintenancePage();
-            } catch (SocketException ex) {
-                Log.Error().Exception(ex).Message("Error getting user: {0}", ex.Message).Report().Write();
-                MarkDbDown();
-                RedirectToMaintenancePage();
-            }
-        }
-
         protected void Application_Error(Object sender, EventArgs e) {
             Exception error = Server.GetLastError();
-            if (error != null)
-                Log.Error().Exception(error).Message("Application error.").Write();
+            if (error == null)
+                return;
+
+            if (error is HttpAntiForgeryException) {
+                Server.ClearError();
+                Response.Redirect("~/account/logoff", false);
+                Context.ApplicationInstance.CompleteRequest();
+                return;
+            }
+
+            Log.Error().Exception(error).Message("Application error.").Write();
         }
     }
 }

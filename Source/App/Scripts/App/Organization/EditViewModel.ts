@@ -20,11 +20,19 @@ module exceptionless.organization {
 
             App.organizations.subscribe((organizations) => {
                 $('#free-plan-notification').hide();
+                $('#hourly-limit-notification').hide();
+                $('#monthly-limit-notification').hide();
 
-                var organization = ko.utils.arrayFirst(organizations, (o) => (<any>o).id === organizationId);
-                if (organization != null && organization.planId === Constants.FREE_PLAN_ID) {
+                var org = ko.utils.arrayFirst(organizations, (o) => (<any>o).id === organizationId);
+                if (org == null)
+                    return;
+
+                if (org.isOverHourlyLimit)
+                    $('#monthly-limit-notification').show();
+                else if (org.isOverHourlyLimit)
+                    $('#hourly-limit-notification').show();
+                else if (org.planId === Constants.FREE_PLAN_ID)
                     $('#free-plan-notification').show();
-                }
             });
 
             // TODO Optmize this into only loading the data when the tab changes and or consolidate it into one request.
@@ -60,6 +68,9 @@ module exceptionless.organization {
 
             this.applyBindings();
             this.populateViewModel(data);
+
+            if (data)
+                this.loading(false);
         }
 
         public populateViewModel(data?: any) {

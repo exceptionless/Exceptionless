@@ -158,6 +158,10 @@ namespace Exceptionless.Extensions {
             return text;
         }
 
+        public static IEnumerable<string> SplitLines(this string text) {
+            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
+        }
+
         /// <summary>
         /// Indicates whether the specified String object is null or an empty string
         /// </summary>
@@ -197,7 +201,27 @@ namespace Exceptionless.Extensions {
         /// <param name="value"></param>
         /// <returns></returns>
         public static bool IsJson(this string value) {
-            return !String.IsNullOrEmpty(value) && ((value.StartsWith("{") || value.EndsWith("}")) || (value.StartsWith("[") && value.EndsWith("]")));
+            return value.GetJsonType() != JsonType.None;
+        }
+
+        public static JsonType GetJsonType(this string value) {
+            if (String.IsNullOrEmpty(value))
+                return JsonType.None;
+
+            for (int i = 0; i < value.Length; i++) {
+                if (Char.IsWhiteSpace(value[i]))
+                    continue;
+
+                if (value[i] == '{')
+                    return JsonType.Object;
+
+                if (value[i] == '[')
+                    return JsonType.Array;
+
+                break;
+            }
+
+            return JsonType.None;
         }
 
         /// <summary>
@@ -595,13 +619,11 @@ namespace Exceptionless.Extensions {
         /// </summary>
         /// <param name="value">The value to convert.</param>
         /// <returns>The string</returns>
-        public static string ToSpacedWords(this string value)
-        {
+        public static string ToSpacedWords(this string value) {
             string[] words = ToWords(value);
 
             var spacedName = new StringBuilder();
-            foreach (string word in words)
-            {
+            foreach (string word in words) {
                 spacedName.Append(word);
                 spacedName.Append(' ');
             }
@@ -1335,4 +1357,10 @@ namespace Exceptionless.Extensions {
         }
     }
 #endif
+
+    public enum JsonType : byte {
+        None,
+        Object,
+        Array
+    }
 }

@@ -14,14 +14,14 @@ using System.Collections.Generic;
 using System.Globalization;
 
 namespace Exceptionless.Models {
-    public class DayProjectStats : ErrorStatsWithStackIds {
+    public class DayProjectStats : EventStatsWithStackIds, IIdentity, IOwnedByProject {
         public DayProjectStats() {
-            MinuteStats = new Dictionary<string, ErrorStatsWithStackIds>();
+            MinuteStats = new Dictionary<string, EventStatsWithStackIds>();
         }
 
         public string Id { get; set; }
         public string ProjectId { get; set; }
-        public Dictionary<string, ErrorStatsWithStackIds> MinuteStats { get; set; }
+        public Dictionary<string, EventStatsWithStackIds> MinuteStats { get; set; }
 
         // TODO: see if we can share code between this and DayStackStats.
         public DateTime GetDateFromMinuteStatKey(string minute) {

@@ -14,14 +14,14 @@ using System.Collections.Generic;
 using System.Globalization;
 
 namespace Exceptionless.Models {
-    public class DayStackStats {
+    public class DayStackStats : IIdentity, IOwnedByProject, IOwnedByStack {
         public DayStackStats() {
             MinuteStats = new Dictionary<string, int>();
         }
 
         public string Id { get; set; }
         public string ProjectId { get; set; }
-        public string ErrorStackId { get; set; }
+        public string StackId { get; set; }
         public int Total { get; set; }
         public Dictionary<string, int> MinuteStats { get; set; }
 

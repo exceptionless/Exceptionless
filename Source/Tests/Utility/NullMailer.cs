@@ -13,6 +13,7 @@ using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 
 namespace Exceptionless.Tests.Utility {
@@ -20,41 +21,41 @@ namespace Exceptionless.Tests.Utility {
         public void SendPasswordReset(User user) {}
 
         public Task SendPasswordResetAsync(User sender) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
         public void SendVerifyEmail(User user) {}
 
         public Task SendVerifyEmailAsync(User user) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
         public void SendInvite(User sender, Organization organization, Invite invite) {}
 
         public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
         public Task SendPaymentFailedAsync(User owner, Organization organization) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
         public void SendAddedToOrganization(User sender, Organization organization, User user) {}
 
         public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
-        public void SendNotice(string emailAddress, ErrorNotificationModel notification) {}
+        public void SendNotice(string emailAddress, EventNotification model) {}
 
-        public Task SendNoticeAsync(string emailAddress, ErrorNotificationModel notification) {
-            return Task.Delay(0);
+        public Task SendNoticeAsync(string emailAddress, EventNotification notification) {
+            return Task.FromResult(0);
         }
 
         public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {}
 
         public Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {
-            return Task.Delay(0);
+            return Task.FromResult(0);
         }
 
         public void SendPaymentFailed(User owner, Organization organization) {}

@@ -85,17 +85,17 @@ namespace Exceptionless.Extensions {
 #if !EMBEDDED
         public static DateTime Round(this DateTime datetime, TimeSpan roundingInterval, MidpointRounding roundingType = MidpointRounding.ToEven)
         {
-            return new DateTime((datetime - DateTime.MinValue).Round(roundingInterval, roundingType).Ticks);
+            return new DateTime((datetime - DateTime.MinValue).Round(roundingInterval, roundingType).Ticks, datetime.Kind);
         }
 
         public static DateTime Floor(this DateTime datetime, TimeSpan roundingInterval)
         {
-            return new DateTime((datetime - DateTime.MinValue).Floor(roundingInterval).Ticks);
+            return new DateTime((datetime - DateTime.MinValue).Floor(roundingInterval).Ticks, datetime.Kind);
         }
 
         public static DateTime Ceiling(this DateTime datetime, TimeSpan roundingInterval)
         {
-            return new DateTime((datetime - DateTime.MinValue).Ceiling(roundingInterval).Ticks);
+            return new DateTime((datetime - DateTime.MinValue).Ceiling(roundingInterval).Ticks, datetime.Kind);
         }
 
         public static DateTimeOffset Round(this DateTimeOffset datetime, TimeSpan roundingInterval, MidpointRounding roundingType = MidpointRounding.ToEven) {

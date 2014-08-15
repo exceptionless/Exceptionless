@@ -1,0 +1,1890 @@
+FORMAT: 1A
+HOST: http://api.exceptionless.com/api/v2
+
+# Exceptionless
+Discover errors in your .NET app you never knew were happening and use detailed error reports to squash them with ease. Make your app Exceptionless!
+
+# Group Events
+Event related resources of the **Events API**
+
+## Create [/events]
+You can create an event by posting any uncompressed or compressed (`gzip` or `deflate`) string or json object.
+
+### Create new event [POST]
+You can post any JSON object to create an event. If we know how to handle it we will create a new event. If none of the JSON properties match the `event` object then we will create a new event and place your JSON object into the events data collection.
+
+You can also post a multiline string. We automatically split strings by the `\n` character and create a new log event for every line.
+
++ Request Event from JSON (application/json)
+
+        { "message": "Exceptionless is amazing!" }
+
++ Request Multiple events from string content (application/text)
+
+        Exceptionless is amazing!
+        Exceptionless is really amazing!
+
++ Request Error from JSON (application/json)
+ 
+        {  
+            "type": "error",
+            "date": "2020-10-16T18:59:09.579Z",
+            "serr": {  
+                "message": "Simple Exception",
+                "type": "System.Exception",
+                "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in c:\\Code\\Exceptionless\\Source\\Clients\\Tests\\ExceptionlessClientTests.cs:line 77"
+            }
+        }
+
++ Response 202
+
+## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
+You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
+
+### Sets the user description for a specific event [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
+
++ Request UserDescription from JSON (application/json)
+
+        { 
+            "email_address": "noreply@exceptionless.com",
+            "description": "This product is amazing!"
+        }
+    
++ Response 202
+
+## Get [/events/{id}]
+### Get by id [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    
++ Response 200 (application/json)
+
+        {
+          "id": "537b7255b77efe2474bfdd80",
+          "organization_id": "537650f3b77efe23a47914f3",
+          "project_id": "537650f3b77efe23a47914f4",
+          "stack_id": "537b7255b77efe2474bfdd7f",
+          "summary_html": null,
+          "is_fixed": false,
+          "is_hidden": false,
+          "type": "log",
+          "source": null,
+          "tags": [],
+          "message": "Exceptionless is amazing!",
+          "data": {},
+          "reference_id": null,
+          "session_id": null,
+          "is_critical": false,
+          "is_not_found": false,
+          "is_error": false
+        }
+
+## Get all [/events{?before,after,limit}]
+### List all events [GET]
++ Parameters
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }]
+
+## Get by reference id [/projects/{id}/events/by-ref/{reference_id}]
+### List all events for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
+    
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": "1234567890",
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+
+## Get by project [/projects/{id}/events{?before,after,limit}]
+### List all events for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+        
+## Get by stack [/stacks/{id}/events{?before,after,limit}]
+### List all events for a given stack [GET]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+
+# Group Organizations
+Organizations related resources of the **Organization API**
+
+## Create [/organizations]
+### Create new organization [POST]
++ Request (application/json)
+
+        { "name": "Acme" }
+
++ Response 201 (application/json)
+
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
+
+## Get all [/organizations{?before,after,limit}]
+### List all organizations [GET]
++ Parameters
+    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }]
+
+## Get, Update, Remove [/organizations/{id}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+
+### Get by id [GET]
++ Response 200 (application/json)
+    
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
+
+### Update organization [PATCH]
++ Request (application/json)
+
+        { "name": "Updated Acme" }
+
++ Response 200 (application/json)
+
+        {
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Updated Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }
+
+### Remove organization [DELETE]
++ Response 204
+
+## Manage users [/organizations/{id}/user/{email}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
+
+### Create new user [POST]
++ Response 200
+
+### Remove user [DELETE]
++ Response 200
+
+## Add custom data [/organizations/{id}/data/{key}{?value}]
+### Add custom data value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    + value (required, string, `90210`) ... Any string value.
+
++ Response 200
+
+## Remove custom data [/organizations/{id}/data/{key}]
+### Remove custom data value [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    
++ Response 200
+
+## Check for unique name [/organizations/check-name/{name}]
+### Check for unique organization name [GET]
+Returns a `404` status code if an existing orgnaization with the specified name does not exist.
+
++ Parameters
+    + name (required, string, `Acme`) ... The organization name to check.
+
++ Response 404
+    `404` status code is returned if the name is available.
+    + Body
+    
++ Response 200
+    `200` status code is returned if the name is not available.
+    + Body
+
+# Group Projects
+Project related resources of the **Projects API**
+
+## Create [/projects]
+### Create new project [POST]
++ Request (application/json)
+
+        { "organization_id": "537650f3b77efe23a47914f3", "name": "Disintegrating Pistol" }
+
++ Response 201 (application/json)
+
+        {
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "time_zone_offset": -21600000.0,
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
+        }
+
+## Get all [/projects{?before,after,limit}]
+### List all projects [GET]
++ Parameters
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "time_zone_offset": -21600000.0,
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
+        }]
+
+## Get by organization [/organizations/{id}/projects{?before,after,limit}]
+### List all projects for a given organization [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "time_zone_offset": -21600000.0,
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
+        }]
+
+## Get, Update, Remove [/projects/{id}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
+            "name": "Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "time_zone_offset": -21600000.0,
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
+        }
+
+### Update project [PATCH]
++ Request (application/json)
+
+        { "name": "Updated Disintegrating Pistol" }
+
++ Response 201 (application/json)
+
+        {
+            "id": "537650f3b77efe23a47914f4",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "organization_name": "Acme",
+            "name": "Updated Disintegrating Pistol",
+            "time_zone": "Central Standard Time",
+            "time_zone_offset": -21600000.0,
+            "data": {},
+            "promoted_tabs": [],
+            "custom_content": null,
+            "stack_count": 2,
+            "event_count": 62,
+            "total_event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.166Z"
+        }
+
+### Remove project [DELETE]
++ Response 204
+
+## Reset project data [/projects/{id}/reset-data]
+### Reset project data [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    
++ Response 200
+
+## Get configuration settings [/projects/{id}/config]
+### Get the project configuration object [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+
++ Response 200 (application/json)
+
+        {
+          "version": 0,
+          "settings": {
+            "include_conditional_data": "true"
+          }
+        }
+
+## Add configuration setting [/projects/{id}/config/{key}{?value}]
+### Add configuration value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the config object.
+    + value (required, string, `90210`) ... Any config value.
+
++ Response 200
+
+## Remove configuration setting [/projects/{id}/config/{key}]
+### Remove configuration setting [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the config object.
+    
++ Response 200
+
+## Add custom data [/projects/{id}/data/{key}{?value}]
+### Add custom data value [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    + value (required, string, `90210`) ... Any string value.
+
++ Response 200
+
+## Remove custom data [/projects/{id}/data/{key}]
+### Remove custom data value [DELETE]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + key (required, string, `zip-code`) ... The key name of the data object.
+    
++ Response 200
+
+## Promoted Tabs [/projects/{id}/promotedtabs/{name}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + name (required, string, `Machine Info`) ... The tab name.
+
+### Promote Tab [POST]
++ Response 200
+
+### Demote Tab [DELETE]
++ Response 200
+
+## Get all notification settings [/projects/{id}/notifications]
+### Get the project's notification settings [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    
++ Response 200 (application/json)
+
+        {
+          "537b6e77b77efe102444053d": {
+            "mode": 1,
+            "send_daily_summary": true,
+            "report_critical_errors": true,
+            "report_regressions": true,
+            "report404_errors": false,
+            "report_known_bot_errors": false
+          },
+          "537b6e77b77efe102444053e": {
+            "mode": 2,
+            "send_daily_summary": true,
+            "report_critical_errors": true,
+            "report_regressions": true,
+            "report404_errors": false,
+            "report_known_bot_errors": false
+          }
+        }
+    
+## User notification settings [/projects/{id}/notifications/{user_id}]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + user_id (required, string, `537b6e77b77efe102444053d`) ... A identifier of the user.
+
+### Get user notification settings [GET]
++ Response 200 (application/json)
+
+        {
+            "mode": 1,
+            "send_daily_summary": true,
+            "report_critical_errors": true,
+            "report_regressions": true,
+            "report404_errors": false,
+            "report_known_bot_errors": false
+        }
+
+### Set user notification settings [POST]
++ Request (application/json)
+
+        {
+            "mode": 2,
+            "send_daily_summary": false,
+            "report_critical_errors": true,
+            "report_regressions": true,
+            "report404_errors": false,
+            "report_known_bot_errors": false
+        }
+
++ Response 200
+
+### Remove user notification settings [DELETE]
++ Response 200
+    
+## Check for unique name [/projects/check-name/{name}]
+### Check for unique project name [GET]
+Returns a `404` status code if an existing project with the specified name does not exist.
+
++ Parameters
+    + name (required, string, `Acme`) ... The project name to check.
+
++ Response 404
+    `404` status code is returned if the name is available.
+    + Body
+    
++ Response 200
+    `200` status code is returned if the name is not available.
+    + Body
+
+# Group Stacks
+Stack related resources of the **Stacks API**
+
+## Get all [/stacks{?before,after,limit}]
+### List all projects [GET]
+
++ Parameters
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get newest by project [/projects/{id}/stacks/new{?before,after,limit}]
+### Get newest by project [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get most recent by project [/projects/{id}/stacks/recent{?before,after,limit}]
+### Get most recent by project [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get most frequent by project [/projects/{id}/stacks/frequent{?page,limit,start,end,hidden,fixed,notfound}]
+### Gets most frequent by project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
+    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
+    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+        
+## Get [/stacks/{id}]
+### Get by id [GET]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
++ Response 200 (application/json)
+
+        {
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }
+
+## Reset data [/stacks/{id}/reset-data]
+### Reset data [GET]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
++ Response 200
+
+## Mark fixed [/stacks/{id}/mark-fixed]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
+### Mark fixed [POST]
++ Response 200
+
+### Mark not fixed [DELETE]
++ Response 200
+
+## Mark hidden [/stacks/{id}/mark-hidden]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
+### Mark hidden [POST]
++ Response 200
+
+### Mark not hidden [DELETE]
++ Response 200
+
+## Promote [/stacks/{id}/promote]
+### Promote to external service [POST]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
++ Response 200
+
+## Add reference link [/stacks/add-link]
+### Add reference link [POST]
++ Request (application/json)
+
+        { "stack": "537b7255b77efe2474bfdd7f", "link": "https://exceptionless.com" }
+
++ Response 200
+
+# Group Tokens
+Token related resources of the **Tokens API**
+
+
+## Create [/tokens]
+### Create new token [POST]
+To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.
+
++ Request (application/json)
+
+        {
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "default_project_id": null,
+            "application_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
+## Get, Remove [/tokens/{id}]
++ Parameters
+    + id (required, string, `e3d51ea621464280bbcb79c11fd6483e`) ... The identifier of the token.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }
+
+### Remove web hook [DELETE]
++ Response 204
+
+## Get by organization [/organizations/{id}/tokens{?before,after,limit}]
+### List all tokens for a given organization [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
+
+## Get by project [/projects/{id}/tokens{?before,after,limit}]
+### List all tokens for a given project [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
+
+## Get a projects default token [/projects/{id}/tokens/default]
+### Get the default token for a specific project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    
++ Response 200 (application/json)
+
+        [{
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": [],
+            "notes": null
+        }]
+
+# Group Web Hooks
+Web Hook related resources of the **Web Hooks  API**
+
+## Create [/webhooks]
+### Create new web hook [POST]
+To create a new web hook, you must specify project_id, url and event_types.
+
++ Request (application/json)
+
+        { 
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4", 
+            "url": "http://exceptionless.com", 
+            "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] 
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+## Get, Update, Remove [/webhooks/{id}]
++ Parameters
+    + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the web hook.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+### Update web hook [PATCH]
++ Request (application/json)
+
+        { "url": "https://mycompanywebsite.com" }
+
++ Response 200 (application/json)
+
+        {
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "https://mycompanywebsite.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }
+
+### Remove web hook [DELETE]
++ Response 204
+
+## Get by project [/projects/{id}/webhooks{?before,after,limit}]
+### List all web hooks for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b84cfb77efe2474072488",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "url": "http://exceptionless.com",
+            "event_types": [
+                "NewError",
+                "ErrorRegression",
+                "CriticalError",
+                "StackPromoted"
+            ]
+        }]
+
+# Group Stats
+Stat related resources of the **Stats API**
+
+## Get by project [/projects/{id}/stats{?start,end,hidden,fixed,notfound}]
+### Get stats for a given project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
+    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
+    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+
++ Response 200 (application/json)
+
+        {
+          "unique_total": 1,
+          "new_total": 1,
+          "most_frequent": null,
+          "most_recent": null,
+          "total_limited_by_plan": 0,
+          "start_date": "2020-10-16T09:15:00-05:00",
+          "end_date": "2020-10-17T00:00:00Z",
+          "stats": [
+            {
+              "unique_total": 1,
+              "new_total": 1,
+              "date": "2020-10-16T09:15:00",
+              "per_hour_average": 0.0,
+              "total": 1
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T09:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T09:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-17T00:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            }
+          ],
+          "per_day_average": 1.0,
+          "per_hour_average": 0.1,
+          "total": 1
+        }
+
+## Get by stack [/stacks/{id}/stats{?start,end}]
+### Get stats for a given stack [GET]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
+    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+
++ Response 200 (application/json)
+
+        {
+          "total_limited_by_plan": 0,
+          "start_date": "2020-10-16T09:15:00-05:00",
+          "end_date": "2020-10-17T00:00:00Z",
+          "stats": [
+            {
+              "date": "2020-10-16T09:15:00",
+              "per_hour_average": 0.0,
+              "total": 1
+            },
+            {
+              "date": "2020-10-16T09:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T09:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T10:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T10:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T10:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T10:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T11:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T11:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T11:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T11:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T12:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T12:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T12:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T12:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T13:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T13:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T13:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T13:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T14:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T14:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T14:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T14:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T15:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T15:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T15:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T15:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T16:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T16:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T16:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T16:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T17:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T17:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T17:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T17:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T18:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T18:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T18:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T18:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T19:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T19:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T19:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T19:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T20:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T20:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T20:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T20:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T21:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T21:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T21:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T21:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T22:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T22:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T22:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T22:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T23:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T23:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T23:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-16T23:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "date": "2020-10-17T00:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            }
+          ],
+          "per_day_average": 1.0,
+          "per_hour_average": 0.1,
+          "total": 1
+        }
+        
+# Group Users
+User related resources of the **Users API**
+
+## Get by organization [/organizations/{id}/users{?page,limit}]
+### List all users for an organization [GET]
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f3`) ...The identifier of the organization.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+ 
++ Response 200 (application/json)
+
+        [{
+            "id": "537b6e77b77efe102444053d",
+            "email_address": "noreply@exceptionless.com",
+            "full_name": "Test User",
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
+        }]

@@ -27,6 +27,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Globalization;
+using Exceptionless.Json.Serialization;
 using Exceptionless.Json.Utilities;
 #if NET20
 using Exceptionless.Json.Utilities.LinqBridge;
@@ -126,6 +127,7 @@ namespace Exceptionless.Json
         private bool _hasExceededMaxDepth;
         internal DateParseHandling _dateParseHandling;
         internal FloatParseHandling _floatParseHandling;
+        private string _dateFormatString;
         private readonly List<JsonPosition> _stack;
 
         /// <summary>
@@ -190,6 +192,15 @@ namespace Exceptionless.Json
         {
             get { return _floatParseHandling; }
             set { _floatParseHandling = value; }
+        }
+
+        /// <summary>
+        /// Get or set how custom date formatted strings are parsed when reading JSON.
+        /// </summary>
+        public string DateFormatString
+        {
+            get { return _dateFormatString; }
+            set { _dateFormatString = value; }
         }
 
         /// <summary>
@@ -420,7 +431,7 @@ namespace Exceptionless.Json
             if (t == JsonToken.Date)
             {
                 if (Value is DateTime)
-                    SetToken(JsonToken.Date, new DateTimeOffset((DateTime)Value));
+                    SetToken(JsonToken.Date, new DateTimeOffset((DateTime)Value), false);
 
                 return (DateTimeOffset)Value;
             }
@@ -428,7 +439,6 @@ namespace Exceptionless.Json
             if (t == JsonToken.Null)
                 return null;
 
-            DateTimeOffset dt;
             if (t == JsonToken.String)
             {
                 string s = (string)Value;
@@ -438,15 +448,22 @@ namespace Exceptionless.Json
                     return null;
                 }
 
-                if (DateTimeOffset.TryParse(s, Culture, DateTimeStyles.RoundtripKind, out dt))
+                object temp;
+                DateTimeOffset dt;
+                if (DateTimeUtils.TryParseDateTime(s, DateParseHandling.DateTimeOffset, DateTimeZoneHandling, _dateFormatString, Culture, out temp))
                 {
-                    SetToken(JsonToken.Date, dt);
+                    dt = (DateTimeOffset)temp;
+                    SetToken(JsonToken.Date, dt, false);
                     return dt;
                 }
-                else
+
+                if (DateTimeOffset.TryParse(s, Culture, DateTimeStyles.RoundtripKind, out dt))
                 {
-                    throw JsonReaderException.Create(this, "Could not convert string to DateTimeOffset: {0}.".FormatWith(CultureInfo.InvariantCulture, Value));
+                    SetToken(JsonToken.Date, dt, false);
+                    return dt;
                 }
+                
+                throw JsonReaderException.Create(this, "Could not convert string to DateTimeOffset: {0}.".FormatWith(CultureInfo.InvariantCulture, Value));
             }
 
             if (t == JsonToken.EndArray)
@@ -479,7 +496,7 @@ namespace Exceptionless.Json
             {
                 byte[] data = ReadAsBytes();
                 ReadInternal();
-                SetToken(JsonToken.Bytes, data);
+                SetToken(JsonToken.Bytes, data, false);
                 return data;
             }
 
@@ -487,8 +504,24 @@ namespace Exceptionless.Json
             if (t == JsonToken.String)
             {
                 string s = (string)Value;
-                byte[] data = (s.Length == 0) ? new byte[0] : Convert.FromBase64String(s);
-                SetToken(JsonToken.Bytes, data);
+
+                byte[] data;
+
+                Guid g;
+                if (s.Length == 0)
+                {
+                    data = new byte[0];
+                }
+                else if (ConvertUtils.TryConvertGuid(s, out g))
+                {
+                    data = g.ToByteArray();
+                }
+                else
+                {
+                    data = Convert.FromBase64String(s);
+                }
+
+                SetToken(JsonToken.Bytes, data, false);
                 return data;
             }
 
@@ -496,7 +529,16 @@ namespace Exceptionless.Json
                 return null;
 
             if (t == JsonToken.Bytes)
+            {
+                if (ValueType == typeof(Guid))
+                {
+                    byte[] data = ((Guid)Value).ToByteArray();
+                    SetToken(JsonToken.Bytes, data, false);
+                    return data;
+                }
+
                 return (byte[])Value;
+            }
 
             if (t == JsonToken.StartArray)
             {
@@ -512,7 +554,7 @@ namespace Exceptionless.Json
                             break;
                         case JsonToken.EndArray:
                             byte[] d = data.ToArray();
-                            SetToken(JsonToken.Bytes, d);
+                            SetToken(JsonToken.Bytes, d, false);
                             return d;
                         case JsonToken.Comment:
                             // skip
@@ -553,7 +595,7 @@ namespace Exceptionless.Json
             if (t == JsonToken.Integer || t == JsonToken.Float)
             {
                 if (!(Value is decimal))
-                    SetToken(JsonToken.Float, Convert.ToDecimal(Value, CultureInfo.InvariantCulture));
+                    SetToken(JsonToken.Float, Convert.ToDecimal(Value, CultureInfo.InvariantCulture), false);
 
                 return (decimal)Value;
             }
@@ -561,7 +603,6 @@ namespace Exceptionless.Json
             if (t == JsonToken.Null)
                 return null;
 
-            decimal d;
             if (t == JsonToken.String)
             {
                 string s = (string)Value;
@@ -571,9 +612,10 @@ namespace Exceptionless.Json
                     return null;
                 }
 
+                decimal d;
                 if (decimal.TryParse(s, NumberStyles.Number, Culture, out d))
                 {
-                    SetToken(JsonToken.Float, d);
+                    SetToken(JsonToken.Float, d, false);
                     return d;
                 }
                 else
@@ -610,7 +652,7 @@ namespace Exceptionless.Json
             if (t == JsonToken.Integer || t == JsonToken.Float)
             {
                 if (!(Value is int))
-                    SetToken(JsonToken.Integer, Convert.ToInt32(Value, CultureInfo.InvariantCulture));
+                    SetToken(JsonToken.Integer, Convert.ToInt32(Value, CultureInfo.InvariantCulture), false);
 
                 return (int)Value;
             }
@@ -630,7 +672,7 @@ namespace Exceptionless.Json
 
                 if (int.TryParse(s, NumberStyles.Integer, Culture, out i))
                 {
-                    SetToken(JsonToken.Integer, i);
+                    SetToken(JsonToken.Integer, i, false);
                     return i;
                 }
                 else
@@ -680,7 +722,7 @@ namespace Exceptionless.Json
                     else
                         s = Value.ToString();
 
-                    SetToken(JsonToken.String, s);
+                    SetToken(JsonToken.String, s, false);
                     return s;
                 }
             }
@@ -710,7 +752,6 @@ namespace Exceptionless.Json
             if (TokenType == JsonToken.Null)
                 return null;
 
-            DateTime dt;
             if (TokenType == JsonToken.String)
             {
                 string s = (string)Value;
@@ -720,16 +761,24 @@ namespace Exceptionless.Json
                     return null;
                 }
 
+                DateTime dt;
+                object temp;
+                if (DateTimeUtils.TryParseDateTime(s, DateParseHandling.DateTime, DateTimeZoneHandling, _dateFormatString, Culture, out temp))
+                {
+                    dt = (DateTime)temp;
+                    dt = DateTimeUtils.EnsureDateTime(dt, DateTimeZoneHandling);
+                    SetToken(JsonToken.Date, dt, false);
+                    return dt;
+                }
+
                 if (DateTime.TryParse(s, Culture, DateTimeStyles.RoundtripKind, out dt))
                 {
                     dt = DateTimeUtils.EnsureDateTime(dt, DateTimeZoneHandling);
-                    SetToken(JsonToken.Date, dt);
+                    SetToken(JsonToken.Date, dt, false);
                     return dt;
                 }
-                else
-                {
-                    throw JsonReaderException.Create(this, "Could not convert string to DateTime: {0}.".FormatWith(CultureInfo.InvariantCulture, Value));
-                }
+
+                throw JsonReaderException.Create(this, "Could not convert string to DateTime: {0}.".FormatWith(CultureInfo.InvariantCulture, Value));
             }
 
             if (TokenType == JsonToken.EndArray)
@@ -747,13 +796,13 @@ namespace Exceptionless.Json
                 if (!ReadInternal())
                     throw JsonReaderException.Create(this, "Unexpected end when reading bytes.");
 
-                if (Value.ToString() == "$type")
+                if (Value.ToString() == JsonTypeReflector.TypePropertyName)
                 {
                     ReadInternal();
-                    if (Value != null && Value.ToString().StartsWith("System.Byte[]"))
+                    if (Value != null && Value.ToString().StartsWith("System.Byte[]", StringComparison.Ordinal))
                     {
                         ReadInternal();
-                        if (Value.ToString() == "$value")
+                        if (Value.ToString() == JsonTypeReflector.ValuePropertyName)
                         {
                             return true;
                         }
@@ -790,7 +839,7 @@ namespace Exceptionless.Json
         /// <param name="newToken">The new token.</param>
         protected void SetToken(JsonToken newToken)
         {
-            SetToken(newToken, null);
+            SetToken(newToken, null, true);
         }
 
         /// <summary>
@@ -799,6 +848,11 @@ namespace Exceptionless.Json
         /// <param name="newToken">The new token.</param>
         /// <param name="value">The value.</param>
         protected void SetToken(JsonToken newToken, object value)
+        {
+            SetToken(newToken, value, true);
+        }
+
+        internal void SetToken(JsonToken newToken, object value, bool updateIndex)
         {
             _tokenType = newToken;
             _value = value;
@@ -840,14 +894,20 @@ namespace Exceptionless.Json
                 case JsonToken.String:
                 case JsonToken.Raw:
                 case JsonToken.Bytes:
-                    if (Peek() != JsonContainerType.None)
-                        _currentState = State.PostValue;
-                    else
-                        SetFinished();
-
-                    UpdateScopeWithFinishedValue();
+                    SetPostValueState(updateIndex);
                     break;
             }
+        }
+
+        internal void SetPostValueState(bool updateIndex)
+        {
+            if (Peek() != JsonContainerType.None)
+                _currentState = State.PostValue;
+            else
+                SetFinished();
+
+            if (updateIndex)
+                UpdateScopeWithFinishedValue();
         }
 
         private void UpdateScopeWithFinishedValue()

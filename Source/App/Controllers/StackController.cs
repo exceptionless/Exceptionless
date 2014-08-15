@@ -11,18 +11,17 @@
 
 using System;
 using System.Web.Mvc;
-using Exceptionless.Core;
-using Exceptionless.Core.Web;
+using Exceptionless.App.Utility;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
-using Exceptionless.Web.Controllers;
 
 namespace Exceptionless.App.Controllers {
     [Authorize]
     [ProjectRequiredActionFilter]
     public class StackController : ExceptionlessController {
-        private readonly IErrorStackRepository _repository;
+        private readonly IStackRepository _repository;
 
-        public StackController(IErrorStackRepository repository) {
+        public StackController(IStackRepository repository) {
             _repository = repository;
         }
 
@@ -31,12 +30,12 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(id))
                 return RedirectToAction("Index", "Project");
 
-            ErrorStack errorStack = _repository.GetById(id);
-            if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
+            Stack stack = _repository.GetById(id);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return HttpNotFound("An error stack with this id was not found.");
 
-            RouteData.SetOrganizationId(errorStack.OrganizationId);
-            return View(errorStack);
+            RouteData.SetOrganizationId(stack.OrganizationId);
+            return View(stack);
         }
 
         [ActionName("mark-fixed")]
@@ -45,8 +44,8 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(id))
                 return RedirectToAction("Index", "Project");
 
-            ErrorStack stack = _repository.GetById(id);
-            if (stack == null || !User.CanAccessOrganization(stack.OrganizationId))
+            Stack stack = _repository.GetById(id);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return RedirectToAction("Index", "Project");
 
             stack.DateFixed = DateTime.UtcNow;
@@ -54,7 +53,7 @@ namespace Exceptionless.App.Controllers {
             stack.IsRegressed = false;
 
             // TODO: Add a log entry.
-            _repository.Update(stack);
+            _repository.Save(stack);
 
             return RedirectToAction("Index", "Stack", new { id = stack.Id, notification = "mark-fixed" });
         }
@@ -65,15 +64,15 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(id))
                 return RedirectToAction("Index", "Project");
 
-            ErrorStack errorStack = _repository.GetById(id);
-            if (errorStack == null || !User.CanAccessOrganization(errorStack.OrganizationId))
+            Stack stack = _repository.GetById(id);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return RedirectToAction("Index", "Project");
 
-            errorStack.DisableNotifications = true;
+            stack.DisableNotifications = true;
             // TODO: Add a log entry.
-            _repository.Update(errorStack);
+            _repository.Save(stack);
 
-            return RedirectToAction("Index", "Stack", new { id = errorStack.Id, notification = "stop-notifications" });
+            return RedirectToAction("Index", "Stack", new { id = stack.Id, notification = "stop-notifications" });
         }
     }
 }

@@ -12,20 +12,17 @@
 using System;
 using System.Net;
 using System.Web.Mvc;
-using Exceptionless.App.Hubs;
-using ServiceStack.CacheAccess;
-using ServiceStack.Redis;
+using Exceptionless.Core.Caching;
+using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.App.Controllers {
     public class HomeController : Controller {
         private readonly ICacheClient _cacheClient;
-        private readonly IRedisClientsManager _clientsManager;
-        private readonly NotificationSender _notificationSender;
+        private readonly IUserRepository _userRepository;
 
-        public HomeController(ICacheClient cacheClient, IRedisClientsManager clientsManager, NotificationSender notificationSender) {
+        public HomeController(ICacheClient cacheClient, IUserRepository userRepository) {
             _cacheClient = cacheClient;
-            _clientsManager = clientsManager;
-            _notificationSender = notificationSender;
+            _userRepository = userRepository;
         }
 
         public ActionResult Index() {
@@ -49,7 +46,7 @@ namespace Exceptionless.App.Controllers {
             if (String.IsNullOrEmpty(emailaddress) && String.IsNullOrEmpty(description))
                 return RedirectToAction("Index", "Home");
 
-            ExceptionlessClient.Current.UpdateUserEmailAndDescription(identifier, emailaddress, description);
+            ExceptionlessClient.Default.UpdateUserEmailAndDescription(identifier, emailaddress, description);
 
             return View("ErrorSubmitted");
         }
@@ -80,12 +77,14 @@ namespace Exceptionless.App.Controllers {
             try {
                 if (!GlobalApplication.IsDbUpToDate())
                     return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo DB Schema Outdated");
+
+                var numberOfUsers = _userRepository.Count();
             } catch (Exception ex) {
                 return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Mongo Not Working: " + ex.Message);
             }
 
-            if (!_notificationSender.IsListening())
-                return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
+            //if (!_notificationSender.IsListening())
+            //    return new HttpStatusCodeResult(HttpStatusCode.ServiceUnavailable, "Ping Not Received");
 
             return new ContentResult { Content = "All Systems Check" };
         }

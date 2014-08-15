@@ -12,49 +12,78 @@ using System.Collections.Generic;
 using System.Web;
 using Exceptionless.ExtendedData;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace Exceptionless {
     public static class ExceptionlessWebExtensions {
         /// <summary>
-        /// Adds the current request info to the error.
+        /// Get the current request info.
         /// </summary>
-        /// <param name="error">The error model.</param>
-        /// <param name="client">The client.</param>
         /// <param name="context">The http context to gather information from.</param>
-        public static Error AddRequestInfo(this Error error, ExceptionlessClient client, HttpContext context) {
+        /// <param name="config">The config.</param>
+        public static RequestInfo GetRequestInfo(this HttpContext context, ExceptionlessConfiguration config) {
             if (context == null)
-                return error;
+                return null;
 
-            error.AddRequestInfo(client, new HttpContextWrapper(context));
-
-            return error;
+            return GetRequestInfo(context.ToWrapped(), config);
         }
 
         /// <summary>
-        /// Adds the current request info to the error.
+        /// Adds the current request info.
         /// </summary>
-        /// <param name="error">The error model.</param>
-        /// <param name="client">The client.</param>
         /// <param name="context">The http context to gather information from.</param>
-        public static Error AddRequestInfo(this Error error, ExceptionlessClient client, HttpContextBase context = null) {
+        /// <param name="config">The config.</param>
+        public static RequestInfo GetRequestInfo(this HttpContextBase context, ExceptionlessConfiguration config) {
             if (context == null && HttpContext.Current != null)
-                context = new HttpContextWrapper(HttpContext.Current);
+                context = HttpContext.Current.ToWrapped();
 
-            if (context == null)
-                return error;
-
-            error.RequestInfo = RequestInfoCollector.Collect(client, context);
-
-            return error;
+            return RequestInfoCollector.Collect(context, config);
         }
 
         /// <summary>
-        /// Adds the current request info to the error.
+        /// Adds the current request info to the event.
         /// </summary>
-        /// <param name="builder">The error builder.</param>
-        public static ErrorBuilder AddRequestInfo(this ErrorBuilder builder) {
+        /// <param name="ev">The event model.</param>
+        /// <param name="client">The client.</param>
+        /// <param name="context">The http context to gather information from.</param>
+        public static Event AddRequestInfo(this Event ev, ExceptionlessClient client, HttpContext context) {
+            if (context == null)
+                return ev;
+
+            ev.AddRequestInfo(client, context.ToWrapped());
+
+            return ev;
+        }
+
+        /// <summary>
+        /// Adds the current request info to the event.
+        /// </summary>
+        /// <param name="ev">The event model.</param>
+        /// <param name="client">The client.</param>
+        /// <param name="context">The http context to gather information from.</param>
+        public static Event AddRequestInfo(this Event ev, ExceptionlessClient client, HttpContextBase context = null) {
+            if (context == null && HttpContext.Current != null)
+                context = HttpContext.Current.ToWrapped();
+
+            if (context == null)
+                return ev;
+
+            ev.AddRequestInfo(RequestInfoCollector.Collect(context, client.Configuration));
+
+            return ev;
+        }
+
+        /// <summary>
+        /// Adds the current request info to the event.
+        /// </summary>
+        /// <param name="builder">The event builder.</param>
+        public static EventBuilder AddRequestInfo(this EventBuilder builder) {
             builder.Target.AddRequestInfo(builder.Client);
             return builder;
+        }
+
+        internal static HttpContextBase ToWrapped(this HttpContext context) {
+            return new HttpContextWrapper(context);
         }
 
         internal static HttpContextBase GetHttpContext(this IDictionary<string, object> data) {

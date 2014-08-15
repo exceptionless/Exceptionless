@@ -11,11 +11,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Text.RegularExpressions;
-using System.Web.Management;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Exceptionless.Tests.Stacking;
 using Samples;
 using Xunit;
@@ -244,7 +242,7 @@ namespace Exceptionless.Tests.Models {
             Compare(appEx, ed);
         }
 
-        private void Compare(Exception ex, ErrorInfo err, int level = 1) {
+        private void Compare(Exception ex, InnerError err, int level = 1) {
             Console.WriteLine("Level " + level);
             Assert.Equal(ex.GetType().FullName, err.Type);
             if (String.IsNullOrEmpty(ex.StackTrace))

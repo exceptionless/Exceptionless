@@ -54,5 +54,20 @@ namespace CodeSmith.Core.Extensions {
 
             return merged;
         }
+
+        public static bool ContainsKeyWithValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, params TValue[] values) {
+            if (dictionary == null || values == null || values.Length == 0)
+                return false;
+
+            TValue temp;
+            try {
+                if (!dictionary.TryGetValue(key, out temp))
+                    return false;
+            } catch (ArgumentNullException) {
+                return false;
+            }
+
+            return values.Any(v => v.Equals(temp));
+        }
     }
 }

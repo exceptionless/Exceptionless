@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Configuration;
 using System.Linq;
+using System.Web;
 
 namespace CodeSmith.Core.Extensions {
     public static class NameValueCollectionExtensions {
@@ -45,13 +46,20 @@ namespace CodeSmith.Core.Extensions {
 
         public static T GetEnum<T>(this NameValueCollection collection, string name, T? defaultValue = null) where T: struct {
             string value = GetValue(collection, name);
+            if (value == null) {
+                if (defaultValue.HasValue && defaultValue is T)
+                    return (T)defaultValue;
+
+                throw new ConfigurationErrorsException(String.Format("The configuration key '{0}' was not found and no default value was specified.", name));
+            }
+
             try {
                 return (T)Enum.Parse(typeof(T), value, true);
             } catch (ArgumentException ex) {
                 if (defaultValue.HasValue && defaultValue is T)
                     return (T)defaultValue;
 
-                string message = string.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
+                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
                 throw new ConfigurationErrorsException(message, ex);
             }
         }

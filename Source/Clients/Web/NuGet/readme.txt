@@ -23,6 +23,11 @@ api key to the web.config Exceptionless section.
 
 <exceptionless apiKey="API_KEY_HERE" />
 
+You can also add support for WCF by adding the ExceptionlessWcfHandleError 
+attribute to your WCF classes.
+
+[ExceptionlessWcfHandleError]
+
 -------------------------------------
    Manually reporting an exception
 -------------------------------------

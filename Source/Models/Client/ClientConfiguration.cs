@@ -14,10 +14,14 @@ using System;
 namespace Exceptionless.Models {
     public class ClientConfiguration {
         public ClientConfiguration() {
-            Settings = new ConfigurationDictionary();
+            Settings = new SettingsDictionary();
         }
 
-        public int Version { get; set; } // TODO: Make this private once we have better patching support.
-        public ConfigurationDictionary Settings { get; set; }
+        public int Version { get; private set; }
+        public SettingsDictionary Settings { get; private set; }
+
+        public void IncrementVersion() {
+            Version++;
+        }
     }
 }

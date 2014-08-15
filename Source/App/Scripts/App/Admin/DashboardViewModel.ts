@@ -30,7 +30,7 @@ module exceptionless.admin {
             this._adminSearchablePagedOrganizationViewModel = new AdminSearchablePagedOrganizationViewModel(organizationsElementId, '/organization', '/list', emailAddress, pageSize, autoUpdate);            
 
             this.applyBindings();
-            this.retrieve(this.retrieveResource);
+            this.refreshViewModelData();
         }
 
         public populateViewModel(data?: any) {
@@ -56,8 +56,8 @@ module exceptionless.admin {
             $(tabId + ' a[href="' + tabName +'"]').tab('show');
             location.hash = tabName;
 
-            if (this._adminSearchablePagedOrganizationViewModel.planSearchCriteria() != organization.PlanSearchCriteria.Suspended)
-                this._adminSearchablePagedOrganizationViewModel.planSearchCriteria(organization.PlanSearchCriteria.Suspended);
+            if (this._adminSearchablePagedOrganizationViewModel.planSearchCriteria() != exceptionless.organization.PlanSearchCriteria.Suspended)
+                this._adminSearchablePagedOrganizationViewModel.planSearchCriteria(exceptionless.organization.PlanSearchCriteria.Suspended);
 
             if (!StringUtil.isNullOrEmpty(this._adminSearchablePagedOrganizationViewModel.criteria()))
                 this._adminSearchablePagedOrganizationViewModel.criteria('');

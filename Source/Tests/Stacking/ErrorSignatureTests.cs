@@ -13,6 +13,7 @@ using System;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 using Samples;
 using Xunit;
 

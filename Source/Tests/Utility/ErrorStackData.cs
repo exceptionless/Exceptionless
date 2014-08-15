@@ -17,26 +17,26 @@ using Exceptionless.Models;
 using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
-    internal static class ErrorStackData {
-        public static IEnumerable<ErrorStack> GenerateErrorStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
+    internal static class EventStackData {
+        public static IEnumerable<Stack> GenerateEventStacks(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateErrorStack(generateId, id, organizationId, projectId);
+                yield return GenerateEventStack(generateId, id, organizationId, projectId);
         }
 
-        public static List<ErrorStack> GenerateSampleErrors() {
-            return new List<ErrorStack> {
-                GenerateSampleErrorStack(),
-                GenerateErrorStack(id: TestConstants.ErrorStackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles),
-                GenerateErrorStack(id: TestConstants.InvalidErrorStackId)
+        public static List<Stack> GenerateSampleEvents() {
+            return new List<Stack> {
+                GenerateSampleEventStack(),
+                GenerateEventStack(id: TestConstants.StackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles),
+                GenerateEventStack(id: TestConstants.InvalidStackId)
             };
         }
 
-        public static ErrorStack GenerateSampleErrorStack(string id = TestConstants.ErrorStackId) {
-            return GenerateErrorStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+        public static Stack GenerateSampleEventStack(string id = TestConstants.StackId) {
+            return GenerateEventStack(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
         }
 
-        public static ErrorStack GenerateErrorStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
-            var stack = new ErrorStack {
+        public static Stack GenerateEventStack(bool generateId = false, string id = null, string organizationId = null, string projectId = null) {
+            var stack = new Stack {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,

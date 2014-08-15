@@ -10,8 +10,8 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Caching;
 using Exceptionless.Tests.Utility;
-using ServiceStack.CacheAccess;
 
 namespace Exceptionless.Tests {
     public abstract class DataTestBase : TestBase {

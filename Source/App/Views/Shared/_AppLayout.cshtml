@@ -67,6 +67,9 @@
                 <li @if(Html.IsActiveMenuItem("Manage", "Account")){ <text>class="active"</text>}>
                     <a href="@Url.Action("Manage", "Account")"><i class="fa fa-user fa-fw"></i>My Account</a>
                 </li>
+                <li>
+                    <a href="http://docs.exceptionless.com" target="_blank"><i class="fa fa-question fa-fw"></i>Documentation</a>
+                </li>
 @if (Settings.Current.EnableBilling && User.IsInRole(Exceptionless.Core.Authorization.AuthorizationRoles.GlobalAdmin)) {
                 <li @if (Html.IsActiveMenuItem("Index", "Admin")) { <text>class="active"</text>}>
                     <a href="@Url.Action("Index", "Admin")"><i class="fa fa-cog fa-fw"></i>Admin</a>
@@ -137,6 +140,9 @@
                             </li>
 }
                             <li>
+                                <a href="http://docs.exceptionless.com" target="_blank"><i class="fa fa-question fa-fw"></i>Documentation</a>
+                            </li>
+                            <li>
                                 <a href="javascript:void(0)" data-uv-lightbox="classic_widget" data-uv-mode="feedback" data-uv-primary-color="#568f01" data-uv-link-color="#78b001" data-uv-default-mode="support" data-uv-forum-id="199409">
                                     <i class="fa fa-comment fa-fw"></i>Feedback
                                 </a>
@@ -170,7 +176,7 @@
                         <p>&copy; @DateTime.Now.Year <a href="http://exceptionless.com">Exceptionless</a></p>
                     </div>
                     <div style="width: 60%; float: left;">
-                        <p class="pull-right"><a href="http://exceptionless.com" class="hidden-phone">Home</a> <a href="http://docs.exceptionless.com/contents/home" class="hidden-phone">Help</a> <a href="http://exceptionless.com/privacy">Privacy Policy</a> <a href="http://exceptionless.com/terms">Terms of Use</a></p>
+                        <p class="pull-right"><a href="@ViewBag.LogoUrl" class="hidden-phone">Home</a> <a href="http://docs.exceptionless.com" class="hidden-phone">Help</a> <a href="http://exceptionless.com/privacy">Privacy Policy</a> <a href="http://exceptionless.com/terms">Terms of Use</a></p>
                     </div>
                 </div>
             </div>

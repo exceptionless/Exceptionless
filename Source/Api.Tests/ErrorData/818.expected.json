@@ -1,0 +1,52 @@
+﻿{
+  "SignatureInfo": {
+    "HttpMethod": "GET",
+    "Path": "/articles/print.aspx",
+    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
+  },
+  "Date": "2013-04-08T13:47:46.21851-05:00",
+  "request": {
+    "UserAgent": "Mozilla/4.0 (compatible; Synapse)",
+    "HttpMethod": "GET",
+    "IsSecure": false,
+    "Host": "www.test.com",
+    "Port": 80,
+    "Path": "/articles/print.aspx",
+    "ClientIpAddress": "127.0.0.1",
+    "Cookies": {},
+    "Form": {},
+    "QueryString": {}
+  },
+  "environment": {
+    "ProcessorCount": 1,
+    "TotalPhysicalMemory": 6441984000,
+    "AvailablePhysicalMemory": 358043648,
+    "CommandLine": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe -ap \"PublicSite\" -v \"v4.0\" -l \"webengine4.dll\" -a \\\\.\\pipe\\iisipm49d6fb75-4d75-4c26-b219-2cef547d94c1 -h \"C:\\inetpub\\temp\\apppools\\PublicSite\\PublicSite.config\" -w \"\" -m 0 -t 20",
+    "ProcessName": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
+    "ProcessId": "26052",
+    "ProcessMemorySize": 135569408,
+    "ThreadId": "25412",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows Web Server 2008 R2 ",
+    "OSVersion": "6.1.7601.65536",
+    "MachineName": "WWW",
+    "RuntimeVersion": "4.0.30319.544",
+    "IpAddress": "127.0.0.1",
+    "Data": {
+      "AppDomainName": "/LM/W3SVC/4/ROOT-1-130098958450601491"
+    }
+  },
+  "Data": {
+    "WebEventCode": 0,
+    "ErrorCode": -2147467259,
+    "Data": {
+      "ASPIMPERSONATING": ""
+    }
+  },
+  "Type": "404",
+  "error": {
+    "Code": "404",
+    "Type": "System.Web.HttpUnhandledException",
+    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
+  }
+}

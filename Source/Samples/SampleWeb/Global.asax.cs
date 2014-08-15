@@ -11,18 +11,17 @@
 
 using System;
 using System.Web;
-using Exceptionless.Logging;
 
 namespace Exceptionless.SampleWeb {
     public partial class Global : HttpApplication {
         protected void Application_Start(object sender, EventArgs e) {
-            ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
-            ExceptionlessClient.Current.UnhandledExceptionReporting += OnUnhandledExceptionReporting;
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
+            ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
         }
 
-        private void OnUnhandledExceptionReporting(object sender, UnhandledExceptionReportingEventArgs e) {
+        private void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             // you can get access to the report here
-            e.Error.Tags.Add("WebTag");
+            e.Event.Tags.Add("WebTag");
         }
     }
 }

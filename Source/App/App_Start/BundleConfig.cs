@@ -28,7 +28,6 @@ namespace Exceptionless.App {
                 .Include("~/Content/bootstrap-datepicker.css")
                 .Include("~/Content/bootstrap-select.css")
                 .Include("~/Content/css/font-awesome.css")
-                .Include("~/Content/jquery.fancybox.css")
                 .Include("~/Content/toastr.less")
                 .Include("~/Content/exceptionless.less")
                 .Include("~/Content/exceptionless-responsive.css");
@@ -52,8 +51,7 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/jquery.validate.unobtrusive.js")
                 .Include("~/Scripts/jquery.validate.unobtrusive-custom-for-bootstrap.js")
                 .Include("~/Scripts/mvcfoolproof.unobtrusive.js")
-                .Include("~/Scripts/bootstrap.js")
-                .Include("~/Scripts/jquery.fancybox.pack.js");
+                .Include("~/Scripts/bootstrap.js");
 
             mainJsBundle.Builder = new NullBuilder();
             mainJsBundle.Transforms.Add(new JsTransformer());
@@ -85,7 +83,6 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/jquery.validate.unobtrusive-custom-for-bootstrap.js")
                 .Include("~/Scripts/mvcfoolproof.unobtrusive.js")
                 .Include("~/Scripts/jquery.payment.js")
-                .Include("~/Scripts/jquery.scrollTo.js")
                 .Include("~/Scripts/jquery.signalR-{version}.js")
                 .Include("~/Scripts/moment.js")
                 .Include("~/Scripts/twix.js")
@@ -100,14 +97,14 @@ namespace Exceptionless.App {
                 .Include("~/Scripts/knockout.activity.js")
                 .Include("~/Scripts/knockout.command.js")
                 .Include("~/Scripts/knockout.dirtyFlag.js")
-                .Include("~/Scripts/knockout.mapping-latest.js")
-                .Include("~/Scripts/knockout.validation.js")
+                .Include("~/Scripts/knockout.mapping-latest.debug.js")
+                .Include("~/Scripts/knockout.validation.debug.js")
                 .Include("~/Scripts/jstz.js")
-                .Include("~/Scripts/d3.v3.js")
+                .Include("~/Scripts/d3.js")
                 .Include("~/Scripts/rickshaw.js")
                 .Include("~/Scripts/rickshaw.custom.js")
                 .Include("~/Scripts/spin.js")
-                .Include("~/Scripts/numeral.min.js")
+                .Include("~/Scripts/numeral.js")
                 .Include("~/Scripts/toastr.js")
                 .Include("~/Scripts/trunk8.js")
                 .Include("~/Scripts/underscore.js")
@@ -126,7 +123,7 @@ namespace Exceptionless.App {
 
             ignoreList.Ignore("*.intellisense.js");
             ignoreList.Ignore("*-vsdoc.js");
-            ignoreList.Ignore("*.debug.js", OptimizationMode.WhenEnabled);
+            //ignoreList.Ignore("*.debug.js", OptimizationMode.WhenEnabled);
             //ignoreList.Ignore("*.min.js", OptimizationMode.WhenDisabled);
             ignoreList.Ignore("*.min.css", OptimizationMode.WhenDisabled);
         }

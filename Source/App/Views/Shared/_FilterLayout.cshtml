@@ -1,5 +1,4 @@
-﻿@using System.Web.Optimization
-@{
+﻿@{
     Layout = "~/Views/Shared/_AppLayout.cshtml";
 }
 
@@ -7,15 +6,12 @@
     @RenderSection("HeadContent", required: false)
 }
 
-<div id="free-plan-notification" class="alert in fade alert-success" style="display: none;">
-    <strong>You are on a free plan.</strong>
-    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable premium features and extra storage!
-</div>
+@Html.Partial("_Notifications")
 
 <div class="well well-small">
     <div class="btn-toolbar" style="margin-top: 0; margin-bottom: 0;">
         <div id="daterange" class="pull-right">
-            <div class="btn-group">
+            <div class="btn-group" style="display: none;" data-bind="visible: showToggleControls">
                 <button type="button" class="btn" data-bind="click: function () { showHidden(!showHidden()) }, css: { active: showHidden }, attr: { title: showHidden() ? 'Hide Hidden Errors' : 'Show Hidden Errors'}">
                     <i class="fa fa-eye"></i>
                 </button>
@@ -26,6 +22,7 @@
                     <i class="fa fa-bookmark"></i>
                 </button>
             </div>
+
             <div class="btn-group">
                 <button class="btn dropdown-toggle" data-toggle="dropdown">
                     <!-- ko if: selectedDateRange().id() !== exceptionless.Constants.CUSTOM -->

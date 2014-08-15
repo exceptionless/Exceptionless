@@ -22,6 +22,8 @@ namespace MongoMigrations {
         public string Description { get; set; }
         public DateTime StartedOn { get; set; }
         public DateTime? CompletedOn { get; set; }
+        public long CompletedCount { get; set; }
+        public long TotalCount { get; set; }
         public string LastCompletedId { get; set; }
         public List<DocumentMigrationError> FailedMigrations { get; set; }
         public bool ShouldRunAgain { get; set; }

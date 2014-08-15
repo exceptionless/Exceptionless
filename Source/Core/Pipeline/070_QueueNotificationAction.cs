@@ -12,70 +12,66 @@
 using System;
 using System.Linq;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventProcessor;
+using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models.Admin;
 using NLog.Fluent;
-using ServiceStack.Messaging;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
-    public class QueueNotificationAction : ErrorPipelineActionBase {
-        private readonly IMessageFactory _messageFactory;
-        private readonly IProjectHookRepository _projectHookRepository;
-        private readonly IProjectRepository _projectRepository;
-        private readonly IErrorStackRepository _errorStackRepository;
-        private readonly IOrganizationRepository _organizationRepository;
+    public class QueueNotificationAction : EventPipelineActionBase {
+        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
+        private readonly IWebHookRepository _webHookRepository;
+        private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IMessageFactory messageFactory, IProjectHookRepository projectHookRepository,
-            IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IErrorStackRepository errorStackRepository) {
-            _messageFactory = messageFactory;
-            _projectHookRepository = projectHookRepository;
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
-            _errorStackRepository = errorStackRepository;
+        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, 
+            IQueue<WebHookNotification> webHookNotificationQueue, 
+            IWebHookRepository webHookRepository,
+            WebHookDataPluginManager webHookDataPluginManager) {
+            _notificationQueue = notificationQueue;
+            _webHookNotificationQueue = webHookNotificationQueue;
+            _webHookRepository = webHookRepository;
+            _webHookDataPluginManager = webHookDataPluginManager;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(ErrorPipelineContext ctx) {
-            var organization = _organizationRepository.GetByIdCached(ctx.Error.OrganizationId);
-
+        public override void Process(EventContext ctx) {
             // if they don't have premium features, then we don't need to queue notifications
-            if (organization != null && !organization.HasPremiumFeatures)
+            if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            using (IMessageProducer messageProducer = _messageFactory.CreateMessageProducer()) {
-                messageProducer.Publish(new ErrorNotification {
-                    ErrorId = ctx.Error.Id,
-                    ErrorStackId = ctx.Error.ErrorStackId,
-                    FullTypeName = ctx.StackingInfo.FullTypeName,
-                    IsNew = ctx.IsNew,
-                    IsCritical = ctx.Error.Tags != null && ctx.Error.Tags.Contains("Critical"),
-                    IsRegression = ctx.IsRegression,
-                    Message = ctx.StackingInfo.Message,
-                    ProjectId = ctx.Error.ProjectId,
-                    Code = ctx.Error.Code,
-                    UserAgent = ctx.Error.RequestInfo != null ? ctx.Error.RequestInfo.UserAgent : null,
-                    Url = ctx.Error.RequestInfo != null ? ctx.Error.RequestInfo.GetFullPath(true, true) : null
-                });
+            _notificationQueue.EnqueueAsync(new EventNotification {
+                Event = ctx.Event,
+                IsNew = ctx.IsNew,
+                IsCritical = ctx.Event.IsCritical(),
+                IsRegression = ctx.IsRegression,
+                //TotalOccurrences = ctx.Stack.TotalOccurrences,
+                ProjectName = ctx.Project.Name
+            }).Wait();
 
-                foreach (ProjectHook hook in _projectHookRepository.GetByProjectId(ctx.Error.ProjectId)) {
-                    bool shouldCall = hook.EventTypes.Contains(ProjectHookRepository.EventTypes.NewError) && ctx.IsNew
-                                      || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
-                                      || hook.EventTypes.Contains(ProjectHookRepository.EventTypes.CriticalError) && ctx.Error.Tags != null && ctx.Error.Tags.Contains("Critical");
+            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
+                bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
+                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
+                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
 
-                    if (!shouldCall)
-                        continue;
+                if (!shouldCall)
+                    continue;
 
-                    Log.Trace().Project(ctx.Error.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Error.ProjectId, hook.Url).Write();
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
 
-                    messageProducer.Publish(new WebHookNotification {
-                        ProjectId = ctx.Error.ProjectId,
-                        Url = hook.Url,
-                        Data = WebHookError.FromError(ctx, _projectRepository, _errorStackRepository, _organizationRepository)
-                    });
-                }
+                // TODO: Should we be using the hook's project id and organization id?
+                var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
+                _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+                    OrganizationId = ctx.Event.OrganizationId,
+                    ProjectId = ctx.Event.ProjectId, 
+                    Url = hook.Url,
+                    Data = _webHookDataPluginManager.CreateFromEvent(context)
+                }).Wait();
             }
         }
     }

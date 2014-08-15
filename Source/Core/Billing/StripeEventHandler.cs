@@ -10,8 +10,10 @@
 #endregion
 
 using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 using Stripe;
@@ -28,7 +30,7 @@ namespace Exceptionless.Core.Billing {
             _mailer = mailer;
         }
 
-        public void HandleEvent(StripeEvent stripeEvent) {
+        public async Task HandleEventAsync(StripeEvent stripeEvent) {
             switch (stripeEvent.Type) {
                 case "customer.subscription.updated": {
                     StripeSubscription stripeSubscription = Mapper<StripeSubscription>.MapFromJson(stripeEvent.Data.Object.ToString());
@@ -47,7 +49,7 @@ namespace Exceptionless.Core.Billing {
                 }
                 case "invoice.payment_failed": {
                     StripeInvoice stripeInvoice = Mapper<StripeInvoice>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    InvoicePaymentFailed(stripeInvoice);
+                    await InvoicePaymentFailedAsync(stripeInvoice);
                     break;
                 }
                 default: {
@@ -98,13 +100,13 @@ namespace Exceptionless.Core.Billing {
             if (status.Value == BillingStatus.Unpaid || status.Value == BillingStatus.Canceled) {
                 org.IsSuspended = true;
                 org.SuspensionDate = DateTime.Now;
-                org.SuspensionCode = SuspensionCodes.Billing;
+                org.SuspensionCode = SuspensionCode.Billing;
                 org.SuspensionNotes = String.Format("Stripe subscription status changed to \"{0}\".", status.Value);
                 org.SuspendedByUserId = "Stripe";
             } else if (status.Value == BillingStatus.Active || status.Value == BillingStatus.Trialing) {
                 org.RemoveSuspension();
             }
-            _organizationRepository.Update(org);
+            _organizationRepository.Save(org);
         }
 
         private void SubscriptionDeleted(StripeSubscription sub) {
@@ -119,12 +121,12 @@ namespace Exceptionless.Core.Billing {
             org.BillingStatus = BillingStatus.Canceled;
             org.IsSuspended = true;
             org.SuspensionDate = DateTime.Now;
-            org.SuspensionCode = SuspensionCodes.Billing;
+            org.SuspensionCode = SuspensionCode.Billing;
             org.SuspensionNotes = String.Format("Stripe subscription deleted.");
             org.SuspendedByUserId = "Stripe";
 
             org.BillingChangeDate = DateTime.Now;
-            _organizationRepository.Update(org);
+            _organizationRepository.Save(org);
         }
 
         private void InvoicePaymentSucceeded(StripeInvoice inv) {
@@ -146,7 +148,7 @@ namespace Exceptionless.Core.Billing {
             //_mailer.SendPaymentSuccessAsync(user, org);
         }
 
-        private void InvoicePaymentFailed(StripeInvoice inv) {
+        private async Task InvoicePaymentFailedAsync(StripeInvoice inv) {
             var org = _organizationRepository.GetByStripeCustomerId(inv.CustomerId);
             if (org == null) {
                 Log.Error().Message("Unknown customer id in payment failed notification: {0}", inv.CustomerId).Write();
@@ -161,7 +163,7 @@ namespace Exceptionless.Core.Billing {
 
             Log.Info().Message("Stripe payment failed. Customer: {0} Org: {1} Org Name: {2} Email: {3}", inv.CustomerId, org.Id, org.Name, user.EmailAddress).Write();
 
-            _mailer.SendPaymentFailedAsync(user, org);
+            await _mailer.SendPaymentFailedAsync(user, org);
         }
     }
 }

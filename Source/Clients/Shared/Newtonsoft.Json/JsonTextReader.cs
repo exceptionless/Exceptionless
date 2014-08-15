@@ -56,6 +56,7 @@ namespace Exceptionless.Json
     public class JsonTextReader : JsonReader, IJsonLineInfo
     {
         private const char UnicodeReplacementChar = '\uFFFD';
+        private const int MaximumJavascriptIntegerCharacterLength = 380;
 
         private readonly TextReader _reader;
         private char[] _chars;
@@ -114,6 +115,7 @@ namespace Exceptionless.Json
 
             ShiftBufferIfNeeded();
             ReadStringIntoBuffer(quote);
+            SetPostValueState(true);
 
             if (_readType == ReadType.ReadAsBytes)
             {
@@ -127,13 +129,13 @@ namespace Exceptionless.Json
                     data = Convert.FromBase64CharArray(_stringReference.Chars, _stringReference.StartIndex, _stringReference.Length);
                 }
 
-                SetToken(JsonToken.Bytes, data);
+                SetToken(JsonToken.Bytes, data, false);
             }
             else if (_readType == ReadType.ReadAsString)
             {
                 string text = _stringReference.ToString();
 
-                SetToken(JsonToken.String, text);
+                SetToken(JsonToken.String, text, false);
                 _quoteChar = quote;
             }
             else
@@ -153,14 +155,14 @@ namespace Exceptionless.Json
                         dateParseHandling = _dateParseHandling;
 
                     object dt;
-                    if (DateTimeUtils.TryParseDateTime(text, dateParseHandling, DateTimeZoneHandling, out dt))
+                    if (DateTimeUtils.TryParseDateTime(text, dateParseHandling, DateTimeZoneHandling, DateFormatString, Culture, out dt))
                     {
-                        SetToken(JsonToken.Date, dt);
+                        SetToken(JsonToken.Date, dt, false);
                         return;
                     }
                 }
 
-                SetToken(JsonToken.String, text);
+                SetToken(JsonToken.String, text, false);
                 _quoteChar = quote;
             }
         }
@@ -380,8 +382,6 @@ namespace Exceptionless.Json
                     case State.Constructor:
                     case State.ConstructorStart:
                         return ParseValue();
-                    case State.Complete:
-                        break;
                     case State.Object:
                     case State.ObjectStart:
                         return ParseObject();
@@ -404,16 +404,10 @@ namespace Exceptionless.Json
                                 ParseComment();
                                 return true;
                             }
-                            else
-                            {
-                                throw JsonReaderException.Create(this, "Additional text encountered after finished reading JSON content: {0}.".FormatWith(CultureInfo.InvariantCulture, _chars[_charPos]));
-                            }
+                            
+                            throw JsonReaderException.Create(this, "Additional text encountered after finished reading JSON content: {0}.".FormatWith(CultureInfo.InvariantCulture, _chars[_charPos]));
                         }
                         return false;
-                    case State.Closed:
-                        break;
-                    case State.Error:
-                        break;
                     default:
                         throw JsonReaderException.Create(this, "Unexpected state: {0}.".FormatWith(CultureInfo.InvariantCulture, CurrentState));
                 }
@@ -637,19 +631,18 @@ namespace Exceptionless.Json
 
             while (true)
             {
-                switch (_chars[charPos++])
+                switch (_chars[charPos])
                 {
                     case '\0':
-                        if (_charsUsed == charPos - 1)
+                        _charPos = charPos;
+
+                        if (_charsUsed == charPos)
                         {
-                            charPos--;
-                            _charPos = charPos;
                             if (ReadData(true) == 0)
                                 return;
                         }
                         else
                         {
-                            _charPos = charPos - 1;
                             return;
                         }
                         break;
@@ -680,10 +673,23 @@ namespace Exceptionless.Json
                     case '7':
                     case '8':
                     case '9':
+                        charPos++;
                         break;
                     default:
-                        _charPos = charPos - 1;
-                        return;
+                        _charPos = charPos;
+
+                        char currentChar = _chars[_charPos];
+                        if (char.IsWhiteSpace(currentChar)
+                            || currentChar == ','
+                            || currentChar == '}'
+                            || currentChar == ']'
+                            || currentChar == ')'
+                            || currentChar == '/')
+                        {
+                            return;
+                        }
+                        
+                        throw JsonReaderException.Create(this, "Unexpected character encountered while parsing number: {0}.".FormatWith(CultureInfo.InvariantCulture, currentChar));
                 }
             }
         }
@@ -1003,15 +1009,13 @@ namespace Exceptionless.Json
                             _charPos++;
                             break;
                         }
-                        else if (char.IsNumber(currentChar) || currentChar == '-' || currentChar == '.')
+                        if (char.IsNumber(currentChar) || currentChar == '-' || currentChar == '.')
                         {
                             ParseNumber();
                             return true;
                         }
-                        else
-                        {
-                            throw JsonReaderException.Create(this, "Unexpected character encountered while parsing value: {0}.".FormatWith(CultureInfo.InvariantCulture, currentChar));
-                        }
+
+                        throw JsonReaderException.Create(this, "Unexpected character encountered while parsing value: {0}.".FormatWith(CultureInfo.InvariantCulture, currentChar));
                 }
             }
         }
@@ -1078,7 +1082,7 @@ namespace Exceptionless.Json
 
         private void ParseConstructor()
         {
-            if (MatchValueWithTrailingSeperator("new"))
+            if (MatchValueWithTrailingSeparator("new"))
             {
                 EatWhitespace(false);
 
@@ -1164,6 +1168,9 @@ namespace Exceptionless.Json
 
             ReadNumberIntoBuffer();
 
+            // set state to PostValue now so that if there is an error parsing the number then the reader can continue
+            SetPostValueState(true);
+
             _stringReference = new StringReference(_chars, initialPosition, _charPos - initialPosition);
 
             object numberValue;
@@ -1186,12 +1193,18 @@ namespace Exceptionless.Json
                 {
                     string number = _stringReference.ToString();
 
-                    // decimal.Parse doesn't support parsing hexadecimal values
-                    int integer = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                        ? Convert.ToInt32(number, 16)
-                        : Convert.ToInt32(number, 8);
+                    try
+                    {
+                        int integer = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                            ? Convert.ToInt32(number, 16)
+                            : Convert.ToInt32(number, 8);
 
-                    numberValue = integer;
+                        numberValue = integer;
+                    }
+                    catch (Exception ex)
+                    {
+                        throw JsonReaderException.Create(this, "Input string '{0}' is not a valid integer.".FormatWith(CultureInfo.InvariantCulture, number), ex);
+                    }
                 }
                 else
                 {
@@ -1218,12 +1231,19 @@ namespace Exceptionless.Json
                 {
                     string number = _stringReference.ToString();
 
-                    // decimal.Parse doesn't support parsing hexadecimal values
-                    long integer = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                        ? Convert.ToInt64(number, 16)
-                        : Convert.ToInt64(number, 8);
+                    try
+                    {
+                        // decimal.Parse doesn't support parsing hexadecimal values
+                        long integer = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                            ? Convert.ToInt64(number, 16)
+                            : Convert.ToInt64(number, 8);
 
-                    numberValue = Convert.ToDecimal(integer);
+                        numberValue = Convert.ToDecimal(integer);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw JsonReaderException.Create(this, "Input string '{0}' is not a valid decimal.".FormatWith(CultureInfo.InvariantCulture, number), ex);
+                    }
                 }
                 else
                 {
@@ -1250,9 +1270,17 @@ namespace Exceptionless.Json
                 {
                     string number = _stringReference.ToString();
 
-                    numberValue = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                        ? Convert.ToInt64(number, 16)
-                        : Convert.ToInt64(number, 8);
+                    try
+                    {
+                        numberValue = number.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                            ? Convert.ToInt64(number, 16)
+                            : Convert.ToInt64(number, 8);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw JsonReaderException.Create(this, "Input string '{0}' is not a valid number.".FormatWith(CultureInfo.InvariantCulture, number), ex);
+                    }
+
                     numberType = JsonToken.Integer;
                 }
                 else
@@ -1268,6 +1296,10 @@ namespace Exceptionless.Json
                     {
 #if !(NET20 || NET35 || PORTABLE40 || PORTABLE)
                         string number = _stringReference.ToString();
+
+                        if (number.Length > MaximumJavascriptIntegerCharacterLength)
+                            throw JsonReaderException.Create(this, "JSON integer {0} is too large to parse.".FormatWith(CultureInfo.InvariantCulture, _stringReference.ToString()));
+
                         numberValue = BigInteger.Parse(number, CultureInfo.InvariantCulture);
                         numberType = JsonToken.Integer;
 #else
@@ -1302,7 +1334,8 @@ namespace Exceptionless.Json
 
             ClearRecentString();
 
-            SetToken(numberType, numberValue);
+            // index has already been updated
+            SetToken(numberType, numberValue, false);
         }
 
         private void ParseComment()
@@ -1411,9 +1444,9 @@ namespace Exceptionless.Json
             return true;
         }
 
-        private bool MatchValueWithTrailingSeperator(string value)
+        private bool MatchValueWithTrailingSeparator(string value)
         {
-            // will match value and then move to the next character, checking that it is a seperator character
+            // will match value and then move to the next character, checking that it is a separator character
             bool match = MatchValue(value);
 
             if (!match)
@@ -1422,10 +1455,10 @@ namespace Exceptionless.Json
             if (!EnsureChars(0, false))
                 return true;
 
-            return IsSeperator(_chars[_charPos]) || _chars[_charPos] == '\0';
+            return IsSeparator(_chars[_charPos]) || _chars[_charPos] == '\0';
         }
 
-        private bool IsSeperator(char c)
+        private bool IsSeparator(char c)
         {
             switch (c)
             {
@@ -1462,9 +1495,9 @@ namespace Exceptionless.Json
         private void ParseTrue()
         {
             // check characters equal 'true'
-            // and that it is followed by either a seperator character
+            // and that it is followed by either a separator character
             // or the text ends
-            if (MatchValueWithTrailingSeperator(JsonConvert.True))
+            if (MatchValueWithTrailingSeparator(JsonConvert.True))
             {
                 SetToken(JsonToken.Boolean, true);
             }
@@ -1476,7 +1509,7 @@ namespace Exceptionless.Json
 
         private void ParseNull()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.Null))
+            if (MatchValueWithTrailingSeparator(JsonConvert.Null))
             {
                 SetToken(JsonToken.Null);
             }
@@ -1488,7 +1521,7 @@ namespace Exceptionless.Json
 
         private void ParseUndefined()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.Undefined))
+            if (MatchValueWithTrailingSeparator(JsonConvert.Undefined))
             {
                 SetToken(JsonToken.Undefined);
             }
@@ -1500,7 +1533,7 @@ namespace Exceptionless.Json
 
         private void ParseFalse()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.False))
+            if (MatchValueWithTrailingSeparator(JsonConvert.False))
             {
                 SetToken(JsonToken.Boolean, false);
             }
@@ -1512,7 +1545,7 @@ namespace Exceptionless.Json
 
         private void ParseNumberNegativeInfinity()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.NegativeInfinity))
+            if (MatchValueWithTrailingSeparator(JsonConvert.NegativeInfinity))
             {
                 if (_floatParseHandling == FloatParseHandling.Decimal)
                     throw new JsonReaderException("Cannot read -Infinity as a decimal.");
@@ -1527,7 +1560,7 @@ namespace Exceptionless.Json
 
         private void ParseNumberPositiveInfinity()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.PositiveInfinity))
+            if (MatchValueWithTrailingSeparator(JsonConvert.PositiveInfinity))
             {
                 if (_floatParseHandling == FloatParseHandling.Decimal)
                     throw new JsonReaderException("Cannot read Infinity as a decimal.");
@@ -1542,7 +1575,7 @@ namespace Exceptionless.Json
 
         private void ParseNumberNaN()
         {
-            if (MatchValueWithTrailingSeperator(JsonConvert.NaN))
+            if (MatchValueWithTrailingSeparator(JsonConvert.NaN))
             {
                 if (_floatParseHandling == FloatParseHandling.Decimal)
                     throw new JsonReaderException("Cannot read NaN as a decimal.");

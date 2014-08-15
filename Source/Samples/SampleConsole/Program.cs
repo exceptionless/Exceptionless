@@ -18,9 +18,9 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless;
-using Exceptionless.Models;
-using Exceptionless.Serialization;
+using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Models;
 
 namespace SampleConsole {
     internal class Program {
@@ -28,10 +28,20 @@ namespace SampleConsole {
         private static bool _sendingContinuous = false;
 
         private static void Main() {
-            ExceptionlessClient.Current.Startup();
+
+            ExceptionlessClient.Default.Startup();
+            ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
+            //ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
+
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
             int errorCode = _random.Next();
+            ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }, name: "Test Object").Submit();
+            ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
+            ExceptionlessClient.Default.SubmitNotFound("/somepage");
+            ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data["TestKey"] = "Test");
+            ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             while (true) {
                 if (!_sendingContinuous) {
@@ -47,13 +57,13 @@ namespace SampleConsole {
                 if (keyInfo.Key == ConsoleKey.D2)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 100, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D3)
-                    SendContinuousErrors(1000, token, uniqueCount: 5);
+                    SendContinuousErrors(1000, token, randomizeDates: true, uniqueCount: 5, maxDaysOld: 1);
                 else if (keyInfo.Key == ConsoleKey.D4)
-                    SendContinuousErrors(50, token, uniqueCount: 5);
+                    SendContinuousErrors(50, token, randomizeDates: true, uniqueCount: 5);
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
                 else if (keyInfo.Key == ConsoleKey.D6)
-                    ExceptionlessClient.Current.ProcessQueue();
+                    ExceptionlessClient.Default.ProcessQueue();
                 else if (keyInfo.Key == ConsoleKey.D7)
                     SendAllCapturedErrorsFromDisk();
                 else if (keyInfo.Key == ConsoleKey.Q)
@@ -68,7 +78,7 @@ namespace SampleConsole {
             }
         }
 
-        private static void SendContinuousErrors(int delay, CancellationToken token, bool randomizeDates = false, int maxErrors = Int32.MaxValue, int uniqueCount = 1, bool randomizeCritical = true) {
+        private static void SendContinuousErrors(int delay, CancellationToken token, bool randomizeDates = false, int maxErrors = Int32.MaxValue, int uniqueCount = 1, bool randomizeCritical = true, int maxDaysOld = 90) {
             _sendingContinuous = true;
             Console.WriteLine();
             Console.WriteLine("Press 's' to stop sending.");
@@ -87,7 +97,7 @@ namespace SampleConsole {
                         break;
                     }
 
-                    SendError(randomizeDates, errorCodeList.Random(), randomizeCritical ? RandomHelper.GetBool() : false, writeToConsole: false);
+                    SendError(randomizeDates, errorCodeList.Random(), randomizeCritical ? RandomHelper.GetBool() : false, writeToConsole: false, maxDaysOld: maxDaysOld);
                     errorCount++;
 
                     Console.SetCursorPosition(0, 13);
@@ -99,14 +109,14 @@ namespace SampleConsole {
             }, token);
         }
 
-        private static void SendError(bool randomizeDates = false, int? errorCode = null, bool critical = false, bool writeToConsole = true) {
+        private static void SendError(bool randomizeDates = false, int? errorCode = null, bool critical = false, bool writeToConsole = true, int maxDaysOld = 90) {
             if (!errorCode.HasValue)
                 errorCode = _random.Next();
 
             try {
                 throw new MyException(errorCode.Value, Guid.NewGuid().ToString());
             } catch (Exception ex) {
-                ErrorBuilder err = ex.ToExceptionless()
+                var builder = ex.ToExceptionless()
                     .AddObject(new {
                         myApplicationVersion = new Version(1, 0),
                         Date = DateTime.Now,
@@ -114,18 +124,18 @@ namespace SampleConsole {
                         SomeField10 = "testing"
                     }, "Object From Code");
                 if (randomizeDates)
-                    err.Target.OccurrenceDate = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-90), maximum: DateTime.Now);
+                    builder.Target.Date = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
                 if (critical)
-                    err.MarkAsCritical();
-                if (ExceptionlessClient.Current.Configuration.GetBoolean("IncludeConditionalData"))
-                    err.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
-                err.Submit();
+                    builder.MarkAsCritical();
+                if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+                    builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
+                builder.Submit();
             }
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, 11);
-                Console.WriteLine("Sent 1 error.");
-                Trace.WriteLine("Sent 1 error.");
+                Console.WriteLine("Sent 1 event.");
+                Trace.WriteLine("Sent 1 event.");
             }
         }
 
@@ -135,8 +145,9 @@ namespace SampleConsole {
                 return;
 
             foreach (string file in Directory.GetFiles(path)) {
-                var error = ModelSerializer.Current.Deserialize<Error>(file);
-                ExceptionlessClient.Current.SubmitError(error);
+                var serializer = DependencyResolver.Default.GetJsonSerializer();
+                var e = serializer.Deserialize<Event>(file);
+                ExceptionlessClient.Default.SubmitEvent(e);
             }
         }
 

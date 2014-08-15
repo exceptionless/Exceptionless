@@ -15,8 +15,9 @@ namespace Exceptionless.Core.Authorization {
     public static class AuthorizationRoles {
         public const string Client = "client";
         public const string User = "user";
-        public const string UserOrClient = "user,client";
-        public const string Admin = "admin";
         public const string GlobalAdmin = "global";
+        public const string UserOrClient = "user,client";
+        public static readonly string[] All = { Client, User };
+        public static readonly string[] GlobalAll = { Client, User, GlobalAdmin };
     }
 }

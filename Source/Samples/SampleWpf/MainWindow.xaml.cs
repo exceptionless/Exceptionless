@@ -10,11 +10,12 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Exceptionless.Models.Collections;
 
 namespace Exceptionless.SampleWpf {
     /// <summary>
@@ -24,46 +25,23 @@ namespace Exceptionless.SampleWpf {
         public MainWindow() {
             InitializeComponent();
 
-            ExceptionlessClient.Current.SendingError += OnSendingError;
-            ExceptionlessClient.Current.SendErrorCompleted += OnSendErrorCompleted;
-            ExceptionlessClient.Current.ConfigurationUpdated += OnConfigurationUpdated;
+            ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
+            ExceptionlessClient.Default.Configuration.Settings.Changed += SettingsOnChanged;
         }
 
-        private void OnConfigurationUpdated(object sender, ConfigurationUpdatedEventArgs e) {
-            var sb = new StringBuilder();
+        private void SettingsOnChanged(object sender, ChangedEventArgs<KeyValuePair<string, string>> args) {
+            WriteLog("Configuration updated.");
+        }
 
-            if (e.Configuration != null)
-                sb.Append(String.Format("Configuration updated.\tVersion: {0}", e.Configuration.Version.ToString()));
-            else if (e.Error != null)
-                sb.Append(String.Format("Configuration was not updated: {0}", e.Error.Message));
+        private void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
+            e.Event.Data["BaseDirectory"] = AppDomain.CurrentDomain.BaseDirectory;
+            if (e.Event.Message == "Important Exception")
+                e.Event.Tags.Add("Important");
+
+            if (!String.IsNullOrEmpty(e.Event.ReferenceId))
+                WriteLog(String.Format("Submitting Event: {0}{1}", e.Event.ReferenceId, Environment.NewLine));
             else
-                sb.AppendLine("Configuration was not updated: Response is {null}");
-
-            WriteLog(sb.ToString());
-        }
-
-        private void OnSendErrorCompleted(object sender, SendErrorCompletedEventArgs e) {
-            var sb = new StringBuilder();
-
-            sb.AppendLine("Submit Completed: " + e.ErrorId);
-            //sb.AppendLine("    Status: " + e.ReportResponse.Status);
-
-            if (e.Error != null)
-                sb.AppendLine("    Error: " + e.Error.Message);
-            //else if (e.ReportResponse.Status == ResponseStatusType.Error)
-            //    sb.AppendLine("    Error: " + e.ReportResponse.ExceptionMessage);
-
-            WriteLog(sb.ToString());
-        }
-
-        private void OnSendingError(object sender, ErrorModelEventArgs e) {
-            string message = "Submitting Message: " + e.Error.Id + Environment.NewLine;
-            WriteLog(message);
-
-            e.Error.ExtendedData["BaseDirectory"] = AppDomain.CurrentDomain.BaseDirectory;
-
-            if (e.Error.Message == "Important Exception")
-                e.Error.Tags.Add("Important");
+                WriteLog("Submitting Event");
         }
 
         private void WriteLog(string message) {
@@ -104,17 +82,8 @@ namespace Exceptionless.SampleWpf {
 
         private void OnImportDemoReports(object sender, RoutedEventArgs e) {}
 
-        //private void OnSendFeedback(object sender, RoutedEventArgs e) {
-        //    var feedback = new ReportDialog();
-        //    var result = feedback.ShowDialog();
-        //}
-
         private void OnProcessQueue(object sender, RoutedEventArgs e) {
-            ExceptionlessClient.Current.ProcessQueueAsync();
-        }
-
-        private void OnUpdateConfiguration(object sender, RoutedEventArgs e) {
-            ExceptionlessClient.Current.UpdateConfigurationAsync(true);
+            ExceptionlessClient.Default.ProcessQueueAsync();
         }
 
         private void OnGenerateThreadException(object sender, RoutedEventArgs e) {
@@ -131,7 +100,7 @@ namespace Exceptionless.SampleWpf {
                 try {
                     throw new Exception("TEST!");
                 } catch (Exception ex) {
-                    ExceptionlessClient.Submit(ex);
+                    ex.ToExceptionless().Submit();
                 }
             });
 
@@ -169,7 +138,7 @@ namespace Exceptionless.SampleWpf {
             try {
                 throw new ApplicationException("Blah2");
             } catch (Exception ex) {
-                ExceptionlessClient.Submit(ex);
+                ex.ToExceptionless().Submit();
             }
         }
     }

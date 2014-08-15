@@ -28,6 +28,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.IO;
+using Exceptionless.Json.Serialization;
 using Exceptionless.Json.Utilities;
 using Exceptionless.Json.Linq;
 
@@ -356,7 +357,7 @@ namespace Exceptionless.Json.Bson
             {
                 case State.ObjectStart:
                 {
-                    SetToken(JsonToken.PropertyName, "$ref");
+                    SetToken(JsonToken.PropertyName, JsonTypeReflector.RefPropertyName);
                     _bsonReaderState = BsonReaderState.ReferenceRef;
                     return true;
                 }
@@ -381,7 +382,7 @@ namespace Exceptionless.Json.Bson
                 {
                     if (_bsonReaderState == BsonReaderState.ReferenceRef)
                     {
-                        SetToken(JsonToken.PropertyName, "$id");
+                        SetToken(JsonToken.PropertyName, JsonTypeReflector.IdPropertyName);
                         _bsonReaderState = BsonReaderState.ReferenceId;
                         return true;
                     }
@@ -535,7 +536,14 @@ namespace Exceptionless.Json.Bson
                     break;
                 }
                 case BsonType.Binary:
-                    SetToken(JsonToken.Bytes, ReadBinary());
+                    BsonBinaryType binaryType;
+                    byte[] data = ReadBinary(out binaryType);
+
+                    object value = (binaryType != BsonBinaryType.Uuid)
+                        ? data
+                        : (object)new Guid(data);
+
+                    SetToken(JsonToken.Bytes, value);
                     break;
                 case BsonType.Undefined:
                     SetToken(JsonToken.Undefined);
@@ -601,11 +609,11 @@ namespace Exceptionless.Json.Bson
             }
         }
 
-        private byte[] ReadBinary()
+        private byte[] ReadBinary(out BsonBinaryType binaryType)
         {
             int dataLength = ReadInt32();
 
-            BsonBinaryType binaryType = (BsonBinaryType)ReadByte();
+            binaryType = (BsonBinaryType)ReadByte();
 
 #pragma warning disable 612,618
             // the old binary type has the data length repeated in the data for some reason

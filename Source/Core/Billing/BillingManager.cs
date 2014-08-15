@@ -13,15 +13,18 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Billing {
     public class BillingManager {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
 
-        public BillingManager(IOrganizationRepository organizationRepository, IUserRepository userRepository) {
+        public BillingManager(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IUserRepository userRepository) {
             _organizationRepository = organizationRepository;
+            _projectRepository = projectRepository;
             _userRepository = userRepository;
         }
 
@@ -46,7 +49,11 @@ namespace Exceptionless.Core.Billing {
                 return false;
 
             var organization = _organizationRepository.GetById(project.OrganizationId);
-            return organization.MaxProjects == -1 || organization.ProjectCount < organization.MaxProjects;
+            if (organization == null)
+                return false;
+
+            long projectCount = _projectRepository.GetCountByOrganizationId(project.OrganizationId);
+            return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
         public bool CanAddIntegration(Project project) {
@@ -57,7 +64,10 @@ namespace Exceptionless.Core.Billing {
         }
 
         public bool HasPremiumFeatures(string organizationId) {
-            var organization = _organizationRepository.GetByIdCached(organizationId);
+            var organization = _organizationRepository.GetById(organizationId);
+            if (organization == null)
+                return false;
+
             return organization.HasPremiumFeatures;
         }
 
@@ -75,14 +85,9 @@ namespace Exceptionless.Core.Billing {
             }
 
             int maxProjects = plan.MaxProjects != -1 ? plan.MaxProjects : int.MaxValue;
-            if (organization.ProjectCount > maxProjects) {
-                message = String.Format("Please remove {0} project{1} and try again.", organization.ProjectCount - maxProjects, (organization.ProjectCount - maxProjects) > 0 ? "s" : String.Empty);
-                return false;
-            }
-
-            // TODO: We need to make this smarter.
-            if (organization.OverageDays != null && organization.OverageDays.Count(d => d.Day > DateTime.Now.AddDays(-30)) > 0 && plan.MaxErrorsPerDay < GetBillingPlan(organization.PlanId).MaxErrorsPerDay) {
-                message = "You would exceed the maximum errors per day plan limit.";
+            long projectCount = _projectRepository.GetCountByOrganizationId(organization.Id);
+            if (projectCount > maxProjects) {
+                message = String.Format("Please remove {0} project{1} and try again.", projectCount - maxProjects, (projectCount - maxProjects) > 0 ? "s" : String.Empty);
                 return false;
             }
 
@@ -111,7 +116,7 @@ namespace Exceptionless.Core.Billing {
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;
-            organization.MaxErrorsPerDay = plan.MaxErrorsPerDay;
+            organization.MaxEventsPerMonth = plan.MaxEventsPerMonth;
             organization.HasPremiumFeatures = plan.HasPremiumFeatures;
         }
 
@@ -125,7 +130,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 1,
                     MaxUsers = 1,
                     RetentionDays = 3,
-                    MaxErrorsPerDay = 100,
+                    MaxEventsPerMonth = 3000,
                     HasPremiumFeatures = false
                 };
             }
@@ -141,7 +146,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxErrorsPerDay = 500,
+                    MaxEventsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -157,7 +162,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 5,
                     MaxUsers = 10,
                     RetentionDays = 30,
-                    MaxErrorsPerDay = 500,
+                    MaxEventsPerMonth = 15000,
                     HasPremiumFeatures = true
                 };
             }
@@ -173,7 +178,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxErrorsPerDay = 2500,
+                    MaxEventsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -189,7 +194,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = 15,
                     MaxUsers = 25,
                     RetentionDays = 90,
-                    MaxErrorsPerDay = 2500,
+                    MaxEventsPerMonth = 75000,
                     HasPremiumFeatures = true
                 };
             }
@@ -205,7 +210,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxErrorsPerDay = 5000,
+                    MaxEventsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -221,7 +226,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = 365,
-                    MaxErrorsPerDay = 5000,
+                    MaxEventsPerMonth = 150000,
                     HasPremiumFeatures = true
                 };
             }
@@ -238,7 +243,7 @@ namespace Exceptionless.Core.Billing {
                     MaxProjects = -1,
                     MaxUsers = -1,
                     RetentionDays = -1,
-                    MaxErrorsPerDay = -1,
+                    MaxEventsPerMonth = -1,
                     HasPremiumFeatures = true
                 };
             }

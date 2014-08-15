@@ -26,7 +26,7 @@
                 <div class="tab-content">
                     <div class="tab-pane active" id="statistics">
                         <div class="stat-container">
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text positive-number" data-bind="formatCurrency: monthlyTotal">0</span>
                                     <span class="visible-desktop">Monthly Total</span>
@@ -36,7 +36,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text positive-number" data-bind="formatCurrency: yearlyTotal">0</span>
                                     <span class="visible-desktop">Projected Yearly Total</span>
@@ -46,7 +46,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: paidAccounts">0</span>
                                     <span class="visible-desktop">Total Paid Accounts</span>
@@ -59,7 +59,7 @@
                         <!-- /stat-container -->
 
                         <div class="stat-container">
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: monthlyTotalAccounts">0</span>
                                     <span class="visible-desktop">Monthly Paid Accounts</span>
@@ -69,7 +69,7 @@
                             </div>
                             <!-- /stat-holder -->
 
-                            <div class="stat-holder loading-spinner">
+                            <div class="stat-holder loading-indicator">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: yearlyTotalAccounts">0</span>
                                     <span class="visible-desktop">Yearly Paid Accounts</span>
@@ -78,7 +78,7 @@
                                 <!-- /stat -->
                             </div>
                             <!-- /stat-holder -->
-                            <div class="stat-holder loading-spinner" data-bind="click: function() { viewSuspendedAccounts('#admin-tabs', '#organizations'); ; return true; }">
+                            <div class="stat-holder loading-indicator" data-bind="click: function() { viewSuspendedAccounts('#admin-tabs', '#organizations'); ; return true; }">
                                 <div class="stat">
                                     <span class="stat-text" data-bind="formatNumber: suspendedAccounts, css: suspendedAccounts() > 0 ? 'negitive-number' : ''">0</span>
                                     <span class="visible-desktop">Suspended Accounts</span>
@@ -163,8 +163,9 @@
                                     <button class="btn btn-gray dropdown-toggle" data-toggle="dropdown"><span class="visible-desktop">Sort&nbsp;</span><span class="caret"></span></button>
                                     <ul class="dropdown-menu right-aligned">
                                         <li><a href="#" data-bind="click: function () { sortBy(0) }" title="Newest"><span data-bind="visible: sortBy() === 0" class="fa fa-check" style="display: none;"></span>Newest</a></li>
-                                        <li><a href="#" data-bind="click: function () { sortBy(1) }" title="Most Active"><span data-bind="visible: sortBy() === 1" class="fa fa-check" style="display: none;"></span>Most Active</a></li>
-                                        <li><a href="#" data-bind="click: function () { sortBy(2) }" title="Alphabetical"><span data-bind="visible: sortBy() === 2" class="fa fa-check" style="display: none;"></span>Alphabetical</a></li>
+                                        <li><a href="#" data-bind="click: function () { sortBy(1) }" title="Subscribed"><span data-bind="visible: sortBy() === 1" class="fa fa-check" style="display: none;"></span>Subscribed</a></li>
+                                        <li><a href="#" data-bind="click: function () { sortBy(2) }" title="Most Active"><span data-bind="visible: sortBy() === 2" class="fa fa-check" style="display: none;"></span>Most Active</a></li>
+                                        <li><a href="#" data-bind="click: function () { sortBy(3) }" title="Alphabetical"><span data-bind="visible: sortBy() === 3" class="fa fa-check" style="display: none;"></span>Alphabetical</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -174,7 +175,7 @@
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th class="date hidden-phone hidden-tablet">Created</th>
+                                    <th class="date hidden-phone hidden-tablet" data-bind="text: sortBy() === 1 ? 'Subscribed' : 'Created'">Created</th>
                                     <th style="width: 85px;">Plan</th>
                                     <th class="number hidden-phone" style="width: 85px">Stats</th>
                                     <th data-bind="visible: items().length > 0, css: actionsLayoutStyle">&nbsp;</th>
@@ -237,7 +238,7 @@
             </td>
             <td class="date hidden-phone hidden-tablet" data-bind="click: $parent.rowClick">
                 <a href="#" data-bind="popover: { placement: 'right', content: $data.activitySummary }, click: $parent.rowClick">
-                    <span data-bind="livestamp: $data.createdOn, hideTitle: true"></span>
+                    <span data-bind="livestamp: $parent.sortBy() === 1 ? $data.subscribeDate : $data.createdOn, hideTitle: true"></span>
                 </a>
             </td>
             <td><a title="Change Plan" data-bind="attr: { href: '/organization/' + $data.id + '/manage' }, click: function () { exceptionless.App.showChangePlanDialog($data); }">

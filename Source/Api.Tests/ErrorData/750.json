@@ -1,0 +1,38 @@
+﻿{
+  "Id": "80000000b77efe1e0ca982e8",
+  "OccurrenceDate": "2013-03-27T09:52:51.9135414-05:00",
+  "Tags": [],
+  "ExceptionlessClientInfo": {
+    "Version": "1.0.0.750",
+    "InstallDate": "0001-01-01T00:00:00",
+    "StartCount": 0,
+    "SubmitCount": 2,
+    "Platform": ".NET"
+  },
+  "Modules": [],
+  "EnvironmentInfo": {
+    "ProcessorCount": 12,
+    "TotalPhysicalMemory": 17120079872,
+    "AvailablePhysicalMemory": 10055864320,
+    "CommandLine": "\"C:\\Users\\Example\\Documents\\Visual Studio 2012\\Projects\\MvcApplication5\\ConsoleApplication1\\bin\\Debug\\ConsoleApplication1.vshost.exe\" ",
+    "ProcessName": "C:\\Users\\Example\\Documents\\Visual Studio 2012\\Projects\\MvcApplication5\\ConsoleApplication1\\bin\\Debug\\ConsoleApplication1.vshost.exe",
+    "ProcessId": "7692",
+    "ProcessMemorySize": 19058688,
+    "ThreadId": "9448",
+    "Architecture": "x64",
+    "OSName": "Microsoft Windows 8 Enterprise",
+    "OSVersion": "6.2.9200.0",
+    "MachineName": "Example",
+    "RuntimeVersion": "4.0.30319.18033",
+    "IpAddress": "127.0.0.1",
+    "ExtendedData": {
+      "AppDomainName": "ConsoleApplication1.vshost.exe"
+    }
+  },
+  "Message": "Exception of type 'System.Exception' was thrown.",
+  "Type": "System.Exception",
+  "ExtendedData": {
+    "ExtraExceptionProperties": "{\r\n  \"Data\": {}\r\n}"
+  },
+  "StackTrace": []
+}

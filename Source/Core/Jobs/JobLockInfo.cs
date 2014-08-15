@@ -10,11 +10,12 @@
 #endregion
 
 using System;
+using Exceptionless.Models;
 
 namespace Exceptionless.Core.Jobs {
-    public class JobLockInfo {
+    public class JobLockInfo : IIdentity {
+        public string Id { get; set; }
         public string Name { get; set; }
-        public string MachineName { get; set; }
         public DateTime CreatedDate { get; set; }
     }
 }

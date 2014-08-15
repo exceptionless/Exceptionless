@@ -12,7 +12,6 @@
 using System;
 using System.Net.Http;
 using System.Web.Http;
-using Exceptionless.Logging;
 using Microsoft.Owin.Hosting;
 using Owin;
 
@@ -22,8 +21,9 @@ namespace Exceptionless.SampleWebApi {
             var config = new HttpConfiguration();
             config.Routes.MapHttpRoute(name: "DefaultApi", routeTemplate: "api/{controller}/{id}", defaults: new { id = RouteParameter.Optional });
             app.UseWebApi(config);
-            ExceptionlessClient.Current.RegisterWebApi(config);
-            ExceptionlessClient.Current.Log = new TraceExceptionlessLog();
+
+            ExceptionlessClient.Default.Configuration.UseTraceLogger();
+            ExceptionlessClient.Default.RegisterWebApi(config);
         }
     }
 

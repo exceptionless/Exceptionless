@@ -14,13 +14,13 @@ namespace CodeSmith.Core.Scheduler
         /// <summary>
         /// Restores the latest job history from the provider.
         /// </summary>
-        /// <param name="job">The job to restore the history to.</param>
-        public abstract void RestoreHistory(Job job);
+        /// <param name="jobRunner">The job to restore the history to.</param>
+        public abstract void RestoreHistory(JobRunner jobRunner);
 
         /// <summary>
         /// Saves the history to the provider.
         /// </summary>
-        /// <param name="job">The job to save the history on.</param>
-        public abstract void SaveHistory(Job job);
+        /// <param name="jobRunner">The job to save the history on.</param>
+        public abstract void SaveHistory(JobRunner jobRunner);
     }
 }
