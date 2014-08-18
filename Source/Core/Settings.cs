@@ -168,7 +168,7 @@ namespace Exceptionless.Core {
                 settings.MongoConnectionString = mongoConnectionString.ConnectionString;
 
             ConnectionStringSettings elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
-            if (mongoConnectionString != null)
+            if (elasticSearchConnectionString != null)
                 settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
 
             settings.Version = ThisAssembly.AssemblyInformationalVersion;

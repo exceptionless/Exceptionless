@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Repositories {
             if (result != null)
                 return result;
 
-            var searchDescriptor = new SearchDescriptor<TModel>().Query(options.GetElasticSearchQuery<T>()).Take(1);
+            var searchDescriptor = new SearchDescriptor<TModel>().Filter(options.GetElasticSearchFilter<T>()).Take(1);
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
 
@@ -82,8 +82,8 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            // TODO: See if take 0 works and if I just need to set it to one with the field of CommonFieldNames.Id
-            var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>()).Take(0);
+            options.Fields.Add("id");
+            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories {
             if (result != null)
                 return result;
 
-            var searchDescriptor = new SearchDescriptor<TModel>().Query(options.GetElasticSearchQuery<TModel>());
+            var searchDescriptor = new SearchDescriptor<TModel>().Filter(options.GetElasticSearchFilter());
             searchDescriptor.Indices(options.Indices);
 
             if (options.UsePaging)
@@ -129,50 +129,35 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public long Count() {
-            return _elasticClient.Count(c => c.Query(q => q.MatchAll())).Count;
+            return _elasticClient.Count<T>(c => c.Query(q => q.MatchAll())).Count;
         }
 
         public T GetById(string id, bool useCache = false, TimeSpan? expiresIn = null) {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            T result = null;
-            if (useCache)
-                result = Cache.Get<T>(GetScopedCacheKey(id));
-
-            if (result != null)
-                return result;
-
-            var response = _elasticClient.Get<T>(id);
-            if (!response.Found || response.Source == null)
-                return null;
-
-            if (useCache)
-                Cache.Set(GetScopedCacheKey(id), response.Source, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
-
-            return response.Source;
+            return FindOne<T>(new OneOptions().WithId(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
         }
 
         public ICollection<T> GetByIds(ICollection<string> ids, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (ids == null || ids.Count == 0)
                 return new List<T>();
 
-
-            string cacheKey = String.Join("", ids).GetHashCode().ToString();
-
-            ICollection<T> results = null;
+            var results = new List<T>();
             if (useCache)
-                results = Cache.Get<ICollection<T>>(GetScopedCacheKey(cacheKey));
+                results.AddRange(ids.Select(id => Cache.Get<T>(GetScopedCacheKey(id))).Where(cacheHit => cacheHit != null));
 
-            if (results != null)
+            var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
+            if (notCachedIds.Length == 0)
                 return results;
 
-            results = _elasticClient.GetMany<T>(ids).Select(r => r.Source).ToList();
-            if (results.Count == 0)
-                return null;
+            var foundItems = Find(new ElasticSearchOptions<T>().WithIds(ids.Except(results.Select(i => i.Id))));
+            
+            if (useCache && foundItems.Count > 0)
+                foreach (var item in foundItems)
+                    Cache.Set(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
-            if (useCache)
-                Cache.Set(GetScopedCacheKey(cacheKey), results, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+            results.AddRange(foundItems);
 
             return results;
         }

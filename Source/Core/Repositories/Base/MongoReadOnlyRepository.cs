@@ -184,8 +184,23 @@ namespace Exceptionless.Core.Repositories {
             if (ids == null || ids.Count == 0)
                 return new List<T>();
 
-            string cacheKey = String.Join("", ids).GetHashCode().ToString();
-            return Find<T>(new MultiOptions().WithIds(ids).WithPaging(paging).WithCacheKey(useCache ? cacheKey : null).WithExpiresIn(expiresIn));
+            var results = new List<T>();
+            if (useCache)
+                results.AddRange(ids.Select(id => Cache.Get<T>(GetScopedCacheKey(id))).Where(cacheHit => cacheHit != null));
+
+            var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
+            if (notCachedIds.Length == 0)
+                return results;
+
+            var foundItems = Find<T>(new MultiOptions().WithIds(ids.Except(results.Select(i => i.Id))));
+
+            if (useCache && foundItems.Count > 0)
+                foreach (var item in foundItems)
+                    Cache.Set(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+
+            results.AddRange(foundItems);
+
+            return results;
         }
 
         public bool Exists(string id) {

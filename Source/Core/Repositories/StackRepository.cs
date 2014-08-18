@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
     public class StackRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(ElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+        public StackRepository(IElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
         }
@@ -71,41 +71,41 @@ namespace Exceptionless.Core.Repositories {
         public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
             return FindOne<StackInfo>(new ElasticSearchOptions<Stack>()
                 .WithProjectId(projectId)
-                .WithQuery(Query<Stack>.Term(s => s.SignatureHash, signatureHash))
+                .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
                 .WithFields("id", "date_fixed", "occurrences_are_critical", "is_hidden")
                 .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
         }
 
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
-            options.Query = Query<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
-            options.Query &= Query<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
+            options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
+            options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
 
             if (!includeFixed)
-                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing(s => s.DateFixed)));
+                options.Filter &= Filter<Stack>.Missing(s => s.DateFixed);
 
             if (!includeHidden)
-                options.Query &= !Query<Stack>.Term(s => s.IsHidden, true);
+                options.Filter &= !Filter<Stack>.Term(s => s.IsHidden, true);
 
             if (!includeNotFound)
-                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing("signature_info.path")));
+                options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
             return Find<Stack>(options);
         }
 
         public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
             var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
-            options.Query = Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
-            options.Query &= Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
+            options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
+            options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
 
             if (!includeFixed)
-                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing(s => s.DateFixed)));
+                options.Filter &= Filter<Stack>.Missing(s => s.DateFixed);
 
             if (!includeHidden)
-                options.Query &= !Query<Stack>.Term(s => s.IsHidden, true);
+                options.Filter &= !Filter<Stack>.Term(s => s.IsHidden, true);
 
             if (!includeNotFound)
-                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing("signature_info.path")));
+                options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
             return Find<Stack>(options);
         }

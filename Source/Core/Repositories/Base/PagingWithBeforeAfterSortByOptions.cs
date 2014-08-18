@@ -8,8 +8,8 @@ namespace Exceptionless.Core.Repositories {
             _options = options ?? new PagingOptions();
         }
 
-        public TQuery BeforeQuery { get; set; }
-        public TQuery AfterQuery { get; set; }
+        public TQuery BeforeFilter { get; set; }
+        public TQuery AfterFilter { get; set; }
         public TSortBy SortBy { get; set; }
 
         public override string Before {

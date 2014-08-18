@@ -103,8 +103,8 @@ namespace Exceptionless.Core.Repositories {
 
             var mongoPagingOptions = paging as MongoPagingOptions;
             if (mongoPagingOptions != null) {
-                options.BeforeQuery = mongoPagingOptions.BeforeQuery;
-                options.AfterQuery = mongoPagingOptions.AfterQuery;
+                options.BeforeQuery = mongoPagingOptions.BeforeFilter;
+                options.AfterQuery = mongoPagingOptions.AfterFilter;
                 options.SortBy = mongoPagingOptions.SortBy;
             }
 

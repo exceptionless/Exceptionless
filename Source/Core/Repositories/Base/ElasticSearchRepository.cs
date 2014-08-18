@@ -20,7 +20,6 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
 using Nest;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
@@ -31,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
-        protected static readonly bool _isEvent = typeof(T) == typeof(Event);
+        protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
 
         protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
@@ -61,8 +60,8 @@ namespace Exceptionless.Core.Repositories {
                 documents.ForEach(_validator.ValidateAndThrow);
 
             if (_isEvent)
-                foreach (var group in documents.Cast<Event>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
+                foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
                 }
@@ -141,7 +140,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
 
             var searchDescriptor = new SearchDescriptor<T>()
-                .Query(options.GetElasticSearchQuery<T>() ?? Query<T>.MatchAll())
+                .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
                 .Take(RepositoryConstants.BATCH_SIZE);
 
@@ -176,7 +175,7 @@ namespace Exceptionless.Core.Repositories {
                 documents.ForEach(_validator.ValidateAndThrow);
 
             if (_isEvent)
-                foreach (var group in documents.Cast<Event>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
                     var result = _elasticClient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));

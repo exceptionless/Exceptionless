@@ -10,7 +10,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchRepositoryTests {
         public readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
-        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         [Fact]
         public void CanCreateUpdateRemove() {
@@ -65,7 +65,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
         }
 
-        
         [Fact]
         public void CanAddAndGetByCached() {
             var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;

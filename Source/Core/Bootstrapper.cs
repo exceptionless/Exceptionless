@@ -69,7 +69,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
+            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString), true));
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
             container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(workItemTimeoutMilliseconds: 2 * 60 * 1000));
@@ -123,7 +123,10 @@ namespace Exceptionless.Core {
         }
 
         private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(serverUri);
+            var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
+#if TRACE
+            settings.EnableTrace();
+#endif
             settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionElasticContractResolver(settings); });
             settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
             settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks_v1"));
