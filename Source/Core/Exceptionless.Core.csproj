@@ -157,6 +157,7 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
@@ -245,7 +246,7 @@
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\PagingWtihBeforeAfterSortByOptions.cs" />
+    <Compile Include="Repositories\Base\PagingWithBeforeAfterSortByOptions.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />

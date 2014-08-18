@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
@@ -25,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
 
-        public EventRepository(ElasticClient elasticClient, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+        public EventRepository(IElasticClient elasticClient, IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, cacheClient, messagePublisher) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
@@ -89,7 +88,18 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithQuery(query).WithIndices(GetTargetIndex(utcStart, utcEnd)).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+        }
+
+        private List<string> GetTargetIndex(DateTime utcStart, DateTime utcEnd) {
+            DateTime current = new DateTime(utcStart.Year, utcStart.Month, 1);
+            var indices = new List<string>();
+            while (current <= utcEnd) {
+                indices.Add("events_v1_" + current.ToString("yyyyMM"));
+                current = current.AddMonths(1);
+            }
+
+            return indices;
         }
 
         public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -100,7 +110,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 query &= Query<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithQuery(query).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithQuery(query).WithIndices(GetTargetIndex(utcStart, utcEnd)).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {
@@ -147,7 +157,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
                 .WithQuery(query));
 
-            Trace.WriteLine("HERE!!");
             if (documents.Count == 0)
                 return null;
 

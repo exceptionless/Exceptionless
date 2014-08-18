@@ -14,14 +14,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
-using Elasticsearch.Net;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Models;
 using FluentValidation;
-using MongoDB.Driver;
 using Nest;
 using NLog.Fluent;
 
@@ -34,8 +31,9 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
+        protected static readonly bool _isEvent = typeof(T) == typeof(Event);
 
-        protected ElasticSearchRepository(ElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
+        protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
             _messagePublisher = messagePublisher;
             EnableNotifications = true;
@@ -62,9 +60,17 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            var result = _elasticClient.IndexMany(documents);
-            if (!result.IsValid)
-                throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+            if (_isEvent)
+                foreach (var group in documents.Cast<Event>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                    var result = _elasticClient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
+                    if (!result.IsValid)
+                        throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+                }
+            else {
+                var result = _elasticClient.IndexMany(documents);
+                if (!result.IsValid)
+                    throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+            }
 
             AfterAdd(documents, addToCache, expiresIn);
         }
@@ -169,9 +175,16 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            var result = _elasticClient.IndexMany(documents);
-            if (!result.IsValid)
-                throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+            if (_isEvent)
+                foreach (var group in documents.Cast<Event>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
+                    var result = _elasticClient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
+                    if (!result.IsValid)
+                        throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+            } else {
+                var result = _elasticClient.IndexMany(documents);
+                if (!result.IsValid)
+                    throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+            }
 
             AfterSave(documents, addToCache, expiresIn);
         }

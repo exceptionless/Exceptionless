@@ -9,7 +9,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepositoryOwnedByOrganizationAndProject<T> : ElasticSearchRepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public ElasticSearchRepositoryOwnedByOrganizationAndProject(ElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, validator, cacheClient, messagePublisher) { }
+        public ElasticSearchRepositoryOwnedByOrganizationAndProject(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, validator, cacheClient, messagePublisher) { }
 
         public virtual ICollection<T> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new ElasticSearchOptions<T>()

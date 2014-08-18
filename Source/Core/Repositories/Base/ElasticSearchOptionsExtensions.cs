@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Nest;
 
@@ -11,6 +12,16 @@ namespace Exceptionless.Core.Repositories {
 
         public static ElasticSearchOptions<T> WithSort<T>(this ElasticSearchOptions<T> options, Func<SortFieldDescriptor<T>, IFieldSort> sort) where T : class {
             options.SortBy.Add(sort);
+            return options;
+        }
+
+        public static ElasticSearchOptions<T> WithIndex<T>(this ElasticSearchOptions<T> options, string index) where T : class {
+            options.Indices.Add(index);
+            return options;
+        }
+
+        public static ElasticSearchOptions<T> WithIndices<T>(this ElasticSearchOptions<T> options, IEnumerable<string> indices) where T : class {
+            options.Indices.AddRange(indices);
             return options;
         }
 
@@ -43,7 +54,7 @@ namespace Exceptionless.Core.Repositories {
 
         public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options) where T : class {
             var queries = Query<T>.MatchAll();
-
+            
             if (options.Ids.Count > 0)
                 queries &= Query<T>.Ids(options.Ids);
             

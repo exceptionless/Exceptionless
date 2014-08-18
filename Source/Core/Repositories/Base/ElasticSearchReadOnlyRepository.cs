@@ -18,10 +18,9 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
-        protected readonly ElasticClient _elasticClient;
-        private SearchDescriptor<T> _searchDescriptor;
+        protected readonly IElasticClient _elasticClient;
 
-        protected ElasticSearchReadOnlyRepository(ElasticClient elasticClient, ICacheClient cacheClient = null) {
+        protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, ICacheClient cacheClient = null) {
             _elasticClient = elasticClient;
             Cache = cacheClient;
         }
@@ -66,10 +65,12 @@ namespace Exceptionless.Core.Repositories {
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
 
             var elasticSearchOptions = options as ElasticSearchOptions<TModel>;
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
+                searchDescriptor.Indices(elasticSearchOptions.Indices);
                 foreach (var sort in elasticSearchOptions.SortBy)
                     searchDescriptor.Sort(sort);
-           
+            }
+
             result = _elasticClient.Search<TModel>(searchDescriptor).Documents.FirstOrDefault();
             if (result != null && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
@@ -85,9 +86,11 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>().Query(options.GetElasticSearchQuery<T>()).Take(0);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
+                searchDescriptor.Indices(elasticSearchOptions.Indices);
                 foreach (var sort in elasticSearchOptions.SortBy)
                     searchDescriptor.Sort(sort);
+            }
 
             return _elasticClient.Search<T>(searchDescriptor).HitsMetaData.Total > 0;
         }
@@ -104,6 +107,8 @@ namespace Exceptionless.Core.Repositories {
                 return result;
 
             var searchDescriptor = new SearchDescriptor<TModel>().Query(options.GetElasticSearchQuery<TModel>());
+            searchDescriptor.Indices(options.Indices);
+
             if (options.UsePaging)
                 searchDescriptor.Skip(options.GetSkip());
             searchDescriptor.Size(options.GetLimit());

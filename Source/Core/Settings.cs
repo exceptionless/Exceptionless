@@ -67,6 +67,8 @@ namespace Exceptionless.Core {
 
         public string MongoConnectionString { get; private set; }
 
+        public string ElasticSearchConnectionString { get; set; }
+
         public string Version { get; private set; }
 
         public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId); } }
@@ -164,6 +166,10 @@ namespace Exceptionless.Core {
             ConnectionStringSettings mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
             if (mongoConnectionString != null)
                 settings.MongoConnectionString = mongoConnectionString.ConnectionString;
+
+            ConnectionStringSettings elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
+            if (mongoConnectionString != null)
+                settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
 
             settings.Version = ThisAssembly.AssemblyInformationalVersion;
 

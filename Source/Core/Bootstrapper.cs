@@ -11,7 +11,6 @@
 
 using System;
 using System.Configuration;
-using System.Reflection;
 using CodeSmith.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
@@ -26,6 +25,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Exceptionless.Models;
@@ -34,9 +34,6 @@ using Exceptionless.Models.Data;
 using FluentValidation;
 using MongoDB.Driver;
 using Nest;
-using Nest.Resolvers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
@@ -72,14 +69,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.RegisterSingle<ElasticClient>(() => {
-                var settings = new ConnectionSettings(new Uri("http://localhost:9200")).SetDefaultIndex("exceptionless_v1");
-                settings.EnableTrace();
-                settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionContractResolver(settings); });
-                settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
-                settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
-                return new ElasticClient(settings);
-            });
+            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
             container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(workItemTimeoutMilliseconds: 2 * 60 * 1000));
@@ -131,30 +121,76 @@ namespace Exceptionless.Core {
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
         }
-    }
 
-    public class EmptyCollectionContractResolver : ElasticContractResolver {
-        public EmptyCollectionContractResolver(IConnectionSettingsValues connectionSettings) : base(connectionSettings) {}
+        private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
+            var settings = new ConnectionSettings(serverUri);
+            settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionElasticContractResolver(settings); });
+            settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
+            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks_v1"));
+            settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
+            var client = new ElasticClient(settings);
+            ConfigureMapping(client, deleteExistingIndexes);
 
-            Predicate<object> shouldSerialize = property.ShouldSerialize;
-            property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
-            return property;
+            return client;
         }
 
-        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
-                return base.CreateDictionaryContract(objectType);
+        private static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
+            if (deleteExistingIndexes)
+                searchclient.DeleteIndex(i => i.AllIndices());
 
-            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
-            contract.PropertyNameResolver = propertyName => propertyName;
-            return contract;
-        }
+            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "stacks_v1" })).Exists)
+                searchclient.CreateIndex("stacks_v1", d => d
+                    .AddAlias("stacks")
+                    .AddMapping<Stack>(map => map
+                        .Dynamic(DynamicMappingOption.Ignore)
+                        .IncludeInAll(false)
+                        .Properties(p => p
+                            .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(s => s.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(s => s.SignatureHash).IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.NotAnalyzed))
+                            .Date(f => f.Name(s => s.FirstOccurrence).IndexName("first"))
+                            .Date(f => f.Name(s => s.LastOccurrence).IndexName("last"))
+                            .String(f => f.Name(s => s.Title).IndexName("title").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
+                            .String(f => f.Name(s => s.Description).IndexName("description").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .String(f => f.Name(s => s.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.2))
+                            .String(f => f.Name(s => s.References).IndexName("references").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                            .Date(f => f.Name(s => s.DateFixed).IndexName("fixed"))
+                            .Boolean(f => f.Name(s => s.IsHidden).IndexName("hidden"))
+                            .Boolean(f => f.Name(s => s.IsRegressed).IndexName("regressed"))
+                            .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName("critical"))
+                            .Number(f => f.Name(s => s.TotalOccurrences).IndexName("occurrences"))
+                        )
+                    )
+                );
 
-        protected override string ResolvePropertyName(string propertyName) {
-            return propertyName.ToLowerUnderscoredWords();
+            searchclient.PutTemplate("events_v1", d => d
+                .Template("events_v1_*")
+                .AddMapping<PersistentEvent>(map => map
+                    .Dynamic(DynamicMappingOption.Ignore)
+                    .IncludeInAll(false)
+                    .SetParent("stacks")
+                    .Properties(p => p
+                        .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.ReferenceId).IndexName("reference").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.SessionId).IndexName("session").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name(e => e.Source).IndexName("source").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                        .Date(f => f.Name(e => e.Date).IndexName("date"))
+                        .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                        .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                        .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
+                        .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
+                        .String(f => f.Name("data.error.type").IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                        .String(f => f.Name("data.user.identity").IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
+                        .String(f => f.Name("data.request.client_ip_address").IndexName("ip").Index(FieldIndexOption.NotAnalyzed))
+                        .String(f => f.Name("data.environment.machine_name").IndexName("machine").Index(FieldIndexOption.Analyzed))
+                    )
+                )
+            );
         }
     }
 }
