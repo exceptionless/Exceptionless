@@ -3,6 +3,8 @@ using System.Linq;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Serialization;
+using Newtonsoft.Json;
 using Exceptionless.Tests.Utility;
 using Nest;
 using Xunit;
@@ -20,6 +22,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             var ev = EventData.GenerateEvent(generateId: false, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1);
             Assert.Null(ev.Id);
 
+            var json = JsonConvert.SerializeObject(ev, new JsonSerializerSettings {
+                ContractResolver = new EmptyCollectionElasticContractResolver(new ConnectionSettings())
+            });
             _repository.Add(ev);
             Assert.NotNull(ev.Id);
             _client.Refresh();
@@ -50,11 +55,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(events);
             Assert.Equal(1, events.Count);
 
-            var events2 = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithPage(1).WithLimit(1));
+            var events2 = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithPage(2).WithLimit(1));
             Assert.NotNull(events);
             Assert.Equal(1, events.Count);
 
-            Assert.NotEqual(events.First(), events2.First());
+            Assert.NotEqual(events.First().Id, events2.First().Id);
 
             events = _repository.GetByStackId(TestConstants.StackId2);
             Assert.NotNull(events);

@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null) {
                 try {
-                    options.BeforeQuery = Filter<T>.Range(r => r.OnField("id").Lower(options.BeforeValue));
+                    options.BeforeQuery = Filter<T>.Range(r => r.OnField("_uid").Lower(options.BeforeValue));
                 } catch (Exception ex) {
                     ex.ToExceptionless().AddObject(options.BeforeQuery, "BeforeQuery").Submit();
                 }
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null) {
                 try {
-                    options.AfterQuery = Filter<T>.Range(r => r.OnField("id").Greater(options.AfterValue));
+                    options.AfterQuery = Filter<T>.Range(r => r.OnField("_uid").Greater(options.AfterValue));
                 } catch (Exception ex) {
                     ex.ToExceptionless().AddObject(options.AfterQuery, "AfterQuery").Submit();
                 }

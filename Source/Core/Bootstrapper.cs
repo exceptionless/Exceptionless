@@ -129,7 +129,7 @@ namespace Exceptionless.Core {
 #endif
             settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionElasticContractResolver(settings); });
             settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
-            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks_v1"));
+            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks-v1"));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
             var client = new ElasticClient(settings);
@@ -142,8 +142,8 @@ namespace Exceptionless.Core {
             if (deleteExistingIndexes)
                 searchclient.DeleteIndex(i => i.AllIndices());
 
-            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "stacks_v1" })).Exists)
-                searchclient.CreateIndex("stacks_v1", d => d
+            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "stacks-v1" })).Exists)
+                searchclient.CreateIndex("stacks-v1", d => d
                     .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
@@ -168,12 +168,12 @@ namespace Exceptionless.Core {
                     )
                 );
 
-            searchclient.PutTemplate("events_v1", d => d
-                .Template("events_v1_*")
+            searchclient.PutTemplate("events-v1", d => d
+                .Template("events-v1-*")
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)
-                    .SetParent("stacks")
+                    //.SetParent("stacks")
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))

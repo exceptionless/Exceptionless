@@ -61,7 +61,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events-v1-" + group.Key.ToString("yyyyMM"));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
                 }
@@ -176,7 +176,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group, type: "events", index: "events_v1_" + group.Key.ToString("yyyyMM"));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events-v1-" + group.Key.ToString("yyyyMM"));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
             } else {

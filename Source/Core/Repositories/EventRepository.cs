@@ -231,10 +231,10 @@ namespace Exceptionless.Core.Repositories {
             var pagingOptions = new ElasticSearchPagingOptions<PersistentEvent>(paging);
             if (sortByAscending) {
                 pagingOptions.SortBy.Add(s => s.OnField(f => f.Date).Ascending());
-                pagingOptions.SortBy.Add(s => s.OnField(f => f.Id).Ascending());
+                pagingOptions.SortBy.Add(s => s.OnField("_uid").Ascending());
             } else {
                 pagingOptions.SortBy.Add(s => s.OnField(f => f.Date).Descending());
-                pagingOptions.SortBy.Add(s => s.OnField(f => f.Id).Descending());
+                pagingOptions.SortBy.Add(s => s.OnField("_uid").Descending());
             }
 
             if (!String.IsNullOrEmpty(pagingOptions.Before) && pagingOptions.Before.IndexOf('-') > 0) {
@@ -244,7 +244,7 @@ namespace Exceptionless.Core.Repositories {
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out beforeUtcTicks) && !String.IsNullOrEmpty(parts[1]))
                     pagingOptions.BeforeFilter = (
                             Filter<PersistentEvent>.Term(e => e.Date, new DateTime(beforeUtcTicks, DateTimeKind.Utc))
-                            && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Id).Lower(parts[1]))
+                            && Filter<PersistentEvent>.Range(r => r.OnField("_uid").Lower(parts[1]))
                         ) || Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Lower(new DateTime(beforeUtcTicks, DateTimeKind.Utc)));
             }
             
@@ -255,7 +255,7 @@ namespace Exceptionless.Core.Repositories {
                 if (parts.Length == 2 && Int64.TryParse(parts[0], out afterUtcTicks) && !String.IsNullOrEmpty(parts[1]))
                     pagingOptions.AfterFilter = (
                             Filter<PersistentEvent>.Term(e => e.Date, new DateTime(afterUtcTicks, DateTimeKind.Utc))
-                            && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Id).Greater(parts[1]))
+                            && Filter<PersistentEvent>.Range(r => r.OnField("_uid").Greater(parts[1]))
                         ) || Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).Greater(new DateTime(afterUtcTicks, DateTimeKind.Utc)));
             }
 

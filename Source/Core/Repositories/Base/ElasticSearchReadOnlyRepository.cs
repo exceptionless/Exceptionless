@@ -112,6 +112,7 @@ namespace Exceptionless.Core.Repositories {
             if (options.UsePaging)
                 searchDescriptor.Skip(options.GetSkip());
             searchDescriptor.Size(options.GetLimit());
+            searchDescriptor.Type(typeof(T));
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
             if (options.SortBy.Count > 0)
@@ -119,7 +120,7 @@ namespace Exceptionless.Core.Repositories {
                     searchDescriptor.Sort(sort);
 
             var results = _elasticClient.Search<TModel>(searchDescriptor);
-            options.HasMore = options.UseLimit && results.HitsMetaData.Total > options.GetLimit();
+            options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
             result = results.Documents.ToList();
             if (options.UseCache)
