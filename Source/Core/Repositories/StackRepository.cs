@@ -13,124 +13,123 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Nest;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
-    public class StackRepository : MongoRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
+    public class StackRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, validator, cacheClient, messagePublisher) {
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
+        public StackRepository(ElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(elasticClient, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
         }
 
-        public void IncrementEventCounter(string stackId, DateTime occurrenceDate) {
+        protected override void BeforeAdd(ICollection<Stack> documents) {
+            // TODO: Remove this dependency on the mongo lib.
+            foreach (var ev in documents.Where(ev => ev.Id == null))
+                ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+
+            base.BeforeAdd(documents);
+        }
+
+        public void IncrementEventCounter(string stackId, string organizationId, DateTime occurrenceDate) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
-            UpdateAll(new MongoOptions().WithId(stackId).WithQuery(Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))), Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
-
             // Only update the LastOccurrence if the new date is greater then the existing date.
-            UpdateBuilder update = Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
-            var documentsAffected = UpdateAll(new MongoOptions().WithId(stackId).WithQuery(Query.LT(FieldNames.LastOccurrence, occurrenceDate)), update);
-            if (documentsAffected > 0)
-                return;
+            var result = _elasticClient.Update<Stack>(s => s
+                .Id(stackId)
+                .Script(@"if (ctx._source.total_occurrences == 0) {
+                            ctx._source.first_occurrence = occurrenceDate; 
+                          }
+                          if (ctx._source.last_occurrence < occurrenceDate) {
+                            ctx._source.last_occurrence = occurrenceDate; 
+                          }                          
+                          ctx._source.total_occurrences++;")
+                .Params(p => p.Add("occurrenceDate", occurrenceDate)));
 
-            UpdateAll(new QueryOptions().WithId(stackId), Update.Inc(FieldNames.TotalOccurrences, 1));
+            if (!result.IsValid) {
+                Log.Error().Message("Error occurred incrementing stack count.");
+                return;
+            }
+
             InvalidateCache(stackId);
+
+            if (EnableNotifications) {
+                PublishMessageAsync(new EntityChanged {
+                    ChangeType = EntityChangeType.Saved,
+                    Id = stackId,
+                    OrganizationId = organizationId,
+                    Type = _entityType
+                });
+            }
         }
 
         public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
-            return FindOne<StackInfo>(new MongoOptions()
+            return FindOne<StackInfo>(new ElasticSearchOptions<Stack>()
                 .WithProjectId(projectId)
-                .WithQuery(Query.EQ(FieldNames.SignatureHash, signatureHash))
-                .WithFields(FieldNames.Id, FieldNames.DateFixed, FieldNames.OccurrencesAreCritical, FieldNames.IsHidden)
-                .WithReadPreference(ReadPreference.Primary)
+                .WithQuery(Query<Stack>.Term(s => s.SignatureHash, signatureHash))
+                .WithFields("id", "date_fixed", "occurrences_are_critical", "is_hidden")
                 .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
         }
 
-        public string[] GetHiddenIds(string projectId) {
-            return Find<Stack>(new MongoOptions()
-                .WithProjectId(projectId)
-                .WithQuery(Query.EQ(FieldNames.IsHidden, BsonBoolean.True))
-                .WithFields(FieldNames.Id)
-                .WithCacheKey(String.Concat(projectId, "@__HIDDEN")))
-                .Select(s => s.Id).ToArray();
-        }
-
-        public void InvalidateHiddenIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__HIDDEN")));
-        }
-
-        public string[] GetFixedIds(string projectId) {
-            return Find<Stack>(new MongoOptions()
-                .WithProjectId(projectId)
-                .WithQuery(Query.Exists(FieldNames.DateFixed))
-                .WithFields(FieldNames.Id)
-                .WithCacheKey(String.Concat(projectId, "@__FIXED")))
-                .Select(s => s.Id).ToArray();
-        }
-
-        public void InvalidateFixedIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__FIXED")));
-        }
-
-        public string[] GetNotFoundIds(string projectId) {
-            return Find<Stack>(new MongoOptions()
-                .WithProjectId(projectId)
-                .WithQuery(Query.Exists(FieldNames.SignatureInfo_Path))
-                .WithFields(FieldNames.Id)
-                .WithCacheKey(String.Concat(projectId, "@__NOTFOUND")))
-                .Select(s => s.Id).ToArray();
-        }
-
-        public void InvalidateNotFoundIdsCache(string projectId) {
-            Cache.Remove(GetScopedCacheKey(String.Concat(projectId, "@__NOTFOUND")));
-        }
-
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new MongoOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.LastOccurrence)).WithPaging(paging);
-            options.Query = options.Query.And(Query.GTE(FieldNames.LastOccurrence, utcStart), Query.LTE(FieldNames.LastOccurrence, utcEnd));
+            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
+            options.Query = Query<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
+            options.Query &= Query<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
 
             if (!includeFixed)
-                options.Query = options.Query.And(Query.NotExists(FieldNames.DateFixed));
+                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing(s => s.DateFixed)));
 
             if (!includeHidden)
-                options.Query = options.Query.And(Query.NE(FieldNames.IsHidden, true));
+                options.Query &= !Query<Stack>.Term(s => s.IsHidden, true);
 
             if (!includeNotFound)
-                options.Query = options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing("signature_info.path")));
 
             return Find<Stack>(options);
         }
 
         public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new MongoOptions().WithProjectId(projectId).WithSort(SortBy.Descending(FieldNames.FirstOccurrence)).WithPaging(paging);
-            options.Query = options.Query.And(Query.GTE(FieldNames.FirstOccurrence, utcStart), Query.LTE(FieldNames.FirstOccurrence, utcEnd));
+            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
+            options.Query = Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
+            options.Query &= Query<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
 
             if (!includeFixed)
-                options.Query = options.Query.And(Query.NotExists(FieldNames.DateFixed));
+                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing(s => s.DateFixed)));
 
             if (!includeHidden)
-                options.Query = options.Query.And(Query.NE(FieldNames.IsHidden, true));
+                options.Query &= !Query<Stack>.Term(s => s.IsHidden, true);
 
             if (!includeNotFound)
-                options.Query = options.Query.And(Query.NotExists(FieldNames.SignatureInfo_Path));
+                options.Query &= Query<Stack>.Filtered(f => f.Filter(f1 => f1.Missing("signature_info.path")));
 
             return Find<Stack>(options);
         }
 
-        public void MarkAsRegressed(string id) {
-            UpdateAll(new QueryOptions().WithId(id), Update.Unset(FieldNames.DateFixed).Set(FieldNames.IsRegressed, true));
+        public void MarkAsRegressed(string stackId, string organizationId) {
+            var result = _elasticClient.Update<Stack>(s => s
+                .Id(stackId)
+                .Script("ctx._source.remove('date_fixed'); ctx._source.is_regressed = true;"));
+
+            if (!result.IsValid) {
+                Log.Error().Message("Error occurred marking the stack fixed");
+                return;
+            }
+
+            InvalidateCache(stackId);
+
+            if (EnableNotifications) {
+                PublishMessageAsync(new EntityChanged {
+                    ChangeType = EntityChangeType.Saved,
+                    Id = stackId,
+                    OrganizationId = organizationId,
+                    Type = _entityType
+                });
+            }
         }
 
         public override void InvalidateCache(Stack entity) {
@@ -141,12 +140,10 @@ namespace Exceptionless.Core.Repositories {
             if (originalStack != null) {
                 if (originalStack.DateFixed != entity.DateFixed) {
                     _eventRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
-                    InvalidateFixedIdsCache(entity.ProjectId);
                 }
 
                 if (originalStack.IsHidden != entity.IsHidden) {
                     _eventRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
-                    InvalidateHiddenIdsCache(entity.ProjectId);
                 }
 
                 InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
@@ -158,7 +155,6 @@ namespace Exceptionless.Core.Repositories {
         public void InvalidateCache(string id, string signatureHash, string projectId) {
             InvalidateCache(id);
             InvalidateCache(String.Concat(projectId, signatureHash));
-            InvalidateFixedIdsCache(projectId);
         }
 
         protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
@@ -167,64 +163,5 @@ namespace Exceptionless.Core.Repositories {
 
             base.AfterRemove(documents, sendNotification);
         }
-
-        #region Collection Setup
-
-        public const string CollectionName = "stack";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
-        }
-
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string ProjectId = CommonFieldNames.ProjectId;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string SignatureHash = "hash";
-            public const string FirstOccurrence = "fst";
-            public const string LastOccurrence = "lst";
-            public const string TotalOccurrences = "tot";
-            public const string SignatureInfo = "sig";
-            public const string SignatureInfo_Path = "sig.Path";
-            public const string FixedInVersion = "fix";
-            public const string DateFixed = "fdt";
-            public const string Title = "tit";
-            public const string Description = "dsc";
-            public const string IsHidden = "hid";
-            public const string IsRegressed = "regr";
-            public const string DisableNotifications = "dnot";
-            public const string OccurrencesAreCritical = "crit";
-            public const string References = "refs";
-            public const string Tags = "tag";
-        }
-
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), IndexOptions.SetUnique(true).SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), IndexOptions.SetBackground(true));
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<Stack> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.SignatureHash).SetElementName(FieldNames.SignatureHash);
-            cm.GetMemberMap(c => c.SignatureInfo).SetElementName(FieldNames.SignatureInfo);
-            cm.GetMemberMap(c => c.FixedInVersion).SetElementName(FieldNames.FixedInVersion).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.DateFixed).SetElementName(FieldNames.DateFixed).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.Title).SetElementName(FieldNames.Title);
-            cm.GetMemberMap(c => c.TotalOccurrences).SetElementName(FieldNames.TotalOccurrences);
-            cm.GetMemberMap(c => c.FirstOccurrence).SetElementName(FieldNames.FirstOccurrence);
-            cm.GetMemberMap(c => c.LastOccurrence).SetElementName(FieldNames.LastOccurrence);
-            cm.GetMemberMap(c => c.Description).SetElementName(FieldNames.Description).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.IsRegressed).SetElementName(FieldNames.IsRegressed).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.DisableNotifications).SetElementName(FieldNames.DisableNotifications).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.OccurrencesAreCritical).SetElementName(FieldNames.OccurrencesAreCritical).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.References).SetElementName(FieldNames.References).SetShouldSerializeMethod(obj => ((Stack)obj).References.Any());
-            cm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetShouldSerializeMethod(obj => ((Stack)obj).Tags.Any());
-        }
-
-        #endregion
     }
 }

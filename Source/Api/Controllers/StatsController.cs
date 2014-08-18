@@ -14,21 +14,17 @@ using System.Web.Http;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 using Exceptionless.Models;
-using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
-        private readonly EventStatsHelper _statsHelper;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IProjectRepository _projectRepository;
 
-        public StatsController(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository) {
-            _statsHelper = statsHelper;
+        public StatsController(IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository) {
             _organizationRepository = organizationRepository;
             _stackRepository = stackRepository;
             _projectRepository = projectRepository;
@@ -49,11 +45,12 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("End date must be greater than start date.");
 
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
-            result.MostFrequent = null;
-            result.MostRecent = null;
+            //ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
+            //result.MostFrequent = null;
+            //result.MostRecent = null;
 
-            return Ok(result);
+            //return Ok(result);
+            return Ok();
         }
 
         [HttpGet]
@@ -72,7 +69,8 @@ namespace Exceptionless.Api.Controllers {
 
             Project project = _projectRepository.GetById(stack.ProjectId, true);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
+            //return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
+            return Ok();
         }
     }
 }

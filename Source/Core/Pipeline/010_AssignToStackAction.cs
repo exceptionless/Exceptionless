@@ -72,10 +72,6 @@ namespace Exceptionless.Core.Pipeline {
                         DateFixed = stack.DateFixed,
                         OccurrencesAreCritical = stack.OccurrencesAreCritical
                     };
-
-                    // new 404 stack id added, invalidate 404 id cache
-                    if (ctx.Event.IsNotFound())
-                        _stackRepository.InvalidateNotFoundIdsCache(ctx.Event.ProjectId);
                 }
 
                 Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.StackInfo.Id).Write();

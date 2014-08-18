@@ -381,11 +381,6 @@
     <Compile Include="Jobs\JobLockInfo.cs" />
     <Compile Include="Jobs\MongoJobLockProvider.cs" />
     <Compile Include="Jobs\MongoMachineJobLockProvider.cs" />
-    <Compile Include="Utility\EventStatsHelper.cs" />
-    <Compile Include="Repositories\DayProjectStatsRepository.cs" />
-    <Compile Include="Repositories\MonthProjectStatsRepository.cs" />
-    <Compile Include="Repositories\MonthStackStatsRepository.cs" />
-    <Compile Include="Repositories\DayStackStatsRepository.cs" />
     <Compile Include="Repositories\Base\IReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\MongoReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\IRepository.cs" />

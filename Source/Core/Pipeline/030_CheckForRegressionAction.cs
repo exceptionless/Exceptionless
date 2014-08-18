@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             Log.Trace().Message("Marking event as an regression.").Write();
-            _stackRepository.MarkAsRegressed(ctx.StackInfo.Id);
+            _stackRepository.MarkAsRegressed(ctx.StackInfo.Id, ctx.Event.OrganizationId);
             _eventRepository.MarkAsRegressedByStack(ctx.StackInfo.Id);
 
             string signatureHash = ctx.GetProperty<string>("__SignatureHash");

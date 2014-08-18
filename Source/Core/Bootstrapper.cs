@@ -87,7 +87,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
             container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>());
             
-            container.Register<EventStatsHelper>();
             container.RegisterSingle<InMemoryMessageBus>();
             container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
             container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
@@ -100,10 +99,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IProjectRepository, ProjectRepository>();
             container.RegisterSingle<IUserRepository, UserRepository>();
             container.RegisterSingle<IWebHookRepository, WebHookRepository>();
-            container.RegisterSingle<IDayProjectStatsRepository, DayProjectStatsRepository>();
-            container.RegisterSingle<IMonthProjectStatsRepository, MonthProjectStatsRepository>();
-            container.RegisterSingle<IMonthStackStatsRepository, MonthStackStatsRepository>();
-            container.RegisterSingle<IDayStackStatsRepository, DayStackStatsRepository>();
             container.RegisterSingle<ITokenRepository, TokenRepository>();
             container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
 

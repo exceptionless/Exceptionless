@@ -10,11 +10,9 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
@@ -22,13 +20,11 @@ namespace Exceptionless.Core.Pipeline {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly EventStatsHelper _statsHelper;
 
-        public UpdateStatsAction(EventStatsHelper statsHelper, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
+        public UpdateStatsAction(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
-            _statsHelper = statsHelper;
         }
 
         protected override bool IsCritical { get { return true; } }
@@ -37,7 +33,7 @@ namespace Exceptionless.Core.Pipeline {
             _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
             _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
             if (!ctx.IsNew)
-                _stackRepository.IncrementEventCounter(ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
+                _stackRepository.IncrementEventCounter(ctx.Event.StackId, ctx.Event.OrganizationId, ctx.Event.Date.UtcDateTime);
         }
     }
 }

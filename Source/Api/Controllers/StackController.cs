@@ -39,7 +39,6 @@ namespace Exceptionless.Api.Controllers {
         private readonly IProjectRepository _projectRepository;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
-        private readonly EventStatsHelper _statsHelper;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
@@ -48,7 +47,7 @@ namespace Exceptionless.Api.Controllers {
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
-            EventStatsHelper statsHelper, BillingManager billingManager, DataHelper dataHelper,
+            BillingManager billingManager, DataHelper dataHelper,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
@@ -56,7 +55,6 @@ namespace Exceptionless.Api.Controllers {
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
-            _statsHelper = statsHelper;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
             _formattingPluginManager = formattingPluginManager;
@@ -89,7 +87,6 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: Add a log entry.
             _stackRepository.Save(stack);
-            _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
             return Ok();
         }
@@ -175,7 +172,6 @@ namespace Exceptionless.Api.Controllers {
 
             // TODO: Add a log entry.
             _stackRepository.Save(stack);
-            _stackRepository.InvalidateFixedIdsCache(stack.ProjectId);
 
             return StatusCode(HttpStatusCode.NoContent);
         }
@@ -190,7 +186,6 @@ namespace Exceptionless.Api.Controllers {
             if (!stack.IsHidden) {
                 stack.IsHidden = true;
                 _stackRepository.Save(stack);
-                _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
             }
 
             return Ok();
@@ -206,7 +201,6 @@ namespace Exceptionless.Api.Controllers {
             if (stack.IsHidden) {
                 stack.IsHidden = false;
                 _stackRepository.Save(stack);
-                _stackRepository.InvalidateHiddenIdsCache(stack.ProjectId);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -340,37 +334,38 @@ namespace Exceptionless.Api.Controllers {
 
             limit = GetLimit(limit);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
-            var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
-            var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
+            //var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
+            //var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
+            //var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
 
-            foreach (var esr in results) {
-                var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
-                if (stack == null) {
-                    results.RemoveAll(r => r.Id == esr.Id);
-                    continue;
-                }
+            //foreach (var esr in results) {
+            //    var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
+            //    if (stack == null) {
+            //        results.RemoveAll(r => r.Id == esr.Id);
+            //        continue;
+            //    }
 
-                // Stat's Id and Total properties are already calculated in the Results.
-                esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
-                esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
-                esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
-                esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
+            //    // Stat's Id and Total properties are already calculated in the Results.
+            //    esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
+            //    esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
+            //    esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
+            //    esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
 
-                esr.Title = stack.Title;
-                esr.First = stack.FirstOccurrence;
-                esr.Last = stack.LastOccurrence;
-            }
+            //    esr.Title = stack.Title;
+            //    esr.First = stack.FirstOccurrence;
+            //    esr.Last = stack.LastOccurrence;
+            //}
 
-            Dictionary<string, IEnumerable<string>> header = null;
-            if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
-                header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
+            //Dictionary<string, IEnumerable<string>> header = null;
+            //if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
+            //    header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
 
             // TODO: Finish this once we finish elastic search.
             //if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
             //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
 
-            return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
+            //return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
+            return Ok();
         }
 
         [HttpGet]

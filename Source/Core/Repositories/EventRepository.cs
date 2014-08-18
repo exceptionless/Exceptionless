@@ -128,7 +128,7 @@ namespace Exceptionless.Core.Repositories {
         private ICollection<PersistentEvent> GetOldestEvents(string stackId, PagingOptions options) {
             return Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithStackId(stackId)
-                .WithFields(FieldNames.Id, FieldNames.OrganizationId, FieldNames.ProjectId, FieldNames.StackId)
+                .WithFields("id", "organization_id", "project_id", "stack_id")
                 .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithPaging(options));
         }
@@ -264,27 +264,6 @@ namespace Exceptionless.Core.Repositories {
             EnableNotifications = false;
             base.AfterAdd(documents, addToCache, expiresIn);
             EnableNotifications = enableNotifications;
-        }
-
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string ProjectId = CommonFieldNames.ProjectId;
-            public const string StackId = CommonFieldNames.StackId;
-            public const string Type = "typ";
-            public const string Source = "src";
-            public const string Date = CommonFieldNames.Date;
-            public const string Date_UTC = CommonFieldNames.Date_UTC;
-            public const string Tags = "tag";
-            public const string Message = "msg";
-            public const string Data = CommonFieldNames.Data;
-            public const string ReferenceId = "ref";
-            public const string SessionId = "xid";
-            public const string SummaryHtml = "html";
-            public const string IsFixed = "fix";
-            public const string IsHidden = "hid";
-            public const string RequestInfo = "req";
-            public const string RequestInfo_ClientIpAddress = RequestInfo + ".ip";
         }
     }
 }

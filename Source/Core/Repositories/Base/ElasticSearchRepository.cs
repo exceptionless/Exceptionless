@@ -23,6 +23,7 @@ using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Driver;
 using Nest;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
@@ -187,6 +188,26 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected long UpdateAll(QueryOptions options, string update, bool sendNotifications = true) {
+            //var result = _elasticClient.Update<T>(s => s
+            //    .Id(stackId)
+            //    .Script("ctx._source.remove('date_fixed'); ctx._source.is_regressed = true;"));
+
+            //if (!result.IsValid) {
+            //    Log.Error().Message("Error occurred marking the stack fixed");
+            //    return;
+            //}
+
+            //InvalidateCache(stackId);
+
+            //if (EnableNotifications) {
+            //    PublishMessageAsync(new EntityChanged {
+            //        ChangeType = EntityChangeType.Saved,
+            //        Id = stackId,
+            //        OrganizationId = organizationId,
+            //        Type = _entityType
+            //    });
+            //}
+
             //var result = _collection.Update(options.GetMongoQuery(_getIdValue), update, UpdateFlags.Multi);
             //if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
             //    return result.DocumentsAffected;
