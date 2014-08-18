@@ -310,10 +310,6 @@
     <Compile Include="Repositories\Base\IRepositoryOwnedByStack.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByStack.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByProject.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\PagingOptions.cs" />
     <Compile Include="Repositories\Base\PagingOptionsExtensions.cs" />
