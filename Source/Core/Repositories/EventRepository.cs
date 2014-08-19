@@ -34,18 +34,18 @@ namespace Exceptionless.Core.Repositories {
             base.BeforeAdd(documents);
         }
 
-        public void UpdateFixedByStackId(string stackId, bool value) {
+        public void UpdateFixedByStack(string organizationId, string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException("stackId");
 
-            UpdateAll(new QueryOptions().WithStackId(stackId), String.Concat("ctx._source.is_fixed = ", value ? "true" : "false"));
+            UpdateAll(organizationId, new QueryOptions().WithStackId(stackId), new { is_fixed = value });
         }
 
-        public void UpdateHiddenByStackId(string stackId, bool value) {
+        public void UpdateHiddenByStack(string organizationId, string stackId, bool value) {
             if (String.IsNullOrEmpty(stackId))
                 throw new ArgumentNullException("stackId");
 
-            UpdateAll(new QueryOptions().WithStackId(stackId), String.Concat("ctx._source.is_hidden = ", value ? "true" : "false"));
+            UpdateAll(organizationId, new QueryOptions().WithStackId(stackId), new { is_hidden = value });
         }
 
         public void RemoveAllByDate(string organizationId, DateTime utcCutoffDate) {
@@ -199,8 +199,8 @@ namespace Exceptionless.Core.Repositories {
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 
-        public void MarkAsRegressedByStack(string id) {
-            UpdateAll(new QueryOptions().WithStackId(id), "ctx._source.is_fixed = false");
+        public void MarkAsRegressedByStack(string organizationId, string stackId) {
+            UpdateAll(organizationId, new QueryOptions().WithStackId(stackId), new { is_fixed = false});
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {

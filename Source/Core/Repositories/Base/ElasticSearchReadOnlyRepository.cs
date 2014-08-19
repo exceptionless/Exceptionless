@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Repositories {
             if (result != null)
                 return result;
 
-            var searchDescriptor = new SearchDescriptor<TModel>().Filter(options.GetElasticSearchFilter<T>()).Take(1);
+            var searchDescriptor = new SearchDescriptor<TModel>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
 

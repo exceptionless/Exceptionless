@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
@@ -10,69 +11,16 @@ using Nest;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
-    public class EventRepositoryTests : IDisposable {
+    public class EventRepositoryTests {
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
-        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
-
-        public EventRepositoryTests() {
-            RemoveData();
-            CreateData();
-        }
         
         [Fact]
-        public void GetPreviousEventOccurrenceIdTest() {
-            Debug.WriteLine("Actual order:");
-            foreach (var t in _ids)
-                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Sorted order:");
-            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
-            foreach (var t in sortedIds)
-                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Tests:");
-            _client.Refresh(r => r.Force(false));
-            Assert.Equal(_ids.Count, _repository.Count());
-            for (int i = 0; i < sortedIds.Count; i++) {
-                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
-                if (i == 0)
-                    Assert.Null(_repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
-                else
-                    Assert.Equal(sortedIds[i - 1].Item1, _repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
-            }
-        }
-
-        [Fact]
-        public void GetNextEventOccurrenceIdTest() {
-            Debug.WriteLine("Actual order:");
-            foreach (var t in _ids)
-                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Sorted order:");
-            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
-            foreach (var t in sortedIds)
-                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Tests:");
-            _client.Refresh(r => r.Force(false));
-            Assert.Equal(_ids.Count, _repository.Count());
-            for (int i = 0; i < sortedIds.Count; i++) {
-                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
-                string nextId = _repository.GetNextEventIdInStack(sortedIds[i].Item1);
-                if (i == sortedIds.Count - 1)
-                    Assert.Null(nextId);
-                else
-                    Assert.Equal(sortedIds[i + 1].Item1, nextId);
-            }
-        }
-
-        [Fact]
         public void GetByOrganizationIdsPaged() {
+            RemoveData();
+            CreateData();
+
             Debug.WriteLine("Sorted order:");
             List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderByDescending(t => t.Item2.Ticks).ThenByDescending(t => t.Item1).ToList();
             foreach (var t in sortedIds)
@@ -108,6 +56,102 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Debug.WriteLine("{0}: {1}", sortedIds[i + 2].Item1, sortedIds[i + 2].Item2.LocalDateTime.ToLongTimeString());
                 Assert.Equal(sortedIds[i + 2].Item1, results[i].Id);
             }
+        }
+        
+        [Fact]
+        public void GetPreviousEventIdInStackTest() {
+            RemoveData();
+            CreateData();
+
+            Debug.WriteLine("Actual order:");
+            foreach (var t in _ids)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Sorted order:");
+            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            foreach (var t in sortedIds)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Tests:");
+            _client.Refresh(r => r.Force(false));
+            Assert.Equal(_ids.Count, _repository.Count());
+            for (int i = 0; i < sortedIds.Count; i++) {
+                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
+                if (i == 0)
+                    Assert.Null(_repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
+                else
+                    Assert.Equal(sortedIds[i - 1].Item1, _repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
+            }
+        }
+
+        [Fact]
+        public void GetNextEventIdInStackTest() {
+            RemoveData();
+            CreateData();
+
+            Debug.WriteLine("Actual order:");
+            foreach (var t in _ids)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Sorted order:");
+            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderBy(t => t.Item2.Ticks).ThenBy(t => t.Item1).ToList();
+            foreach (var t in sortedIds)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Tests:");
+            _client.Refresh(r => r.Force(false));
+            Assert.Equal(_ids.Count, _repository.Count());
+            for (int i = 0; i < sortedIds.Count; i++) {
+                Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
+                string nextId = _repository.GetNextEventIdInStack(sortedIds[i].Item1);
+                if (i == sortedIds.Count - 1)
+                    Assert.Null(nextId);
+                else
+                    Assert.Equal(sortedIds[i + 1].Item1, nextId);
+            }
+        }
+
+        [Fact]
+        public void MarkAsFixedByStackTest() {
+            RemoveData();
+
+            const int NUMBER_OF_EVENTS_TO_CREATE = 50;
+            _repository.Add(EventData.GenerateEvents(count: NUMBER_OF_EVENTS_TO_CREATE, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, isFixed: true).ToList());
+
+            _client.Refresh();
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, _repository.Count());
+            
+            _repository.MarkAsRegressedByStack(TestConstants.OrganizationId, TestConstants.StackId2);
+
+            _client.Refresh();
+            var events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE));
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
+            foreach (var ev in events)
+                Assert.False(ev.IsFixed);
+        }
+        
+        [Fact]
+        public void RemoveOldestEventsTest() {
+            
+        }
+        
+        [Fact]
+        public void RemoveAllByDateTest() {
+            
+        }
+        
+        [Fact]
+        public void RemoveAllByClientIpAndDate() {
+            
+        }
+        
+        [Fact]
+        public async Task RemoveAllByClientIpAndDateAsyncTests() {
+            
         }
 
         private readonly List<Tuple<string, DateTimeOffset>> _ids = new List<Tuple<string, DateTimeOffset>>();
@@ -160,10 +204,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         protected void RemoveData() {
             _repository.RemoveAll(false);
             _stackRepository.RemoveAll(false);
-        }
-
-        public void Dispose() {
-            RemoveData();
         }
     }
 }

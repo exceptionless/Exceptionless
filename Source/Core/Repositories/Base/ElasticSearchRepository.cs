@@ -14,12 +14,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
+using Elasticsearch.Net;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
 using Nest;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepository<T> : ElasticSearchReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
@@ -142,7 +144,7 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>()
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
-                .Take(RepositoryConstants.BATCH_SIZE);
+                .Size(RepositoryConstants.BATCH_SIZE);
 
             var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             while (documents.Count > 0) {
@@ -199,49 +201,49 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        protected long UpdateAll(QueryOptions options, string update, bool sendNotifications = true) {
-            //var result = _elasticClient.Update<T>(s => s
-            //    .Id(stackId)
-            //    .Script("ctx._source.remove('date_fixed'); ctx._source.is_regressed = true;"));
+        protected long UpdateAll(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
+            long recordsAffected = 0;
 
-            //if (!result.IsValid) {
-            //    Log.Error().Message("Error occurred marking the stack fixed");
-            //    return;
-            //}
+            var searchDescriptor = new SearchDescriptor<T>()
+                .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
+                .Source(s => s.Include(f => f.Id))
+                .SearchType(SearchType.Scan)
+                .Scroll("4s")
+                .Size(RepositoryConstants.BATCH_SIZE);
 
-            //InvalidateCache(stackId);
+            var scanResults = _elasticClient.Search<T>(searchDescriptor);
+            var results = _elasticClient.Scroll<T>("4s", scanResults.ScrollId);
+            while (results.Hits.Any()) {
+                var bulkResult = _elasticClient.Bulk(b => {
+                    var script = update as string;
+                    if (script != null)
+                        results.Hits.ForEach(h => b.Update<T>(u => u.Id(h.Id).Index(h.Index).Script(script)));
+                    else
+                        results.Hits.ForEach(h => b.Update<T, object>(u => u.Id(h.Id).Index(h.Index).Doc(update)));
 
-            //if (EnableNotifications) {
-            //    PublishMessageAsync(new EntityChanged {
-            //        ChangeType = EntityChangeType.Saved,
-            //        Id = stackId,
-            //        OrganizationId = organizationId,
-            //        Type = _entityType
-            //    });
-            //}
+                    return b;
+                });
 
-            //var result = _collection.Update(options.GetMongoQuery(_getIdValue), update, UpdateFlags.Multi);
-            //if (!sendNotifications || !EnableNotifications || _messagePublisher == null)
-            //    return result.DocumentsAffected;
+                if (!bulkResult.IsValid) {
+                    Log.Error().Message("Error occurred while bulk updating");
+                    return 0;
+                }
 
-            //if (options.OrganizationIds.Any()) {
-            //    foreach (var orgId in options.OrganizationIds) {
-            //        PublishMessageAsync(new EntityChanged {
-            //            ChangeType = EntityChangeType.UpdatedAll,
-            //            OrganizationId = orgId,
-            //            Type = _entityType
-            //        });
-            //    }
-            //} else {
-            //    PublishMessageAsync(new EntityChanged {
-            //        ChangeType = EntityChangeType.UpdatedAll,
-            //        Type = _entityType
-            //    });
-            //}
+                results.Hits.ForEach(d => InvalidateCache(d.Id));
 
-            //return result.DocumentsAffected;
+                recordsAffected += results.Documents.Count();
+                results = _elasticClient.Scroll<T>("4s", results.ScrollId);
+            }
 
-            return 0;
+            if (EnableNotifications && sendNotifications) {
+                PublishMessageAsync(new EntityChanged {
+                    ChangeType = EntityChangeType.UpdatedAll,
+                    OrganizationId = organizationId,
+                    Type = _entityType
+                });
+            }
+
+            return recordsAffected;
         }
 
         protected virtual async Task PublishMessageAsync(EntityChangeType changeType, T document) {

@@ -37,19 +37,19 @@ namespace Exceptionless.Core.Repositories {
             base.BeforeAdd(documents);
         }
 
-        public void IncrementEventCounter(string stackId, string organizationId, DateTime occurrenceDate) {
+        public void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = _elasticClient.Update<Stack>(s => s
                 .Id(stackId)
-                .Script(@"if (ctx._source.total_occurrences == 0) {
-                            ctx._source.first_occurrence = occurrenceDate; 
+                .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > occurrenceDateUtc) {
+                            ctx._source.first_occurrence = occurrenceDateUtc; 
                           }
-                          if (ctx._source.last_occurrence < occurrenceDate) {
-                            ctx._source.last_occurrence = occurrenceDate; 
-                          }                          
-                          ctx._source.total_occurrences++;")
-                .Params(p => p.Add("occurrenceDate", occurrenceDate)));
+                          if (ctx._source.last_occurrence < occurrenceDateUtc) {
+                            ctx._source.last_occurrence = occurrenceDateUtc; 
+                          }      
+                          ctx._source.total_occurrences += 1;")
+                .Params(p => p.Add("occurrenceDateUtc", occurrenceDateUtc)));
 
             if (!result.IsValid) {
                 Log.Error().Message("Error occurred incrementing stack count.");
@@ -110,8 +110,8 @@ namespace Exceptionless.Core.Repositories {
             return Find<Stack>(options);
         }
 
-        public void MarkAsRegressed(string stackId, string organizationId) {
-            var result = _elasticClient.Update<Stack>(s => s
+        public void MarkAsRegressed(string organizationId, string stackId) {
+            var result = _elasticClient.Update<Stack, object>(s => s
                 .Id(stackId)
                 .Script("ctx._source.remove('date_fixed'); ctx._source.is_regressed = true;"));
 
@@ -139,11 +139,11 @@ namespace Exceptionless.Core.Repositories {
             var originalStack = GetById(entity.Id, true);
             if (originalStack != null) {
                 if (originalStack.DateFixed != entity.DateFixed) {
-                    _eventRepository.UpdateFixedByStackId(entity.Id, entity.DateFixed.HasValue);
+                    _eventRepository.UpdateFixedByStack(entity.OrganizationId, entity.Id, entity.DateFixed.HasValue);
                 }
 
                 if (originalStack.IsHidden != entity.IsHidden) {
-                    _eventRepository.UpdateHiddenByStackId(entity.Id, entity.IsHidden);
+                    _eventRepository.UpdateHiddenByStack(entity.OrganizationId, entity.Id, entity.IsHidden);
                 }
 
                 InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
@@ -152,8 +152,8 @@ namespace Exceptionless.Core.Repositories {
             base.InvalidateCache(entity);
         }
 
-        public void InvalidateCache(string id, string signatureHash, string projectId) {
-            InvalidateCache(id);
+        public void InvalidateCache(string projectId, string stackId, string signatureHash) {
+            InvalidateCache(stackId);
             InvalidateCache(String.Concat(projectId, signatureHash));
         }
 

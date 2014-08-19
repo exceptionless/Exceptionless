@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Pipeline {
             _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
             _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
             if (!ctx.IsNew)
-                _stackRepository.IncrementEventCounter(ctx.Event.StackId, ctx.Event.OrganizationId, ctx.Event.Date.UtcDateTime);
+                _stackRepository.IncrementEventCounter(ctx.Event.OrganizationId, ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
         }
     }
 }

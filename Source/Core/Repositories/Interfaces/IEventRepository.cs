@@ -21,9 +21,9 @@ namespace Exceptionless.Core.Repositories {
         ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId);
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
-        void MarkAsRegressedByStack(string id);
-        void UpdateFixedByStackId(string stackId, bool value);
-        void UpdateHiddenByStackId(string stackId, bool value);
+        void MarkAsRegressedByStack(string organizationId, string stackId);
+        void UpdateFixedByStack(string organizationId, string stackId, bool value);
+        void UpdateHiddenByStack(string organizationId, string stackId, bool value);
         void RemoveOldestEvents(string stackId, int maxEventsPerStack);
         void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
         void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate);

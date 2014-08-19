@@ -19,9 +19,9 @@ using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string errorStackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(generateId, id, organizationId, projectId, errorStackId, startDate, endDate, timeZoneOffset: timeZoneOffset);
+                yield return GenerateEvent(generateId, id, organizationId, projectId, stackId, startDate, endDate, timeZoneOffset: timeZoneOffset, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden);
         }
 
         public static List<PersistentEvent> GenerateSampleEvents() {
@@ -37,7 +37,8 @@ namespace Exceptionless.Tests.Utility {
             return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
         }
 
-        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true) {
+        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false)
+        {
             if (!startDate.HasValue)
                 startDate = DateTime.Now.AddDays(-90);
             if (!endDate.HasValue)
@@ -47,7 +48,9 @@ namespace Exceptionless.Tests.Utility {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
-                Date = occurrenceDate.HasValue ? occurrenceDate.Value : new DateTimeOffset(RandomHelper.GetDateTime(startDate, endDate), timeZoneOffset.HasValue ? timeZoneOffset.Value : TimeZoneInfo.Local.BaseUtcOffset)
+                Date = occurrenceDate.HasValue ? occurrenceDate.Value : new DateTimeOffset(RandomHelper.GetDateTime(startDate, endDate), timeZoneOffset.HasValue ? timeZoneOffset.Value : TimeZoneInfo.Local.BaseUtcOffset),
+                IsFixed = isFixed,
+                IsHidden = isHidden
             };
 
             if (!stackId.IsNullOrEmpty())

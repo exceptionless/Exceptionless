@@ -62,10 +62,10 @@ namespace Exceptionless.EventMigration {
 
                 ISearchResponse<Stack> mostRecentStack = null;
                 if (ca.Resume)
-                    mostRecentStack = searchclient.Search<Stack>(d => d.AllIndices().Type(typeof(Stack)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Take(1));
+                    mostRecentStack = searchclient.Search<Stack>(d => d.AllIndices().Type(typeof(Stack)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Size(1));
                 ISearchResponse<PersistentEvent> mostRecentEvent = null;
                 if (ca.Resume)
-                    mostRecentEvent = searchclient.Search<PersistentEvent>(d => d.AllIndices().Type(typeof(PersistentEvent)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Take(1));
+                    mostRecentEvent = searchclient.Search<PersistentEvent>(d => d.AllIndices().Type(typeof(PersistentEvent)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Size(1));
 
                 int total = 0;
                 var stopwatch = new Stopwatch();

@@ -33,11 +33,11 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             Log.Trace().Message("Marking event as an regression.").Write();
-            _stackRepository.MarkAsRegressed(ctx.StackInfo.Id, ctx.Event.OrganizationId);
-            _eventRepository.MarkAsRegressedByStack(ctx.StackInfo.Id);
+            _stackRepository.MarkAsRegressed(ctx.Event.OrganizationId, ctx.StackInfo.Id);
+            _eventRepository.MarkAsRegressedByStack(ctx.Event.OrganizationId, ctx.StackInfo.Id);
 
             string signatureHash = ctx.GetProperty<string>("__SignatureHash");
-            _stackRepository.InvalidateCache(ctx.Event.StackId, signatureHash, ctx.Event.ProjectId);
+            _stackRepository.InvalidateCache(ctx.Event.ProjectId, ctx.Event.StackId, signatureHash);
 
             ctx.Event.IsFixed = false;
             ctx.IsRegression = true;
