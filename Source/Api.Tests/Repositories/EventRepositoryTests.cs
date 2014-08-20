@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Models.Data;
 using Exceptionless.Tests.Utility;
 using MongoDB.Bson;
 using Nest;
@@ -146,12 +148,30 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Fact]
         public void RemoveAllByClientIpAndDate() {
-            
-        }
-        
-        [Fact]
-        public async Task RemoveAllByClientIpAndDateAsyncTests() {
-            
+            RemoveData();
+            const string _clientIpAddress = "123.123.12.256";
+
+            const int NUMBER_OF_EVENTS_TO_CREATE = 50;
+            var events = EventData.GenerateEvents(count: NUMBER_OF_EVENTS_TO_CREATE, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, isFixed: true, startDate: DateTime.Now.SubtractDays(2), endDate: DateTime.Now).ToList();
+            events.ForEach(e => e.AddRequestInfo(new RequestInfo { ClientIpAddress = _clientIpAddress }));
+            _repository.Add(events);
+
+            _client.Refresh();
+            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).ToList();
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
+            events.ForEach(e => {
+                Assert.False(e.IsHidden);
+                var ri = e.GetRequestInfo();
+                Assert.NotNull(ri);
+                Assert.Equal(_clientIpAddress, ri.ClientIpAddress);
+            });
+
+            _repository.HideAllByClientIpAndDate(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2));
+
+            _client.Refresh();
+            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).ToList();
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
+            events.ForEach(e => Assert.True(e.IsHidden));
         }
 
         private readonly List<Tuple<string, DateTimeOffset>> _ids = new List<Tuple<string, DateTimeOffset>>();

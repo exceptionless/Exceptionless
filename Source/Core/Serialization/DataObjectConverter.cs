@@ -39,15 +39,16 @@ namespace Exceptionless.Serializer {
             foreach (var p in json.Properties()) {
                 // first set the native properties
                 string propertyName = p.Name.ToLowerFiltered(new[] { '.', '-', '_' });
-                var accessor = _propertyAccessors.ContainsKey(propertyName) ? _propertyAccessors[propertyName] : null;
-                if (accessor != null) {
-                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType));
-                    continue;
-                }
 
                 if (propertyName == "data" && p.Value is JObject) {
                     foreach (var dataProp in ((JObject)p.Value).Properties())
                         AddDataEntry(serializer, dataProp, target);
+                    continue;
+                }
+
+                var accessor = _propertyAccessors.ContainsKey(propertyName) ? _propertyAccessors[propertyName] : null;
+                if (accessor != null) {
+                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType));
                     continue;
                 }
 
@@ -58,6 +59,9 @@ namespace Exceptionless.Serializer {
         }
 
         private void AddDataEntry(JsonSerializer serializer, JProperty p, T target) {
+            if (target.Data == null)
+                target.Data = new DataDictionary();
+
             // when adding items to data, see if they are a known type and deserialize to the registered type
             if (_dataTypeRegistry.ContainsKey(p.Name)) {
                 try {
@@ -65,9 +69,9 @@ namespace Exceptionless.Serializer {
                     if (target.Data.ContainsKey(dataKey))
                         dataKey = "_" + dataKey;
                     if (p.Value is JValue && p.Value.Type == JTokenType.String)
-                        target.Data.Add(dataKey, serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]));
+                        target.Data[dataKey] = serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]);
                     else
-                        target.Data.Add(dataKey, p.Value.ToObject(_dataTypeRegistry[p.Name], serializer));
+                        target.Data[dataKey] = p.Value.ToObject(_dataTypeRegistry[p.Name], serializer);
                     return;
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, ex.Message).Write();
@@ -76,13 +80,13 @@ namespace Exceptionless.Serializer {
 
             // add item to data as a JObject, JArray or native type.
             if (p.Value is JObject)
-                target.Data.Add(p.Name, p.Value.ToObject<JObject>());
+                target.Data[p.Name] = p.Value.ToObject<JObject>();
             else if (p.Value is JArray)
-                target.Data.Add(p.Name, p.Value.ToObject<JArray>());
+                target.Data[p.Name] = p.Value.ToObject<JArray>();
             else if (p.Value is JValue)
-                target.Data.Add(p.Name, ((JValue)p.Value).Value);
+                target.Data[p.Name] = ((JValue)p.Value).Value;
             else
-                target.Data.Add(p.Name, p.Value.ToString());
+                target.Data[p.Name] = p.Value.ToString();
         }
 
         public override T Create(Type objectType) {

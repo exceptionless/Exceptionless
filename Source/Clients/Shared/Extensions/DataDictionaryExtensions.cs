@@ -31,18 +31,9 @@ namespace Exceptionless {
             if (data == null || data is T)
                 return (T)data;
 
-            if (data is JObject) {
-                serializer = serializer ?? DependencyResolver.Default.GetJsonSerializer();
-                return serializer.Deserialize<T>(data.ToString());
-            }
-
-            var json = data as string;
-            if (json != null) {
-                serializer = serializer ?? DependencyResolver.Default.GetJsonSerializer();
-                return serializer.Deserialize<T>(json);
-            }
-
-            throw new ArgumentException("Data is not able to be be converted to the specified type.");
+            var json = data as string ?? data.ToString();
+            serializer = serializer ?? DependencyResolver.Default.GetJsonSerializer();
+            return serializer.Deserialize<T>(json);
         }
 
         /// <summary>

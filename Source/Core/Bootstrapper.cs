@@ -125,9 +125,12 @@ namespace Exceptionless.Core {
         private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
 #if TRACE
-            settings.EnableTrace();
+            //settings.EnableTrace();
 #endif
-            settings.SetJsonSerializerSettingsModifier(s => { s.ContractResolver = new EmptyCollectionElasticContractResolver(settings); });
+            settings.SetJsonSerializerSettingsModifier(s => {
+                s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
+                s.AddModelConverters();
+            });
             settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
             settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks-v1"));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
@@ -173,7 +176,6 @@ namespace Exceptionless.Core {
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)
-                    //.SetParent("stacks")
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -187,10 +189,15 @@ namespace Exceptionless.Core {
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
-                        .String(f => f.Name("data.error.type").IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                        .String(f => f.Name("data.user.identity").IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
-                        .String(f => f.Name("data.request.client_ip_address").IndexName("ip").Index(FieldIndexOption.NotAnalyzed))
-                        .String(f => f.Name("data.environment.machine_name").IndexName("machine").Index(FieldIndexOption.Analyzed))
+                        .NestedObject<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
+                            .NestedObject<RequestInfo>(f2 => f2.Name("request").IncludeInRoot().Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                            .NestedObject<Error>(f2 => f2.Name("error").IncludeInRoot().Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                            .NestedObject<EnvironmentInfo>(f2 => f2.Name("environment").IncludeInRoot().Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                            .NestedObject<UserInfo>(f2 => f2.Name("user").IncludeInRoot().Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
                     )
                 )
             );

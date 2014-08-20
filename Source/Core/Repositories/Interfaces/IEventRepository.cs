@@ -26,7 +26,7 @@ namespace Exceptionless.Core.Repositories {
         void UpdateHiddenByStack(string organizationId, string stackId, bool value);
         void RemoveOldestEvents(string stackId, int maxEventsPerStack);
         void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
-        void RemoveAllByClientIpAndDate(string clientIp, DateTime utcStartDate, DateTime utcEndDate);
-        Task RemoveAllByClientIpAndDateAsync(string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+        void HideAllByClientIpAndDate(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+        Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
     }
 }

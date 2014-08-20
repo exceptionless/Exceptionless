@@ -83,9 +83,10 @@ namespace Exceptionless.EventMigration {
                                 s.Title = s.Title.Truncate(1000);
                         });
 
+                        // TODO: Convert to new Stack object and set stack type.
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
-                        var response = searchclient.IndexMany(stacks, type: "stacks", index: "stacks_v1");
+                        var response = searchclient.IndexMany(stacks, type: "stacks", index: "stacks-v1");
                         if (!response.IsValid)
                             Debugger.Break();
 
@@ -102,7 +103,7 @@ namespace Exceptionless.EventMigration {
                     var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                     var eventRepository = container.GetInstance<IEventRepository>();
                     var errorCollection = GetErrorCollection(container);
-                    var json = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("800000002e519522d83837a1")), Formatting.Indented);
+                    //var json = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("800000002e519522d83837a1")), Formatting.Indented);
                     var query = mostRecentEvent != null && mostRecentEvent.Total > 0 ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Hits.First().Id)) : Query.Null;
                     var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (errors.Count > 0) {
