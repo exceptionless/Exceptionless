@@ -69,7 +69,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString), true));
+            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
             container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(workItemTimeoutMilliseconds: 2 * 60 * 1000));

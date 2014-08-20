@@ -29,8 +29,6 @@ using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
     internal class Program {
-        private static readonly object _lock = new object();
-
         private static int Main(string[] args) {
             OutputHeader();
 
@@ -57,6 +55,10 @@ namespace Exceptionless.EventMigration {
 
                 var container = CreateContainer();
                 var searchclient = container.GetInstance<IElasticClient>();
+
+                if (ca.DeleteExistingIndexes)
+                    searchclient.DeleteIndex(i => i.AllIndices());
+
                 var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
                 serializerSettings.AddModelConverters();
 
@@ -116,7 +118,11 @@ namespace Exceptionless.EventMigration {
                         eventUpgraderPluginManager.Upgrade(ctx);
 
                         var ev = events.FromJson<PersistentEvent>(serializerSettings);
-                        eventRepository.Add(ev);
+                        try {
+                            eventRepository.Add(ev);
+                        } catch (Exception ex) {
+                            
+                        }
 
                         var lastId = ev.Last().Id;
                         errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
