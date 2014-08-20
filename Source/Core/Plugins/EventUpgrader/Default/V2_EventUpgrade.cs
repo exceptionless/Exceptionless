@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 if (!doc.RemoveIfNullOrEmpty("Tags")) {
                     var tags = doc.GetValue("Tags");
                     if (tags.Type == JTokenType.Array) {
-                        foreach (JToken tag in tags) {
+                        foreach (JToken tag in tags.ToList()) {
                             string t = tag.ToString();
                             if (String.IsNullOrEmpty(t) || t.Length > 255)
                                 tag.Remove();
