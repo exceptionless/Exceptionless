@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -27,10 +26,6 @@ namespace Exceptionless.Core.Utility {
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IDayStackStatsRepository _dayStackStats;
-        private readonly IMonthStackStatsRepository _monthStackStats;
-        private readonly IDayProjectStatsRepository _dayProjectStats;
-        private readonly IMonthProjectStatsRepository _monthProjectStats;
         private readonly BillingManager _billingManager;
         
         public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
@@ -42,10 +37,6 @@ namespace Exceptionless.Core.Utility {
             IEventRepository eventRepository,
             IStackRepository stackRepository,
             ITokenRepository tokenRepository,
-            IDayStackStatsRepository dayStackStats,
-            IMonthStackStatsRepository monthStackStats,
-            IDayProjectStatsRepository dayProjectStats,
-            IMonthProjectStatsRepository monthProjectStats,
             BillingManager billingManager) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
@@ -53,10 +44,6 @@ namespace Exceptionless.Core.Utility {
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
-            _dayStackStats = dayStackStats;
-            _monthStackStats = monthStackStats;
-            _dayProjectStats = dayProjectStats;
-            _monthProjectStats = monthProjectStats;
             _billingManager = billingManager;
         }
 
@@ -71,10 +58,6 @@ namespace Exceptionless.Core.Utility {
             try {
                 await _stackRepository.RemoveAllByProjectIdAsync(projectId);
                 await _eventRepository.RemoveAllByProjectIdAsync(projectId);
-                await _dayStackStats.RemoveAllByProjectIdAsync(projectId);
-                await _monthStackStats.RemoveAllByProjectIdAsync(projectId);
-                await _dayProjectStats.RemoveAllByProjectIdAsync(projectId);
-                await _monthProjectStats.RemoveAllByProjectIdAsync(projectId);
 
                 _projectRepository.Save(project);
             } catch (Exception e) {
@@ -97,12 +80,7 @@ namespace Exceptionless.Core.Utility {
                 stack.FirstOccurrence = DateTime.MinValue.ToUniversalTime();
                 _stackRepository.Save(stack);
 
-                _dayProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
-                _monthProjectStats.DecrementStatsByStackId(stack.ProjectId, stackId);
-
                 await _eventRepository.RemoveAllByStackIdAsync(stackId);
-                await _dayStackStats.RemoveAllByStackIdAsync(stackId);
-                await _monthStackStats.RemoveAllByStackIdAsync(stackId);
             } catch (Exception e) {
                 Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
                 throw;

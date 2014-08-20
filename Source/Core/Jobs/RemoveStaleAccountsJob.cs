@@ -25,30 +25,18 @@ namespace Exceptionless.Core.Jobs {
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IDayStackStatsRepository _dayStackStats;
-        private readonly IMonthStackStatsRepository _monthStackStats;
-        private readonly IDayProjectStatsRepository _dayProjectStats;
-        private readonly IMonthProjectStatsRepository _monthProjectStats;
 
         public RemoveStaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,
-            IStackRepository stackRepository,
-            IDayStackStatsRepository dayStackStats,
-            IMonthStackStatsRepository monthStackStats,
-            IDayProjectStatsRepository dayProjectStats,
-            IMonthProjectStatsRepository monthProjectStats)
+            IStackRepository stackRepository)
         {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
-            _dayStackStats = dayStackStats;
-            _monthStackStats = monthStackStats;
-            _dayProjectStats = dayProjectStats;
-            _monthProjectStats = monthProjectStats;
         }
 
         public override Task<JobResult> RunAsync(JobRunContext context) {
@@ -78,10 +66,6 @@ namespace Exceptionless.Core.Jobs {
                     Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
                     _stackRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
                     _eventRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
-                    _dayStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
-                    _monthStackStats.RemoveAllByProjectIdAsync(project.Id).Wait();
-                    _dayProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
-                    _monthProjectStats.RemoveAllByProjectIdAsync(project.Id).Wait();
                 }
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();

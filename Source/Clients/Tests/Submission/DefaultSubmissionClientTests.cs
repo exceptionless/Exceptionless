@@ -12,15 +12,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues;
-using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -59,7 +55,7 @@ namespace Client.Tests.Submission {
             }
         }
 
-        [Fact(Skip="TODO: Fix a serialization issue that is causing this test to fail.")]
+        [Fact]
         public void PostUserDescription() {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {

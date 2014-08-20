@@ -29,7 +29,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(stack.DateFixed);
 
             _repository.MarkAsRegressed(TestConstants.OrganizationId, TestConstants.StackId);
-
+            
+            _client.Refresh();
             stack = _repository.GetById(TestConstants.StackId);
             Assert.NotNull(stack);
             Assert.True(stack.IsRegressed);

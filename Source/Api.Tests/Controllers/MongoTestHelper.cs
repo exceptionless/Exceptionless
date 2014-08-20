@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
@@ -12,7 +11,7 @@ namespace Exceptionless.Api.Tests.Controllers {
     public class MongoTestHelper {
         private readonly MongoDatabase _database = IoC.GetInstance<MongoDatabase>();
         private readonly MongoRepositoryManager _manager = IoC.GetInstance<MongoRepositoryManager>();
-        private readonly ElasticClient _client = IoC.GetInstance<ElasticClient>();
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         private static bool _databaseReset = false;
         public void ResetDatabase(bool force = false) {
