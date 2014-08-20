@@ -35,6 +35,8 @@ namespace Exceptionless.EventMigration.Models {
         /// </summary>
         public string ProjectId { get; set; }
 
+        public string Type { get; set; }
+
         /// <summary>
         /// The error signature used for stacking future occurrences.
         /// </summary>

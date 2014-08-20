@@ -76,6 +76,8 @@ namespace Exceptionless.EventMigration {
                     var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (stacks.Count > 0) {
                         stacks.ForEach(s => {
+                            s.Type = s.SignatureInfo != null && s.SignatureInfo.ContainsKey("HttpMethod") && s.SignatureInfo.ContainsKey("Path") ? "404" : "error";
+
                             if (s.Tags != null)
                                 s.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
 
@@ -83,7 +85,6 @@ namespace Exceptionless.EventMigration {
                                 s.Title = s.Title.Truncate(1000);
                         });
 
-                        // TODO: Convert to new Stack object and set stack type.
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
                         var response = searchclient.IndexMany(stacks, type: "stacks", index: "stacks-v1");

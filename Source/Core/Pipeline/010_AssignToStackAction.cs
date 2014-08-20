@@ -24,11 +24,11 @@ namespace Exceptionless.Core.Pipeline {
     [Priority(10)]
     public class AssignToStackAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
-        private readonly FormattingPluginManager _pluginManager;
+        private readonly FormattingPluginManager _formattingPluginManager;
 
-        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager pluginManager) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager) {
             _stackRepository = stackRepository;
-            _pluginManager = pluginManager;
+            _formattingPluginManager = formattingPluginManager;
         }
 
         protected override bool IsCritical { get { return true; } }
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Pipeline {
                     Log.Trace().Message("Creating new error stack.").Write();
                     ctx.IsNew = true;
 
-                    string title = _pluginManager.GetStackTitle(ctx.Event);
+                    string title = _formattingPluginManager.GetStackTitle(ctx.Event);
                     var stack = new Stack {
                         OrganizationId = ctx.Event.OrganizationId,
                         ProjectId = ctx.Event.ProjectId,
@@ -61,6 +61,7 @@ namespace Exceptionless.Core.Pipeline {
                         SignatureHash = signatureHash,
                         Title = title != null ? title.Truncate(1000) : null,
                         Tags = ctx.Event.Tags ?? new TagSet(),
+                        Type = ctx.Event.Type,
                         TotalOccurrences = 1,
                         FirstOccurrence = ctx.Event.Date.UtcDateTime,
                         LastOccurrence = ctx.Event.Date.UtcDateTime

@@ -11,10 +11,12 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class UserInfo : IData {
-        public UserInfo() {}
-        public UserInfo(string identity) {
-            Identity = identity;
+        public UserInfo() {
             Data = new DataDictionary();
+        }
+
+        public UserInfo(string identity) : this() {
+            Identity = identity;
         }
 
         public string Identity { get; set; }
