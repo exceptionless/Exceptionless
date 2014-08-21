@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
@@ -48,6 +49,11 @@ namespace Exceptionless.Core.Extensions {
                 Error = defaultError,
                 Method = defaultMethod
             };
+        }
+
+        public static StackingTarget GetStackingTarget(this Event ev) {
+            var error = ev.GetError();
+            return error != null ? error.GetStackingTarget() : null;
         }
 
         public static InnerError GetInnermostError(this InnerError error) {

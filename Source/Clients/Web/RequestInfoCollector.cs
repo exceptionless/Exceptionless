@@ -20,6 +20,8 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless.ExtendedData {
     internal static class RequestInfoCollector {
+        private const int MAX_DATA_ITEM_LENGTH = 1000;
+
         public static RequestInfo Collect(HttpContextBase context, ExceptionlessConfiguration config) {
             if (context == null)
                 return null;
@@ -78,13 +80,12 @@ namespace Exceptionless.ExtendedData {
         }
 
         private static readonly List<string> _ignoredFormFields = new List<string> {
-            "__VIEWSTATE",
-            "__EVENTVALIDATION"
+            "*VIEWSTATE*",
+            "*EVENTVALIDATION*"
         };
 
         private static readonly List<string> _ignoredCookies = new List<string> {
-            ".ASPXAUTH",
-            ".ASPXROLES",
+            "*ASPX*",
             "__RequestVerificationToken",
             "ASP.NET_SessionId",
             "__LastErrorId"
@@ -96,7 +97,7 @@ namespace Exceptionless.ExtendedData {
             foreach (string key in cookies.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !k.AnyWildcardMatches(_ignoredCookies, true) && !k.AnyWildcardMatches(exclusions, true))) {
                 try {
                     HttpCookie cookie = cookies.Get(key);
-                    if (cookie != null && !d.ContainsKey(key))
+                    if (cookie != null && !d.ContainsKey(key) && cookie.Value < MAX_DATA_ITEM_LENGTH)
                         d.Add(key, cookie.Value);
                 } catch (Exception ex) {
                     if (!d.ContainsKey(key))
@@ -117,11 +118,11 @@ namespace Exceptionless.ExtendedData {
 
                 try {
                     string value = values.Get(key);
-                    if (!d.ContainsKey(key))
+                    if (value != null && !d.ContainsKey(key) && value.Length < MAX_DATA_ITEM_LENGTH)
                         d.Add(key, value);
                 } catch (Exception ex) {
                     if (!d.ContainsKey(key))
-                        d.Add(key, ex.Message);
+                        d.Add(key, "EXCEPTION: " + ex.Message);
                 }
             }
 

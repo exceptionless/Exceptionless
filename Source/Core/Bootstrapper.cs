@@ -176,6 +176,7 @@ namespace Exceptionless.Core {
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)
+                    .DisableSizeField(false)
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))

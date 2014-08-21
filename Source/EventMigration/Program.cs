@@ -106,7 +106,13 @@ namespace Exceptionless.EventMigration {
                     var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
                     var eventRepository = container.GetInstance<IEventRepository>();
                     var errorCollection = GetErrorCollection(container);
-                    //var json = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("800000002e519522d83837a1")), Formatting.Indented);
+                    //var json1 = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("80000000e2cc694bd029a952")), Formatting.Indented);
+                    //var json2 = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("80000000e2cc694bd029a953")), Formatting.Indented);
+                    //var ctx2 = new EventUpgraderContext("[" + json1 + "," + json2 + "]", new Version(1, 5), true);
+                    //eventUpgraderPluginManager.Upgrade(ctx2);
+                    //var ev2 = ctx2.Documents.ToObject<List<PersistentEvent>>();
+                    //eventRepository.Add(ev2.First());
+                    //eventRepository.Add(ev2.Last());
                     var query = mostRecentEvent != null && mostRecentEvent.Total > 0 ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Hits.First().Id)) : Query.Null;
                     var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
                     while (errors.Count > 0) {
@@ -118,10 +124,22 @@ namespace Exceptionless.EventMigration {
                         eventUpgraderPluginManager.Upgrade(ctx);
 
                         var ev = events.FromJson<PersistentEvent>(serializerSettings);
+                        ev.ForEach(e => {
+                            if (e.Date.UtcDateTime > DateTimeOffset.UtcNow.AddHours(1))
+                                e.Date = DateTimeOffset.Now;
+
+                            if (e.Type != Event.KnownTypes.Error)
+                                return;
+
+                            var stacking = e.GetStackingTarget();
+                            if (stacking != null && stacking.Method != null && !String.IsNullOrEmpty(stacking.Method.DeclaringTypeFullName))
+                                e.Source = stacking.Method.DeclaringTypeFullName.Truncate(2000);
+                        });
+
                         try {
                             eventRepository.Add(ev);
                         } catch (Exception ex) {
-                            
+                            Debugger.Break();
                         }
 
                         var lastId = ev.Last().Id;
