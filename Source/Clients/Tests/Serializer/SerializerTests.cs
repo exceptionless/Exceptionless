@@ -18,7 +18,7 @@ namespace Client.Tests.Serializer {
             var data = new SampleModel { Date = DateTime.Now, Message = "Testing" };
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, new[] { "Date" });
-            Assert.Equal(@"{""Message"":""Testing""}", json);
+            Assert.Equal(@"{""message"":""Testing""}", json);
         }
          
         [Fact]
@@ -28,7 +28,7 @@ namespace Client.Tests.Serializer {
 
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(ev, new[] { "Date" });
-            Assert.Equal(@"{""Message"":""Testing"",""Data"":{""FirstName"":""Blake""}}", json);
+            Assert.Equal(@"{""message"":""Testing"",""data"":{""FirstName"":""Blake""}}", json);
         }
 
 
@@ -37,7 +37,7 @@ namespace Client.Tests.Serializer {
             var data = new SampleModel { Date = DateTime.Now, Message = "Testing" };
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, new []{ "Date" });
-            Assert.Equal(@"{""Message"":""Testing""}", json);
+            Assert.Equal(@"{""message"":""Testing""}", json);
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace Client.Tests.Serializer {
             var data = new SampleModel { Date = DateTime.Now, Message = "Testing", Nested = new SampleModel { Date = DateTime.Now, Message = "Nested" } };
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, new[] { "Date" });
-            Assert.Equal(@"{""Message"":""Testing"",""Nested"":{""Message"":""Nested""}}", json);
+            Assert.Equal(@"{""message"":""Testing"",""nested"":{""message"":""Nested""}}", json);
         }
 
         [Fact]
@@ -64,7 +64,7 @@ namespace Client.Tests.Serializer {
             var data = new SampleModel { Message = "Level 1", Nested = new SampleModel { Message = "Level 2", Nested = new SampleModel { Message = "Level 3"}} };
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, maxDepth: 2);
-            Assert.Equal(@"{""Message"":""Level 1"",""Nested"":{""Message"":""Level 2""}}", json);
+            Assert.Equal(@"{""message"":""Level 1"",""nested"":{""message"":""Level 2""}}", json);
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace Client.Tests.Serializer {
             var data = new SampleModel { Date = DateTime.Now, Message = "Testing", Collection = new Collection<string>() };
             IJsonSerializer serializer = GetSerializer();
             string json = serializer.Serialize(data, new[] { "Date" });
-            Assert.Equal(@"{""Message"":""Testing""}", json);
+            Assert.Equal(@"{""message"":""Testing""}", json);
         }
     }
 

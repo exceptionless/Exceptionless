@@ -53,13 +53,15 @@ namespace Exceptionless.Core.AppStats {
                 waitHandle.Set();
         }
 
-        public void WaitForCounter(string statName, int count = 1) {
+        public void WaitForCounter(string statName, int count = 1, double timeoutInSeconds = 10) {
             if (count == 0)
                 return;
 
             var waitHandle = _counterEvents.GetOrAdd(statName, s => new AutoResetEvent(false));
             do {
-                waitHandle.WaitOne(TimeSpan.FromSeconds(10));
+                if (!waitHandle.WaitOne(TimeSpan.FromSeconds(timeoutInSeconds)))
+                    throw new TimeoutException();
+
                 count--;
             } while (count > 0);
         }

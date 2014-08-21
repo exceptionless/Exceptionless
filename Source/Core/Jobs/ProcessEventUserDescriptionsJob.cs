@@ -4,11 +4,10 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Models.Data;
 using NLog.Fluent;
 
@@ -31,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public async override Task<JobResult> RunAsync(JobRunContext context) {
-            Log.Info().Message("Process email message job starting").Write();
+            Log.Info().Message("Process user description job starting").Write();
             int totalUserDescriptionsProcessed = 0;
             int totalUserDescriptionsToProcess = -1;
             if (context.Properties.ContainsKey("TotalUserDescriptionsToProcess"))
@@ -50,15 +49,18 @@ namespace Exceptionless.Core.Jobs {
                 if (queueEntry == null)
                     continue;
                 
-                // TODO: Should we validate the dequeued item?
                 _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
-
                 Log.Info().Message("Processing EventUserDescription '{0}'.", queueEntry.Id).Write();
 
                 try {
                     ProcessUserDescription(queueEntry.Value);
                     totalUserDescriptionsProcessed++;
                     _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
+                } catch (DocumentNotFoundException ex){
+                    _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
+                    queueEntry.AbandonAsync().Wait();
+                    Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
+                    continue;
                 } catch (Exception ex) {
                     _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
                     queueEntry.AbandonAsync().Wait();
@@ -77,13 +79,13 @@ namespace Exceptionless.Core.Jobs {
         private void ProcessUserDescription(EventUserDescription description) {
             var ev = _eventRepository.GetByReferenceId(description.ProjectId, description.ReferenceId).FirstOrDefault();
             if (ev == null)
-                throw new InvalidOperationException("An event with this reference id has not been processed yet or was deleted.");
+                throw new DocumentNotFoundException(description.ReferenceId);
 
-            // TODO: Should this be storing it in json?
             var ud = new UserDescription {
                 EmailAddress = description.EmailAddress,
                 Description = description.Description
             };
+
             if (description.Data.Count > 0)
                 ev.Data.AddRange(description.Data);
 

@@ -129,8 +129,10 @@ namespace Exceptionless.Core.Queues {
 
             Interlocked.Increment(ref _abandonedCounter);
             if (info.Attempts < _retries + 1) {
-                _queue.Enqueue(info);
-                RunWorkersAsync();
+                Task.Delay(TimeSpan.FromSeconds(info.Attempts)).ContinueWith(d => {
+                    _queue.Enqueue(info);
+                    RunWorkersAsync();
+                });
             } else {
                 _deadletterQueue.Enqueue(info);
             }

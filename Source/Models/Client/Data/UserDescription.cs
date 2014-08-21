@@ -11,11 +11,13 @@ using System;
 
 namespace Exceptionless.Models.Data {
     public class UserDescription : IData {
-        public UserDescription() {}
-        public UserDescription(string emailAddress, string description) {
+        public UserDescription() {
+            Data = new DataDictionary();
+        }
+
+        public UserDescription(string emailAddress, string description) : this() {
             EmailAddress = emailAddress;
             Description = description;
-            Data = new DataDictionary();
         }
 
         public string EmailAddress { get; set; }

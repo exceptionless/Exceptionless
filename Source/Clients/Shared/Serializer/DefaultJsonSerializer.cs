@@ -37,7 +37,7 @@ namespace Exceptionless.Serializer {
                 using (var jw = new JsonTextWriterWithDepth(sw)) {
                     jw.Formatting = Formatting.None;
                     Func<JsonProperty, object, bool> include = (property, value) => ShouldSerialize(jw, property, value, maxDepth, exclusions);
-                    var resolver = new ConditionalContractResolver(include);
+                    var resolver = new ExceptionlessContractResolver(include);
                     serializer.ContractResolver = resolver;
                     if (continueOnSerializationError)
                         serializer.Error += (sender, args) => { args.ErrorContext.Handled = true; };

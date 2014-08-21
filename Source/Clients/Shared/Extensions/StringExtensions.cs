@@ -15,6 +15,23 @@ using System.Text.RegularExpressions;
 
 namespace Exceptionless.Extensions {
     public static class StringExtensions {
+        public static string ToLowerUnderscoredWords(this string value) {
+            var builder = new StringBuilder(value.Length + 10);
+            for (int index = 0; index < value.Length; index++) {
+                char c = value[index];
+                if (Char.IsUpper(c)) {
+                    if (index > 0 && value[index - 1] != '_')
+                        builder.Append('_');
+
+                    builder.Append(Char.ToLower(c));
+                } else {
+                    builder.Append(c);
+                }
+            }
+
+            return builder.ToString();
+        }
+
         public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false) {
             if (patternsToMatch == null)
                 return false;

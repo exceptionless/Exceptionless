@@ -156,6 +156,7 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Repositories\Base\DocumentNotFoundException.cs" />
     <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
@@ -324,7 +325,7 @@
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
     <Compile Include="AppStats\InMemoryAppStatsClient.cs" />
-    <Compile Include="Serialization\ConditionalContractResolver.cs" />
+    <Compile Include="Serialization\ExceptionlessContractResolver.cs" />
     <Compile Include="Serialization\DataDictionaryConverter.cs" />
     <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />

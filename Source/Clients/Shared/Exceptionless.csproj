@@ -35,11 +35,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\..\Core\Serialization\ConditionalContractResolver.cs">
-      <Link>Serializer\ConditionalContractResolver.cs</Link>
-    </Compile>
     <Compile Include="..\..\Core\Serialization\DataDictionaryConverter.cs">
       <Link>Serializer\DataDictionaryConverter.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Core\Serialization\ExceptionlessContractResolver.cs">
+      <Link>Serializer\ExceptionlessContractResolver.cs</Link>
     </Compile>
     <Compile Include="..\..\Core\Serialization\JsonTextWriterWithDepth.cs">
       <Link>Serializer\JsonTextWriterWithDepth.cs</Link>
