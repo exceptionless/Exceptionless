@@ -6,7 +6,9 @@ using System.Linq;
 using System.Reflection;
 using CodeSmith.Core.CommandLine;
 using CodeSmith.Core.Extensions;
+using Exceptionless;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -130,6 +132,10 @@ namespace Exceptionless.EventMigration {
 
                             if (e.Type != Event.KnownTypes.Error)
                                 return;
+
+                            var request = e.GetRequestInfo();
+                            if (request != null)
+                                e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
 
                             var stacking = e.GetStackingTarget();
                             if (stacking != null && stacking.Method != null && !String.IsNullOrEmpty(stacking.Method.DeclaringTypeFullName))

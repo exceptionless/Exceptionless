@@ -156,6 +156,8 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Extensions\RequestInfoExtensions.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\40_RequestInfoPlugin.cs" />
     <Compile Include="Repositories\Base\DocumentNotFoundException.cs" />
     <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />

@@ -239,8 +239,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        [Route("summary/{summary:bool=true}")]
-        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10, bool summary = false) {
+        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10, string mode = null) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -253,7 +252,7 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
             var results = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
 
-            if (summary)
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
 
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);

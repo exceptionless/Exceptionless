@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -49,9 +50,16 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string before = null, string after = null, int limit = 10, string mode = null) {
+        public IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10, string mode = null) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
+
+            var organizationIds = new List<string>();
+            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
+                organizationIds.Add(organization);
+            else
+                organizationIds.AddRange(GetAssociatedOrganizationIds());
+
+            var results = _repository.GetByOrganizationIds(organizationIds, options);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);

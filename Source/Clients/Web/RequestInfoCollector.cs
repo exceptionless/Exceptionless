@@ -97,7 +97,7 @@ namespace Exceptionless.ExtendedData {
             foreach (string key in cookies.AllKeys.Distinct().Where(k => !String.IsNullOrEmpty(k) && !k.AnyWildcardMatches(_ignoredCookies, true) && !k.AnyWildcardMatches(exclusions, true))) {
                 try {
                     HttpCookie cookie = cookies.Get(key);
-                    if (cookie != null && !d.ContainsKey(key) && cookie.Value < MAX_DATA_ITEM_LENGTH)
+                    if (cookie != null && cookie.Value != null && cookie.Value.Length < MAX_DATA_ITEM_LENGTH && !d.ContainsKey(key))
                         d.Add(key, cookie.Value);
                 } catch (Exception ex) {
                     if (!d.ContainsKey(key))
