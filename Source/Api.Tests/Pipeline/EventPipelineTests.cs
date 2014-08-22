@@ -16,6 +16,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
     public class EventPipelineTests : IDisposable {
         private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
+        private readonly ITokenRepository _tokenRepository = IoC.GetInstance<ITokenRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
@@ -228,6 +229,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             if (!removeUserAndProjectAndOrganizationData)
                 return;
 
+            _tokenRepository.RemoveAll(false);
             _userRepository.RemoveAll(false);
             _projectRepository.RemoveAll(false);
             _organizationRepository.RemoveAll(false);

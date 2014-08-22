@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using CodeSmith.Core.CommandLine;
 using CodeSmith.Core.Extensions;
-using Exceptionless;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
