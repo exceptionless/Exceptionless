@@ -42,6 +42,7 @@ namespace Exceptionless.Tests.Utility {
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
                 Type = type ?? Event.KnownTypes.Log,
                 Title = title ?? RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50)),
+                Type = type ?? Stack.KnownTypes.Error,
                 DateFixed = dateFixed,
                 FirstOccurrence = utcFirstOccurrence ?? DateTime.MinValue,
                 LastOccurrence = utcLastOccurrence ?? DateTime.MinValue,

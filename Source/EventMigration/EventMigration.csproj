@@ -112,6 +112,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
+      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
       <Name>Exceptionless</Name>
     </ProjectReference>
     <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">

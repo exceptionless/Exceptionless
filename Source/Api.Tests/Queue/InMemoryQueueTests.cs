@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Tests.Queue {
 
         [Fact]
         public void WorkItemsWillTimeout() {
-            var queue = new InMemoryQueue<SimpleWorkItem>(workItemTimeoutMilliseconds: 10);
+            var queue = new InMemoryQueue<SimpleWorkItem>(workItemTimeoutMilliseconds: 10, retryDelayMilliseconds: 0);
             queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             });
@@ -65,10 +65,10 @@ namespace Exceptionless.Api.Tests.Queue {
 
         [Fact]
         public void WorkItemsWillGetMovedToDeadletter() {
-            var queue = new InMemoryQueue<SimpleWorkItem>(retries: 1, workItemTimeoutMilliseconds: 10);
+            var queue = new InMemoryQueue<SimpleWorkItem>(retries: 1, workItemTimeoutMilliseconds: 10, retryDelayMilliseconds: 10);
             queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
-            });
+            }).Wait();
             var workItem = queue.DequeueAsync(0).Result;
             Assert.Equal("Hello", workItem.Value.Data);
             Assert.Equal(1, queue.Dequeued);
@@ -117,7 +117,7 @@ namespace Exceptionless.Api.Tests.Queue {
             var latch = new CountDownLatch(workItemCount);
             int errorCount = 0;
             int abandonCount = 0;
-            var queue = new InMemoryQueue<SimpleWorkItem>(retries: 1, workItemTimeoutMilliseconds: 50);
+            var queue = new InMemoryQueue<SimpleWorkItem>(retries: 1, workItemTimeoutMilliseconds: 50, retryDelayMilliseconds: 0);
             Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
             Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
             Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));

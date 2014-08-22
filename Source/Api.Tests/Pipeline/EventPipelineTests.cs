@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;
+using Nest;
 using Xunit;
 using Xunit.Extensions;
 
@@ -125,12 +126,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public void EnsureSingleRegression() {
             var pipeline = IoC.GetInstance<EventPipeline>();
+            var client = IoC.GetInstance<IElasticClient>();
 
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
             var context = new EventContext(ev);
             Assert.DoesNotThrow(() => pipeline.Run(context));
             Assert.False(context.IsRegression);
 
+            client.Refresh();
             ev = _eventRepository.GetById(ev.Id);
             Assert.NotNull(ev);
 

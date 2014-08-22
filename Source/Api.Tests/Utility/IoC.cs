@@ -12,6 +12,7 @@
 using System;
 using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core.Mail;
+using Nest;
 using SimpleInjector;
 
 namespace Exceptionless.Api.Tests.Utility {
@@ -45,6 +46,10 @@ namespace Exceptionless.Api.Tests.Utility {
             _initialized = true;
 
             RegisterServices(_container);
+
+            // TODO: We need to figure out how to be able to run unit tests separate from our normal data.
+            var searchclient = _container.GetInstance<IElasticClient>();
+            searchclient.DeleteIndex(i => i.AllIndices());
         }
 
         #endregion

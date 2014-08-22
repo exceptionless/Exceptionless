@@ -37,7 +37,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Null(stack.DateFixed);
         }
 
-
         [Fact]
         public void IncrementEventCounterTest() {
             RemoveData();
@@ -58,7 +57,6 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, stack.TotalOccurrences);
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
-
             
             _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow.SubtractDays(1));
             _client.Refresh();

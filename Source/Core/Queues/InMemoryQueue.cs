@@ -14,6 +14,7 @@ namespace Exceptionless.Core.Queues {
         private readonly AutoResetEvent _autoEvent = new AutoResetEvent(false);
         private readonly BlockingCollection<Worker> _workers = new BlockingCollection<Worker>();
         private readonly int _timeoutMilliseconds;
+        private readonly int _retryDelayMilliseconds;
         private readonly int _retries;
         private int _enqueuedCounter = 0;
         private int _dequeuedCounter = 0;
@@ -22,9 +23,10 @@ namespace Exceptionless.Core.Queues {
         private int _workerErrorsCounter = 0;
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
 
-        public InMemoryQueue(int retries = 2, int workItemTimeoutMilliseconds = 60 * 1000) {
+        public InMemoryQueue(int retries = 2, int workItemTimeoutMilliseconds = 60 * 1000, int retryDelayMilliseconds = 1000) {
             _retries = retries;
             _timeoutMilliseconds = workItemTimeoutMilliseconds;
+            _retryDelayMilliseconds = retryDelayMilliseconds;
             Task.Factory.StartNew(async () =>
             {
                 while (!_cancellationTokenSource.IsCancellationRequested) {
@@ -129,15 +131,20 @@ namespace Exceptionless.Core.Queues {
 
             Interlocked.Increment(ref _abandonedCounter);
             if (info.Attempts < _retries + 1) {
-                Task.Delay(TimeSpan.FromSeconds(info.Attempts)).ContinueWith(d => {
-                    _queue.Enqueue(info);
-                    RunWorkersAsync();
-                });
+                if (_retryDelayMilliseconds > 0)
+                    Task.Factory.StartNewDelayed(_retryDelayMilliseconds, () => Retry(info));
+                else
+                    Retry(info);
             } else {
                 _deadletterQueue.Enqueue(info);
             }
 
             return Task.FromResult(0);
+        }
+
+        private void Retry(QueueInfo<T> info) {
+            _queue.Enqueue(info);
+            RunWorkersAsync();
         }
 
         public void Dispose() {

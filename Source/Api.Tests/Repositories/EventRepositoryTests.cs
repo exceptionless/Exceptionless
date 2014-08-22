@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
