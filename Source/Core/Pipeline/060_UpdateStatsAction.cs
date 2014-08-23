@@ -32,8 +32,9 @@ namespace Exceptionless.Core.Pipeline {
         public override void Process(EventContext ctx) {
             _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
             _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
-            if (!ctx.IsNew)
+            if (!ctx.IsNew) {
                 _stackRepository.IncrementEventCounter(ctx.Event.OrganizationId, ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
+            }
         }
     }
 }

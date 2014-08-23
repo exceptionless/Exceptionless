@@ -3,9 +3,17 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using CodeSmith.Core.Component;
 
 namespace CodeSmith.Core.Extensions {
     public static class TypeExtensions {
+        public static IList<Type> SortByPriority(this IEnumerable<Type> types) {
+            return types.OrderBy(t => {
+                var priorityAttribute = t.GetCustomAttributes(typeof(PriorityAttribute), true).FirstOrDefault() as PriorityAttribute;
+                return priorityAttribute != null ? priorityAttribute.Priority : 0;
+            }).ToList();
+        } 
+
         public static bool IsNullable(this Type type) {
             if (type.IsValueType)
                 return false;

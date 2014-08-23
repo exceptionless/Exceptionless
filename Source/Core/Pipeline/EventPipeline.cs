@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -39,6 +40,9 @@ namespace Exceptionless.Core.Pipeline {
         protected override void Run(EventContext context, IEnumerable<Type> actionTypes) {
             _statsClient.Counter(StatNames.EventsSubmitted);
             try {
+                if (!String.IsNullOrEmpty(context.Event.Id))
+                    throw new ArgumentException("Event Id should not be populated.");
+
                 if (String.IsNullOrEmpty(context.Event.ProjectId))
                     throw new ArgumentException("ProjectId must be populated on the Event.");
 
@@ -73,7 +77,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         protected override IList<Type> GetActionTypes() {
-            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>(new[] { typeof(EventPipeline).Assembly }).ToList());
+            return _actionTypeCache.GetOrAdd(typeof(EventPipelineActionBase), t => TypeHelper.GetDerivedTypes<EventPipelineActionBase>(new[] { typeof(EventPipeline).Assembly }).SortByPriority());
         }
     }
 }

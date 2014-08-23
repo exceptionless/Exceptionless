@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            if (ctx.StackInfo == null || !ctx.StackInfo.OccurrencesAreCritical)
+            if (ctx.Stack == null || !ctx.Stack.OccurrencesAreCritical)
                 return;
 
             Log.Trace().Message("Marking error as critical.").Write();

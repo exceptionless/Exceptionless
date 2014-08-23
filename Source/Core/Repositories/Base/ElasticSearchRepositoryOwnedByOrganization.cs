@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Repositories {
         public ElasticSearchRepositoryOwnedByOrganization(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, validator, cacheClient, messagePublisher) { }
 
         public virtual ICollection<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new ElasticSearchOptions<T>()
+            return Find(new ElasticSearchOptions<T>()
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("org:", organizationId) : null)
@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
-            return Find<T>(new ElasticSearchOptions<T>()
+            return Find(new ElasticSearchOptions<T>()
                 .WithOrganizationIds(organizationIds)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)

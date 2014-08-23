@@ -1,6 +1,6 @@
 ﻿{
-  "Id": "1ecd0826e447ad1e78877ab4",
-  "Url": "http://localhost:50000/event/1ecd0826e447a44e78877ab1/1ecd0826e447ad1e78877ab4",
+  "Id": null,
+  "Url": "http://localhost:50000/event/1ecd0826e447a44e78877ab1/",
   "OccurrenceDate": "2014-01-17T14:37:02.739-06:00",
   "Tags": [],
   "Type": "error",

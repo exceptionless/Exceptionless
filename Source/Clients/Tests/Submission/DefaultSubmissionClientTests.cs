@@ -60,7 +60,7 @@ namespace Client.Tests.Submission {
         public void PostUserDescription() {
             var container = AppBuilder.CreateContainer();
             var repository = container.GetInstance<IEventRepository>();
-            repository.RemoveAll(false);
+            repository.RemoveAll();
 
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";

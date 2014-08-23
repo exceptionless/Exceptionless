@@ -43,14 +43,14 @@ namespace Exceptionless.Core.Repositories {
             var result = _elasticClient.Update<Stack>(s => s
                 .Id(stackId)
                 .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > occurrenceDateUtc) {
-                            ctx._source.first_occurrence = occurrenceDateUtc; 
+                            ctx._source.first_occurrence = occurrenceDateUtc;
                           }
                           if (ctx._source.last_occurrence < occurrenceDateUtc) {
-                            ctx._source.last_occurrence = occurrenceDateUtc; 
-                          }      
+                            ctx._source.last_occurrence = occurrenceDateUtc;
+                          }
                           ctx._source.total_occurrences += 1;")
                 .Params(p => p.Add("occurrenceDateUtc", occurrenceDateUtc)));
-
+            
             if (!result.IsValid) {
                 Log.Error().Message("Error occurred incrementing stack count.");
                 return;
@@ -68,8 +68,8 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        public StackInfo GetStackInfoBySignatureHash(string projectId, string signatureHash) {
-            return FindOne<StackInfo>(new ElasticSearchOptions<Stack>()
+        public Stack GetStackBySignatureHash(string projectId, string signatureHash) {
+            return FindOne(new ElasticSearchOptions<Stack>()
                 .WithProjectId(projectId)
                 .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
                 .WithFields("id", "date_fixed", "occurrences_are_critical", "is_hidden")
@@ -90,7 +90,7 @@ namespace Exceptionless.Core.Repositories {
             if (!includeNotFound)
                 options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
-            return Find<Stack>(options);
+            return Find(options);
         }
 
         public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
@@ -107,29 +107,14 @@ namespace Exceptionless.Core.Repositories {
             if (!includeNotFound)
                 options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
-            return Find<Stack>(options);
+            return Find(options);
         }
 
-        public void MarkAsRegressed(string organizationId, string stackId) {
-            var result = _elasticClient.Update<Stack, object>(s => s
-                .Id(stackId)
-                .Script("ctx._source.remove('date_fixed'); ctx._source.is_regressed = true;"));
-
-            if (!result.IsValid) {
-                Log.Error().Message("Error occurred marking the stack fixed");
-                return;
-            }
-
-            InvalidateCache(stackId);
-
-            if (EnableNotifications) {
-                PublishMessageAsync(new EntityChanged {
-                    ChangeType = EntityChangeType.Saved,
-                    Id = stackId,
-                    OrganizationId = organizationId,
-                    Type = _entityType
-                });
-            }
+        public void MarkAsRegressed(string stackId) {
+            var stack = GetById(stackId);
+            stack.DateFixed = null;
+            stack.IsRegressed = true;
+            Save(stack, true);
         }
 
         public override void InvalidateCache(Stack entity) {
@@ -138,13 +123,11 @@ namespace Exceptionless.Core.Repositories {
 
             var originalStack = GetById(entity.Id, true);
             if (originalStack != null) {
-                if (originalStack.DateFixed != entity.DateFixed) {
+                if (originalStack.DateFixed != entity.DateFixed)
                     _eventRepository.UpdateFixedByStack(entity.OrganizationId, entity.Id, entity.DateFixed.HasValue);
-                }
 
-                if (originalStack.IsHidden != entity.IsHidden) {
+                if (originalStack.IsHidden != entity.IsHidden)
                     _eventRepository.UpdateHiddenByStack(entity.OrganizationId, entity.Id, entity.IsHidden);
-                }
 
                 InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
             }

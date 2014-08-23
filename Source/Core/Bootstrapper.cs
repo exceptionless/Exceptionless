@@ -132,7 +132,7 @@ namespace Exceptionless.Core {
                 s.AddModelConverters();
             });
             settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
-            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), "stacks-v1"));
+            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
             var client = new ElasticClient(settings);
@@ -145,8 +145,8 @@ namespace Exceptionless.Core {
             if (deleteExistingIndexes)
                 searchclient.DeleteIndex(i => i.AllIndices());
 
-            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = "stacks-v1" })).Exists)
-                searchclient.CreateIndex("stacks-v1", d => d
+            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = ElasticSearchRepository<Stack>.StacksIndexName })).Exists)
+                searchclient.CreateIndex(ElasticSearchRepository<Stack>.StacksIndexName, d => d
                     .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
@@ -171,8 +171,8 @@ namespace Exceptionless.Core {
                     )
                 );
 
-            searchclient.PutTemplate("events-v1", d => d
-                .Template("events-v1-*")
+            searchclient.PutTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName, d => d
+                .Template(ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*")
                 .AddMapping<PersistentEvent>(map => map
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)

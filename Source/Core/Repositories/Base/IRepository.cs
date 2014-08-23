@@ -22,6 +22,6 @@ namespace Exceptionless.Core.Repositories {
         void Remove(string id);
         void Remove(T document);
         void Remove(ICollection<T> documents, bool sendNotification = true);
-        long RemoveAll(bool sendNotification = true);
+        void RemoveAll();
     }
 }

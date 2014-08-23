@@ -15,37 +15,26 @@ using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
-using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class EventData {
-        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false) {
+        public static IEnumerable<PersistentEvent> GenerateEvents(int count = 10, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false) {
             for (int i = 0; i < count; i++)
-                yield return GenerateEvent(generateId, id, organizationId, projectId, stackId, startDate, endDate, timeZoneOffset: timeZoneOffset, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden);
+                yield return GenerateEvent(organizationId, projectId, stackId, startDate, endDate, timeZoneOffset: timeZoneOffset, generateTags: generateTags, generateData: generateData, isFixed: isFixed, isHidden: isHidden);
         }
 
-        public static List<PersistentEvent> GenerateSampleEvents() {
-            return new List<PersistentEvent> {
-                GenerateSampleEvent(),
-                GenerateSampleEvent(TestConstants.EventId2),
-                GenerateSampleEvent(TestConstants.EventId7),
-                GenerateSampleEvent(TestConstants.EventId8),
-            };
+        public static PersistentEvent GenerateSampleEvent() {
+            return GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
         }
 
-        public static PersistentEvent GenerateSampleEvent(string id = TestConstants.EventId) {
-            return GenerateEvent(id: id, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
-        }
-
-        public static PersistentEvent GenerateEvent(bool generateId = false, string id = null, string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false)
+        public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTimeOffset? occurrenceDate = null, int nestingLevel = 0, int minimiumNestingLevel = 0, TimeSpan? timeZoneOffset = null, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false)
         {
-            if (!startDate.HasValue)
-                startDate = DateTime.Now.AddDays(-90);
-            if (!endDate.HasValue)
+            if (!startDate.HasValue || startDate > DateTime.Now.AddHours(1))
+                startDate = DateTime.Now.AddDays(-30);
+            if (!endDate.HasValue || endDate > DateTime.Now.AddHours(1))
                 endDate = DateTime.Now;
 
             var ev = new PersistentEvent {
-                Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
                 Date = occurrenceDate.HasValue ? occurrenceDate.Value : new DateTimeOffset(RandomHelper.GetDateTime(startDate, endDate), timeZoneOffset.HasValue ? timeZoneOffset.Value : TimeZoneInfo.Local.BaseUtcOffset),

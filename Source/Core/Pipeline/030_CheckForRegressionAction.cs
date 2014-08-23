@@ -29,12 +29,12 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            if (ctx.StackInfo == null || !ctx.StackInfo.DateFixed.HasValue || ctx.StackInfo.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
+            if (ctx.Stack == null || !ctx.Stack.DateFixed.HasValue || ctx.Stack.DateFixed.Value >= ctx.Event.Date.UtcDateTime)
                 return;
 
             Log.Trace().Message("Marking event as an regression.").Write();
-            _stackRepository.MarkAsRegressed(ctx.Event.OrganizationId, ctx.StackInfo.Id);
-            _eventRepository.MarkAsRegressedByStack(ctx.Event.OrganizationId, ctx.StackInfo.Id);
+            _stackRepository.MarkAsRegressed(ctx.Stack.Id);
+            _eventRepository.MarkAsRegressedByStack(ctx.Event.OrganizationId, ctx.Stack.Id);
 
             string signatureHash = ctx.GetProperty<string>("__SignatureHash");
             _stackRepository.InvalidateCache(ctx.Event.ProjectId, ctx.Event.StackId, signatureHash);

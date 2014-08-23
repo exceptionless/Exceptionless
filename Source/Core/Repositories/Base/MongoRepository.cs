@@ -110,8 +110,8 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        public long RemoveAll(bool sendNotifications = true) {
-            return RemoveAll(new QueryOptions(), sendNotifications);
+        public void RemoveAll() {
+            RemoveAll(new QueryOptions());
         }
 
         protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {

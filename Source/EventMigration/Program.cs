@@ -90,7 +90,7 @@ namespace Exceptionless.EventMigration {
 
                         Console.SetCursorPosition(0, 4);
                         Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
-                        var response = searchclient.IndexMany(stacks, type: "stacks", index: "stacks-v1");
+                        var response = searchclient.IndexMany(stacks, type: "stacks", index: ElasticSearchRepository<Stack>.StacksIndexName);
                         if (!response.IsValid)
                             Debugger.Break();
 

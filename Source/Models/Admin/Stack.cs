@@ -18,6 +18,7 @@ namespace Exceptionless.Models {
         public Stack() {
             Tags = new TagSet();
             References = new Collection<string>();
+            SignatureInfo = new SettingsDictionary();
         }
 
         /// <summary>

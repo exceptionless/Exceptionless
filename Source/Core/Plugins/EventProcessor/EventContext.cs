@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
@@ -29,7 +28,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         public Organization Organization { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
-        public StackInfo StackInfo { get; set; }
         public IDictionary<string, string> StackSignatureData { get; private set; }
 
         public bool IsCancelled { get; set; }

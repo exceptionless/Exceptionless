@@ -32,7 +32,6 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
         protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
-        protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
 
         protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
@@ -63,7 +62,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events-v1-" + group.Key.ToString("yyyyMM"));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
                 }
@@ -123,8 +122,14 @@ namespace Exceptionless.Core.Repositories {
             }
         }
 
-        public long RemoveAll(bool sendNotifications = true) {
-            return RemoveAll(new QueryOptions(), sendNotifications);
+        public void RemoveAll() {
+            Cache.FlushAll();
+            if (_isEvent)
+                _elasticClient.DeleteIndex(d => d.Index(String.Concat(EventsIndexName, "-*")));
+            else if (_isStack)
+                _elasticClient.DeleteIndex(d => d.Index(StacksIndexName));
+            else
+                RemoveAll(new QueryOptions(), false);
         }
 
         protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {
@@ -178,7 +183,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: "events-v1-" + group.Key.ToString("yyyyMM"));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
             } else {

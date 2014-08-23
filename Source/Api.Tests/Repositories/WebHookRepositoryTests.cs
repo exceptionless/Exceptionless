@@ -22,7 +22,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         protected void RemoveData() {
-            _repository.RemoveAll(false);
+            _repository.RemoveAll();
         }
 
         public void Dispose() {

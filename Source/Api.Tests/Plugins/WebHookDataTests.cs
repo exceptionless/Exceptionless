@@ -63,7 +63,6 @@ namespace Exceptionless.Api.Tests.Plugins
             };
 
             var ev = JsonConvert.DeserializeObject<PersistentEvent>(json, settings);
-            ev.Id = TestConstants.EventId;
             ev.OrganizationId = TestConstants.OrganizationId;
             ev.ProjectId = TestConstants.ProjectId;
             ev.StackId = TestConstants.StackId;

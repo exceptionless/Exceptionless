@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 #if PFX_LEGACY_3_5 || SILVERLIGHT
 using CodeSmith.Core.Collections;
@@ -27,12 +27,12 @@ namespace CodeSmith.Core.Component
         where TAction : class, IPipelineAction<TContext>
         where TContext : IPipelineContext
     {
-        protected static readonly ConcurrentDictionary<Type, List<Type>> _actionTypeCache;
+        protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache;
         private readonly IDependencyResolver _dependencyResolver;
 
         static PipelineBase()
         {
-            _actionTypeCache = new ConcurrentDictionary<Type, List<Type>>();
+            _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
         }
 
         public PipelineBase(IDependencyResolver dependencyResolver = null) {
@@ -87,6 +87,10 @@ namespace CodeSmith.Core.Component
                 if (context.IsCancelled)
                     break;
             }
+
+            if (!context.IsCancelled)
+                context.IsProcessed = true;
+
             PipelineCompleted(context);
         }
 
@@ -108,7 +112,7 @@ namespace CodeSmith.Core.Component
         /// <returns>An enumerable list of action types in priority order to run for the pipeline.</returns>
         protected virtual IList<Type> GetActionTypes()
         {
-            return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().ToList());
+            return _actionTypeCache.GetOrAdd(typeof(TAction), t => TypeHelper.GetDerivedTypes<TAction>().SortByPriority());
         }
     }
 }

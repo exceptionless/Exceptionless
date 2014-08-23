@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.False(stack.IsRegressed);
             Assert.NotNull(stack.DateFixed);
 
-            _repository.MarkAsRegressed(TestConstants.OrganizationId, TestConstants.StackId);
+            _repository.MarkAsRegressed(TestConstants.StackId);
             
             _client.Refresh();
             stack = _repository.GetById(TestConstants.StackId);
@@ -88,7 +88,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void InvalidateCacheTest() { }
 
         protected void RemoveData() {
-            _repository.RemoveAll(false);
+            _repository.RemoveAll();
         }
     }
 }

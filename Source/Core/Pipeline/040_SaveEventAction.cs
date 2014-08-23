@@ -14,7 +14,6 @@ using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
-using MongoDB.Driver;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {

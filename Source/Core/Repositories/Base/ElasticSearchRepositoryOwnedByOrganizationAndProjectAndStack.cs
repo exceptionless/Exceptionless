@@ -13,7 +13,7 @@ namespace Exceptionless.Core.Repositories {
             : base(elasticClient, validator, cacheClient, messagePublisher) {}
 
         public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return Find<T>(new ElasticSearchOptions<T>()
+            return Find(new ElasticSearchOptions<T>()
                 .WithStackId(stackId)
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("stack:", stackId) : null)
