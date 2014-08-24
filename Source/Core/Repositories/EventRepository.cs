@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {
-            var filter = Filter<PersistentEvent>.Bool(b => b.Must(m => m.Term(e => e.ReferenceId, referenceId)));
+            var filter = Filter<PersistentEvent>.Term(e => e.ReferenceId, referenceId);
             return Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithProjectId(projectId)
                 .WithFilter(filter)

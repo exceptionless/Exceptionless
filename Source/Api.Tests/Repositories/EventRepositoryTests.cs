@@ -117,6 +117,20 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
+        public void GetByReferenceId() {
+            RemoveData();
+
+            string referenceId = ObjectId.GenerateNewId().ToString();
+            _repository.Add(EventData.GenerateEvents(count: 3, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, referenceId: referenceId).ToList());
+
+            _client.Refresh();
+            var results = _repository.GetByReferenceId(TestConstants.ProjectId, referenceId);
+            Assert.True(results.Count > 0);
+            Assert.NotNull(results.FirstOrDefault());
+            Assert.Equal(referenceId, results.FirstOrDefault().ReferenceId);
+        }
+
+        [Fact]
         public void MarkAsFixedByStackTest() {
             RemoveData();
 

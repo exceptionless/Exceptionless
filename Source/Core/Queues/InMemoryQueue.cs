@@ -144,6 +144,7 @@ namespace Exceptionless.Core.Queues {
 
         private void Retry(QueueInfo<T> info) {
             _queue.Enqueue(info);
+            _autoEvent.Set();
             RunWorkersAsync();
         }
 

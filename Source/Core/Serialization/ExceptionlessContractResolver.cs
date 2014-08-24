@@ -20,7 +20,7 @@ namespace Exceptionless.Serializer {
     class ExceptionlessContractResolver : DefaultContractResolver {
         private readonly Func<JsonProperty, object, bool> _includeProperty;
 
-        public ExceptionlessContractResolver(Func<JsonProperty, object, bool> includeProperty) {
+        public ExceptionlessContractResolver(Func<JsonProperty, object, bool> includeProperty = null) {
             _includeProperty = includeProperty;
         }
 

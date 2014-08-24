@@ -17,8 +17,9 @@ namespace Exceptionless.Core.Plugins.EventParser {
             var events = new List<PersistentEvent>();
             var serializerSettings = new JsonSerializerSettings {
                 MissingMemberHandling = MissingMemberHandling.Ignore, 
-                ContractResolver = new ExtensionContractResolver()
+                ContractResolver = new ExceptionlessContractResolver()
             };
+            serializerSettings.AddModelConverters();
 
             switch (input.GetJsonType()) {
                 case JsonType.Object: {

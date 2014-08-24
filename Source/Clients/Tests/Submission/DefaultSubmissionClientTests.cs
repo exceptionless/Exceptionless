@@ -64,6 +64,7 @@ namespace Client.Tests.Submission {
 
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";
+                const string badReferenceId = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
 
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 Assert.NotNull(statsCounter);
@@ -79,12 +80,14 @@ namespace Client.Tests.Submission {
                 var response = client.PostUserDescription(referenceId, description, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors);
 
                 response = client.PostEvents(events, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
 
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, 1, 40);
+                statsCounter.WaitForCounter(StatNames.EventsProcessed);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed);
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
@@ -92,13 +95,13 @@ namespace Client.Tests.Submission {
                 Assert.NotNull(ev.GetUserDescription());
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
 
-                Assert.Equal(0, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
-                response = client.PostUserDescription(referenceId + 1, description, configuration, serializer);
+                Assert.Equal(2, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
+                response = client.PostUserDescription(badReferenceId, description, configuration, serializer);
                 Assert.True(response.Success, response.Message);
                 Assert.Null(response.Message);
 
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, 1);
-                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors);
+                Assert.Equal(2, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
             }
         }
 
