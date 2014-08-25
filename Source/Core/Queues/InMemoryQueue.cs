@@ -51,35 +51,40 @@ namespace Exceptionless.Core.Queues {
         }
 
         private Task RunWorkersAsync() {
+            if (Count == 0 || _workers.Count == 0)
+                return Task.FromResult(0);
+
             return Task.Factory.StartNew(() => {
-                if (_workers.Count == 0)
-                    return;
-
                 QueueEntry<T> queueEntry = null;
-                try {
-                    queueEntry = DequeueAsync(0).Result;
-                } catch (TimeoutException) {}
-                if (queueEntry == null)
-                    return;
+                while (Count > 0) {
+                    try {
+                        queueEntry = DequeueAsync(0).Result;
+                    } catch (TimeoutException) {}
+                    if (queueEntry == null)
+                        return;
 
-                // get a random worker
-                var worker = _workers.ToList().Random();
-                if (worker == null)
-                    return;
-                try {
-                    worker.Action(queueEntry);
-                    if (worker.AutoComplete)
-                        queueEntry.CompleteAsync().Wait();
-                } catch (Exception ex) {
-                    Interlocked.Increment(ref _workerErrorsCounter);
-                    Log.Error().Exception(ex).Message("Error sending work item to worker: {0}", ex.Message).Write();
-                    queueEntry.AbandonAsync().Wait();
+                    // get a random worker
+                    var worker = _workers.ToList().Random();
+                    if (worker == null)
+                        return;
+
+                    try {
+                        worker.Action(queueEntry);
+                        if (worker.AutoComplete)
+                            queueEntry.CompleteAsync().Wait();
+                    } catch (Exception ex) {
+                        Interlocked.Increment(ref _workerErrorsCounter);
+                        Log.Error().Exception(ex).Message("Error sending work item to worker: {0}", ex.Message).Write();
+                        queueEntry.AbandonAsync().Wait();
+                    }
                 }
             });
         }
 
         public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
             _workers.Add(new Worker { Action = handler, AutoComplete = autoComplete });
+            if (Count > 0)
+                RunWorkersAsync();
         }
 
         public Task<QueueEntry<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {

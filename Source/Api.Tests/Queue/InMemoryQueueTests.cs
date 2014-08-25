@@ -30,16 +30,17 @@ namespace Exceptionless.Api.Tests.Queue {
         public void CanUseQueueWorker() {
             var resetEvent = new AutoResetEvent(false);
             var queue = new InMemoryQueue<SimpleWorkItem>();
+
+            queue.EnqueueAsync(new SimpleWorkItem {
+                Data = "Hello"
+            });
+
             queue.StartWorking(w => {
                 Assert.Equal("Hello", w.Value.Data);
                 w.CompleteAsync().Wait();
                 resetEvent.Set();
             });
-            queue.EnqueueAsync(new SimpleWorkItem {
-                Data = "Hello"
-            });
 
-            Assert.Equal(1, queue.Count);
             bool success = resetEvent.WaitOne(250);
             Assert.Equal(0, queue.Count);
             Assert.Equal(1, queue.Completed);
@@ -94,16 +95,16 @@ namespace Exceptionless.Api.Tests.Queue {
         public void CanAutoCompleteWorker() {
             var resetEvent = new AutoResetEvent(false);
             var queue = new InMemoryQueue<SimpleWorkItem>(workItemTimeoutMilliseconds: 100);
-            queue.StartWorking(w => {
-                Assert.Equal("Hello", w.Value.Data);
-                resetEvent.Set();
-            }, true);
             queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello"
             });
 
-            Assert.Equal(1, queue.Count);
-            bool success = resetEvent.WaitOne(100);
+            queue.StartWorking(w => {
+                Assert.Equal("Hello", w.Value.Data);
+                resetEvent.Set();
+            }, true);
+
+            bool success = resetEvent.WaitOne(250);
             Assert.True(success, "Failed to receive message.");
             Task.Delay(25).Wait();
             Assert.Equal(0, queue.Count);
@@ -118,16 +119,17 @@ namespace Exceptionless.Api.Tests.Queue {
             int errorCount = 0;
             int abandonCount = 0;
             var queue = new InMemoryQueue<SimpleWorkItem>(retries: 1, workItemTimeoutMilliseconds: 50, retryDelayMilliseconds: 0);
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
-            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
 
             Parallel.For(0, workItemCount, i => queue.EnqueueAsync(new SimpleWorkItem {
                 Data = "Hello",
                 Id = i
             }));
 
-            bool success = latch.Wait(1500);
+            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+            Task.Factory.StartNew(() => queue.StartWorking(w => DoWork(w, latch, ref abandonCount, ref errorCount)));
+
+            bool success = latch.Wait(2000);
             Assert.True(success, "Failed to receive all work items.");
             Task.Delay(50).Wait();
             Assert.Equal(workItemCount, queue.Completed + queue.DeadletterCount);
