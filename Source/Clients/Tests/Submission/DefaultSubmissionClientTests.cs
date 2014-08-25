@@ -77,17 +77,17 @@ namespace Client.Tests.Submission {
 
                 var client = new DefaultSubmissionClient();
                 var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
-                var response = client.PostUserDescription(referenceId, description, configuration, serializer);
-                Assert.True(response.Success, response.Message);
-                Assert.Null(response.Message);
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
+                    var response = client.PostUserDescription(referenceId, description, configuration, serializer);
+                    Assert.True(response.Success, response.Message);
+                    Assert.Null(response.Message);
+                });
 
-                response = client.PostEvents(events, configuration, serializer);
-                Assert.True(response.Success, response.Message);
-                Assert.Null(response.Message);
-
-                statsCounter.WaitForCounter(StatNames.EventsProcessed);
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, work: () => {
+                    var response = client.PostEvents(events, configuration, serializer);
+                    Assert.True(response.Success, response.Message);
+                    Assert.Null(response.Message);
+                });
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
@@ -96,11 +96,12 @@ namespace Client.Tests.Submission {
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
 
                 Assert.Equal(2, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
-                response = client.PostUserDescription(badReferenceId, description, configuration, serializer);
-                Assert.True(response.Success, response.Message);
-                Assert.Null(response.Message);
+                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
+                    var response = client.PostUserDescription(badReferenceId, description, configuration, serializer);
+                    Assert.True(response.Success, response.Message);
+                    Assert.Null(response.Message);
+                });
 
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors);
                 Assert.Equal(2, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
             }
         }

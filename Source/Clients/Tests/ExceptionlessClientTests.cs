@@ -47,8 +47,7 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
 
-                client.ProcessQueue();
-                statsCounter.WaitForCounter(StatNames.EventsProcessed);
+                statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
 
                 Assert.Equal(0, queue.Count);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
@@ -83,8 +82,7 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
                 
-                client.ProcessQueue();
-                statsCounter.WaitForCounter(StatNames.EventsProcessed);
+                statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
 
                 Assert.Equal(0, queue.Count);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));

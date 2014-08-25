@@ -53,9 +53,15 @@ namespace Exceptionless.Core.AppStats {
                 waitHandle.Set();
         }
 
-        public void WaitForCounter(string statName, int count = 1, double timeoutInSeconds = 10) {
+        public void WaitForCounter(string statName, long count = 1, double timeoutInSeconds = 10, Action work = null) {
             if (count == 0)
                 return;
+
+            long currentCount = GetCount(statName);
+            if (work != null)
+                work();
+
+            count = count - (GetCount(statName) - currentCount);
 
             var waitHandle = _counterEvents.GetOrAdd(statName, s => new AutoResetEvent(false));
             do {
