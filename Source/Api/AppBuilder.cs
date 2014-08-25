@@ -159,7 +159,7 @@ namespace Exceptionless.Api {
             if (fileSystem != null)
                 app.UseFileServer(new FileServerOptions { FileSystem = fileSystem });
 
-            Mapper.Initialize(c => c.ConstructServicesUsing(container.GetInstance));
+            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
             // TODO: Remove this as it's only for testing.
             EnsureSampleData(container);
