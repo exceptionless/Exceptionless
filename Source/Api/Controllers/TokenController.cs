@@ -108,7 +108,6 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.DenyWithResult(BadRequest());
 
-            // TODO: Code review this.
             if (value.Scopes.Contains("admin") && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithResult(BadRequest());
 

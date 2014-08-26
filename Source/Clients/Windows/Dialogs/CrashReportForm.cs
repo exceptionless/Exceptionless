@@ -28,7 +28,6 @@ namespace Exceptionless.Dialogs {
             Text = String.Format("{0} Error", AssemblyHelper.GetAssemblyTitle());
             InformationHeaderLabel.Text = String.Format("{0} has encountered a problem and needs to close.  We are sorry for the inconvenience.", AssemblyHelper.GetAssemblyTitle());
 
-            // TODO: Implement this once the client has persisted storage.
             var userInfo = ev.GetUserIdentity();
             if (userInfo != null && !String.IsNullOrEmpty(userInfo.Identity)) {
                 EmailAddressTextBox.Text = userInfo.Identity;

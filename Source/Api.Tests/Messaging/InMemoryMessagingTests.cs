@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Data = "Hello"
             });
 
-            bool success = latch.Wait(500);
+            bool success = latch.Wait(900);
             Assert.True(success, "Failed to receive all messages.");
         }
 

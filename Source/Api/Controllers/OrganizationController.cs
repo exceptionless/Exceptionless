@@ -111,7 +111,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/change-plan")]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
-                throw new ArgumentException("Invalid organization id.", "id"); // TODO: These should probably throw http Response exceptions.
+                return BadRequest("Invalid organization id.");
 
             if (!Settings.Current.EnableBilling)
                 return Ok(new { Success = false, Message = "Plans cannot be changed while billing is disabled." });

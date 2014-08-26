@@ -149,7 +149,6 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings);
         }
 
-        // TODO: Should we remove userId and just use the current user..
         [HttpGet]
         [Route("{id:objectid}/notifications/{userId:objectid}")]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
@@ -160,11 +159,9 @@ namespace Exceptionless.Api.Controllers {
             if (!project.NotificationSettings.ContainsKey(userId))
                 return NotFound();
 
-            // TODO: We should just return the settings instead of user id and settings.
             return Ok(project.NotificationSettings[userId]);
         }
 
-        // TODO: Should we remove userId and just use the current user..
         [HttpPut]
         [HttpPost]
         [Route("{id:objectid}/notifications/{userId:objectid}")]

@@ -116,11 +116,6 @@ namespace Exceptionless.Core.Repositories {
             public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         }
        
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
-            // TODO: Should we set an index on project and configuration key name.
-        }
-
         protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);

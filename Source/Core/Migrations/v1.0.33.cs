@@ -23,9 +23,6 @@ namespace Exceptionless.Core.Migrations {
         public override void Update() {
             if (Database.CollectionExists("project.hook"))
                 Database.RenameCollection("project.hook", "webhook");
-
-            // TODO: rename error collection to event
-            // TODO: migrate errors to events on demand as documents are requested
             
             base.Update();
         }

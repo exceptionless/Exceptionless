@@ -155,10 +155,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Theory]
         [PropertyData("Events")]
         public void ProcessEvents(string errorFilePath) {
-            // TODO: We currently fail to process this error due to https://jira.mongodb.org/browse/CSHARP-930
-            if (errorFilePath.Contains("881"))
-                return;
-            
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             var events = parserPluginManager.ParseEvents(File.ReadAllText(errorFilePath), 2, "exceptionless/2.0.0.0");
             Assert.NotNull(events);
