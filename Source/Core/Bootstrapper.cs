@@ -192,13 +192,13 @@ namespace Exceptionless.Core {
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed))
-                            .Object<RequestInfo>(f2 => f2.Name("request").Properties(p3 => p3
+                            .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<Error>(f2 => f2.Name("error").Properties(p3 => p3
+                            .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.Type).Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<EnvironmentInfo>(f2 => f2.Name("environment").Properties(p3 => p3
+                            .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.MachineName).Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<UserInfo>(f2 => f2.Name("user").Properties(p3 => p3
+                            .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.Identity).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
                     )
                 )
