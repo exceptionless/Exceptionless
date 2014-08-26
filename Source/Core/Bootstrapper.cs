@@ -191,6 +191,7 @@ namespace Exceptionless.Core {
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
+                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed))
                             .Object<RequestInfo>(f2 => f2.Name("request").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())))
                             .Object<Error>(f2 => f2.Name("error").Properties(p3 => p3
