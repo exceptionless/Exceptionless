@@ -204,14 +204,28 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
-            var results = base.GetByOrganizationId(organizationId, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
-            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
+            return GetByOrganizationIds(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
             var results = base.GetByOrganizationIds(organizationIds, GetPagingWithSortingOptions(paging, sortByAscending), useCache, expiresIn);
+            return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
+        }
+
+        public ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            if (organizationIds == null || organizationIds.Count == 0)
+                return new List<PersistentEvent>();
+
+            string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
+            bool sortByAscending = paging != null && !String.IsNullOrEmpty(paging.After);
+            var results = Find(new ElasticSearchOptions<PersistentEvent>()
+                .WithOrganizationIds(organizationIds)
+                .WithQuery(query)
+                .WithPaging(GetPagingWithSortingOptions(paging, sortByAscending))
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
+
             return !sortByAscending ? results : results.OrderByDescending(e => e.Date).ThenByDescending(se => se.Id).ToList();
         }
 

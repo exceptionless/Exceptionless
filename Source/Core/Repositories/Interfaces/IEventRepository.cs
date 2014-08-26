@@ -28,5 +28,7 @@ namespace Exceptionless.Core.Repositories {
         void RemoveAllByDate(string organizationId, DateTime utcCutoffDate);
         void HideAllByClientIpAndDate(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
         Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
+
+        ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
     }
 }

@@ -58,7 +58,30 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Assert.Equal(sortedIds[i + 2].Item1, results[i].Id);
             }
         }
-        
+
+        [Fact]
+        public void GetByQuery() {
+            RemoveData();
+            CreateData();
+
+            Debug.WriteLine("Sorted order:");
+            List<Tuple<string, DateTimeOffset>> sortedIds = _ids.OrderByDescending(t => t.Item2.Ticks).ThenByDescending(t => t.Item1).ToList();
+            foreach (var t in sortedIds)
+                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.LocalDateTime.ToLongTimeString());
+
+            Debug.WriteLine("");
+            Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.LocalDateTime.ToLongTimeString());
+            _client.Refresh(r => r.Force(false));
+            string query = String.Format("stack:{0} project:{1} date:[now-1h TO now+1h]", TestConstants.StackId, TestConstants.ProjectId, DateTime.UtcNow.SubtractHours(1).ToString("O"), DateTime.UtcNow.AddHours(1).ToString("O"));
+            var results = _repository.GetByOrganizationIds(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20)).ToArray();
+            Assert.True(results.Length > 0);
+
+            for (int i = 0; i < sortedIds.Count; i++) {
+                Debug.WriteLine("{0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.LocalDateTime.ToLongTimeString());
+                Assert.Equal(sortedIds[i].Item1, results[i].Id);
+            }
+        }
+       
         [Fact]
         public void GetPreviousEventIdInStackTest() {
             RemoveData();
