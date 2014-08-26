@@ -57,9 +57,6 @@
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\GlobalAssemblyInfo.cs">
-      <Link>Properties\GlobalAssemblyInfo.cs</Link>
-    </Compile>
     <Compile Include="ExceptionlessBootstrapper.cs" />
     <Compile Include="ExceptionlessModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

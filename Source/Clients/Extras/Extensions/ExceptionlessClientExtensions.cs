@@ -13,6 +13,7 @@ namespace Exceptionless {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
             client.Configuration.ReadAllConfig();
             client.Configuration.UseErrorEnrichment();
+            client.Configuration.AddEnrichment<VersionEnrichment>();
             client.Configuration.AddEnrichment<PrivateInformationEnrichment>();
             client.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
             client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();

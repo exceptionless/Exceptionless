@@ -50,6 +50,7 @@
     <Compile Include="Enrichments\ErrorEnrichment.cs" />
     <Compile Include="Enrichments\PrivateInformationEnrichment.cs" />
     <Compile Include="Enrichments\TraceLogEnrichment.cs" />
+    <Compile Include="Enrichments\VersionEnrichment.cs" />
     <Compile Include="ExceptionlessSection.cs" />
     <Compile Include="Extensions\EventBuilderExtensions.cs" />
     <Compile Include="Extensions\ExceptionlessClientExtensions.cs" />

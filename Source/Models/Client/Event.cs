@@ -77,6 +77,7 @@ namespace Exceptionless.Models {
             public const string EnvironmentInfo = "environment";
             public const string UserInfo = "user";
             public const string UserDescription = "user_description";
+            public const string Version = "version";
         }
     }
 }

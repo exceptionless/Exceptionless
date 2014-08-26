@@ -24,15 +24,20 @@ namespace Client.Tests.Configuration {
 
         [Fact]
         public void CanConfigureClientUsingActionMethod() {
+            const string version = "1.2.3";
+            
             var client = new ExceptionlessClient(c => {
                 c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
+                c.SetVersion(version);
             });
 
             Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", client.Configuration.ApiKey);
             Assert.Equal("http://localhost:45000", client.Configuration.ServerUrl);
             Assert.False(client.Configuration.EnableSSL);
+            Assert.Equal(version, client.Configuration.DefaultData[Event.KnownDataKeys.Version].ToString());
+            
         }
 
         [Fact]

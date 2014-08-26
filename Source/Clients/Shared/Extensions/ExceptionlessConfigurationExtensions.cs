@@ -6,10 +6,31 @@ using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Logging;
+using Exceptionless.Models;
 using Exceptionless.Storage;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
+        /// <summary>
+        /// Automatically set the application version for events.
+        /// </summary>
+        public static void SetVersion(this ExceptionlessConfiguration config, string version) {
+            if (String.IsNullOrEmpty(version))
+                return;
+
+            config.DefaultData[Event.KnownDataKeys.Version] = version;
+        }
+
+        /// <summary>
+        /// Automatically set the application version for events.
+        /// </summary>
+        public static void SetVersion(this ExceptionlessConfiguration config, Version version) {
+            if (version == null)
+                return;
+
+            config.DefaultData[Event.KnownDataKeys.Version] = version.ToString();
+        }
+        
         public static string GetQueueName(this ExceptionlessConfiguration config) {
             // TODO: Ensure the api key has been set before this is called.
             return config.ApiKey.Substring(0, 8);
