@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Extras;
@@ -26,10 +24,7 @@ namespace Exceptionless.Enrichments {
             _checkedForVersion = true;
             string version = null;
             try {
-                var v = GetVersionFromLoadedAssemblies();
-                version = GetVersionFromAssembly(Assembly.GetEntryAssembly());
-                if (String.IsNullOrEmpty(version))
-                    version = GetVersionFromStackTrace();
+                version = GetVersionFromLoadedAssemblies();
             } catch (Exception) {}
 
             if (String.IsNullOrEmpty(version))
@@ -70,33 +65,6 @@ namespace Exceptionless.Enrichments {
                     continue;
 
                 string version = GetVersionFromAssembly(assembly);
-                if (!String.IsNullOrEmpty(version))
-                    return version;
-            }
-
-            return null;
-        }
-
-        private string GetVersionFromStackTrace() {
-            var trace = new StackTrace(false);
-            for (int i = 0; i < trace.FrameCount; i++) {
-                StackFrame frame = trace.GetFrame(i);
-                MethodBase methodBase = frame.GetMethod();
-                Type type = methodBase.DeclaringType;
-                if (type == null)
-                    continue;
-
-                if (type.Assembly.IsDynamic || type.Assembly == typeof(ExceptionlessClient).Assembly || type.Assembly == GetType().Assembly || type.Assembly == typeof(object).Assembly)
-                    continue;
-
-                if (String.IsNullOrEmpty(type.Assembly.FullName) || type.Assembly.FullName.StartsWith("System.") || type.Assembly.FullName.StartsWith("Microsoft."))
-                    continue;
-           
-                string company = type.Assembly.GetCompany();
-                if (!String.IsNullOrEmpty(company) && (String.Equals(company, "Exceptionless", StringComparison.OrdinalIgnoreCase) || String.Equals(company, "Microsoft Corporation", StringComparison.OrdinalIgnoreCase)))
-                    continue;
-
-                string version = GetVersionFromAssembly(type.Assembly);
                 if (!String.IsNullOrEmpty(version))
                     return version;
             }
