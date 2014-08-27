@@ -20,4 +20,6 @@ using Exceptionless.Configuration;
 [assembly: ComVisible(false)]
 [assembly: ThemeInfo(ResourceDictionaryLocation.None, ResourceDictionaryLocation.SourceAssembly)]
 [assembly: AssemblyVersion("1.2.3.*")]
+[assembly: AssemblyFileVersion("1.2.3.*")]
+
 [assembly: Exceptionless("e3d51ea621464280bbcb79c11fd6483e", ServerUrl = "http://localhost:50000")]

@@ -23,5 +23,8 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: Guid("2a45b7bb-82b6-4055-8c8e-1a3c81afb4f1")]
 
+[assembly: AssemblyVersion("1.2.3.*")]
+[assembly: AssemblyFileVersion("1.2.3.*")]
+
 // example of setting an attribute value in config.
 //[assembly: ExceptionlessSetting("AttributeSettings", "AttributeValue")]
