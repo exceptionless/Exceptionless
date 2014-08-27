@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Exceptionless.Extras;
 using Exceptionless.Models;
@@ -24,6 +26,7 @@ namespace Exceptionless.Enrichments {
             _checkedForVersion = true;
             string version = null;
             try {
+                var v = GetVersionFromLoadedAssemblies();
                 version = GetVersionFromAssembly(Assembly.GetEntryAssembly());
                 if (String.IsNullOrEmpty(version))
                     version = GetVersionFromStackTrace();
@@ -40,19 +43,38 @@ namespace Exceptionless.Enrichments {
                 return null;
 
             string version = assembly.GetInformationalVersion();
-            if (!String.IsNullOrEmpty(version))
-                return version;
+            if (String.IsNullOrEmpty(version) || String.Equals(version, "0.0.0.0"))
+                version = assembly.GetFileVersion();
 
-            version = assembly.GetFileVersion();
-            if (!String.IsNullOrEmpty(version))
-                return version;
+            if (String.IsNullOrEmpty(version) || String.Equals(version, "0.0.0.0"))
+                version = assembly.GetVersion();
+            
+            if (String.IsNullOrEmpty(version) || String.Equals(version, "0.0.0.0")) {
+                var assemblyName = assembly.GetAssemblyName();
+                version = assemblyName != null ? assemblyName.Version.ToString() : null;
+            }
 
-            version = assembly.GetVersion();
-            if (!String.IsNullOrEmpty(version))
-                return version;
+            return !String.IsNullOrEmpty(version) && !String.Equals(version, "0.0.0.0") ? version : null;
+        }
 
-            var assemblyName = assembly.GetAssemblyName();
-            return assemblyName != null ? assemblyName.Version.ToString() : null;
+        private string GetVersionFromLoadedAssemblies() {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic && a != typeof(ExceptionlessClient).Assembly && a != GetType().Assembly && a != typeof(object).Assembly)) {
+                if (String.IsNullOrEmpty(assembly.FullName) || assembly.FullName.StartsWith("System.") || assembly.FullName.StartsWith("Microsoft."))
+                    continue;
+
+                string company = assembly.GetCompany();
+                if (!String.IsNullOrEmpty(company) && (String.Equals(company, "Exceptionless", StringComparison.OrdinalIgnoreCase) || String.Equals(company, "Microsoft Corporation", StringComparison.OrdinalIgnoreCase)))
+                    continue;
+            
+                if (!assembly.GetReferencedAssemblies().Any(an => String.Equals(an.FullName, typeof(ExceptionlessClient).Assembly.FullName)))
+                    continue;
+
+                string version = GetVersionFromAssembly(assembly);
+                if (!String.IsNullOrEmpty(version))
+                    return version;
+            }
+
+            return null;
         }
 
         private string GetVersionFromStackTrace() {
@@ -71,7 +93,7 @@ namespace Exceptionless.Enrichments {
                     continue;
            
                 string company = type.Assembly.GetCompany();
-                if (String.IsNullOrEmpty(company) || String.Equals(company, "Exceptionless", StringComparison.OrdinalIgnoreCase))
+                if (!String.IsNullOrEmpty(company) && (String.Equals(company, "Exceptionless", StringComparison.OrdinalIgnoreCase) || String.Equals(company, "Microsoft Corporation", StringComparison.OrdinalIgnoreCase)))
                     continue;
 
                 string version = GetVersionFromAssembly(type.Assembly);
