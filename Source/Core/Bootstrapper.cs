@@ -125,7 +125,7 @@ namespace Exceptionless.Core {
         private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
 #if TRACE
-            //settings.EnableTrace();
+            settings.EnableTrace();
 #endif
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
@@ -190,15 +190,16 @@ namespace Exceptionless.Core {
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
-                        .NestedObject<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
-                            .NestedObject<RequestInfo>(f2 => f2.Name("request").IncludeInRoot().Properties(p3 => p3
+                        .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
+                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed))
+                            .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .NestedObject<Error>(f2 => f2.Name("error").IncludeInRoot().Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .NestedObject<EnvironmentInfo>(f2 => f2.Name("environment").IncludeInRoot().Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .NestedObject<UserInfo>(f2 => f2.Name("user").IncludeInRoot().Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
+                            .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Type).Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                            .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.MachineName).Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                            .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Identity).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
                     )
                 )
             );

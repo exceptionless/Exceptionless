@@ -13,6 +13,7 @@ namespace Exceptionless.Core.Repositories {
         public FilterContainer BeforeQuery { get; set; }
         public FilterContainer AfterQuery { get; set; }
         public FilterContainer Filter { get; set; }
+        public string Query { get; set; }
         public List<string> Indices { get; private set; }
     }
 } 

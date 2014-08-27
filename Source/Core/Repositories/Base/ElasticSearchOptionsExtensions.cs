@@ -5,8 +5,13 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public static class ElasticSearchOptionsExtensions {
-        public static ElasticSearchOptions<T> WithFilter<T>(this ElasticSearchOptions<T> options, FilterContainer query) where T : class {
-            options.Filter = query;
+        public static ElasticSearchOptions<T> WithFilter<T>(this ElasticSearchOptions<T> options, FilterContainer filter) where T : class {
+            options.Filter = filter;
+            return options;
+        }
+
+        public static ElasticSearchOptions<T> WithQuery<T>(this ElasticSearchOptions<T> options, string query) where T : class {
+            options.Query = query;
             return options;
         }
 
@@ -82,6 +87,8 @@ namespace Exceptionless.Core.Repositories {
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             if (elasticSearchOptions != null && elasticSearchOptions.Filter != null)
                  queries &= elasticSearchOptions.Filter;
+            if (elasticSearchOptions != null && !String.IsNullOrEmpty(elasticSearchOptions.Query))
+                queries &= Filter<T>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(elasticSearchOptions.Query).AnalyzeWildcard()));
 
             return queries;
         }
