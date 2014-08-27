@@ -59,6 +59,7 @@ namespace Exceptionless.Core {
             public const string OccurrencesAreCritical = "crit";
             public const string References = "refs";
             public const string Tags = "tag";
+            public const string LastUpdated = "upd";
         }
 
         protected override void InitializeCollection(MongoCollection<ErrorStack> collection) {
@@ -66,6 +67,7 @@ namespace Exceptionless.Core {
 
             collection.CreateIndex(M.IndexKeys.Ascending(FieldNames.ProjectId, FieldNames.SignatureHash), M.IndexOptions.SetUnique(true).SetBackground(true));
             collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.LastOccurrence), M.IndexOptions.SetBackground(true));
+            collection.CreateIndex(M.IndexKeys.Descending(FieldNames.LastUpdated), M.IndexOptions.SetBackground(true));
             collection.CreateIndex(M.IndexKeys.Descending(FieldNames.ProjectId, FieldNames.IsHidden, FieldNames.DateFixed, FieldNames.SignatureInfo_Path), M.IndexOptions.SetBackground(true));
         }
 
@@ -87,6 +89,7 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.OccurrencesAreCritical).SetElementName(FieldNames.OccurrencesAreCritical).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.References).SetElementName(FieldNames.References).SetShouldSerializeMethod(obj => ((ErrorStack)obj).References.Any());
             cm.GetMemberMap(c => c.Tags).SetElementName(FieldNames.Tags).SetShouldSerializeMethod(obj => ((ErrorStack)obj).Tags.Any());
+            cm.GetMemberMap(c => c.LastUpdated).SetElementName(FieldNames.LastUpdated);
         }
 
         public override void InvalidateCache(ErrorStack entity) {
@@ -148,6 +151,24 @@ namespace Exceptionless.Core {
             _projectRepository.SetStats(projectId, errorCount: 0, stackCount: 0);
         }
 
+        public override ErrorStack Add(ErrorStack stack, bool addToCache = false) {
+            if (stack == null)
+                throw new ArgumentNullException("stack");
+
+            stack.LastUpdated = DateTime.UtcNow;
+            return base.Add(stack, addToCache);
+        }
+
+        public override void Add(IEnumerable<ErrorStack> stacks, bool addToCache = false) {
+            foreach (ErrorStack stack in stacks)
+                Add(stack, addToCache);
+        }
+
+        public override ErrorStack Update(ErrorStack entity, bool addToCache = false) {
+            entity.LastUpdated = DateTime.UtcNow;
+            return base.Update(entity, addToCache);
+        }
+
         public async Task RemoveAllByProjectIdAsync(string projectId) {
             await Task.Run(() => RemoveAllByProjectId(projectId));
         }
@@ -181,11 +202,11 @@ namespace Exceptionless.Core {
                                            M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))),
                                    M.Query.EQ(FieldNames.TotalOccurrences, new BsonInt32(0))
                                    ),
-                M.Update.Set(FieldNames.FirstOccurrence, occurrenceDate));
+                M.Update.Set(FieldNames.FirstOccurrence, occurrenceDate).Set(FieldNames.LastUpdated, DateTime.UtcNow));
 
             // Only update the LastOccurrence if the new date is greater then the existing date.
             IMongoQuery query = M.Query.And(M.Query.EQ(FieldNames.Id, new BsonObjectId(new ObjectId(errorStackId))), M.Query.LT(FieldNames.LastOccurrence, occurrenceDate));
-            M.UpdateBuilder update = M.Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate);
+            M.UpdateBuilder update = M.Update.Inc(FieldNames.TotalOccurrences, 1).Set(FieldNames.LastOccurrence, occurrenceDate).Set(FieldNames.LastUpdated, DateTime.UtcNow);
 
             var result = _collection.Update(query, update);
             if (result.DocumentsAffected > 0)

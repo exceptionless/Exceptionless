@@ -99,6 +99,11 @@ namespace Exceptionless.Models {
         /// Wether the error has been marked as hidden or not.
         /// </summary>
         public bool IsHidden { get; set; }
+
+        /// <summary>
+        /// The date this error occurrence was last updated.
+        /// </summary>
+        public DateTime LastUpdated { get; set; }
 #endif
 
         /// <summary>

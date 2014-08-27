@@ -37,12 +37,14 @@ namespace Exceptionless.Core.Pipeline {
                 Query.EQ(ErrorStackRepository.FieldNames.Id, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
                 Update
                     .Unset(ErrorStackRepository.FieldNames.DateFixed)
-                    .Set(ErrorStackRepository.FieldNames.IsRegressed, true));
+                    .Set(ErrorStackRepository.FieldNames.IsRegressed, true)
+                    .Set(ErrorStackRepository.FieldNames.LastUpdated, DateTime.UtcNow));
 
             _errorRepository.Collection.Update(
                 Query.EQ(ErrorRepository.FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(ctx.StackInfo.Id))),
                 Update
-                    .Unset(ErrorRepository.FieldNames.IsFixed));
+                    .Unset(ErrorRepository.FieldNames.IsFixed)
+                    .Set(ErrorRepository.FieldNames.LastUpdated, DateTime.UtcNow));
 
             _errorStackRepository.InvalidateCache(ctx.Error.ErrorStackId, ctx.StackInfo.SignatureHash, ctx.Error.ProjectId);
 

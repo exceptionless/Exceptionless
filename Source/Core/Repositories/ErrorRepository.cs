@@ -117,6 +117,7 @@ namespace Exceptionless.Core {
             public const string ModifiedDate = "mod";
             public const string IsFixed = "fix";
             public const string IsHidden = "hid";
+            public const string LastUpdated = "upd";
         }
 
         protected override void InitializeCollection(MongoCollection<Error> collection) {
@@ -124,6 +125,7 @@ namespace Exceptionless.Core {
 
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.ErrorStackId), IndexOptions.SetBackground(true));
+            collection.CreateIndex(IndexKeys.Ascending(FieldNames.LastUpdated), IndexOptions.SetBackground(true));
             collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId, FieldNames.OccurrenceDate_UTC), IndexOptions.SetBackground(true));
             collection.CreateIndex(IndexKeys.Descending(FieldNames.ProjectId, FieldNames.OccurrenceDate_UTC, FieldNames.IsFixed, FieldNames.IsHidden, FieldNames.Code), IndexOptions.SetBackground(true));
             collection.CreateIndex(IndexKeys.Descending(FieldNames.RequestInfo_ClientIpAddress, FieldNames.OccurrenceDate_UTC), IndexOptions.SetBackground(true));
@@ -145,6 +147,7 @@ namespace Exceptionless.Core {
             cm.GetMemberMap(c => c.EnvironmentInfo).SetElementName(FieldNames.EnvironmentInfo).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.IsFixed).SetElementName(FieldNames.IsFixed).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.IsHidden).SetElementName(FieldNames.IsHidden).SetIgnoreIfDefault(true);
+            cm.GetMemberMap(c => c.LastUpdated).SetElementName(FieldNames.LastUpdated);
 
             if (!BsonClassMap.IsClassMapRegistered(typeof(ErrorInfo))) {
                 BsonClassMap.RegisterClassMap<ErrorInfo>(cmm => {
@@ -280,6 +283,11 @@ namespace Exceptionless.Core {
 
         #endregion
 
+        public override Error Update(Error entity, bool addToCache = false) {
+            entity.LastUpdated = DateTime.UtcNow;
+            return base.Update(entity, addToCache);
+        }
+
         public override Error Add(Error error, bool addToCache = false) {
             if (error == null)
                 throw new ArgumentNullException("error");
@@ -288,6 +296,7 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(error.ProjectId))
                 throw new ArgumentException("ProjectId must be set.", "error");
 
+            error.LastUpdated = DateTime.UtcNow;
             return base.Add(error, addToCache);
         }
 
@@ -303,6 +312,7 @@ namespace Exceptionless.Core {
             IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
 
             var update = new UpdateBuilder();
+            update.Set(FieldNames.LastUpdated, DateTime.UtcNow);
             if (value)
                 update.Set(FieldNames.IsFixed, true);
             else
@@ -318,6 +328,7 @@ namespace Exceptionless.Core {
             IMongoQuery query = Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(stackId)));
 
             var update = new UpdateBuilder();
+            update.Set(FieldNames.LastUpdated, DateTime.UtcNow);
             if (value)
                 update.Set(FieldNames.IsHidden, true);
             else
@@ -555,9 +566,9 @@ namespace Exceptionless.Core {
 
             var cursor = _collection.FindAs<Error>(
                                                    Query.And(
-                                                             Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(error.ErrorStackId))),
-                                                       Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(error.Id))),
-                                                       Query.LTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.UtcTicks)));
+                                                        Query.EQ(FieldNames.ErrorStackId, new BsonObjectId(new ObjectId(error.ErrorStackId))),
+                                                        Query.NE(FieldNames.Id, new BsonObjectId(new ObjectId(error.Id))),
+                                                        Query.LTE(FieldNames.OccurrenceDate_UTC, error.OccurrenceDate.UtcTicks)));
 
             cursor.SetSortOrder(SortBy.Descending(FieldNames.OccurrenceDate_UTC));
             cursor.SetLimit(10);

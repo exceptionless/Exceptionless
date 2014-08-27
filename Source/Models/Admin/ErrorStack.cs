@@ -106,5 +106,10 @@ namespace Exceptionless.Models {
         /// A list of tags used to categorize this error.
         /// </summary>
         public TagSet Tags { get; set; }
+
+        /// <summary>
+        /// The date this error stack was last updated.
+        /// </summary>
+        public DateTime LastUpdated { get; set; }
     }
 }
