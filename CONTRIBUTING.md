@@ -8,7 +8,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 1. Always update to the most recent master release; the bug may already be resolved.
 
-2. Search for similar issues on the [Exceptionless uservoice forum][m]; it may already be an identified problem.
+2. Search for similar [issues](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Abug); it may already be an identified problem.
 
 3. If this is a bug or problem that **requires any kind of extended discussion -- open [a topic on uservoice][m] about it**. Do *not* open a bug on GitHub.
 
@@ -17,7 +17,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 ## Requesting New Features
 
-1. Do not submit a feature request on GitHub; all feature requests on GitHub will be closed. Instead, visit the **[Exceptionless uservoice forum][m]**, and search this list for similar feature requests. It's possible somebody has already asked for this feature or provided a pull request that we're still discussing.
+1. Search for similar [feature requests](https://github.com/exceptionless/Exceptionless/issues?q=is%3Aopen+is%3Aissue+label%3Aenhancement). It's possible somebody has already asked for this feature or provided a pull request that we're still discussing.
 
 2. Provide a clear and detailed explanation of the feature you want and why it's important to add. The feature must apply to a wide array of users of Exceptionless. You may also want to provide us with some advance documentation on the feature, which will help the community to better understand where it will fit.
 
@@ -32,7 +32,7 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 2. Follow the Coding Conventions
   * Adhere to common conventions you see in the existing code
   * Include tests, and ensure they pass
-  * Search to see if your new functionality has been discussed on [the Exceptionless uservoice forum](http://exceptionless.uservoice.com), and include updates as appropriate
+  * Search to see if your new functionality has been discussed on [the Exceptionless issues](https://github.com/exceptionless/Exceptionless/issues), and include updates as appropriate
   * four spaces, no tabs
   * no trailing whitespaces, blank lines should have no spaces
   * use spaces around operators, after commas, colons, semicolons, around `{` and before `}`
@@ -50,7 +50,6 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
   The Exceptionless team may recommend adjustments to your code. Part of interacting with a healthy open-source community requires you to be open to learning new techniques and strategies; *don't get discouraged!* Remember: if the Exceptionless team suggest changes to your code, **they care enough about your work that they want to include it**, and hope that you can assist by implementing those revisions on your own.
   
-[m]: https://exceptionless.uservoice.com
 
 ## Appreciation
 
