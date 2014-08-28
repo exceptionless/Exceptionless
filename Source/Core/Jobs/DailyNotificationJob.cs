@@ -10,8 +10,6 @@
 #endregion
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -32,7 +30,7 @@ namespace Exceptionless.Core.Jobs {
             _summaryNotificationQueue = summaryNotificationQueue;
         }
 
-        public override Task<JobResult> RunAsync(JobRunContext context) {
+        protected override Task<JobResult> RunInternalAsync() {
             Log.Info().Message("Daily Notification job starting").Write();
 
             if (!Settings.Current.EnableSummaryNotifications)

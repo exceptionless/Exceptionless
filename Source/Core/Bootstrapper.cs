@@ -71,15 +71,27 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
-            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
-            container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(workItemTimeoutMilliseconds: 2 * 60 * 1000));
-            container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
-            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
-            container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>());
-            
-            container.RegisterSingle<InMemoryMessageBus>();
-            container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
-            container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
+            if (Settings.Current.UseAzureServiceBus) {
+                container.RegisterSingle<IQueue<EventPost>>(() => new ServiceBusQueue<EventPost>(Settings.Current.AzureServiceBusConnectionString));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new ServiceBusQueue<EventUserDescription>(Settings.Current.AzureServiceBusConnectionString));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new ServiceBusQueue<EventNotification>(Settings.Current.AzureServiceBusConnectionString));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new ServiceBusQueue<WebHookNotification>(Settings.Current.AzureServiceBusConnectionString));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new ServiceBusQueue<MailMessage>(Settings.Current.AzureServiceBusConnectionString));
+
+                container.RegisterSingle<ServiceBusMessageBus>();
+                container.Register<IMessagePublisher>(container.GetInstance<ServiceBusMessageBus>);
+                container.Register<IMessageSubscriber>(container.GetInstance<ServiceBusMessageBus>);
+            } else {
+                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>());
+                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
+                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>());
+
+                container.RegisterSingle<InMemoryMessageBus>();
+                container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
+                container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
+            }
 
             container.RegisterSingle<IStackRepository, StackRepository>();
             container.RegisterSingle<IEventRepository, EventRepository>();
@@ -111,6 +123,10 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                container.RegisterSingle<IMailSender, SmtpMailSender>();
+            else
+                container.RegisterSingle<IMailSender>(() => new InMemoryMailSender());
 
             container.Register<MongoJobHistoryProvider>();
             container.Register<MongoJobLockProvider>();

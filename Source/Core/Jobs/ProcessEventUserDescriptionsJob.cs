@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -24,17 +25,13 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public void Run(int totalUserDescriptionsToProcess) {
-            var context = new JobRunContext();
-            context.Properties.Add("TotalUserDescriptionsToProcess", totalUserDescriptionsToProcess);
-            Run(context);
+            Run(new JobRunContext().WithWorkItemLimit(totalUserDescriptionsToProcess));
         }
 
-        public async override Task<JobResult> RunAsync(JobRunContext context) {
+        protected async override Task<JobResult> RunInternalAsync() {
             Log.Info().Message("Process user description job starting").Write();
             int totalUserDescriptionsProcessed = 0;
-            int totalUserDescriptionsToProcess = -1;
-            if (context.Properties.ContainsKey("TotalUserDescriptionsToProcess"))
-                totalUserDescriptionsToProcess = (int)context.Properties["TotalUserDescriptionsToProcess"];
+            int totalUserDescriptionsToProcess = Context.GetWorkItemLimit();
 
             while (!CancelPending && (totalUserDescriptionsToProcess == -1 || totalUserDescriptionsProcessed < totalUserDescriptionsToProcess)) {
                 QueueEntry<EventUserDescription> queueEntry = null;

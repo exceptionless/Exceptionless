@@ -193,6 +193,7 @@ namespace CodeSmith.Core.Scheduler
         private readonly object _runLock;
         private readonly Timer _timer;
         private IJob _instance;
+        private CancellationTokenSource _tokenSource;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JobRunner"/> class.
@@ -264,7 +265,7 @@ namespace CodeSmith.Core.Scheduler
             StopTimer();
 
             if (cancel && IsBusy && _instance != null)
-                _instance.Cancel();
+                _tokenSource.Cancel();
 
             Status = JobStatus.Stopped;
         }
@@ -339,7 +340,8 @@ namespace CodeSmith.Core.Scheduler
                     CreateInstance();
 
                     var context = new JobRunContext(UpdateStatus);
-                    var task = _instance.RunAsync(context);
+                    _tokenSource = new CancellationTokenSource();
+                    var task = _instance.RunAsync(context, _tokenSource.Token);
                     task.Wait();
                     JobResult r = task.Result;
                     if (task.IsFaulted && task.Exception != null) {

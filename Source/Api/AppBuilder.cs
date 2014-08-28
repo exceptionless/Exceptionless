@@ -3,10 +3,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
+using System.Threading;
 using System.Web.Http;
 using System.Web.Http.Routing;
 using AutoMapper;
+using CodeSmith.Core.Helpers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Providers;
 using Exceptionless.Api.Utility;
@@ -161,11 +162,18 @@ namespace Exceptionless.Api {
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
-            // TODO: Remove this as it's only for testing.
-            EnsureSampleData(container);
-            Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().Run());
-            Task.Factory.StartNew(() => container.GetInstance<ProcessEventUserDescriptionsJob>().Run());
-            Task.Factory.StartNew(() => container.GetInstance<ProcessMailMessageJob>().Run());
+            // TODO: Figure out what data we want to create when the db is empty in production mode.
+            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                EnsureSampleData(container);
+
+            var context = new OwinContext(app.Properties);
+            var token = context.Get<CancellationToken>("host.OnAppDisposing");
+
+            if (Settings.Current.EnableJobsModule) {
+                Run.InBackground(t => container.GetInstance<ProcessEventPostsJob>().Run(null, token), token);
+                Run.InBackground(t => container.GetInstance<ProcessEventUserDescriptionsJob>().Run(null, token), token);
+                Run.InBackground(t => container.GetInstance<ProcessMailMessageJob>().Run(null, token), token);
+            }
         }
 
         private static string _userId;

@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
@@ -35,17 +35,13 @@ namespace Exceptionless.Core.Jobs {
         }
 
         public void Run(int totalEventsToProcess) {
-            var context = new JobRunContext();
-            context.Properties.Add("TotalEventsToProcess", totalEventsToProcess);
-            Run(context);
+            Run(new JobRunContext().WithWorkItemLimit(totalEventsToProcess));
         }
 
-        public async override Task<JobResult> RunAsync(JobRunContext context) {
+        protected async override Task<JobResult> RunInternalAsync() {
             Log.Info().Message("Process events job starting").Write();
             int totalEventsProcessed = 0;
-            int totalEventsToProcess = -1;
-            if (context.Properties.ContainsKey("TotalEventsToProcess"))
-                totalEventsToProcess = (int)context.Properties["TotalEventsToProcess"];
+            int totalEventsToProcess = Context.GetWorkItemLimit();
 
             while (!CancelPending && (totalEventsToProcess == -1 || totalEventsProcessed < totalEventsToProcess)) {
                 QueueEntry<EventPost> queueEntry = null;

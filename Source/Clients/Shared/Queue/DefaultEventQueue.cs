@@ -49,7 +49,7 @@ namespace Exceptionless.Queue {
         }
 
         public void Process() {
-            if (IsQueueProcessingSuspended || _processingQueue)
+            if (_processingQueue)
                 return;
 
             _log.Info(typeof(DefaultEventQueue), "Processing queue...");
@@ -117,7 +117,7 @@ namespace Exceptionless.Queue {
         }
 
         private void OnProcessQueue(object state) {
-            if (!_processingQueue)
+            if (!IsQueueProcessingSuspended && !_processingQueue)
                 Process();
         }
 

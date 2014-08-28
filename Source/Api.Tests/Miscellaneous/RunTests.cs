@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Helpers;
 using Xunit;
@@ -16,6 +17,28 @@ namespace Exceptionless.Api.Tests.Miscelaneous {
             Assert.Equal(1, counter);
             Run.Once(method2);
             Assert.Equal(3, counter);
+        }
+
+        [Fact]
+        public void CanRunInBackground() {
+            int runs = 0;
+            var tokenSource = new CancellationTokenSource(TimeSpan.FromMilliseconds(110));
+            Run.InBackground(t => {
+                runs++;
+                throw new ApplicationException();
+            }, tokenSource.Token, 1000, TimeSpan.FromMilliseconds(10));
+            tokenSource.Token.WaitHandle.WaitOne();
+            Assert.InRange(runs, 7, 12);
+        }
+
+        [Fact]
+        public void CanRunInBackgroundAndMaxRestarts() {
+            int runs = 0;
+            Assert.Throws<AggregateException>(() => Run.InBackground(() => {
+                runs++;
+                throw new ApplicationException();
+            }, 5, TimeSpan.FromMilliseconds(0)).Wait());
+            Assert.Equal(6, runs);
         }
 
         [Fact]

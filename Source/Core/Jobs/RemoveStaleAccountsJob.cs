@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
             _stackRepository = stackRepository;
         }
 
-        public override Task<JobResult> RunAsync(JobRunContext context) {
+        protected override Task<JobResult> RunInternalAsync() {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
             var organizations = _organizationRepository.GetAbandoned();

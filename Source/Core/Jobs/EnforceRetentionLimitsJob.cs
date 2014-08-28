@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
         }
 
-        public override Task<JobResult> RunAsync(JobRunContext context) {
+        protected override Task<JobResult> RunInternalAsync() {
             Log.Info().Message("Enforce retention limits job starting").Write();
 
             var page = 1;

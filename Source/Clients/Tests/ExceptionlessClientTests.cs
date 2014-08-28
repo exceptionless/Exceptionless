@@ -72,6 +72,9 @@ namespace Client.Tests {
                 EnsureSampleData(container);
 
                 var client = CreateClient();
+                var clientQueue = client.Configuration.Resolver.GetEventQueue();
+                // make sure the queue isn't processed until we are ready for it
+                clientQueue.SuspendProcessing(TimeSpan.FromSeconds(10));
                 try {
                     throw new Exception("Simple Exception");
                 } catch (Exception ex) {
