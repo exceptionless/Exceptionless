@@ -15,6 +15,7 @@ using AutoMapper;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
@@ -128,9 +129,13 @@ namespace Exceptionless.Api.Tests.Mail {
             }).Wait();
         }
 
-        [Fact(Skip = "Used for testing html formatting.")]
+        [Fact]
         public void SendInvite() {
             var mailer = IoC.GetInstance<Mailer>();
+            var mailerSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
+            var mailJob = IoC.GetInstance<ProcessMailMessageJob>();
+            Assert.NotNull(mailerSender);
+
             User user = UserData.GenerateSampleUser();
             Organization organization = OrganizationData.GenerateSampleOrganization();
             mailer.SendInviteAsync(user, organization, new Invite {
@@ -138,6 +143,11 @@ namespace Exceptionless.Api.Tests.Mail {
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
             }).Wait();
+            mailJob.Run(1);
+
+            Assert.Equal(1, mailerSender.TotalSent);
+            Assert.Equal(Settings.Current.TestEmailAddress, mailerSender.LastMessage.To);
+            Assert.Contains("Join Organization", mailerSender.LastMessage.HtmlBody);
         }
 
         [Fact(Skip = "Used for testing html formatting.")]
