@@ -132,10 +132,6 @@ namespace Exceptionless.App {
         }
 
         private void CheckDbOrCacheDown() {
-            // make sure we are still listening for events
-            var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
-            notificationSender.EnsureListening();
-
             // check if the cache is down every 5 seconds or every request if it's currently marked as down
             if (_isCacheDown || DateTime.Now.Subtract(_lastCacheCheck).TotalSeconds > 5) {
                 try {
@@ -143,14 +139,19 @@ namespace Exceptionless.App {
                     var ping = cache.Get<string>("__PING__");
                     _isCacheDown = false;
                     _lastCacheCheck = DateTime.Now;
-                } catch (RedisException) {
+                } catch {
                     _isCacheDown = true;
                     _lastCacheCheck = DateTime.Now;
                 }
             }
 
-            if (!_isDbDown && !_isCacheDown)
+            if (!_isDbDown && !_isCacheDown) {
+                // make sure we are still listening for events
+                var notificationSender = DependencyResolver.Current.GetService<NotificationSender>();
+                notificationSender.EnsureListening();
+
                 return;
+            }
 
             // check every 10 seconds to see if the db is back up
             if (_isDbDown && DateTime.Now.Subtract(_lastDbCheck).TotalSeconds > 10) {
