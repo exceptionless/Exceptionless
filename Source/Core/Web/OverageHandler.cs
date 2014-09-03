@@ -21,6 +21,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Extensions;
 using Exceptionless.Core.Extensions;
+using NLog.Fluent;
 using ServiceStack.Redis;
 
 namespace Exceptionless.Core.Web {
@@ -46,6 +47,15 @@ namespace Exceptionless.Core.Web {
                 return principal.Project != null ? principal.Project.OrganizationId : principal.UserEntity.OrganizationIds.FirstOrDefault();
 
             return null;
+        }
+
+        private string GetProjectId(HttpRequestMessage request) {
+            HttpRequestContext ctx = request.GetRequestContext();
+            if (ctx == null)
+                return null;
+
+            var principal = ctx.Principal as ExceptionlessPrincipal;
+            return principal != null && principal.Project != null ? principal.Project.Id : null;
         }
 
         private bool IsErrorPost(HttpRequestMessage request) {
@@ -79,6 +89,16 @@ namespace Exceptionless.Core.Web {
             string organizationId = GetOrganizationId(request);
             if (String.IsNullOrEmpty(organizationId))
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
+
+            if (request.Content != null && request.Content.Headers != null) {
+                long size = request.Content.Headers.ContentLength.GetValueOrDefault();
+                _statsClient.Gauge(StatNames.ErrorsSize, size);
+                if (request.Content.Headers.ContentLength > Settings.Current.MaximumErrorSize) {
+                    Log.Warn().Message("Error submission discarded for being too large: {0}", size).Project(GetProjectId(request)).Write();
+                    _statsClient.Counter(StatNames.ErrorsDiscarded, 1);
+                    return CreateResponse(request, HttpStatusCode.Created, "Created");
+                }
+            }
 
             var org = _organizationRepository.GetByIdCached(organizationId);
             if (org.MaxErrorsPerMonth < 0)

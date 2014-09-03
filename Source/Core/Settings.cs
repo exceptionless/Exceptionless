@@ -53,6 +53,8 @@ namespace Exceptionless.Core {
 
         public int ApiThrottleLimit { get; private set; }
 
+        public int MaximumErrorSize { get; private set; }
+
         public bool EnableSummaryNotifications { get; private set; }
 
         public bool ShouldAutoUpgradeDatabase { get; private set; }
@@ -128,6 +130,7 @@ namespace Exceptionless.Core {
             settings.EnableSignalR = ConfigurationManager.AppSettings.GetBool("EnableSignalR", true);
             settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
             settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
+            settings.MaximumErrorSize = ConfigurationManager.AppSettings.GetInt("MaximumErrorSize", Int32.MaxValue);
             settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", false);
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
             settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
