@@ -94,6 +94,8 @@ namespace Exceptionless.Api {
             config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             //config.EnableSystemDiagnosticsTracing();
 
+            app.UseCors(CorsOptions.AllowAll);
+
             var oauthProvider = container.GetInstance<ExceptionlessOAuthAuthorizationServerProvider>();
             var tokenProvider = container.GetInstance<ExceptionlessTokenProvider>();
             var authProvider = container.GetInstance<ExceptionlessOAuthBearerAuthenticationProvider>();
@@ -145,8 +147,7 @@ namespace Exceptionless.Api {
 
             if (registerExceptionlessClient)
                 ExceptionlessClient.Default.RegisterWebApi(config);
-            
-            app.UseCors(CorsOptions.AllowAll);
+
             app.UseWebApi(config);
             app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
 
