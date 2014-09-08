@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         
-        [Fact]
+        [Fact(Skip = "TODO")]
         public void GetPaged() {
             RemoveData();
 
