@@ -5,6 +5,7 @@ using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Utility;
 using MongoDB.Bson;
@@ -17,6 +18,34 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         
+        [Fact]
+        public void GetPaged() {
+            RemoveData();
+
+            var events = new List<PersistentEvent>();
+            for (int i = 0; i < 6; i++)
+                events.Add(EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now.Subtract(TimeSpan.FromMinutes(i))));
+
+            _repository.Add(events);
+            _client.Refresh(r => r.Force(false));
+            Assert.Equal(events.Count, _repository.Count());
+
+            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithAfter(String.Concat(events[1].Date.UtcTicks.ToString(), "-", events[1].Id)));
+            Assert.Equal(2, results.Count);
+            Assert.Equal(results.First().Id, events[2].Id);
+            Assert.Equal(results.Last().Id, events[3].Id);
+
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithAfter(String.Concat(events[3].Date.UtcTicks.ToString(), "-", events[3].Id)));
+            Assert.Equal(2, results.Count);
+            Assert.Equal(results.First().Id, events[4].Id);
+            Assert.Equal(results.Last().Id, events[5].Id);
+
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithBefore(String.Concat(events[3].Date.UtcTicks.ToString(), "-", events[3].Id)));
+            Assert.Equal(2, results.Count);
+            Assert.Equal(results.First().Id, events[1].Id);
+            Assert.Equal(results.Last().Id, events[2].Id);
+        }
+
         [Fact]
         public void GetByOrganizationIdsPaged() {
             RemoveData();
