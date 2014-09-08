@@ -34,24 +34,23 @@ namespace Exceptionless.Tests.Utility {
 
         public static PersistentEvent GenerateEvent(string organizationId = null, string projectId = null, string stackId = null, DateTime? startDate = null, DateTime? endDate = null, DateTime? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string referenceId = null) {
             return GenerateEvent(
-                    organizationId != null ? new [] { organizationId } : null,
-                    projectId != null ? new [] { projectId } : null,
-                    stackId != null ? new [] { stackId } : null,
+                    organizationId != null ? new[] { organizationId } : null,
+                    projectId != null ? new[] { projectId } : null,
+                    stackId != null ? new[] { stackId } : null,
                     startDate, endDate, occurrenceDate, maxErrorNestingLevel, generateTags, generateData, isFixed, isHidden,
-                    referenceId != null ? new [] { referenceId } : null
+                    referenceId != null ? new[] { referenceId } : null
                 );
         }
 
-        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTime? startDate = null, DateTime? endDate = null, DateTime? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null)
-        {
+        public static PersistentEvent GenerateEvent(string[] organizationIds = null, string[] projectIds = null, string[] stackIds = null, DateTime? startDate = null, DateTime? endDate = null, DateTime? occurrenceDate = null, int maxErrorNestingLevel = 0, bool generateTags = true, bool generateData = true, bool isFixed = false, bool isHidden = false, string[] referenceIds = null) {
             if (!startDate.HasValue || startDate > DateTime.Now.AddHours(1))
                 startDate = DateTime.Now.AddDays(-30);
             if (!endDate.HasValue || endDate > DateTime.Now.AddHours(1))
                 endDate = DateTime.Now;
-            
+
             var ev = new PersistentEvent {
                 OrganizationId = organizationIds.Random(TestConstants.OrganizationId),
-                ProjectId = organizationIds.Random(TestConstants.ProjectId),
+                ProjectId = projectIds.Random(TestConstants.ProjectId),
                 ReferenceId = referenceIds.Random(),
                 Date = occurrenceDate.HasValue ? occurrenceDate.Value : RandomHelper.GetDateTime(startDate, endDate),
                 IsFixed = isFixed,
