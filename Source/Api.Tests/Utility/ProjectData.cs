@@ -23,7 +23,7 @@ namespace Exceptionless.Tests.Utility {
                 yield return GenerateProject(generateId, id, organizationId, timeZone: timeZone, nextSummaryEndOfDayTicks: nextSummaryEndOfDayTicks);
         }
 
-        public static IEnumerable<Project> GenerateSampleProjects() {
+        public static List<Project> GenerateSampleProjects() {
             return new List<Project> {
                 GenerateSampleProject(),
                 GenerateProject(generateId: true, organizationId: TestConstants.OrganizationId2),

@@ -181,6 +181,7 @@
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
     <Compile Include="Repositories\MongoRepositoryTests.cs" />
     <Compile Include="SerializerTests.cs" />
+    <Compile Include="Stats\StatsTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />

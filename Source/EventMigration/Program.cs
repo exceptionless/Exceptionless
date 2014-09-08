@@ -116,6 +116,9 @@ namespace Exceptionless.EventMigration {
                     //eventRepository.Add(ev2.Last());
                     var query = mostRecentEvent != null && mostRecentEvent.Total > 0 ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Hits.First().Id)) : Query.Null;
                     var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
+                    // TODO: When resuming, we need to get a list of existing stack ids from the events.
+                    var knownStackIds = new List<string>();
+
                     while (errors.Count > 0) {
                         Console.SetCursorPosition(0, 5);
                         Console.WriteLine("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
@@ -131,6 +134,11 @@ namespace Exceptionless.EventMigration {
 
                             if (e.Type != Event.KnownTypes.Error)
                                 return;
+
+                            if (!knownStackIds.Contains(e.StackId)) {
+                                e.IsFirstOccurrence = true;
+                                knownStackIds.Add(e.StackId);
+                            }
 
                             var request = e.GetRequestInfo();
                             if (request != null)

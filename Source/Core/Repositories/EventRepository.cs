@@ -82,18 +82,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithFilter(filter).WithIndices(GetTargetIndex(utcStart, utcEnd)).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
-        }
-
-        private List<string> GetTargetIndex(DateTime utcStart, DateTime utcEnd) {
-            DateTime current = new DateTime(utcStart.Year, utcStart.Month, 1);
-            var indices = new List<string>();
-            while (current <= utcEnd) {
-                indices.Add("events_v1_" + current.ToString("yyyyMM"));
-                current = current.AddMonths(1);
-            }
-
-            return indices;
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
@@ -104,7 +93,7 @@ namespace Exceptionless.Core.Repositories {
             if (utcEnd != DateTime.MaxValue)
                 filter &= Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(utcEnd));
 
-            return Find(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithFilter(filter).WithIndices(GetTargetIndex(utcStart, utcEnd)).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
+            return Find(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId).WithFilter(filter).WithIndices(utcStart, utcEnd).WithPaging(paging).WithSort(s => s.OnField(e => e.Date).Descending()));
         }
 
         public ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId) {

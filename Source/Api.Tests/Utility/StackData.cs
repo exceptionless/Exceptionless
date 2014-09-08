@@ -27,7 +27,7 @@ namespace Exceptionless.Tests.Utility {
             return new List<Stack> {
                 GenerateSampleStack(),
                 GenerateStack(id: TestConstants.StackId2, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectIdWithNoRoles),
-                GenerateStack(id: TestConstants.InvalidStackId)
+                GenerateStack(generateId: true, organizationId: TestConstants.OrganizationId)
             };
         }
 

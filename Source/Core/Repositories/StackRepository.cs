@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
@@ -56,6 +57,7 @@ namespace Exceptionless.Core.Repositories {
                 return;
             }
 
+            //Trace.WriteLine(String.Format("Incr: {0}", stackId));
             InvalidateCache(stackId);
 
             if (EnableNotifications) {
@@ -72,7 +74,6 @@ namespace Exceptionless.Core.Repositories {
             return FindOne(new ElasticSearchOptions<Stack>()
                 .WithProjectId(projectId)
                 .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
-                .WithFields("id", "date_fixed", "occurrences_are_critical", "is_hidden")
                 .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
         }
 

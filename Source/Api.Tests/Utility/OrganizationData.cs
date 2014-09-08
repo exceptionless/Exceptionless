@@ -12,6 +12,8 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Billing;
+using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 using MongoDB.Bson;
 
@@ -40,7 +42,8 @@ namespace Exceptionless.Tests.Utility {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
                 Name = name ?? String.Format("Organization{0}", id),
-                IsSuspended = isSuspended
+                IsSuspended = isSuspended,
+                PlanId = BillingManager.UnlimitedPlan.Id
             };
 
             if (!String.IsNullOrEmpty(inviteEmail)) {

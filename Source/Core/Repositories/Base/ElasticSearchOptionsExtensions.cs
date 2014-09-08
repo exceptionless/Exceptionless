@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CodeSmith.Core.Extensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -30,8 +31,41 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
+        public static ElasticSearchOptions<T> WithIndices<T>(this ElasticSearchOptions<T> options, DateTime? utcStart, DateTime? utcEnd) where T : class {
+            options.Indices.AddRange(GetTargetIndex(utcStart, utcEnd));
+            return options;
+        }
+
+        public static ElasticSearchOptions<T> WithIndicesFromDateRange<T>(this ElasticSearchOptions<T> options) where T : class {
+            if (!options.UseDateRange)
+                return options;
+
+            options.Indices.AddRange(GetTargetIndex(options.GetStartDate(), options.GetEndDate()));
+            return options;
+        }
+
+        private static IEnumerable<string> GetTargetIndex(DateTime? utcStart, DateTime? utcEnd) {
+            if (!utcStart.HasValue)
+                utcStart = MultiOptions.ServiceStartDate;
+
+            if (!utcEnd.HasValue)
+                utcEnd = DateTime.UtcNow.ToEndOfDay();
+
+            var current = new DateTime(utcStart.Value.Year, utcStart.Value.Month, 1);
+            var indices = new List<string>();
+            while (current <= utcEnd) {
+                indices.Add("events-v1-" + current.ToString("yyyyMM"));
+                current = current.AddMonths(1);
+            }
+
+            return indices;
+        }
+
         public static FilterContainer GetElasticSearchFilter<T>(this ElasticSearchOptions<T> options) where T : class {
             var queries = GetElasticSearchFilter<T>((QueryOptions)options);
+
+            if (options.UseDateRange)
+                queries &= Filter<T>.Range(r => r.OnField(options.DateField).GreaterOrEquals(options.GetStartDate()).LowerOrEquals(options.GetEndDate()));
 
             if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null) {
                 try {

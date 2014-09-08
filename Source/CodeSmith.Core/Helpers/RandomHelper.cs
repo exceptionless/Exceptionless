@@ -27,13 +27,17 @@ namespace CodeSmith.Core.Helpers {
             return (Math.Abs(longRand % (max - min)) + min);
         }
 
-        public static DateTime GetDateTime(DateTime? minimum = null, DateTime? maximum = null) {
-            if (!minimum.HasValue)
-                minimum = DateTime.MinValue;
-            if (!maximum.HasValue)
-                maximum = DateTime.MaxValue;
+        public static DateTime GetDateTime(DateTime? start = null, DateTime? end = null) {
+            if (start.HasValue && end.HasValue && start.Value >= end.Value)
+                throw new Exception("Start date must be less than end date.");
 
-            return new DateTime(GetLongRange(minimum.Value.Ticks, maximum.Value.Ticks));
+            DateTime min = start ?? DateTime.MinValue;
+            DateTime max = end ?? DateTime.MaxValue;
+
+            TimeSpan timeSpan = max - min;
+            var newSpan = new TimeSpan(GetLongRange(0, timeSpan.Ticks));
+
+            return min + newSpan;
         }
 
         public static bool GetBool() {

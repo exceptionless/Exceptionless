@@ -1,10 +1,12 @@
 using System;
 using CodeSmith.Core.Events;
+using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {
         public event EventHandler<EventArgs<bool>> HasMoreChanged;
         private bool _hasMore;
+        public static readonly DateTime ServiceStartDate = new DateTime(2011, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         public bool HasMore {
             get { return _hasMore; }
@@ -19,6 +21,9 @@ namespace Exceptionless.Core.Repositories {
         public string AfterValue { get; set; }
         public int? Limit { get; set; }
         public int? Page { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public string DateField { get; set; }
 
         public bool UseLimit {
             get { return Limit.HasValue; }
@@ -30,6 +35,18 @@ namespace Exceptionless.Core.Repositories {
 
         public bool UsePaging {
             get { return Page.HasValue; }
+        }
+
+        public bool UseDateRange {
+            get { return !String.IsNullOrEmpty(DateField) && (StartDate.HasValue || EndDate.HasValue); }
+        }
+
+        public DateTime GetStartDate() {
+            return StartDate.HasValue ? StartDate.Value : ServiceStartDate;
+        }
+
+        public DateTime GetEndDate() {
+            return EndDate.HasValue ? EndDate.Value : DateTime.UtcNow.ToEndOfDay();
         }
 
         public int GetLimit() {

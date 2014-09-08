@@ -54,7 +54,7 @@ namespace Exceptionless.Extensions {
 #endif
 
         public static int ToEpoch(this DateTime fromDate) {
-            var utc = (fromDate.ToUniversalTime().Ticks - 621355968000000000) / 10000000;
+            var utc = (fromDate.ToUniversalTime().Ticks - EPOCH_TICKS) / TimeSpan.TicksPerSecond;
             return Convert.ToInt32(utc);
         }
 
@@ -66,8 +66,14 @@ namespace Exceptionless.Extensions {
             return offset + date.ToEpoch();
         }
 
+        private const long EPOCH_TICKS = 621355968000000000;
+
         public static DateTime ToDateTime(this int secondsSinceEpoch) {
-            return new DateTime(621355968000000000 + (secondsSinceEpoch * 10000000)); 
+            return new DateTime(EPOCH_TICKS + (secondsSinceEpoch * TimeSpan.TicksPerSecond)); 
+        }
+
+        public static DateTime ToDateTime(this double milliSecondsSinceEpoch) {
+            return new DateTime(EPOCH_TICKS + ((long)milliSecondsSinceEpoch * TimeSpan.TicksPerMillisecond));
         }
 
         /// <summary>

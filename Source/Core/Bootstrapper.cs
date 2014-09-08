@@ -105,13 +105,9 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
 
             container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
-            container.RegisterSingle<IValidator<DayProjectStats>, DayProjectStatsValidator>();
-            container.RegisterSingle<IValidator<DayStackStats>, DayStackStatsValidator>();
             container.RegisterSingle<IValidator<Event>, EventValidator>();
             container.RegisterSingle<IValidator<JobHistory>, JobHistoryValidator>();
             container.RegisterSingle<IValidator<JobLockInfo>, JobLockInfoValidator>();
-            container.RegisterSingle<IValidator<MonthProjectStats>, MonthProjectStatsValidator>();
-            container.RegisterSingle<IValidator<MonthStackStats>, MonthStackStatsValidator>();
             container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
             container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
             container.RegisterSingle<IValidator<Project>, ProjectValidator>();
@@ -134,15 +130,13 @@ namespace Exceptionless.Core {
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();
+            container.RegisterSingle<EventStats>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
         }
 
         private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
-#if TRACE
-            settings.EnableTrace();
-#endif
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
                 s.AddModelConverters();
@@ -204,6 +198,7 @@ namespace Exceptionless.Core {
                         .Date(f => f.Name(e => e.Date).IndexName("date"))
                         .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                        .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2

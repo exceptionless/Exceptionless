@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
-            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1);
+            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now);
             Assert.Null(ev.Id);
 
             _repository.Add(ev);
@@ -39,9 +39,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, _repository.Count());
 
             _repository.Add(new[] {
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1)
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now),
+                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now)
             });
 
             _client.Refresh();
@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(cache);
             cache.FlushAll();
 
-            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now, nestingLevel: 5, minimiumNestingLevel: 1);
+            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now);
             Assert.Null(ev.Id);
 
             Assert.Equal(0, cache.Count);

@@ -41,6 +41,9 @@ namespace Exceptionless.Core.Repositories {
             if (getIdValue == null)
                 getIdValue = id => new BsonObjectId(new ObjectId(id));
 
+            if (options.UseDateRange)
+                query = query.And(Query.GTE(options.DateField, options.GetStartDate()).And(Query.LTE(options.DateField, options.GetEndDate())));
+
             if (!String.IsNullOrEmpty(mongoOptions.BeforeValue) && mongoOptions.BeforeQuery == null) {
                 try {
                     mongoOptions.BeforeQuery = Query.LT(CommonFieldNames.Id, getIdValue(mongoOptions.BeforeValue));

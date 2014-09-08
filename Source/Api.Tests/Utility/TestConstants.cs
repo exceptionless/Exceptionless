@@ -60,6 +60,14 @@ namespace Exceptionless.Tests.Utility {
             "System.InvalidOperationException"
         };
 
+        public static readonly List<string> EventTags = new List<string> {
+            "Tag1",
+            "Tag2",
+            "Tag3",
+            "Tag4",
+            "Tag5"
+        };
+
         public static readonly List<string> ProjectIds = new List<string> {
             ProjectId,
             InvalidProjectId,

@@ -124,7 +124,7 @@ namespace SampleConsole {
                         SomeField10 = "testing"
                     }, "Object From Code");
                 if (randomizeDates)
-                    builder.Target.Date = RandomHelper.GetDateTime(minimum: DateTime.Now.AddDays(-maxDaysOld), maximum: DateTime.Now);
+                    builder.Target.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
                 if (critical)
                     builder.MarkAsCritical();
                 if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))

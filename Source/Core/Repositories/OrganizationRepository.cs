@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Repositories {
             var update = new UpdateBuilder();
             if (eventCount < 0)
                 return;
-
+            
             update.Inc(FieldNames.TotalEventCount, eventCount);
             update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
 

@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Extensions {
             foreach (var key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || CodeSmith.Core.Extensions.StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
                 dictionary.Remove(key);
 
-            foreach (var key in dictionary.Where(kvp => kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
+            foreach (var key in dictionary.Where(kvp => kvp.Value != null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())
                 dictionary[key] = String.Format("Value is too large to be included.");
 
             return dictionary;

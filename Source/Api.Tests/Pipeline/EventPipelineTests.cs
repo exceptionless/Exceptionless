@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             RemoveData(true);
             CreateData();
 
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1);
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
 
             var organization = _organizationRepository.GetById(TestConstants.OrganizationId);
             Assert.NotNull(organization);
@@ -92,7 +92,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             const string Tag2_Lowercase = "tag two";
             var client = IoC.GetInstance<IElasticClient>();
 
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1, occurrenceDate: DateTime.Now);
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag1);
 
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -106,14 +106,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var stack = _stackRepository.GetById(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1, occurrenceDate: DateTime.Now);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2);
 
             Assert.DoesNotThrow(() => pipeline.Run(ev));
             stack = _stackRepository.GetById(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, nestingLevel: 5, minimiumNestingLevel: 1, occurrenceDate: DateTime.Now);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2_Lowercase);
 
             Assert.DoesNotThrow(() => pipeline.Run(ev));
@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             var pipeline = IoC.GetInstance<EventPipeline>();
             var client = IoC.GetInstance<IElasticClient>();
 
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, nestingLevel: 5, minimiumNestingLevel: 1, occurrenceDate: DateTime.UtcNow);
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
             var context = new EventContext(ev);
             Assert.DoesNotThrow(() => pipeline.Run(context));
             Assert.True(context.IsProcessed);
@@ -141,12 +141,12 @@ namespace Exceptionless.Api.Tests.Pipeline {
             stack.IsRegressed = false;
             _stackRepository.Save(stack, true);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), nestingLevel: 5, minimiumNestingLevel: 1);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1));
             context = new EventContext(ev);
             Assert.DoesNotThrow(() => pipeline.Run(context));
             Assert.True(context.IsRegression);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1), nestingLevel: 5, minimiumNestingLevel: 1);
+            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1));
             context = new EventContext(ev);
             Assert.DoesNotThrow(() => pipeline.Run(context));
             Assert.False(context.IsRegression);

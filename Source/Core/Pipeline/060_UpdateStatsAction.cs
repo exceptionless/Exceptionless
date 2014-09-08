@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Concurrent;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
@@ -29,12 +30,18 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
+        private static readonly ConcurrentDictionary<string, long> _organizationCounters = new ConcurrentDictionary<string, long>();
+        private static readonly ConcurrentDictionary<string, long> _projectCounters = new ConcurrentDictionary<string, long>(); 
+
         public override void Process(EventContext ctx) {
+            // TODO: Implement batch incrementing to reduce pipeline cost.
+            //_organizationCounters.AddOrUpdate(ctx.Event.OrganizationId, 1, (key, value) => value + 1);
+            //_projectCounters.AddOrUpdate(ctx.Event.ProjectId, 1, (key, value) => value + 1);
+
             _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
             _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
-            if (!ctx.IsNew) {
+            if (!ctx.IsNew)
                 _stackRepository.IncrementEventCounter(ctx.Event.OrganizationId, ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
-            }
         }
     }
 }

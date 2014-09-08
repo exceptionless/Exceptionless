@@ -69,15 +69,16 @@ namespace Exceptionless.Extensions {
                 .Take(count);
         }
 
-        public static T Random<T>(this IEnumerable<T> items) {
+        public static T Random<T>(this IEnumerable<T> items, T defaultValue = default(T)) {
             if (items == null)
-                throw new ArgumentNullException("items");
+                return defaultValue;
 
-            int count = items.Count();
+            var list = items.ToList();
+            int count = list.Count();
             if (count == 0)
-                return default(T);
+                return defaultValue;
 
-            return items.ElementAt(RandomHelper.Instance.Next(count));
+            return list.ElementAt(RandomHelper.Instance.Next(count));
         }
 
         public static IList<T> Shuffle<T>(this IList<T> list) {
