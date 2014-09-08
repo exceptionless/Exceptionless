@@ -10,6 +10,7 @@ using AutoMapper;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Providers;
+using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -20,6 +21,7 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.FileSystems;
@@ -27,6 +29,7 @@ using Microsoft.Owin.Security.OAuth;
 using Microsoft.Owin.StaticFiles;
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -52,25 +55,20 @@ namespace Exceptionless.Api {
             }
 
             var config = new HttpConfiguration();
+            config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
             config.Formatters.Remove(config.Formatters.XmlFormatter);
             config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
 
-            config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
-            config.MessageHandlers.Add(new EncodingDelegatingHandler());
-
-            // Throttle api calls to X every 15 minutes by IP address.
-            config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
-
-            // Reject event posts in orgs over their max event limits.
-            config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
-
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
             config.MapHttpAttributeRoutes(constraintResolver);
+            //config.EnableSystemDiagnosticsTracing();
 
+            container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() }));
             container.RegisterWebApiFilterProvider(config);
+
             try {
                 container.Verify();
             } catch (Exception ex) {
@@ -91,8 +89,14 @@ namespace Exceptionless.Api {
                 throw;
             }
 
-            config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            //config.EnableSystemDiagnosticsTracing();
+            config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
+            config.MessageHandlers.Add(new EncodingDelegatingHandler());
+
+            // Throttle api calls to X every 15 minutes by IP address.
+            config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
+
+            // Reject event posts in orgs over their max event limits.
+            config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             app.UseCors(CorsOptions.AllowAll);
 
