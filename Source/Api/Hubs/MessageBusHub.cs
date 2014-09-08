@@ -33,23 +33,23 @@ namespace Exceptionless.Api.Hubs {
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return;
 
-            Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged.ToJson());
+            Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
         }
 
         private void OnEventOccurrence(EventOccurrence eventOccurrence) {
-            Clients.Group(eventOccurrence.OrganizationId).eventOccurrence(eventOccurrence.ToJson());
+            Clients.Group(eventOccurrence.OrganizationId).eventOccurrence(eventOccurrence);
         }
 
         private void OnStackUpdated(StackUpdated stackUpdated) {
-            Clients.Group(stackUpdated.OrganizationId).stackUpdated(stackUpdated.ToJson());
+            Clients.Group(stackUpdated.OrganizationId).stackUpdated(stackUpdated);
         }
 
         private void OnPlanOverage(PlanOverage planOverage) {
-            Clients.Group(planOverage.OrganizationId).planOverage(planOverage.ToJson());
+            Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
         }
 
         private void OnPlanChanged(PlanChanged planChanged) {
-            Clients.Group(planChanged.OrganizationId).planChanged(planChanged.ToJson());
+            Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
         }
 
         public override Task OnConnected() {
