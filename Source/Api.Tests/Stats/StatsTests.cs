@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
 
-            var resultLocal = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, utcOffset: TimeSpan.FromHours(-4));
+            var resultLocal = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, displayTimeOffset: TimeSpan.FromHours(-4));
             Assert.Equal(eventCount, resultLocal.Total);
             Assert.Equal(eventCount, resultLocal.Timeline.Sum(t => t.Total));
         }

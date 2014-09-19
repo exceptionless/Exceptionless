@@ -17,9 +17,9 @@ namespace Exceptionless.Core.Utility {
             _client = client;
         }
 
-        public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string query = null, TimeSpan? utcOffset = null, int max = 25, int desiredDataPoints = 10) {
-            if (!utcOffset.HasValue)
-                utcOffset = TimeSpan.Zero;
+        public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string query = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
+            if (!displayTimeOffset.HasValue)
+                displayTimeOffset = TimeSpan.Zero;
 
             var allowedTerms = new[] { "tags", "stack_id", "organization_id" };
             if (!allowedTerms.Contains(term))
@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Utility {
                                         .Field(ev => ev.Date)
                                         .MinimumDocumentCount(0)
                                         .Interval(interval.Item1)
-                                        .TimeZone(HoursAndMinutes(utcOffset.Value))
+                                        .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
                                     )
                                     .Cardinality("unique", u => u
                                         .Field(ev => ev.StackId)
@@ -91,10 +91,10 @@ namespace Exceptionless.Core.Utility {
                 var lastOccurrence = i.Max("last_occurrence").Value;
 
                 if (firstOccurrence.HasValue)
-                    item.FirstOccurrence = firstOccurrence.Value.ToDateTime();
+                    item.FirstOccurrence = firstOccurrence.Value.ToDateTime().Add(displayTimeOffset.Value);
 
                 if (lastOccurrence.HasValue)
-                    item.LastOccurrence = lastOccurrence.Value.ToDateTime();
+                    item.LastOccurrence = lastOccurrence.Value.ToDateTime().Add(displayTimeOffset.Value);
 
                 item.Timeline.AddRange(i.DateHistogram("timelime").Items.Select(ti => new TermTimelineItem {
                     Date = ti.Date,
@@ -104,15 +104,15 @@ namespace Exceptionless.Core.Utility {
                 return item;
             }));
 
-            stats.Start = utcStart.Add(utcOffset.Value);
-            stats.End = utcEnd.Add(utcOffset.Value);
+            stats.Start = utcStart.Add(displayTimeOffset.Value);
+            stats.End = utcEnd.Add(displayTimeOffset.Value);
 
             return stats;
         }
 
-        public EventStatsResult GetOccurrenceStats(DateTime utcStart, DateTime utcEnd, string query = null, TimeSpan? utcOffset = null, int desiredDataPoints = 100) {
-            if (!utcOffset.HasValue)
-                utcOffset = TimeSpan.Zero;
+        public EventStatsResult GetOccurrenceStats(DateTime utcStart, DateTime utcEnd, string query = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
+            if (!displayTimeOffset.HasValue)
+                displayTimeOffset = TimeSpan.Zero;
 
             var options = new ElasticSearchOptions<PersistentEvent>().WithQuery(query).WithDateRange(utcStart, utcEnd, "date").WithIndicesFromDateRange();
             _client.EnableTrace();
@@ -140,7 +140,7 @@ namespace Exceptionless.Core.Utility {
                                         .Exclude("F")
                                     )
                                 )
-                                .TimeZone(HoursAndMinutes(utcOffset.Value))
+                                .TimeZone(HoursAndMinutes(displayTimeOffset.Value))
                             )
                             .Cardinality("unique", u => u
                                 .Field(ev => ev.StackId)
@@ -187,8 +187,8 @@ namespace Exceptionless.Core.Utility {
                 };
             }));
 
-            stats.Start = utcStart.Add(utcOffset.Value);
-            stats.End = utcEnd.Add(utcOffset.Value);
+            stats.Start = utcStart.Add(displayTimeOffset.Value);
+            stats.End = utcEnd.Add(displayTimeOffset.Value);
             stats.AvgPerHour = stats.Total / stats.End.Subtract(stats.Start).TotalHours;
 
             if (stats.Timeline.Count <= 0)
@@ -198,10 +198,10 @@ namespace Exceptionless.Core.Utility {
             var lastOccurrence = res.Aggs.Filter("filtered").Max("last_occurrence").Value;
                 
             if (firstOccurrence.HasValue)
-                stats.FirstOccurrence = firstOccurrence.Value.ToDateTime();
+                stats.FirstOccurrence = firstOccurrence.Value.ToDateTime().Add(displayTimeOffset.Value);
                 
             if (lastOccurrence.HasValue)
-                stats.LastOccurrence = lastOccurrence.Value.ToDateTime();
+                stats.LastOccurrence = lastOccurrence.Value.ToDateTime().Add(displayTimeOffset.Value);
 
             return stats;
         }
