@@ -843,6 +843,16 @@ Stack related resources of the **Stacks API**
 
 + Response 200
 
+## Mark future occurrences as critical [/stacks/{id}/mark-critical]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
+### Mark future occurrences as critical [POST]
++ Response 200
+
+### Mark future occurrences as not critical [DELETE]
++ Response 204
+
 ## Mark fixed [/stacks/{id}/mark-fixed]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
@@ -851,7 +861,7 @@ Stack related resources of the **Stacks API**
 + Response 200
 
 ### Mark not fixed [DELETE]
-+ Response 200
++ Response 204
 
 ## Mark hidden [/stacks/{id}/mark-hidden]
 + Parameters
@@ -861,7 +871,17 @@ Stack related resources of the **Stacks API**
 + Response 200
 
 ### Mark not hidden [DELETE]
++ Response 204
+
+## Notifications [/stacks/{id}/notifications]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+
+### Enable notifications [POST]
 + Response 200
+
+### Disable notifications [DELETE]
++ Response 204
 
 ## Promote [/stacks/{id}/promote]
 ### Promote to external service [POST]
