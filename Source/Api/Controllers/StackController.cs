@@ -157,6 +157,66 @@ namespace Exceptionless.Api.Controllers {
             return AddLink(id, url);
         }
 
+        [HttpPost]
+        [Route("{id:objectid}/mark-critical")]
+        public IHttpActionResult MarkCritical(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (!stack.OccurrencesAreCritical) {
+                stack.OccurrencesAreCritical = true;
+                _stackRepository.Save(stack);
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id:objectid}/mark-critical")]
+        public IHttpActionResult MarkNotCritical(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (stack.OccurrencesAreCritical) {
+                stack.OccurrencesAreCritical = false;
+                _stackRepository.Save(stack);
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        [HttpPost]
+        [Route("{id:objectid}/notifications")]
+        public IHttpActionResult EnableNotifications(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (stack.DisableNotifications) {
+                stack.DisableNotifications = false;
+                _stackRepository.Save(stack);
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id:objectid}/notifications")]
+        public IHttpActionResult DisableNotifications(string id) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (!stack.DisableNotifications) {
+                stack.DisableNotifications = true;
+                _stackRepository.Save(stack);
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
         [HttpDelete]
         [Route("{id:objectid}/mark-fixed")]
         public IHttpActionResult MarkNotFixed(string id) {
