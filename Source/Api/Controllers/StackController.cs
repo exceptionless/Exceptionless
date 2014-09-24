@@ -158,8 +158,8 @@ namespace Exceptionless.Api.Controllers {
             return AddLink(id, url);
         }
 
-        [HttpDelete]
-        [Route("{id:objectid}/add-link")]
+        [HttpPost]
+        [Route("{id:objectid}/remove-link")]
         public IHttpActionResult RemoveLink(string id, [NakedBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
