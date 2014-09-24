@@ -890,15 +890,22 @@ Stack related resources of the **Stacks API**
 
 + Response 200
 
-## Add reference link [/stacks/add-link]
+## Add reference link [/stacks/{id}/add-link]
++ Parameters
+    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    
 ### Add reference link [POST]
-+ Request (application/json)
++ Request (application/text)
 
-        { "stack": "537b7255b77efe2474bfdd7f", "link": "https://exceptionless.com" }
+        https://exceptionless.com
 
 + Response 200
 
 ### Remove reference link [DELETE]
++ Request (application/text)
+
+        https://exceptionless.com
+        
 + Response 204
 
 # Group Tokens
