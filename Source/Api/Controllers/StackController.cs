@@ -157,6 +157,24 @@ namespace Exceptionless.Api.Controllers {
             return AddLink(id, url);
         }
 
+        [HttpDelete]
+        [Route("{id:objectid}/add-link/{url:minlength(3)}")]
+        public IHttpActionResult RemoveLink(string id, string url) {
+            var stack = GetModel(id, false);
+            if (stack == null)
+                return BadRequest();
+
+            if (String.IsNullOrEmpty(url))
+                return BadRequest();
+
+            if (stack.References.Contains(url)) {
+                stack.References.Remove(url);
+                _stackRepository.Save(stack);
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
         [HttpPost]
         [Route("{id:objectid}/mark-critical")]
         public IHttpActionResult MarkCritical(string id) {
