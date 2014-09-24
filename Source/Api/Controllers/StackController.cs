@@ -116,8 +116,8 @@ namespace Exceptionless.Api.Controllers {
 
         // TODO: Add attribute validation for the url.
         [HttpPost]
-        [Route("{id:objectid}/add-link/{url:minlength(3)}")]
-        public IHttpActionResult AddLink(string id, string url) {
+        [Route("{id:objectid}/add-link")]
+        public IHttpActionResult AddLink(string id, [FromBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
                 return BadRequest();
@@ -158,8 +158,8 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/add-link/{url:minlength(3)}")]
-        public IHttpActionResult RemoveLink(string id, string url) {
+        [Route("{id:objectid}/add-link")]
+        public IHttpActionResult RemoveLink(string id, [FromBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
                 return BadRequest();
