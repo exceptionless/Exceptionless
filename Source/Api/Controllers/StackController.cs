@@ -16,6 +16,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -117,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
         // TODO: Add attribute validation for the url.
         [HttpPost]
         [Route("{id:objectid}/add-link")]
-        public IHttpActionResult AddLink(string id, [FromBody] string url) {
+        public IHttpActionResult AddLink(string id, [NakedBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
                 return BadRequest();
@@ -159,7 +160,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{id:objectid}/add-link")]
-        public IHttpActionResult RemoveLink(string id, [FromBody] string url) {
+        public IHttpActionResult RemoveLink(string id, [NakedBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
                 return BadRequest();
