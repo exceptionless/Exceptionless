@@ -11,9 +11,11 @@ namespace Exceptionless.Enrichments.Default {
 
             try {
                 var collector = context.Resolver.GetEnvironmentInfoCollector();
-                ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, collector.GetEnvironmentInfo());
+                var info = collector.GetEnvironmentInfo();
+                info.InstallId = context.Client.Configuration.GetInstallId();
+                ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, info);
             } catch (Exception ex) {
-                context.Resolver.GetLog().FormattedError(typeof(EnvironmentInfoEnrichment), ex, "Error adding machine information: {0}", ex.Message);
+                context.Resolver.GetLog().FormattedError(typeof(EnvironmentInfoEnrichment), ex, "Error adding environment information: {0}", ex.Message);
             }
         }
     }

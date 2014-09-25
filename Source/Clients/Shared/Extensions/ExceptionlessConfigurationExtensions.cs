@@ -5,12 +5,15 @@ using System.Reflection;
 using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
+using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Storage;
 
 namespace Exceptionless {
     public static class ExceptionlessConfigurationExtensions {
+        private const string INSTALL_ID_KEY = "ExceptionlessInstallId";
+
         /// <summary>
         /// Automatically set the application version for events.
         /// </summary>
@@ -34,6 +37,20 @@ namespace Exceptionless {
         public static string GetQueueName(this ExceptionlessConfiguration config) {
             // TODO: Ensure the api key has been set before this is called.
             return config.ApiKey.Substring(0, 8);
+        }
+
+        public static string GetInstallId(this ExceptionlessConfiguration config) {
+            if (config == null)
+                return null;
+
+            var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
+            if (persistedClientData == null)
+                return null;
+
+            if (!persistedClientData.ContainsKey(INSTALL_ID_KEY))
+                persistedClientData[INSTALL_ID_KEY] = Guid.NewGuid().ToString("N");
+
+            return persistedClientData[INSTALL_ID_KEY];
         }
 
         public static void UseDebugLogger(this ExceptionlessConfiguration config) {

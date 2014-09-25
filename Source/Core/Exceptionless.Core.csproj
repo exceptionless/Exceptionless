@@ -197,7 +197,7 @@
     <Compile Include="Models\Organization\InvoiceModel.cs" />
     <Compile Include="Models\StackSummaryModel.cs" />
     <Compile Include="Models\SummaryData.cs" />
-    <Compile Include="Pipeline\001_DiscardEventsOutsideOfRetentionAction.cs" />
+    <Compile Include="Pipeline\001_CheckEventDateAction.cs" />
     <Compile Include="Pipeline\006_TruncateFieldsAction.cs" />
     <Compile Include="Plugins\EventParser\Default\FallbackEventParserPlugin.cs" />
     <Compile Include="Plugins\EventParser\Default\LegacyErrorParserPlugin.cs" />
