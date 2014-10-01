@@ -30,7 +30,7 @@ namespace Exceptionless {
                 return "<null>";
 
             var sb = new StringBuilder(method.GetDeclaringTypeFullName());
-            sb.Append(method.Name);
+            sb.AppendFormat(".{0}", method.Name);
 
             if (method.GenericArguments.Count <= 0)
                 return sb.ToString();
