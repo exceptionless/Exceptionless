@@ -145,8 +145,8 @@ namespace Exceptionless.EventMigration {
                                 e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
 
                             var stacking = e.GetStackingTarget();
-                            if (stacking != null && stacking.Method != null && !String.IsNullOrEmpty(stacking.Method.DeclaringTypeFullName))
-                                e.Source = stacking.Method.DeclaringTypeFullName.Truncate(2000);
+                            if (stacking != null && stacking.Method != null && !String.IsNullOrEmpty(stacking.Method.GetDeclaringTypeFullName()))
+                                e.Source = stacking.Method.GetDeclaringTypeFullName().Truncate(2000);
                         });
 
                         try {

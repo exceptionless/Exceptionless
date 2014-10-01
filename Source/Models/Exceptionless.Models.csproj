@@ -85,6 +85,8 @@
     <Compile Include="Enums\ResponseStatusType.cs" />
     <Compile Include="Admin\Stack.cs" />
     <Compile Include="Enums\SuspensionCode.cs" />
+    <Compile Include="Extensions\ParameterExtensions.cs" />
+    <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Interfaces\IData.cs" />

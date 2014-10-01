@@ -20,15 +20,6 @@ namespace Exceptionless.Models.Data {
         public string Type { get; set; }
         public string TypeNamespace { get; set; }
 
-        public string TypeFullName {
-            get {
-                if (String.IsNullOrEmpty(Name))
-                    return "<UnknownType>";
-
-                return !String.IsNullOrEmpty(TypeNamespace) ? String.Concat(TypeNamespace, ".", Type.Replace('+', '.')) : Type.Replace('+', '.');
-            }
-        }
-
         public DataDictionary Data { get; set; }
         public GenericArguments GenericArguments { get; set; }
     }

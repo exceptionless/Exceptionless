@@ -48,7 +48,7 @@ namespace Exceptionless.Serializer {
 
                 var accessor = _propertyAccessors.ContainsKey(propertyName) ? _propertyAccessors[propertyName] : null;
                 if (accessor != null) {
-                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType));
+                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType, serializer));
                     continue;
                 }
 

@@ -8,7 +8,6 @@
 #endregion
 
 using System;
-using System.Text;
 
 namespace Exceptionless.Models.Data {
     public class Method : IData {
@@ -21,46 +20,6 @@ namespace Exceptionless.Models.Data {
         public bool IsSignatureTarget { get; set; }
         public string DeclaringNamespace { get; set; }
         public string DeclaringType { get; set; }
-
-        public string DeclaringTypeFullName {
-            get {
-                if (!String.IsNullOrEmpty(DeclaringNamespace) && !String.IsNullOrEmpty(DeclaringType))
-                    return String.Concat(DeclaringNamespace, ".", DeclaringType.Replace('+', '.'));
-
-                if (!String.IsNullOrEmpty(DeclaringType))
-                    return DeclaringType.Replace('+', '.');
-
-                return String.Empty;
-            }
-        }
-
-        public string FullName {
-            get {
-                if (String.IsNullOrEmpty(Name))
-                    return "<null>";
-
-                var sb = new StringBuilder(DeclaringTypeFullName);
-                sb.Append(Name);
-
-                if (GenericArguments.Count <= 0)
-                    return sb.ToString();
-
-                sb.Append("[");
-                bool first = true;
-                foreach (string arg in GenericArguments) {
-                    if (first)
-                        first = false;
-                    else
-                        sb.Append(",");
-
-                    sb.Append(arg);
-                }
-
-                sb.Append("]");
-
-                return sb.ToString();
-            }
-        }
 
         public string Name { get; set; }
 

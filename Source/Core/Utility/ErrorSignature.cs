@@ -156,7 +156,7 @@ namespace Exceptionless.Core.Utility {
             // Assume user method if no namespace
             bool isEmptyNamespaceMethod = EmptyNamespaceIsUserMethod && frame.DeclaringNamespace.IsNullOrEmpty();
             if (!isEmptyNamespaceMethod) {
-                bool isUserNamespace = IsUserNamespace(frame.DeclaringTypeFullName);
+                bool isUserNamespace = IsUserNamespace(frame.DeclaringNamespace);
                 if (!isUserNamespace)
                     return false;
             }
@@ -164,12 +164,15 @@ namespace Exceptionless.Core.Utility {
             return !UserCommonMethods.Any(frame.GetSignature().Contains);
         }
 
-        private bool IsUserNamespace(string fullName) {
+        private bool IsUserNamespace(string ns) {
+            if (String.IsNullOrEmpty(ns))
+                return false;
+
             // if no user namespaces were set, return any non-system namespace as true
             if (UserNamespaces == null || _userNamespaces.Count == 0)
-                return !_defaultNonUserNamespaces.Any(fullName.StartsWith);
+                return !_defaultNonUserNamespaces.Any(ns.StartsWith);
 
-            return UserNamespaces.Any(fullName.StartsWith);
+            return UserNamespaces.Any(ns.StartsWith);
         }
 
         private void AddSpecialCaseDetails(InnerError error) {

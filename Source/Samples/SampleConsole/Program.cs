@@ -114,7 +114,7 @@ namespace SampleConsole {
                 errorCode = _random.Next();
 
             try {
-                throw new MyException(errorCode.Value, Guid.NewGuid().ToString());
+                new MyCustomClass<string>().ThrowNastyException("blah", new List<string>(), errorCode.Value);
             } catch (Exception ex) {
                 var builder = ex.ToExceptionless()
                     .AddObject(new {
@@ -129,6 +129,8 @@ namespace SampleConsole {
                     builder.MarkAsCritical();
                 if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
                     builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
+
+                builder.AddRecentTraceLogEntries();
                 builder.Submit();
             }
 
@@ -157,6 +159,16 @@ namespace SampleConsole {
             }
 
             public int ErrorCode { get; set; }
+        }
+
+        public class MyCustomClass<T> {
+            public void ThrowNastyException<T, K>(T value, List<K> values, int? errorCode) {
+                try {
+                    throw new MyException(errorCode.HasValue ? errorCode.Value : 0, Guid.NewGuid().ToString());
+                } catch (Exception ex) {
+                    throw new Exception("Caught and Rethrown", ex);
+                }
+            }
         }
     }
 }
