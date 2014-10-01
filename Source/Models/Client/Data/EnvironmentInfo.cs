@@ -95,6 +95,11 @@ namespace Exceptionless.Models.Data {
         public string MachineName { get; set; }
 
         /// <summary>
+        /// A unique value identifying each Exceptionless client installation.
+        /// </summary>
+        public string InstallId { get; set; }
+
+        /// <summary>
         /// The runtime version the application was running under when the error occurred.
         /// </summary>
         public string RuntimeVersion { get; set; }

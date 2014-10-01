@@ -86,6 +86,23 @@ namespace Exceptionless.Api.Tests.Pipeline {
         }
 
         [Fact]
+        public void NoFutureEvents() {
+            var client = IoC.GetInstance<IElasticClient>();
+
+            var localTime = DateTime.Now;
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: localTime.AddMinutes(10));
+
+            var pipeline = IoC.GetInstance<EventPipeline>();
+            Assert.DoesNotThrow(() => pipeline.Run(ev));
+
+            client.Refresh();
+            ev = _eventRepository.GetById(ev.Id);
+            Assert.NotNull(ev);
+            Assert.True(ev.Date < localTime.AddMinutes(10));
+            Assert.True(ev.Date - localTime < TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
         public void SyncStackTags() {
             const string Tag1 = "Tag One";
             const string Tag2 = "Tag Two";
