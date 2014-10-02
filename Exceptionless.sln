@@ -94,25 +94,25 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{9AA4BD09-5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\EventMigration\EventMigration.csproj", "{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "App", "http://localhost:7625", "{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}"
+Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web", "http://localhost:7625", "{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}"
 	ProjectSection(WebsiteProperties) = preProject
 		UseIISExpress = "true"
 		TargetFrameworkMoniker = ".NETFramework,Version%3Dv2.0"
 		Debug.AspNetCompiler.VirtualPath = "/localhost_7625"
-		Debug.AspNetCompiler.PhysicalPath = "Source\App\"
+		Debug.AspNetCompiler.PhysicalPath = "Source\Web\"
 		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7625\"
 		Debug.AspNetCompiler.Updateable = "true"
 		Debug.AspNetCompiler.ForceOverwrite = "true"
 		Debug.AspNetCompiler.FixedNames = "false"
 		Debug.AspNetCompiler.Debug = "True"
 		Release.AspNetCompiler.VirtualPath = "/localhost_7625"
-		Release.AspNetCompiler.PhysicalPath = "Source\App\"
+		Release.AspNetCompiler.PhysicalPath = "Source\Web\"
 		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7625\"
 		Release.AspNetCompiler.Updateable = "true"
 		Release.AspNetCompiler.ForceOverwrite = "true"
 		Release.AspNetCompiler.FixedNames = "false"
 		Release.AspNetCompiler.Debug = "False"
-		SlnRelativePath = "Source\App\"
+		SlnRelativePath = "Source\Web\"
 	EndProjectSection
 EndProject
 Global
