@@ -1,0 +1,96 @@
+<div class="hbox hbox-auto-xs hbox-auto-sm">
+    <div class="wrapper-md">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                Stack
+                <span class="badge" ng-if="vm.isFixed()">
+                    <span class="hidden-xs">FIXED</span>
+                    <span class="visible-xs">F</span>
+                </span>
+                <span class="badge" ng-if="vm.isRegressed()">
+                    <span class="hidden-xs">REGRESSED</span>
+                    <span class="visible-xs">R</span>
+                </span>
+                <span class="badge" ng-if="vm.isHidden()">
+                    <span class="hidden-xs">HIDDEN</span>
+                    <span class="visible-xs">H</span>
+                </span>
+
+                <div class="pull-right btn-toolbar">
+                    <div class="btn-group">
+                        <button class="btn" ng-click="vm.updateIsFixed()" title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">{{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}</button>
+                    </div>
+                    <div id="visibility" class="btn-group">
+                        <button class="btn dropdown-toggle" data-toggle="dropdown">
+                            <span class="hidden-xs">Options</span>
+                            <i class="visible-xs fa fa-gear"></i>
+                            <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                            <li><a href="javascript:void(0);" ng-click="vm.updateIsHidden()" title="Hide this stack from reports" ><span ng-if="vm.isHidden()" class="fa fa-check"></span>Hide From Reports</a></li>
+                            <li class="divider"></li>
+                            <li><a href="javascript:void(0);" ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To External</a></li>
+                            <li><a href="javascript:void(0);" ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add Reference Link</a></li>
+                            <li class="divider"></li>
+                            <li><a href="javascript:void(0);" ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><span ng-if="vm.notificationsDisabled()" class="fa fa-check"></span>Disable Notifications</a></li>
+                            <li><a href="javascript:void(0);" ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><span ng-if="vm.isCritical()" class="fa fa-check"></span>Future Occurrences Are Critical</a></li>
+                            <li class="divider"></li>
+                            <li><a href="javascript:void(0);" ng-click="vm.resetOccurrences()" title="Reset stats and occurrence data for this stack">Reset Stats</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <table class="table table-bordered table-striped m-b-none">
+                    <tbody>
+                        <tr>
+                            <th>Title</th>
+                            <td><span truncate lines="3">{{vm.stack.title}}</span></td>
+                        </tr>
+                        <tr ng-if="vm.isFixed()">
+                            <th>Date Fixed</th>
+                            <td><span>{{vm.stack.date_fixed | date: 'medium'}}</span></td>
+                        </tr>
+                        <tr ng-if="vm.stack.description">
+                            <th>Description</th>
+                            <td><span truncate lines="2">{{vm.stack.description}}</span></td>
+                        </tr>
+                        <tr ng-if="vm.hasTags()">
+                            <th>Tags</th>
+                            <td><span class="label label-success" ng-repeat="tag in vm.stack.tags">{{tag}}</span></td>
+                        </tr>
+                        <tr ng-if="vm.hasReference()">
+                            <th>{{vm.hasReferences() ? 'Reference Links' : 'Reference Link'}}</th>
+                            <td>
+                                <ul ng-if="vm.hasReferences()" class="fa-ul">
+                                    <li ng-repeat="reference in vm.stack.references">
+                                        <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
+                                        <a class="delete-link" href="javascript:void(0);" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-times"></i></a>
+                                    </li>
+                                </ul>
+
+                                <div ng-if="!vm.hasReferences()">
+                                    <a ng-href="{{::vm.stack.references[0]}}" target="_blank">{{::vm.stack.references[0]}}</a>
+                                    <a class="delete-link" href="javascript:void(0);" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i class="fa fa-times"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Stacking Information</h4>
+                <table class="table table-bordered table-striped m-b-none">
+                    <tbody>
+                        <tr ng-repeat="(key, value) in vm.stack.signature_info">
+                            <th>{{key}}</th>
+                            <td>{{value}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <events settings="vm.recentOccurrences"></events>
+    </div>
+</div>

@@ -1,0 +1,34 @@
+<pre class="stack-trace"><!--
+ --><span class="ex-header" ng-repeat="exception in vm.exceptions"><!--
+     --><span class="ex-inner" ng-if="$index > 0"> ---> </span><!--
+     --><span class="ex-type">{{::exception.type}}</span><!--
+     --><span class="ex-message" ng-if="exception.message">: {{::exception.message}}</span><!--
+ --></span><!--
+
+ --><div ng-repeat="exception in vm.exceptions | reverse"><!--
+    --><div class="stack-frame" ng-repeat="frame in exception.stack_trace"><!--
+        -->at <!--
+        --><span ng-if="!frame.name">&lt;null&gt;</span><!--
+        --><span ng-if="frame.name"><!--
+            -->{{::[frame.declaring_namespace, frame.declaring_type, frame.name] | join:'.' | replace:'+':'.'}}<!--
+            --><span ng-if="frame.generic_arguments.length > 0">[{{::frame.generic_arguments | join:','}}]</span><!--
+            --><span ng-if="frame.parameters.length > 0"><!--
+                -->(<span ng-repeat="parameter in frame.parameters"><!--
+                     --><span ng-if="$index > 0">, </span><!--
+                     -->{{::[parameter.type_namespace, parameter.type] | join:'.' | replace:'+':'.'}}<!--
+                     --><span ng-if="parameter.generic_arguments.length > 0">[{{::parameter.generic_arguments | join:','}}]</span> {{::parameter.name}}<!--
+                --></span>)<!--
+            --></span><!--
+            --><span ng-if="frame.data.ILOffset > 0 || frame.data.NativeOffset > 0"><!--
+                --> at offset {{::frame.data.ILOffset || frame.data.NativeOffset}}<!--
+            --></span><!--
+            --><span ng-if="frame.file_name"><!--
+                --> in {{::frame.file_name}}<!--
+                --><span ng-if="frame.line_number > 0">:line {{::frame.line_number}}</span><!--
+                --><span ng-if="frame.column > 0">:col {{::frame.column}}</span><!--
+            --></span><!--
+        --></span><!--
+        --><div ng-if="$index > 0">--- End of inner exception stack trace ---</div><!--
+    --></div><!--
+ --></div><!--
+--></pre>

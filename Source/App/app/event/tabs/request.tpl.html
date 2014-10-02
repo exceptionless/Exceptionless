@@ -1,0 +1,70 @@
+<h3 class="visible-print">Request</h3>
+<table class="table table-bordered table-striped table-fixed">
+    <tr>
+        <th>Occurred On</th>
+        <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
+    </tr>
+    <tr>
+        <th>HTTP Method</th>
+        <td>{{::vm.event.data.request.http_method}}</td>
+    </tr>
+    <tr>
+        <th>URL</th>
+        <td><a ng-href="{{::vm.getRequestUrl()}}" target="_blank" truncate>{{::vm.getRequestUrl()}}</a></td>
+    </tr>
+    <tr>
+        <th>Referrer</th>
+        <td>
+            <span ng-if="vm.hasReferrer()">
+                <a ng-href="{{::vm.event.data.request.referrer}}" target="_blank" truncate>{{::vm.event.data.request.referrer}}</a>
+            </span>
+            <em ng-if="!vm.hasReferrer()">None</em>
+        </td>
+    </tr>
+    <tr>
+        <th>Client IP</th>
+        <td>{{::vm.event.data.request.client_ip_address}}</td>
+    </tr>
+    <tr>
+        <th>User Agent</th>
+        <td><span truncate lines="2">{{::vm.event.data.request.user_agent}}</span></td>
+    </tr>
+    <tr ng-if="vm.hasUserAgent()">
+        <th>Browser</th>
+        <td><span truncate>{{::vm.getBrowser()}}</span></td>
+    </tr>
+    <tr ng-if="vm.hasUserAgent()">
+        <th>Browser OS</th>
+        <td>{{::vm.getBrowserOS()}}</td>
+    </tr>
+    <tr ng-if="vm.hasDevice()">
+        <th>Device</th>
+        <td>{{::vm.getDevice()}}</td>
+    </tr>
+    <tr ng-if="vm.hasUserAgent()">
+        <th>Is Known Bot</th>
+        <td>TODO</td>
+    </tr>
+</table>
+
+<div ng-if="vm.event.data.request.post_data">
+    TODO
+</div>
+
+<div ng-if="vm.hasCookies()">
+    <h4>Cookie Values</h4>
+    <table class="table table-bordered table-striped table-fixed">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr ng-repeat="(key, value) in vm.event.data.request.cookies">
+                <td>{{::key}}</td>
+                <td><span truncate lines="3">{{::value}}</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>

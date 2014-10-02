@@ -1,0 +1,59 @@
+<h3 class="visible-print">Environment</h3>
+<table class="table table-bordered table-striped table-fixed">
+    <tr>
+        <th>Occurred On</th>
+        <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
+    </tr>
+    <tr>
+        <th>Machine Name</th>
+        <td><span truncate>{{::vm.event.data.environment.machine_name}}</span></td>
+    </tr>
+    <tr>
+        <th>IP Address</th>
+        <td>{{::vm.event.data.environment.ip_address}}</td>
+    </tr>
+    <tr>
+        <th>Processor Count</th>
+        <td>{{::vm.event.data.environment.processor_count}}</td>
+    </tr>
+    <tr>
+        <th>Total Memory</th>
+        <td>{{::vm.event.data.environment.total_physical_memory | bytes}}</td>
+    </tr>
+    <tr>
+        <th>Available Memory</th>
+        <td>{{::vm.event.data.environment.available_physical_memory | bytes}}</td>
+    </tr>
+    <tr>
+        <th>Process Memory</th>
+        <td>{{::vm.event.data.environment.process_memory_size | bytes}}</td>
+    </tr>
+    <tr ng-if="vm.event.data.environment.os_name">
+        <th>OS Name</th>
+        <td><span truncate>{{::vm.event.data.environment.os_name}}</span></td>
+    </tr>
+    <tr ng-if="vm.event.data.environment.os_version">
+        <th>OS Version</th>
+        <td>{{::vm.event.data.environment.os_version}}</td>
+    </tr>
+    <tr>
+        <th>Architecture</th>
+        <td>{{::vm.event.data.environment.architecture}}</td>
+    </tr>
+    <tr>
+        <th>Runtime Version</th>
+        <td>{{::vm.event.data.environment.runtime_version}}</td>
+    </tr>
+    <tr>
+        <th>Process ID</th>
+        <td>{{::vm.event.data.environment.process_id}}</td>
+    </tr>
+    <tr>
+        <th>Process Name</th>
+        <td><span truncate>{{::vm.event.data.environment.process_name}}</span></td>
+    </tr>
+    <tr>
+        <th>Command Line</th>
+        <td><span truncate lines="2">{{::vm.event.data.environment.command_line}}</span></td>
+    </tr>
+</table>

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html ng-app="app">
+    <head>
+        <title>Exceptionless</title>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui"/>
+        <meta name="description" content="Exceptionless provides real-time error reporting for your apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!"/>
+
+        <meta property="og:type" content="website" />
+        <meta property="og:title" content="Exceptionless" />
+        <meta property="og:description" content="Exceptionless provides real-time error reporting for your apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!" />
+        <meta property="og:image" content="//img/exceptionless.png" />
+        <meta name="application-name" content="Exceptionless"/>
+        <meta name="msapplication-TileColor" content="#2c2c2c"/>
+        <meta name="msapplication-TileImage" content="/img/exceptionless-144.png"/>
+        <meta name="msapplication-navbutton-color" content="#73C03A" />
+        <meta name="msapplication-starturl" content="/project"/>
+        <meta name="msapplication-task" content="name=Dashboard; action-uri=/#/project; icon-uri=/img/icons/dashboard.ico" />
+        <meta name="msapplication-task" content="name=Most Recent; action-uri=/#/project/recent; icon-uri=/img/icons/recent.ico" />
+        <meta name="msapplication-task" content="name=Most Frequent; action-uri=/#/project/frequent; icon-uri=/img/icons/frequent.ico" />
+        <meta name="msapplication-task" content="name=New Errors; action-uri=/#/project/new; icon-uri=/img/icons/new.ico" />
+
+        <link rel='icon' href='/favicon.ico' type="image/x-icon" />
+        <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+
+        <meta name="apple-mobile-web-app-title" content="Exceptionless" />
+        <link rel="apple-touch-icon" sizes="57x57" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="144x144" href="/touch-icon-ipad-144.png" />
+
+        <link href="app.less" type="text/css" rel="stylesheet/less" />
+    </head>
+    <body ng-controller="App as appVm">
+        <div class="app" id="app" ng-class="{'app-header-fixed': appVm.settings.headerFixed, 'app-aside-fixed': appVm.settings.asideFixed, 'app-aside-folded': appVm.settings.asideFolded}" ui-view></div>
+
+        <!-- JS from Bower Components -->
+        <script src="bower_components/less.js/dist/less-1.7.5.js" data-concat="false"></script>
+        <script src="bower_components/jquery/dist/jquery.js"></script>
+        <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+        <script src="bower_components/underscore/underscore.js"></script>
+        <script src="bower_components/moment/moment.js"></script>
+        <script src="bower_components/angular/angular.js"></script>
+        <script src="bower_components/angular-animate/angular-animate.js"></script>
+        <script src="bower_components/angular-resource/angular-resource.js"></script>
+        <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+        <script src="bower_components/angular-translate/angular-translate.js"></script>
+        <script src="bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+        <script src="bower_components/angular-dialog-service/dist/dialogs-default-translations.min.js"></script>
+        <script src="bower_components/angular-dialog-service/dist/dialogs.min.js"></script>
+        <script src="bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+        <script src="bower_components/angular-ui-utils/ui-utils.js"></script>
+        <script src="bower_components/angularjs-toaster/toaster.js"></script>
+        <script src="bower_components/restangular/dist/restangular.js"></script>
+        <script src="bower_components/ng-debounce/angular-debounce.js"></script>
+        <script src="bower_components/ng-filters/dist/angular-filters.js"></script>
+        <script src="bower_components/checklist-model/checklist-model.js"></script>
+        <script src="bower_components/trunk8/trunk8.js"></script>
+
+        <script src="bower_components/signalr/jquery.signalR.js"></script>
+        <script src="bower_components/angular-signalr-hub/signalr-hub.js"></script>
+
+        <script src="bower_components/li/lib/index.js"></script>
+        <script src="bower_components/query-string/query-string.js"></script>
+        <script src="bower_components/ua-parser-js/src/ua-parser.js"></script>
+        <!-- Add New Bower Component JS Above -->
+
+        <!-- Main App JS -->
+        <script src="app.js"></script>
+
+        <script src="components/dialog/dialog.js"></script>
+        <script src="components/dialog/dialog-service.js"></script>
+        <script src="components/dialog/confirm-dialog-controller.js"></script>
+
+        <script src="components/exception/exception-service.js"></script>
+        <script src="components/feature/feature-service.js"></script>
+        <script src="components/link/link-service.js"></script>
+        <script src="components/notification/notification-service.js"></script>
+        <script src="components/signalr/signalr-service.js"></script>
+        <script src="components/summary/summary-directive.js"></script>
+        <script src="components/timeago/timeago-directive.js"></script>
+        <script src="components/truncate/truncate-directive.js"></script>
+
+        <script src="components/event/event-service.js"></script>
+        <script src="components/events/events-directive.js"></script>
+
+        <script src="components/stack/stack-service.js"></script>
+        <script src="components/stack-actions/stack-actions-service.js"></script>
+        <script src="components/stack-trace/stack-trace-directive.js"></script>
+        <script src="components/stacks/stacks-directive.js"></script>
+
+        <script src="components/ui-loading-bar/ui-loading-bar-directive.js"></script>
+        <script src="components/ui-nav/ui-nav-directive.js"></script>
+        <script src="components/ui-scroll/ui-scroll-directive.js"></script>
+        <script src="components/ui-shift/ui-shift-directive.js"></script>
+        <script src="components/ui-toggle-class/ui-toggle-class-directive.js"></script>
+
+        <script src="app/app-controller.js"></script>
+        <script src="app/dashboard/dashboard.js"></script>
+        <script src="app/dashboard/dashboard-controller.js"></script>
+
+        <script src="app/event/event.js"></script>
+        <script src="app/event/event-controller.js"></script>
+
+        <script src="app/stack/stack.js"></script>
+        <script src="app/stack/stack-controller.js"></script>
+        <script src="app/stack/add-reference-dialog-controller.js"></script>
+
+        <!-- Add New Component JS Above -->
+    </body>
+</html>

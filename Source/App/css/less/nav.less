@@ -1,0 +1,209 @@
+.nav-sub{
+	opacity: 0;
+	height: 0;
+	overflow: hidden;
+	margin-left: -20px;
+	.transition(all .2s ease-in-out 0s);
+
+  .active &,
+  .app-aside-folded li:hover &,
+  .app-aside-folded li:focus &,
+  .app-aside-folded li:active &{
+  	opacity: 1;
+		margin-left: 0;
+		height: auto !important;
+		overflow: auto;
+  }
+}
+
+.nav-sub-header {
+	display: none !important;
+	a{
+		padding: floor((@app-aside-folded-nav-height - @line-height-computed)/2) 20px;
+	}
+}
+
+.navi {
+	ul.nav {
+		li {
+			display: block;
+			position: relative;
+			li {
+				a {
+					padding-left: @app-aside-nav-height + 15px;
+				}
+			}
+			a {
+				font-weight: normal;
+				text-transform: none;
+				display: block;
+				padding: floor((@app-aside-nav-height - @line-height-computed)/2) 20px;
+				position: relative;
+				.transition(background-color .2s ease-in-out 0s);
+				.badge,
+				.label {
+					font-size: 11px;
+					padding: 2px 5px;
+					margin-top: 2px;
+				}
+				> i {
+					margin: floor(-(@app-aside-nav-height - @line-height-computed)/2) -10px;
+					line-height: @app-aside-nav-height;
+					width: @app-aside-nav-height;
+					float: left;
+					margin-right: 5px;
+					text-align: center;
+					position: relative;
+					overflow: hidden;
+					&:before {
+						position: relative;
+						z-index: 2;
+					}
+				}
+			}
+		}
+	}
+}
+
+@media (min-width: 768px) {
+	.app-aside-folded{
+		.nav-sub-header{
+			display: block !important;
+			a{
+				padding: floor((@app-aside-folded-nav-height - @line-height-computed)/2) 20px !important;
+			}
+		}
+		.navi{
+			> ul {
+				> li {
+					> a {
+						position: relative;
+						padding: 0;
+						font-size: 11px;
+						text-align: center;
+						height: @app-aside-folded-nav-height;
+						border: none;
+						span {
+							display: none;
+							&.pull-right{
+								display: none !important;
+							}
+						}
+						i{
+							width: auto;
+							float: none;
+							display: block;
+							font-size: 16px;
+							margin: 0;
+							line-height: @app-aside-folded-nav-height;
+							border: none !important;
+							.transition(margin-top 0.2s);
+							b{
+								left: 0 !important;
+							}
+						}
+						.badge,
+						.label{
+							position: absolute;
+							right: 12px;
+							top: 8px;
+							z-index: 3;
+						}
+					}
+				}
+				ul{
+					height: 0 !important;
+					position: absolute;
+					left: 100%;
+					top: 0 !important;
+					z-index: 1050;
+					width: @app-aside-width;
+					.box-shadow(0 2px 6px rgba(0,0,0,0.1));
+				}
+			}
+			li {
+				li{
+					a{
+						padding-left: 20px !important;
+					}
+				}
+			}
+		}
+	}
+
+	.app-aside-folded.app-aside-fixed .app-aside{
+		> ul.nav {
+			&:before{
+				content:"";
+				width: @app-aside-folded-width;
+				height: @app-aside-folded-nav-height;
+				position: absolute;
+				left: -@app-aside-folded-width;
+				top: 0;
+			}
+			z-index: 1010;
+			opacity: 1;
+			height: auto;
+			overflow: visible;
+			overflow-y: auto;
+			display: block;
+			width: @app-aside-width + @app-aside-folded-width;
+			left: @app-aside-folded-width + 20;
+			position: fixed;
+			-webkit-overflow-scrolling: touch;
+			a{
+				padding-left:  20px !important;
+				padding-right: 20px !important;
+			}
+		}
+	}
+}
+
+/*
+Off screen
+*/
+
+@media (max-width: 767px) {
+    .app{
+        overflow-x: hidden;
+    }
+    .app-content{
+        .transition-transform(0.2s ease);
+    }
+    .off-screen{
+        position: absolute;
+        top: 50px;
+        bottom: 0;
+        width: 75%;
+        display: block !important;
+        visibility: visible;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        z-index: 1010;
+        + *{
+            background-color: @body-bg;
+            .transition-transform(0.2s ease);
+            .backface-visibility(hidden);
+            .translate3d(75%, 0px, 0px);
+            overflow: hidden;
+            position: absolute;
+            width: 100%;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1015;
+            padding-top: 50px;
+            .off-screen-toggle {
+                display:block !important;
+                position: absolute;
+                left: 0;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 1020;
+            }
+        }
+    }
+}

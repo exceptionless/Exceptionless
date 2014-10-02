@@ -1,0 +1,50 @@
+<div class="hbox hbox-auto-xs hbox-auto-sm">
+    <div class="col">
+        <div class="bg-light lter b-b wrapper-md">
+            <div class="row">
+                <div class="col-sm-6 col-xs-12">
+                    <h1 class="m-n font-thin h3 text-black">Dashboard</h1>
+                </div>
+                <div class="col-sm-6 text-right hidden-xs">
+                    Filter
+                </div>
+            </div>
+        </div>
+        <div class="wrapper-md">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="row row-sm text-center">
+                        <div class="col-xs-6">
+                            <div class="panel padder-v item">
+                                <div class="h1 font-thin h1">100</div>
+                                <span class="text-muted text-xs">Total</span>
+                            </div>
+                        </div>
+                        <div class="col-xs-6">
+                            <a href="javascript:void(0);" class="block panel padder-v item">
+                                <span class="font-thin h1 block">80</span>
+                                <span class="text-muted text-xs">Unique</span>
+                            </a>
+                        </div>
+                        <div class="col-xs-6">
+                            <a href="javascript:void(0);" class="block panel padder-v item">
+                                <span class="font-thin h1 block">30</span>
+                                <span class="text-muted text-xs">New</span>
+                            </a>
+                        </div>
+                        <div class="col-xs-6">
+                            <div class="panel padder-v item">
+                                <div class="font-thin h1 block">15</div>
+                                <span class="text-muted text-xs">Per Hour</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <stacks settings="vm.mostFrequent"></stacks>
+
+            <events settings="vm.mostRecent"></events>
+        </div>
+    </div>
+</div>
