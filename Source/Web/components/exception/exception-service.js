@@ -14,16 +14,21 @@
                 return exceptions;
             }
 
-            function getTargetMethod(exception) {
+            function getTargetException(exception) {
                 var currentException = exception;
                 while (currentException) {
                     if (currentException.target_method && currentException.target_method.is_signature_target) {
-                        return currentException.target_method;
+                        return currentException;
                     }
                     currentException = currentException.inner;
                 }
 
-                return exception.target_method;
+                return exception;
+            }
+
+            function getTargetMethod(exception) {
+                var target = getTargetException(exception);
+                return target.target_method;
             }
 
             function getTargetMethodType(exception) {
@@ -46,6 +51,7 @@
 
             var service = {
                 getExceptions: getExceptions,
+                getTargetException: getTargetException,
                 getTargetMethod: getTargetMethod,
                 getTargetMethodType: getTargetMethodType
             };

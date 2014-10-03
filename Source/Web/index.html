@@ -34,6 +34,9 @@
     <body ng-controller="App as appVm">
         <div class="app" id="app" ng-class="{'app-header-fixed': appVm.settings.headerFixed, 'app-aside-fixed': appVm.settings.asideFixed, 'app-aside-folded': appVm.settings.asideFolded}" ui-view></div>
 
+        <!-- Livereload script for development only (stripped during dist build) -->
+        <script src="http://localhost:35729/livereload.js" data-concat="false"></script>
+
         <!-- JS from Bower Components -->
         <script src="bower_components/less.js/dist/less-1.7.5.js" data-concat="false"></script>
         <script src="bower_components/jquery/dist/jquery.js"></script>

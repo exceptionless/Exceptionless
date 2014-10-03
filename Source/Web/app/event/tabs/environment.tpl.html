@@ -28,13 +28,13 @@
         <th>Process Memory</th>
         <td>{{::vm.event.data.environment.process_memory_size | bytes}}</td>
     </tr>
-    <tr ng-if="vm.event.data.environment.os_name">
+    <tr ng-if="vm.event.data.environment.o_s_name">
         <th>OS Name</th>
-        <td><span truncate>{{::vm.event.data.environment.os_name}}</span></td>
+        <td><span truncate>{{::vm.event.data.environment.o_s_name}}</span></td>
     </tr>
-    <tr ng-if="vm.event.data.environment.os_version">
+    <tr ng-if="vm.event.data.environment.o_s_version">
         <th>OS Version</th>
-        <td>{{::vm.event.data.environment.os_version}}</td>
+        <td>{{::vm.event.data.environment.o_s_version}}</td>
     </tr>
     <tr>
         <th>Architecture</th>

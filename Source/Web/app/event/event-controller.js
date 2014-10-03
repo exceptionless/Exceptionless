@@ -71,6 +71,14 @@
                 return 'Unknown';
             }
 
+            function getMessage() {
+                if (vm.event.data.error) {
+                    return exceptionService.getTargetException(vm.event.data.error).message;
+                }
+
+                return vm.event.message;
+            }
+
             function getRequestUrl() {
                 var request = vm.event.data.request;
                 var path = request.is_secure ? 'https://' : 'http://';
@@ -143,6 +151,7 @@
             vm.getBrowserOS = getBrowserOS;
             vm.getDevice = getDevice;
             vm.getErrorType = getErrorType;
+            vm.getMessage = getMessage;
             vm.getRequestUrl = getRequestUrl;
             vm.hasCookies = hasCookies;
             vm.hasDevice = hasDevice;

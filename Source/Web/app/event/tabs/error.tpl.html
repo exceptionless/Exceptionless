@@ -6,11 +6,11 @@
     </tr>
     <tr>
         <th>Error Type</th>
-        <td><span truncate>{{::vm.event.data.error.type}}</span></td>
+        <td><span truncate>{{::vm.getErrorType()}}</span></td>
     </tr>
     <tr>
         <th>Message</th>
-        <td><span truncate lines="2">@Model.StackingMessage</span></td>
+        <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
     </tr>
     <tr ng-if="vm.event.data.error.code">
         <th>Code</th>
@@ -19,10 +19,6 @@
 </table>
 
 <h4>Stack Trace</h4>
-<div class="pull-right" style="margin-top: 1.2em">
-    <button class="btn btn-mini clipboard" title="Copy to Clipboard" data-clipboard-target="stacktrace"><i class="fa fa-copy"></i></button>
-</div>
-
 <stack-trace exception="vm.event.data.error"></stack-trace>
 
 <div ng-if="vm.event.data.error.modules.length > 0">
