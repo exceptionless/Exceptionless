@@ -12,6 +12,7 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using Exceptionless.Dependency;
+using Exceptionless.Web;
 using Exceptionless.Web.Extensions;
 
 namespace Exceptionless.Mvc {
@@ -22,7 +23,7 @@ namespace Exceptionless.Mvc {
             ExceptionlessClient.Default.Startup();
             ExceptionlessClient.Default.RegisterHttpApplicationErrorHandler(app);
             ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
-            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessMvcEnrichment>();
+            ExceptionlessClient.Default.Configuration.AddEnrichment<ExceptionlessWebEnrichment>();
             ExceptionlessClient.Default.Configuration.Resolver.Register<ILastReferenceIdManager, WebLastReferenceIdManager>();
             
             _app = app;

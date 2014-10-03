@@ -435,16 +435,16 @@ Global
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|x86.ActiveCfg = Release|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
-		{BF6E3CD7-1CBE-452C-BB75-5D7B068C4C4A}.Release|x86.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
+		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|x86.ActiveCfg = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

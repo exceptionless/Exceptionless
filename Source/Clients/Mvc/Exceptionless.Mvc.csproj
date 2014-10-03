@@ -78,7 +78,6 @@
       <Link>WebLastReferenceIdManager.cs</Link>
     </Compile>
     <Compile Include="ExceptionlessModule.cs" />
-    <Compile Include="ExceptionlessMvcEnrichment.cs" />
     <Compile Include="ExceptionlessSendErrorsAttribute.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
