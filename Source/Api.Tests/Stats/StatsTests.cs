@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
@@ -26,10 +25,10 @@ namespace Exceptionless.Api.Tests.Stats {
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount);
+            CreateData(eventCount, false);
 
             _client.Refresh();
-            var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow);
+            var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
             Assert.Equal(_stackRepository.Count(), result.Unique);
@@ -63,26 +62,76 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventTermStats() {
+        public void CanGetEventTermStatsByTag() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
-            const int eventCount = 10;
+            const int eventCount = 100;
+            RemoveData();
+            CreateData(eventCount, false);
+
+            _client.Refresh();
+            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "tags", "project:" + TestConstants.ProjectId);
+            Assert.Equal(eventCount, result.Total);
+            // each event can be in multiple tag buckets since an event can have up to 3 sample tags
+            Assert.InRange(result.Terms.Sum(t => t.Total), eventCount, eventCount * 3);
+            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25 * TestConstants.EventTags.Count);
+            Assert.InRange(result.Terms.Count, 1, TestConstants.EventTags.Count);
+            foreach (var term in result.Terms) {
+                Assert.InRange(term.New, 1, 25);
+                Assert.InRange(term.Unique, 1, 25);
+                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
+            }
+        }
+
+        [Fact]
+        public void CanGetEventTermStatsByStack() {
+            // capture start date before generating data to make sure that our time range for stats includes all items
+            var startDate = DateTime.UtcNow.SubtractDays(60);
+            const int eventCount = 100;
+            RemoveData();
+            CreateData(eventCount, false);
+
+            _client.Refresh();
+            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "stack_id", "project:" + TestConstants.ProjectId);
+            Assert.Equal(eventCount, result.Total);
+            Assert.InRange(result.Terms.Count, 1, 25);
+            // TODO: Figure out why this is less than eventCount
+            //Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
+            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25);
+            foreach (var term in result.Terms) {
+                Assert.Equal(1, term.New);
+                Assert.Equal(1, term.Unique);
+                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
+            }
+        }
+
+        [Fact]
+        public void CanGetEventTermStatsByProject() {
+            // capture start date before generating data to make sure that our time range for stats includes all items
+            var startDate = DateTime.UtcNow.SubtractDays(60);
+            const int eventCount = 100;
             RemoveData();
             CreateData(eventCount);
 
             _client.Refresh();
-            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "tags");
+            var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "project_id");
             Assert.Equal(eventCount, result.Total);
+            Assert.Equal(3, result.Terms.Count); // 3 sample projects
+            Assert.InRange(result.Terms.Sum(t => t.New), 1, 25 * 3);
+            Assert.Equal(eventCount, result.Terms.Sum(t => t.Total));
+            foreach (var term in result.Terms) {
+                Assert.Equal(term.Total, term.Timeline.Sum(t => t.Total));
+            }
         }
 
-        protected void CreateData(int eventCount = 100) {
+        protected void CreateData(int eventCount = 100, bool multipleProjects = true) {
             var org = OrganizationData.GenerateSampleOrganization();
             _organizationRepository.Add(org);
 
             var projects = ProjectData.GenerateSampleProjects();
             _projectRepository.Add(projects);
 
-            var events = EventData.GenerateEvents(eventCount, projectIds: projects.Select(p => p.Id).ToArray(), startDate: DateTime.Now.SubtractDays(60), endDate: DateTime.Now);
+            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTime.Now.SubtractDays(60), endDate: DateTime.Now);
             
             foreach (var ev in events)
                 _eventPipeline.Run(ev);

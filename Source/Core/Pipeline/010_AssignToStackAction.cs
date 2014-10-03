@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Pipeline {
                     ctx.Stack = _stackRepository.Add(stack, true);
                 }
 
-                Log.Trace().Message("Updating error's ErrorStackId to: {0}", ctx.Stack.Id).Write();
+                Log.Trace().Message("Updating error's StackId to: {0}", ctx.Stack.Id).Write();
                 ctx.Event.StackId = ctx.Stack.Id;
             } else {
                 ctx.Stack = _stackRepository.GetById(ctx.Event.StackId, true);
