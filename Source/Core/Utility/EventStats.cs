@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Utility {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
-            var allowedTerms = new[] { "tags", "stack_id", "organization_id" };
+            var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", "term");
             
@@ -40,6 +40,7 @@ namespace Exceptionless.Core.Utility {
                             .Terms("terms", t => t
                                 .Field(term)
                                 .Size(max)
+                                .MinimumDocumentCount(0)
                                 .Aggregations(agg2 => agg2
                                     .DateHistogram("timelime", tl => tl
                                         .Field(ev => ev.Date)
@@ -75,7 +76,7 @@ namespace Exceptionless.Core.Utility {
                 Total = res.Aggs.Filter("filtered").DocCount,
             };
 
-            stats.Terms.AddRange(res.Aggs.Filter("filtered").DateHistogram("terms").Items.Select(i => {
+            stats.Terms.AddRange(res.Aggs.Filter("filtered").Terms("terms").Items.Select(i => {
                 long count = 0;
                 var timelineUnique = i.Cardinality("unique").Value;
                 if (timelineUnique.HasValue)
@@ -84,6 +85,7 @@ namespace Exceptionless.Core.Utility {
                 var item = new TermStatsItem {
                     Total = i.DocCount,
                     Unique = count,
+                    Term = i.Key,
                     New = i.Terms("new").Items.Count > 0 ? i.Terms("new").Items[0].DocCount : 0
                 };
 

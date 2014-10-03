@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
@@ -23,6 +22,7 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public class StackRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<Stack>, IStackRepository {
+        private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
         public StackRepository(IElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
@@ -36,6 +36,23 @@ namespace Exceptionless.Core.Repositories {
                 ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
 
             base.BeforeAdd(documents);
+        }
+
+        protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            base.AfterAdd(documents, addToCache, expiresIn);
+            if (!addToCache)
+                return;
+
+            foreach (var stack in documents)
+                Cache.Set(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack);
+        }
+
+        private string GetStackSignatureCacheKey(Stack stack) {
+            return GetStackSignatureCacheKey(stack.ProjectId, stack.SignatureHash);
+        }
+
+        private string GetStackSignatureCacheKey(string projectId, string signatureHash) {
+            return String.Concat(projectId, "-", signatureHash, "-", STACKING_VERSION);
         }
 
         public void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc) {
@@ -74,7 +91,7 @@ namespace Exceptionless.Core.Repositories {
             return FindOne(new ElasticSearchOptions<Stack>()
                 .WithProjectId(projectId)
                 .WithFilter(Filter<Stack>.Term(s => s.SignatureHash, signatureHash))
-                .WithCacheKey(String.Concat(projectId, signatureHash, "v2")));
+                .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
@@ -130,7 +147,7 @@ namespace Exceptionless.Core.Repositories {
                 if (originalStack.IsHidden != entity.IsHidden)
                     _eventRepository.UpdateHiddenByStack(entity.OrganizationId, entity.Id, entity.IsHidden);
 
-                InvalidateCache(String.Concat(entity.ProjectId, entity.SignatureHash));
+                InvalidateCache(GetStackSignatureCacheKey(entity));
             }
 
             base.InvalidateCache(entity);
@@ -138,12 +155,12 @@ namespace Exceptionless.Core.Repositories {
 
         public void InvalidateCache(string projectId, string stackId, string signatureHash) {
             InvalidateCache(stackId);
-            InvalidateCache(String.Concat(projectId, signatureHash));
+            InvalidateCache(GetStackSignatureCacheKey(projectId, signatureHash));
         }
 
         protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
             foreach (Stack document in documents)
-                InvalidateCache(String.Concat(document.ProjectId, document.SignatureHash));
+                InvalidateCache(GetStackSignatureCacheKey(document));
 
             base.AfterRemove(documents, sendNotification);
         }

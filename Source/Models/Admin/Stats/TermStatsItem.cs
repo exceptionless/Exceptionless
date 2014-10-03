@@ -7,6 +7,7 @@ namespace Exceptionless.Models.Stats {
             Timeline = new List<TermTimelineItem>();
         }
 
+        public string Term { get; set; }
         public long Total { get; set; }
         public long Unique { get; set; }
         public long New { get; set; }

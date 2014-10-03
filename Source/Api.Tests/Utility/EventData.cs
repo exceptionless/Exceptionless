@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Models;
@@ -77,10 +78,17 @@ namespace Exceptionless.Tests.Utility {
             }
 
             ev.Type = Event.KnownTypes.Error;
-            ev.Data[Event.KnownDataKeys.Error] = GenerateError(maxErrorNestingLevel);
+
+            // limit error variation so that stacking will occur
+            if (_randomErrors == null)
+                _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError(maxErrorNestingLevel)));
+            
+            ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
 
             return ev;
         }
+
+        private static List<Error> _randomErrors; 
 
         private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
             var error = new Error();
