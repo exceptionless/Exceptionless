@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    angular.module('exceptionless.exception', [])
-        .factory('exceptionService', [function (Restangular) {
+    angular.module('exceptionless.error', [])
+        .factory('errorService', [function () {
             function getExceptions(exception) {
                 var exceptions = [];
                 var currentException = exception;

@@ -4,8 +4,12 @@
     angular.module('app.event', [
         'ui.router',
         'angular-filters',
+        'exceptionless.error',
         'exceptionless.event',
         'exceptionless.notification',
+        'exceptionless.simple-error',
+        'exceptionless.simple-stack-trace',
+        'exceptionless.stack-trace',
         'exceptionless.timeago'
     ])
     .config(function ($stateProvider) {

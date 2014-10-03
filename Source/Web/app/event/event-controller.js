@@ -3,7 +3,7 @@
     'use strict';
 
     angular.module('app.event')
-        .controller('Event', ['$state', '$stateParams', 'exceptionService', 'eventService', 'notificationService', function ($state, $stateParams, exceptionService, eventService, notificationService) {
+        .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', function ($state, $stateParams, errorService, eventService, notificationService) {
             var eventId = $stateParams.id;
             var vm = this;
 
@@ -61,7 +61,7 @@
 
             function getErrorType(){
                 if (vm.event.data.error) {
-                    return exceptionService.getTargetMethodType(vm.event.data.error);
+                    return errorService.getTargetMethodType(vm.event.data.error);
                 }
 
                 if (vm.event.data.simple_error) {
@@ -73,7 +73,7 @@
 
             function getMessage() {
                 if (vm.event.data.error) {
-                    return exceptionService.getTargetException(vm.event.data.error).message;
+                    return errorService.getTargetException(vm.event.data.error).message;
                 }
 
                 return vm.event.message;

@@ -1,1 +1,25 @@
-Simple Error
+<h3 class="visible-print">Exception</h3>
+<table class="table table-bordered table-striped table-fixed">
+    <tr>
+        <th>Occurred On</th>
+        <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
+    </tr>
+    <tr>
+        <th>Error Type</th>
+        <td><span truncate>{{::vm.getErrorType()}}</span></td>
+    </tr>
+    <tr>
+        <th>Message</th>
+        <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
+    </tr>
+</table>
+
+<h4>Stack Trace</h4>
+<simple-stack-trace exception="vm.event.data.simple_error"></simple-stack-trace>
+
+<!--
+TODO: implement this.
+@if (Model.StackingExtendedData != null && Model.StackingExtendedData.ContainsKey(ExtendedDataDictionary.EXCEPTION_INFO_KEY)) {
+@Html.Partial("_ExtendedDataItem", new ExtendedDataItemModel { Data = new KeyValuePair<string, object>(ExtendedDataDictionary.EXCEPTION_INFO_KEY, Model.StackingExtendedData[ExtendedDataDictionary.EXCEPTION_INFO_KEY]), Title = "Additional Data" })
+}
+-->

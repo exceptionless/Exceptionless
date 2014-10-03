@@ -1,0 +1,12 @@
+<pre class="stack-trace"><!--
+ --><span class="ex-header" ng-repeat="exception in vm.exceptions"><!--
+     --><span ng-if="!$first"> ---> </span><!--
+     --><span class="ex-type">{{::exception.type}}</span><!--
+     --><span class="ex-message" ng-if="exception.message">: {{::exception.message}}</span><!--
+ --></span><!--
+
+ --><div class="stack-frame" ng-repeat="exception in vm.exceptions | reverse"><!--
+    -->{{::exception.stack_trace | replace:'   ':''}}<!--
+    --><div ng-if="!$last">--- End of inner exception stack trace ---</div><!--
+ --></div><!--
+--></pre>

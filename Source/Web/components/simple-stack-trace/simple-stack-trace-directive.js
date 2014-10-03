@@ -1,21 +1,21 @@
 (function() {
     'use strict';
 
-    angular.module('exceptionless.stack-trace', [
+    angular.module('exceptionless.simple-stack-trace', [
         'angular-filters',
-        'exceptionless.error'
+        'exceptionless.simple-error'
     ])
-    .directive('stackTrace', ['errorService', function(errorService) {
+    .directive('simpleStackTrace', ['simpleErrorService', function(simpleErrorService) {
         return {
             restrict: 'E',
             replace: true,
             scope: {
                 exception: "="
             },
-            templateUrl: 'components/stack-trace/stack-trace-directive.tpl.html',
+            templateUrl: 'components/simple-stack-trace/simple-stack-trace-directive.tpl.html',
             controller: ['$scope', function ($scope) {
                 var vm = this;
-                vm.exceptions = errorService.getExceptions($scope.exception);
+                vm.exceptions = simpleErrorService.getExceptions($scope.exception);
             }],
             controllerAs: 'vm'
         };

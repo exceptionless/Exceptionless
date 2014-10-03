@@ -1,6 +1,6 @@
 <pre class="stack-trace"><!--
  --><span class="ex-header" ng-repeat="exception in vm.exceptions"><!--
-     --><span class="ex-inner" ng-if="$index > 0"> ---> </span><!--
+     --><span ng-if="!$first"> ---> </span><!--
      --><span class="ex-type">{{::exception.type}}</span><!--
      --><span class="ex-message" ng-if="exception.message">: {{::exception.message}}</span><!--
  --></span><!--
@@ -29,6 +29,6 @@
             --></span><!--
         --></span><!--
     --></div><!--
- --><div ng-if="$index > 0">--- End of inner exception stack trace ---</div><!--
+ --><div ng-if="!$last">--- End of inner exception stack trace ---</div><!--
  --></div><!--
 --></pre>
