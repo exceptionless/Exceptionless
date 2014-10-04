@@ -10,7 +10,9 @@
         'exceptionless.simple-error',
         'exceptionless.simple-stack-trace',
         'exceptionless.stack-trace',
-        'exceptionless.timeago'
+        'exceptionless.timeago',
+        'exceptionless.url',
+        'exceptionless.user-agent'
     ])
     .config(function ($stateProvider) {
         $stateProvider.state('app.event', {

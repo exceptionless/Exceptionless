@@ -1,9 +1,8 @@
-/*global UAParser:false */
 (function () {
     'use strict';
 
     angular.module('app.event')
-        .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', function ($state, $stateParams, errorService, eventService, notificationService) {
+        .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', 'urlService', 'userAgentService', function ($state, $stateParams, errorService, eventService, notificationService, urlService, userAgentService) {
             var eventId = $stateParams.id;
             var vm = this;
 
@@ -38,25 +37,16 @@
                     });
             }
 
-            function getUserAgent() {
-                var parser = new UAParser();
-                parser.setUA(vm.event.data.request.user_agent);
-                return parser.getResult();
-            }
-
             function getBrowser() {
-                var browser = getUserAgent().browser;
-                return browser.name + ' ' + browser.version;
+                return userAgentService.getBrowser(vm.event.data.request.user_agent);
             }
 
             function getBrowserOS() {
-                var os = getUserAgent().os;
-                return os.name + ' ' + os.version;
+                return userAgentService.getBrowserOS(vm.event.data.request.user_agent);
             }
 
             function getDevice() {
-                var device = getUserAgent().device;
-                return device.model;
+                return userAgentService.getDevice(vm.event.data.request.user_agent);
             }
 
             function getErrorType(){
@@ -81,25 +71,7 @@
 
             function getRequestUrl() {
                 var request = vm.event.data.request;
-                var path = request.is_secure ? 'https://' : 'http://';
-                path += request.host;
-
-                if (request.port !== 80 && request.port !== 443) {
-                    path += ':' + request.port;
-                }
-
-                if (request.path.indexOf('/') !== 0) {
-                    path += '/';
-                }
-
-                if (Object.keys(request.query_string).length > 0) {
-                    path += '?';
-                    for (var key in request.query_string){
-                        path += key + '=' + request.query_string[key];
-                    }
-                }
-
-                return path;
+                return urlService.buildUrl(request.is_secure, request.host, request.port, request.path, request.query_string);
             }
 
             function hasCookies() {
