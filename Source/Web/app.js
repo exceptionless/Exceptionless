@@ -15,6 +15,9 @@
         'exceptionless.ui-toggle-class',
         'app.dashboard',
         'app.event',
+        'app.frequent',
+        'app.new',
+        'app.recent',
         'app.stack'
     ])
     .constant('BASE_URL', 'https://new.exceptionless.com')

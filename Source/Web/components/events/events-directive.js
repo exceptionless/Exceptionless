@@ -53,6 +53,7 @@
 
                     vm.hasEvents = hasEvents;
                     vm.header = settings.header;
+                    vm.headerIcon = settings.headerIcon || 'fa-calendar';
                     vm.open = open;
                     vm.nextPage = nextPage;
                     vm.previousPage = previousPage;

@@ -1,5 +1,5 @@
 <div class="panel panel-default">
-    <div class="panel-heading"><i class="fa fa-signal"></i> {{::vm.header}}</div>
+    <div class="panel-heading"><i class="fa" ng-class="vm.headerIcon"></i> {{::vm.header}}</div>
     <div class="table-responsive">
         <table class="table table-striped table-fixed b-t b-light">
             <thead>
@@ -40,7 +40,7 @@
                 </select>
                 <button class="btn btn-sm btn-default" ng-click="vm.save()" ng-disabled="!vm.hasStacks()">Apply</button>
             </div>
-            <div class="col-sm-4 col-xs-12 text-right">
+            <div class="col-sm-4 col-xs-12 text-right" ng-if="vm.previous || vm.next">
                 <ul class="pagination pagination-sm m-t-none m-b-none">
                     <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i class="fa fa-chevron-left"></i></a></li>
                     <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>

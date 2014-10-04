@@ -1,5 +1,5 @@
 <div class="panel panel-default">
-    <div class="panel-heading"><i class="fa fa-calendar"></i> {{::vm.header}}</div>
+    <div class="panel-heading"><i class="fa" ng-class="vm.headerIcon"></i> {{::vm.header}}</div>
     <div class="table-responsive">
         <table class="table table-striped b-t b-light">
             <thead>
@@ -21,7 +21,7 @@
             </tbody>
         </table>
     </div>
-    <footer class="panel-footer">
+    <footer class="panel-footer" ng-show="vm.previous || vm.next">
         <div class="row">
             <div class="col-sm-12 text-right">
                 <ul class="pagination pagination-sm m-t-none m-b-none">

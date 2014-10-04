@@ -10,7 +10,7 @@
                     return stackService.getAll(options);
                 },
                 options: {
-                    limit: 4,
+                    limit: 5,
                     mode: 'summary'
                 }
             };
@@ -21,7 +21,7 @@
                     return eventService.getAll(options);
                 },
                 options: {
-                    limit: 10,
+                    limit: 5,
                     mode: 'summary'
                 }
             };
