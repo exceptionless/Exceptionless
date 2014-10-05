@@ -1,0 +1,53 @@
+<div class="panel panel-default">
+    <div class="panel-heading"><i class="fa" ng-class="vm.headerIcon"></i> {{::vm.header}}</div>
+    <div class="table-responsive">
+        <table class="table table-striped table-fixed b-t b-light">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Organization</th>
+                    <th class="number hidden-xs">Stacks</th>
+                    <th class="number hidden-xs">Errors</th>
+                    <th ng-hide="!vm.hasProjects()">&nbsp;</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="row-clickable" ng-repeat="project in vm.projects" ng-if="vm.hasProjects()">
+                    <td ng-click="vm.open(project.id, $event)">{{::project.name}}</td>
+                    <td ng-click="vm.open(project.id, $event)">{{::project.organization_name}}</td>
+                    <td ng-click="vm.open(project.id, $event)" class="hidden-xs">{{::project.stack_count | number:0}}</td>
+                    <td ng-click="vm.open(project.id, $event)" class="hidden-xs">{{::project.event_count | number:0}}</td>
+                    <td>
+                        <a ui-sref="app.dashboard({ projectId: project.id })" role="button" title="Dashboard" class="btn btn-sm btn-default">
+                            <i class="fa fa-dashboard"></i>
+                        </a>
+                        <a ui-sref="app.project.manage({ id: project.id })" role="button" title="Edit" class="btn btn-sm btn-default">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <a ui-sref="app.project.configure({ id: project.id })" role="button" title="Configure Client" class="btn btn-sm btn-default">
+                            <i class="fa fa fa-download"></i>
+                        </a>
+                        <button role="button" ng-click="vm.remove(project)" title="Delete" class="btn btn-sm btn-danger">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+                <tr ng-if="!vm.hasProjects()">
+                    <td colspan="5">
+                        <strong>No projects were found.</strong>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <footer class="panel-footer" ng-show="vm.previous || vm.next">
+        <div class="row">
+            <div class="col-sm-12 text-right">
+                <ul class="pagination pagination-sm m-t-none m-b-none">
+                    <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i class="fa fa-chevron-left"></i></a></li>
+                    <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>
+                </ul>
+            </div>
+        </div>
+    </footer>
+</div>

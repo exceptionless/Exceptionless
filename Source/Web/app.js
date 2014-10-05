@@ -17,6 +17,7 @@
         'app.event',
         'app.frequent',
         'app.new',
+        'app.project',
         'app.recent',
         'app.stack'
     ])
