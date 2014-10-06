@@ -76,7 +76,7 @@
                             dialogService.confirmUpgradePlan(response.data);
                         } else if (response.status === 501) {
                             dialogService.confirm(response.data, 'Manage Integrations').then(function() {
-                                $state.go('app.project.manage.integrations');
+                                $state.go('app.projects.manage.integrations');
                             });
                         } else {
                             notificationService.error('An error occurred while promoting this stack.');

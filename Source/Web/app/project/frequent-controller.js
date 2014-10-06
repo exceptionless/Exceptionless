@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    angular.module('app.frequent')
+    angular.module('app.project')
         .controller('Frequent', ['stackService', function (stackService) {
             var vm = this;
             vm.mostFrequent = {

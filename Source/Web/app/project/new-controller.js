@@ -1,13 +1,14 @@
 (function () {
     'use strict';
 
-    angular.module('app.recent')
-        .controller('Recent', ['eventService', function (eventService) {
+    angular.module('app.project')
+        .controller('New', ['stackService', function (stackService) {
             var vm = this;
-            vm.mostRecent = {
-                header: 'Most Recent',
+            vm.newest = {
+                header: 'Newest Events',
+                headerIcon: 'fa-asterisk',
                 get: function (options) {
-                    return eventService.getAll(options);
+                    return stackService.getAll(options);
                 },
                 options: {
                     limit: 20,

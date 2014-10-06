@@ -13,12 +13,8 @@
         'exceptionless.ui-scroll',
         'exceptionless.ui-shift',
         'exceptionless.ui-toggle-class',
-        'app.dashboard',
         'app.event',
-        'app.frequent',
-        'app.new',
         'app.project',
-        'app.recent',
         'app.stack'
     ])
     .constant('BASE_URL', 'https://new.exceptionless.com')
@@ -29,10 +25,9 @@
         RestangularProvider.setFullResponse(true);
         //RestangularProvider.setDefaultHeaders({  'Content-Type': 'application/json' });
 
-        $urlRouterProvider.otherwise('/app/dashboard');
+        $urlRouterProvider.otherwise('/project/dashboard');
         $stateProvider.state('app', {
             abstract: true,
-            url: '/app',
             templateUrl: 'app/app.tpl.html'
         });
     });
