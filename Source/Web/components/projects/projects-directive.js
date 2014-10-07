@@ -35,9 +35,9 @@
                 function open(id, event) {
                     // TODO: implement this.
                     if (event.ctrlKey || event.which === 2) {
-                        $window.open('/#/app/dashboard/' + id, '_blank');
+                        $window.open('/#/project/dashboard/' + id, '_blank');
                     } else {
-                        $state.go('app.dashboard', { id: id });
+                        $state.go('app.project.dashboard', { id: id });
                     }
                 }
 

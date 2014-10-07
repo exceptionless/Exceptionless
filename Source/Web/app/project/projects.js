@@ -14,6 +14,13 @@
             template: '<ui-view/>'
         });
 
+        $stateProvider.state('app.project.configure', {
+            url: '/:id/configure',
+            controller: 'Configure',
+            controllerAs: 'vm',
+            templateUrl: 'app/project/configure.tpl.html'
+        });
+
         $stateProvider.state('app.project.dashboard', {
             url: '/dashboard',
             controller: 'Dashboard',
@@ -33,6 +40,13 @@
             controller: 'List',
             controllerAs: 'vm',
             templateUrl: 'app/project/list.tpl.html'
+        });
+
+        $stateProvider.state('app.project.manage', {
+            url: '/:id/manage',
+            controller: 'Manage',
+            controllerAs: 'vm',
+            templateUrl: 'app/project/manage.tpl.html'
         });
 
         $stateProvider.state('app.project.new', {
