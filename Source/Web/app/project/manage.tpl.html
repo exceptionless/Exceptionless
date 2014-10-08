@@ -2,19 +2,24 @@
     <div class="col">
         <div class="bg-light lter b-b wrapper-md">
             <div class="row">
-                <h1 class="m-n font-thin h3 text-black">Manage Project</h1>
+                <h1 class="m-n font-thin h3 text-black">Manage {{vm.project.name || 'Project'}}</h1>
             </div>
         </div>
         <div class="wrapper-md">
             <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-th-list"></i> Configure Exceptionless Client</div>
+                <div class="panel-heading"><i class="fa fa-th-list"></i> Manage {{vm.project.name || 'Project'}}</div>
                 <div class="panel-body">
                     <tabset>
                         <tab heading="Project">
-                            <form role="form">
+                            <form name="projectForm" role="form">
                                 <div class="form-group">
                                     <label>Project Name</label>
-                                    <input type="text" class="form-control" placeholder="Project Name" ng-model="vm.project.name" required />
+                                    <input name="name" type="text" class="form-control" placeholder="Project Name" ng-model="vm.project.name" required />
+                                    <div class="error" ng-if="projectForm.name.$touched">
+                                        <small ng-if="projectForm.name.$error.required">
+                                            Please enter a valid project name.
+                                        </small>
+                                    </div>
                                 </div>
 
                                 <div class="form-group">
@@ -37,82 +42,7 @@
                                     <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                     <div class="pull-right">
                                         <button ng-click="vm.resetData()" class="btn btn-default">Delete All Project Data</button>
-                                        <button ng-click="vm.save()" class="btn btn-primary">Save</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </tab>
-                        <tab heading="Notifications">
-                            <form role="form">
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.send_daily_summary">
-                                        <i></i>
-                                        Send daily project summary
-                                    </label>
-                                </div>
-
-                                <!--
-                                <hr style="display: none;" data-bind="visible: !hasPremiumFeatures()"/>
-                                <div class="alert in fade alert-success" style="display: none;" data-bind="visible: !hasPremiumFeatures()">
-                                    <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable occurrence level notifications!
-                                </div>
-                                -->
-
-                                <!-- Premium feature -->
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.report_critical_events">
-                                        <i></i>
-                                        Notify me on critical events
-                                    </label>
-                                </div>
-
-                                <!-- Premium feature -->
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.report_regressions">
-                                        <i></i>
-                                        Notify me on event regressions
-                                    </label>
-                                </div>
-
-                                <hr />
-
-                                <!-- Premium feature -->
-                                <div class="form-group">
-                                    Choose how often you want to receive notifications for error occurrences in this project.
-                                    <div class="btn-group">
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'0'" uncheckable>Never</label>
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'1'" uncheckable>New Only</label>
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'2'" uncheckable>All Occurrences</label>
-                                    </div>
-                                </div>
-
-                                <!-- Premium feature -->
-                                <div ng-if="vm.project.mode > 0">
-                                    <div class="checkbox">
-                                        <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.project.report_known_bot_events">
-                                            <i></i>
-                                            Notify me on events from known bots
-                                        </label>
-                                    </div>
-
-                                    <div class="checkbox">
-                                        <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.project.report_404_events">
-                                            <i></i>
-                                            Notify me on 404 events
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="line line-dashed b-b line-lg pull-in"></div>
-                                <div class="form-group">
-                                    <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
-                                    <div class="pull-right">
-                                        <button ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save</button>
+                                        <button ng-click="vm.save(projectForm.$valid)" class="btn btn-primary">Save</button>
                                     </div>
                                 </div>
                             </form>
@@ -122,18 +52,18 @@
                                 <thead>
                                     <tr>
                                         <th>API Key</th>
-                                        <th ng-show="vm.hasApiKeys()">&nbsp;</th>
+                                        <th ng-show="vm.hasTokens()">&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="key in vm.project.api_keys">
-                                        <td>{{::key}}</td>
+                                    <tr ng-repeat="token in vm.tokens">
+                                        <td>{{::token.id}}</td>
                                         <td>
                                             <button class="btn btn-sm clipboard" title="Copy to Clipboard"><i class="fa fa-copy"></i></button>
-                                            <button ng-click="vm.removeApiKey(key)" class="btn btn-sm" title="Delete" ><i class="fa fa-times"></i></button>
+                                            <button ng-click="vm.removeToken(token)" class="btn btn-sm" title="Delete" ><i class="fa fa-times"></i></button>
                                         </td>
                                     </tr>
-                                    <tr ng-if="!vm.hasApiKeys()">
+                                    <tr ng-if="!vm.hasTokens()">
                                         <td colspan="2" class="text-warning">This project does not have an API Key.</td>
                                     </tr>
                                 </tbody>
@@ -143,107 +73,70 @@
                             <div class="form-group">
                                 <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                 <div class="pull-right">
-                                    <button ng-click="vm.addApiKey()" class="btn btn-primary">New API Key</button>
+                                    <button ng-click="vm.addToken()" class="btn btn-primary">New API Key</button>
                                 </div>
                             </div>
                         </tab>
                         <tab heading="Settings">
                             <form role="form">
-                                <div class="form-group">
-                                    <label>Project Name</label>
-                                    <input type="text" class="form-control" placeholder="Project Name" ng-model="vm.project.name" required />
+                                <p>If the system detects a high volume of events coming from the same client IP address, it will automatically delete the data to reduce system noise.</p>
+                                <div class="checkbox">
+                                    <label class="i-checks">
+                                        <input type="checkbox" ng-model="vm.project.delete_bot_data_enabled">
+                                        <i></i>
+                                        Automatically delete bot data
+                                    </label>
                                 </div>
 
-                                <div class="form-group">
-                                    <label>Organization Name</label>
-                                    <input type="text" class="form-control" placeholder="Organization Name" ng-model="vm.project.organization_name" disabled />
-                                </div>
+                                <h5>Data Exclusions</h5>
+                                <p>
+                                    A comma delimited list of field names that should be removed from any error report data
+                                    (e.g.,  extended data properties, form fields, cookies and query parameters). You can also
+                                    specify a <a href="http://docs.exceptionless.com/contents/security/" target="_blank" title="Data Exclusions documentation">field name with wildcards (<strong>*</strong>)</a>
+                                    to specify starts with, ends with, or contains just to be extra safe.
+                                </p>
+                                <input type="text" class="form-control" placeholder="Example: *Password*, CreditCard*, SSN" ng-model="vm.data_exclusions" />
 
-                                <div class="form-group">
-                                    <label>Time Zone</label>
-                                    <input type="text" class="form-control" placeholder="Time Zone" ng-model="vm.project.time_zone" disabled />
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Custom Page Content</label>
-                                    <input type="text" class="form-control" ng-model="vm.project.custom_content" />
-                                </div>
+                                <h5>Client Configuration</h5>
+                                <p>The configuration values on this page will be automatically sent to the Exceptionless clients for your project and be available in the <code>ExceptionlessClient.Current.Configuration</code> dictionary.</p>
+                                <!-- TODO: The add new dropdown should be populated with default settings we know about. -->
+                                <table class="table table-striped table-bordered table-fixed">
+                                    <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Value</th>
+                                        <th>&nbsp;</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr ng-repeat="conf in vm.config">
+                                            <td><div class="control-group" style="margin-bottom: 0">{{::conf.key}}</div></td>
+                                            <td>
+                                                <div class="control-group" style="margin-bottom: 0">{{::conf.value}}</div>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm" title="Delete" ng-click="vm.removeConfig(conf)"><i class="fa fa-times"></i></button>
+                                            </td>
+                                        </tr>
+                                        <tr ng-if="!vm.hasConfiguration()">
+                                            <td colspan="3">This project does not contain any custom configuration settings.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
 
                                 <div class="line line-dashed b-b line-lg pull-in"></div>
                                 <div class="form-group">
                                     <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                     <div class="pull-right">
-                                        <button ng-click="vm.resetData()" class="btn btn-default">Delete All Project Data</button>
-                                        <button ng-click="vm.save()" class="btn btn-primary">Save</button>
+                                        <button ng-click="vm.addConfiguration()" class="btn btn-default">Add</button>
+                                        <button ng-click="vm.saveConfiguration()" class="btn btn-primary">Save</button>
                                     </div>
                                 </div>
                             </form>
-
-                            <div>
-                                @Html.BeginLabelFor(m => m.DeleteBotDataEnabled, new { @class = "checkbox" })
-                                @Html.CheckBoxFor(m => m.DeleteBotDataEnabled, new { data_bind = "checked: deleteBotDataEnabled" })
-                                Automatically delete bot data
-                                @Html.EndLabel()
-                                If the system detects a high volume of errors coming from the same client IP address, it will automatically delete the data to reduce system noise.
-                            </div>
-
-                            <h5>Data Exclusions</h5>
-                            <p>
-                                A comma delimited list of field names that should be removed from any error report data
-                                (e.g.,  extended data properties, form fields, cookies and query parameters). You can also
-                                specify a <a href="http://docs.exceptionless.com/contents/security/" target="_blank" title="Data Exclusions documentation">field name with wildcards (<strong>*</strong>)</a>
-                                to specify starts with, ends with, or contains just to be extra safe.
-                            </p>
-
-                            <input type="text" class="input-xxlarge" data-bind="value: dataExclusions" placeholder="Example: *Password*, CreditCard*, SSN" />
-
-                            <h5>Client Configuration</h5>
-                            <p>The configuration values on this page will be automatically sent to the Exceptionless clients for your project and be available in the <code>ExceptionlessClient.Current.Configuration</code> dictionary.</p>
-                            <!-- TODO: The add new dropdown should be populated with default settings we know about. -->
-                            <table class="table table-striped table-bordered table-fixed">
-                                <thead>
-                                <tr>
-                                    <th>Key</th>
-                                    <th>Value</th>
-                                    <th class="action-small" data-bind="visible: configuration().length > 0">&nbsp;</th>
-                                </tr>
-                                </thead>
-                                <tbody data-bind="foreach: configuration(), visible: configuration().length > 0">
-                                <tr>
-                                    <td>
-                                        <div class="control-group" style="margin-bottom: 0" data-bind="validationElement: key">
-                                            <input type="text" data-bind="value: key, valueUpdate: 'keyup'" style="margin-bottom: 0; width: 94%; width: -webkit-calc(100% - 14px); width: -moz-calc(100% - 14px); width: calc(100% - 14px);" required />
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="control-group" style="margin-bottom: 0" data-bind="validationElement: value">
-                                            <input type="text" data-bind="value: value, valueUpdate: 'keyup'" style="margin-bottom: 0; width: 94%; width: -webkit-calc(100% - 14px); width: -moz-calc(100% - 14px); width: calc(100% - 14px);" required />
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm" title="Delete" data-bind="click: $root.removeConfigurationValue"><i class="fa fa-times"></i></button>
-                                    </td>
-                                </tr>
-                                </tbody>
-                                <tbody style="display: none;" data-bind="visible: configuration().length == 0">
-                                <tr>
-                                    <td colspan="3">This project does not contain any custom configuration settings.</td>
-                                </tr>
-                                </tbody>
-                            </table>
-
-                            <div class="form-actions">
-                                @Html.ActionLink("Go To Dashboard", "Index", "Project", null, new { @class = "btn" })
-                                <div class="pull-right">
-                                    <button class="btn" data-bind="click: $root.addConfigurationValue">Add</button>
-                                    <button class="btn btn-primary" data-bind="command: saveConfigurationSettingsCommand, template: { name: 'command-button-template', data: { command: saveConfigurationSettingsCommand, name: 'Save', executingName: 'Saving' } }">Save</button>
-
-                                </div>
-                            </div> <!-- /form-actions -->
                         </tab>
                         <tab heading="Integrations">
-                            <div class="alert in fade alert-success" style="display: none;" data-bind="visible: !hasPremiumFeatures()">
-                                <a href="#plan-modal" onclick="exceptionless.App.showChangePlanDialog()">Upgrade now</a> to enable integrations!
+                            <div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures()">
+                                <a href="javascript:void(0);">Upgrade now</a> to enable integrations!
                             </div>
 
                             <p>
@@ -255,36 +148,35 @@
 
                             <table class="table table-striped table-bordered table-fixed">
                                 <thead>
-                                <tr>
-                                    <th>Url</th>
-                                    <th>Event Types</th>
-                                    <th class="action-small" data-bind="visible: projectHooks().length > 0">&nbsp;</th>
-                                </tr>
+                                    <tr>
+                                        <th>Url</th>
+                                        <th>Event Types</th>
+                                        <th class="action-small" ng-show="vm.hasProjectHooks()">&nbsp;</th>
+                                    </tr>
                                 </thead>
-                                <tbody data-bind="foreach: projectHooks(), visible: projectHooks().length > 0">
-                                <tr>
-                                    <td data-bind="text: url"></td>
-                                    <td data-bind="foreach: eventTypes">
-                                        <span class="label label-success" data-bind="text: $data"></span>
-                                    </td>
-                                    <td>
-                                        <button class="btn btn-sm" title="Delete" data-bind="click: $root.removeProjectHook"><i class="fa fa-times"></i></button>
-                                    </td>
-                                </tr>
-                                </tbody>
-                                <tbody style="display: none;" data-bind="visible: projectHooks().length == 0">
-                                <tr>
-                                    <td colspan="3">This project does not contain any integrations.</td>
-                                </tr>
+                                <tbody>
+                                    <tr ng-repeat="hook in vm.project.hooks">
+                                        <td>{{::hook.url}}</td>
+                                        <td>
+                                            <span class="label label-success" ng-repeat="tag in hook.event_types">{{::tag}}</span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm" title="Delete" ng-click="vm.removeProjectHook()"><i class="fa fa-times"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr ng-if="!vm.hasProjectHooks()">
+                                        <td colspan="3">This project does not contain any integrations.</td>
+                                    </tr>
                                 </tbody>
                             </table>
 
-                            <div class="form-actions">
-                                @Html.ActionLink("Go To Dashboard", "Index", "Project", null, new { @class = "btn" })
+                            <div class="line line-dashed b-b line-lg pull-in"></div>
+                            <div class="form-group">
+                                <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                 <div class="pull-right">
-                                    <button class="btn btn-primary" data-bind="click: $root.addProjectHook">Add Web Hook</button>
+                                    <button ng-click="vm.addProjectHook()" class="btn btn-primary">Add Web Hook</button>
                                 </div>
-                            </div> <!-- /form-actions -->
+                            </div>
 
                             <div id="add-new-item-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="add-new-item-modal" aria-hidden="true">
                                 <div class="modal-header">
@@ -295,7 +187,7 @@
                                     <div class="control-group" data-bind="validationElement: url">
                                         <label for="url" class="control-label">URL</label>
                                         <div class="controls">
-                                            <input type="url" class="input-xlarge" data-bind="value: url, valueUpdate: 'keyup'" placeholder="Enter the URL to call" required>
+                                            <input id="url" type="url" class="input-xlarge" data-bind="value: url, valueUpdate: 'keyup'" placeholder="Enter the URL to call" required>
                                         </div>
                                     </div>
                                     <p>Control when the web hook is called by choosing the event types below.</p>

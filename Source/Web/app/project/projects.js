@@ -2,10 +2,18 @@
     'use strict';
 
     angular.module('app.project', [
+        'ui.router',
+
         'exceptionless.project',
         'exceptionless.projects',
         'exceptionless.stack',
-        'exceptionless.stacks'
+        'exceptionless.stacks',
+        'exceptionless.token',
+
+        // Custom dialog dependencies
+        'ui.bootstrap',
+        'dialogs.main',
+        'dialogs.default-translations'
     ])
     .config(function ($stateProvider) {
         $stateProvider.state('app.project', {

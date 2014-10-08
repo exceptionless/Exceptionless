@@ -170,6 +170,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
+            // TODO: Validate that they can change these settings for their project.
             project.NotificationSettings[userId] = settings;
             _repository.Save(project);
 
