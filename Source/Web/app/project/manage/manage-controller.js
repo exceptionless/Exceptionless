@@ -2,35 +2,52 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'notificationService', 'featureService', 'dialogs', 'dialogService', function ($state, $stateParams, projectService, tokenService, notificationService, featureService, dialogs, dialogService) {
+        .controller('Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'webHookService', 'notificationService', 'featureService', 'dialogs', 'dialogService', function ($state, $stateParams, projectService, tokenService, webHookService, notificationService, featureService, dialogs, dialogService) {
             var projectId = $stateParams.id;
             var vm = this;
 
-            function addToken(){
-                var token = {
-                    'organization_id': vm.project.organization_id,
-                    'project_id': projectId,
-                    'scopes': ['Client']
-                };
+            function addConfiguration() {
+                dialogs.create('/app/project/manage/add-configuration-dialog.tpl.html', 'AddConfigurationDialog as vm').result.then(function(data) {
+                    function onSuccess() {
+                        vm.config.push(data);
+                        notificationService.success('Successfully added the configuration setting.');
+                    }
 
+                    function onFailure() {
+                        notificationService.error('An error occurred while saving the configuration setting.');
+                    }
+
+                    return projectService.setConfig(projectId, data.key, data.value).then(onSuccess, onFailure);
+                });
+            }
+
+            function addToken(){
                 function onSuccess(response) {
                     vm.tokens.push(response.data);
-                    notificationService.success('Successfully created a new API key.')
+                    notificationService.success('Successfully created a new API key.');
                 }
 
                 function onFailure() {
                     notificationService.error('An error occurred while creating a new API key for your project.');
                 }
 
-                return tokenService.add(token).then(onSuccess, onFailure);
+                var options = { organization_id: vm.project.organization_id, project_id: projectId };
+                return tokenService.create(options).then(onSuccess, onFailure);
             }
 
-            function addConfiguration() {
+            function addWebHook() {
+                dialogs.create('/components/web-hook/add-web-hook-dialog.tpl.html', 'AddWebHookDialog as vm').result.then(function(data) {
+                    function onSuccess() {
+                        vm.webHooks.push(data);
+                        notificationService.success('Successfully added the configuration setting.');
+                    }
 
-            }
+                    function onFailure() {
+                        notificationService.error('An error occurred while saving the configuration setting.');
+                    }
 
-            function addProjectHook() {
-
+                    //return projectService.setConfig(projectId, data.key, data.value).then(onSuccess, onFailure);
+                });
             }
 
             function get() {
@@ -67,6 +84,15 @@
                     });
             }
 
+            function getWebHooks() {
+                return webHookService.getByProjectId(projectId)
+                    .then(function (response) {
+                        vm.webHooks = response.data;
+                    }, function() {
+                        notificationService.error('An error occurred loading the notification settings.');
+                    });
+            }
+
             function hasConfiguration(){
                 return vm.config.length > 0;
             }
@@ -75,19 +101,19 @@
                 return featureService.hasPremium();
             }
 
-            function hasProjectHooks() {
-
-            }
-
             function hasTokens(){
                 return vm.tokens.length > 0;
+            }
+
+            function hasWebHook() {
+                return vm.webHooks.length > 0;
             }
 
             function removeToken(token){
                 return dialogService.confirmDanger('Are you sure you want to remove the API key?', 'REMOVE API KEY').then(function() {
                     function onSuccess() {
                         vm.tokens.splice(vm.tokens.indexOf(token), 1);
-                        notificationService.success('Successfully removed the API key.')
+                        notificationService.success('Successfully removed the API key.');
                     }
 
                     function onFailure() {
@@ -102,7 +128,7 @@
                 return dialogService.confirmDanger('Are you sure you want to remove this configuration setting?', 'REMOVE CONFIGURATION SETTING').then(function() {
                     function onSuccess() {
                         vm.config.splice(vm.config.indexOf(config), 1);
-                        notificationService.success('Successfully removed the configuration setting.')
+                        notificationService.success('Successfully removed the configuration setting.');
                     }
 
                     function onFailure() {
@@ -113,14 +139,14 @@
                 });
             }
 
-            function removeProjectHook(){
+            function removeWebHook(hook){
 
             }
 
             function resetData() {
                 return dialogService.confirmDanger('Are you sure you want to reset the data for this project?', 'RESET PROJECT DATA').then(function() {
                     function onSuccess() {
-                        notificationService.success('Successfully reset project data.')
+                        notificationService.success('Successfully reset project data.');
                     }
 
                     function onFailure() {
@@ -137,7 +163,7 @@
                 }
 
                 function onSuccess() {
-                    notificationService.success('Successfully saved the project.')
+                    notificationService.success('Successfully saved the project.');
                 }
 
                 function onFailure() {
@@ -161,7 +187,7 @@
                 }
 
                 function onSuccess() {
-                    notificationService.success('Successfully saved the project.')
+                    notificationService.success('Successfully saved the project.');
                 }
 
                 function onFailure() {
@@ -171,26 +197,26 @@
                 return saveDataExclusion().then(saveDeleteBotDataEnabled, onFailure).then(onSuccess, onFailure);
             }
 
-            var vm = this;
             vm.addToken = addToken;
             vm.addConfiguration = addConfiguration;
-            vm.addProjectHook = addProjectHook;
+            vm.addWebHook = addWebHook;
             vm.config = [];
             vm.data_exclusions = null;
             vm.hasConfiguration = hasConfiguration;
             vm.hasPremiumFeatures = hasPremiumFeatures;
-            vm.hasProjectHooks = hasProjectHooks;
             vm.hasTokens = hasTokens;
+            vm.hasWebHook = hasWebHook;
             vm.project = {};
             vm.removeConfig = removeConfig;
-            vm.removeProjectHook = removeProjectHook;
             vm.removeToken = removeToken;
+            vm.removeWebHook = removeWebHook;
             vm.resetData = resetData;
             vm.save = save;
             vm.saveConfiguration = saveConfiguration;
             vm.tokens = [];
+            vm.webHooks = [];
 
-            get().then(getTokens).then(getConfiguration);
+            get().then(getTokens).then(getConfiguration).then(getWebHooks);
         }
     ]);
 }());

@@ -24,12 +24,12 @@
 
                                 <div class="form-group">
                                     <label>Organization Name</label>
-                                    <input type="text" class="form-control" placeholder="Organization Name" ng-model="vm.project.organization_name" disabled />
+                                    <input type="text" class="form-control" placeholder="Organization Name" ng-model="vm.project.organization_name" readonly />
                                 </div>
 
                                 <div class="form-group">
                                     <label>Time Zone</label>
-                                    <input type="text" class="form-control" placeholder="Time Zone" ng-model="vm.project.time_zone" disabled />
+                                    <input type="text" class="form-control" placeholder="Time Zone" ng-model="vm.project.time_zone" readonly />
                                 </div>
 
                                 <div class="form-group">
@@ -128,7 +128,7 @@
                                 <div class="form-group">
                                     <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                     <div class="pull-right">
-                                        <button ng-click="vm.addConfiguration()" class="btn btn-default">Add</button>
+                                        <button ng-click="vm.addConfiguration()" class="btn btn-default">New Client Configuration</button>
                                         <button ng-click="vm.saveConfiguration()" class="btn btn-primary">Save</button>
                                     </div>
                                 </div>
@@ -151,20 +151,20 @@
                                     <tr>
                                         <th>Url</th>
                                         <th>Event Types</th>
-                                        <th class="action-small" ng-show="vm.hasProjectHooks()">&nbsp;</th>
+                                        <th>&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="hook in vm.project.hooks">
+                                    <tr ng-repeat="hook in vm.webHooks">
                                         <td>{{::hook.url}}</td>
                                         <td>
-                                            <span class="label label-success" ng-repeat="tag in hook.event_types">{{::tag}}</span>
+                                            <span class="label label-success" ng-repeat="type in hook.event_types">{{::type}}</span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm" title="Delete" ng-click="vm.removeProjectHook()"><i class="fa fa-times"></i></button>
+                                            <button class="btn btn-sm" title="Delete" ng-click="vm.removeWebHook(hook)"><i class="fa fa-times"></i></button>
                                         </td>
                                     </tr>
-                                    <tr ng-if="!vm.hasProjectHooks()">
+                                    <tr ng-if="!vm.hasWebHook()">
                                         <td colspan="3">This project does not contain any integrations.</td>
                                     </tr>
                                 </tbody>
@@ -174,48 +174,7 @@
                             <div class="form-group">
                                 <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                 <div class="pull-right">
-                                    <button ng-click="vm.addProjectHook()" class="btn btn-primary">Add Web Hook</button>
-                                </div>
-                            </div>
-
-                            <div id="add-new-item-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="add-new-item-modal" aria-hidden="true">
-                                <div class="modal-header">
-                                    <a href="#" class="close" data-dismiss="modal">&times;</a>
-                                    <h3>Add "<span data-bind="text: name"></span>" Web Hook</h3>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="control-group" data-bind="validationElement: url">
-                                        <label for="url" class="control-label">URL</label>
-                                        <div class="controls">
-                                            <input id="url" type="url" class="input-xlarge" data-bind="value: url, valueUpdate: 'keyup'" placeholder="Enter the URL to call" required>
-                                        </div>
-                                    </div>
-                                    <p>Control when the web hook is called by choosing the event types below.</p>
-                                    <div class="control-group" data-bind="validationElement: eventTypes">
-                                        <div class="controls controls-row">
-                                            <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.NewError">
-                                                <abbr title="Occurs when a new error that has never been seen before is reported to your project.">New Error</abbr>
-                                            </label>
-                                            <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.ErrorRegression">
-                                                <abbr title="Occurs when an error that has been marked as fixed is reported to your project.">Regression</abbr>
-                                            </label>
-                                            <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.CriticalError">
-                                                <abbr title="Occurs when an error that has been marked as critical is reported to your project.">Critical Error</abbr>
-                                            </label>
-                                            <label class="checkbox span2">
-                                                <input type="checkbox" data-bind="checked: eventTypes" value="@ProjectHookRepository.EventTypes.StackPromoted">
-                                                <abbr title="Used to promote error stacks to external systems.">Promoted</abbr>
-                                            </label>
-                                        </div>
-                                        <p class="error help-inline" data-bind="validationMessage: eventTypes"></p>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button class="btn" data-dismiss="modal">Cancel</button>
-                                    <button class="btn btn-primary pull-right" data-bind="command: saveProjectHookCommand, template: { name: 'command-button-template', data: { command: saveProjectHookCommand, name: 'Create Web Hook', executingName: 'Creating Web Hook' } }">Create Web Hook</button>
+                                    <button ng-click="vm.addWebHook()" class="btn btn-primary">Add Web Hook</button>
                                 </div>
                             </div>
                         </tab>

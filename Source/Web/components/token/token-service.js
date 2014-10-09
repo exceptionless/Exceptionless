@@ -3,7 +3,13 @@
 
     angular.module('exceptionless.token', ['restangular'])
         .factory('tokenService', ['Restangular', function (Restangular) {
-            function add(token) {
+            function create(options) {
+                var token = {
+                    'organization_id': options.organization_id,
+                    'project_id': options.project_id,
+                    'scopes': ['Client']
+                };
+
                 return Restangular.all('tokens').post(token);
             }
 
@@ -23,12 +29,12 @@
                 return Restangular.one('projects', id).one('tokens', 'default').get();
             }
 
-            function remove() {
+            function remove(id) {
                 return Restangular.one('tokens', id).remove();
             }
 
             var service = {
-                add: add,
+                create: create,
                 getById: getById,
                 getByOrganizationId: getByOrganizationId,
                 getByProjectId: getByProjectId,

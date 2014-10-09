@@ -58,6 +58,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static class EventTypes {
+            // TODO: Add support for these new web hook types.
             public const string NewEvent = "NewEvent";
             public const string CriticalEvent = "CriticalEvent";
             public const string NewError = "NewError";

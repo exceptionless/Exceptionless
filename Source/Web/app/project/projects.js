@@ -2,13 +2,15 @@
     'use strict';
 
     angular.module('app.project', [
-        'ui.router',
-
         'exceptionless.project',
         'exceptionless.projects',
         'exceptionless.stack',
         'exceptionless.stacks',
         'exceptionless.token',
+        'exceptionless.web-hook',
+
+        'ui.router',
+        'checklist-model',
 
         // Custom dialog dependencies
         'ui.bootstrap',
@@ -54,7 +56,7 @@
             url: '/:id/manage',
             controller: 'Manage',
             controllerAs: 'vm',
-            templateUrl: 'app/project/manage.tpl.html'
+            templateUrl: 'app/project/manage/manage.tpl.html'
         });
 
         $stateProvider.state('app.project.new', {

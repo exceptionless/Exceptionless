@@ -1,8 +1,8 @@
 (function () {
     'use strict';
 
-    angular.module('app.stack')
-        .controller('AddReferenceDialog',['$modalInstance', function($modalInstance){
+    angular.module('app.project')
+        .controller('AddConfigurationDialog',['$modalInstance', function($modalInstance, configuration){
             var vm = this;
 
             function cancel(){
@@ -14,10 +14,12 @@
                     return;
                 }
 
-                $modalInstance.close(vm.data.url);
+                $modalInstance.close(vm.data);
             }
 
             vm.cancel = cancel;
+            vm.configuration = configuration;
+            vm.data = {};
             vm.save = save;
         }]);
 }());
