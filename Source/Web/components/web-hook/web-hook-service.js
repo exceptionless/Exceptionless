@@ -3,6 +3,10 @@
 
     angular.module('exceptionless.web-hook')
         .factory('webHookService', ['Restangular', function (Restangular) {
+            function create(webHook) {
+                return Restangular.all('webhooks').post(webHook);
+            }
+
             function getAll(options) {
                 return Restangular.all('webhooks').getList(options || {});
             }
@@ -12,14 +16,16 @@
             }
 
             function getByOrganizationId(id, options) {
-                return Restangular.all('organizations').one(id, 'webhooks').get(options || {});
+                return Restangular.one('organizations', id).all('webhooks').getList(options || {});
             }
 
             function getByProjectId(id, options) {
-                return Restangular.all('projects').one(id, 'webhooks').get(options || {});
+                return Restangular.one('projects', id).all('webhooks').getList(options || {});
             }
 
+
             var service = {
+                create: create,
                 getAll: getAll,
                 getById: getById,
                 getByOrganizationId: getByOrganizationId,

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.Odbc;
 using System.Linq;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;

@@ -12,7 +12,7 @@
             }
 
             function getByOrganizationId(id, options) {
-                return Restangular.all('organizations').one(id, 'projects').get(options || {});
+                return Restangular.one('organizations', id).all('projects').getList(options || {});
             }
 
             function getConfig(id) {
@@ -40,7 +40,7 @@
             }
 
             function setConfig(id, key, value) {
-                return Restangular.all('projects').one(id, 'config').one(key, value).post();
+                return Restangular.one('projects', id).one('config', key).customPOST(value);
             }
 
             function setNotificationSettings(id, userId, settings) {

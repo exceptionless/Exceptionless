@@ -12,7 +12,7 @@
             }
 
             function getByStackId(id, options) {
-                return Restangular.all('stacks').one(id, 'events').get(options || {});
+                return Restangular.one('stacks', id).all('events').getList(options || {});
             }
 
             var service = {

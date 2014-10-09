@@ -6,6 +6,7 @@ using FluentValidation;
 namespace Exceptionless.Core.Validation {
     public class TokenValidator : AbstractValidator<Token> {
         public TokenValidator() {
+            RuleFor(t => t.Id).NotEmpty().WithMessage("Please specify a valid id.");
             RuleFor(t => t.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
             RuleFor(t => t.CreatedUtc).NotEmpty().WithMessage("Please specify a valid created date.");
 

@@ -16,6 +16,7 @@ using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -124,6 +125,15 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanAdd(value);
         }
 
+        protected override Token AddModel(Token value) {
+            value.Id = Guid.NewGuid().ToString("N");
+            value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
+            value.Type = TokenType.Access;
+            value.UserId = User.GetUserId();
+
+            return base.AddModel(value);
+        }
+
         protected override PermissionResult CanDelete(Token value) {
             if (!IsInProject(value.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
@@ -143,6 +153,13 @@ namespace Exceptionless.App.Controllers.API {
                 return false;
 
             return IsInOrganization(value.OrganizationId);
+        }
+
+        protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<NewToken, Token>() == null)
+                Mapper.CreateMap<NewToken, Token>().ForMember(m => m.Type, m => m.Ignore());
+
+            base.CreateMaps();
         }
     }
 }

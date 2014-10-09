@@ -110,8 +110,6 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void ConfigureClassMap(BsonClassMap<Token> cm) {
-            //base.ConfigureClassMap(cm);
-
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id));

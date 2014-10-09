@@ -153,7 +153,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override PermissionResult CanAdd(WebHook value) {
-            if (String.IsNullOrEmpty(value.ProjectId))
+            if (String.IsNullOrEmpty(value.ProjectId) || String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
                 return PermissionResult.DenyWithResult(BadRequest());
 
             Project project = _projectRepository.GetById(value.ProjectId, true);
@@ -166,10 +166,19 @@ namespace Exceptionless.App.Controllers.API {
             return base.CanAdd(value);
         }
 
+        protected override WebHook AddModel(WebHook value) {
+            if (!IsValidWebHookVersion(value.Version))
+                value.Version = new Version(2, 0);
+
+            return base.AddModel(value);
+        }
+
         protected override PermissionResult CanUpdate(WebHook original, Delta<NewWebHook> changes) {
             if (!IsInProject(original.ProjectId))
                 return PermissionResult.DenyWithResult(BadRequest());
             
+            // TODO: The changes might actually change the project id, url and event types.
+
             return base.CanUpdate(original, changes);
         }
 
@@ -193,5 +202,10 @@ namespace Exceptionless.App.Controllers.API {
 
             return IsInOrganization(value.OrganizationId);
         }
+
+        private bool IsValidWebHookVersion(Version version) {
+            return version != null && version.Major >= 1 && version.Major <= 2;
+        }
+
     }
 }

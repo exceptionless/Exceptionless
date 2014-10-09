@@ -101,9 +101,9 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
-        public IHttpActionResult SetConfig(string id, string key, string value) {
+        public IHttpActionResult SetConfig(string id, string key, [NakedBody] string value) {
             var project = GetModel(id, false);
-            if (project == null)
+            if (project == null || String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
             project.Configuration.Settings[key] = value;

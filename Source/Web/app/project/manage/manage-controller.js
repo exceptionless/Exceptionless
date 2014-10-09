@@ -8,8 +8,8 @@
 
             function addConfiguration() {
                 dialogs.create('/app/project/manage/add-configuration-dialog.tpl.html', 'AddConfigurationDialog as vm').result.then(function(data) {
-                    function onSuccess() {
-                        vm.config.push(data);
+                    function onSuccess(response) {
+                        vm.config.push(response.data);
                         notificationService.success('Successfully added the configuration setting.');
                     }
 
@@ -37,8 +37,8 @@
 
             function addWebHook() {
                 dialogs.create('/components/web-hook/add-web-hook-dialog.tpl.html', 'AddWebHookDialog as vm').result.then(function(data) {
-                    function onSuccess() {
-                        vm.webHooks.push(data);
+                    function onSuccess(response) {
+                        vm.webHooks.push(response.data);
                         notificationService.success('Successfully added the configuration setting.');
                     }
 
@@ -46,7 +46,9 @@
                         notificationService.error('An error occurred while saving the configuration setting.');
                     }
 
-                    //return projectService.setConfig(projectId, data.key, data.value).then(onSuccess, onFailure);
+                    data.organization_id = vm.project.organization_id;
+                    data.project_id = projectId;
+                    return webHookService.create(data).then(onSuccess, onFailure);
                 });
             }
 

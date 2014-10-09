@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Controllers {
             if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = GetDefaultOrganizationId();
 
-            var mapped = Mapper.Map<TNewModel, TModel>(value);
+            TModel mapped = Mapper.Map<TNewModel, TModel>(value);
             var permission = CanAdd(mapped);
             if (!permission.Allowed)
                 return permission.HttpActionResult ?? BadRequest();
@@ -143,6 +143,8 @@ namespace Exceptionless.Api.Controllers {
             var orgModel = original as IOwnedByOrganization;
             if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
+
+            // TODO: The changes might actually change the organization id.
 
             return PermissionResult.Allow;
         }
