@@ -19,12 +19,12 @@
                         if (found){
                             deferred.resolve(true);
                         } else {
-                            deferred.reject(false)
+                            deferred.reject(false);
                         }
 
                         return deferred.promise;
-                    }
+                    };
                 }
-            }
+            };
         }]);
 }());

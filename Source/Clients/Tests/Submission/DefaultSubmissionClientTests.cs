@@ -87,7 +87,7 @@ namespace Client.Tests.Submission {
                     var response = client.PostEvents(events, configuration, serializer);
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
-                });
+                }, timeoutInSeconds: 15D);
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
