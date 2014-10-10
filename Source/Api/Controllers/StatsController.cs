@@ -14,6 +14,7 @@ using System.Web.Http;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
@@ -23,16 +24,18 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly EventStats _stats;
 
-        public StatsController(IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository) {
+        public StatsController(IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository, EventStats stats) {
             _organizationRepository = organizationRepository;
             _stackRepository = stackRepository;
             _projectRepository = projectRepository;
+            _stats = stats;
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
-        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true) {
+        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, string filter = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -40,22 +43,22 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
+            var org = _organizationRepository.GetById(project.OrganizationId, true);
+            if (!start.HasValue || start.Value < org.GetRetentionUtcCutoff())
+                start = org.GetRetentionUtcCutoff();
+
             var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            //ProjectEventStatsResult result = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound);
-            //result.MostFrequent = null;
-            //result.MostRecent = null;
+            var result = _stats.GetOccurrenceStats(range.Item1, range.Item2, String.Concat("project:", projectId, " ", filter), project.DefaultTimeZoneOffset());
 
-            //return Ok(result);
-            return Ok();
+            return Ok(result);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
-        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null) {
+        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null, string filter = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
@@ -63,14 +66,18 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
+            var org = _organizationRepository.GetById(stack.OrganizationId, true);
+            var project = _projectRepository.GetById(stack.ProjectId, true);
+            if (!start.HasValue || start.Value < org.GetRetentionUtcCutoff())
+                start = org.GetRetentionUtcCutoff();
+
             var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            Project project = _projectRepository.GetById(stack.ProjectId, true);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            //return Ok(_statsHelper.GetStackStats(stackId, _projectRepository.GetDefaultTimeOffset(stack.ProjectId), start, end, retentionUtcCutoff));
-            return Ok();
+            var result = _stats.GetOccurrenceStats(range.Item1, range.Item2, String.Concat("stack:", stackId, " ", filter), project.DefaultTimeZoneOffset());
+
+            return Ok(result);
         }
     }
 }

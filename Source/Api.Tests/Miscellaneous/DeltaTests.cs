@@ -3,7 +3,7 @@ using Exceptionless.Api.Tests.Messaging;
 using Exceptionless.Api.Utility;
 using Xunit;
 
-namespace Exceptionless.Api.Tests.Miscelaneous {
+namespace Exceptionless.Api.Tests.Miscellaneous {
     public class DeltaTests {
         [Fact]
         public void CanSetUnknownProperties() {
