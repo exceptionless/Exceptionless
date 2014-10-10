@@ -14,7 +14,7 @@
                             <form name="projectForm" role="form">
                                 <div class="form-group">
                                     <label>Project Name</label>
-                                    <input name="name" type="text" class="form-control" placeholder="Project Name" ng-model="vm.project.name" required />
+                                    <input name="name" type="text" class="form-control" placeholder="Project Name" ng-model="vm.project.name" ng-change="vm.save(projectForm.$valid)" required />
                                     <div class="error" ng-if="projectForm.name.$touched">
                                         <small ng-if="projectForm.name.$error.required">
                                             Please enter a valid project name.
@@ -34,15 +34,14 @@
 
                                 <div class="form-group">
                                     <label>Custom Page Content</label>
-                                    <input type="text" class="form-control" ng-model="vm.project.custom_content" />
+                                    <input type="text" class="form-control" ng-model="vm.project.custom_content" ng-change="vm.save(projectForm.$valid)" />
                                 </div>
 
                                 <div class="line line-dashed b-b line-lg pull-in"></div>
                                 <div class="form-group">
                                     <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                     <div class="pull-right">
-                                        <button ng-click="vm.resetData()" class="btn btn-default">Delete All Project Data</button>
-                                        <button ng-click="vm.save(projectForm.$valid)" class="btn btn-primary">Save</button>
+                                        <button ng-click="vm.resetData()" class="btn btn-danger">Delete All Project Data</button>
                                     </div>
                                 </div>
                             </form>
@@ -82,7 +81,7 @@
                                 <p>If the system detects a high volume of events coming from the same client IP address, it will automatically delete the data to reduce system noise.</p>
                                 <div class="checkbox">
                                     <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.delete_bot_data_enabled">
+                                        <input type="checkbox" ng-model="vm.project.delete_bot_data_enabled" ng-change="vm.saveDeleteBotDataEnabled()">
                                         <i></i>
                                         Automatically delete bot data
                                     </label>
@@ -95,7 +94,7 @@
                                     specify a <a href="http://docs.exceptionless.com/contents/security/" target="_blank" title="Data Exclusions documentation">field name with wildcards (<strong>*</strong>)</a>
                                     to specify starts with, ends with, or contains just to be extra safe.
                                 </p>
-                                <input type="text" class="form-control" placeholder="Example: *Password*, CreditCard*, SSN" ng-model="vm.data_exclusions" />
+                                <input type="text" class="form-control" placeholder="Example: *Password*, CreditCard*, SSN" ng-model="vm.data_exclusions" ng-change="vm.saveDataExclusion()" />
 
                                 <h5>Client Configuration</h5>
                                 <p>The configuration values on this page will be automatically sent to the Exceptionless clients for your project and be available in the <code>ExceptionlessClient.Current.Configuration</code> dictionary.</p>
@@ -128,8 +127,7 @@
                                 <div class="form-group">
                                     <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
                                     <div class="pull-right">
-                                        <button ng-click="vm.addConfiguration()" class="btn btn-default">New Client Configuration</button>
-                                        <button ng-click="vm.saveConfiguration()" class="btn btn-primary">Save</button>
+                                        <button ng-click="vm.addConfiguration()" class="btn btn-primary">New Client Configuration</button>
                                     </div>
                                 </div>
                             </form>

@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('Configure', ['projectService', function (projectService) {
+        .controller('Configure', ['$stateParams', 'projectService', function ($stateParams, projectService) {
             function getProjectTypes() {
                 return [
                     { key: 'Exceptionless.Mvc', name: 'ASP.NET MVC', config: 'web.config' },
@@ -17,6 +17,7 @@
 
             var vm = this;
             vm.currentProjectType = null;
+            vm.projectId = $stateParams.id;
             vm.projectTypes = getProjectTypes();
         }
     ]);

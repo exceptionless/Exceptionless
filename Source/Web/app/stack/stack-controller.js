@@ -89,7 +89,6 @@
                 dialogService.confirmDanger('Are you sure you want to remove this reference link?', 'REMOVE REFERENCE LINK').then(function() {
                     function onSuccess() {
                         vm.stack.references.splice(vm.stack.references.indexOf(reference), 1);
-                        notificationService.success('Successfully removed the external reference link.');
                     }
 
                     function onFailure() {
@@ -116,9 +115,6 @@
             function updateIsCritical() {
                 function onSuccess() {
                     vm.stack.occurrences_are_critical = !isCritical();
-
-                    var action = isCritical() ? '' : 'not ';
-                    notificationService.success('Future occurrences will ' + action + 'be marked as critical.');
                 }
 
                 function onFailure() {
@@ -137,9 +133,6 @@
                     vm.stack.date_fixed = !isFixed() ? moment().toDate() : null;
                     if (isRegressed() && isFixed())
                         vm.stack.is_regressed = false;
-
-                    var action = isFixed() ? '' : ' not';
-                    notificationService.success('Successfully marked the stack as' + action + ' fixed.');
                 }
 
                 function onFailure() {
@@ -157,9 +150,6 @@
             function updateIsHidden() {
                 function onSuccess() {
                     vm.stack.is_hidden = !isHidden();
-
-                    var action = isHidden() ? 'shown in' : 'hidden from';
-                    notificationService.success('Stack occurrences will be ' + action + ' statistics and reports.');
                 }
 
                 function onFailure() {
@@ -176,9 +166,6 @@
             function updateNotifications() {
                 function onSuccess() {
                     vm.stack.disable_notifications = !notificationsDisabled();
-
-                    var action = notificationsDisabled() ? 'disabled' : 'enabled';
-                    notificationService.success('Successfully ' + action + ' the stack notifications.');
                 }
 
                 function onFailure() {

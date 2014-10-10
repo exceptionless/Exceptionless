@@ -17,7 +17,7 @@
 
         <p>Control when the web hook is called by choosing the event types below.</p>
         <div class="form-group">
-            <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes track by type">
+            <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes">
                 <label class="i-checks">
                     <input name="types" type="checkbox" checklist-model="vm.data.event_types" checklist-value="type.key" ng-required="!vm.hasEventTypeSelection()">
                     <i></i>

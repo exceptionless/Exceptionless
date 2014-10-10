@@ -11,6 +11,7 @@
 
         'ui.router',
         'checklist-model',
+        'debounce',
 
         // Custom dialog dependencies
         'ui.bootstrap',
