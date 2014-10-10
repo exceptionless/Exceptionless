@@ -12,7 +12,7 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="row-clickable" ng-repeat="project in vm.projects" ng-if="vm.hasProjects()">
+                <tr class="row-clickable" ng-repeat="project in vm.projects track by project.id" ng-if="vm.hasProjects()">
                     <td ng-click="vm.open(project.id, $event)">{{::project.name}}</td>
                     <td ng-click="vm.open(project.id, $event)">{{::project.organization_name}}</td>
                     <td ng-click="vm.open(project.id, $event)" class="hidden-xs">{{::project.stack_count | number:0}}</td>

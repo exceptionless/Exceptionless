@@ -16,7 +16,8 @@
                         notificationService.error('An error occurred while adding the reference link.');
                     }
 
-                    stackService.addLink(stackId, url).then(onSuccess, onFailure);
+                    if (vm.stack.references.indexOf(url) < 0)
+                        stackService.addLink(stackId, url).then(onSuccess, onFailure);
                 });
             }
 

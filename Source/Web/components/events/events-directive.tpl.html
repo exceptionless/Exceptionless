@@ -9,7 +9,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr class="row-clickable" ng-repeat="event in vm.events" ng-click="vm.open(event.id, $event)" ng-if="vm.hasEvents()">
+            <tr class="row-clickable" ng-repeat="event in vm.events track by event.id" ng-click="vm.open(event.id, $event)" ng-if="vm.hasEvents()">
                 <td><summary source="event"></summary></td>
                 <td><abbr title="{{::event.date | date : 'medium'}}"><timeago date="event.date"></timeago></abbr></td>
             </tr>

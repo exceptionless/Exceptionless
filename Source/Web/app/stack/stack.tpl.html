@@ -58,13 +58,13 @@
                         </tr>
                         <tr ng-if="vm.hasTags()">
                             <th>Tags</th>
-                            <td><span class="label label-success" ng-repeat="tag in vm.stack.tags">{{tag}}</span></td>
+                            <td><span class="label label-success" ng-repeat="tag in vm.stack.tags track by tag">{{tag}}</span></td>
                         </tr>
                         <tr ng-if="vm.hasReference()">
                             <th>{{vm.hasReferences() ? 'Reference Links' : 'Reference Link'}}</th>
                             <td>
                                 <ul ng-if="vm.hasReferences()" class="fa-ul">
-                                    <li ng-repeat="reference in vm.stack.references">
+                                    <li ng-repeat="reference in vm.stack.references track by reference">
                                         <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
                                         <a class="delete-link" href="javascript:void(0);" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-times"></i></a>
                                     </li>
@@ -82,7 +82,7 @@
                 <h4>Stacking Information</h4>
                 <table class="table table-bordered table-striped m-b-none">
                     <tbody>
-                        <tr ng-repeat="(key, value) in vm.stack.signature_info">
+                        <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
                             <th>{{key}}</th>
                             <td>{{value}}</td>
                         </tr>

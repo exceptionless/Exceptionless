@@ -16,7 +16,7 @@
             </tr>
             </thead>
             <tbody>
-            <tr class="row-clickable" ng-repeat="stack in vm.stacks" ng-if="vm.hasStacks()">
+            <tr class="row-clickable" ng-repeat="stack in vm.stacks track by stack.id" ng-if="vm.hasStacks()">
                 <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds" checklist-value="stack.id"><i></i></label></td>
                 <td ng-click="vm.open(stack.id, $event)"><summary source="stack"></summary></td>
                 <td ng-click="vm.open(stack.id, $event)">{{0 | number:0}}</td>

@@ -5,7 +5,7 @@
     </tr>
     <tr ng-if="vm.hasTags()">
         <th>Tags</th>
-        <td><span class="label label-success" ng-repeat="tag in vm.event.tags">{{tag}}</span></td>
+        <td><span class="label label-success" ng-repeat="tag in vm.event.tags track by tag">{{tag}}</span></td>
     </tr>
     <tr class="hidden-print" ng-if="vm.isError()">
         <th>Error Type</th>

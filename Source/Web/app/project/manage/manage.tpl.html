@@ -56,7 +56,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="token in vm.tokens">
+                                    <tr ng-repeat="token in vm.tokens track by token.id">
                                         <td>{{::token.id}}</td>
                                         <td>
                                             <button class="btn btn-sm clipboard" title="Copy to Clipboard"><i class="fa fa-copy"></i></button>
@@ -109,7 +109,7 @@
                                     </tr>
                                     </thead>
                                     <tbody>
-                                        <tr ng-repeat="conf in vm.config">
+                                        <tr ng-repeat="conf in vm.config track by conf.key">
                                             <td><div class="control-group" style="margin-bottom: 0">{{::conf.key}}</div></td>
                                             <td>
                                                 <div class="control-group" style="margin-bottom: 0">{{::conf.value}}</div>
@@ -155,10 +155,10 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr ng-repeat="hook in vm.webHooks">
+                                    <tr ng-repeat="hook in vm.webHooks track by hook.id">
                                         <td>{{::hook.url}}</td>
                                         <td>
-                                            <span class="label label-success" ng-repeat="type in hook.event_types">{{::type}}</span>
+                                            <span class="label label-success" ng-repeat="type in hook.event_types track by type">{{::type}}</span>
                                         </td>
                                         <td>
                                             <button class="btn btn-sm" title="Delete" ng-click="vm.removeWebHook(hook)"><i class="fa fa-times"></i></button>

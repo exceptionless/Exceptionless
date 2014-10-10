@@ -61,7 +61,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="(key, value) in vm.event.data.request.cookies">
+            <tr ng-repeat="(key, value) in vm.event.data.request.cookies track by key">
                 <td>{{::key}}</td>
                 <td><span truncate lines="3">{{::value}}</span></td>
             </tr>

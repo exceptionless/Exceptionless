@@ -1,7 +1,7 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm">
     <div class="wrapper-md">
         <tabset class="tab-container">
-            <tab ng-repeat="tab in vm.tabs" heading="{{tab.title}}" active="tab.active">
+            <tab ng-repeat="tab in vm.tabs track by tab.template_key" heading="{{tab.title}}" active="tab.active">
                 <div ng-include="'/app/event/tabs/' + tab.template_key + '.tpl.html'"></div>
             </tab>
         </tabset>

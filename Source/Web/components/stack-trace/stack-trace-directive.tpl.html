@@ -13,7 +13,7 @@
             -->{{::[frame.declaring_namespace, frame.declaring_type, frame.name] | join:'.' | replace:'+':'.'}}<!--
             --><span ng-if="frame.generic_arguments.length > 0">[{{::frame.generic_arguments | join:','}}]</span><!--
             --><span ng-if="frame.parameters.length > 0"><!--
-                -->(<span ng-repeat="parameter in frame.parameters"><!--
+                -->(<span ng-repeat="parameter in frame.parameters track by parameter.name"><!--
                      --><span ng-if="$index > 0">, </span><!--
                      -->{{::[parameter.type_namespace, parameter.type] | join:'.' | replace:'+':'.'}}<!--
                      --><span ng-if="parameter.generic_arguments.length > 0">[{{::parameter.generic_arguments | join:','}}]</span> {{::parameter.name}}<!--

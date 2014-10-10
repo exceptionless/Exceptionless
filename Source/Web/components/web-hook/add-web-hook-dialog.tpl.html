@@ -1,10 +1,10 @@
-<div class="modal-header dialog-header-confirm">
-    <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
-    <h4 class="modal-title">Create a new Web Hook</h4>
-</div>
+<form name="addWebHookForm" role="form">
+    <div class="modal-header dialog-header-confirm">
+        <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
+        <h4 class="modal-title">Create a new Web Hook</h4>
+    </div>
 
-<div class="modal-body">
-    <form name="addWebHookForm" role="form">
+    <div class="modal-body">
         <div class="form-group">
             <label for="url">URL</label>
             <input type="url" class="form-control input-lg" id="url" name="url" ng-model="vm.data.url" placeholder="Enter the URL to call" required>
@@ -17,9 +17,9 @@
 
         <p>Control when the web hook is called by choosing the event types below.</p>
         <div class="form-group">
-            <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes">
+            <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes track by type">
                 <label class="i-checks">
-                    <input name="types" type="checkbox" checklist-model="vm.data.event_types" checklist-value="type.key" required>
+                    <input name="types" type="checkbox" checklist-model="vm.data.event_types" checklist-value="type.key" ng-required="!vm.hasEventTypeSelection()">
                     <i></i>
                     <abbr title="{{::type.description}}">{{::type.name}}</abbr>
                 </label>
@@ -30,10 +30,10 @@
                 </small>
             </div>
         </div>
-    </form>
-</div>
+    </div>
 
-<div class="modal-footer">
-    <button type="button" class="btn btn-default" ng-click="vm.save(addWebHookForm.$valid)">Create Web Hook</button>
-    <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
-</div>
+    <div class="modal-footer">
+        <button type="submit" class="btn btn-default" ng-click="vm.save(addWebHookForm.$valid)">Create Web Hook</button>
+        <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
+    </div>
+</form>

@@ -31,7 +31,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="module in vm.event.data.error.modules">
+            <tr ng-repeat="module in vm.event.data.error.modules track by module.module_id">
                 <td><span truncate>{{::module.name}}</span></td>
                 <td>{{::module.version}}</td>
             </tr>

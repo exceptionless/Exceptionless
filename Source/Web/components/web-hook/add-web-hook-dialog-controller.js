@@ -5,6 +5,10 @@
         .controller('AddWebHookDialog',['$modalInstance', function($modalInstance){
             var vm = this;
 
+            function cancel(){
+                $modalInstance.dismiss('cancel');
+            }
+
             function getEventTypes() {
                 return [
                     { key: 'NewEvent', name: 'New Event', description: 'Occurs when a new event that has never been seen before is reported to your project.' },
@@ -16,8 +20,8 @@
                 ];
             }
 
-            function cancel(){
-                $modalInstance.dismiss('cancel');
+            function hasEventTypeSelection() {
+                return vm.data.event_types && vm.data.event_types.length > 0;
             }
 
             function save(isValid){
@@ -31,7 +35,8 @@
 
             vm.cancel = cancel;
             vm.data = {};
-            vm.save = save;
             vm.eventTypes = getEventTypes();
+            vm.hasEventTypeSelection = hasEventTypeSelection;
+            vm.save = save;
         }]);
 }());
