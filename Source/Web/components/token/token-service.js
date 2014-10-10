@@ -18,11 +18,11 @@
             }
 
             function getByOrganizationId(id, options) {
-                return Restangular.one('prganizations', id).one('tokens').get(options || {});
+                return Restangular.one('organizations', id).all('tokens').getList(options || {});
             }
 
             function getByProjectId(id, options) {
-                return Restangular.one('projects', id).one('tokens').get(options || {});
+                return Restangular.one('projects', id).all('tokens').getList(options || {});
             }
 
             function getProjectDefault(id) {

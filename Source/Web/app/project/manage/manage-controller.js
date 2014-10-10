@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'webHookService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, projectService, tokenService, webHookService, notificationService, featureService, dialogs, dialogService, debounce) {
+        .controller('project.Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'webHookService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, projectService, tokenService, webHookService, notificationService, featureService, dialogs, dialogService, debounce) {
             var projectId = $stateParams.id;
             var vm = this;
 

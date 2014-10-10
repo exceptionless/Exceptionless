@@ -8,7 +8,15 @@
             </div>
         </div>
         <div class="wrapper-md">
-            <projects settings="vm.projects"></projects>
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-briefcase"></i> My Projects</div>
+                <projects settings="vm.projects"></projects>
+
+                <footer class="panel-footer">
+                    <button ui-sref="app.project.dashboard" type="button" class="btn btn-default" role="button">Go To Dashboard</button>
+                    <button ui-sref="app.project.add" type="button" class="btn btn-primary pull-right" role="button">New Project</button>
+                </footer>
+            </div>
         </div>
     </div>
 </div>

@@ -2,10 +2,9 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('Frequent', ['stackService', function (stackService) {
+        .controller('project.Frequent', ['stackService', function (stackService) {
             var vm = this;
             vm.mostFrequent = {
-                header: 'Most Frequent',
                 get: function (options) {
                     return stackService.getAll(options);
                 },

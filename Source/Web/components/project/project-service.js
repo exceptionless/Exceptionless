@@ -23,6 +23,10 @@
                 return Restangular.one('projects', id).one('notifications', userId).get();
             }
 
+            function remove(id) {
+                return Restangular.one('projects', id).remove();
+            }
+
             function removeConfig(id, key) {
                 return Restangular.one('projects', id).one('config', key).remove();
             }
@@ -53,6 +57,7 @@
                 getByOrganizationId: getByOrganizationId,
                 getConfig: getConfig,
                 getNotificationSettings: getNotificationSettings,
+                remove: remove,
                 removeConfig: removeConfig,
                 removeNotificationSettings: removeNotificationSettings,
                 resetData: resetData,

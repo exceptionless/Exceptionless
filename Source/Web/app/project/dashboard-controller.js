@@ -2,10 +2,9 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('Dashboard', ['eventService', 'stackService', function (eventService, stackService) {
+        .controller('project.Dashboard', ['eventService', 'stackService', function (eventService, stackService) {
             var vm = this;
             vm.mostFrequent = {
-                header: 'Most Frequent',
                 get: function (options) {
                     return stackService.getAll(options);
                 },

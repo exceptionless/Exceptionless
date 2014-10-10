@@ -14,6 +14,7 @@
         'exceptionless.ui-shift',
         'exceptionless.ui-toggle-class',
         'app.event',
+        'app.organization',
         'app.project',
         'app.stack'
     ])

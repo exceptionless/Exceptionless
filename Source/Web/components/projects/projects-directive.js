@@ -2,8 +2,10 @@
     'use strict';
 
     angular.module('exceptionless.projects', [
+        'exceptionless.dialog',
         'exceptionless.link',
-        'exceptionless.notification'
+        'exceptionless.notification',
+        'exceptionless.project'
     ])
     .directive('projects', function() {
         return {
@@ -13,13 +15,12 @@
                 settings: "="
             },
             templateUrl: 'components/projects/projects-directive.tpl.html',
-            controller: ['$rootScope', '$scope', '$window', '$state', 'linkService', 'notificationService', function ($rootScope, $scope, $window, $state, linkService, notificationService) {
+            controller: ['$rootScope', '$scope', '$window', '$state', 'dialogService', 'linkService', 'notificationService', 'projectService', function ($rootScope, $scope, $window, $state, dialogService, linkService, notificationService, projectService) {
                 var settings = $scope.settings;
                 var vm = this;
 
                 function get(options) {
                     settings.get(options).then(function (response) {
-                        vm.selectedIds = [];
                         vm.projects = response.data.plain();
 
                         var links = linkService.getLinksQueryParameters(response.headers('link'));
@@ -49,6 +50,20 @@
                     get(vm.previous);
                 }
 
+                function remove(project) {
+                    return dialogService.confirmDanger('Are you sure you want to remove the project?', 'REMOVE PROJECT').then(function() {
+                        function onSuccess() {
+                            vm.projects.splice(vm.projects.indexOf(project), 1);
+                        }
+
+                        function onFailure() {
+                            notificationService.error('An error occurred while trying to remove the project.');
+                        }
+
+                        return projectService.remove(project.id).then(onSuccess, onFailure);
+                    });
+                }
+
                 var unbind = $rootScope.$on('ProjectChanged', function(e, data){
                     if ($scope.previous === undefined)
                         get($scope.settings.options);
@@ -57,11 +72,11 @@
                 $scope.$on('$destroy', unbind);
 
                 vm.hasProjects = hasProjects;
-                vm.header = settings.header;
-                vm.headerIcon = settings.headerIcon || 'fa-briefcase';
                 vm.nextPage = nextPage;
                 vm.open = open;
                 vm.previousPage = previousPage;
+                vm.projects = [];
+                vm.remove = remove;
 
                 get(settings.options);
             }],

@@ -192,7 +192,6 @@
             vm.promoteToExternal = promoteToExternal;
             vm.removeReferenceLink = removeReferenceLink;
             vm.recentOccurrences = {
-                header: 'Recent Occurrences',
                 get: function (options) {
                     return eventService.getByStackId(stackId, options);
                 },

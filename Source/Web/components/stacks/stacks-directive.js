@@ -93,8 +93,6 @@
                 vm.actions = stackActionsService.getActions();
                 vm.hasStacks = hasStacks;
                 vm.hasSelection = hasSelection;
-                vm.header = settings.header;
-                vm.headerIcon = settings.headerIcon || 'fa-signal';
                 vm.nextPage = nextPage;
                 vm.open = open;
                 vm.previousPage = previousPage;

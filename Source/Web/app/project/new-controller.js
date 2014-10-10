@@ -2,11 +2,9 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('New', ['stackService', function (stackService) {
+        .controller('project.New', ['stackService', function (stackService) {
             var vm = this;
             vm.newest = {
-                header: 'Newest Events',
-                headerIcon: 'fa-asterisk',
                 get: function (options) {
                     return stackService.getAll(options);
                 },

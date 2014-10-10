@@ -1,14 +1,12 @@
-<div class="panel panel-default">
-    <div class="panel-heading"><i class="fa" ng-class="vm.headerIcon"></i> {{::vm.header}}</div>
-    <div class="table-responsive">
-        <table class="table table-striped b-t b-light">
-            <thead>
+<div class="table-responsive">
+    <table class="table table-striped b-t b-light">
+        <thead>
             <tr>
                 <th>Summary</th>
                 <th class="date">Date</th>
             </tr>
-            </thead>
-            <tbody>
+        </thead>
+        <tbody>
             <tr class="row-clickable" ng-repeat="event in vm.events track by event.id" ng-click="vm.open(event.id, $event)" ng-if="vm.hasEvents()">
                 <td><summary source="event"></summary></td>
                 <td><abbr title="{{::event.date | date : 'medium'}}"><timeago date="event.date"></timeago></abbr></td>
@@ -18,10 +16,10 @@
                     <strong>Congratulations!</strong> You are <strong>exceptionless!</strong>
                 </td>
             </tr>
-            </tbody>
-        </table>
-    </div>
-    <footer class="panel-footer" ng-show="vm.previous || vm.next">
+        </tbody>
+    </table>
+
+    <div class="table-footer" ng-show="vm.previous || vm.next">
         <div class="row">
             <div class="col-sm-12 text-right">
                 <ul class="pagination pagination-sm m-t-none m-b-none">
@@ -30,5 +28,5 @@
                 </ul>
             </div>
         </div>
-    </footer>
+    </div>
 </div>
