@@ -7,7 +7,7 @@
             var vm = this;
 
             function add() {
-                dialogs.create('/app/organization/add-organization-dialog.tpl.html', 'AddOrganizationDialog as vm').result.then(function(name) {
+                dialogs.create('/app/organization/list/add-organization-dialog.tpl.html', 'AddOrganizationDialog as vm').result.then(function(name) {
                     function onSuccess(response) {
                         vm.organizations.push(response.data);
                     }

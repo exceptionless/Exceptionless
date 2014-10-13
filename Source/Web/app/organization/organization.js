@@ -28,14 +28,14 @@
             url: '/list',
             controller: 'organization.List',
             controllerAs: 'vm',
-            templateUrl: 'app/organization/list.tpl.html'
+            templateUrl: 'app/organization/list/list.tpl.html'
         });
 
         $stateProvider.state('app.organization.manage', {
             url: '/:id/manage',
             controller: 'organization.Manage',
             controllerAs: 'vm',
-            templateUrl: 'app/organization/manage.tpl.html'
+            templateUrl: 'app/organization/manage/manage.tpl.html'
         });
     });
 }());

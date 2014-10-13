@@ -2,13 +2,23 @@
     'use strict';
 
     angular.module('app.organization')
-        .controller('organization.Manage', ['$state', '$stateParams', 'organizationService', 'projectService', 'userService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, organizationService, projectService, userService, notificationService, featureService, dialogs, dialogService, debounce) {
+        .controller('organization.Manage', ['$state', '$stateParams', '$window', 'organizationService', 'projectService', 'userService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, $window, organizationService, projectService, userService, notificationService, featureService, dialogs, dialogService, debounce) {
             var organizationId = $stateParams.id;
             var options = { limit: 5 };
             var vm = this;
 
             function addUser() {
+                dialogs.create('/app/organization/manage/add-user-dialog.tpl.html', 'AddUserDialog as vm').result.then(function(name) {
+                    function onSuccess(response) {
+                        vm.users.push(response.data);
+                    }
 
+                    function onFailure() {
+                        notificationService.error('An error occurred while inviting the user.');
+                    }
+
+                    organizationService.create(name).then(onSuccess, onFailure);
+                });
             }
 
             function get() {
@@ -47,12 +57,26 @@
                 return featureService.hasPremium();
             }
 
-            function removeUser() {
+            function removeUser(user) {
+                return dialogService.confirmDanger('Are you sure you want to remove this user from your organization?', 'REMOVE USER').then(function() {
+                    function onSuccess() {
+                        vm.users.splice(vm.users.indexOf(user), 1);
+                    }
 
+                    function onFailure() {
+                        notificationService.error('An error occurred while trying to remove the user.');
+                    }
+
+                    return organizationService.removeUser(organizationId, user.id).then(onSuccess, onFailure);
+                });
             }
 
-            function resendNotification() {
+            function resendNotification(user) {
+                function onFailure() {
+                    notificationService.error('An error occurred while trying to resend the notification.');
+                }
 
+                return organizationService.addUser(organizationId, user.email_address).catch(onFailure);
             }
 
             function open(id, event) {

@@ -20,7 +20,7 @@
             }
 
             function getInvoices(id, options) {
-                return Restangular.one('organizations', id).all('invoices').getList(options || {});;
+                return Restangular.one('organizations', id).all('invoices').getList(options || {});
             }
 
             function remove(id) {
