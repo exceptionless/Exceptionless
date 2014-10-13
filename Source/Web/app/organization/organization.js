@@ -7,6 +7,7 @@
         'exceptionless.project',
         'exceptionless.projects',
         'exceptionless.token',
+        'exceptionless.user',
         'exceptionless.web-hook',
 
         'ui.router',
@@ -28,6 +29,13 @@
             controller: 'organization.List',
             controllerAs: 'vm',
             templateUrl: 'app/organization/list.tpl.html'
+        });
+
+        $stateProvider.state('app.organization.manage', {
+            url: '/:id/manage',
+            controller: 'organization.Manage',
+            controllerAs: 'vm',
+            templateUrl: 'app/organization/manage.tpl.html'
         });
     });
 }());

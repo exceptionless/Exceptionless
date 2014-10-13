@@ -19,6 +19,10 @@
                 return Restangular.one('organizations', id).get();
             }
 
+            function getInvoices(id, options) {
+                return Restangular.one('organizations', id).all('invoices').getList(options || {});;
+            }
+
             function remove(id) {
                 return Restangular.one('organizations', id).remove();
             }
@@ -36,6 +40,7 @@
                 create: create,
                 getAll: getAll,
                 getById: getById,
+                getInvoices: getInvoices,
                 remove: remove,
                 removeUser: removeUser,
                 update: update

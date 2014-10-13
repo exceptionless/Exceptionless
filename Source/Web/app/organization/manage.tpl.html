@@ -1,0 +1,115 @@
+<div class="hbox hbox-auto-xs hbox-auto-sm">
+    <div class="col">
+        <div class="bg-light lter b-b wrapper-md">
+            <div class="row">
+                <h1 class="m-n font-thin h3 text-black">Manage {{vm.organization.name || 'Organization'}}</h1>
+            </div>
+        </div>
+        <div class="wrapper-md">
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-th-list"></i> Manage {{vm.organization.name || 'Organization'}}</div>
+                <div class="panel-body">
+                    <tabset>
+                        <tab heading="General">
+                            <form name="organizationForm" role="form">
+                                <div class="form-group">
+                                    <label>organization Name</label>
+                                    <input name="name" type="text" class="form-control" placeholder="organization Name" ng-model="vm.organization.name" ng-change="vm.save(organizationForm.$valid)" required />
+                                    <div class="error" ng-if="organizationForm.name.$touched">
+                                        <small ng-if="organizationForm.name.$error.required">
+                                            Please enter a valid organization name.
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="line line-dashed b-b line-lg pull-in"></div>
+                                <div class="form-group">
+                                    <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
+                                </div>
+                            </form>
+                        </tab>
+                        <tab heading="Projects">
+                            <projects settings="vm.projects"></projects>
+
+                            <div class="line line-dashed b-b line-lg pull-in"></div>
+                            <div class="form-group">
+                                <button ui-sref="app.project.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
+                                <div class="pull-right">
+                                    <button ui-sref="app.project.add" type="button" class="btn btn-primary">New Project</button>
+                                </div>
+                            </div>
+                        </tab>
+                        <tab heading="Users">
+                            <table class="table table-striped table-bordered table-fixed">
+                                <thead>
+                                    <tr>
+                                        <th>Email Address</th>
+                                        <th>&nbsp;</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="user in vm.users track by user.id">
+                                        <td>
+                                            <span>{{::user.email_address}}</span>
+                                            <span ng-if="user.has_admin_role" class="label label-info">Admin</span>
+                                            <span ng-if="user.is_invite" class="label label-success">Invited</span>
+                                        </td>
+                                        <td>
+                                            <!--
+                                            <a class="btn btn-sm" data-bind="visible: !isInvite() && exceptionless.App.user().hasAdminRole(), click: $parent.updateAdminRole, attr: { title: !hasAdminRole() ? 'Add Admin Role' : 'Remove Admin Role' }">
+                                                <i class="fa fa-user"></i>
+                                            </a>
+                                            -->
+                                            <a class="btn btn-sm" ng-click="vm.resendNotification" title="Resend Invite Email">
+                                                <i class="fa fa-envelope"></i>
+                                            </a>
+                                            <a class="btn btn-sm" ng-click="vm.removeUser(user)" title="{{user.is_invite ? 'Revoke Invite' : 'Remove User' }}">
+                                                <i class="fa fa-times"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <div class="line line-dashed b-b line-lg pull-in"></div>
+                            <div class="form-group">
+                                <button ui-sref="app.organization.dashboard" type="submit" class="btn btn-default">Go To Dashboard</button>
+                                <div class="pull-right">
+                                    <button ng-click="vm.addUser()" class="btn btn-primary">Invite User</button>
+                                </div>
+                            </div>
+                        </tab>
+                        <tab heading="Billing" ng-if="vm.hasInvoices()">
+                            <table class="table table-striped table-bordered table-fixed">
+                                <thead>
+                                    <tr>
+                                        <th>Payment Number</th>
+                                        <th>Date</th>
+                                        <th class="number">Status</th>
+                                        <th>&nbsp;</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="row-clickable" ng-repeat="invoice in vm.invoices track by invoice.id">
+                                        <td ng-click="vm.open(invoice.id, $event)">{{::invoice.id}}</td>
+                                        <td ng-click="vm.open(invoice.id, $event)">{{::invoice.date | date: 'medium'}}</td>
+                                        <td ng-click="vm.open(invoice.id, $event)">{{::invoice.paid ? 'Paid' : 'Unpaid'}}</td>
+                                        <td>
+                                            <a ui-sref="app.organization.payment({id: invoice.id})" title="View Payment" class="btn btn-sm">
+                                                <i class="fa fa-file"></i>
+                                            </a>
+                                            <!--
+                                            <a data-bind="visible: id && exceptionless.App.user().hasAdminRole,  attr: { href: 'https://manage.stripe.com/invoices/in_' + id, target: '_blank' }" title="View Stripe Invoice" class="btn btn-small">
+                                                <i class="fa fa-credit-card"></i>
+                                            </a>
+                                            -->
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </tab>
+                    </tabset>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
