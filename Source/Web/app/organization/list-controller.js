@@ -2,14 +2,22 @@
     'use strict';
 
     angular.module('app.organization')
-        .controller('organization.List', ['$rootScope', '$scope', '$window', '$state', 'dialogService', 'linkService', 'notificationService', 'organizationService', function ($rootScope, $scope, $window, $state, dialogService, linkService, notificationService, organizationService) {
+        .controller('organization.List', ['$rootScope', '$scope', '$window', '$state', 'dialogs', 'dialogService', 'linkService', 'notificationService', 'organizationService', function ($rootScope, $scope, $window, $state, dialogs, dialogService, linkService, notificationService, organizationService) {
             var options = { limit: 10, mode: 'summary' };
             var vm = this;
 
-            console.log(this);
-
             function add() {
+                dialogs.create('/app/organization/add-organization-dialog.tpl.html', 'AddOrganizationDialog as vm').result.then(function(name) {
+                    function onSuccess(response) {
+                        vm.organizations.push(response.data);
+                    }
 
+                    function onFailure() {
+                        notificationService.error('An error occurred while creating the organization.');
+                    }
+
+                    organizationService.create(name).then(onSuccess, onFailure);
+                });
             }
 
             function get() {
@@ -23,7 +31,23 @@
             }
 
             function leave(organization) {
+                return dialogService.confirmDanger('Are you sure you want to leave this organization?', 'LEAVE ORGANIZATION').then(function() {
+                    function onSuccess() {
+                        vm.organizations.splice(vm.organizations.indexOf(organization), 1);
+                    }
 
+                    function onFailure(response) {
+                        // TODO: Show upgrade dialog.
+                        var message = 'An error occurred while trying to leave the organization.';
+                        if (response.status === 400) {
+                            message += '<br /> Message: ' + response.data;
+                        }
+
+                        notificationService.error(message);
+                    }
+
+                    return organizationService.remove(organization.id).then(onSuccess, onFailure);
+                });
             }
 
             function open(id, event) {

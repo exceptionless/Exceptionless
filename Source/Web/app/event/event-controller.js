@@ -32,7 +32,7 @@
                     .then(function (response) {
                         vm.event = response.data;
                     }, function() {
-                        $state.go('app.dashboard');
+                        $state.go('app.project.dashboard');
                         notificationService.error('The stack "' + $stateParams.id + '" could not be found.');
                     });
             }
