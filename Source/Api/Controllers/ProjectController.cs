@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/projects")]
+        [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
         public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
