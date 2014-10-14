@@ -40,13 +40,14 @@
                         // TODO: Show upgrade dialog.
                         var message = 'An error occurred while trying to leave the organization.';
                         if (response.status === 400) {
-                            message += '<br /> Message: ' + response.data;
+                            message += 'Message: ' + response.data.message;
                         }
 
                         notificationService.error(message);
                     }
 
-                    return organizationService.remove(organization.id).then(onSuccess, onFailure);
+                    // TODO: Inject the current user.
+                    return organizationService.removeUser(organization.id, 'test@exceptionless.com').then(onSuccess, onFailure);
                 });
             }
 

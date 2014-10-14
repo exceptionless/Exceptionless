@@ -98,8 +98,11 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             Organization organization = _repository.GetById(id, true);
-            if (organization == null || String.IsNullOrWhiteSpace(organization.StripeCustomerId))
+            if (organization == null)
                 return NotFound();
+
+            if (String.IsNullOrWhiteSpace(organization.StripeCustomerId))
+                return Ok(new List<InvoiceGridModel>());
 
             var invoiceService = new StripeInvoiceService();
             var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after }).Select(Mapper.Map<InvoiceGridModel>).ToList();

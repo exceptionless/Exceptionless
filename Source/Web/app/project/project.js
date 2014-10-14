@@ -26,6 +26,13 @@
             template: '<ui-view/>'
         });
 
+        $stateProvider.state('app.project.add', {
+            url: '/:id/configure',
+            controller: 'project.Add',
+            controllerAs: 'vm',
+            templateUrl: 'app/project/add.tpl.html'
+        });
+
         $stateProvider.state('app.project.configure', {
             url: '/:id/configure',
             controller: 'project.Configure',

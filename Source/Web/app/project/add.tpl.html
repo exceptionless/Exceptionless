@@ -1,0 +1,61 @@
+<div class="hbox hbox-auto-xs hbox-auto-sm">
+    <div class="col">
+        <div class="bg-light lter b-b wrapper-md">
+            <div class="row">
+                <div class="col-sm-6 col-xs-12">
+                    <h1 class="m-n font-thin h3 text-black">Project Information</h1>
+                </div>
+                <div class="col-sm-6 text-right hidden-xs">
+                    Filter
+                </div>
+            </div>
+        </div>
+        <div class="wrapper-md">
+            <div class="panel panel-default">
+                <div class="panel-heading"><i class="fa fa-asterisk"></i> Project Information</div>
+                <div class="panel-body">
+                    <form name="addForm" role="form">
+                        <div class="form-group" ng-if="vm.hasOrganizations()">
+                            <label>Organization</label>
+                            <select class="form-control" ng-init="vm.currentOrganization = vm.organizations[0]" ng-model="vm.currentOrganization" ng-options="organization.name for organization in vm.organizations"></select>
+                        </div>
+
+                        <div class="form-group" ng-if="!vm.hasOrganizations()">
+                            <label>Organization Name</label>
+                            <input name="organization_name" type="text" class="form-control" placeholder="Organization Name" ng-model="vm.organization_name" ng-required="!vm.hasOrganizations()" />
+                            <div class="error" ng-if="addForm.organization_name.$touched">
+                                <small ng-if="addForm.organization_name.$error.required">
+                                    Please enter a valid organization name.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Project Name</label>
+                            <input name="project_name" type="text" class="form-control" placeholder="Project Name" ng-model="vm.project_name" required />
+                            <div class="error" ng-if="addForm.project_name.$touched">
+                                <small ng-if="addForm.project_name.$error.required">
+                                    Please enter a valid project name.
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Time Zone</label>
+                            <select class="form-control" ng-init="vm.currentTimeZone = vm.timeZones[0]" ng-model="vm.time_zone" ng-options="timeZone.name for timeZone in vm.timeZones"></select>
+                            <span class="help-block">Used to display charts and event data in your local time.</span>
+                        </div>
+
+                        <div class="line line-dashed b-b line-lg pull-in"></div>
+                        <div class="form-group">
+                            <div class="pull-right">
+                                <button type="submit" ng-click="vm.add()" class="btn btn-primary">Add Project</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- TODO: Google Conversions -->
