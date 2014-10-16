@@ -39,19 +39,6 @@
                                 </small>
                             </div>
                         </div>
-
-                        <div class="form-group">
-                            <label>Time Zone</label>
-                            <select class="form-control" ng-init="vm.currentTimeZone = vm.timeZones[0]" ng-model="vm.time_zone" ng-options="timeZone.name for timeZone in vm.timeZones"></select>
-                            <span class="help-block">Used to display charts and event data in your local time.</span>
-                        </div>
-
-                        <div class="line line-dashed b-b line-lg pull-in"></div>
-                        <div class="form-group">
-                            <div class="pull-right">
-                                <button type="submit" ng-click="vm.add()" class="btn btn-primary">Add Project</button>
-                            </div>
-                        </div>
                     </form>
                 </div>
             </div>
