@@ -10,12 +10,11 @@
             }
 
             function getProjects() {
-                return projectService.getById(projectId)
+                return projectService.getAll()
                     .then(function (response) {
-                        vm.project = response.data;
+                        vm.projects = response.data;
                     }, function() {
-                        $state.go('app.dashboard');
-                        notificationService.error('The project "' + $stateParams.id + '" could not be found.');
+                        notificationService.error('An error occurred while loading the projects.');
                     });
             }
 
@@ -23,6 +22,9 @@
                 return featureService.hasPremium();
             }
 
+            function hasProjects() {
+                return vm.projects.length > 0;
+            }
 
             function isVerified() {
                 return false;
@@ -41,7 +43,7 @@
                     notificationService.error('An error occurred while saving the project.');
                 }
 
-                return projectService.update(vm.project.id, vm.project).catch(onFailure);
+                return projectService.update(vm.currentProject.id, vm.currentProject).catch(onFailure);
             }
 
             function saveNotificationSettings() {
@@ -49,14 +51,18 @@
             }
 
             vm.changePassword = changePassword;
+            vm.currentProject = {};
             vm.hasPremiumFeatures = hasPremiumFeatures;
+            vm.hasProjects = hasProjects;
             vm.isVerified = isVerified;
             vm.password = {};
             vm.profile = {};
-            vm.project = {};
+            vm.projects = [];
             vm.resendVerificationEmail = resendVerificationEmail;
             vm.save = debounce(save, 1000);
             vm.saveNotificationSettings = saveNotificationSettings;
+
+            getProjects();
         }
     ]);
 }());

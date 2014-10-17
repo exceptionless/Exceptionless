@@ -52,72 +52,75 @@
                                     </label>
                                 </div>
 
-                                <hr />
+                                <div ng-if="vm.hasProjects()">
+                                    <hr />
+                                    <select class="form-control" ng-init="vm.currentProject = vm.projects[0]" ng-model="vm.currentProject" ng-options="project.name group by project.organization_name for project in vm.projects"></select>
 
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.send_daily_summary">
-                                        <i></i>
-                                        Send daily project summary
-                                    </label>
-                                </div>
-
-
-                                <hr ng-if="!vm.hasPremiumFeatures()" />
-                                <div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures()">
-                                    <a href="javascript:void(0);">Upgrade now</a> to enable occurrence level notifications!
-                                </div>
-
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.report_critical_events" ng-disabled="!vm.hasPremiumFeatures()">
-                                        <i></i>
-                                        Notify me on critical events
-                                    </label>
-                                </div>
-
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.report_regressions" ng-disabled="!vm.hasPremiumFeatures()">
-                                        <i></i>
-                                        Notify me on event regressions
-                                    </label>
-                                </div>
-
-                                <hr />
-
-                                <p>Choose how often you want to receive notifications for error occurrences in this project.</p>
-                                <div class="form-group">
-                                    <div class="btn-group">
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'0'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>Never</label>
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'1'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>New Only</label>
-                                        <label class="btn btn-default" ng-model="vm.project.mode" btn-radio="'2'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>All Occurrences</label>
-                                    </div>
-                                </div>
-
-                                <div ng-if="vm.project.mode > 0">
                                     <div class="checkbox">
                                         <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.project.report_known_bot_events" ng-disabled="!vm.hasPremiumFeatures()">
+                                            <input type="checkbox" ng-model="vm.currentProject.send_daily_summary">
                                             <i></i>
-                                            Notify me on events from known bots
+                                            Send daily project summary
+                                        </label>
+                                    </div>
+
+
+                                    <hr ng-if="!vm.hasPremiumFeatures()" />
+                                    <div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures()">
+                                        <a href="javascript:void(0);">Upgrade now</a> to enable occurrence level notifications!
+                                    </div>
+
+                                    <div class="checkbox">
+                                        <label class="i-checks">
+                                            <input type="checkbox" ng-model="vm.currentProject.report_critical_events" ng-disabled="!vm.hasPremiumFeatures()">
+                                            <i></i>
+                                            Notify me on critical events
                                         </label>
                                     </div>
 
                                     <div class="checkbox">
                                         <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.project.report_404_events" ng-disabled="!vm.hasPremiumFeatures()">
+                                            <input type="checkbox" ng-model="vm.currentProject.report_regressions" ng-disabled="!vm.hasPremiumFeatures()">
                                             <i></i>
-                                            Notify me on 404 events
+                                            Notify me on event regressions
                                         </label>
                                     </div>
-                                </div>
 
-                                <div class="line line-dashed b-b line-lg pull-in"></div>
-                                <div class="form-group">
-                                    <button ui-sref="app.project.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
-                                    <div class="pull-right">
-                                        <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save</button>
+                                    <hr />
+
+                                    <p>Choose how often you want to receive notifications for error occurrences in this project.</p>
+                                    <div class="form-group">
+                                        <div class="btn-group">
+                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'0'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>Never</label>
+                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'1'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>New Only</label>
+                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'2'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>All Occurrences</label>
+                                        </div>
+                                    </div>
+
+                                    <div ng-if="vm.currentProject.mode > 0">
+                                        <div class="checkbox">
+                                            <label class="i-checks">
+                                                <input type="checkbox" ng-model="vm.currentProject.report_known_bot_events" ng-disabled="!vm.hasPremiumFeatures()">
+                                                <i></i>
+                                                Notify me on events from known bots
+                                            </label>
+                                        </div>
+
+                                        <div class="checkbox">
+                                            <label class="i-checks">
+                                                <input type="checkbox" ng-model="vm.currentProject.report_404_events" ng-disabled="!vm.hasPremiumFeatures()">
+                                                <i></i>
+                                                Notify me on 404 events
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="line line-dashed b-b line-lg pull-in"></div>
+                                    <div class="form-group">
+                                        <button ui-sref="app.project.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
+                                        <div class="pull-right">
+                                            <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save</button>
+                                        </div>
                                     </div>
                                 </div>
                             </form>
