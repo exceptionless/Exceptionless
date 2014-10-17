@@ -13,6 +13,7 @@
         'exceptionless.ui-scroll',
         'exceptionless.ui-shift',
         'exceptionless.ui-toggle-class',
+        'app.account',
         'app.event',
         'app.organization',
         'app.project',

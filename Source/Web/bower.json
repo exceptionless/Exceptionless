@@ -36,7 +36,8 @@
     "angularjs-toaster": "~0.4",
     "ua-parser-js": "~0.7",
     "angular-dialog-service": "~5.2",
-    "moment-timezone": "~0.2.2"
+    "moment-timezone": "~0.2.2",
+    "angular-input-match": "~0.0.2"
   },
   "resolutions": {
     "bootstrap": "~3.2",

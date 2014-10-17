@@ -27,7 +27,7 @@
         });
 
         $stateProvider.state('app.project.add', {
-            url: '/:id/configure',
+            url: '/add',
             controller: 'project.Add',
             controllerAs: 'vm',
             templateUrl: 'app/project/add.tpl.html'
