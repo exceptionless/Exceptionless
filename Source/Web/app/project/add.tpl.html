@@ -16,13 +16,12 @@
                 <div class="panel-body">
                     <form name="addForm" role="form">
                         <div class="form-group" ng-if="vm.hasOrganizations()">
-                            <label>Organization</label>
+                            <label>Organization Name</label>
                             <select class="form-control" ng-init="vm.currentOrganization = vm.organizations[0]" ng-model="vm.currentOrganization" ng-options="organization.name for organization in vm.organizations"></select>
                         </div>
 
-                        <div class="form-group" ng-if="!vm.hasOrganizations()">
-                            <label>Organization Name</label>
-                            <input name="organization_name" type="text" class="form-control" placeholder="Organization Name" ng-model="vm.organization_name" ng-required="!vm.hasOrganizations()" />
+                        <div class="form-group" ng-if="vm.canCreateOrganization()">
+                            <input name="organization_name" type="text" class="form-control" placeholder="New Organization Name" ng-model="vm.organization_name" ng-required="vm.canCreateOrganization()" />
                             <div class="error" ng-if="addForm.organization_name.$touched">
                                 <small ng-if="addForm.organization_name.$error.required">
                                     Please enter a valid organization name.
@@ -32,11 +31,19 @@
 
                         <div class="form-group">
                             <label>Project Name</label>
-                            <input name="project_name" type="text" class="form-control" placeholder="Project Name" ng-model="vm.project_name" required />
+                            <input name="project_name" type="text" class="form-control" placeholder="New Project Name" ng-model="vm.project_name" required />
                             <div class="error" ng-if="addForm.project_name.$touched">
                                 <small ng-if="addForm.project_name.$error.required">
                                     Please enter a valid project name.
                                 </small>
+                            </div>
+                        </div>
+
+                        <div class="line line-dashed b-b line-lg pull-in"></div>
+                        <div class="form-group">
+                            <button ui-sref="app.project.dashboard" ng-if="vm.hasOrganizations()" type="button" class="btn btn-default">Go To Dashboard</button>
+                            <div class="pull-right">
+                                <button ng-click="vm.add(addForm.$valid)" type="submit" class="btn btn-primary">Add Project</button>
                             </div>
                         </div>
                     </form>

@@ -65,28 +65,33 @@
 
             function promoteToExternal() {
                 if (!featureService.hasPremium()) {
-                    dialogService.confirmUpgradePlan('Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.');
-                    return;
+                    return dialogService.confirmUpgradePlan('Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.').then(function() {
+                        return promoteToExternal();
+                    });
                 }
 
-                stackService.promote(stackId)
+                return stackService.promote(stackId)
                     .then(function() {
                         notificationService.success('Successfully promoted stack!');
                     }, function(response) {
                         if (response.status === 426) { // TODO: Move this to an interceptor.
-                            dialogService.confirmUpgradePlan(response.data);
-                        } else if (response.status === 501) {
-                            dialogService.confirm(response.data, 'Manage Integrations').then(function() {
+                            return dialogService.confirmUpgradePlan(response.data).then(function() {
+                                return promoteToExternal();
+                            });
+                        }
+
+                        if (response.status === 501) {
+                            return dialogService.confirm(response.data, 'Manage Integrations').then(function() {
                                 $state.go('app.projects.manage.integrations');
                             });
-                        } else {
-                            notificationService.error('An error occurred while promoting this stack.');
                         }
+
+                        notificationService.error('An error occurred while promoting this stack.');
                     });
             }
 
             function removeReferenceLink(reference) {
-                dialogService.confirmDanger('Are you sure you want to remove this reference link?', 'REMOVE REFERENCE LINK').then(function() {
+                return dialogService.confirmDanger('Are you sure you want to remove this reference link?', 'REMOVE REFERENCE LINK').then(function() {
                     function onSuccess() {
                         vm.stack.references.splice(vm.stack.references.indexOf(reference), 1);
                     }
@@ -101,7 +106,7 @@
 
             function resetOccurrences() {
                 var message = 'Are you sure you want to reset all occurrences for this stack?';
-                dialogService.confirmDanger(message, 'RESET ALL OCCURRENCE DATA').then(function() {
+                return dialogService.confirmDanger(message, 'RESET ALL OCCURRENCE DATA').then(function() {
                     return stackService.resetData(stackId)
                         .then(function (response) {
                             // TODO: Trigger refresh of page data.
@@ -122,10 +127,10 @@
                 }
 
                 if (isCritical()) {
-                    stackService.markNotCritical(stackId).then(onSuccess, onFailure);
-                } else {
-                    stackService.markCritical(stackId).then(onSuccess, onFailure);
+                    return stackService.markNotCritical(stackId).then(onSuccess, onFailure);
                 }
+
+                return stackService.markCritical(stackId).then(onSuccess, onFailure);
             }
 
             function updateIsFixed(){
@@ -141,10 +146,10 @@
                 }
 
                 if (isFixed()) {
-                    stackService.markNotFixed(stackId).then(onSuccess, onFailure);
-                } else {
-                    stackService.markFixed(stackId).then(onSuccess, onFailure);
+                    return stackService.markNotFixed(stackId).then(onSuccess, onFailure);
                 }
+
+                return stackService.markFixed(stackId).then(onSuccess, onFailure);
             }
 
             function updateIsHidden() {
@@ -157,10 +162,10 @@
                 }
 
                 if (isHidden()) {
-                    stackService.markNotHidden(stackId).then(onSuccess, onFailure);
-                } else {
-                    stackService.markHidden(stackId).then(onSuccess, onFailure);
+                    return stackService.markNotHidden(stackId).then(onSuccess, onFailure);
                 }
+
+                return stackService.markHidden(stackId).then(onSuccess, onFailure);
             }
 
             function updateNotifications() {
@@ -174,10 +179,10 @@
                 }
 
                 if (notificationsDisabled()) {
-                    stackService.enableNotifications(stackId).then(onSuccess, onFailure);
-                } else {
-                    stackService.disableNotifications(stackId).then(onSuccess, onFailure);
+                    return stackService.enableNotifications(stackId).then(onSuccess, onFailure);
                 }
+
+                return stackService.disableNotifications(stackId).then(onSuccess, onFailure);
             }
 
             vm.addReferenceLink = addReferenceLink;

@@ -3,6 +3,10 @@
 
     angular.module('exceptionless.project', ['restangular'])
         .factory('projectService', ['Restangular', function (Restangular) {
+            function create(organizationId, name) {
+                return Restangular.all('projects').post({ 'organization_id': organizationId, 'name': name });
+            }
+
             function getAll(options) {
                 return Restangular.all('projects').getList(options || {});
             }
@@ -52,6 +56,7 @@
             }
 
             var service = {
+                create: create,
                 getAll: getAll,
                 getById: getById,
                 getByOrganizationId: getByOrganizationId,
