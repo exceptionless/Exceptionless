@@ -5,29 +5,29 @@
 @import "bower_components/font-awesome/less/font-awesome.less";
 @fa-font-path: "bower_components/font-awesome/fonts";
 
-@import "css/font.css";
-@import "css/animate.css";
+@import url(//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700);
+
+@import "bower_components/animate.css/animate.css";
 @import "bower_components/angularjs-toaster/toaster.css";
 
 /* app */
-
-@import "css/less/variables.less";
-@import "css/less/mixins.less";
-@import "css/less/reset.less";
-@import "css/less/layout.less";
-@import "css/less/nav.less";
-@import "css/less/buttons.less";
-@import "css/less/components.less";
-@import "css/less/ng.less";
-@import "css/less/colors.less";
-@import "css/less/utilities.less";
+@import "less/variables.less";
+@import "less/mixins.less";
+@import "less/reset.less";
+@import "less/layout.less";
+@import "less/nav.less";
+@import "less/buttons.less";
+@import "less/components.less";
+@import "less/tables.less";
+@import "less/ng.less";
+@import "less/colors.less";
+@import "less/utilities.less";
 
 /* Component LESS */
 
+@import "app/event/event.less";
 @import "app/organization/organization.less";
 
-@import "components/events/events-directive.less";
-@import "components/projects/projects-directive.less";
 @import "components/simple-stack-trace/simple-stack-trace-directive.less";
 @import "components/stack-trace/stack-trace-directive.less";
 @import "components/stacks/stacks-directive.less";

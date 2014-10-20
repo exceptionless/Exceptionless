@@ -6,7 +6,7 @@
                 <th>Organization</th>
                 <th class="number hidden-xs">Stacks</th>
                 <th class="number hidden-xs">Errors</th>
-                <th ng-hide="!vm.hasProjects()">&nbsp;</th>
+                <th class="action" ng-hide="!vm.hasProjects()">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -16,18 +16,17 @@
                 <td ng-click="vm.open(project.id, $event)" class="hidden-xs">{{::project.stack_count | number:0}}</td>
                 <td ng-click="vm.open(project.id, $event)" class="hidden-xs">{{::project.event_count | number:0}}</td>
                 <td>
-                    <a ui-sref="app.dashboard({ projectId: project.id })" role="button" title="Dashboard" class="btn btn-sm btn-default">
-                        <i class="fa fa-dashboard"></i>
-                    </a>
-                    <a ui-sref="app.project.manage({ id: project.id })" role="button" title="Edit" class="btn btn-sm btn-default">
-                        <i class="fa fa-edit"></i>
-                    </a>
-                    <a ui-sref="app.project.configure({ id: project.id })" role="button" title="Configure Client" class="btn btn-sm btn-default">
-                        <i class="fa fa-download"></i>
-                    </a>
-                    <button role="button" ng-click="vm.remove(project)" title="Delete" class="btn btn-sm btn-danger">
-                        <i class="fa fa-times"></i>
-                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                            <i class="fa fa-fw fa-edit"></i> <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                            <li><a ui-sref="app.dashboard({ projectId: project.id })"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
+                            <li><a ui-sref="app.project.manage({ id: project.id })"><i class="fa fa-fw fa-edit"></i> Edit</a></li>
+                            <li><a ui-sref="app.project.configure({ id: project.id })"><i class="fa fa-fw fa-download"></i> Configure Client</a></li>
+                            <li><a ng-click="vm.remove(project)"><i class="fa fa-fw fa-times"></i> Delete</a></li>
+                        </ul>
+                    </div>
                 </td>
             </tr>
             <tr ng-if="!vm.hasProjects()">

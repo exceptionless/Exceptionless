@@ -19,8 +19,7 @@
             url: '/event/:id',
             controller: 'Event',
             controllerAs: 'vm',
-            templateUrl: 'app/event/event.tpl.html',
-
+            templateUrl: 'app/event/event.tpl.html'
         });
     });
 }());

@@ -1,0 +1,52 @@
+.row-clickable {
+    cursor: pointer;
+}
+
+.table-fixed {
+    table-layout: fixed;
+    word-wrap: break-word;
+}
+
+.table th.action {
+    width: 78px;
+}
+
+.table th.date {
+    white-space: nowrap;
+    width: 140px;
+}
+
+.table th.number {
+    white-space: nowrap;
+    width: 70px;
+}
+
+.table-key-value td+td, .table-key-value th+td {
+    width: 100%
+}
+
+.table-key-value th:first-child, .table-key-value td:first-child {
+    @media (max-width: @screen-xs-max) {
+        width: 100px;
+    }
+
+    @media (min-width: @screen-sm-min) and (max-width: @screen-sm-max) {
+        width: 100px;
+    }
+
+    @media (min-width: @screen-md-min) and (max-width: @screen-md-max) {
+        width: 140px;
+    }
+
+    @media (min-width: @screen-lg-min) {
+        width: 140px;
+    }
+}
+
+.table-footer {
+    padding: 10px 15px;
+    background-color: #f5f5f5;
+    border-top: 1px solid #ddd;
+    border-bottom-right-radius: 3px;
+    border-bottom-left-radius: 3px;
+}

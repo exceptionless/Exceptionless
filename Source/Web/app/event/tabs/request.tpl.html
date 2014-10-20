@@ -1,5 +1,5 @@
 <h3 class="visible-print">Request</h3>
-<table class="table table-striped table-bordered table-fixed b-t b-light">
+<table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
     <tr>
         <th>Occurred On</th>
         <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
@@ -53,7 +53,7 @@
 
 <div ng-if="vm.hasCookies()">
     <h4>Cookie Values</h4>
-    <table class="table table-striped table-bordered table-fixed b-t b-light">
+    <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
         <thead>
             <tr>
                 <th>Name</th>

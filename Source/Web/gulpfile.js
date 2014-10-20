@@ -121,11 +121,7 @@ gulp.task('fonts', ['clean'], function(){
     var fontAwesome = gulp.src('bower_components/font-awesome/fonts/**')
         .pipe(gulp.dest('dist/bower_components/font-awesome/fonts/'));
 
-    var sourceSansPro = gulp.src('fonts/sourcesanspro/**')
-        .pipe(gulp.dest('dist/fonts/sourcesanspro/'));
-
     combined.queue(fontAwesome);
-    combined.queue(sourceSansPro);
 
     return combined.done();
 });

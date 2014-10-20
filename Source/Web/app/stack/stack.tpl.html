@@ -17,32 +17,30 @@
                 </span>
 
                 <div class="pull-right btn-toolbar">
-                    <div class="btn-group">
-                        <button class="btn" ng-click="vm.updateIsFixed()" title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">{{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}</button>
+                    <div class="btn-group btn-group-xs">
+                        <button class="btn btn-default" ng-click="vm.updateIsFixed()" title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">{{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}</button>
                     </div>
-                    <div id="visibility" class="btn-group">
-                        <button class="btn dropdown-toggle" data-toggle="dropdown">
-                            <span class="hidden-xs">Options</span>
-                            <i class="visible-xs fa fa-gear"></i>
-                            <span class="caret"></span>
+                    <div class="btn-group btn-group-xs">
+                        <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                            <i class="visible-xs fa fa-fw fa-gear"></i><span class="hidden-xs">Options</span> <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right" role="menu">
-                            <li><a href="javascript:void(0);" ng-click="vm.updateIsHidden()" title="Hide this stack from reports" ><span ng-if="vm.isHidden()" class="fa fa-check"></span>Hide From Reports</a></li>
+                            <li><a ng-click="vm.updateIsHidden()" title="Hide this stack from reports"><i ng-if="vm.isHidden()" class="fa fa-fw fa-check"></i>Hide From Reports</a></li>
                             <li class="divider"></li>
-                            <li><a href="javascript:void(0);" ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To External</a></li>
-                            <li><a href="javascript:void(0);" ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add Reference Link</a></li>
+                            <li><a ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To External</a></li>
+                            <li><a ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add Reference Link</a></li>
                             <li class="divider"></li>
-                            <li><a href="javascript:void(0);" ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><span ng-if="vm.notificationsDisabled()" class="fa fa-check"></span>Disable Notifications</a></li>
-                            <li><a href="javascript:void(0);" ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><span ng-if="vm.isCritical()" class="fa fa-check"></span>Future Occurrences Are Critical</a></li>
+                            <li><a ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><i ng-if="vm.notificationsDisabled()" class="fa fa-fw fa-check"></i>Disable Notifications</a></li>
+                            <li><a ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><i ng-if="vm.isCritical()" class="fa fa-fw fa-check"></i>Future Occurrences Are Critical</a></li>
                             <li class="divider"></li>
-                            <li><a href="javascript:void(0);" ng-click="vm.resetOccurrences()" title="Reset stats and occurrence data for this stack">Reset Stats</a></li>
+                            <li><a ng-click="vm.resetOccurrences()" title="Reset stats and occurrence data for this stack">Reset Stats</a></li>
                         </ul>
                     </div>
                 </div>
             </div>
 
             <div class="panel-body">
-                <table class="table table-striped table-bordered table-fixed b-t b-light">
+                <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
                     <tbody>
                         <tr>
                             <th>Title</th>
@@ -63,16 +61,16 @@
                         <tr ng-if="vm.hasReference()">
                             <th>{{vm.hasReferences() ? 'Reference Links' : 'Reference Link'}}</th>
                             <td>
-                                <ul ng-if="vm.hasReferences()" class="fa-ul">
+                                <ul ng-if="vm.hasReferences()" class="fa fa-fw-ul">
                                     <li ng-repeat="reference in vm.stack.references track by reference">
                                         <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
-                                        <a class="delete-link" href="javascript:void(0);" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-times"></i></a>
+                                        <a class="delete-link" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-fw fa-times"></i></a>
                                     </li>
                                 </ul>
 
                                 <div ng-if="!vm.hasReferences()">
                                     <a ng-href="{{::vm.stack.references[0]}}" target="_blank">{{::vm.stack.references[0]}}</a>
-                                    <a class="delete-link" href="javascript:void(0);" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i class="fa fa-times"></i></a>
+                                    <a class="delete-link" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i class="fa fa-fw fa-times"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -80,7 +78,7 @@
                 </table>
 
                 <h4>Stacking Information</h4>
-                <table class="table table-striped table-bordered table-fixed b-t b-light">
+                <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
                     <tbody>
                         <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
                             <th>{{key}}</th>
@@ -92,7 +90,7 @@
         </div>
 
         <div class="panel panel-default">
-            <div class="panel-heading"><i class="fa fa-calendar"></i> Recent Occurrences</div>
+            <div class="panel-heading"><i class="fa fa-fw fa-calendar"></i> Recent Occurrences</div>
             <events settings="vm.recentOccurrences"></events>
         </div>
     </div>
