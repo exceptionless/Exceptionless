@@ -1,6 +1,5 @@
 using System;
 using CodeSmith.Core.Events;
-using CodeSmith.Core.Extensions;
 
 namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {
@@ -42,11 +41,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public DateTime GetStartDate() {
-            return StartDate.HasValue ? StartDate.Value : ServiceStartDate;
+            return StartDate.HasValue && StartDate.Value > ServiceStartDate ? StartDate.Value : ServiceStartDate;
         }
 
         public DateTime GetEndDate() {
-            return EndDate.HasValue ? EndDate.Value : DateTime.UtcNow.ToEndOfDay();
+            return EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1) ? EndDate.Value : DateTime.UtcNow.AddHours(1);
         }
 
         public int GetLimit() {

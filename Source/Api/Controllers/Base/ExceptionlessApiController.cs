@@ -24,14 +24,14 @@ namespace Exceptionless.Api.Controllers {
         public const int API_CURRENT_VERSION = 2;
         public const string API_PREFIX = "api/v2";
 
-        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? starTime, DateTime? endTime) {
-            if (starTime == null)
-                starTime = DateTime.MinValue;
+        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? start, DateTime? end) {
+            if (start == null)
+                start = DateTime.MinValue;
 
-            if (endTime == null)
-                endTime = DateTime.MaxValue;
+            if (end == null)
+                end = DateTime.MaxValue;
 
-            return starTime < endTime ? new Tuple<DateTime, DateTime>(starTime.Value, endTime.Value) : new Tuple<DateTime, DateTime>(endTime.Value, starTime.Value);
+            return start < end ? new Tuple<DateTime, DateTime>(start.Value, end.Value) : new Tuple<DateTime, DateTime>(end.Value, start.Value);
         }
 
         protected const int DEFAULT_LIMIT = 10;

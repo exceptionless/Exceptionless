@@ -339,7 +339,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
-        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, bool summary = false) {
+        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -356,20 +356,18 @@ namespace Exceptionless.Api.Controllers {
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
             var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, hidden, @fixed, notfound).ToList();
-            List<EventStackResult> results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack, EventStackResult>).ToList();
+            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, query).ToList();
+            var results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).ToList();
 
-            // TODO: Finish this once we finish elastic search.
-            //if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
 
-            // TODO: Fix this paging
-            return OkWithResourceLinks(results, options.HasMore, e => e.First.UtcTicks.ToString(), GetLimitedByPlanHeader(stacks.Count - results.Count));
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
-        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, string mode = null) {
+        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -385,15 +383,14 @@ namespace Exceptionless.Api.Controllers {
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
-            var paging = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var results = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, paging, hidden, @fixed, notfound);
-            var stacks = results.Where(es => es.LastOccurrence >= retentionUtcCutoff).Select(Mapper.Map<Stack,EventStackResult>).ToList();
+            var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
+            var stacks = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, options, query);
+            var results = stacks.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
-            // TODO: Finish this once we finish elastic search.
-            //if (summary)
-            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
 
-            return OkWithResourceLinks(results, paging.HasMore, e => e.Id, GetLimitedByPlanHeader(stacks.Count - results.Count));
+            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
@@ -464,7 +461,7 @@ namespace Exceptionless.Api.Controllers {
             if (Mapper.FindTypeMapFor<Stack, EventStackResult>() == null)
                 Mapper.CreateMap<Stack, EventStackResult>().AfterMap((s, esr) => {
                     esr.Id = s.Id;
-                    esr.Type = s.SignatureInfo.ContainsKey("ExceptionType") ? s.SignatureInfo["ExceptionType"] : null;
+                    esr.Type = s.Type;
                     esr.Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null;
                     esr.Path = s.SignatureInfo.ContainsKey("Path") ? s.SignatureInfo["Path"] : null;
                     esr.Is404 = s.SignatureInfo.ContainsKey("Path");

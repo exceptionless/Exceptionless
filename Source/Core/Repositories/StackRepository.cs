@@ -94,36 +94,18 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
-        public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
+        public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
+            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
             options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));
             options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).LowerOrEquals(utcEnd));
-
-            if (!includeFixed)
-                options.Filter &= Filter<Stack>.Missing(s => s.DateFixed);
-
-            if (!includeHidden)
-                options.Filter &= !Filter<Stack>.Term(s => s.IsHidden, true);
-
-            if (!includeNotFound)
-                options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
             return Find(options);
         }
 
-        public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {
-            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
+        public ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
+            var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.FirstOccurrence).Descending()).WithPaging(paging);
             options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).GreaterOrEquals(utcStart));
             options.Filter &= Filter<Stack>.Range(r => r.OnField(s => s.FirstOccurrence).LowerOrEquals(utcEnd));
-
-            if (!includeFixed)
-                options.Filter &= Filter<Stack>.Missing(s => s.DateFixed);
-
-            if (!includeHidden)
-                options.Filter &= !Filter<Stack>.Term(s => s.IsHidden, true);
-
-            if (!includeNotFound)
-                options.Filter &= Filter<Stack>.Missing("signature_info.path");
 
             return Find(options);
         }

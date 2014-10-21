@@ -213,6 +213,7 @@
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ExceptionlessOAuthAuthorizationServerProvider.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
+    <Compile Include="Utility\EndDateParameterBinding.cs" />
     <Compile Include="Utility\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />

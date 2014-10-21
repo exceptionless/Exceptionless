@@ -45,11 +45,11 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private static IEnumerable<string> GetTargetIndex(DateTime? utcStart, DateTime? utcEnd) {
-            if (!utcStart.HasValue)
+            if (!utcStart.HasValue || utcStart < MultiOptions.ServiceStartDate)
                 utcStart = MultiOptions.ServiceStartDate;
 
-            if (!utcEnd.HasValue)
-                utcEnd = DateTime.UtcNow.ToEndOfDay();
+            if (!utcEnd.HasValue || utcEnd.Value > DateTime.UtcNow.AddHours(1))
+                utcEnd = DateTime.UtcNow.AddHours(1);
 
             var current = new DateTime(utcStart.Value.Year, utcStart.Value.Month, 1);
             var indices = new List<string>();

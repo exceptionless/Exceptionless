@@ -16,8 +16,8 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IStackRepository : IRepositoryOwnedByOrganizationAndProject<Stack> {
         Stack GetStackBySignatureHash(string projectId, string signatureHash);
-        ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
-        ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
+        ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
+        ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
         void MarkAsRegressed(string stackId);
         void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc);
         void InvalidateCache(string projectId, string stackId, string signatureHash);

@@ -11,6 +11,7 @@
 
 using System;
 using System.Web.Http;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -35,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
-        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, DateTime? end = null, string filter = null) {
+        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, [EndOfDay] DateTime? end = null, string filter = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -44,8 +45,9 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var org = _organizationRepository.GetById(project.OrganizationId, true);
-            if (!start.HasValue || start.Value < org.GetRetentionUtcCutoff())
-                start = org.GetRetentionUtcCutoff();
+            var utcRetentionCutoff = org.GetRetentionUtcCutoff();
+            if (!start.HasValue || start.Value < utcRetentionCutoff)
+                start = utcRetentionCutoff;
 
             var range = GetDateRange(start, end);
             if (range.Item1 == range.Item2)

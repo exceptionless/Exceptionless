@@ -118,6 +118,8 @@ namespace Exceptionless.Core.Utility {
 
             var options = new ElasticSearchOptions<PersistentEvent>().WithQuery(query).WithDateRange(utcStart, utcEnd, "date").WithIndicesFromDateRange();
             _client.EnableTrace();
+            utcStart = options.GetStartDate();
+            utcEnd = options.GetEndDate();
 
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
             var res = _client.Search<PersistentEvent>(s => s
@@ -189,7 +191,7 @@ namespace Exceptionless.Core.Utility {
                 };
             }));
 
-            stats.Start = utcStart.Add(displayTimeOffset.Value);
+            stats.Start = stats.Timeline.Count > 0 ? stats.Timeline.Min(tl => tl.Date).Add(displayTimeOffset.Value) : utcStart.Add(displayTimeOffset.Value);
             stats.End = utcEnd.Add(displayTimeOffset.Value);
             stats.AvgPerHour = stats.Total / stats.End.Subtract(stats.Start).TotalHours;
 
