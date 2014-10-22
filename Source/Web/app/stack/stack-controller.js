@@ -22,13 +22,16 @@
             }
 
             function get() {
-                stackService.getById(stackId)
-                    .then(function (response) {
-                        vm.stack = response.data;
-                    }, function() {
-                        $state.go('app.project.dashboard');
-                        notificationService.error('The stack "' + $stateParams.id + '" could not be found.');
-                    });
+                function onSuccess(response) {
+                    vm.stack = response.data;
+                }
+
+                function onFailure() {
+                    $state.go('app.project.dashboard');
+                    notificationService.error('The stack "' + $stateParams.id + '" could not be found.');
+                }
+
+                stackService.getById(stackId).then(onSuccess, onFailure);
             }
 
             function hasTags() {
@@ -75,14 +78,14 @@
                         notificationService.success('Successfully promoted stack!');
                     }, function(response) {
                         if (response.status === 426) { // TODO: Move this to an interceptor.
-                            return dialogService.confirmUpgradePlan(response.data).then(function() {
+                            return dialogService.confirmUpgradePlan(response.data.message).then(function() {
                                 return promoteToExternal();
                             });
                         }
 
                         if (response.status === 501) {
-                            return dialogService.confirm(response.data, 'Manage Integrations').then(function() {
-                                $state.go('app.projects.manage.integrations');
+                            return dialogService.confirm(response.data.message, 'Manage Integrations').then(function() {
+                                $state.go('app.project.manage', { id: vm.stack.project_id });
                             });
                         }
 
@@ -107,13 +110,16 @@
             function resetOccurrences() {
                 var message = 'Are you sure you want to reset all occurrences for this stack?';
                 return dialogService.confirmDanger(message, 'RESET ALL OCCURRENCE DATA').then(function() {
-                    return stackService.resetData(stackId)
-                        .then(function (response) {
-                            // TODO: Trigger refresh of page data.
-                            notificationService.success('Successfully reset the error stacks statistics and occurrences data.');
-                        }, function() {
-                            notificationService.error('An error occurred while resetting the error stacks statistics and occurrences data.');
-                        });
+                    function onSuccess() {
+                        // TODO: Trigger refresh of page data.
+                        get();
+                    }
+
+                    function onFailure() {
+                        notificationService.error('An error occurred while resetting the error stacks statistics and occurrences data.');
+                    }
+
+                    return stackService.resetData(stackId).then(onSuccess, onFailure);
                 });
             }
 

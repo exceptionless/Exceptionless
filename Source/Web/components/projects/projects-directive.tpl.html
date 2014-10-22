@@ -21,7 +21,7 @@
                             <i class="fa fa-fw fa-edit"></i> <span class="caret"></span>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-right" role="menu">
-                            <li><a ui-sref="app.dashboard({ projectId: project.id })"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
+                            <li><a ui-sref="app.project.dashboard({ id: project.id })"><i class="fa fa-fw fa-dashboard"></i> Dashboard</a></li>
                             <li><a ui-sref="app.project.manage({ id: project.id })"><i class="fa fa-fw fa-edit"></i> Edit</a></li>
                             <li><a ui-sref="app.project.configure({ id: project.id })"><i class="fa fa-fw fa-download"></i> Configure Client</a></li>
                             <li><a ng-click="vm.remove(project)"><i class="fa fa-fw fa-times"></i> Delete</a></li>

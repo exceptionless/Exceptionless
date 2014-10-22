@@ -21,7 +21,7 @@
             <em ng-if="!vm.hasReferrer()">None</em>
         </td>
     </tr>
-    <tr>
+    <tr ng-if="vm.hasIPAddress()">
         <th>Client IP</th>
         <td>{{::vm.event.data.request.client_ip_address}}</td>
     </tr>
@@ -40,10 +40,6 @@
     <tr ng-if="vm.hasDevice()">
         <th>Device</th>
         <td>{{::vm.getDevice()}}</td>
-    </tr>
-    <tr ng-if="vm.hasUserAgent()">
-        <th>Is Known Bot</th>
-        <td>TODO</td>
     </tr>
 </table>
 

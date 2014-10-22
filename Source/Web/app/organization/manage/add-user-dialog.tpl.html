@@ -1,4 +1,4 @@
-<form email="addUserForm" role="form">
+<form name="addUserForm" role="form">
     <div class="modal-header dialog-header-confirm">
         <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
         <h4 class="modal-title">Invite User</h4>
@@ -6,8 +6,8 @@
 
     <div class="modal-body">
         <div class="form-group">
-            <label for="email">Email Address</label>
-            <input type="email" class="form-control input-lg" id="email" email="email" ng-model="vm.data.email" placeholder="Email Address" required>
+            <label>Email Address</label>
+            <input name="email" type="email" class="form-control input-lg" ng-model="vm.data.email" placeholder="Email Address" required>
             <div class="error" ng-if="addUserForm.email.$touched || addUserForm.$submitted">
                 <small ng-if="addUserForm.email.$error.required || addUserForm.email.$error.email">
                     Please enter a valid email address.

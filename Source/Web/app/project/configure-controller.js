@@ -2,7 +2,21 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('project.Configure', ['$stateParams', 'projectService', function ($stateParams, projectService) {
+        .controller('project.Configure', ['$stateParams', 'notificationService', 'tokenService', function ($stateParams, notificationService, tokenService) {
+            var projectId = $stateParams.id;
+
+            function getDefaultApiKey() {
+                function onSuccess(response) {
+                    vm.apiKey = response.data.id;
+                }
+
+                function onFailure() {
+                    notificationService.error('An error occurred while getting the API key for your project.');
+                }
+
+                tokenService.getProjectDefault(projectId).then(onSuccess, onFailure);
+            }
+
             function getProjectTypes() {
                 return [
                     { key: 'Exceptionless.Mvc', name: 'ASP.NET MVC', config: 'web.config' },
@@ -16,9 +30,12 @@
             }
 
             var vm = this;
+            vm.apiKey = null;
             vm.currentProjectType = null;
-            vm.projectId = $stateParams.id;
+            vm.projectId = projectId;
             vm.projectTypes = getProjectTypes();
+
+            getDefaultApiKey();
         }
     ]);
 }());

@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
+using Exceptionless.Api.Serialization;
 
 namespace Exceptionless.Api.Utility.Results {
     public class NotImplementedActionResult : IHttpActionResult {
@@ -30,7 +31,8 @@ namespace Exceptionless.Api.Utility.Results {
 
         private HttpResponseMessage Execute() {
             return new HttpResponseMessage(HttpStatusCode.NotImplemented) {
-                Content = new StringContent(Message),
+                ReasonPhrase = Message,
+                Content = new ObjectContent<MessageContent>(new MessageContent(Message), new ExceptionlessJsonMediaTypeFormatter()),
                 RequestMessage = Request
             };
         }

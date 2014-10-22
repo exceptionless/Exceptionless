@@ -62,8 +62,8 @@
     </table>
 </div>
 
-<div ng-if="vm.isError()">
-    <h4 class="hidden-print">Stack Trace</h4>
-    <stack-trace class="hidden-print" exception="vm.event.data.error" ng-if="vm.event.data.error"></stack-trace>
-    <simple-stack-trace class="hidden-print" exception="vm.event.data.simple_error" ng-if="vm.event.data.simple_error"></simple-stack-trace>
+<div class="hidden-print" ng-if="vm.isError()">
+    <h4>Stack Trace</h4>
+    <stack-trace class="stack-trace-mini" exception="vm.event.data.error" ng-if="vm.event.data.error"></stack-trace>
+    <simple-stack-trace class="stack-trace-mini" exception="vm.event.data.simple_error" ng-if="vm.event.data.simple_error"></simple-stack-trace>
 </div>

@@ -212,8 +212,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Providers\ExceptionlessOAuthAuthorizationServerProvider.cs" />
+    <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
     <Compile Include="Utility\EndDateParameterBinding.cs" />
+    <Compile Include="Utility\Results\MessageContent.cs" />
     <Compile Include="Utility\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />
@@ -222,7 +224,6 @@
     <Compile Include="Utility\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ExceptionlessHeaders.cs" />
     <Compile Include="Utility\InvalidModelStateFilterAttribute.cs" />
-    <Compile Include="Utility\JsonContentNegotiator.cs" />
     <Compile Include="Utility\LowercaseHttpRoute.cs" />
     <Compile Include="Utility\NakedParameterBinding.cs" />
     <Compile Include="Utility\ObjectIdRouteConstraint.cs" />

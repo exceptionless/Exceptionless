@@ -90,6 +90,10 @@
                 return vm.event.data && vm.event.data.user && vm.event.data.user.identity;
             }
 
+            function hasIPAddress() {
+                return hasRequestInfo() && vm.event.data.request.client_ip_address && vm.event.data.request.client_ip_address.length > 0;
+            }
+
             function hasReferrer(){
                 return vm.event.data && vm.event.data.request && vm.event.data.request.referrer;
             }

@@ -67,7 +67,7 @@ module.exports = function (grunt) {
     htmlangular: {
         main: {
           options: {
-            customtags: ['toaster-container', 'progressbar', 'events', 'simple-stack-trace', 'stacks', 'stack-trace', 'summary', 'timeago'],
+            customtags: ['events', 'progressbar', 'projects', 'simple-stack-trace', 'stacks', 'stack-trace', 'summary', 'timeago', 'toaster-container'],
             customattrs: [
                 'ui-*',
                 'checklist-*',

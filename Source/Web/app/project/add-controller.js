@@ -31,7 +31,7 @@
 
                 function onFailure(response) {
                     if (response.status === 426) {
-                        return dialogService.confirmUpgradePlan(response.data).then(function() {
+                        return dialogService.confirmUpgradePlan(response.data.message).then(function() {
                             return createOrganization(name);
                         });
                     }
