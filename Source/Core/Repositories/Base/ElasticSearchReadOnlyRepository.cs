@@ -216,13 +216,13 @@ namespace Exceptionless.Core.Repositories {
                     multiGet.Get<T>(f => f.Id(id).Index(index));
                 else
                     itemsToFind.Add(id);
+            }
 
-                foreach (var doc in _elasticClient.MultiGet(multiGet).Documents) {
-                    if (doc.Found)
-                        foundItems.Add(doc.Source as T);
-                    else
-                        itemsToFind.Add(doc.Id);
-                }
+            foreach (var doc in _elasticClient.MultiGet(multiGet).Documents) {
+                if (doc.Found)
+                    foundItems.Add(doc.Source as T);
+                else
+                    itemsToFind.Add(doc.Id);
             }
 
             // fallback to doing a find
