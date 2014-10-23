@@ -40,7 +40,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("ExceptionType"))
                 return null;
 
-            dynamic data = new { ExceptionType = stack.SignatureInfo["ExceptionType"] };
+            dynamic data = new ExpandoObject();
+            data.Title = stack.Title;
+            data.ExceptionType = stack.SignatureInfo["ExceptionType"];
 
             string value;
             if (stack.SignatureInfo.TryGetValue("Method", out value))
