@@ -19,7 +19,7 @@
         'dialogs.main',
         'dialogs.default-translations'
     ])
-    .config(function ($stateProvider) {
+    .config(function ($urlRouterProvider, $stateProvider) {
         $stateProvider.state('app.project', {
             abstract: true,
             url: '/project',
@@ -40,22 +40,27 @@
             templateUrl: 'app/project/configure.tpl.html'
         });
 
+        $urlRouterProvider.when('/project/dashboard', function() {
+            // TODO: Resolve current project id from service.
+            return '/project/537650f3b77efe23a47914f4/dashboard';
+        });
+
         $stateProvider.state('app.project.dashboard', {
-            url: '/dashboard',
+            url: '/:id/dashboard',
             controller: 'project.Dashboard',
             controllerAs: 'vm',
             templateUrl: 'app/project/dashboard.tpl.html'
         });
 
         $stateProvider.state('app.project.frequent', {
-            url: '/frequent',
+            url: '/:id/frequent',
             controller: 'project.Frequent',
             controllerAs: 'vm',
             templateUrl: 'app/project/frequent.tpl.html'
         });
 
         $stateProvider.state('app.project.list', {
-            url: '/list',
+            url: '/:id/list',
             controller: 'project.List',
             controllerAs: 'vm',
             templateUrl: 'app/project/list.tpl.html'
@@ -69,14 +74,14 @@
         });
 
         $stateProvider.state('app.project.new', {
-            url: '/new',
+            url: '/:id/new',
             controller: 'project.New',
             controllerAs: 'vm',
             templateUrl: 'app/project/new.tpl.html'
         });
 
         $stateProvider.state('app.project.recent', {
-            url: '/recent',
+            url: '/:id/recent',
             controller: 'project.Recent',
             controllerAs: 'vm',
             templateUrl: 'app/project/recent.tpl.html'
