@@ -27,6 +27,10 @@
                 return Restangular.one('projects', id).one('stacks').all('frequent').getList(options || {});
             }
 
+            function getNewByProjectId(id, options) {
+                return Restangular.one('projects', id).one('stacks').all('new').getList(options || {});
+            }
+
             function markCritical(id) {
                 return Restangular.one('stacks', id).one('mark-critical').post();
             }
@@ -69,6 +73,7 @@
                 getAll: getAll,
                 getById: getById,
                 getFrequentByProjectId: getFrequentByProjectId,
+                getNewByProjectId: getNewByProjectId,
                 markCritical: markCritical,
                 markNotCritical: markNotCritical,
                 markFixed: markFixed,

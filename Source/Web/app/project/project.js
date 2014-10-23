@@ -40,10 +40,12 @@
             templateUrl: 'app/project/configure.tpl.html'
         });
 
-        $urlRouterProvider.when('/project/dashboard', function() {
+        $urlRouterProvider.when('/project/dashboard', [function() {
             // TODO: Resolve current project id from service.
             return '/project/537650f3b77efe23a47914f4/dashboard';
-        });
+
+            //$state.transitionTo(state, $match, false);
+        }]);
 
         $stateProvider.state('app.project.dashboard', {
             url: '/:id/dashboard',

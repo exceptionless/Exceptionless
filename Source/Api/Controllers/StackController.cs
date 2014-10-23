@@ -15,7 +15,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
-using AutoMapper;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -29,6 +28,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
+using Exceptionless.Models.Stats;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {
@@ -331,21 +331,13 @@ namespace Exceptionless.Api.Controllers {
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
+            var stacks = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
 
+            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => {
-                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
-                    return new StackSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = s.Id,
-                        FirstOccurrence = s.FirstOccurrence,
-                        LastOccurrence = s.LastOccurrence,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), options.HasMore, e => e.Id);
+                GetStackSummaries(stacks, DateTime.MinValue, DateTime.MaxValue);
 
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
@@ -367,22 +359,13 @@ namespace Exceptionless.Api.Controllers {
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
             var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, query).ToList();
-            var results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).ToList();
+            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, query).Where(m => m.FirstOccurrence >= retentionUtcCutoff).ToList();
 
+            // TODO: Add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => {
-                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
-                    return new StackSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = s.Id,
-                        FirstOccurrence = s.FirstOccurrence,
-                        LastOccurrence = s.LastOccurrence,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), options.HasMore, e => e.Id);
+                return OkWithResourceLinks(GetStackSummaries(stacks, utcStart, utcEnd), options.HasMore, e => e.Id);
 
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
@@ -404,22 +387,13 @@ namespace Exceptionless.Api.Controllers {
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
             var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var stacks = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, options, query);
-            var results = stacks.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
+            var stacks = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, options, query).Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
+            // TODO: Add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => {
-                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
-                    return new StackSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = s.Id,
-                        FirstOccurrence = s.FirstOccurrence,
-                        LastOccurrence = s.LastOccurrence,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), options.HasMore, e => e.Id);
+                return OkWithResourceLinks(GetStackSummaries(stacks, utcStart, utcEnd), options.HasMore, e => e.Id);
 
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
@@ -436,47 +410,25 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            if (page < 1)
-                page = 1;
-
-            if (limit < 0 || limit > 100)
-                limit = 10;
-
+            limit = GetLimit(limit);
             DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
             DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
 
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "project:" + projectId, max: limit * page + 1).Terms;
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "project:" + projectId, max: GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
-            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip((page - 1) * limit).Take(limit + 1).Select(t => t.Term).ToArray();
-            var results = _stackRepository.GetByIds(stackIds);
+            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip(GetSkip(page, limit)).Take(limit + 1).Select(t => t.Term).ToArray();
+            var stacks = _stackRepository.GetByIds(stackIds);
 
+            // TODO: Add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
-                var summaries = terms.Join(results, tk => tk.Term, s => s.Id, (term, stack) => {
-                    var data = _formattingPluginManager.GetStackSummaryData(stack);
-                    var summary = new StackSummaryModel {
-                        TemplateKey = data.TemplateKey,
-                        Data = data.Data,
-                        Id = stack.Id,
-                        Title = stack.Title,
-                        FirstOccurrence = stack.FirstOccurrence,
-                        LastOccurrence = stack.LastOccurrence,
-
-                        New = term.New,
-                        Total = term.Total,
-                        Unique = term.Unique,
-                        Timeline = term.Timeline
-                    };
-
-                    return summary;
-                }).ToList();
-
-                return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
+                var summaries = GetStackSummaries(stacks, terms);
+                return OkWithResourceLinks(GetStackSummaries(stacks, terms).Take(limit).ToList(), summaries.Count > limit, page);
             }
 
-            return OkWithResourceLinks(results.Take(limit).ToList(), results.Count > limit, page);
+            return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
         }
 
         [HttpGet]
@@ -493,19 +445,29 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<Stack, EventStackResult>() == null)
-                Mapper.CreateMap<Stack, EventStackResult>().AfterMap((s, esr) => {
-                    esr.Id = s.Id;
-                    esr.Type = s.Type;
-                    esr.Method = s.SignatureInfo.ContainsKey("Method") ? s.SignatureInfo["Method"] : null;
-                    esr.Path = s.SignatureInfo.ContainsKey("Path") ? s.SignatureInfo["Path"] : null;
-                    esr.Is404 = s.SignatureInfo.ContainsKey("Path");
-                    esr.Title = s.Title;
-                    esr.Total = s.TotalOccurrences;
-                    esr.First = s.FirstOccurrence;
-                    esr.Last = s.LastOccurrence;
-                });
+        private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, DateTime utcStart, DateTime utcEnd) {
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "stack_id: (" + String.Join(" OR ", stacks.Select(r => r.Id)) + ")", max: stacks.Count).Terms;
+            return GetStackSummaries(stacks, terms);
+        }
+
+        private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<TermStatsItem> terms) {
+            return terms.Join(stacks, tk => tk.Term, s => s.Id, (term, stack) => {
+                var data = _formattingPluginManager.GetStackSummaryData(stack);
+                var summary = new StackSummaryModel {
+                    TemplateKey = data.TemplateKey,
+                    Data = data.Data,
+                    Id = stack.Id,
+                    Title = stack.Title,
+                    FirstOccurrence = stack.FirstOccurrence,
+                    LastOccurrence = stack.LastOccurrence,
+                    New = term.New,
+                    Total = term.Total,
+                    Unique = term.Unique,
+                    Timeline = term.Timeline
+                };
+
+                return summary;
+            }).ToList();
         }
     }
 }

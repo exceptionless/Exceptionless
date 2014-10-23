@@ -56,7 +56,6 @@ namespace Exceptionless.Api.Controllers {
             return skip;
         }
 
-
         public User ExceptionlessUser {
             get { return Request.GetUser(); }
         }
