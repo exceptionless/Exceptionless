@@ -42,14 +42,25 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             dynamic data = new ExpandoObject();
             data.Title = stack.Title;
-            data.ExceptionType = stack.SignatureInfo["ExceptionType"];
 
             string value;
-            if (stack.SignatureInfo.TryGetValue("Method", out value))
-                data.Method = value;
+            if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
+                data.Type = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                data.TypeFullName = value;
+            }
+
+            if (stack.SignatureInfo.TryGetValue("Method", out value)) {
+                string method = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                int index = method.IndexOf('(');
+                data.Method = index > 0 ? method.Substring(0, index) : method;
+                data.MethodFullName = value;
+            }
 
             if (stack.SignatureInfo.TryGetValue("Message", out value))
                 data.Message = value;
+
+            if (stack.SignatureInfo.TryGetValue("Path", out value))
+                data.Path = value;
 
             return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
         }
