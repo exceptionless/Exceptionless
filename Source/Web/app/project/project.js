@@ -20,7 +20,7 @@
         'dialogs.main',
         'dialogs.default-translations'
     ])
-    .config(function ($urlRouterProvider, $stateProvider) {
+    .config(function ($stateProvider, $urlRouterProvider) {
         $stateProvider.state('app.project', {
             abstract: true,
             url: '/project',
@@ -41,18 +41,17 @@
             templateUrl: 'app/project/configure.tpl.html'
         });
 
-        $urlRouterProvider.when('/project/dashboard', [function() {
-            // TODO: Resolve current project id from service.
-            return '/project/537650f3b77efe23a47914f4/dashboard';
-
-            //$state.transitionTo(state, $match, false);
-        }]);
-
         $stateProvider.state('app.project.dashboard', {
             url: '/:id/dashboard',
             controller: 'project.Dashboard',
             controllerAs: 'vm',
-            templateUrl: 'app/project/dashboard.tpl.html'
+            templateUrl: 'app/project/dashboard.tpl.html',
+            params: {
+                id: function() {
+                    // TODO: Resolve current project id from service.
+                    return '537650f3b77efe23a47914f4'
+                }
+            }
         });
 
         $stateProvider.state('app.project.frequent', {
@@ -89,5 +88,8 @@
             controllerAs: 'vm',
             templateUrl: 'app/project/recent.tpl.html'
         });
-    });
+    })
+    .run(['$urlMatcherFactory', function($urlMatcherFactory){
+        // Required for default params.
+    }]);
 }());
