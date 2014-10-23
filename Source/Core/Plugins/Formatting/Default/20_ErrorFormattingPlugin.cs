@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo.TryGetValue("Message", out value))
                 data.Message = value;
 
-            return new SummaryData("stack-error-summary", data);
+            return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
                 data.Path = requestInfo.Path;
 
-            return new SummaryData("event-error-summary", data);
+            return new SummaryData { TemplateKey = "event-error-summary", Data = data };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {

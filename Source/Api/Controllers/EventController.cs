@@ -62,7 +62,15 @@ namespace Exceptionless.Api.Controllers {
             var results = _repository.GetByOrganizationIds(organizationIds, options);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+                return OkWithResourceLinks(results.Select(e => {
+                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
+                    return new EventSummaryModel { 
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = e.Id,
+                        Date = e.Date,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
 
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }
@@ -81,7 +89,15 @@ namespace Exceptionless.Api.Controllers {
             var results = _repository.GetByProjectId(projectId, options);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+                return OkWithResourceLinks(results.Select(e => {
+                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
+                    return new EventSummaryModel {
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = e.Id,
+                        Date = e.Date,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
 
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }
@@ -100,7 +116,15 @@ namespace Exceptionless.Api.Controllers {
             var results = _repository.GetByStackId(stackId, options);
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => new EventSummaryModel(e.Id, e.Date, _formattingPluginManager.GetEventSummaryData(e))).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+                return OkWithResourceLinks(results.Select(e => {
+                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
+                    return new EventSummaryModel {
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = e.Id,
+                        Date = e.Date,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
 
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
         }

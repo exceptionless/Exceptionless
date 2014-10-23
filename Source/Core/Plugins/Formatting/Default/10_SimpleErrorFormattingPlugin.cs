@@ -28,10 +28,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (stack.SignatureInfo == null || !stack.SignatureInfo.ContainsKey("StackTrace"))
                 return null;
 
-            return new SummaryData("stack-simple-summary", new {
-                Title = stack.Title,
-                ExceptionType = stack.SignatureInfo["ExceptionType"]
-            });
+            return new SummaryData { 
+                TemplateKey = "stack-simple-summary", 
+                Data = new {
+                    Title = stack.Title,
+                    ExceptionType = stack.SignatureInfo["ExceptionType"]
+                }
+            };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -62,7 +65,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))
                 data.Path = requestInfo.Path;
 
-            return new SummaryData("event-simple-summary", data);
+            return new SummaryData { TemplateKey = "event-simple-summary", Data = data };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {

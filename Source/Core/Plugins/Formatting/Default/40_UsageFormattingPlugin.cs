@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.FeatureUsage))
                 return null;
 
-            return new SummaryData("stack-feature-summary", new { Title = stack.Title });
+            return new SummaryData { TemplateKey = "stack-feature-summary", Data = new { Title = stack.Title } };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData("event-feature-summary", new { Source = ev.Source });
+            return new SummaryData { TemplateKey = "event-feature-summary", Data = new { Source = ev.Source } };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {

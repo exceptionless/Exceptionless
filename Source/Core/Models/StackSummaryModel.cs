@@ -1,17 +1,17 @@
 ﻿using System;
+using System.Collections.Generic;
+using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Core.Models {
     public class StackSummaryModel : SummaryData {
-        public StackSummaryModel(string id, string title, DateTime firstOccurrence, DateTime lastOccurrence, SummaryData data) : base(data.TemplateKey, data.Data) {
-            Id = id;
-            Title = title;
-            FirstOccurrence = firstOccurrence;
-            LastOccurrence = lastOccurrence;
-        }
-
-        public string Id { get; private set; }
+        public string Id { get; set; }
         public string Title { get; set; }
-        public DateTime FirstOccurrence { get; private set; }
-        public DateTime LastOccurrence { get; private set; }
+        public DateTime FirstOccurrence { get; set; }
+        public DateTime LastOccurrence { get; set; }
+
+        public long New { get; set; }
+        public long Total { get; set; }
+        public long Unique { get; set; }
+        public ICollection<TermTimelineItem> Timeline { get; set; }
     }
 }

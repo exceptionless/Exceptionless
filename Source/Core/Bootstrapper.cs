@@ -137,6 +137,7 @@ namespace Exceptionless.Core {
 
         private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
+            settings.EnableMetrics();
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
                 s.AddModelConverters();

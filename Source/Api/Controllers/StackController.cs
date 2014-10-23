@@ -41,6 +41,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
+        private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
         private readonly DataHelper _dataHelper;
         private readonly FormattingPluginManager _formattingPluginManager;
@@ -48,7 +49,7 @@ namespace Exceptionless.Api.Controllers {
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
-            BillingManager billingManager, DataHelper dataHelper,
+            EventStats eventStats, BillingManager billingManager, DataHelper dataHelper,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
@@ -56,6 +57,7 @@ namespace Exceptionless.Api.Controllers {
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
+            _eventStats = eventStats;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
             _formattingPluginManager = formattingPluginManager;
@@ -332,7 +334,16 @@ namespace Exceptionless.Api.Controllers {
             var results = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+                return OkWithResourceLinks(results.Select(s => {
+                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
+                    return new StackSummaryModel {
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = s.Id,
+                        FirstOccurrence = s.FirstOccurrence,
+                        LastOccurrence = s.LastOccurrence,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => e.Id);
 
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
@@ -360,7 +371,16 @@ namespace Exceptionless.Api.Controllers {
             var results = stacks.Where(m => m.FirstOccurrence >= retentionUtcCutoff).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+                return OkWithResourceLinks(results.Select(s => {
+                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
+                    return new StackSummaryModel {
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = s.Id,
+                        FirstOccurrence = s.FirstOccurrence,
+                        LastOccurrence = s.LastOccurrence,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => e.Id);
 
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
@@ -388,14 +408,23 @@ namespace Exceptionless.Api.Controllers {
             var results = stacks.Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+                return OkWithResourceLinks(results.Select(s => {
+                    var summaryData = _formattingPluginManager.GetStackSummaryData(s);
+                    return new StackSummaryModel {
+                        TemplateKey = summaryData.TemplateKey,
+                        Id = s.Id,
+                        FirstOccurrence = s.FirstOccurrence,
+                        LastOccurrence = s.LastOccurrence,
+                        Data = summaryData.Data
+                    };
+                }).ToList(), options.HasMore, e => e.Id);
 
             return OkWithResourceLinks(results, options.HasMore, e => e.Id);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
-        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, bool hidden = false, bool @fixed = false, bool notfound = true, string mode = null) {
+        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -407,40 +436,47 @@ namespace Exceptionless.Api.Controllers {
             if (range.Item1 == range.Item2)
                 return BadRequest("End date must be greater than start date.");
 
-            limit = GetLimit(limit);
+            if (page < 1)
+                page = 1;
+
+            if (limit < 0 || limit > 100)
+                limit = 10;
+
+            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
+            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            //var frequent = _statsHelper.GetProjectErrorStats(projectId, _projectRepository.GetDefaultTimeOffset(projectId), start, end, retentionUtcCutoff, hidden, @fixed, notfound).MostFrequent;
-            //var results = frequent.Results.Skip(GetSkip(page, limit)).Take(limit).ToList();
-            //var stacks = _stackRepository.GetByIds(results.Select(s => s.Id).ToList());
 
-            //foreach (var esr in results) {
-            //    var stack = stacks.SingleOrDefault(s => s.Id == esr.Id);
-            //    if (stack == null) {
-            //        results.RemoveAll(r => r.Id == esr.Id);
-            //        continue;
-            //    }
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "project:" + projectId, max: limit * page + 1).Terms;
+            if (terms.Count == 0)
+                return Ok(new object[0]);
 
-            //    // Stat's Id and Total properties are already calculated in the Results.
-            //    esr.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
-            //    esr.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
-            //    esr.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
-            //    esr.Is404 = stack.SignatureInfo.ContainsKey("Path");
+            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip((page - 1) * limit).Take(limit + 1).Select(t => t.Term).ToArray();
+            var results = _stackRepository.GetByIds(stackIds);
 
-            //    esr.Title = stack.Title;
-            //    esr.First = stack.FirstOccurrence;
-            //    esr.Last = stack.LastOccurrence;
-            //}
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
+                var summaries = terms.Join(results, tk => tk.Term, s => s.Id, (term, stack) => {
+                    var data = _formattingPluginManager.GetStackSummaryData(stack);
+                    var summary = new StackSummaryModel {
+                        TemplateKey = data.TemplateKey,
+                        Data = data.Data,
+                        Id = stack.Id,
+                        Title = stack.Title,
+                        FirstOccurrence = stack.FirstOccurrence,
+                        LastOccurrence = stack.LastOccurrence,
 
-            //Dictionary<string, IEnumerable<string>> header = null;
-            //if (frequent.Results.Count != limit && frequent.TotalLimitedByPlan.HasValue)
-            //    header = GetLimitedByPlanHeader(frequent.TotalLimitedByPlan.Value);
+                        New = term.New,
+                        Total = term.Total,
+                        Unique = term.Unique,
+                        Timeline = term.Timeline
+                    };
 
-            // TODO: Finish this once we finish elastic search.
-            //if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-            //    return OkWithResourceLinks(results.Select(s => new StackSummaryModel(s.Id, s.Title, s.FirstOccurrence, s.LastOccurrence, _formattingPluginManager.GetStackSummaryData(s))).ToList(), options.HasMore, e => e.Id);
+                    return summary;
+                }).ToList();
 
-            //return OkWithResourceLinks(results, frequent.Results.Count > (GetSkip(page, limit) + limit), e => e.Id, header);
-            return Ok();
+                return OkWithResourceLinks(summaries.Take(limit).ToList(), summaries.Count > limit, page);
+            }
+
+            return OkWithResourceLinks(results.Take(limit).ToList(), results.Count > limit, page);
         }
 
         [HttpGet]

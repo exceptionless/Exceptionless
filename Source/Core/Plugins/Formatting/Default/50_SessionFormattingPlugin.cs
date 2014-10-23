@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.SessionStart, Event.KnownTypes.SessionEnd))
                 return null;
 
-            return new SummaryData("stack-session-summary", new { Title = stack.Title });
+            return new SummaryData { TemplateKey = "stack-session-summary", Data = new { Title = stack.Title } };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData("event-session-summary", new { SessionId = ev.SessionId });
+            return new SummaryData { TemplateKey = "event-session-summary", Data = new { SessionId = ev.SessionId } };
         }
 
         public override string GetEventViewName(PersistentEvent ev) {

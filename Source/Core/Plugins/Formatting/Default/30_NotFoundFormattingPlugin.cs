@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
                 return null;
 
-            return new SummaryData("stack-notfound-summary", new { Title = stack.Title });
+            return new SummaryData { TemplateKey = "stack-notfound-summary", Data = new { Title = stack.Title } };
         }
 
 
@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData("event-notfound-summary", new { Source = ev.Source });
+            return new SummaryData { TemplateKey = "event-notfound-summary", Data = new { Source = ev.Source } };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
