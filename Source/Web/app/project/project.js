@@ -7,6 +7,7 @@
         'exceptionless.projects',
         'exceptionless.stack',
         'exceptionless.stacks',
+        'exceptionless.stat',
         'exceptionless.token',
         'exceptionless.web-hook',
 

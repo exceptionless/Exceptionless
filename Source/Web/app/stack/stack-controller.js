@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.stack')
-        .controller('Stack', ['$state', '$stateParams', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'stackService', 'eventService', function ($state, $stateParams, notificationService, featureService, dialogs, dialogService, stackService, eventService) {
+        .controller('Stack', ['$state', '$stateParams', 'dialogs', 'dialogService', 'eventService', 'featureService', 'notificationService', 'stackService', 'statService', function ($state, $stateParams, dialogs, dialogService, eventService, featureService, notificationService, stackService, statService) {
             var stackId = $stateParams.id;
             var vm = this;
 
@@ -17,7 +17,7 @@
                     }
 
                     if (vm.stack.references.indexOf(url) < 0)
-                        stackService.addLink(stackId, url).then(onSuccess, onFailure);
+                        return stackService.addLink(stackId, url).then(onSuccess, onFailure);
                 });
             }
 
@@ -31,7 +31,20 @@
                     notificationService.error('The stack "' + $stateParams.id + '" could not be found.');
                 }
 
-                stackService.getById(stackId).then(onSuccess, onFailure);
+                return stackService.getById(stackId).then(onSuccess, onFailure);
+            }
+
+            function getStats() {
+                function onSuccess(response) {
+                    vm.stats = response.data.plain();
+                }
+
+                function onFailure() {
+                    notificationService.error('An error occurred while loading the stats for this stack.');
+                }
+
+                var options = {};
+                return statService.getByStackId(stackId, options).then(onSuccess, onFailure);
             }
 
             function hasTags() {
@@ -213,11 +226,12 @@
             };
             vm.resetOccurrences = resetOccurrences;
             vm.stack = {};
+            vm.stats = {};
             vm.updateIsCritical = updateIsCritical;
             vm.updateIsFixed = updateIsFixed;
             vm.updateIsHidden = updateIsHidden;
             vm.updateNotifications = updateNotifications;
 
-            get();
+            get().then(getStats);
         }]);
 }());

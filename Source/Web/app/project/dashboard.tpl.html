@@ -16,26 +16,26 @@
                     <div class="row row-sm text-center">
                         <div class="col-xs-6">
                             <div class="panel padder-v item">
-                                <div class="h1 font-thin h1">100</div>
-                                <span class="text-muted text-xs">Total</span>
+                                <div class="h1 font-thin h1">{{vm.stats.total | number : 0}}</div>
+                                <span class="text-muted text-xs">Total Events</span>
                             </div>
                         </div>
                         <div class="col-xs-6">
                             <a href="javascript:void(0);" class="block panel padder-v item">
-                                <span class="font-thin h1 block">80</span>
-                                <span class="text-muted text-xs">Unique</span>
+                                <span class="font-thin h1 block">{{vm.stats.unique | number : 0}}</span>
+                                <span class="text-muted text-xs">Unique Events</span>
                             </a>
                         </div>
                         <div class="col-xs-6">
                             <a href="javascript:void(0);" class="block panel padder-v item">
-                                <span class="font-thin h1 block">30</span>
-                                <span class="text-muted text-xs">New</span>
+                                <span class="font-thin h1 block">{{vm.stats.new | number : 0}}</span>
+                                <span class="text-muted text-xs">New Events</span>
                             </a>
                         </div>
                         <div class="col-xs-6">
                             <div class="panel padder-v item">
-                                <div class="font-thin h1 block">15</div>
-                                <span class="text-muted text-xs">Per Hour</span>
+                                <div class="font-thin h1 block">{{vm.stats.avg_per_hour | number : 1}}</div>
+                                <span class="text-muted text-xs">Events Per Hour</span>
                             </div>
                         </div>
                     </div>

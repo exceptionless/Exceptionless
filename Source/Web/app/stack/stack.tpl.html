@@ -1,5 +1,30 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm">
     <div class="wrapper-md">
+        <div class="row">
+            <div class="col-sm-12">
+                <div class="row row-sm text-center">
+                    <div class="col-xs-4">
+                        <div class="panel padder-v item">
+                            <div class="h1 font-thin h1">{{vm.stats.total | number : 0}}</div>
+                            <span class="text-muted text-xs">Total Occurrence</span>
+                        </div>
+                    </div>
+                    <div class="col-xs-4">
+                        <a href="javascript:void(0);" class="block panel padder-v item">
+                            <span class="font-thin h1 block"><timeago date="vm.stats.first_occurrence"></timeago></span>
+                            <span class="text-muted text-xs">First Occurrence</span>
+                        </a>
+                    </div>
+                    <div class="col-xs-4">
+                        <a href="javascript:void(0);" class="block panel padder-v item">
+                            <span class="font-thin h1 block"><timeago date="vm.stats.last_occurrence"></timeago></span>
+                            <span class="text-muted text-xs">Last Occurrence</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="panel panel-default">
             <div class="panel-heading">
                 Stack

@@ -10,6 +10,7 @@
         'exceptionless.notification',
         'exceptionless.stack',
         'exceptionless.stack-trace',
+        'exceptionless.stat',
 
         // Custom dialog dependencies
         'ui.bootstrap',
