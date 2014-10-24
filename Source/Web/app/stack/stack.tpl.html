@@ -5,20 +5,23 @@
                 <div class="row row-sm text-center">
                     <div class="col-xs-4">
                         <div class="panel padder-v item">
-                            <div class="h1 font-thin h1">{{vm.stats.total | number : 0}}</div>
-                            <span class="text-muted text-xs">Total Occurrence</span>
+                            <div class="h1 font-thin h1">{{vm.stats.total || 0 | number : 0}}</div>
+                            <span class="text-muted text-xs visible-md">Total Occurrences</span>
+                            <span class="text-muted text-xs hidden-md"><abbr title="Total Occurrences">Total</abbr></span>
                         </div>
                     </div>
                     <div class="col-xs-4">
                         <a href="javascript:void(0);" class="block panel padder-v item">
                             <span class="font-thin h1 block"><timeago date="vm.stats.first_occurrence"></timeago></span>
-                            <span class="text-muted text-xs">First Occurrence</span>
+                            <span class="text-muted text-xs visible-md">First Occurrence</span>
+                            <span class="text-muted text-xs hidden-md"><abbr title="First Occurrence">First</abbr></span>
                         </a>
                     </div>
                     <div class="col-xs-4">
                         <a href="javascript:void(0);" class="block panel padder-v item">
                             <span class="font-thin h1 block"><timeago date="vm.stats.last_occurrence"></timeago></span>
-                            <span class="text-muted text-xs">Last Occurrence</span>
+                            <span class="text-muted text-xs visible-md">Last Occurrence</span>
+                            <span class="text-muted text-xs hidden-md"><abbr title="Last Occurrence">Last</abbr></span>
                         </a>
                     </div>
                 </div>

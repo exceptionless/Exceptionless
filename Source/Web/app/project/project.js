@@ -11,6 +11,7 @@
         'exceptionless.token',
         'exceptionless.web-hook',
 
+        'angular-rickshaw',
         'ui.router',
         'checklist-model',
         'debounce',
@@ -49,7 +50,7 @@
             params: {
                 id: function() {
                     // TODO: Resolve current project id from service.
-                    return '537650f3b77efe23a47914f4'
+                    return '537650f3b77efe23a47914f4';
                 }
             }
         });
