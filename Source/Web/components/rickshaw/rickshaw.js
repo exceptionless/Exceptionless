@@ -3,8 +3,8 @@
 (function () {
     'use strict';
 
-    angular.module('angular-rickshaw', [])
-        .directive('rickshaw', function($compile) {
+    angular.module('angular-rickshaw', ['debounce'])
+        .directive('rickshaw', ['$compile', '$timeout', '$window', 'debounce', function($compile, $timeout, $window, debounce) {
             return {
                 restrict: 'EA',
                 scope: {
@@ -20,7 +20,7 @@
                         return settings;
                     }
 
-                    function update() {
+                    var update = debounce(function() {
                         if (!scope.series[0].data || scope.series[0].data.length === 0) {
                             return;
                         }
@@ -34,12 +34,13 @@
 
                         if (scope.features && scope.features.hover) {
                             var hoverConfig = {
-                                graph: graph
+                                graph: graph,
+                                xFormatter: scope.features.hover.xFormatter,
+                                yFormatter: scope.features.hover.yFormatter,
+                                formatter: scope.features.hover.formatter,
+                                onRender: scope.features.hover.onRender
                             };
-                            hoverConfig.xFormatter = scope.features.hover.xFormatter;
-                            hoverConfig.yFormatter = scope.features.hover.yFormatter;
-                            hoverConfig.formatter = scope.features.hover.formatter;
-                            hoverConfig.render = scope.features.hover.render;
+
                             var hoverDetail = new Rickshaw.Graph.HoverDetail(hoverConfig);
                         }
 
@@ -118,30 +119,46 @@
                                 });
                             }
                         }
-                    }
+                    }, 150);
 
-                    scope.$watch('options', function(newValue, oldValue) {
+                    var watchOptions = scope.$watch('options', function(newValue, oldValue) {
                         if (!angular.equals(newValue, oldValue)) {
                             update();
                         }
                     });
 
-                    scope.$watch(function() {
+                    var watchSeries = scope.$watch(function() {
                         return scope.series[0].data;
                     }, function(newValue, oldValue){
                         if (!angular.equals(newValue, oldValue)) {
                             update();
+
+                            // TODO: this should call graph.update();
                         }
                     });
 
-                    scope.$watch('features', function(newValue, oldValue) {
+                    var watchFeatures = scope.$watch('features', function(newValue, oldValue) {
                         if (!angular.equals(newValue, oldValue)) {
                             update();
                         }
                     });
 
-                    update();
+                    // TODO: Fix this bug: http://branchandbound.net/blog/web/2013/08/some-angularjs-pitfalls/
+                    var timeout = $timeout(update, 1);
+
+                    var window = angular.element($window);
+                    window.bind('resize', update);
+
+                    scope.$on('$destroy', function(e) {
+                        // Remove watchers
+                        watchOptions();
+                        watchSeries();
+                        watchFeatures();
+
+                        $timeout.cancel(timeout);
+                        window.unbind('resize', update);
+                    });
                 }
             };
-        });
+        }]);
 }());
