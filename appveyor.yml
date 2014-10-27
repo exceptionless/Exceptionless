@@ -3,3 +3,5 @@ install:
   - cinst elastic
   - cinst redis-64
   - cinst mongodb.core.2.6
+
+build_script: .\build.ps1
