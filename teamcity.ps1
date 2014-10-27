@@ -199,4 +199,5 @@ function TeamCity-WriteServiceMessage([string]$messageName, $messageAttributesHa
 	}
 
 	Write-Output "##teamcity[$messageName $messageAttributesString]"
+	Write-Host "$messageName $messageAttributesString"
 }
