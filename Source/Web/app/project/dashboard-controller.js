@@ -8,6 +8,14 @@
             function getStats() {
                 function onSuccess(response) {
                     vm.stats = response.data.plain();
+
+                    vm.series[0].data = vm.stats.timeline.map(function (item) {
+                        return { x: moment.utc(item.date).unix(), y: item.total, data: item };
+                    });
+
+                    vm.series[1].data = vm.stats.timeline.map(function (item) {
+                        return { x: moment.utc(item.date).unix(), y: item.unique, data: item };
+                    });
                 }
 
                 function onFailure() {
@@ -137,17 +145,17 @@
                 }
             };
 
-            vm.series = [{
-                name: 'Events',
-                color: 'rgba(115, 192, 58, 0.5)',
-                stroke: 'rgba(0,0,0,0.15)',
-                data: [{x: 0, y: 23}, {x: 1, y: 15}, {x: 2, y: 79}, {x: 3, y: 31}, {x: 4, y: 60}]
-            }, {
-                name: 'Unique',
-                color: 'rgba(95, 157, 47, 0.5)',
-                stroke: 'rgba(0,0,0,0.15)',
-                data: [{x: 0, y: 30}, {x: 1, y: 20}, {x: 2, y: 64}, {x: 3, y: 50}, {x: 4, y: 15}]
-            }];
+            vm.series = [
+                {
+                    name: 'Events',
+                    color: 'rgba(115, 192, 58, 0.5)',
+                    stroke: 'rgba(0,0,0,0.15)'
+                }, {
+                    name: 'Unique',
+                    color: 'rgba(95, 157, 47, 0.5)',
+                    stroke: 'rgba(0,0,0,0.15)'
+                }
+            ];
 
             getStats();
         }

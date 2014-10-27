@@ -20,15 +20,17 @@
                         return settings;
                     }
 
-                    var graph;
-
                     function update() {
+                        if (!scope.series[0].data || scope.series[0].data.length === 0) {
+                            return;
+                        }
+
                         var mainEl = angular.element(element);
                         mainEl.empty();
                         var graphEl = $compile('<div></div>')(scope);
                         mainEl.append(graphEl);
                         var settings = getSettings(graphEl[0]);
-                        graph = new Rickshaw.Graph(settings);
+                        var graph = new Rickshaw.Graph(settings);
 
                         if (scope.features && scope.features.hover) {
                             var hoverConfig = {
@@ -124,7 +126,9 @@
                         }
                     });
 
-                    scope.$watch('series', function(newValue, oldValue) {
+                    scope.$watch(function() {
+                        return scope.series[0].data;
+                    }, function(newValue, oldValue){
                         if (!angular.equals(newValue, oldValue)) {
                             update();
                         }
