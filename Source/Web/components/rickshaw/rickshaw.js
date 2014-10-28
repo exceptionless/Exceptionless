@@ -5,33 +5,34 @@
     'use strict';
 
     angular.module('angular-rickshaw', ['debounce'])
-        .directive('rickshaw', ['$compile', '$timeout', '$window', 'debounce', function($compile, $timeout, $window, debounce) {
+        .directive('rickshaw', ['$compile', '$window', 'debounce', function($compile, $window, debounce) {
             return {
-                restrict: 'EA',
+                restrict: 'E',
                 scope: {
-                    options: '=rickshawOptions',
-                    series: '=rickshawSeries',
-                    features: '=rickshawFeatures'
+                    options: '=options',
+                    features: '=features'
                 },
                 link: function(scope, element) {
-                    function getSettings(el) {
+                    var graph;
+
+                    function getSettings(element) {
                         var settings = angular.copy(scope.options);
-                        settings.element = el;
-                        settings.series = scope.series;
+                        settings.element = element;
                         return settings;
                     }
 
-                    var update = debounce(function() {
-                        if (!scope.series[0].data || scope.series[0].data.length === 0) {
+                    var create = debounce(function() {
+                        if (!scope.options || !scope.options.series || !scope.options.series[0].data || scope.options.series[0].data.length === 0) {
                             return;
                         }
 
-                        var mainEl = angular.element(element);
-                        mainEl.empty();
-                        var graphEl = $compile('<div></div>')(scope);
-                        mainEl.append(graphEl);
-                        var settings = getSettings(graphEl[0]);
-                        var graph = new Rickshaw.Graph(settings);
+                        var mainElement = angular.element(element);
+                        mainElement.empty();
+                        var graphElement = $compile('<div></div>')(scope);
+                        mainElement.append(graphElement);
+                        var settings = getSettings(graphElement[0]);
+
+                        graph = new Rickshaw.Graph(settings);
 
                         if (scope.features && scope.features.hover) {
                             var config = {
@@ -105,12 +106,12 @@
                         }
 
                         if (scope.features && scope.features.legend) {
-                            var legendEl = $compile('<div></div>')(scope);
-                            mainEl.append(legendEl);
+                            var legendElement = $compile('<div></div>')(scope);
+                            mainElement.append(legendElement);
 
                             var legend = new Rickshaw.Graph.Legend({
                                 graph: graph,
-                                element: legendEl[0]
+                                element: legendElement[0]
                             });
                             if (scope.features.legend.toggle) {
                                 var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
@@ -127,42 +128,25 @@
                         }
                     }, 150);
 
-                    var watchOptions = scope.$watch('options', function(newValue, oldValue) {
-                        if (!angular.equals(newValue, oldValue)) {
-                            update();
-                        }
-                    });
-
-                    var watchSeries = scope.$watch(function() {
-                        return scope.series[0].data;
+                    var seriesWatcher = scope.$watch(function() {
+                        return scope.options.series[0].data;
                     }, function(newValue, oldValue){
                         if (!angular.equals(newValue, oldValue)) {
-                            update();
-
-                            // TODO: this should call graph.update();
+                            if (!graph) {
+                                create();
+                            } else {
+                                graph.update();
+                            }
                         }
                     });
 
-                    var watchFeatures = scope.$watch('features', function(newValue, oldValue) {
-                        if (!angular.equals(newValue, oldValue)) {
-                            update();
-                        }
-                    });
-
-                    // TODO: Fix this bug: http://branchandbound.net/blog/web/2013/08/some-angularjs-pitfalls/
-                    var timeout = $timeout(update, 1);
-
+                    // TODO: resize should call configure function on the graph and set the elements width and height.
                     var window = angular.element($window);
-                    window.bind('resize', update);
+                    window.bind('resize', create);
 
                     scope.$on('$destroy', function(e) {
-                        // Remove watchers
-                        watchOptions();
-                        watchSeries();
-                        watchFeatures();
-
-                        $timeout.cancel(timeout);
-                        window.unbind('resize', update);
+                        seriesWatcher(); // Remove watcher
+                        window.unbind('resize', create);
                     });
                 }
             };
