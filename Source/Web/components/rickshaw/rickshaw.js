@@ -43,10 +43,7 @@
                                 onRender: scope.features.hover.onRender
                             };
 
-                            var Hover = scope.features.hover.render
-                                ? Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, { render: scope.features.hover.render })
-                                : Rickshaw.Graph.HoverDetail;
-
+                            var Hover = scope.features.hover.render ? Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, { render: scope.features.hover.render }) : Rickshaw.Graph.HoverDetail;
                             var hoverDetail = new Hover(config);
                         }
 

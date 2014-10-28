@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.stack')
-        .controller('Stack', ['$state', '$stateParams', 'dialogs', 'dialogService', 'eventService', 'featureService', 'notificationService', 'stackService', 'statService', function ($state, $stateParams, dialogs, dialogService, eventService, featureService, notificationService, stackService, statService) {
+        .controller('Stack', ['$filter', '$state', '$stateParams', 'dialogs', 'dialogService', 'eventService', 'featureService', 'notificationService', 'stackService', 'statService', function ($filter, $state, $stateParams, dialogs, dialogService, eventService, featureService, notificationService, stackService, statService) {
             var stackId = $stateParams.id;
             var vm = this;
 
@@ -37,6 +37,10 @@
             function getStats() {
                 function onSuccess(response) {
                     vm.stats = response.data.plain();
+
+                    vm.chart.options.series[0].data = vm.stats.timeline.map(function (item) {
+                        return { x: moment.utc(item.date).unix(), y: item.total, data: item };
+                    });
                 }
 
                 function onFailure() {
@@ -86,24 +90,27 @@
                     });
                 }
 
-                return stackService.promote(stackId)
-                    .then(function() {
-                        notificationService.success('Successfully promoted stack!');
-                    }, function(response) {
-                        if (response.status === 426) { // TODO: Move this to an interceptor.
-                            return dialogService.confirmUpgradePlan(response.data.message).then(function() {
-                                return promoteToExternal();
-                            });
-                        }
+                function onSuccess() {
+                    notificationService.success('Successfully promoted stack!');
+                }
 
-                        if (response.status === 501) {
-                            return dialogService.confirm(response.data.message, 'Manage Integrations').then(function() {
-                                $state.go('app.project.manage', { id: vm.stack.project_id });
-                            });
-                        }
+                function onFailure(response) {
+                    if (response.status === 426) { // TODO: Move this to an interceptor.
+                        return dialogService.confirmUpgradePlan(response.data.message).then(function() {
+                            return promoteToExternal();
+                        });
+                    }
 
-                        notificationService.error('An error occurred while promoting this stack.');
-                    });
+                    if (response.status === 501) {
+                        return dialogService.confirm(response.data.message, 'Manage Integrations').then(function() {
+                            $state.go('app.project.manage', { id: vm.stack.project_id });
+                        });
+                    }
+
+                    notificationService.error('An error occurred while promoting this stack.');
+                }
+
+                return stackService.promote(stackId).then(onSuccess, onFailure);
             }
 
             function removeReferenceLink(reference) {
@@ -205,6 +212,72 @@
             }
 
             vm.addReferenceLink = addReferenceLink;
+
+            vm.chart = {
+                options: {
+                    renderer: 'stack',
+                    stroke: true,
+                    padding: { top: 0.085 },
+                    series: [{
+                        name: 'Occurrences',
+                        color: 'rgba(115, 192, 58, 0.5)',
+                        stroke: 'rgba(0, 0, 0, 0.15)'
+                    }]
+                },
+                features: {
+                    hover: {
+                        render: function (args) {
+                            var date = moment.unix(args.domainX).utc();
+                            var formattedDate = date.hours() === 0 ? $filter('date')(date.toDate(), 'mediumDate') : $filter('date')(date.toDate(), 'medium');
+                            var content = '<div class="date">' + formattedDate + '</div>';
+                            args.detail.sort(function (a, b) {
+                                return a.order - b.order;
+                            }).forEach(function (d) {
+                                var swatch = '<span class="detail-swatch" style="background-color: ' + d.series.color.replace('0.5', '1') + '"></span>';
+                                content += swatch + $filter('number')(d.name === 'Total' ? d.value.data.total : d.value.data.unique) + ' ' + d.series.name + ' <br />';
+                            }, this);
+
+                            var xLabel = document.createElement('div');
+                            xLabel.className = 'x_label';
+                            xLabel.innerHTML = content;
+                            this.element.appendChild(xLabel);
+
+                            // If left-alignment results in any error, try right-alignment.
+                            var leftAlignError = this._calcLayoutError([xLabel]);
+                            if (leftAlignError > 0) {
+                                xLabel.classList.remove('left');
+                                xLabel.classList.add('right');
+
+                                // If right-alignment is worse than left alignment, switch back.
+                                var rightAlignError = this._calcLayoutError([xLabel]);
+                                if (rightAlignError > leftAlignError) {
+                                    xLabel.classList.remove('right');
+                                    xLabel.classList.add('left');
+                                }
+                            }
+
+                            this.show();
+                        }
+                    },
+                    range: {
+                        onSelection: function (position) {
+                            var start = moment.unix(position.coordMinX).utc();
+                            var end = moment.unix(position.coordMaxX).utc();
+
+                            // TODO: Update filter.
+                            //this.filterViewModel.changeDateRange(new models.DateRange(Constants.CUSTOM, 'Custom', start, end));
+
+                            return false;
+                        }
+                    },
+                    yAxis: {
+                        ticks: 5,
+                        tickFormat: 'formatKMBT',
+                        ticksTreatment: 'glow'
+                    }
+                }
+            };
+
             vm.hasTags = hasTags;
             vm.hasReference = hasReference;
             vm.hasReferences = hasReferences;
