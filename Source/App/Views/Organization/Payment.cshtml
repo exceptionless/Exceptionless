@@ -1,7 +1,14 @@
-﻿@model Exceptionless.App.Models.Organization.InvoiceModel
+﻿@using MongoDB.Driver.Linq
+@model Exceptionless.App.Models.Organization.InvoiceModel
 @{
     ViewBag.Title = "Payment";
     Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var coupon = Model.Invoice.StripeDiscount != null ? Model.Invoice.StripeDiscount.StripeCoupon : null;
+    var discountAmount = 0d;
+    if (coupon != null) {
+        discountAmount = coupon.AmountOff.HasValue ? coupon.AmountOff.Value : (Model.Invoice.Subtotal.GetValueOrDefault()) * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+    }
 }
 
 <div class="container invoice">
@@ -54,7 +61,7 @@
                             <tr>
                                 <th>Description</th>
                                 <th>Date</th>
-                                <th>Amount</th>
+                                <th><div class="text-right">Amount</div></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -71,22 +78,22 @@
                                     } else {
                                     <td>@line.Period.Start.GetValueOrDefault().ToShortDateString() - @line.Period.End.GetValueOrDefault().ToShortDateString()</td>
                                     }
-                                    <td><strong>@((line.Amount.GetValueOrDefault() / 100.0).ToString("c"))</strong></td>
+                                    <td><div class="text-right"><strong>@((line.Amount.GetValueOrDefault() / 100.0).ToString("c"))</strong></div></td>
                                 </tr>
                             }
-
-                            @if (Model.Invoice.StripeDiscount != null)
+                            
+                            @if (coupon != null)
                             {
                                 <tr>
-                                    <td>@Model.Invoice.StripeDiscount.StripeCoupon.Id (@Model.Invoice.StripeDiscount.StripeCoupon.PercentOff%)</td>
+                                    <td>@coupon.Id @(coupon.PercentOff.HasValue ? "(" + coupon.PercentOff.Value + "% off)" : "(" + (coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C") + " off)")</td>
                                     <td>&nbsp;</td>
-                                    <td><strong>-@((Model.Invoice.Total.GetValueOrDefault() * (Model.Invoice.StripeDiscount.StripeCoupon.PercentOff.GetValueOrDefault() / 100.0)).ToString("C"))</strong></td>
+                                    <td><div class="text-right"><strong>-@((discountAmount / 100.0).ToString("C"))</strong></div></td>
                                 </tr>
                             }
                             <tr>
                                 <td>&nbsp;</td>
                                 <td><strong>Total</strong></td>
-                                <td><strong>@((Model.Invoice.Total.GetValueOrDefault() / 100.0).ToString("c"))</strong></td>
+                                <td><div class="text-right"><strong>@((Model.Invoice.Total.GetValueOrDefault() / 100.0).ToString("C"))</strong></div></td>
                             </tr>
                         </tbody>
                     </table>

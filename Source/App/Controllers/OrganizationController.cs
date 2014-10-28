@@ -97,13 +97,17 @@ namespace Exceptionless.App.Controllers {
 
                     organization.SubscribeDate = DateTime.Now;
 
-                    StripeCustomer customer = customerService.Create(new StripeCustomerCreateOptions {
+                    var createCustomer = new StripeCustomerCreateOptions {
                         TokenId = stripeToken,
                         PlanId = planId,
                         Description = organization.Name,
-                        Email = User.UserEntity.EmailAddress,
-                        CouponId = couponId
-                    });
+                        Email = User.UserEntity.EmailAddress
+                    };
+
+                    if (!String.IsNullOrWhiteSpace(couponId))
+                        createCustomer.CouponId = couponId;
+
+                    StripeCustomer customer = customerService.Create(createCustomer);
 
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();

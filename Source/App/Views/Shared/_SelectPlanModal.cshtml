@@ -29,11 +29,6 @@
             <label for="plan">Select new plan (<a href="http://exceptionless.com/pricing" target="_blank">view plan information</a>)</label>
             <select id="plan" class="span4" style="display: block;" data-bind="options: plans, value: selectedPlan, optionsText: function(item) { return item.description }"></select>
 
-            <div data-bind="visible: !selectedOrganization.stripeCustomerId">
-                <label for="couponId">Coupon code</label>
-                <input type="text" id="couponId" placeholder="Coupon code" />
-            </div>
-
             <div data-bind="visible: selectedPlan.price !== 0 && !hasAdminRole">
                 <h4>Credit Card</h4>
                 <div data-bind="visible: selectedOrganization.stripeCustomerId">
@@ -76,6 +71,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div data-bind="visible: !selectedOrganization.stripeCustomerId">
+                <label for="couponId">Coupon code</label>
+                <input type="text" id="couponId" />
             </div>
         </form>
     </div>
