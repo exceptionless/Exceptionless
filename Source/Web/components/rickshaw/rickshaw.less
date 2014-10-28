@@ -27,3 +27,21 @@
     padding: 0;
     margin: 0
 }
+
+/* rangeSelector */
+
+.rickshaw_range_selector{
+    outline: 1px dashed rgba(0, 0, 0, 0.1);
+    background: rgba(51, 51, 51, 0.1);
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.rickshaw_graph:active,
+.rickshaw_graph:focus,
+.rickshaw_graph *:active,
+.rickshaw_graph *:focus{
+    cursor:crosshair !important;
+}

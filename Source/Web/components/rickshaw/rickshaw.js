@@ -1,4 +1,5 @@
 /* global Rickshaw:false */
+// Fork of https://github.com/ngyewch/angular-rickshaw
 
 (function () {
     'use strict';
@@ -33,7 +34,7 @@
                         var graph = new Rickshaw.Graph(settings);
 
                         if (scope.features && scope.features.hover) {
-                            var hoverConfig = {
+                            var config = {
                                 graph: graph,
                                 xFormatter: scope.features.hover.xFormatter,
                                 yFormatter: scope.features.hover.yFormatter,
@@ -41,7 +42,11 @@
                                 onRender: scope.features.hover.onRender
                             };
 
-                            var hoverDetail = new Rickshaw.Graph.HoverDetail(hoverConfig);
+                            var Hover = scope.features.hover.render
+                                ? Rickshaw.Class.create(Rickshaw.Graph.HoverDetail, { render: scope.features.hover.render })
+                                : Rickshaw.Graph.HoverDetail;
+
+                            var hoverDetail = new Hover(config);
                         }
 
                         if (scope.features && scope.features.palette) {
@@ -77,6 +82,7 @@
                             var xAxis = new Rickshaw.Graph.Axis.Time(xAxisConfig);
                             xAxis.render();
                         }
+
                         if (scope.features && scope.features.yAxis) {
                             var yAxisConfig = {
                                 graph: graph

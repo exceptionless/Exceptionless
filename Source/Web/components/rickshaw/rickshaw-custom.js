@@ -7,9 +7,9 @@
 
     Rickshaw.Graph.RangeSelector = Rickshaw.Class.create({
         initialize: function (args) {
-            this._selectionCallback = args.selectionCallback;
             var element = this.element = args.element;
             var graph = this.graph = args.graph;
+            graph._selectionCallback = args.selectionCallback;
             var position = this.position = {};
             var selectionBox = this.selectionBox = $('<div class="rickshaw_range_selector"></div>');
             var loader = $('<div class="rickshaw_range_selector_loader"></div>');
@@ -20,7 +20,6 @@
                 this.update();
             }.bind(this));
         },
-        _selectionCallback: null,
         _addListeners: function () {
             var graph = this.graph;
             var position = this.position;
@@ -90,12 +89,12 @@
                     'opacity': '0'
                 });
 
-                if (this._selectionCallback &&
+                if (graph._selectionCallback &&
                     !isNaN(position.coordMinX) &&
                     !isNaN(position.coordMaxX) &&
                     this.startPointX !== event.layerX && // Ensure that there was an actual selection.
                     event.button === 0) { // Only accept left mouse button up..
-                    this._selectionCallback(position);
+                    graph._selectionCallback(position);
                 }
 
                 this.startPointX = 0;

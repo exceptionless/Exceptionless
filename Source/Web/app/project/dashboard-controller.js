@@ -112,7 +112,7 @@
                         var content = swatch + series.name + ": " + $filter('number')(y, '0,0[.]0') + ' <br /><span class="date">' + formattedDate + '</span>';
                         return content;
                     },*/
-                    onRender: function (args) {
+                    render: function (args) {
                         var date = moment.unix(args.domainX).utc();
                         var formattedDate = date.hours() === 0 ? $filter('date')(date.toDate(), 'medium') : $filter('date')(date.toDate(), 'medium');
                         var content = '<div class="date">' + formattedDate + '</div>';
@@ -133,10 +133,43 @@
                 },
                 range: {
                     onSelection: function (position) {
-                        console.log(position);
-                        //var start = DateUtil.roundToPrevious15Minutes(moment.unix(position.coordMinX).utc());
-                      //  var end = DateUtil.roundToNext15Minutes(moment.unix(position.coordMaxX).utc());
-                       // this.filterViewModel.changeDateRange(new models.DateRange(Constants.CUSTOM, 'Custom', start, end));
+                        function roundToPrevious15Minutes(moment) {
+                            var minutes = moment.minutes();
+                            if (minutes < 15)
+                                moment.minutes(0);
+                            else if (minutes < 30)
+                                moment.minutes(15);
+                            else if (minutes < 45)
+                                moment.minutes(30);
+                            else
+                                moment.minutes(45);
+
+                            moment.seconds(0);
+
+                            return moment;
+                        }
+
+                        function roundToNext15Minutes(moment) {
+                            var intervals = Math.floor(moment.minutes() / 15);
+                            if (moment.minutes() % 15 != 0)
+                                intervals++;
+
+                            if (intervals == 4) {
+                                moment.add('hours', 1);
+                                intervals = 0;
+                            }
+
+                            moment.minutes(intervals * 15);
+                            moment.seconds(0);
+
+                            return moment;
+                        }
+
+                        var start = roundToPrevious15Minutes(moment.unix(position.coordMinX).utc());
+                        var end = roundToNext15Minutes(moment.unix(position.coordMaxX).utc());
+
+                        // TODO: Update filter.
+                        //this.filterViewModel.changeDateRange(new models.DateRange(Constants.CUSTOM, 'Custom', start, end));
 
                         return false;
                     }
