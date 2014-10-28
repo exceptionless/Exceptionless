@@ -39,6 +39,7 @@ module exceptionless.account {
                 var cardNumber = $('#cardNumber').val();
                 var cardName = $('#cardName').val();
                 var cardCvc = $('#cardCVC').val();
+                var couponId = $('#couponId').val();
 
                 if (this.billingInfo.selectedOrganization.planId === Constants.FREE_PLAN_ID && planId === Constants.FREE_PLAN_ID) {
                     $("#change-plan-button").prop('disabled', false);
@@ -78,11 +79,11 @@ module exceptionless.account {
                             $(".payment-message").text(response.error.message);
                             $("#change-plan-button").prop('disabled', false);
                         } else {
-                            this.changePlan(false, organizationId, planId, response.id, response.card.last4);
+                            this.changePlan(false, organizationId, planId, response.id, response.card.last4, couponId);
                         }
                     });
                 } else {
-                    this.changePlan(false, organizationId, planId);
+                    this.changePlan(false, organizationId, planId, null, null, couponId);
                 }
 
                 return false;
@@ -93,11 +94,11 @@ module exceptionless.account {
             });
         }
 
-        private changePlan(hasAdminRole: boolean, organizationId: string, planId: string, stripeToken?: string, last4?: string) {
+        private changePlan(hasAdminRole: boolean, organizationId: string, planId: string, stripeToken?: string, last4?: string, couponId?: string) {
             $.ajax({
                 type: 'POST',
                 url: hasAdminRole ? '/admin/changeplan' : '/organization/changeplan',
-                data: { organizationId: organizationId, planId: planId, stripeToken: stripeToken, last4: last4 },
+                data: { organizationId: organizationId, planId: planId, stripeToken: stripeToken, last4: last4, couponId: couponId },
                 success: (data) => {
                     if (!data.Success) {
                         App.showErrorNotification('Error changing your plan. <br /> Message: ' + data.Message);

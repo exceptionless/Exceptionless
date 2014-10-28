@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Web.Mvc;
 using Exceptionless.App.Hubs;
 using Exceptionless.App.Models.Organization;
@@ -53,7 +54,7 @@ namespace Exceptionless.App.Controllers {
         }
 
         [HttpPost]
-        public JsonResult ChangePlan(string organizationId, string planId, string stripeToken, string last4) {
+        public JsonResult ChangePlan(string organizationId, string planId, string stripeToken, string last4, string couponId = null) {
             if (String.IsNullOrEmpty(organizationId) || !User.CanAccessOrganization(organizationId))
                 throw new ArgumentException("Invalid organization id.", "organizationId"); // TODO: These should probably throw http Response exceptions.
 
@@ -77,12 +78,16 @@ namespace Exceptionless.App.Controllers {
                 return Json(new { Success = false, Message = message });
 
             var customerService = new StripeCustomerService();
+            var subscriptionService = new StripeSubscriptionService();
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
                 if (!String.Equals(organization.PlanId, BillingManager.FreePlan.Id) && String.Equals(plan.Id, BillingManager.FreePlan.Id)) {
-                    if (!String.IsNullOrEmpty(organization.StripeCustomerId))
-                        customerService.CancelSubscription(organization.StripeCustomerId);
+                    if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
+                        var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                        foreach (var sub in subs)
+                            subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
+                    }
 
                     organization.BillingStatus = BillingStatus.Trialing;
                     organization.RemoveSuspension();
@@ -96,7 +101,8 @@ namespace Exceptionless.App.Controllers {
                         TokenId = stripeToken,
                         PlanId = planId,
                         Description = organization.Name,
-                        Email = User.UserEntity.EmailAddress
+                        Email = User.UserEntity.EmailAddress,
+                        CouponId = couponId
                     });
 
                     organization.BillingStatus = BillingStatus.Active;
@@ -105,20 +111,26 @@ namespace Exceptionless.App.Controllers {
                     if (customer.StripeCardList.StripeCards.Count > 0)
                         organization.CardLast4 = customer.StripeCardList.StripeCards[0].Last4;
                 } else {
-                    var update = new StripeCustomerUpdateSubscriptionOptions {
-                        PlanId = planId
-                    };
+                    var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
+                    var create = new StripeSubscriptionCreateOptions();
                     bool cardUpdated = false;
 
                     if (!String.IsNullOrEmpty(stripeToken)) {
                         update.TokenId = stripeToken;
+                        create.TokenId = stripeToken;
                         cardUpdated = true;
                     }
-
-                    customerService.UpdateSubscription(organization.StripeCustomerId, update);
+                 
+                    var subscription = subscriptionService.List(organization.StripeCustomerId).FirstOrDefault(s => !s.CanceledAt.HasValue);
+                    if (subscription != null)
+                        subscriptionService.Update(organization.StripeCustomerId, subscription.Id, update);
+                    else
+                        subscriptionService.Create(organization.StripeCustomerId, planId, create);
+                    
                     customerService.Update(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
                         Email = User.UserEntity.EmailAddress
                     });
+                    
                     if (cardUpdated)
                         organization.CardLast4 = last4;
 

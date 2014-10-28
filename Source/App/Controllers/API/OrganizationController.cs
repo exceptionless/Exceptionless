@@ -129,7 +129,8 @@ namespace Exceptionless.App.Controllers.API {
             int skip = GetSkip(page, pageSize);
 
             var invoiceService = new StripeInvoiceService();
-            List<InvoiceGridModel> invoices = invoiceService.List(100, organization.StripeCustomerId).Select(Mapper.Map<InvoiceGridModel>).ToList();
+            var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = 100 }).Select(Mapper.Map<InvoiceGridModel>).ToList();
+
             return Ok(new PagedResult<InvoiceGridModel>(invoices.Skip(skip).Take(pageSize).ToList(), invoices.Count) {
                 Page = page,
                 PageSize = pageSize
@@ -255,8 +256,10 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
                 Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
 
-                var customerService = new StripeCustomerService();
-                customerService.CancelSubscription(value.StripeCustomerId);
+                var subscriptionService = new StripeSubscriptionService();
+                var subs = subscriptionService.List(value.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                foreach (var sub in subs)
+                    subscriptionService.Cancel(value.StripeCustomerId, sub.Id);
             }
 
             List<User> users = _userRepository.GetByOrganizationId(value.Id).ToList();
