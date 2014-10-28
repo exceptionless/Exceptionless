@@ -13,6 +13,7 @@ using System;
 using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.AppStats;
 using NLog.Fluent;
 using ServiceStack.CacheAccess;
 
@@ -20,14 +21,16 @@ namespace Exceptionless.Core.Pipeline {
     [Priority(5)]
     public class ThrottleBotsAction : ErrorPipelineActionBase {
         private readonly ICacheClient _cacheClient;
+        private readonly IAppStatsClient _stats;
         private readonly ErrorRepository _errorRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsAction(ICacheClient cacheClient, ErrorRepository errorRepository, IProjectRepository projectRepository) {
+        public ThrottleBotsAction(ICacheClient cacheClient, ErrorRepository errorRepository, IProjectRepository projectRepository, IAppStatsClient stats) {
             _cacheClient = cacheClient;
             _errorRepository = errorRepository;
             _projectRepository = projectRepository;
+            _stats = stats;
         }
 
         protected override bool ContinueOnError { get { return true; } }
@@ -61,6 +64,7 @@ namespace Exceptionless.Core.Pipeline {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
 
+            _stats.Counter(StatNames.ErrorsBotThrottleTriggered);
             Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", clientIp, DateTime.Now.Floor(_throttlingPeriod), ctx.Error.ProjectId).Project(ctx.Error.ProjectId).Write();
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             Task.Run(() => _errorRepository.RemoveAllByClientIpAndDateAsync(clientIp, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));

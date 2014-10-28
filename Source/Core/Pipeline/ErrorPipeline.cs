@@ -13,15 +13,26 @@ using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Dependency;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Pipeline {
     public class ErrorPipeline : PipelineBase<ErrorPipelineContext, ErrorPipelineActionBase> {
-        public ErrorPipeline(IDependencyResolver dependencyResolver) : base(dependencyResolver) {}
+        private readonly IAppStatsClient _stats;
+
+        public ErrorPipeline(IDependencyResolver dependencyResolver, IAppStatsClient stats) : base(dependencyResolver) {
+            _stats = stats;
+        }
 
         public void Run(Error error) {
             var ctx = new ErrorPipelineContext(error);
             Run(ctx);
+        }
+
+        protected override void Run(ErrorPipelineContext context, IEnumerable<Type> actionTypes) {
+            base.Run(context, actionTypes);
+            if (context.IsCancelled)
+                _stats.Counter(StatNames.ErrorsProcessingCancelled);
         }
 
         public void Run(IEnumerable<Error> errors) {

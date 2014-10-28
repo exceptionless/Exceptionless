@@ -385,6 +385,7 @@
     <Compile Include="Controllers\API\StackController.cs" />
     <Compile Include="Controllers\API\ProjectController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\StatusController.cs" />
     <Compile Include="Controllers\OrganizationController.cs" />
     <Compile Include="Controllers\ErrorController.cs" />
     <Compile Include="Controllers\StackController.cs" />
@@ -799,6 +800,9 @@
     <Content Include="Scripts\typings\d3\d3.d.ts" />
     <Content Include="Scripts\typings\d3\plugins\d3.superformula.d.ts" />
     <Content Include="Scripts\typings\jquery\jquery.d.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Views\Maintenance\" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
