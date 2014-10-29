@@ -59,11 +59,12 @@
                 return Restangular.one('stacks', id).one('promote').post();
             }
 
+            function remove(id) {
+                return Restangular.one('stacks', id).remove();
+            }
+
             function removeLink(id, url) {
                 return Restangular.one('stacks', id).one('remove-link').customPOST(url);
-            }
-            function resetData(id) {
-                return Restangular.one('stacks', id).one('reset-data').get();
             }
 
             var service = {
@@ -81,8 +82,8 @@
                 markHidden: markHidden,
                 markNotHidden: markNotHidden,
                 promote: promote,
-                removeLink: removeLink,
-                resetData: resetData
+                remove: remove,
+                removeLink: removeLink
             };
 
             return service;

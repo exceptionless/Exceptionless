@@ -2,16 +2,23 @@
     <table class="table table-striped table-bordered table-fixed b-t b-light">
         <thead>
             <tr>
+                <th class="selection hidden-xs">
+                    <label class="i-checks m-b-none">
+                        <input type="checkbox" ng-click="vm.updateSelection()" ng-checked="vm.hasSelection()" ng-disabled="!vm.hasEvents()"><i></i>
+                    </label>
+                </th>
                 <th>Summary</th>
                 <th class="date">Date</th>
             </tr>
         </thead>
         <tbody>
-            <tr class="row-clickable" ng-repeat="event in vm.events track by event.id" ng-click="vm.open(event.id, $event)" ng-if="vm.hasEvents()">
-                <td><summary source="event"></summary></td>
-                <td><abbr title="{{::event.date | date : 'medium'}}"><timeago date="event.date"></timeago></abbr></td>
+            <tr class="row-clickable" ng-repeat="event in vm.events track by event.id" ng-if="vm.hasEvents()">
+                <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds" checklist-value="event.id"><i></i></label></td>
+                <td ng-click="vm.open(event.id, $event)"><summary source="event"></summary></td>
+                <td ng-click="vm.open(event.id, $event)"><abbr title="{{::event.date | date : 'medium'}}"><timeago date="event.date"></timeago></abbr></td>
             </tr>
             <tr ng-if="!vm.hasEvents()">
+                <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" disabled><i></i></label></td>
                 <td colspan="2">
                     <strong>Congratulations!</strong> You are <strong>exceptionless!</strong>
                 </td>
@@ -19,9 +26,15 @@
         </tbody>
     </table>
 
-    <div class="table-footer" ng-show="vm.previous || vm.next">
+    <div class="table-footer">
         <div class="row">
-            <div class="col-sm-12 text-right">
+            <div class="col-sm-8 hidden-xs">
+                <select class="input-sm form-control w-sm inline v-middle" ng-model="vm.selectedAction" ng-options="a.name for a in vm.actions" ng-disabled="!vm.hasEvents()">
+                    <option value="">Bulk action</option>
+                </select>
+                <button class="btn btn-sm btn-default" ng-click="vm.save()" ng-disabled="!vm.hasEvents()">Apply</button>
+            </div>
+            <div class="col-sm-4 col-xs-12 text-right" ng-if="vm.previous || vm.next">
                 <ul class="pagination pagination-sm m-t-none m-b-none">
                     <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i class="fa fa-chevron-left"></i></a></li>
                     <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>

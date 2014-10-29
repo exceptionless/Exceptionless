@@ -15,10 +15,25 @@
                 return Restangular.one('stacks', id).all('events').getList(options || {});
             }
 
+            function markCritical(id) {
+                return Restangular.one('events', id).one('mark-critical').post();
+            }
+
+            function markNotCritical(id) {
+                return Restangular.one('events', id).one('mark-critical').remove();
+            }
+
+            function remove(id) {
+                return Restangular.one('events', id).remove();
+            }
+
             var service = {
                 getAll: getAll,
                 getById: getById,
-                getByStackId: getByStackId
+                getByStackId: getByStackId,
+                markCritical: markCritical,
+                markNotCritical: markNotCritical,
+                remove: remove
             };
             return service;
         }

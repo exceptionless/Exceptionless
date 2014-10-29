@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-    angular.module('exceptionless.events', ['exceptionless.link', 'exceptionless.summary', 'exceptionless.timeago'])
+    angular.module('exceptionless.events')
         .directive('events', function(linkService) {
             return {
                 restrict: 'E',
@@ -10,7 +10,7 @@
                     settings: "="
                 },
                 templateUrl: 'components/events/events-directive.tpl.html',
-                controller: ['$rootScope', '$scope', '$window', '$state', 'linkService', function ($rootScope, $scope, $window, $state, linkService) {
+                controller: ['$rootScope', '$scope', '$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($rootScope, $scope, $window, $state, linkService, notificationService, eventsActionsService) {
                     var settings = $scope.settings;
                     var vm = this;
 
@@ -26,6 +26,10 @@
 
                     function hasEvents() {
                         return vm.events && vm.events.length > 0;
+                    }
+
+                    function hasSelection() {
+                        return vm.selectedIds.length > 0;
                     }
 
                     function open(id, event) {
@@ -44,6 +48,30 @@
                         get(vm.previous);
                     }
 
+                    function updateSelection() {
+                        if (!hasEvents())
+                            return;
+
+                        if (hasSelection())
+                            vm.selectedIds = [];
+                        else
+                            vm.selectedIds = vm.events.map(function(event) { return event.id; });
+                    }
+
+                    function save() {
+                        if (!hasSelection()) {
+                            notificationService.info(null, 'Please select one or more events');
+                            return;
+                        }
+
+                        if (!vm.selectedAction) {
+                            notificationService.info(null, 'Please select a bulk action');
+                            return;
+                        }
+
+                        vm.selectedAction.run(vm.selectedIds);
+                    }
+
                     var unbind = $rootScope.$on('eventOccurrence', function(e, data){
                         if (!vm.previous)
                             get(vm.settings.options);
@@ -51,10 +79,16 @@
 
                     $scope.$on('$destroy', unbind);
 
+                    vm.actions = eventsActionsService.getActions();
                     vm.hasEvents = hasEvents;
+                    vm.hasSelection = hasSelection;
                     vm.open = open;
                     vm.nextPage = nextPage;
                     vm.previousPage = previousPage;
+                    vm.save = save;
+                    vm.selectedIds = [];
+                    vm.selectedAction = null;
+                    vm.updateSelection = updateSelection;
 
                     get(settings.options);
                 }],

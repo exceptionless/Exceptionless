@@ -79,10 +79,6 @@
                 return vm.stack.is_regressed === true;
             }
 
-            function notificationsDisabled() {
-                return vm.stack.disable_notifications === true;
-            }
-
             function promoteToExternal() {
                 if (!featureService.hasPremium()) {
                     return dialogService.confirmUpgradePlan('Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.').then(function() {
@@ -127,19 +123,18 @@
                 });
             }
 
-            function resetOccurrences() {
-                var message = 'Are you sure you want to reset all occurrences for this stack?';
-                return dialogService.confirmDanger(message, 'RESET ALL OCCURRENCE DATA').then(function() {
+            function remove() {
+                var message = 'Are you sure you want to delete this stack?';
+                return dialogService.confirmDanger(message, 'DELETE STACK').then(function() {
                     function onSuccess() {
-                        // TODO: Trigger refresh of page data.
-                        get();
+                        $state.go('app.project.dashboard', { id: vm.stack.project_id });
                     }
 
                     function onFailure() {
-                        notificationService.error('An error occurred while resetting the error stacks statistics and occurrences data.');
+                        notificationService.error('An error occurred while deleting this stack.');
                     }
 
-                    return stackService.resetData(stackId).then(onSuccess, onFailure);
+                    return stackService.remove(stackId).then(onSuccess, onFailure);
                 });
             }
 
@@ -192,23 +187,6 @@
                 }
 
                 return stackService.markHidden(stackId).then(onSuccess, onFailure);
-            }
-
-            function updateNotifications() {
-                function onSuccess() {
-                    vm.stack.disable_notifications = !notificationsDisabled();
-                }
-
-                function onFailure() {
-                    var action = notificationsDisabled() ? 'enabling' : 'disabling';
-                    notificationService.error('An error occurred while ' + action + ' stack notifications.');
-                }
-
-                if (notificationsDisabled()) {
-                    return stackService.enableNotifications(stackId).then(onSuccess, onFailure);
-                }
-
-                return stackService.disableNotifications(stackId).then(onSuccess, onFailure);
             }
 
             vm.addReferenceLink = addReferenceLink;
@@ -285,8 +263,8 @@
             vm.isFixed = isFixed;
             vm.isHidden = isHidden;
             vm.isRegressed = isRegressed;
-            vm.notificationsDisabled = notificationsDisabled;
             vm.promoteToExternal = promoteToExternal;
+            vm.remove = remove;
             vm.removeReferenceLink = removeReferenceLink;
             vm.recentOccurrences = {
                 get: function (options) {
@@ -297,13 +275,11 @@
                     mode: 'summary'
                 }
             };
-            vm.resetOccurrences = resetOccurrences;
             vm.stack = {};
             vm.stats = {};
             vm.updateIsCritical = updateIsCritical;
             vm.updateIsFixed = updateIsFixed;
             vm.updateIsHidden = updateIsHidden;
-            vm.updateNotifications = updateNotifications;
 
             get().then(getStats);
         }]);
