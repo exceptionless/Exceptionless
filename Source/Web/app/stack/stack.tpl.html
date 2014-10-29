@@ -55,6 +55,7 @@
                         <ul class="dropdown-menu dropdown-menu-right" role="menu">
                             <li><a ng-click="vm.updateIsHidden()" title="Hide this stack from reports and mutes occurrence notifications"><i ng-if="vm.isHidden()" class="fa fa-fw fa-check"></i>Hide</a></li>
                             <li><a ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><i ng-if="vm.isCritical()" class="fa fa-fw fa-check"></i>Future Occurrences Are Critical</a></li>
+                            <li><a ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><i ng-if="vm.notificationsDisabled()" class="fa fa-fw fa-check"></i>Disable Notifications</a></li>
                             <li class="divider"></li>
                             <li><a ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To External</a></li>
                             <li><a ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add Reference Link</a></li>

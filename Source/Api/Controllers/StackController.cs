@@ -38,6 +38,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
@@ -47,13 +48,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly FormattingPluginManager _formattingPluginManager;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
-            IProjectRepository projectRepository, IWebHookRepository webHookRepository, 
+            IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
             EventStats eventStats, BillingManager billingManager, DataHelper dataHelper,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _eventRepository = eventRepository;
             _webHookRepository = webHookRepository;
             _webHookDataPluginManager = webHookDataPluginManager;
             _webHookNotificationQueue = webHookNotificationQueue;
@@ -316,6 +318,17 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id:objectid}")]
+        public override IHttpActionResult Delete(string id) {
+            return base.Delete(id);
+        }
+
+        protected override async void DeleteModel(Stack value) {
+            await _eventRepository.RemoveAllByStackIdAsync(value.Id);
+            base.DeleteModel(value);
         }
 
         [HttpGet]

@@ -10,6 +10,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Driver;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
@@ -167,7 +168,13 @@ namespace Exceptionless.Api.Controllers {
             if (!permission.Allowed)
                 return permission.HttpActionResult ?? NotFound();
 
-            DeleteModel(item);
+            try {
+                DeleteModel(item);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Report().Write();
+                return StatusCode(HttpStatusCode.InternalServerError);
+            }
+
             return StatusCode(HttpStatusCode.NoContent);
         }
 

@@ -79,6 +79,10 @@
                 return vm.stack.is_regressed === true;
             }
 
+            function notificationsDisabled() {
+                return vm.stack.disable_notifications === true;
+            }
+
             function promoteToExternal() {
                 if (!featureService.hasPremium()) {
                     return dialogService.confirmUpgradePlan('Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.').then(function() {
@@ -189,6 +193,23 @@
                 return stackService.markHidden(stackId).then(onSuccess, onFailure);
             }
 
+            function updateNotifications() {
+                function onSuccess() {
+                    vm.stack.disable_notifications = !notificationsDisabled();
+                }
+
+                function onFailure() {
+                    var action = notificationsDisabled() ? 'enabling' : 'disabling';
+                    notificationService.error('An error occurred while ' + action + ' stack notifications.');
+                }
+
+                if (notificationsDisabled()) {
+                    return stackService.enableNotifications(stackId).then(onSuccess, onFailure);
+                }
+
+                return stackService.disableNotifications(stackId).then(onSuccess, onFailure);
+            }
+
             vm.addReferenceLink = addReferenceLink;
 
             vm.chart = {
@@ -263,6 +284,7 @@
             vm.isFixed = isFixed;
             vm.isHidden = isHidden;
             vm.isRegressed = isRegressed;
+            vm.notificationsDisabled = notificationsDisabled;
             vm.promoteToExternal = promoteToExternal;
             vm.remove = remove;
             vm.removeReferenceLink = removeReferenceLink;
@@ -280,6 +302,7 @@
             vm.updateIsCritical = updateIsCritical;
             vm.updateIsFixed = updateIsFixed;
             vm.updateIsHidden = updateIsHidden;
+            vm.updateNotifications = updateNotifications;
 
             get().then(getStats);
         }]);
