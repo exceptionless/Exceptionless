@@ -158,6 +158,36 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
+        [Route("{id:objectid}/mark-critical")]
+        public IHttpActionResult MarkCritical(string id) {
+            var ev = GetModel(id, false);
+            if (ev == null)
+                return BadRequest();
+
+            if (!ev.IsCritical()) {
+                ev.MarkAsCritical();
+                _repository.Save(ev);
+            }
+
+            return Ok();
+        }
+
+        [HttpDelete]
+        [Route("{id:objectid}/mark-critical")]
+        public IHttpActionResult MarkNotCritical(string id) {
+            var ev = GetModel(id, false);
+            if (ev == null)
+                return BadRequest();
+            
+            if (ev.IsCritical()) {
+                ev.Tags.Remove(Event.KnownTags.Critical);
+                _repository.Save(ev);
+            }
+
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        [HttpPost]
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
         [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
@@ -255,6 +285,12 @@ namespace Exceptionless.Api.Controllers {
             _statsClient.Counter(StatNames.PostsQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
+        }
+
+        [HttpDelete]
+        [Route("{id:objectid}")]
+        public override IHttpActionResult Delete(string id) {
+            return base.Delete(id);
         }
 
         protected override void CreateMaps() {
