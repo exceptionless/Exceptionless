@@ -167,6 +167,7 @@ namespace Exceptionless.Models {
         public DateTime Date { get; set; }
         public int Total { get; set; }
         public int Blocked { get; set; }
+        public int TooBig { get; set; }
         public int Limit { get; set; }
     }
 

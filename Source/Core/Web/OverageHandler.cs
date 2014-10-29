@@ -62,12 +62,20 @@ namespace Exceptionless.Core.Web {
             return request.Method == HttpMethod.Post && request.RequestUri.AbsolutePath.Contains("/error");
         }
 
+        private string GetHourlyTooBigCacheKey(string organizationId) {
+            return String.Concat("usage-toobig", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
         private string GetHourlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
         private string GetHourlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
+        private string GetMonthlyTooBigCacheKey(string organizationId) {
+            return String.Concat("usage-toobig", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
         private string GetMonthlyBlockedCacheKey(string organizationId) {
@@ -90,16 +98,6 @@ namespace Exceptionless.Core.Web {
             if (String.IsNullOrEmpty(organizationId))
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
-            if (request.Content != null && request.Content.Headers != null) {
-                long size = request.Content.Headers.ContentLength.GetValueOrDefault();
-                _statsClient.Gauge(StatNames.ErrorsSize, size);
-                if (request.Content.Headers.ContentLength > Settings.Current.MaximumErrorSize) {
-                    Log.Warn().Message("Error submission discarded for being too large: {0}", size).Project(GetProjectId(request)).Write();
-                    _statsClient.Counter(StatNames.ErrorsDiscarded, 1);
-                    return CreateResponse(request, HttpStatusCode.Created, "Created");
-                }
-            }
-
             var org = _organizationRepository.GetByIdCached(organizationId);
             if (org.MaxErrorsPerMonth < 0)
                 return base.SendAsync(request, cancellationToken);
@@ -111,6 +109,20 @@ namespace Exceptionless.Core.Web {
                 bool overLimit = hourlyTotal > org.GetHourlyErrorLimit() || (monthlyTotal - monthlyBlocked) > org.MaxErrorsPerMonth;
                 long hourlyBlocked = cacheClient.IncrementIf(GetHourlyBlockedCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
                 monthlyBlocked = cacheClient.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), 1, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
+                bool tooBig = false;
+
+                if (request.Content != null && request.Content.Headers != null) {
+                    long size = request.Content.Headers.ContentLength.GetValueOrDefault();
+                    _statsClient.Gauge(StatNames.ErrorsSize, size);
+                    if (request.Content.Headers.ContentLength > Settings.Current.MaximumErrorSize) {
+                        Log.Warn().Message("Error submission discarded for being too large: {0}", size).Project(GetProjectId(request)).Write();
+                        _statsClient.Counter(StatNames.ErrorsDiscarded);
+                        tooBig = true;
+                    }
+                }
+
+                long monthlyTooBig = cacheClient.IncrementIf(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig());
+                long hourlyTooBig = cacheClient.IncrementIf(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig());
 
                 if (overLimit)
                     _statsClient.Counter(StatNames.ErrorsBlocked);
@@ -142,13 +154,17 @@ namespace Exceptionless.Core.Web {
 
                 if (shouldSaveUsage) {
                     org = _organizationRepository.GetById(organizationId, true);
-                    org.SetMonthlyUsage(monthlyTotal, monthlyBlocked);
+                    org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
                     if (hourlyTotal > org.GetHourlyErrorLimit())
-                        org.SetHourlyOverage(hourlyTotal, hourlyBlocked);
+                        org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
                     _organizationRepository.Update(org, true);
                     cacheClient.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
                 }
+
+                // if too big, then tell the client that we got it so it doesn't keep retrying
+                if (tooBig)
+                    return CreateResponse(request, HttpStatusCode.Created, "Created");
 
                 return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Error limit exceeded.") : base.SendAsync(request, cancellationToken);
             }
