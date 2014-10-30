@@ -1,21 +1,54 @@
 ﻿using System;
-using System.Web.Http;
+using System.Net;
 
 namespace Exceptionless.Api.Controllers {
     public class PermissionResult {
         public bool Allowed { get; set; }
 
-        public IHttpActionResult HttpActionResult { get; set; }
+        public string Id { get; set; }
 
-        public static PermissionResult Allow = new PermissionResult { Allowed = true };
+        public string Message { get; set; }
 
-        public static PermissionResult Deny = new PermissionResult { Allowed = false };
+        public HttpStatusCode StatusCode { get; set; }
 
-        public static PermissionResult DenyWithResult(IHttpActionResult result) {
+        public static PermissionResult Allow = new PermissionResult { Allowed = true, StatusCode = HttpStatusCode.OK };
+
+        public static PermissionResult Deny = new PermissionResult { Allowed = false, StatusCode = HttpStatusCode.BadRequest };
+
+        public static PermissionResult DenyWithNotFound(string id = null) {
             return new PermissionResult {
                 Allowed = false,
-                HttpActionResult = result
+                Id = id,
+                StatusCode = HttpStatusCode.NotFound
             };
         }
+
+        public static PermissionResult DenyWithMessage(string message, string id = null) {
+            return new PermissionResult {
+                Allowed = false,
+                Id = id,
+                Message = message,
+                StatusCode = HttpStatusCode.BadRequest
+            };
+        }
+
+        public static PermissionResult DenyWithStatus(HttpStatusCode statusCode, string message = null, string id = null) {
+            return new PermissionResult {
+                Allowed = false,
+                Id = id,
+                Message = message,
+                StatusCode = statusCode
+            };
+        }
+
+        public static PermissionResult DenyWithPlanLimitReached(string message, string id = null) {
+            return new PermissionResult {
+                Allowed = false,
+                Id = id,
+                Message = message,
+                StatusCode = HttpStatusCode.UpgradeRequired
+            };
+        }
+
     }
 }

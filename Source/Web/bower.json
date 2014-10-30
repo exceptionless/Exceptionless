@@ -10,7 +10,7 @@
   "dependencies": {
     "jquery": "~2.1",
     "underscore": "~1.7",
-    "bootstrap": "~3.2",
+    "bootstrap": "~3.3",
     "angular": "~1.3",
     "angular-ui-router": "0.2.12-pre1",
     "angular-animate": "~1.3",
@@ -44,7 +44,8 @@
     "d3": "~3.4.13"
   },
   "resolutions": {
-    "bootstrap": "~3.2",
-    "angular": "1.3.0"
+    "bootstrap": "~3.3",
+    "angular": "1.3.0",
+    "rickshaw": "~1.5.0"
   }
 }

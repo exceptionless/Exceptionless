@@ -5,6 +5,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
@@ -47,24 +48,23 @@ namespace Exceptionless.Api.Controllers {
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
         }
+        
+        [HttpGet]
+        [Route("{id:objectid}")]
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
+        }
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string organization = null, string before = null, string after = null, int limit = 10, string mode = null) {
+        public IHttpActionResult Get(string filter = null, string before = null, string after = null, int limit = 10, string mode = null, string sort = null) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-
-            var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
-                organizationIds.Add(organization);
-            else
-                organizationIds.AddRange(GetAssociatedOrganizationIds());
-
-            var results = _repository.GetByOrganizationIds(organizationIds, options);
-
+            //GetAssociatedOrganizationIds()
+            var results = _repository.GetByFilter(filter, sort, options);
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(results.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);
-                    return new EventSummaryModel { 
+                    return new EventSummaryModel {
                         TemplateKey = summaryData.TemplateKey,
                         Id = e.Id,
                         Date = e.Date,
@@ -73,6 +73,15 @@ namespace Exceptionless.Api.Controllers {
                 }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
 
             return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
+        public IHttpActionResult GetByOrganization(string organizationId = null, string before = null, string after = null, int limit = 10, string mode = null) {
+            if (String.IsNullOrEmpty(organizationId))
+                return NotFound();
+
+            return Get(String.Concat("organization:", organizationId), before, after, limit, mode);
         }
 
         [HttpGet]
@@ -81,25 +90,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            var project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByProjectId(projectId, options);
-
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => {
-                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
-                    return new EventSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = e.Id,
-                        Date = e.Date,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
-
-            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+            return Get(String.Concat("project:", projectId), before, after, limit, mode);
         }
 
         [HttpGet]
@@ -108,33 +99,9 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            var stack = _stackRepository.GetById(stackId, true);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
-
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var results = _repository.GetByStackId(stackId, options);
-
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => {
-                    var summaryData = _formattingPluginManager.GetEventSummaryData(e);
-                    return new EventSummaryModel {
-                        TemplateKey = summaryData.TemplateKey,
-                        Id = e.Id,
-                        Date = e.Date,
-                        Data = summaryData.Data
-                    };
-                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
-
-            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+            return Get(String.Concat("stack:", stackId), before, after, limit, mode);
         }
 
-        [HttpGet]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
-        }
-        
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
         [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
@@ -149,39 +116,40 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
-            var project = _projectRepository.GetById(projectId, true);
-            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
-                return NotFound();
-
-            var results = _repository.GetByReferenceId(projectId, referenceId);
-            return Ok(results);
+            return Get(String.Concat("project:", projectId, " reference:", referenceId));
         }
 
         [HttpPost]
-        [Route("{id:objectid}/mark-critical")]
-        public IHttpActionResult MarkCritical(string id) {
-            var ev = GetModel(id, false);
-            if (ev == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-critical")]
+        public IHttpActionResult MarkCritical([CommaDelimitedArray]string[] ids) {
+            var events = GetModels(ids, false);
+            if (!events.Any())
+                return NotFound();
 
-            if (!ev.IsCritical()) {
-                ev.MarkAsCritical();
-                _repository.Save(ev);
+            events = events.Where(e => !e.IsCritical()).ToList();
+            if (events.Any()) {
+                foreach (var ev in events)
+                    ev.MarkAsCritical();
+
+                _repository.Save(events);
             }
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/mark-critical")]
-        public IHttpActionResult MarkNotCritical(string id) {
-            var ev = GetModel(id, false);
-            if (ev == null)
-                return BadRequest();
-            
-            if (ev.IsCritical()) {
-                ev.Tags.Remove(Event.KnownTags.Critical);
-                _repository.Save(ev);
+        [Route("{ids:objectids}/mark-critical")]
+        public IHttpActionResult MarkNotCritical([CommaDelimitedArray]string[] ids) {
+            var events = GetModels(ids, false);
+            if (!events.Any())
+                return NotFound();
+
+            events = events.Where(e => e.IsCritical()).ToList();
+            if (events.Any()) {
+                foreach (var ev in events)
+                    ev.Tags.Remove(Event.KnownTags.Critical);
+
+                _repository.Save(events);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -288,9 +256,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
         protected override void CreateMaps() {

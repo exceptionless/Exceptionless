@@ -76,22 +76,24 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/mark-fixed")]
-        public IHttpActionResult MarkFixed(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-fixed")]
+        public IHttpActionResult MarkFixed([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (stack.DateFixed.HasValue)
-                return Ok();
+            foreach (var stack in stacks) {
+                if (stack.DateFixed.HasValue)
+                    continue;
 
-            // TODO: Implement Fixed in version.
-            stack.DateFixed = DateTime.UtcNow;
-            //stack.FixedInVersion = "TODO";
-            stack.IsRegressed = false;
+                // TODO: Implement Fixed in version.
+                stack.DateFixed = DateTime.UtcNow;
+                //stack.FixedInVersion = "TODO";
+                stack.IsRegressed = false;
+            }
 
             // TODO: Add a log entry.
-            _stackRepository.Save(stack);
+            _stackRepository.Save(stacks);
 
             return Ok();
         }
@@ -116,7 +118,7 @@ namespace Exceptionless.Api.Controllers {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            return MarkFixed(id);
+            return MarkFixed(new [] { id });
         }
 
         // TODO: Add attribute validation for the url.
@@ -226,35 +228,35 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/notifications")]
-        public IHttpActionResult DisableNotifications(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/notifications")]
+        public IHttpActionResult DisableNotifications(string[] ids) {
+            //var stack = GetModel(id, false);
+            //if (stack == null)
+            //    return BadRequest();
 
-            if (!stack.DisableNotifications) {
-                stack.DisableNotifications = true;
-                _stackRepository.Save(stack);
-            }
+            //if (!stack.DisableNotifications) {
+            //    stack.DisableNotifications = true;
+            //    _stackRepository.Save(stack);
+            //}
 
             return StatusCode(HttpStatusCode.NoContent);
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/mark-fixed")]
-        public IHttpActionResult MarkNotFixed(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-fixed")] // /id/mark-fixed /id,id2,id3/mark-fixed
+        public IHttpActionResult MarkNotFixed(string[] ids) {
+            //var stack = GetModel(id, false);
+            //if (stack == null)
+            //    return BadRequest();
 
-            if (!stack.DateFixed.HasValue)
-                return Ok();
+            //if (!stack.DateFixed.HasValue)
+            //    return Ok();
 
-            stack.DateFixed = null;
-            //stack.IsRegressed = false;
+            //stack.DateFixed = null;
+            ////stack.IsRegressed = false;
 
-            // TODO: Add a log entry.
-            _stackRepository.Save(stack);
+            //// TODO: Add a log entry.
+            //_stackRepository.Save(stack);
 
             return StatusCode(HttpStatusCode.NoContent);
         }
@@ -321,25 +323,31 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
-        protected override async void DeleteModel(Stack value) {
-            await _eventRepository.RemoveAllByStackIdAsync(value.Id);
-            base.DeleteModel(value);
+        protected override async void DeleteModels(ICollection<Stack> values) {
+            await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray());
+            base.DeleteModels(values);
         }
 
         [HttpGet]
         [Route]
-        public IHttpActionResult GetByOrganization(string organization = null, string before = null, string after = null, int limit = 10, string mode = null) {
-            if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
+        public IHttpActionResult Get(string filter, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
+            return null;
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
+        public IHttpActionResult GetByOrganization(string organizationId = null, string before = null, string after = null, int limit = 10, string mode = null) {
+            if (!String.IsNullOrEmpty(organizationId) && !CanAccessOrganization(organizationId))
                 return NotFound();
 
             var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organization) && CanAccessOrganization(organization))
-                organizationIds.Add(organization);
+            if (!String.IsNullOrEmpty(organizationId) && CanAccessOrganization(organizationId))
+                organizationIds.Add(organizationId);
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
@@ -442,20 +450,6 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
-        }
-
-        [HttpGet]
-        [Route("{id:objectid}/reset-data")]
-        public async Task<IHttpActionResult> ResetDataAsync(string id) {
-            if (String.IsNullOrEmpty(id))
-                return NotFound();
-
-            Stack stack = _stackRepository.GetById(id, true);
-            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return NotFound();
-
-            await _dataHelper.ResetStackDataAsync(id);
-            return Ok();
         }
 
         private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, DateTime utcStart, DateTime utcEnd) {

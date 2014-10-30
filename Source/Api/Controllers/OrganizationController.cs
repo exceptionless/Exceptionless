@@ -84,9 +84,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
         #endregion
@@ -361,10 +361,10 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanAdd(Organization value) {
             if (String.IsNullOrEmpty(value.Name))
-                return PermissionResult.DenyWithResult(BadRequest("Organization name is required."));
+                return PermissionResult.DenyWithMessage("Organization name is required.");
 
             if (!_billingManager.CanAddOrganization(ExceptionlessUser))
-                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add an additional organization."));
+                return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add an additional organization.");
 
             return base.CanAdd(value);
         }
@@ -382,54 +382,57 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanDelete(Organization value) {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
-                return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it has a subscription."));
+                return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
             List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
-                return PermissionResult.DenyWithResult(BadRequest("An organization cannot be deleted if it contains any projects."));
+                return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 
             return base.CanDelete(value);
         }
 
-        protected override void DeleteModel(Organization value) {
+        protected override void DeleteModels(ICollection<Organization> organizations) {
             var currentUser = ExceptionlessUser;
-            Log.Info().Message("User {0} deleting organization {1} with {2} total events.", currentUser.Id, value.Id, value.TotalEventCount).Write();
 
-            if (!String.IsNullOrEmpty(value.StripeCustomerId)) {
-                Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
+            foreach (var organization in organizations) {
+                Log.Info().Message("User {0} deleting organization {1} with {2} total events.", currentUser.Id, organization.Id, organization.TotalEventCount).Write();
 
-                var subscriptionService = new StripeSubscriptionService();
-                var subs = subscriptionService.List(value.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
-                foreach (var sub in subs)
-                    subscriptionService.Cancel(value.StripeCustomerId, sub.Id);
-            }
+                if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
+                    Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
 
-            List<User> users = _userRepository.GetByOrganizationId(value.Id).ToList();
-            foreach (User user in users) {
-                // delete the user if they are not associated to any other organizations and they are not the current user
-                if (user.OrganizationIds.All(oid => String.Equals(oid, value.Id)) && !String.Equals(user.Id, currentUser.Id)) {
-                    Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, value.Name, value.Id).Write();
-                    _userRepository.Remove(user.Id);
-                } else {
-                    Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, value.Name, value.Id).Write();
-                    user.OrganizationIds.Remove(value.Id);
-                    _userRepository.Save(user);
-                }
-            }
-
-            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
-            if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
-                foreach (Project project in projects) {
-                    Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _projectController.ResetDataAsync(project.Id).Wait();
+                    var subscriptionService = new StripeSubscriptionService();
+                    var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
+                    foreach (var sub in subs)
+                        subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
                 }
 
-                Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-                _projectRepository.Save(projects);
-            }
+                List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
+                foreach (User user in users) {
+                    // delete the user if they are not associated to any other organizations and they are not the current user
+                    if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
+                        Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();
+                        _userRepository.Remove(user.Id);
+                    } else {
+                        Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
+                        user.OrganizationIds.Remove(organization.Id);
+                        _userRepository.Save(user);
+                    }
+                }
 
-            Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", value.Name, value.Id).Write();
-            base.DeleteModel(value);
+                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
+                if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
+                    foreach (Project project in projects) {
+                        Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
+                        _projectController.ResetDataAsync(project.Id).Wait();
+                    }
+
+                    Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                    _projectRepository.Save(projects);
+                }
+
+                Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                base.DeleteModels(new[] { organization });
+            }
         }
     }
 }

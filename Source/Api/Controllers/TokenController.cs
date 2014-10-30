@@ -93,9 +93,9 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
         #endregion
@@ -107,19 +107,19 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override PermissionResult CanAdd(Token value) {
             if (String.IsNullOrEmpty(value.OrganizationId))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
 
             if (value.Scopes.Contains("admin") && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
 
             Project project = _projectRepository.GetById(value.ProjectId, true);
             if (!IsInProject(project))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
                 var application = _applicationRepository.GetById(value.ApplicationId, true);
                 if (application == null || !IsInOrganization(application.OrganizationId))
-                    return PermissionResult.DenyWithResult(BadRequest());
+                    return PermissionResult.Deny;
             }
 
             return base.CanAdd(value);
@@ -136,7 +136,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override PermissionResult CanDelete(Token value) {
             if (!IsInProject(value.ProjectId))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.DenyWithNotFound(value.Id);
 
             return base.CanDelete(value);
         }

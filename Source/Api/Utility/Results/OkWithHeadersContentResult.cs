@@ -11,7 +11,7 @@ using System.Web.Http.Results;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Api.Utility.Results {
     public class OkWithHeadersContentResult<T> : OkNegotiatedContentResult<T> {
         public OkWithHeadersContentResult(T content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 

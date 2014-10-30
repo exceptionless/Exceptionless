@@ -17,6 +17,6 @@ using Exceptionless.Models;
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByProject<T> : IRepository<T> where T : class, IOwnedByProject, IIdentity, new() {
         ICollection<T> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
-        Task RemoveAllByProjectIdAsync(string projectId);
+        Task RemoveAllByProjectIdsAsync(string[] projectIds);
     }
 }

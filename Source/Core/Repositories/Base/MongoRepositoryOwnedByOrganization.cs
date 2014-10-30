@@ -35,8 +35,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByOrganizationIdAsync(string organizationId) {
-            await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationId(organizationId)));
+        public async Task RemoveAllByOrganizationIdsAsync(string[] organizationIds) {
+            await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationIds(organizationIds)));
         }
 
         protected override void ConfigureClassMap(BsonClassMap<T> cm) {

@@ -73,9 +73,9 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
         #endregion
@@ -154,14 +154,14 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override PermissionResult CanAdd(WebHook value) {
             if (String.IsNullOrEmpty(value.ProjectId) || String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
 
             Project project = _projectRepository.GetById(value.ProjectId, true);
             if (!IsInProject(project))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
 
             if (!_billingManager.CanAddIntegration(project))
-                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add integrations."));
+                return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
             return base.CanAdd(value);
         }
@@ -175,7 +175,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override PermissionResult CanUpdate(WebHook original, Delta<NewWebHook> changes) {
             if (!IsInProject(original.ProjectId))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.Deny;
             
             // TODO: The changes might actually change the project id, url and event types.
 
@@ -184,7 +184,7 @@ namespace Exceptionless.App.Controllers.API {
 
         protected override PermissionResult CanDelete(WebHook value) {
             if (!IsInProject(value.ProjectId))
-                return PermissionResult.DenyWithResult(BadRequest());
+                return PermissionResult.DenyWithNotFound(value.Id);
 
             return base.CanDelete(value);
         }

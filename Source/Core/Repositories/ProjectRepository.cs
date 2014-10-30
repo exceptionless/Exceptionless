@@ -24,11 +24,8 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class ProjectRepository : MongoRepositoryOwnedByOrganization<Project>, IProjectRepository {
-        private readonly IOrganizationRepository _organizationRepository;
-
-        public ProjectRepository(MongoDatabase database, IOrganizationRepository organizationRepository, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+        public ProjectRepository(MongoDatabase database, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, validator, cacheClient, messagePublisher) {
-            _organizationRepository = organizationRepository;
         }
 
         public long GetCountByOrganizationId(string organizationId) {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Web.Http;
@@ -53,15 +54,22 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id))
                 return null;
 
-            TModel model;
-            if (useCache)
-                model = _repository.GetById(id, true);
-            else
-                model = _repository.GetById(id, true);
+            TModel model = _repository.GetById(id, useCache);
             if (_isOwnedByOrganization && model != null && !IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
+        }
+
+        protected virtual ICollection<TModel> GetModels(string[] ids, bool useCache = true) {
+            if (ids == null || ids.Length == 0)
+                return new List<TModel>();
+
+            ICollection<TModel> models = _repository.GetByIds(ids, useCache: useCache);
+            if (_isOwnedByOrganization && models != null)
+                models = models.Where(m => IsInOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
+
+            return models;
         }
 
         #endregion
@@ -80,7 +88,7 @@ namespace Exceptionless.Api.Controllers {
             TModel mapped = Mapper.Map<TNewModel, TModel>(value);
             var permission = CanAdd(mapped);
             if (!permission.Allowed)
-                return permission.HttpActionResult ?? BadRequest();
+                return Permission(permission);
 
             TModel model;
             try {
@@ -105,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
                 return PermissionResult.Allow;
 
             if (!IsInOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             return PermissionResult.Allow;
         }
@@ -129,7 +137,7 @@ namespace Exceptionless.Api.Controllers {
 
             var permission = CanUpdate(original, changes);
             if (!permission.Allowed)
-                return permission.HttpActionResult ?? BadRequest();
+                return Permission(permission);
 
             try {
                 UpdateModel(original, changes);
@@ -143,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
         protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
             if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithResult(BadRequest("Invalid organization id specified."));
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             // TODO: The changes might actually change the organization id.
 
@@ -159,35 +167,50 @@ namespace Exceptionless.Api.Controllers {
 
         #region Delete
 
-        public virtual IHttpActionResult Delete(string id) {
-            TModel item = GetModel(id, false);
-            if (item == null)
-                return BadRequest();
+        public virtual IHttpActionResult Delete(string[] ids) {
+            var items = GetModels(ids, false);
+            if (!items.Any())
+                return NotFound();
 
-            var permission = CanDelete(item);
-            if (!permission.Allowed)
-                return permission.HttpActionResult ?? NotFound();
+            var results = new ModelActionResults();
+            results.AddNotFound(ids.Except(items.Select(i => i.Id)));
+
+            foreach (var model in items.ToList()) {
+                var permission = CanDelete(model);
+                if (permission.Allowed)
+                    continue;
+
+                items.Remove(model);
+                results.Failure.Add(permission);
+            }
+
+            if (items.Count == 0)
+                return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
             try {
-                DeleteModel(item);
-            } catch (Exception ex) {
+                DeleteModels(items);
+            } catch (Exception ex){
                 Log.Error().Exception(ex).Report().Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
-            return StatusCode(HttpStatusCode.NoContent);
+            if (results.Failure.Count == 0)
+                return StatusCode(HttpStatusCode.NoContent);
+
+            results.Success.AddRange(items.Select(i => i.Id));
+            return BadRequest(results);
         }
 
         protected virtual PermissionResult CanDelete(TModel value) {
             var orgModel = value as IOwnedByOrganization;
             if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
-                return PermissionResult.DenyWithResult(NotFound());
+                return PermissionResult.DenyWithNotFound(value.Id);
 
             return PermissionResult.Allow;
         }
 
-        protected virtual void DeleteModel(TModel value) {
-            _repository.Remove(value);
+        protected virtual void DeleteModels(ICollection<TModel> values) {
+            _repository.Remove(values);
         }
 
         #endregion

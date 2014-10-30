@@ -19,6 +19,8 @@ namespace Exceptionless.Core.Repositories {
         ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
         ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId);
+        ICollection<PersistentEvent> GetByFilter(string filter, string sort, PagingOptions paging);
+
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);
         void MarkAsRegressedByStack(string organizationId, string stackId);
@@ -30,5 +32,6 @@ namespace Exceptionless.Core.Repositories {
         Task HideAllByClientIpAndDateAsync(string organizationId, string clientIp, DateTime utcStartDate, DateTime utcEndDate);
 
         ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
+
     }
 }

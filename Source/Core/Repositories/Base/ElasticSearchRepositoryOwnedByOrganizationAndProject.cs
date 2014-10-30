@@ -19,8 +19,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByProjectIdAsync(string projectId) {
-            await Task.Run(() => RemoveAll(new QueryOptions().WithProjectId(projectId)));
+        public async Task RemoveAllByProjectIdsAsync(string[]  projectIds) {
+            await Task.Run(() => RemoveAll(new QueryOptions().WithProjectIds(projectIds)));
         }
 
         public override void InvalidateCache(T document) {

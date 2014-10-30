@@ -75,9 +75,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Delete(string id) {
-            return base.Delete(id);
+        [Route("{ids:objectids}")]
+        public override IHttpActionResult Delete(string[] ids) {
+            return base.Delete(ids);
         }
 
         #endregion
@@ -271,10 +271,10 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanAdd(Project value) {
             if (String.IsNullOrEmpty(value.Name))
-                return PermissionResult.DenyWithResult(BadRequest("Project name is required."));
+                return PermissionResult.DenyWithMessage("Project name is required.");
 
             if (!_billingManager.CanAddProject(value))
-                return PermissionResult.DenyWithResult(PlanLimitReached("Please upgrade your plan to add additional projects."));
+                return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add additional projects.");
 
             return base.CanAdd(value);
         }

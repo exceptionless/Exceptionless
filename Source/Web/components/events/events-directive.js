@@ -74,7 +74,7 @@
 
                     var unbind = $rootScope.$on('eventOccurrence', function(e, data){
                         if (!vm.previous)
-                            get(vm.settings.options);
+                            get(settings.options);
                     });
 
                     $scope.$on('$destroy', unbind);

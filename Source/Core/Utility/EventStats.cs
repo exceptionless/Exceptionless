@@ -40,7 +40,6 @@ namespace Exceptionless.Core.Utility {
                             .Terms("terms", t => t
                                 .Field(term)
                                 .Size(max)
-                                .MinimumDocumentCount(0)
                                 .Aggregations(agg2 => agg2
                                     .DateHistogram("timelime", tl => tl
                                         .Field(ev => ev.Date)

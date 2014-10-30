@@ -20,8 +20,8 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByStackIdAsync(string stackId) {
-            await Task.Run(() => RemoveAll(new QueryOptions().WithStackId(stackId)));
+        public async Task RemoveAllByStackIdsAsync(string[] stackIds) {
+            await Task.Run(() => RemoveAll(new QueryOptions().WithStackIds(stackIds)));
         }
 
         public override void InvalidateCache(T document) {

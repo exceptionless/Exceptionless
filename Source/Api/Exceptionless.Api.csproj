@@ -167,6 +167,7 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="App_Start\AutoMapperConfig.cs" />
+    <Compile Include="Controllers\Base\ModelActionResults.cs" />
     <Compile Include="Controllers\TokenController.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
@@ -208,8 +209,11 @@
     <Compile Include="Providers\ExceptionlessOAuthAuthorizationServerProvider.cs" />
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
+    <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
     <Compile Include="Utility\EndDateParameterBinding.cs" />
+    <Compile Include="Utility\ObjectIdsRouteConstraint.cs" />
     <Compile Include="Utility\Results\MessageContent.cs" />
+    <Compile Include="Utility\Results\PermissionActionResult.cs" />
     <Compile Include="Utility\SimpleInjectorSignalRDependencyResolver.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />
@@ -221,7 +225,7 @@
     <Compile Include="Utility\LowercaseHttpRoute.cs" />
     <Compile Include="Utility\NakedParameterBinding.cs" />
     <Compile Include="Utility\ObjectIdRouteConstraint.cs" />
-    <Compile Include="Utility\OkWithHeadersContentResult.cs" />
+    <Compile Include="Utility\Results\OkWithHeadersContentResult.cs" />
     <Compile Include="Utility\OverageHandler.cs" />
     <Compile Include="Utility\RequireHttpsAttribute.cs" />
     <Compile Include="Utility\RequireHttpsExceptLocalAttribute.cs" />

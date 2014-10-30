@@ -62,11 +62,11 @@ namespace Exceptionless.Core.Jobs {
                     return;
                 }
 
-                foreach (Project project in projects) {
-                    Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
-                    _stackRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
-                    _eventRepository.RemoveAllByProjectIdAsync(project.Id).Wait();
-                }
+                Log.Info().Message("Deleting all events for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                _eventRepository.RemoveAllByProjectIdsAsync(projects.Select(p => p.Id).ToArray()).Wait();
+
+                Log.Info().Message("Deleting all stacks for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                _stackRepository.RemoveAllByProjectIdsAsync(projects.Select(p => p.Id).ToArray()).Wait();
 
                 Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 _projectRepository.Remove(projects);

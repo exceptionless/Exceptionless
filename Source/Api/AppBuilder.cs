@@ -63,6 +63,7 @@ namespace Exceptionless.Api {
 
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
+            constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
             config.MapHttpAttributeRoutes(constraintResolver);
             //config.EnableSystemDiagnosticsTracing();
 

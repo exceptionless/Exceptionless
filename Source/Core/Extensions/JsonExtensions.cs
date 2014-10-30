@@ -269,11 +269,12 @@ namespace Exceptionless.Core.Extensions {
                 if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType)) {
                     var countProperty = property.PropertyType.GetProperty("Count");
                     if (countProperty != null)
-                        _countAccessors.Add(property.PropertyType, LateBinder.GetPropertyAccessor(countProperty));
+                        _countAccessors[property.PropertyType] = LateBinder.GetPropertyAccessor(countProperty);
                     else
-                        _countAccessors.Add(property.PropertyType, null);
-                } else
-                    _countAccessors.Add(property.PropertyType, null);
+                        _countAccessors[property.PropertyType] = null;
+                } else {
+                    _countAccessors[property.PropertyType] = null;
+                }
             }
 
             var countAccessor = _countAccessors[property.PropertyType];

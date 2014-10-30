@@ -77,7 +77,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             project = _projectRepository.GetById(TestConstants.ProjectId);
             Assert.Equal(3, project.TotalEventCount);
 
-            _eventRepository.RemoveAllByStackIdAsync(ev.StackId).Wait();
+            _eventRepository.RemoveAllByStackIdsAsync(ev.StackId).Wait();
             organization = _organizationRepository.GetById(TestConstants.OrganizationId);
             Assert.Equal(3, organization.TotalEventCount);
 

@@ -11,7 +11,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Web.Http;
+using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
@@ -82,6 +84,14 @@ namespace Exceptionless.Api.Controllers {
 
         public string GetDefaultOrganizationId() {
             return Request.GetDefaultOrganizationId();
+        }
+
+        public IHttpActionResult BadRequest<T>(T model) {
+            return new NegotiatedContentResult<T>(HttpStatusCode.BadRequest, model, this);
+        }
+
+        public PermissionActionResult Permission(PermissionResult permission) {
+            return new PermissionActionResult(permission, Request);
         }
 
         public PlanLimitReachedActionResult PlanLimitReached(string message) {
