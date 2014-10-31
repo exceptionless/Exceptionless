@@ -1,4 +1,4 @@
-﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:Exceptionless_Master\)/statusIcon)](http://teamcity.codesmithtools.com/viewType.html?buildTypeId=Exceptionless_Master)
+﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:Exceptionless_Master\)/statusIcon)](http://teamcity.codesmithtools.com/viewType.html?buildTypeId=Exceptionless_Master) [![Code Climate](https://codeclimate.com/github/exceptionless/Exceptionless/badges/gpa.svg)](https://codeclimate.com/github/exceptionless/Exceptionless)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time .NET error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
