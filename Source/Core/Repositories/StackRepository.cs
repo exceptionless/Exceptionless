@@ -95,14 +95,16 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Stack> GetByFilter(string filter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
-            var search = new ElasticSearchOptions<Stack>()
-                .WithDateRange(utcStart, utcEnd, field ?? "date")
-                .WithIndicesFromDateRange()
-                .WithQuery(filter)
-                .WithPaging(paging);
+            if (String.IsNullOrEmpty(sort)) {
+                sort = "last";
+                sortOrder = SortOrder.Descending;
+            }
 
-            if (!String.IsNullOrEmpty(sort))
-                search = search.WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
+            var search = new ElasticSearchOptions<Stack>()
+                .WithDateRange(utcStart, utcEnd, field ?? "last")
+                .WithQuery(filter)
+                .WithPaging(paging)
+                .WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
 
             return Find(search);
         }

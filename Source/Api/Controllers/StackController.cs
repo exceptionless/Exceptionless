@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Web.Http;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -60,11 +61,13 @@ namespace Exceptionless.Api.Controllers {
             _eventStats = eventStats;
             _billingManager = billingManager;
             _formattingPluginManager = formattingPluginManager;
+
+            AllowedFields.AddRange(new[] { "first", "last" });
         }
 
         [HttpGet]
         [Route("{id:objectid}")]
-        public IHttpActionResult GetById(string id, string offset) {
+        public IHttpActionResult GetById(string id, string offset = null) {
             var stack = GetModel(id);
             if (stack == null)
                 return NotFound();
@@ -442,19 +445,10 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
         }
 
-        protected override TimeInfo GetTimeInfo(string time, string offset) {
-            var timeInfo = base.GetTimeInfo(time, offset);
-
-            if (String.IsNullOrEmpty(timeInfo.Field))
-                return timeInfo;
-
-            if (!String.Equals(timeInfo.Field, "first", StringComparison.OrdinalIgnoreCase) && !String.Equals(timeInfo.Field, "last", StringComparison.OrdinalIgnoreCase))
-                timeInfo.Field = null;
-
-            return timeInfo;
-        }
-
         private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
+            if (stacks.Count == 0)
+                return new List<StackSummaryModel>();
+
             var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "stack_id: (" + String.Join(" OR ", stacks.Select(r => r.Id)) + ")", offset, stacks.Count).Terms;
             return GetStackSummaries(stacks, terms);
         }

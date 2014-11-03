@@ -71,11 +71,16 @@ namespace Exceptionless.Core.Utility {
 
             _client.DisableTrace();
 
+
+            var filtered = res.Aggs.Filter("filtered");
+            if (filtered == null)
+                return new EventTermStatsResult();
+
             var stats = new EventTermStatsResult {
-                Total = res.Aggs.Filter("filtered").DocCount,
+                Total = filtered.DocCount
             };
 
-            stats.Terms.AddRange(res.Aggs.Filter("filtered").Terms("terms").Items.Select(i => {
+            stats.Terms.AddRange(filtered.Terms("terms").Items.Select(i => {
                 long count = 0;
                 var timelineUnique = i.Cardinality("unique").Value;
                 if (timelineUnique.HasValue)
@@ -167,16 +172,20 @@ namespace Exceptionless.Core.Utility {
 
             _client.DisableTrace();
 
+            var filtered = res.Aggs.Filter("filtered");
+            if (filtered == null)
+                return new EventStatsResult();
+
             var stats = new EventStatsResult {
-                Total = res.Aggs.Filter("filtered").DocCount,
-                New = res.Aggs.Filter("filtered").Terms("new").Items.Count > 0 ? res.Aggs.Filter("filtered").Terms("new").Items[0].DocCount : 0
+                Total = filtered.DocCount,
+                New = filtered.Terms("new").Items.Count > 0 ? filtered.Terms("new").Items[0].DocCount : 0
             };
 
-            var unique = res.Aggs.Filter("filtered").Cardinality("unique").Value;
+            var unique = filtered.Cardinality("unique").Value;
             if (unique.HasValue)
                 stats.Unique = (long)unique.Value;
 
-            stats.Timeline.AddRange(res.Aggs.Filter("filtered").DateHistogram("timelime").Items.Select(i => {
+            stats.Timeline.AddRange(filtered.DateHistogram("timelime").Items.Select(i => {
                 long count = 0;
                 var timelineUnique = i.Cardinality("tl_unique").Value;
                 if (timelineUnique.HasValue)
@@ -197,8 +206,8 @@ namespace Exceptionless.Core.Utility {
             if (stats.Timeline.Count <= 0)
                 return stats;
 
-            var firstOccurrence = res.Aggs.Filter("filtered").Min("first_occurrence").Value;
-            var lastOccurrence = res.Aggs.Filter("filtered").Max("last_occurrence").Value;
+            var firstOccurrence = filtered.Min("first_occurrence").Value;
+            var lastOccurrence = filtered.Max("last_occurrence").Value;
                 
             if (firstOccurrence.HasValue)
                 stats.FirstOccurrence = firstOccurrence.Value.ToDateTime().Add(displayTimeOffset.Value);

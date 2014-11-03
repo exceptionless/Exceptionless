@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -36,7 +37,7 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static ElasticSearchOptions<T> WithIndicesFromDateRange<T>(this ElasticSearchOptions<T> options) where T : class {
+        public static ElasticSearchOptions<T> WithIndicesFromDateRange<T>(this ElasticSearchOptions<T> options) where T : PersistentEvent {
             if (!options.UseDateRange)
                 return options;
 

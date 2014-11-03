@@ -32,6 +32,10 @@ namespace Exceptionless.Api.Controllers {
         protected const int MAXIMUM_LIMIT = 100;
         protected const int MAXIMUM_SKIP = 1000;
 
+        public ExceptionlessApiController() {
+            AllowedFields = new List<string>();
+        }
+
         protected TimeSpan GetOffset(string offset) {
             double offsetInMinutes;
             if (!String.IsNullOrEmpty(offset) && Double.TryParse(offset, out offsetInMinutes))
@@ -40,12 +44,14 @@ namespace Exceptionless.Api.Controllers {
             return TimeSpan.Zero;
         }
 
+        protected ICollection<string> AllowedFields { get; private set; }
+
         protected virtual TimeInfo GetTimeInfo(string time, string offset) {
             string field = null;
             if (!String.IsNullOrEmpty(time)) {
                 var parts = time.Split(new []{ '|' }, StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 1) {
-                    field = parts[0];
+                    field = AllowedFields.Contains(parts[0]) ? parts[0] : null;
                     time = parts[1];
                 }
             }
@@ -57,11 +63,14 @@ namespace Exceptionless.Api.Controllers {
             };
         }
 
-        protected Tuple<string, SortOrder> GetSort(string sort) {
-            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-"))
-                return Tuple.Create(sort.Substring(1), SortOrder.Descending);
+        protected virtual Tuple<string, SortOrder> GetSort(string sort) {
+            var order = SortOrder.Ascending;
+            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
+                sort = sort.Substring(1);
+                order = SortOrder.Descending;
+            }
 
-            return Tuple.Create(sort, SortOrder.Ascending);
+            return Tuple.Create(AllowedFields.Contains(sort) ? sort : null, order);
         } 
 
         protected int GetLimit(int limit) {

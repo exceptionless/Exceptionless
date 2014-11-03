@@ -23,6 +23,7 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
         private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
@@ -31,17 +32,21 @@ namespace Exceptionless.Api.Controllers {
 
         public EventController(IEventRepository repository, 
             IProjectRepository projectRepository, 
+            IStackRepository stackRepository,
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager) : base(repository) {
             _projectRepository = projectRepository;
+            _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _statsClient = statsClient;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
+
+            AllowedFields.Add("date");
         }
         
         [HttpGet]
@@ -95,7 +100,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            Project project = _projectRepository.GetById(projectId, true);
+            var project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
@@ -106,6 +111,10 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
         public IHttpActionResult GetByStackId(string stackId, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
+                return NotFound();
+
+            var stack = _stackRepository.GetById(stackId, true);
+            if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
             return Get(String.Concat("stack:", stackId), null, time, offset, mode, page, limit);
@@ -280,13 +289,6 @@ namespace Exceptionless.Api.Controllers {
                 Mapper.CreateMap<UserDescription, EventUserDescription>();
 
             base.CreateMaps();
-        }
-
-        protected override TimeInfo GetTimeInfo(string time, string offset) {
-            var timeInfo = base.GetTimeInfo(time, offset);
-            timeInfo.Field = null;
-
-            return timeInfo;
         }
     }
 }

@@ -10,7 +10,7 @@
         </strong>
     </span>
 
-    <a ui-sref="app.event({ id: source.data.id })" truncate lines="2">{{::source.data.message}}</a>
+    <a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.message}}</a>
 </div>
 
 <div class="hidden-xs error-path" ng-if="source.data.path"><i class="fa fa-caret-right"></i> <span truncate>{{::source.data.path}}</span></div>
