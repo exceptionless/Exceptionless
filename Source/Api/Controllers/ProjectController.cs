@@ -265,7 +265,6 @@ namespace Exceptionless.Api.Controllers {
 
         protected override void CreateMaps() {
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
-                pi.TimeZoneOffset = p.DefaultTimeZoneOffset().TotalMilliseconds;
                 pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
             });
             base.CreateMaps();
@@ -282,10 +281,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override Project AddModel(Project value) {
-            if (String.IsNullOrWhiteSpace(value.TimeZone))
-                value.TimeZone = TimeZone.CurrentTimeZone.IsDaylightSavingTime(DateTime.Now) ? TimeZone.CurrentTimeZone.DaylightName : TimeZone.CurrentTimeZone.StandardName;
-
-            value.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), value.DefaultTimeZone()).ToUniversalTime().Ticks;
+            value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             var project = base.AddModel(value);
 
             return project;

@@ -18,9 +18,9 @@ using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ProjectData {
-        public static IEnumerable<Project> GenerateProjects(int count = 10, bool generateId = false, string id = null, string organizationId = null, string timeZone = "Central Standard Time", Int64? nextSummaryEndOfDayTicks = null) {
+        public static IEnumerable<Project> GenerateProjects(int count = 10, bool generateId = false, string id = null, string organizationId = null, Int64? nextSummaryEndOfDayTicks = null) {
             for (int i = 0; i < count; i++)
-                yield return GenerateProject(generateId, id, organizationId, timeZone: timeZone, nextSummaryEndOfDayTicks: nextSummaryEndOfDayTicks);
+                yield return GenerateProject(generateId, id, organizationId, nextSummaryEndOfDayTicks: nextSummaryEndOfDayTicks);
         }
 
         public static List<Project> GenerateSampleProjects() {
@@ -35,25 +35,17 @@ namespace Exceptionless.Tests.Utility {
             return GenerateProject(id: TestConstants.ProjectId, name: "Disintegrating Pistol", organizationId: TestConstants.OrganizationId);
         }
 
-        public static Project GenerateProject(bool generateId = false, string id = null, string organizationId = null, string name = null, string timeZone = "Central Standard Time", Int64? nextSummaryEndOfDayTicks = null) {
+        public static Project GenerateProject(bool generateId = false, string id = null, string organizationId = null, string name = null, Int64? nextSummaryEndOfDayTicks = null) {
             var project = new Project {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : String.Empty : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
-                Name = name ?? String.Format("Project{0}", id),
-                TimeZone = timeZone ?? "Central Standard Time"
+                Name = name ?? String.Format("Project{0}", id)
             };
 
             if (nextSummaryEndOfDayTicks.HasValue)
                 project.NextSummaryEndOfDayTicks = nextSummaryEndOfDayTicks.Value;
             else {
-                TimeZoneInfo tzi;
-                try {
-                    tzi = TimeZoneInfo.FindSystemTimeZoneById(project.TimeZone);
-                } catch {
-                    tzi = TimeZoneInfo.Local;
-                }
-
-                project.NextSummaryEndOfDayTicks = TimeZoneInfo.ConvertTime(DateTime.Today.AddDays(1), tzi).ToUniversalTime().Ticks;
+                project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             }
 
             for (int i = 0; i < RandomHelper.GetRange(0, 5); i++)

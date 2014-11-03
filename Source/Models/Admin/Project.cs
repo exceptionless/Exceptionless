@@ -33,8 +33,6 @@ namespace Exceptionless.Models {
 
         public string Name { get; set; }
 
-        public string TimeZone { get; set; }
-
         public ClientConfiguration Configuration { get; set; }
 
         public Dictionary<string, NotificationSettings> NotificationSettings { get; set; }

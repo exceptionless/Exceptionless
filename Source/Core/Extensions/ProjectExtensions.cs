@@ -11,7 +11,6 @@
 
 using System;
 using Exceptionless.Models;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {
     public static class ProjectExtensions {
@@ -29,24 +28,6 @@ namespace Exceptionless.Core.Extensions {
                 ReportCriticalErrors = true,
                 ReportRegressions = true
             });
-        }
-
-        public static TimeSpan DefaultTimeZoneOffset(this Project project) {
-            return project.DefaultTimeZone().BaseUtcOffset;
-        }
-
-        public static TimeZoneInfo DefaultTimeZone(this Project project) {
-            if (project == null)
-                return TimeZoneInfo.Local;
-
-            TimeZoneInfo tzi;
-            try {
-                tzi = TimeZoneInfo.FindSystemTimeZoneById(project.TimeZone);
-            } catch (Exception ex) {
-                tzi = TimeZoneInfo.Local;
-                Log.Error().Exception(ex).Message("Error looking up time zone by id {0}: {1}", project.TimeZone, ex.Message).Write();
-            }
-            return tzi;
         }
     }
 }

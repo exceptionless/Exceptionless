@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
@@ -47,35 +46,6 @@ namespace Exceptionless.Core.Repositories {
             InvalidateCache(projectId);
         }
         
-        public ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId) {
-            return new[] { GetDefaultTimeOffset(projectId) };
-        }
-
-        public TimeSpan GetDefaultTimeOffset(string projectId) {
-            return GetById(projectId, true).DefaultTimeZoneOffset();
-        }
-
-        public TimeZoneInfo GetDefaultTimeZone(string projectId) {
-            return GetById(projectId, true).DefaultTimeZone();
-        }
-
-        public DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime) {
-            TimeSpan offset = GetDefaultTimeOffset(id);
-            return utcDateTime.Add(offset);
-        }
-
-        public DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset) {
-            return TimeZoneInfo.ConvertTime(dateTimeOffset, GetDefaultTimeZone(id));
-        }
-
-        public DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime) {
-            if (dateTime == DateTime.MinValue || dateTime == DateTime.MaxValue)
-                return dateTime;
-
-            TimeSpan offset = GetDefaultTimeOffset(id);
-            return new DateTimeOffset(dateTime.Year, dateTime.Month, dateTime.Day, dateTime.Hour, dateTime.Minute, dateTime.Second, offset).UtcDateTime;
-        }
-
         public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
             return Find<Project>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
@@ -101,7 +71,6 @@ namespace Exceptionless.Core.Repositories {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
             public const string Name = "Name";
-            public const string TimeZone = "TimeZone";
             public const string Configuration = "Configuration";
             public const string Configuration_Version = "Configuration.Version";
             public const string NotificationSettings = "NotificationSettings";
@@ -115,7 +84,6 @@ namespace Exceptionless.Core.Repositories {
         protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
             base.ConfigureClassMap(cm);
             cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
-            cm.GetMemberMap(c => c.TimeZone).SetElementName(FieldNames.TimeZone);
             cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
             cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);

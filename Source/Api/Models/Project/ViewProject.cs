@@ -8,8 +8,6 @@ namespace Exceptionless.Api.Models {
         public string OrganizationId { get; set; }
         public string OrganizationName { get; set; }
         public string Name { get; set; }
-        public string TimeZone { get; set; }
-        public double TimeZoneOffset { get; set; }
         public DataDictionary Data { get; set; }
         public HashSet<string> PromotedTabs { get; set; }
         public string CustomContent { get; set; }

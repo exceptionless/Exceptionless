@@ -11,7 +11,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsSessionStart() || ev.IsSessionEnd();
         }
         
-        public SummaryData GetStackSummaryData(Stack stack) {
+        public override SummaryData GetStackSummaryData(Stack stack) {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.SessionStart, Event.KnownTypes.SessionEnd))
                 return null;
 

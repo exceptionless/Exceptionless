@@ -18,13 +18,6 @@ namespace Exceptionless.Core.Repositories {
         ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
         long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids);
         void IncrementEventCounter(string projectId, long eventCount = 1);
-        ICollection<TimeSpan> GetTargetTimeOffsetsForStats(string projectId);
-        TimeSpan GetDefaultTimeOffset(string projectId);
-        TimeZoneInfo GetDefaultTimeZone(string projectId);
-        DateTime UtcToDefaultProjectLocalTime(string id, DateTime utcDateTime);
-        DateTimeOffset UtcToDefaultProjectLocalTime(string id, DateTimeOffset dateTimeOffset);
-        DateTime DefaultProjectLocalTimeToUtc(string id, DateTime dateTime);
-
         long GetCountByOrganizationId(string organizationId);
     }
 }
