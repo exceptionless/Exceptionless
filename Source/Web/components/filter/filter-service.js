@@ -9,6 +9,8 @@
 
             function getDefaultOptions() {
                 return {
+                    //filter: 'tag:Europe',
+                    time: 'last 30 days',
                     offset: getTimeZoneOffset()
                 };
             }
@@ -19,8 +21,7 @@
 
             var service = {
                 apply: apply,
-                getDefaultOptions: getDefaultOptions,
-                getTimeZoneOffset: getTimeZoneOffset
+                getDefaultOptions: getDefaultOptions
             };
 
             return service;
