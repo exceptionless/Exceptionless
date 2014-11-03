@@ -11,9 +11,7 @@
 
 using System;
 using System.Web.Http;
-using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -22,21 +20,30 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _organizationRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly EventStats _stats;
 
-        public StatsController(IOrganizationRepository organizationRepository, IStackRepository stackRepository, IProjectRepository projectRepository, EventStats stats) {
-            _organizationRepository = organizationRepository;
+        public StatsController(IStackRepository stackRepository, IProjectRepository projectRepository, EventStats stats) {
             _stackRepository = stackRepository;
             _projectRepository = projectRepository;
             _stats = stats;
         }
 
         [HttpGet]
+        [Route]
+        public IHttpActionResult Get(string filter = null, string time = null, string offset = null) {
+            // TODO: Handle UTC Retention Cutoff.
+            var timeInfo = GetTimeInfo(time, offset);
+            filter = GetAssociatedOrganizationsFilter(filter);
+            var result = _stats.GetOccurrenceStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, filter, timeInfo.Offset);
+
+            return Ok(result);
+        }
+
+        [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
-        public IHttpActionResult GetByProject(string projectId, DateTime? start = null, [EndOfDay] DateTime? end = null, string filter = null) {
+        public IHttpActionResult GetByProject(string projectId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -44,23 +51,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var org = _organizationRepository.GetById(project.OrganizationId, true);
-            var utcRetentionCutoff = org.GetRetentionUtcCutoff();
-            if (!start.HasValue || start.Value < utcRetentionCutoff)
-                start = utcRetentionCutoff;
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            var result = _stats.GetOccurrenceStats(range.Item1, range.Item2, String.Concat("project:", projectId, " ", filter), project.DefaultTimeZoneOffset());
-
-            return Ok(result);
+            return Get(String.Concat("project:", projectId, " ", filter), time, offset);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
-        public IHttpActionResult GetByStack(string stackId, DateTime? start = null, DateTime? end = null, string filter = null) {
+        public IHttpActionResult GetByStack(string stackId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
@@ -68,18 +64,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            var org = _organizationRepository.GetById(stack.OrganizationId, true);
-            var project = _projectRepository.GetById(stack.ProjectId, true);
-            if (!start.HasValue || start.Value < org.GetRetentionUtcCutoff())
-                start = org.GetRetentionUtcCutoff();
-
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            var result = _stats.GetOccurrenceStats(range.Item1, range.Item2, String.Concat("stack:", stackId, " ", filter), project.DefaultTimeZoneOffset());
-
-            return Ok(result);
+            return Get(String.Concat("stack:", stackId, " ", filter), time, offset);
         }
     }
 }

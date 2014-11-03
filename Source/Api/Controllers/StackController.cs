@@ -15,6 +15,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -355,35 +356,38 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string filter, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
-            return null;
+        public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var skip = GetSkip(page + 1, limit);
+            if (skip > MAXIMUM_SKIP)
+                return Ok(new object[0]);
+
+            filter = GetAssociatedOrganizationsFilter(filter);
+            var sortBy = GetSort(sort);
+            var timeInfo = GetTimeInfo(time, offset);
+            var options = new PagingOptions { Page = page, Limit = limit };
+            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options);
+
+            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
+            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
+                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd), options.HasMore, page);
+
+            return OkWithResourceLinks(stacks, options.HasMore, page);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string before = null, string after = null, int limit = 10, string mode = null) {
-            if (!String.IsNullOrEmpty(organizationId) && !CanAccessOrganization(organizationId))
+        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var organizationIds = new List<string>();
-            if (!String.IsNullOrEmpty(organizationId) && CanAccessOrganization(organizationId))
-                organizationIds.Add(organizationId);
-            else
-                organizationIds.AddRange(GetAssociatedOrganizationIds());
-
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            var stacks = _repository.GetByOrganizationIds(organizationIds, options).Select(e => e.ToProjectLocalTime(_projectRepository)).ToList();
-
-            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                GetStackSummaries(stacks, DateTime.MinValue, DateTime.MaxValue);
-
-            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
+            return Get(String.Concat("organization:", organizationId, " ", filter), null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
-        public IHttpActionResult New(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
+        public IHttpActionResult New(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -391,27 +395,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-
-            var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var stacks = _stackRepository.GetNew(projectId, utcStart, utcEnd, options, query).Where(m => m.FirstOccurrence >= retentionUtcCutoff).ToList();
-
-            // TODO: Add header that contains the number of stacks outside of the retention period.
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(GetStackSummaries(stacks, utcStart, utcEnd), options.HasMore, e => e.Id);
-
-            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
+            return Get(String.Concat("project:", projectId, " ", filter), "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
-        public IHttpActionResult Recent(string projectId, string before = null, string after = null, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
+        public IHttpActionResult Recent(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -419,27 +408,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-
-            var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
-            var stacks = _stackRepository.GetMostRecent(projectId, utcStart, utcEnd, options, query).Where(es => es.LastOccurrence >= retentionUtcCutoff).ToList();
-
-            // TODO: Add header that contains the number of stacks outside of the retention period.
-            if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(GetStackSummaries(stacks, utcStart, utcEnd), options.HasMore, e => e.Id);
-
-            return OkWithResourceLinks(stacks, options.HasMore, e => e.Id);
+            return Get(String.Concat("project:", projectId, " ", filter), "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
-        public IHttpActionResult Frequent(string projectId, int page = 1, int limit = 10, DateTime? start = null, DateTime? end = null, string query = null, string mode = null) {
+        public IHttpActionResult Frequent(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -447,20 +421,20 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var range = GetDateRange(start, end);
-            if (range.Item1 == range.Item2)
-                return BadRequest("End date must be greater than start date.");
-
+            page = GetPage(page);
             limit = GetLimit(limit);
-            DateTime utcStart = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item1);
-            DateTime utcEnd = _projectRepository.DefaultProjectLocalTimeToUtc(projectId, range.Item2);
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            var skip = GetSkip(page, limit);
+            if (skip > MAXIMUM_SKIP)
+                return Ok(new object[0]);
 
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "project:" + projectId, max: GetSkip(page + 1, limit)).Terms;
+            var timeInfo = GetTimeInfo(time, offset);
+            filter = String.Concat("project:" + projectId, " ", filter);
+            var terms = _eventStats.GetTermsStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, "stack_id", filter, max: GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
-            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip(GetSkip(page, limit)).Take(limit + 1).Select(t => t.Term).ToArray();
+            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
+            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
             var stacks = _stackRepository.GetByIds(stackIds);
 
             // TODO: Add header that contains the number of stacks outside of the retention period.

@@ -167,6 +167,7 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="App_Start\AutoMapperConfig.cs" />
+    <Compile Include="Controllers\Base\TimeInfo.cs" />
     <Compile Include="Controllers\Base\ModelActionResults.cs" />
     <Compile Include="Controllers\TokenController.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
@@ -210,7 +211,6 @@
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
     <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
-    <Compile Include="Utility\EndDateParameterBinding.cs" />
     <Compile Include="Utility\ObjectIdsRouteConstraint.cs" />
     <Compile Include="Utility\Results\MessageContent.cs" />
     <Compile Include="Utility\Results\PermissionActionResult.cs" />
@@ -271,9 +271,7 @@
     </Content>
     <Content Include="Utility\Delta\LICENSE.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Utility\Compression\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.2.1\tools\AutoMapper.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

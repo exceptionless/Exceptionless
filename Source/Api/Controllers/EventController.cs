@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
@@ -26,7 +23,6 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
         private readonly IProjectRepository _projectRepository;
-        private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
@@ -35,14 +31,12 @@ namespace Exceptionless.Api.Controllers {
 
         public EventController(IEventRepository repository, 
             IProjectRepository projectRepository, 
-            IStackRepository stackRepository, 
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager) : base(repository) {
             _projectRepository = projectRepository;
-            _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
             _statsClient = statsClient;
@@ -58,22 +52,22 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string filter = null, string before = null, string after = null, int limit = 10, string mode = null, string sort = null, string time = null) {
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
-
-            // TODO: parse time to get date range.
-            var utcStart = DateTime.UtcNow.SubtractYears(1);
-            var utcEnd = DateTime.UtcNow;
-            var sortOrder = SortOrder.Ascending;
-            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
-                sortOrder = SortOrder.Descending;
-                sort = sort.Substring(1);
-            }
-
+        public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var skip = GetSkip(page + 1, limit);
+            if (skip > MAXIMUM_SKIP)
+                return Ok(new object[0]);
+            
             filter = GetAssociatedOrganizationsFilter(filter);
-            var results = _repository.GetByFilter(filter, sort, sortOrder, utcStart, utcEnd, options);
+            var sortBy = GetSort(sort);
+            var timeInfo = GetTimeInfo(time, offset);
+            var options = new PagingOptions { Page = page, Limit = limit };
+            var events = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options);
+            
+            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(results.Select(e => {
+                return OkWithResourceLinks(events.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);
                     return new EventSummaryModel {
                         TemplateKey = summaryData.TemplateKey,
@@ -81,36 +75,40 @@ namespace Exceptionless.Api.Controllers {
                         Date = e.Date,
                         Data = summaryData.Data
                     };
-                }).ToList(), options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+                }).ToList(), options.HasMore, page);
 
-            return OkWithResourceLinks(results, options.HasMore, e => String.Concat(e.Date.UtcTicks.ToString(), "-", e.Id), isDescending: true);
+            return OkWithResourceLinks(events, options.HasMore, page);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string before = null, string after = null, int limit = 10, string mode = null) {
-            if (String.IsNullOrEmpty(organizationId))
+        public IHttpActionResult GetByOrganization(string organizationId = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return Get(String.Concat("organization:", organizationId), before, after, limit, mode);
+            return Get(String.Concat("organization:", organizationId), null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-        public IHttpActionResult GetByProjectId(string projectId, string before = null, string after = null, int limit = 10, string mode = null) {
+        public IHttpActionResult GetByProjectId(string projectId, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId), before, after, limit, mode);
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            return Get(String.Concat("project:", projectId), null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-        public IHttpActionResult GetByStackId(string stackId, string before = null, string after = null, int limit = 10, string mode = null) {
+        public IHttpActionResult GetByStackId(string stackId, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
-            return Get(String.Concat("stack:", stackId), before, after, limit, mode);
+            return Get(String.Concat("stack:", stackId), null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
@@ -126,6 +124,10 @@ namespace Exceptionless.Api.Controllers {
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
 
             return Get(String.Concat("project:", projectId, " reference:", referenceId));
         }
@@ -214,10 +216,11 @@ namespace Exceptionless.Api.Controllers {
             if (changes == null)
                 return Ok();
 
-            if (changes.UnknownProperties.ContainsKey("UserEmail"))
-                changes.TrySetPropertyValue("EmailAddress", changes.UnknownProperties["UserEmail"]);
-            if (changes.UnknownProperties.ContainsKey("UserDescription"))
-                changes.TrySetPropertyValue("Description", changes.UnknownProperties["UserDescription"]);
+            object value;
+            if (changes.UnknownProperties.TryGetValue("UserEmail", out value))
+                changes.TrySetPropertyValue("EmailAddress", value);
+            if (changes.UnknownProperties.TryGetValue("UserDescription", out value))
+                changes.TrySetPropertyValue("Description", value);
 
             var userDescription = new UserDescription();
             changes.Patch(userDescription);

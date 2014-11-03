@@ -14,10 +14,13 @@ using System.Collections.Generic;
 using System.Net;
 using System.Web.Http;
 using System.Web.Http.Results;
+using CodeSmith.Core;
+using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
@@ -25,26 +28,53 @@ namespace Exceptionless.Api.Controllers {
     public abstract class ExceptionlessApiController : ApiController {
         public const int API_CURRENT_VERSION = 2;
         public const string API_PREFIX = "api/v2";
+        protected const int DEFAULT_LIMIT = 10;
+        protected const int MAXIMUM_LIMIT = 100;
+        protected const int MAXIMUM_SKIP = 1000;
 
-        protected Tuple<DateTime, DateTime> GetDateRange(DateTime? start, DateTime? end) {
-            if (start == null)
-                start = DateTime.MinValue;
+        protected TimeInfo GetTimeInfo(string time, string offset) {
+            string field = null;
+            if (!String.IsNullOrEmpty(time)) {
+                var parts = time.Split(new []{ '|' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length > 1) {
+                    field = parts[0];
+                    time = parts[1];
+                }
+            }
 
-            if (end == null)
-                end = DateTime.MaxValue;
+            TimeSpan off = TimeSpan.Zero;
+            if (!String.IsNullOrEmpty(offset)) {
+                
+            }
 
-            return start < end ? new Tuple<DateTime, DateTime>(start.Value, end.Value) : new Tuple<DateTime, DateTime>(end.Value, start.Value);
+            return new TimeInfo {
+                Field = field,
+                Offset = off,
+                Range = new DateTimeRange(DateTime.Now.SubtractYears(1), DateTime.Now)
+            };
         }
 
-        protected const int DEFAULT_LIMIT = 10;
+        protected Tuple<string, SortOrder> GetSort(string sort) {
+            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-"))
+                return Tuple.Create(sort.Substring(1), SortOrder.Descending);
+
+            return Tuple.Create(sort, SortOrder.Ascending);
+        } 
 
         protected int GetLimit(int limit) {
             if (limit < 1)
                 limit = DEFAULT_LIMIT;
-            else if (limit > 100)
-                limit = 100;
+            else if (limit > MAXIMUM_LIMIT)
+                limit = MAXIMUM_LIMIT;
 
             return limit;
+        }
+
+        protected int GetPage(int page) {
+            if (page < 1)
+                page = 1;
+
+            return page;
         }
 
         protected int GetSkip(int currentPage, int limit) {

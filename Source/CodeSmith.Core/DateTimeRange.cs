@@ -8,8 +8,8 @@ namespace CodeSmith.Core {
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
 
-        public DateTime StartUtc { get { return Start.ToUniversalTime(); } }
-        public DateTime EndUtc { get { return End.ToUniversalTime(); } }
+        public DateTime UtcStart { get { return Start.ToUniversalTime(); } }
+        public DateTime UtcEnd { get { return End.ToUniversalTime(); } }
 
         public const string DefaultSeparator = " - ";
 

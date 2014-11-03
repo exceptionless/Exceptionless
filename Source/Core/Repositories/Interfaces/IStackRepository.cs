@@ -18,6 +18,8 @@ namespace Exceptionless.Core.Repositories {
         Stack GetStackBySignatureHash(string projectId, string signatureHash);
         ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
         ICollection<Stack> GetNew(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query = null);
+        ICollection<Stack> GetByFilter(string filter, string sort, SortOrder sortOrder, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+
         void MarkAsRegressed(string stackId);
         void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc);
         void InvalidateCache(string projectId, string stackId, string signatureHash);
