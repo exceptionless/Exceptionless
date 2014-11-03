@@ -16,7 +16,7 @@
     <UpgradeBackupLocation>
     </UpgradeBackupLocation>
     <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
-    <SignAssembly>true</SignAssembly>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>..\Exceptionless.snk</AssemblyOriginatorKeyFile>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -123,6 +123,7 @@
     <Compile Include="DataAnnotations\CreditCardValidation.cs" />
     <Compile Include="Database\AdoHelper.cs" />
     <Compile Include="Database\SafeDataReader.cs" />
+    <Compile Include="DateTimeRange.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />

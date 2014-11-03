@@ -163,6 +163,7 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Repositories\Base\SortOrder.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\JobRunContextExtensions.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />

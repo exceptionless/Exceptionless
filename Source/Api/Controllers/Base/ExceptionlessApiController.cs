@@ -82,6 +82,16 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
+        public string GetAssociatedOrganizationsFilter(string filter) {
+            if (Request.IsGlobalAdmin())
+                return filter;
+
+            if (String.IsNullOrEmpty(filter))
+                return String.Concat("organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()));
+            
+            return String.Concat("(organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()), ") AND (", filter, ")");
+        }
+
         public string GetDefaultOrganizationId() {
             return Request.GetDefaultOrganizationId();
         }

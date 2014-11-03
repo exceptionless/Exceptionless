@@ -65,8 +65,17 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => HideAllByClientIpAndDate(organizationId, clientIp, utcStartDate, utcEndDate));
         }
 
-        public ICollection<PersistentEvent> GetByFilter(string filter, string sort, PagingOptions paging) {
-            return Find(new ElasticSearchOptions<PersistentEvent>().WithQuery(filter).WithPaging(paging));
+        public ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            var search = new ElasticSearchOptions<PersistentEvent>()
+                .WithDateRange(utcStart, utcEnd, "date")
+                .WithIndicesFromDateRange()
+                .WithQuery(filter)
+                .WithPaging(paging);
+
+            if (!String.IsNullOrEmpty(sort))
+                search = search.WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
+
+            return Find(search);
         }
 
         public ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true) {

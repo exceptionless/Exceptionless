@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Api.Utility;
+using Exceptionless.Api.Utility.Results;
 using Xunit;
 using Xunit.Extensions;
 

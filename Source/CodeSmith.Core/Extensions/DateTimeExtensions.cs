@@ -88,6 +88,26 @@ namespace Exceptionless.Extensions {
                 .Subtract(TimeSpan.FromMilliseconds(1));    // subtract 1 ms
         }
 
+        public static DateTime ChangeMonth(this DateTime dateTime, int month) {
+            return dateTime.AddMonths(month - dateTime.Date.Month);
+        }
+
+        public static DateTime ToBeginningOfYear(this DateTime dateTime) {
+            return dateTime.Date.AddDays(1 - dateTime.Date.Day).AddMonths(1 - dateTime.Date.Month);
+        }
+
+        public static DateTime ToEndOfYear(this DateTime dateTime) {
+            return dateTime.ToBeginningOfYear().AddYears(1).AddSeconds(-1);
+        }
+
+        public static DateTime ToBeginningOfMonth(this DateTime dateTime) {
+            return dateTime.Date.AddDays(1 - dateTime.Date.Day);
+        }
+
+        public static DateTime ToEndOfMonth(this DateTime dateTime) {
+            return dateTime.ToBeginningOfMonth().AddMonths(1).AddSeconds(-1);
+        }
+
 #if !EMBEDDED
         public static DateTime Round(this DateTime datetime, TimeSpan roundingInterval, MidpointRounding roundingType = MidpointRounding.ToEven)
         {

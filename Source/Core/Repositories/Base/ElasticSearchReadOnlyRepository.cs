@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using Nest;
@@ -139,6 +140,7 @@ namespace Exceptionless.Core.Repositories {
 
             var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter());
             searchDescriptor.Indices(options.Indices);
+            searchDescriptor.IgnoreUnavailable();
 
             if (options.UsePaging)
                 searchDescriptor.Skip(options.GetSkip());
@@ -150,7 +152,9 @@ namespace Exceptionless.Core.Repositories {
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
 
+            _elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
+            _elasticClient.DisableTrace();
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
             var items = results.Documents.ToList();

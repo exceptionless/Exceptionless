@@ -61,6 +61,10 @@ namespace Exceptionless.Api.Extensions {
             if (message.IsInOrganization(organizationId))
                 return true;
 
+            return message.IsGlobalAdmin();
+        }
+
+        public static bool IsGlobalAdmin(this HttpRequestMessage message) {
             var principal = message.GetClaimsPrincipal();
             return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
         }

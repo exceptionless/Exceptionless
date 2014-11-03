@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -57,10 +58,20 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string filter = null, string before = null, string after = null, int limit = 10, string mode = null, string sort = null) {
+        public IHttpActionResult Get(string filter = null, string before = null, string after = null, int limit = 10, string mode = null, string sort = null, string time = null) {
             var options = new PagingOptions { Before = before, After = after, Limit = limit };
-            //GetAssociatedOrganizationIds()
-            var results = _repository.GetByFilter(filter, sort, options);
+
+            // TODO: parse time to get date range.
+            var utcStart = DateTime.UtcNow.SubtractYears(1);
+            var utcEnd = DateTime.UtcNow;
+            var sortOrder = SortOrder.Ascending;
+            if (!String.IsNullOrEmpty(sort) && sort.StartsWith("-")) {
+                sortOrder = SortOrder.Descending;
+                sort = sort.Substring(1);
+            }
+
+            filter = GetAssociatedOrganizationsFilter(filter);
+            var results = _repository.GetByFilter(filter, sort, sortOrder, utcStart, utcEnd, options);
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(results.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);

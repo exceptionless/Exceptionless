@@ -1,0 +1,180 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{4C8CB520-27E9-4511-B2C2-0AC560579A4A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>CodeSmith.Core.Tests</RootNamespace>
+    <AssemblyName>CodeSmith.Core.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>false</SignAssembly>
+    <AssemblyOriginatorKeyFile>CodeSmith.snk</AssemblyOriginatorKeyFile>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <UpgradeBackupLocation />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\..\</SolutionDir>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="nunit.framework">
+      <HintPath>..\..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.ApplicationServices" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="WindowsBase">
+      <RequiredTargetFramework>3.0</RequiredTargetFramework>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DateTimeRangeTests.cs" />
+    <Compile Include="BusinessDayTests.cs" />
+    <Compile Include="Collections\ObservableHashSetTests.cs" />
+    <Compile Include="Collections\DelimitedStringCollectionTests.cs" />
+    <Compile Include="Collections\Setting.cs" />
+    <Compile Include="Collections\SettingsTest.cs" />
+    <Compile Include="ContentTypeLookupTest.cs" />
+    <Compile Include="Extensions\EnumTests.cs" />
+    <Compile Include="Extensions\NumberExtensionsTests.cs" />
+    <Compile Include="Extensions\TimeSpanTests.cs" />
+    <Compile Include="Extensions\DateTimeTests.cs" />
+    <Compile Include="Extensions\StringExtensionsTest.cs" />
+    <Compile Include="GenericTest.cs" />
+    <Compile Include="IO\DirectoryLockTest.cs" />
+    <Compile Include="IO\LockFileTest.cs" />
+    <Compile Include="IO\PathHelperTests.cs" />
+    <Compile Include="LateBinderTest.cs" />
+    <Compile Include="MembershipTests.cs" />
+    <Compile Include="Scheduler\LoggingSleepJob.cs" />
+    <Compile Include="Scheduler\JobManagerSectionTests.cs" />
+    <Compile Include="Scheduler\JobManagerTest.cs" />
+    <Compile Include="Scheduler\JobTests.cs" />
+    <Compile Include="Scheduler\SleepJob.cs" />
+    <Compile Include="Scheduler\StaticLockProviderTest.cs" />
+    <Compile Include="Scheduler\TestJobProvider.cs" />
+    <Compile Include="Scheduler\TimeOfDayProvider.cs" />
+    <Compile Include="Scheduler\StaticHistoryProvider.cs" />
+    <Compile Include="Security\PasswordGeneratorTest.cs" />
+    <Compile Include="Security\SaltedHashBuilderTest.cs" />
+    <Compile Include="ShortGuidTests.cs" />
+    <Compile Include="Support\DumperStub.cs" />
+    <Compile Include="Support\DumperStubEx.cs" />
+    <Compile Include="IsolatedStorageHelperTest.cs" />
+    <Compile Include="ObjectCopierTest.cs" />
+    <Compile Include="Writer\ObjectDumperTest.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SelfSerializerTest.cs" />
+    <Compile Include="StringHashTest.cs" />
+    <Compile Include="Support\TestItem.cs" />
+    <Compile Include="Writer\TextWriterStrategyTest.cs" />
+    <Compile Include="Win32\MapiTest.cs" />
+    <Compile Include="Writer\XmlHelperTests.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Writer\XmlWriterStrategyTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="CodeSmith.snk" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
+      <Visible>False</Visible>
+      <ProductName>Windows Installer 3.1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
+      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
+      <Name>CodeSmith.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Choose>
+    <When Condition="Exists('..\..\Core\CodeSmith.Core.csproj')">
+      <ItemGroup>
+        <ProjectReference Include="..\..\Core\CodeSmith.Core.csproj">
+          <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>
+          <Name>CodeSmith.Core</Name>
+        </ProjectReference>
+      </ItemGroup>
+    </When>
+    <Otherwise />
+  </Choose>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+  <PropertyGroup>
+    <PostBuildEvent>copy "$(ProjectDir)App.config" "$(ProjectDir)$(OutDir)$(TargetFileName).config"</PostBuildEvent>
+  </PropertyGroup>
+</Project>

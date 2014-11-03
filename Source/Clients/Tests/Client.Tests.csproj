@@ -135,6 +135,7 @@
     <Compile Include="Storage\IsolatedStorageFileStorageTests.cs" />
     <Compile Include="Storage\PersistedDictionaryTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
+    <Compile Include="Utility\DateTimeRangeTests.cs" />
     <Compile Include="Utility\InMemorySubmissionClient.cs" />
   </ItemGroup>
   <ItemGroup>
