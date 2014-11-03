@@ -32,7 +32,15 @@ namespace Exceptionless.Api.Controllers {
         protected const int MAXIMUM_LIMIT = 100;
         protected const int MAXIMUM_SKIP = 1000;
 
-        protected TimeInfo GetTimeInfo(string time, string offset) {
+        protected TimeSpan GetOffset(string offset) {
+            double offsetInMinutes;
+            if (!String.IsNullOrEmpty(offset) && Double.TryParse(offset, out offsetInMinutes))
+                return TimeSpan.FromMinutes(offsetInMinutes);
+
+            return TimeSpan.Zero;
+        }
+
+        protected virtual TimeInfo GetTimeInfo(string time, string offset) {
             string field = null;
             if (!String.IsNullOrEmpty(time)) {
                 var parts = time.Split(new []{ '|' }, StringSplitOptions.RemoveEmptyEntries);
@@ -42,14 +50,9 @@ namespace Exceptionless.Api.Controllers {
                 }
             }
 
-            TimeSpan off = TimeSpan.Zero;
-            if (!String.IsNullOrEmpty(offset)) {
-                
-            }
-
             return new TimeInfo {
                 Field = field,
-                Offset = off,
+                Offset = GetOffset(offset),
                 Range = new DateTimeRange(DateTime.Now.SubtractYears(1), DateTime.Now)
             };
         }

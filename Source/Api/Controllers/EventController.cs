@@ -63,7 +63,7 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var events = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options);
+            var events = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options);
             
             // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
@@ -280,6 +280,13 @@ namespace Exceptionless.Api.Controllers {
                 Mapper.CreateMap<UserDescription, EventUserDescription>();
 
             base.CreateMaps();
+        }
+
+        protected override TimeInfo GetTimeInfo(string time, string offset) {
+            var timeInfo = base.GetTimeInfo(time, offset);
+            timeInfo.Field = null;
+
+            return timeInfo;
         }
     }
 }

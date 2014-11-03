@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -103,7 +102,10 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult SetConfig(string id, string key, [NakedBody] string value) {
             var project = GetModel(id, false);
-            if (project == null || String.IsNullOrWhiteSpace(value))
+            if (project == null)
+                return NotFound();
+
+            if (String.IsNullOrWhiteSpace(value))
                 return BadRequest();
 
             project.Configuration.Settings[key] = value;
@@ -118,7 +120,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult DeleteConfig(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             if (project.Configuration.Settings.Remove(key))
                 _repository.Save(project);
@@ -131,7 +133,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
             var project = GetModel(id);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             // TODO: Implement a long running process queue where a task can be inserted and then monitor for progress.
             await _dataHelper.ResetProjectDataAsync(id);
@@ -240,7 +242,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult PostData(string id, string key, string value) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             project.Data[key] = value;
             _repository.Save(project);
@@ -253,7 +255,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult DeleteData(string id, string key) {
             var project = GetModel(id, false);
             if (project == null)
-                return BadRequest();
+                return NotFound();
 
             if (project.Data.Remove(key))
                 _repository.Save(project);

@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         ICollection<PersistentEvent> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, bool includeHidden = false, bool includeFixed = false, bool includeNotFound = true);
         ICollection<PersistentEvent> GetByStackIdOccurrenceDate(string stackId, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
         ICollection<PersistentEvent> GetByReferenceId(string projectId, string referenceId);
-        ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
+        ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
 
         string GetPreviousEventIdInStack(string id);
         string GetNextEventIdInStack(string id);

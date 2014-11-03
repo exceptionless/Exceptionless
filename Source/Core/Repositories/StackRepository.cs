@@ -94,6 +94,19 @@ namespace Exceptionless.Core.Repositories {
                 .WithCacheKey(GetStackSignatureCacheKey(projectId, signatureHash)));
         }
 
+        public ICollection<Stack> GetByFilter(string filter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+            var search = new ElasticSearchOptions<Stack>()
+                .WithDateRange(utcStart, utcEnd, field ?? "date")
+                .WithIndicesFromDateRange()
+                .WithQuery(filter)
+                .WithPaging(paging);
+
+            if (!String.IsNullOrEmpty(sort))
+                search = search.WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
+
+            return Find(search);
+        }
+
         public ICollection<Stack> GetMostRecent(string projectId, DateTime utcStart, DateTime utcEnd, PagingOptions paging, string query) {
             var options = new ElasticSearchOptions<Stack>().WithProjectId(projectId).WithQuery(query).WithSort(s => s.OnField(e => e.LastOccurrence).Descending()).WithPaging(paging);
             options.Filter = Filter<Stack>.Range(r => r.OnField(s => s.LastOccurrence).GreaterOrEquals(utcStart));

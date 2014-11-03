@@ -65,9 +65,9 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => HideAllByClientIpAndDate(organizationId, clientIp, utcStartDate, utcEndDate));
         }
 
-        public ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             var search = new ElasticSearchOptions<PersistentEvent>()
-                .WithDateRange(utcStart, utcEnd, "date")
+                .WithDateRange(utcStart, utcEnd, field ?? "date")
                 .WithIndicesFromDateRange()
                 .WithQuery(filter)
                 .WithPaging(paging);

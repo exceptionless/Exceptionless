@@ -12,27 +12,11 @@
 using System;
 using System.Collections.Generic;
 using CodeSmith.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {
     public static class EventExtensions {
-        public static PersistentEvent ToProjectLocalTime(this PersistentEvent data, Project project) {
-            if (data == null)
-                return null;
-
-            data.Date = TimeZoneInfo.ConvertTime(data.Date, project.DefaultTimeZone());
-            return data;
-        }
-
-        public static PersistentEvent ToProjectLocalTime(this PersistentEvent data, IProjectRepository repository) {
-            if (data == null)
-                return null;
-
-            return data.ToProjectLocalTime(repository.GetById(data.ProjectId, true));
-        }
-
         public static T GetValue<T>(this DataDictionary extendedData, string key) {
             if (!extendedData.ContainsKey(key))
                 throw new KeyNotFoundException(String.Format("Key \"{0}\" not found in the dictionary.", key));

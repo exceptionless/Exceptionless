@@ -10,29 +10,21 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class StackExtensions {
-        public static Stack ToProjectLocalTime(this Stack stack, Project project) {
+        public static Stack ApplyOffset(this Stack stack, TimeSpan offset) {
             if (stack == null)
                 return null;
 
             if (stack.DateFixed.HasValue)
-                stack.DateFixed = TimeZoneInfo.ConvertTime(stack.DateFixed.Value, project.DefaultTimeZone());
+                stack.DateFixed = stack.DateFixed.Value.Add(offset);
 
-            stack.FirstOccurrence = TimeZoneInfo.ConvertTime(stack.FirstOccurrence, project.DefaultTimeZone());
-            stack.LastOccurrence = TimeZoneInfo.ConvertTime(stack.LastOccurrence, project.DefaultTimeZone());
+            stack.FirstOccurrence = stack.FirstOccurrence.Add(offset);
+            stack.LastOccurrence = stack.LastOccurrence.Add(offset);
 
             return stack;
-        }
-
-        public static Stack ToProjectLocalTime(this Stack stack, IProjectRepository repository) {
-            if (stack == null)
-                return null;
-
-            return stack.ToProjectLocalTime(repository.GetById(stack.ProjectId, true));
         }
 
         public static bool IsFixed(this Stack stack) {

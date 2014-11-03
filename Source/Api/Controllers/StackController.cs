@@ -13,9 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Web.Http;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -45,13 +43,12 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly EventStats _eventStats;
         private readonly BillingManager _billingManager;
-        private readonly DataHelper _dataHelper;
         private readonly FormattingPluginManager _formattingPluginManager;
 
         public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
-            EventStats eventStats, BillingManager billingManager, DataHelper dataHelper,
+            EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
             _organizationRepository = organizationRepository;
@@ -62,18 +59,17 @@ namespace Exceptionless.Api.Controllers {
             _webHookNotificationQueue = webHookNotificationQueue;
             _eventStats = eventStats;
             _billingManager = billingManager;
-            _dataHelper = dataHelper;
             _formattingPluginManager = formattingPluginManager;
         }
 
         [HttpGet]
         [Route("{id:objectid}")]
-        public override IHttpActionResult GetById(string id) {
+        public IHttpActionResult GetById(string id, string offset) {
             var stack = GetModel(id);
             if (stack == null)
                 return NotFound();
 
-            return Ok(stack.ToProjectLocalTime(_projectRepository));
+            return Ok(stack.ApplyOffset(GetOffset(offset)));
         }
 
         [HttpPost]
@@ -367,11 +363,11 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options);
+            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd), options.HasMore, page);
+                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd), options.HasMore, page);
 
             return OkWithResourceLinks(stacks, options.HasMore, page);
         }
@@ -429,13 +425,13 @@ namespace Exceptionless.Api.Controllers {
 
             var timeInfo = GetTimeInfo(time, offset);
             filter = String.Concat("project:" + projectId, " ", filter);
-            var terms = _eventStats.GetTermsStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, "stack_id", filter, max: GetSkip(page + 1, limit)).Terms;
+            var terms = _eventStats.GetTermsStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, "stack_id", filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
             DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
             var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
-            var stacks = _stackRepository.GetByIds(stackIds);
+            var stacks = _stackRepository.GetByIds(stackIds).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             // TODO: Add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
@@ -446,8 +442,20 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
         }
 
-        private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, DateTime utcStart, DateTime utcEnd) {
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "stack_id: (" + String.Join(" OR ", stacks.Select(r => r.Id)) + ")", max: stacks.Count).Terms;
+        protected override TimeInfo GetTimeInfo(string time, string offset) {
+            var timeInfo = base.GetTimeInfo(time, offset);
+
+            if (String.IsNullOrEmpty(timeInfo.Field))
+                return timeInfo;
+
+            if (!String.Equals(timeInfo.Field, "first", StringComparison.OrdinalIgnoreCase) && !String.Equals(timeInfo.Field, "last", StringComparison.OrdinalIgnoreCase))
+                timeInfo.Field = null;
+
+            return timeInfo;
+        }
+
+        private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "stack_id: (" + String.Join(" OR ", stacks.Select(r => r.Id)) + ")", offset, stacks.Count).Terms;
             return GetStackSummaries(stacks, terms);
         }
 
@@ -459,8 +467,8 @@ namespace Exceptionless.Api.Controllers {
                     Data = data.Data,
                     Id = stack.Id,
                     Title = stack.Title,
-                    FirstOccurrence = stack.FirstOccurrence,
-                    LastOccurrence = stack.LastOccurrence,
+                    FirstOccurrence = term.FirstOccurrence,
+                    LastOccurrence = term.LastOccurrence,
                     New = term.New,
                     Total = term.Total,
                     Unique = term.Unique,
