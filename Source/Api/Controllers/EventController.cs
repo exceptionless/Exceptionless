@@ -138,7 +138,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             events = events.Where(e => !e.IsCritical()).ToList();
-            if (events.Any()) {
+            if (events.Count > 0) {
                 foreach (var ev in events)
                     ev.MarkAsCritical();
 
@@ -156,7 +156,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             events = events.Where(e => e.IsCritical()).ToList();
-            if (events.Any()) {
+            if (events.Count > 0) {
                 foreach (var ev in events)
                     ev.Tags.Remove(Event.KnownTags.Critical);
 

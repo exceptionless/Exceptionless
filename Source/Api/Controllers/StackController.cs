@@ -82,18 +82,18 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            foreach (var stack in stacks) {
-                if (stack.DateFixed.HasValue)
-                    continue;
+            stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks) {
+                    // TODO: Implement Fixed in version.
+                    stack.DateFixed = DateTime.UtcNow;
+                    //stack.FixedInVersion = "TODO";
+                    stack.IsRegressed = false;
+                }
 
-                // TODO: Implement Fixed in version.
-                stack.DateFixed = DateTime.UtcNow;
-                //stack.FixedInVersion = "TODO";
-                stack.IsRegressed = false;
+                // TODO: Add a log entry.
+                _stackRepository.Save(stacks);
             }
-
-            // TODO: Add a log entry.
-            _stackRepository.Save(stacks);
 
             return Ok();
         }
@@ -113,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
                 id = data.GetValue("Stack").Value<string>();
 
             if (String.IsNullOrEmpty(id))
-                return BadRequest();
+                return NotFound();
 
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
@@ -127,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult AddLink(string id, [NakedBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
-                return BadRequest();
+                return NotFound();
 
             if (String.IsNullOrEmpty(url))
                 return BadRequest();
@@ -155,7 +155,7 @@ namespace Exceptionless.Api.Controllers {
                 id = data.GetValue("Stack").Value<string>();
 
             if (String.IsNullOrEmpty(id))
-                return BadRequest();
+                return NotFound();
 
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
@@ -169,7 +169,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult RemoveLink(string id, [NakedBody] string url) {
             var stack = GetModel(id, false);
             if (stack == null)
-                return BadRequest();
+                return NotFound();
 
             if (String.IsNullOrEmpty(url))
                 return BadRequest();
@@ -183,45 +183,54 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{id:objectid}/mark-critical")]
-        public IHttpActionResult MarkCritical(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-critical")]
+        public IHttpActionResult MarkCritical([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (!stack.OccurrencesAreCritical) {
-                stack.OccurrencesAreCritical = true;
-                _stackRepository.Save(stack);
+            stacks = stacks.Where(s => !s.OccurrencesAreCritical).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.OccurrencesAreCritical = true;
+
+                _stackRepository.Save(stacks);
             }
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/mark-critical")]
-        public IHttpActionResult MarkNotCritical(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-critical")]
+        public IHttpActionResult MarkNotCritical([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (stack.OccurrencesAreCritical) {
-                stack.OccurrencesAreCritical = false;
-                _stackRepository.Save(stack);
+            stacks = stacks.Where(s => s.OccurrencesAreCritical).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.OccurrencesAreCritical = false;
+
+                _stackRepository.Save(stacks);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
         }
 
         [HttpPost]
-        [Route("{id:objectid}/notifications")]
-        public IHttpActionResult EnableNotifications(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/notifications")]
+        public IHttpActionResult EnableNotifications([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (stack.DisableNotifications) {
-                stack.DisableNotifications = false;
-                _stackRepository.Save(stack);
+            stacks = stacks.Where(s => s.DisableNotifications).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.DisableNotifications = false;
+
+                _stackRepository.Save(stacks);
             }
 
             return Ok();
@@ -229,63 +238,74 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}/notifications")]
-        public IHttpActionResult DisableNotifications(string[] ids) {
-            //var stack = GetModel(id, false);
-            //if (stack == null)
-            //    return BadRequest();
+        public IHttpActionResult DisableNotifications([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            //if (!stack.DisableNotifications) {
-            //    stack.DisableNotifications = true;
-            //    _stackRepository.Save(stack);
-            //}
+            stacks = stacks.Where(s => !s.DisableNotifications).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.DisableNotifications = true;
+
+                _stackRepository.Save(stacks);
+            }
 
             return StatusCode(HttpStatusCode.NoContent);
         }
 
         [HttpDelete]
-        [Route("{ids:objectids}/mark-fixed")] // /id/mark-fixed /id,id2,id3/mark-fixed
-        public IHttpActionResult MarkNotFixed(string[] ids) {
-            //var stack = GetModel(id, false);
-            //if (stack == null)
-            //    return BadRequest();
+        [Route("{ids:objectids}/mark-fixed")]
+        public IHttpActionResult MarkNotFixed([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            //if (!stack.DateFixed.HasValue)
-            //    return Ok();
+            stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks) {
+                    stack.DateFixed = null;
+                    stack.IsRegressed = false;
+                }
 
-            //stack.DateFixed = null;
-            ////stack.IsRegressed = false;
-
-            //// TODO: Add a log entry.
-            //_stackRepository.Save(stack);
+                // TODO: Add a log entry.
+                _stackRepository.Save(stacks);
+            }
 
             return StatusCode(HttpStatusCode.NoContent);
         }
 
         [HttpPost]
-        [Route("{id:objectid}/mark-hidden")]
-        public IHttpActionResult MarkHidden(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-hidden")]
+        public IHttpActionResult MarkHidden([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (!stack.IsHidden) {
-                stack.IsHidden = true;
-                _stackRepository.Save(stack);
+            stacks = stacks.Where(s => !s.IsHidden).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.IsHidden = true;
+
+                _stackRepository.Save(stacks);
             }
 
             return Ok();
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/mark-hidden")]
-        public IHttpActionResult MarkNotHidden(string id) {
-            var stack = GetModel(id, false);
-            if (stack == null)
-                return BadRequest();
+        [Route("{ids:objectids}/mark-hidden")]
+        public IHttpActionResult MarkNotHidden([CommaDelimitedArray]string[] ids) {
+            var stacks = GetModels(ids, false);
+            if (!stacks.Any())
+                return NotFound();
 
-            if (stack.IsHidden) {
-                stack.IsHidden = false;
-                _stackRepository.Save(stack);
+            stacks = stacks.Where(s => s.IsHidden).ToList();
+            if (stacks.Count > 0) {
+                foreach (var stack in stacks)
+                    stack.IsHidden = false;
+
+                _stackRepository.Save(stacks);
             }
 
             return StatusCode(HttpStatusCode.NoContent);
@@ -295,11 +315,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/promote")]
         public IHttpActionResult Promote(string id) {
             if (String.IsNullOrEmpty(id))
-                return BadRequest();
+                return NotFound();
 
             Stack stack = _stackRepository.GetById(id);
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
-                return BadRequest();
+                return NotFound();
 
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
                 return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
@@ -324,7 +344,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete(string[] ids) {
+        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 
