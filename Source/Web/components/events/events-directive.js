@@ -10,12 +10,12 @@
                     settings: "="
                 },
                 templateUrl: 'components/events/events-directive.tpl.html',
-                controller: ['$rootScope', '$scope', '$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($rootScope, $scope, $window, $state, linkService, notificationService, eventsActionsService) {
+                controller: ['$scope', '$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($scope, $window, $state, linkService, notificationService, eventsActionsService) {
                     var settings = $scope.settings;
                     var vm = this;
 
                     function get(options) {
-                        settings.get(options).then(function (response) {
+                        settings.get(options || settings.options).then(function (response) {
                             vm.events = response.data.plain();
 
                             var links = linkService.getLinksQueryParameters(response.headers('link'));
@@ -72,14 +72,8 @@
                         vm.selectedAction.run(vm.selectedIds);
                     }
 
-                    var unbind = $rootScope.$on('eventOccurrence', function(e, data){
-                        if (!vm.previous)
-                            get(settings.options);
-                    });
-
-                    $scope.$on('$destroy', unbind);
-
                     vm.actions = eventsActionsService.getActions();
+                    vm.get = get;
                     vm.hasEvents = hasEvents;
                     vm.hasSelection = hasSelection;
                     vm.open = open;
@@ -90,7 +84,7 @@
                     vm.selectedAction = null;
                     vm.updateSelection = updateSelection;
 
-                    get(settings.options);
+                    get();
                 }],
                 controllerAs: 'vm'
             };

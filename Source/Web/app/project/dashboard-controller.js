@@ -6,7 +6,7 @@
             var projectId = $stateParams.id;
             var vm = this;
 
-            function getStats() {
+            function get() {
                 function onSuccess(response) {
                     vm.stats = response.data.plain();
 
@@ -97,6 +97,7 @@
                     }
                 }
             };
+            vm.get = get;
 
             vm.mostFrequent = {
                 get: function (options) {
@@ -120,7 +121,7 @@
             };
             vm.stats = {};
 
-            getStats();
+            get();
         }
     ]);
 }());

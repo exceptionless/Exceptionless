@@ -3,6 +3,7 @@
 
     angular.module('exceptionless.events', [
         'checklist-model',
+        'exceptionless.refresh',
         'exceptionless.link',
         'exceptionless.notification',
         'exceptionless.summary',

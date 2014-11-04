@@ -14,10 +14,10 @@
                         rootPath: baseUrl + '/signalr/hubs',
 
 
-                        //client side methods
+                        // client side methods
                         listeners: {
                             'entityChanged': function (entityChanged) {
-                                $rootScope.$emit(entityChanged.Type + 'Changed', entityChanged);
+                                $rootScope.$emit(entityChanged.type + 'Changed', entityChanged);
                             },
                             'eventOccurrence': function (eventOccurrence) {
                                 $rootScope.$emit('eventOccurrence', eventOccurrence);
@@ -33,12 +33,12 @@
                             }
                         },
 
-                        //query params sent on initial connection
+                        // query params sent on initial connection
                         queryParams: {
-                            'access_token': accessToken
+                            'access_token': accessToken // TODO: Inject this.
                         },
 
-                        //handle connection error
+                        // handle connection error
                         errorHandler: function (error) {
                             $log.error(error);
                         }

@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('project.Configure', ['$stateParams', 'notificationService', 'tokenService', function ($stateParams, notificationService, tokenService) {
+        .controller('project.Configure', ['$state', '$stateParams', 'notificationService', 'tokenService', function ($state, $stateParams, notificationService, tokenService) {
             var projectId = $stateParams.id;
 
             function getDefaultApiKey() {
@@ -29,9 +29,20 @@
                 ];
             }
 
+            function hasProjectData() {
+                // TODO: Implement this.
+                return false;
+            }
+
+            function navigateToDashboard() {
+                $state.go('app.project.dashboard', { id: vm.projectId });
+            }
+
             var vm = this;
             vm.apiKey = null;
             vm.currentProjectType = null;
+            vm.hasProjectData = hasProjectData;
+            vm.navigateToDashboard = navigateToDashboard;
             vm.projectId = projectId;
             vm.projectTypes = getProjectTypes();
 

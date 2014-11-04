@@ -3,6 +3,7 @@
 
     angular.module('exceptionless.projects', [
         'exceptionless.dialog',
+        'exceptionless.refresh',
         'exceptionless.link',
         'exceptionless.notification',
         'exceptionless.project'
@@ -15,12 +16,12 @@
                 settings: "="
             },
             templateUrl: 'components/projects/projects-directive.tpl.html',
-            controller: ['$rootScope', '$scope', '$window', '$state', 'dialogService', 'linkService', 'notificationService', 'projectService', function ($rootScope, $scope, $window, $state, dialogService, linkService, notificationService, projectService) {
+            controller: ['$scope', '$window', '$state', 'dialogService', 'linkService', 'notificationService', 'projectService', function ($scope, $window, $state, dialogService, linkService, notificationService, projectService) {
                 var settings = $scope.settings;
                 var vm = this;
 
                 function get(options) {
-                    settings.get(options).then(function (response) {
+                    settings.get(options || settings.options).then(function (response) {
                         vm.projects = response.data.plain();
 
                         var links = linkService.getLinksQueryParameters(response.headers('link'));
@@ -64,13 +65,7 @@
                     });
                 }
 
-                var unbind = $rootScope.$on('ProjectChanged', function(e, data){
-                    if ($scope.previous === undefined)
-                        get($scope.settings.options);
-                });
-
-                $scope.$on('$destroy', unbind);
-
+                vm.get = get;
                 vm.hasProjects = hasProjects;
                 vm.nextPage = nextPage;
                 vm.open = open;
@@ -78,7 +73,7 @@
                 vm.projects = [];
                 vm.remove = remove;
 
-                get(settings.options);
+                get();
             }],
             controllerAs: 'vm'
         };

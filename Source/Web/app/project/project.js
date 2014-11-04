@@ -5,6 +5,7 @@
         'exceptionless.dialog',
         'exceptionless.project',
         'exceptionless.projects',
+        'exceptionless.refresh',
         'exceptionless.stack',
         'exceptionless.stacks',
         'exceptionless.stat',

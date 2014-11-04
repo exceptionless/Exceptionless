@@ -71,6 +71,7 @@ module.exports = function (grunt) {
             customattrs: [
                 'ui-*',
                 'checklist-*',
+                'refresh-*',
                 'typeahead',
                 'truncate',
                 'lines'

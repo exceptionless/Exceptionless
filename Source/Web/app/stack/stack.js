@@ -8,6 +8,7 @@
         'exceptionless.events',
         'exceptionless.feature',
         'exceptionless.notification',
+        'exceptionless.refresh',
         'exceptionless.stack',
         'exceptionless.stack-trace',
         'exceptionless.stat',

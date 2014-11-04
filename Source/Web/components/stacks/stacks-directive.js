@@ -10,12 +10,12 @@
                     settings: "="
                 },
                 templateUrl: 'components/stacks/stacks-directive.tpl.html',
-                controller: ['$rootScope', '$scope', '$window', '$state', 'linkService', 'notificationService', 'stacksActionsService', function ($rootScope, $scope, $window, $state, linkService, notificationService, stacksActionsService) {
+                controller: ['$scope', '$window', '$state', 'linkService', 'notificationService', 'stacksActionsService', function ($scope, $window, $state, linkService, notificationService, stacksActionsService) {
                     var settings = $scope.settings;
                     var vm = this;
 
                     function get(options) {
-                        settings.get(options).then(function (response) {
+                        settings.get(options || settings.options).then(function (response) {
                             vm.selectedIds = [];
                             vm.stacks = response.data.plain();
 
@@ -73,14 +73,8 @@
                         vm.selectedAction.run(vm.selectedIds);
                     }
 
-                    var unbind = $rootScope.$on('eventOccurrence', function(e, data){
-                        if ($scope.previous === undefined)
-                            get($scope.settings.options);
-                    });
-
-                    $scope.$on('$destroy', unbind);
-
                     vm.actions = stacksActionsService.getActions();
+                    vm.get = get;
                     vm.hasStacks = hasStacks;
                     vm.hasSelection = hasSelection;
                     vm.nextPage = nextPage;
@@ -91,7 +85,7 @@
                     vm.selectedAction = null;
                     vm.updateSelection = updateSelection;
 
-                    get(settings.options);
+                    get();
                 }],
                 controllerAs: 'vm'
             };

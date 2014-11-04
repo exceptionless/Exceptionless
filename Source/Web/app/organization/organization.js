@@ -6,6 +6,7 @@
         'exceptionless.organization',
         'exceptionless.project',
         'exceptionless.projects',
+        'exceptionless.refresh',
         'exceptionless.token',
         'exceptionless.user',
         'exceptionless.web-hook',

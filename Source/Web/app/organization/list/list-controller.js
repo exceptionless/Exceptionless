@@ -3,7 +3,7 @@
 
     angular.module('app.organization')
         .controller('organization.List', ['$rootScope', '$scope', '$window', '$state', 'dialogs', 'dialogService', 'linkService', 'notificationService', 'organizationService', function ($rootScope, $scope, $window, $state, dialogs, dialogService, linkService, notificationService, organizationService) {
-            var options = { limit: 10, mode: 'summary' };
+            var settings = { limit: 10, mode: 'summary' };
             var vm = this;
 
             function add() {
@@ -20,8 +20,8 @@
                 });
             }
 
-            function get() {
-                organizationService.getAll(options).then(function (response) {
+            function get(options) {
+                organizationService.getAll(options || settings).then(function (response) {
                     vm.organizations = response.data.plain();
 
                     var links = linkService.getLinksQueryParameters(response.headers('link'));
@@ -82,14 +82,9 @@
                 });
             }
 
-            var unbind = $rootScope.$on('OrganizationChanged', function(e, data){
-                if ($scope.previous === undefined)
-                    get($scope.settings.options);
-            });
-
-            $scope.$on('$destroy', unbind);
 
             vm.add = add;
+            vm.get = get;
             vm.leave = leave;
             vm.nextPage = nextPage;
             vm.open = open;

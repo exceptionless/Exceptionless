@@ -22,6 +22,10 @@
             }
 
             function get() {
+                return getStack().then(getStats);
+            }
+
+            function getStack() {
                 function onSuccess(response) {
                     vm.stack = response.data;
                 }
@@ -277,6 +281,7 @@
                 }
             };
 
+            vm.get = get;
             vm.hasTags = hasTags;
             vm.hasReference = hasReference;
             vm.hasReferences = hasReferences;
@@ -304,6 +309,6 @@
             vm.updateIsHidden = updateIsHidden;
             vm.updateNotifications = updateNotifications;
 
-            get().then(getStats);
+            get();
         }]);
 }());

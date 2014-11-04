@@ -1,4 +1,4 @@
-<div class="hbox hbox-auto-xs hbox-auto-sm">
+<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="eventOccurrence" refresh-if="!vm.hasProjectData()" refresh-action="vm.navigateToDashboard()">
     <div class="col">
         <div class="bg-light lter b-b wrapper-md">
             <div class="row">
@@ -45,7 +45,7 @@
                 </div>
                 <div class="panel-footer">
                     <button ui-sref="app.project.manage({ id: vm.projectId })" type="submit" class="btn btn-default" role="button">Notification Settings</button>
-                    <button ui-sref="app.project.dashboard" type="submit" class="btn btn-primary pull-right" role="button">Go To Dashboard</button>
+                    <button ui-sref="app.project.dashboard({ id: vm.projectId })" type="submit" class="btn btn-primary pull-right" role="button">Go To Dashboard</button>
                 </div>
             </div>
         </div>
