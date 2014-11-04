@@ -22,7 +22,7 @@
                     }
 
                     var create = debounce(function() {
-                        if (!scope.options || !scope.options.series || !scope.options.series[0].data || scope.options.series[0].data.length === 0) {
+                        if (!scope.options || !scope.options.series || !scope.options.series[0].data) {
                             return;
                         }
 
@@ -129,11 +129,7 @@
                         return scope.options.series[0].data;
                     }, function(newValue, oldValue){
                         if (!angular.equals(newValue, oldValue)) {
-                            if (!graph) {
-                                create();
-                            } else {
-                                graph.update();
-                            }
+                            create();
                         }
                     });
 
