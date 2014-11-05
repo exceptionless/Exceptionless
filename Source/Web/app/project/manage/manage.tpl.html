@@ -29,7 +29,7 @@
 
                                 <div class="form-group">
                                     <label>Custom Page Content</label>
-                                    <input type="text" class="form-control" ng-model="vm.project.custom_content" ng-change="vm.save(projectForm.$valid)" />
+                                    <input type="text" class="form-control" ng-model="vm.project.custom_content" ng-model-options="{ debounce: 1000 }" ng-change="vm.save(projectForm.$valid)" />
                                 </div>
 
                                 <div class="line line-dashed b-b line-lg pull-in"></div>
@@ -76,7 +76,7 @@
                                 <p>If the system detects a high volume of events coming from the same client IP address, it will automatically delete the data to reduce system noise.</p>
                                 <div class="checkbox">
                                     <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.project.delete_bot_data_enabled" ng-change="vm.saveDeleteBotDataEnabled()">
+                                        <input type="checkbox" ng-model="vm.project.delete_bot_data_enabled" ng-model-options="{ debounce: 1000 }" ng-change="vm.saveDeleteBotDataEnabled()">
                                         <i></i>
                                         Automatically delete bot data
                                     </label>
@@ -89,7 +89,7 @@
                                     specify a <a href="http://docs.exceptionless.com/contents/security/" target="_blank" title="Data Exclusions documentation">field name with wildcards (<strong>*</strong>)</a>
                                     to specify starts with, ends with, or contains just to be extra safe.
                                 </p>
-                                <input type="text" class="form-control" placeholder="Example: *Password*, CreditCard*, SSN" ng-model="vm.data_exclusions" ng-change="vm.saveDataExclusion()" />
+                                <input type="text" class="form-control" placeholder="Example: *Password*, CreditCard*, SSN" ng-model="vm.data_exclusions" ng-model-options="{ debounce: 1000 }" ng-change="vm.saveDataExclusion()" />
 
                                 <h5>Client Configuration</h5>
                                 <p>The configuration values on this page will be automatically sent to the Exceptionless clients for your project and be available in the <code>ExceptionlessClient.Current.Configuration</code> dictionary.</p>

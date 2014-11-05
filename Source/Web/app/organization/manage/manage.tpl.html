@@ -14,7 +14,7 @@
                             <form name="organizationForm" role="form">
                                 <div class="form-group">
                                     <label>Organization Name</label>
-                                    <input name="name" type="text" class="form-control" placeholder="Organization Name" ng-model="vm.organization.name" ng-change="vm.save(organizationForm.$valid)" required />
+                                    <input name="name" type="text" class="form-control" placeholder="Organization Name" ng-model="vm.organization.name" ng-model-options="{ debounce: 1000 }" ng-change="vm.save(organizationForm.$valid)" required />
                                     <div class="error" ng-if="organizationForm.name.$touched">
                                         <small ng-if="organizationForm.name.$error.required">
                                             Please enter a valid organization name.

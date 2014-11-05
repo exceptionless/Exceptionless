@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.organization')
-        .controller('organization.Manage', ['$state', '$stateParams', '$window', 'organizationService', 'projectService', 'userService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, $window, organizationService, projectService, userService, notificationService, featureService, dialogs, dialogService, debounce) {
+        .controller('organization.Manage', ['$state', '$stateParams', '$window', 'organizationService', 'projectService', 'userService', 'notificationService', 'featureService', 'dialogs', 'dialogService', function ($state, $stateParams, $window, organizationService, projectService, userService, notificationService, featureService, dialogs, dialogService) {
             var organizationId = $stateParams.id;
             var options = { limit: 5 };
             var vm = this;
@@ -116,7 +116,7 @@
             };
             vm.removeUser = removeUser;
             vm.resendNotification = resendNotification;
-            vm.save = debounce(save, 1000);
+            vm.save = save;
             vm.users = [];
 
             get().then(getUsers).then(getInvoices);

@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.account')
-        .controller('account.Manage', ['projectService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function (projectService, notificationService, featureService, dialogs, dialogService, debounce) {
+        .controller('account.Manage', ['projectService', 'notificationService', 'featureService', function (projectService, notificationService, featureService) {
             var vm = this;
 
             function changePassword(isValid) {
@@ -59,7 +59,7 @@
             vm.profile = {};
             vm.projects = [];
             vm.resendVerificationEmail = resendVerificationEmail;
-            vm.save = debounce(save, 1000);
+            vm.save = save;
             vm.saveNotificationSettings = saveNotificationSettings;
 
             getProjects();

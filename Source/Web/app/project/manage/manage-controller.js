@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('project.Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'webHookService', 'notificationService', 'featureService', 'dialogs', 'dialogService', 'debounce', function ($state, $stateParams, projectService, tokenService, webHookService, notificationService, featureService, dialogs, dialogService, debounce) {
+        .controller('project.Manage', ['$state', '$stateParams', 'projectService', 'tokenService', 'webHookService', 'notificationService', 'featureService', 'dialogs', 'dialogService', function ($state, $stateParams, projectService, tokenService, webHookService, notificationService, featureService, dialogs, dialogService) {
             var projectId = $stateParams.id;
             var vm = this;
 
@@ -206,9 +206,9 @@
             vm.removeToken = removeToken;
             vm.removeWebHook = removeWebHook;
             vm.resetData = resetData;
-            vm.save = debounce(save, 1000);
-            vm.saveDataExclusion = debounce(saveDataExclusion, 1000);
-            vm.saveDeleteBotDataEnabled = debounce(saveDeleteBotDataEnabled, 1000);
+            vm.save = save;
+            vm.saveDataExclusion = saveDataExclusion;
+            vm.saveDeleteBotDataEnabled = saveDeleteBotDataEnabled;
             vm.tokens = [];
             vm.webHooks = [];
 

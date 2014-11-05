@@ -5,12 +5,7 @@
         'ui.router',
 
         'exceptionless.dialog',
-        'exceptionless.project',
-
-        // Custom dialog dependencies
-        'ui.bootstrap',
-        'dialogs.main',
-        'dialogs.default-translations'
+        'exceptionless.project'
     ])
     .config(function ($stateProvider) {
         $stateProvider.state('app.account', {
