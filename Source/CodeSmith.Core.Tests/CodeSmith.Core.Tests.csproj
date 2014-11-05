@@ -79,7 +79,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DateTimeRangeTests.cs" />
     <Compile Include="BusinessDayTests.cs" />
     <Compile Include="Collections\ObservableHashSetTests.cs" />
     <Compile Include="Collections\DelimitedStringCollectionTests.cs" />

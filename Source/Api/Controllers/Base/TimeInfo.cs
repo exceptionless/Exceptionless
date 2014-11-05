@@ -1,5 +1,5 @@
 using System;
-using CodeSmith.Core;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Api.Controllers {
     public class TimeInfo {

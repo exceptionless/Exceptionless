@@ -123,7 +123,6 @@
     <Compile Include="DataAnnotations\CreditCardValidation.cs" />
     <Compile Include="Database\AdoHelper.cs" />
     <Compile Include="Database\SafeDataReader.cs" />
-    <Compile Include="DateTimeRange.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
     <Compile Include="Dependency\DependencyResolverExtensions.cs" />
     <Compile Include="Dependency\IDependencyResolver.cs" />

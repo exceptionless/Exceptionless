@@ -14,14 +14,13 @@ using System.Collections.Generic;
 using System.Net;
 using System.Web.Http;
 using System.Web.Http.Results;
-using CodeSmith.Core;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
