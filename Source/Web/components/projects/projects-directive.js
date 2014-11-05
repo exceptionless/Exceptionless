@@ -10,18 +10,18 @@
     ])
     .directive('projects', function() {
         return {
+            bindToController: true,
             restrict: 'E',
             replace: true,
             scope: {
                 settings: "="
             },
             templateUrl: 'components/projects/projects-directive.tpl.html',
-            controller: ['$scope', '$window', '$state', 'dialogService', 'linkService', 'notificationService', 'projectService', function ($scope, $window, $state, dialogService, linkService, notificationService, projectService) {
-                var settings = $scope.settings;
+            controller: ['$window', '$state', 'dialogService', 'linkService', 'notificationService', 'projectService', function ($window, $state, dialogService, linkService, notificationService, projectService) {
                 var vm = this;
 
                 function get(options) {
-                    settings.get(options || settings.options).then(function (response) {
+                    vm.settings.get(options || vm.settings.options).then(function (response) {
                         vm.projects = response.data.plain();
 
                         var links = linkService.getLinksQueryParameters(response.headers('link'));

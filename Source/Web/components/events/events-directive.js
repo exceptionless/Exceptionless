@@ -4,18 +4,17 @@
     angular.module('exceptionless.events')
         .directive('events', function(linkService) {
             return {
+                bindToController: true,
                 restrict: 'E',
                 replace: true,
                 scope: {
                     settings: "="
                 },
                 templateUrl: 'components/events/events-directive.tpl.html',
-                controller: ['$scope', '$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($scope, $window, $state, linkService, notificationService, eventsActionsService) {
-                    var settings = $scope.settings;
+                controller: ['$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($window, $state, linkService, notificationService, eventsActionsService) {
                     var vm = this;
-
                     function get(options) {
-                        settings.get(options || settings.options).then(function (response) {
+                        vm.settings.get(options || vm.settings.options).then(function (response) {
                             vm.events = response.data.plain();
 
                             var links = linkService.getLinksQueryParameters(response.headers('link'));

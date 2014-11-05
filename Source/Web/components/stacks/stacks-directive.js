@@ -4,18 +4,18 @@
     angular.module('exceptionless.stacks')
         .directive('stacks', function() {
             return {
+                bindToController: true,
                 restrict: 'E',
                 replace: true,
                 scope: {
                     settings: "="
                 },
                 templateUrl: 'components/stacks/stacks-directive.tpl.html',
-                controller: ['$scope', '$window', '$state', 'linkService', 'notificationService', 'stacksActionsService', function ($scope, $window, $state, linkService, notificationService, stacksActionsService) {
-                    var settings = $scope.settings;
+                controller: ['$window', '$state', 'linkService', 'notificationService', 'stacksActionsService', function ($window, $state, linkService, notificationService, stacksActionsService) {
                     var vm = this;
 
                     function get(options) {
-                        settings.get(options || settings.options).then(function (response) {
+                        vm.settings.get(options || vm.settings.options).then(function (response) {
                             vm.selectedIds = [];
                             vm.stacks = response.data.plain();
 

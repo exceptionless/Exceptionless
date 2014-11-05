@@ -7,15 +7,16 @@
     ])
     .directive('simpleStackTrace', ['simpleErrorService', function(simpleErrorService) {
         return {
+            bindToController: true,
             restrict: 'E',
             replace: true,
             scope: {
                 exception: "="
             },
             templateUrl: 'components/simple-stack-trace/simple-stack-trace-directive.tpl.html',
-            controller: ['$scope', function ($scope) {
+            controller: [function () {
                 var vm = this;
-                vm.exceptions = simpleErrorService.getExceptions($scope.exception);
+                vm.exceptions = simpleErrorService.getExceptions(vm.exception);
             }],
             controllerAs: 'vm'
         };

@@ -7,15 +7,16 @@
     ])
     .directive('stackTrace', ['errorService', function(errorService) {
         return {
+            bindToController: true,
             restrict: 'E',
             replace: true,
             scope: {
                 exception: "="
             },
             templateUrl: 'components/stack-trace/stack-trace-directive.tpl.html',
-            controller: ['$scope', function ($scope) {
+            controller: [function () {
                 var vm = this;
-                vm.exceptions = errorService.getExceptions($scope.exception);
+                vm.exceptions = errorService.getExceptions(vm.exception);
             }],
             controllerAs: 'vm'
         };
