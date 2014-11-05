@@ -26,13 +26,16 @@
             }
 
             function setFilter(filter) {
+                if (angular.equals(filter, _filter)) {
+                    return;
+                }
+
                 _filter = filter;
                 fireFilterChanged();
             }
 
             var service = {
                 apply: apply,
-                getDefaultOptions: getDefaultOptions,
                 setFilter: setFilter
             };
 

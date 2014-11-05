@@ -1,4 +1,6 @@
 <div class="input-group">
-    <input type="search" class="form-control" ng-model="vm.filter" ng-model-options="{ debounce: 1000 }" ng-change="vm.setFilter(vm.filter)">
-    <span class="input-group-addon"><i class="fa fa-search"></i></span>
+    <input type="search" class="form-control" placeholder="Search" ng-model="vm.filter" ng-model-options="{ debounce: 1000 }" ng-change="vm.setFilter(vm.filter)">
+    <span class="input-group-btn">
+        <button class="btn btn-default" type="button" ng-click="vm.setFilter(vm.filter)"><i class="fa fa-search"></i></button>
+    </span>
 </div>
