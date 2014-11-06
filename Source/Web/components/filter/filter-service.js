@@ -3,10 +3,17 @@
 
     angular.module('exceptionless.filter')
         .factory('filterService', ['$rootScope', function ($rootScope) {
-            var _filter = null;
+            var _rawfilter;
+            var _organizationFilter;
+            var _projectFilter;
+            var _timeFilter;
 
             function apply(source) {
                 return angular.extend({}, getDefaultOptions(), source);
+            }
+
+            function buildFilter() {
+                return [_organizationFilter, _projectFilter, _timeFilter, _rawfilter].join(' ');
             }
 
             function fireFilterChanged() {
@@ -15,7 +22,7 @@
 
             function getDefaultOptions() {
                 return {
-                    filter: _filter,
+                    filter: buildFilter(),
                     time: 'last 30 days',
                     offset: getTimeZoneOffset()
                 };
@@ -25,18 +32,62 @@
                 return new Date().getTimezoneOffset() * -1;
             }
 
-            function setFilter(filter) {
-                if (angular.equals(filter, _filter)) {
+            function setOrganization(id) {
+                var filter = 'organization:' + id;
+                if (angular.equals(filter, _organizationFilter)) {
                     return;
                 }
 
-                _filter = filter;
+                if (id) {
+                    _organizationFilter = filter;
+                    _projectFilter = void 0;
+                } else {
+                    _organizationFilter = void 0;
+                }
+                fireFilterChanged();
+            }
+
+            function setProject(id) {
+                var filter = 'project:' + id;
+                if (angular.equals(filter, _projectFilter)) {
+                    return;
+                }
+
+                if (id) {
+                    _projectFilter = filter;
+                    _organizationFilter = void 0;
+                } else {
+                    _projectFilter = void 0;
+                }
+
+                fireFilterChanged();
+            }
+
+            function setTime(time) {
+                var filter = 'time:' + time;
+                if (angular.equals(filter, _timeFilter)) {
+                    return;
+                }
+
+                _timeFilter = time ? filter : void 0;
+                fireFilterChanged();
+            }
+
+            function setFilter(filter) {
+                if (angular.equals(filter, _rawfilter)) {
+                    return;
+                }
+
+                _rawfilter = filter;
                 fireFilterChanged();
             }
 
             var service = {
                 apply: apply,
-                setFilter: setFilter
+                setFilter: setFilter,
+                setOrganization: setOrganization,
+                setProject: setProject,
+                setTime: setTime
             };
 
             return service;

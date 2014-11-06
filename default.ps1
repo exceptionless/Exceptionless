@@ -257,8 +257,6 @@ task PackageClient -depends TestClient {
 
     Delete-Directory "$build_dir\$configuration"
     Delete-Directory $working_dir
-
-    TeamCity-ReportBuildProgress ""
 }
 
 task PackageServer -depends TestServer {
@@ -271,11 +269,19 @@ task PackageServer -depends TestServer {
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.IIS.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
     TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
-
-    TeamCity-ReportBuildProgress ""
 }
 
-task Package -depends PackageClient, PackageServer
+task PackageWeb -depends TestWeb {
+    Create-Directory $deploy_dir
+
+    $packageDir = "$deploy_dir\Web"
+    Create-Directory $packageDir
+
+    TeamCity-ReportBuildProgress "Building Web NuGet Package"
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Web\Exeptionless.WebContent.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+}
+
+task Package -depends PackageClient, PackageServer, PackageWeb
 
 Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersionNumber, [string] $assemblyFileVersionNumber, [string] $assemblyInformationalVersionNumber) {
     $assemblyVersion = "AssemblyVersion(`"$assemblyVersionNumber`")"
