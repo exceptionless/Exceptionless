@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Utility {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
-            var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags" };
+            var allowedTerms = new[] { "organization_id", "project_id", "stack_id", "tags", "version" };
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", "term");
             

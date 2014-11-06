@@ -89,13 +89,15 @@ namespace Client.Tests.Submission {
                 statsCounter.DisplayStats();
 
                 Debug.WriteLine("Before Post Event");
-                statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, work: () => {
+                statsCounter.WaitForCounter(StatNames.EventsProcessed, work: () => {
                     var response = client.PostEvents(events, configuration, serializer);
                     Debug.WriteLine("After Post Event");
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 });
                 statsCounter.DisplayStats();
+                if (statsCounter.GetCount(StatNames.EventsUserDescriptionProcessed) == 0)
+                    statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed);
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
