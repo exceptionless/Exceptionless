@@ -57,6 +57,7 @@ task server -depends PackageServer
 
 task Clean {
     Delete-Directory $build_dir
+	Delete-Directory $source_dir\Web\dist
 }
 
 task Init -depends Clean {
@@ -79,7 +80,7 @@ task Init -depends Clean {
 
     TeamCity-SetBuildNumber $version
     
-    Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version
+    Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version	
 }
 
 task BuildClient -depends Init {
@@ -117,7 +118,23 @@ task BuildServer -depends Init {
     TeamCity-ReportBuildFinish "Finished building Server"
 }
 
-task Build -depends BuildClient, BuildServer
+task BuildWeb -depends Init {			
+    TeamCity-ReportBuildStart "Building Web" 
+	
+	Push-Location -Path $source_dir\Web
+	
+	exec { npm install bower grunt-cli }
+	exec { npm install }
+	exec { bower install }
+	
+	exec { grunt build }
+	
+	Pop-Location
+	
+	TeamCity-ReportBuildFinish "Finished building Web"
+}
+
+task Build -depends BuildClient, BuildServer, BuildWeb
 
 task TestClient -depends BuildClient {
     TeamCity-ReportBuildProgress "Running Client Tests"
@@ -143,7 +160,17 @@ task TestServer -depends BuildServer {
     }
 }
 
-task Test -depends TestClient, TestServer
+task TestWeb -depends BuildWeb {			
+    TeamCity-ReportBuildStart "Running Web Tests" 
+	
+	Push-Location -Path $source_dir\Web
+	
+	exec { grunt test }
+	
+	Pop-Location
+}
+
+task Test -depends TestClient, TestServer, TestWeb
 
 task PackageClient -depends TestClient {
     Create-Directory $deploy_dir
