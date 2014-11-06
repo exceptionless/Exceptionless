@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using AutoMapper;
 using Exceptionless.Core.Caching;
@@ -155,6 +156,7 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
             _elasticClient.DisableTrace();
+            Debug.WriteLine("Results: " + results.Total);
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
             var items = results.Documents.ToList();
