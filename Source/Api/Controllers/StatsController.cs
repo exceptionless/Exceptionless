@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Controllers {
             // TODO: Handle UTC Retention Cutoff.
             var timeInfo = GetTimeInfo(time, offset);
             filter = GetAssociatedOrganizationsFilter(filter);
-            var result = _stats.GetOccurrenceStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, filter, timeInfo.Offset);
+            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, filter, timeInfo.Offset);
 
             return Ok(result);
         }

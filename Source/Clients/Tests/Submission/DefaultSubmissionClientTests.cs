@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Exceptionless;
 using Exceptionless.Api;
@@ -77,17 +78,24 @@ namespace Client.Tests.Submission {
 
                 var client = new DefaultSubmissionClient();
                 var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
+                Debug.WriteLine("Before Submit Description");
+                statsCounter.DisplayStats();
                 statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
                     var response = client.PostUserDescription(referenceId, description, configuration, serializer);
+                    Debug.WriteLine("After Submit Description");
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 });
+                statsCounter.DisplayStats();
 
+                Debug.WriteLine("Before Post Event");
                 statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed, work: () => {
                     var response = client.PostEvents(events, configuration, serializer);
+                    Debug.WriteLine("After Post Event");
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
-                }, timeoutInSeconds: 15D);
+                });
+                statsCounter.DisplayStats();
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
@@ -101,6 +109,7 @@ namespace Client.Tests.Submission {
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 });
+                statsCounter.DisplayStats();
 
                 Assert.Equal(2, statsCounter.GetCount(StatNames.EventsUserDescriptionErrors));
             }

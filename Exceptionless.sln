@@ -94,27 +94,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{9AA4BD09-5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\EventMigration\EventMigration.csproj", "{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}"
 EndProject
-Project("{E24C65DC-7377-472B-9ABA-BC803B73C61A}") = "Web", "http://localhost:7625", "{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}"
-	ProjectSection(WebsiteProperties) = preProject
-		UseIISExpress = "true"
-		TargetFrameworkMoniker = ".NETFramework,Version%3Dv4.5.1"
-		Debug.AspNetCompiler.VirtualPath = "/localhost_7625"
-		Debug.AspNetCompiler.PhysicalPath = "Source\Web\"
-		Debug.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7625\"
-		Debug.AspNetCompiler.Updateable = "false"
-		Debug.AspNetCompiler.ForceOverwrite = "true"
-		Debug.AspNetCompiler.FixedNames = "false"
-		Debug.AspNetCompiler.Debug = "True"
-		Release.AspNetCompiler.VirtualPath = "/localhost_7625"
-		Release.AspNetCompiler.PhysicalPath = "Source\Web\"
-		Release.AspNetCompiler.TargetPath = "PrecompiledWeb\localhost_7625\"
-		Release.AspNetCompiler.Updateable = "false"
-		Release.AspNetCompiler.ForceOverwrite = "true"
-		Release.AspNetCompiler.FixedNames = "false"
-		Release.AspNetCompiler.Debug = "False"
-		SlnRelativePath = "Source\Web\"
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSmith.Core.Tests", "Source\CodeSmith.Core.Tests\CodeSmith.Core.Tests.csproj", "{4C8CB520-27E9-4511-B2C2-0AC560579A4A}"
 EndProject
 Global
@@ -437,16 +416,6 @@ Global
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|x86.ActiveCfg = Release|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Any CPU.ActiveCfg = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Any CPU.Build.0 = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|Mixed Platforms.Build.0 = Debug|Any CPU
-		{CADBC18A-AD81-4739-A59C-D0482FF4FCDA}.Release|x86.ActiveCfg = Debug|Any CPU
 		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

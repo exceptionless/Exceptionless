@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Pipeline;
@@ -113,6 +114,7 @@ namespace Exceptionless.Api.Tests.Stats {
             RemoveData();
             CreateData(eventCount);
 
+            Thread.Sleep(500);
             _client.Refresh();
             var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "project_id");
             Assert.Equal(eventCount, result.Total);

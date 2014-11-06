@@ -144,6 +144,7 @@ namespace Exceptionless.Core {
             });
             settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
             settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName));
+            settings.MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
             var client = new ElasticClient(settings);

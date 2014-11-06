@@ -366,11 +366,11 @@ namespace Exceptionless.Api.Controllers {
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd), options.HasMore, page);
+                return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore, page);
 
             return OkWithResourceLinks(stacks, options.HasMore, page);
         }
@@ -428,7 +428,7 @@ namespace Exceptionless.Api.Controllers {
 
             var timeInfo = GetTimeInfo(time, offset);
             filter = String.Concat("project:" + projectId, " ", filter);
-            var terms = _eventStats.GetTermsStats(timeInfo.Range.UtcStart, timeInfo.Range.UtcEnd, "stack_id", filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
+            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 

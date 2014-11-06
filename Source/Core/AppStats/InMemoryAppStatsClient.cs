@@ -29,6 +29,10 @@ namespace Exceptionless.Core.AppStats {
         }
 
         private void OnDisplayStats(object state) {
+            DisplayStats();
+        }
+
+        public void DisplayStats() {
             foreach (var key in _counters.Keys.ToList())
                 Debug.WriteLine("Counter: {0} Value: {1}", key, _counters[key]);
 
