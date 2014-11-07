@@ -219,9 +219,10 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('build',['jshint', 'htmlangular', 'clean:before','less','dom_munger','ngtemplates','cssmin','concat','ngAnnotate','uglify','copy','htmlmin','clean:after']);
-  grunt.registerTask('serve', ['dom_munger:read','jshint', 'connect', 'watch']);
-  grunt.registerTask('test',['dom_munger:read','karma:all_tests']);
+  grunt.registerTask('build', ['jshint', 'htmlangular', 'clean:before', 'less', 'dom_munger', 'ngtemplates', 'cssmin', 'concat', 'ngAnnotate', 'uglify', 'copy', 'htmlmin', 'clean:after']);
+  grunt.registerTask('default', ['build']);
+  grunt.registerTask('serve', ['dom_munger:read', 'jshint', 'connect', 'watch']);
+  grunt.registerTask('test', ['dom_munger:read', 'karma:all_tests']);
 
   grunt.event.on('watch', function(action, filepath) {
     //https://github.com/gruntjs/grunt-contrib-watch/issues/156
