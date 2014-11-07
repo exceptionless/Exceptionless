@@ -18,7 +18,7 @@
         'dialogs.main',
         'dialogs.default-translations'
     ])
-    .config(function ($stateProvider) {
+    .config(['$stateProvider', function ($stateProvider) {
         $stateProvider.state('app.organization', {
             abstract: true,
             url: '/organization',
@@ -38,5 +38,5 @@
             controllerAs: 'vm',
             templateUrl: 'app/organization/manage/manage.tpl.html'
         });
-    });
+    }]);
 }());

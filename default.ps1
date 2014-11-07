@@ -123,10 +123,6 @@ task BuildWeb -depends Init {
 	
 	Push-Location -Path $source_dir\Web
 	
-	exec { npm install bower grunt-cli }
-	exec { npm install }
-	exec { bower install }
-	
 	exec { grunt build }
 	
 	Pop-Location

@@ -18,12 +18,12 @@
         'dialogs.main',
         'dialogs.default-translations'
     ])
-    .config(function ($stateProvider) {
+    .config(['$stateProvider', function ($stateProvider) {
         $stateProvider.state('app.stack', {
             url: '/stack/:id',
             controller: 'Stack',
             controllerAs: 'vm',
             templateUrl: 'app/stack/stack.tpl.html'
         });
-    });
+    }]);
 }());

@@ -7,7 +7,7 @@
         'exceptionless.dialog',
         'exceptionless.project'
     ])
-    .config(function ($stateProvider) {
+    .config(['$stateProvider', function ($stateProvider) {
         $stateProvider.state('app.account', {
             abstract: true,
             url: '/account',
@@ -20,5 +20,5 @@
             controllerAs: 'vm',
             templateUrl: 'app/account/manage.tpl.html'
         });
-    });
+    }]);
 }());

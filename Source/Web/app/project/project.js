@@ -22,7 +22,7 @@
         'dialogs.main',
         'dialogs.default-translations'
     ])
-    .config(function ($stateProvider, $urlRouterProvider) {
+    .config(['$stateProvider', '$urlRouterProvider', function ($stateProvider, $urlRouterProvider) {
         $stateProvider.state('app.project', {
             abstract: true,
             url: '/project',
@@ -90,7 +90,7 @@
             controllerAs: 'vm',
             templateUrl: 'app/project/recent.tpl.html'
         });
-    })
+    }])
     .run(['$urlMatcherFactory', function($urlMatcherFactory){
         // Required for default params.
     }]);

@@ -119,9 +119,7 @@ module.exports = function (grunt) {
     copy: {
       main: {
         files: [
-          {src: ['img/**'], dest: 'dist/'},
-          {src: ['bower_components/font-awesome/fonts/**'], dest: 'dist/',filter:'isFile',expand:true},
-          {src: ['bower_components/bootstrap/fonts/**'], dest: 'dist/',filter:'isFile',expand:true}
+          {src: ['*.png', '*.ico', 'img/**/{*.png,*.jpg,*.ico}'], dest: 'dist/'}
         ]
       }
     },
@@ -191,15 +189,6 @@ module.exports = function (grunt) {
         }
       }
     },
-    imagemin: {
-      main:{
-        files: [{
-          expand: true, cwd:'dist/',
-          src:['**/{*.png,*.jpg}'],
-          dest: 'dist/'
-        }]
-      }
-    },
     karma: {
       options: {
         frameworks: ['jasmine'],
@@ -230,7 +219,7 @@ module.exports = function (grunt) {
     }
   });
 
-  grunt.registerTask('build',['jshint', 'htmlangular', 'clean:before','less','dom_munger','ngtemplates','cssmin','concat','ngAnnotate','uglify','copy','htmlmin','imagemin','clean:after']);
+  grunt.registerTask('build',['jshint', 'htmlangular', 'clean:before','less','dom_munger','ngtemplates','cssmin','concat','ngAnnotate','uglify','copy','htmlmin','clean:after']);
   grunt.registerTask('serve', ['dom_munger:read','jshint', 'connect', 'watch']);
   grunt.registerTask('test',['dom_munger:read','karma:all_tests']);
 

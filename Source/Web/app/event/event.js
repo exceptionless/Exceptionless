@@ -14,12 +14,12 @@
         'exceptionless.url',
         'exceptionless.user-agent'
     ])
-    .config(function ($stateProvider) {
+    .config(['$stateProvider', function ($stateProvider) {
         $stateProvider.state('app.event', {
             url: '/event/:id',
             controller: 'Event',
             controllerAs: 'vm',
             templateUrl: 'app/event/event.tpl.html'
         });
-    });
+    }]);
 }());
