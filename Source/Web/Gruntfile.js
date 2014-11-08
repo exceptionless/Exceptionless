@@ -128,14 +128,14 @@ module.exports = function (grunt) {
         options: {
           read:[
             {selector:'script[data-concat!="false"]',attribute:'src',writeto:'appjs'},
-            {selector:'link[rel="stylesheet"][data-concat!="false"]',attribute:'href',writeto:'appcss'}
+            {selector:'link[rel="stylesheet"][data-concat="true"]',attribute:'href',writeto:'appcss'}
           ]
         },
         src: 'index.html'
       },
       update: {
         options: {
-          remove: ['script[data-remove!="false"]','link[data-remove!="false"]'],
+          remove: ['script[data-remove!="false"]','link[data-remove="true"]'],
           append: [
             {selector:'body',html:'<script src="app.full.min.js"></script>'},
             {selector:'head',html:'<link rel="stylesheet" href="app.full.min.css">'}
@@ -193,6 +193,8 @@ module.exports = function (grunt) {
       options: {
         frameworks: ['jasmine'],
         files: [  //this files data is also updated in the watch handler, if updated change there too
+          'bower_components/jquery/dist/jquery.js',
+          'bower_components/boostrap/dist/js/bootstrap.js',
           '<%= dom_munger.data.appjs %>',
           'bower_components/angular-mocks/angular-mocks.js',
           createFolderGlobs('*-spec.js'),

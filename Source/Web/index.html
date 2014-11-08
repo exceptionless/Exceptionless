@@ -24,16 +24,16 @@
         <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" data-remove="false" />
 
         <meta name="apple-mobile-web-app-title" content="Exceptionless" />
-        <link rel="apple-touch-icon" sizes="57x57" href="/touch-icon-ipad-114.png" data-remove="false" />
-        <link rel="apple-touch-icon" sizes="72x72" href="/touch-icon-ipad-114.png" data-remove="false" />
-        <link rel="apple-touch-icon" sizes="114x114" href="/touch-icon-ipad-114.png" data-remove="false" />
-        <link rel="apple-touch-icon" sizes="144x144" href="/touch-icon-ipad-144.png" data-remove="false" />
+        <link rel="apple-touch-icon" sizes="57x57" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="72x72" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="114x114" href="/touch-icon-ipad-114.png" />
+        <link rel="apple-touch-icon" sizes="144x144" href="/touch-icon-ipad-144.png" />
 
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css" data-remove="false" />
-        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" data-remove="false" />
-        <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700" data-remove="false" />
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" />
+        <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700" />
 
-        <link href="app.less" type="text/css" rel="stylesheet/less" />
+        <link href="app.less" type="text/css" rel="stylesheet/less" data-concat="true" data-remove="true" />
     </head>
     <body ng-controller="App as appVm">
         <div class="app" id="app" ng-class="{'app-header-fixed': appVm.settings.headerFixed, 'app-aside-fixed': appVm.settings.asideFixed, 'app-aside-folded': appVm.settings.asideFolded}" ui-view></div>
