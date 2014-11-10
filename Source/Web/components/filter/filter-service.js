@@ -13,7 +13,17 @@
             }
 
             function buildFilter() {
-                return [_organizationFilter, _projectFilter, _timeFilter, _rawfilter].join(' ');
+                var filters = [];
+                if (_organizationFilter)
+                    filters.push(_organizationFilter);
+
+                if (_projectFilter)
+                    filters.push(_projectFilter);
+
+                if (_rawfilter)
+                    filters.push(_rawfilter);
+
+                return filters.join(' ');
             }
 
             function fireFilterChanged() {
@@ -21,11 +31,18 @@
             }
 
             function getDefaultOptions() {
-                return {
-                    filter: buildFilter(),
-                    time: 'last 30 days',
-                    offset: getTimeZoneOffset()
-                };
+                var options = { offset: getTimeZoneOffset() };
+
+                var filter = buildFilter();
+                if (filter) {
+                    angular.extend(options, { filter: filter });
+                }
+
+                if (_timeFilter) {
+                    angular.extend(options, { time: _timeFilter });
+                }
+
+                return options;
             }
 
             function getTimeZoneOffset() {
