@@ -270,7 +270,7 @@ task PackageServer -depends TestServer {
 task PackageWeb -depends TestWeb {
     Create-Directory $deploy_dir
 
-    $packageDir = "$deploy_dir\Web"
+    $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
     TeamCity-ReportBuildProgress "Building Web NuGet Package"
