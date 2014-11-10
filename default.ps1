@@ -261,23 +261,23 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
-    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api.IIS"
-    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.IIS.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api"
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
     TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
 
-task PackageWeb -depends TestWeb {
+task PackageWebContent -depends TestWeb {
     Create-Directory $deploy_dir
 
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
 
-    TeamCity-ReportBuildProgress "Building Web NuGet Package"
+    TeamCity-ReportBuildProgress "Building Web Content NuGet Package"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Web\Exceptionless.WebContent.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
 
-task Package -depends PackageClient, PackageServer, PackageWeb
+task Package -depends PackageClient, PackageServer, PackageWebContent
 
 Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersionNumber, [string] $assemblyFileVersionNumber, [string] $assemblyInformationalVersionNumber) {
     $assemblyVersion = "AssemblyVersion(`"$assemblyVersionNumber`")"

@@ -96,7 +96,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Exceptionless.Api.IIS.nuspec" />
+    <Content Include="Exceptionless.Api.nuspec" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
