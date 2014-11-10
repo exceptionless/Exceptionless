@@ -274,7 +274,7 @@ task PackageWeb -depends TestWeb {
     Create-Directory $packageDir
 
     TeamCity-ReportBuildProgress "Building Web NuGet Package"
-    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Web\Exeptionless.WebContent.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
+    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Web\Exceptionless.WebContent.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
 
 task Package -depends PackageClient, PackageServer, PackageWeb
