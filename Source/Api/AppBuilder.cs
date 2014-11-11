@@ -53,6 +53,7 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
+            Config = new HttpConfiguration();
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
@@ -202,7 +203,7 @@ namespace Exceptionless.Api {
             return container;
         }
 
-        private static readonly Lazy<HttpConfiguration> _config = new Lazy<HttpConfiguration>(() => new HttpConfiguration()); 
-        public static HttpConfiguration Config { get { return _config.Value; } }
+        //private static readonly Lazy<HttpConfiguration> _config = new Lazy<HttpConfiguration>(() => new HttpConfiguration()); 
+        public static HttpConfiguration Config { get; private set; }
     }
 }
