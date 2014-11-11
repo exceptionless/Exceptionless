@@ -366,7 +366,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            if (systemFilter == null)
+            if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter();
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -390,7 +390,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/stacks/new")]
+        [Route("new")]
         public IHttpActionResult New(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             return GetInternal(null, filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
@@ -409,7 +409,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/stacks/recent")]
+        [Route("recent")]
         public IHttpActionResult Recent(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             return GetInternal(null, filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
@@ -428,28 +428,27 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
-        public IHttpActionResult Frequent(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
-            if (String.IsNullOrEmpty(projectId))
-                return NotFound();
+        [Route("frequent")]
+        public IHttpActionResult Frequent(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return FrequentInternal(null, filter, time, offset, mode, page, limit);
+        }
 
-            Project project = _projectRepository.GetById(projectId, true);
-            if (project == null || !CanAccessOrganization(project.OrganizationId))
-                return NotFound();
-
+        public IHttpActionResult FrequentInternal(string systemFilter = null, string userFilter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
+            if (String.IsNullOrEmpty(systemFilter))
+                systemFilter = GetAssociatedOrganizationsFilter();
             var timeInfo = GetTimeInfo(time, offset);
-            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", String.Concat("project:", projectId), filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
+            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
-            DateTime retentionUtcCutoff = _organizationRepository.GetById(project.OrganizationId, true).GetRetentionUtcCutoff();
-            var stackIds = terms.Where(t => t.LastOccurrence >= retentionUtcCutoff).Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
+            // TODO: Apply retention cutoff
+            var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
             var stacks = _stackRepository.GetByIds(stackIds).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             // TODO: Add header that contains the number of stacks outside of the retention period.
@@ -459,6 +458,19 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return OkWithResourceLinks(stacks.Take(limit).ToList(), stacks.Count > limit, page);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/frequent")]
+        public IHttpActionResult FrequentByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            if (String.IsNullOrEmpty(projectId))
+                return NotFound();
+
+            Project project = _projectRepository.GetById(projectId, true);
+            if (project == null || !CanAccessOrganization(project.OrganizationId))
+                return NotFound();
+
+            return FrequentInternal(String.Concat("project:", projectId), filter, time, offset, mode, page, limit);
         }
 
         private ICollection<StackSummaryModel> GetStackSummaries(ICollection<Stack> stacks, TimeSpan offset, DateTime utcStart, DateTime utcEnd) {
