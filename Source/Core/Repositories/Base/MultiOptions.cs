@@ -36,16 +36,24 @@ namespace Exceptionless.Core.Repositories {
             get { return Page.HasValue; }
         }
 
+        public bool UseStartDate {
+            get { return StartDate.HasValue && StartDate.Value > ServiceStartDate; }
+        }
+        
+        public bool UseEndDate {
+            get { return EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1); }
+        }
+
         public bool UseDateRange {
-            get { return !String.IsNullOrEmpty(DateField) && (StartDate.HasValue || EndDate.HasValue); }
+            get { return !String.IsNullOrEmpty(DateField) && (UseStartDate || UseEndDate); }
         }
 
         public DateTime GetStartDate() {
-            return StartDate.HasValue && StartDate.Value > ServiceStartDate ? StartDate.Value : ServiceStartDate;
+            return UseStartDate ? StartDate.GetValueOrDefault() : ServiceStartDate;
         }
 
         public DateTime GetEndDate() {
-            return EndDate.HasValue && EndDate.Value < DateTime.UtcNow.AddHours(1) ? EndDate.Value : DateTime.UtcNow.AddHours(1);
+            return UseEndDate ? EndDate.GetValueOrDefault() : DateTime.UtcNow.AddHours(1);
         }
 
         public int GetLimit() {

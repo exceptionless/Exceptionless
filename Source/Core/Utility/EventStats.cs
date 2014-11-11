@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Utility {
             var res = _client.Search<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(String.Join(",", options.Indices))
+                .Index(options.Indices.Count > 0 ? String.Join(",", options.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*"))
                 .Aggregations(agg => agg
                     .Filter("filtered", f => f
                         .Filter(d => options.GetElasticSearchFilter())
@@ -130,7 +130,7 @@ namespace Exceptionless.Core.Utility {
             var res = _client.Search<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
-                .Index(String.Join(",", options.Indices))
+                .Index(options.Indices.Count > 0 ? String.Join(",", options.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*"))
                 .Aggregations(agg => agg
                     .Filter("filtered", f => f
                         .Filter(d => options.GetElasticSearchFilter())
