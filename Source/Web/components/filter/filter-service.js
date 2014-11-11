@@ -81,12 +81,12 @@
             }
 
             function setTime(time) {
-                var filter = 'time:' + time;
-                if (angular.equals(filter, _timeFilter)) {
+                if (angular.equals(time, _timeFilter)) {
                     return;
                 }
 
-                _timeFilter = time ? filter : void 0;
+                console.log(time);
+                _timeFilter = time ? time : void 0;
                 fireFilterChanged();
             }
 

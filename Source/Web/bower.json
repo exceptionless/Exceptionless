@@ -19,7 +19,7 @@
     "angular-ui-utils": "~0.1",
     "angular-bootstrap": "~0.11",
     "moment": "~2.8",
-    "less.js": "~1.7",
+    "less.js": "~2.0",
     "font-awesome": "~4.2",
     "restangular": "~1.4",
     "li": "https://github.com/jfromaniello/li.git",

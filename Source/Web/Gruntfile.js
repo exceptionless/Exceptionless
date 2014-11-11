@@ -98,9 +98,8 @@ module.exports = function (grunt) {
       }
     },
     less: {
-      production: {
-        options: {
-        },
+      main: {
+        options: {},
         files: {
           'temp/app.css': 'app.less'
         }
@@ -168,6 +167,13 @@ module.exports = function (grunt) {
       }
     },
     uglify: {
+      options: {
+        sourceMap: true,
+        sourceMapIncludeSources: false,
+        mangle: {
+          except: ['$super']
+        }
+      },
       main: {
         src: 'temp/app.full.js',
         dest:'dist/app.min.js'

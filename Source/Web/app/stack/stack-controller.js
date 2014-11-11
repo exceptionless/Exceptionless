@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.stack')
-        .controller('Stack', ['$filter', '$state', '$stateParams', 'dialogs', 'dialogService', 'eventService', 'featureService', 'notificationService', 'stackService', 'statService', function ($filter, $state, $stateParams, dialogs, dialogService, eventService, featureService, notificationService, stackService, statService) {
+        .controller('Stack', ['$filter', '$state', '$stateParams', 'dialogs', 'dialogService', 'eventService', 'featureService', 'filterService', 'notificationService', 'stackService', 'statService', function ($filter, $state, $stateParams, dialogs, dialogService, eventService, featureService, filterService, notificationService, stackService, statService) {
             var stackId = $stateParams.id;
             var vm = this;
 
@@ -267,8 +267,7 @@
                             var start = moment.unix(position.coordMinX).utc();
                             var end = moment.unix(position.coordMaxX).utc();
 
-                            // TODO: Update filter.
-                            //this.filterViewModel.changeDateRange(new models.DateRange(Constants.CUSTOM, 'Custom', start, end));
+                            filterService.setTime(start.format('YYYY-MM-DDTHH:mm:ss') + '-' + end.format('YYYY-MM-DDTHH:mm:ss'));
 
                             return false;
                         }

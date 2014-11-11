@@ -7,6 +7,7 @@
         'exceptionless.event',
         'exceptionless.events',
         'exceptionless.feature',
+        'exceptionless.filter',
         'exceptionless.notification',
         'exceptionless.refresh',
         'exceptionless.stack',

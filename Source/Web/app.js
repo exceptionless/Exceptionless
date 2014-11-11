@@ -20,7 +20,7 @@
         'app.project',
         'app.stack'
     ])
-    .config(function ($stateProvider, $urlRouterProvider, RestangularProvider, BASE_URL) {
+    .config(['$stateProvider', '$urlRouterProvider', 'RestangularProvider', 'BASE_URL', function ($stateProvider, $urlRouterProvider, RestangularProvider, BASE_URL) {
         RestangularProvider.setBaseUrl(BASE_URL + '/api/v2');
         RestangularProvider.setDefaultHttpFields({ withCredentials: true });
         RestangularProvider.setDefaultRequestParams({ access_token: 'd795c4406f6b4bc6ae8d787c65d0274d' });
@@ -32,5 +32,5 @@
             abstract: true,
             templateUrl: 'app/app.tpl.html'
         });
-    });
+    }]);
 }());

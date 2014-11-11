@@ -3,6 +3,7 @@
 
     angular.module('app.project', [
         'exceptionless.dialog',
+        'exceptionless.filter',
         'exceptionless.project',
         'exceptionless.projects',
         'exceptionless.refresh',

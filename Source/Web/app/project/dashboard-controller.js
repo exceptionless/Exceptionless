@@ -2,7 +2,7 @@
     'use strict';
 
     angular.module('app.project')
-        .controller('project.Dashboard', ['$filter', '$stateParams', 'eventService', 'notificationService', 'stackService', 'statService', function ($filter, $stateParams, eventService, notificationService, stackService, statService) {
+        .controller('project.Dashboard', ['$filter', '$stateParams', 'eventService', 'filterService', 'notificationService', 'stackService', 'statService', function ($filter, $stateParams, eventService, filterService, notificationService, stackService, statService) {
             var projectId = $stateParams.id;
             var vm = this;
 
@@ -84,9 +84,7 @@
                             var start = moment.unix(position.coordMinX).utc();
                             var end = moment.unix(position.coordMaxX).utc();
 
-                            // TODO: Update filter.
-                            //this.filterViewModel.changeDateRange(new models.DateRange(Constants.CUSTOM, 'Custom', start, end));
-
+                            filterService.setTime(start.format('YYYY-MM-DDTHH:mm:ss') + '-' + end.format('YYYY-MM-DDTHH:mm:ss'));
                             return false;
                         }
                     },
