@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Web.Http;
 using System.Web.Http.Routing;
@@ -21,7 +22,6 @@ using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
-using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.FileSystems;
@@ -29,7 +29,6 @@ using Microsoft.Owin.Security.OAuth;
 using Microsoft.Owin.StaticFiles;
 using MongoDB.Driver;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -54,21 +53,20 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
-            var config = new HttpConfiguration();
-            config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
-            config.Formatters.Remove(config.Formatters.XmlFormatter);
-            config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
+            Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
+            Config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
+            Config.Formatters.Remove(Config.Formatters.XmlFormatter);
+            Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
+            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
 
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
             constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
-            config.MapHttpAttributeRoutes(constraintResolver);
+            Config.MapHttpAttributeRoutes(constraintResolver);
             //config.EnableSystemDiagnosticsTracing();
 
             container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() }));
-            container.RegisterWebApiFilterProvider(config);
+            container.RegisterWebApiFilterProvider(Config);
 
             try {
                 container.Verify();
@@ -90,14 +88,14 @@ namespace Exceptionless.Api {
                 throw;
             }
 
-            config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
-            config.MessageHandlers.Add(new EncodingDelegatingHandler());
+            Config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
+            Config.MessageHandlers.Add(new EncodingDelegatingHandler());
 
             // Throttle api calls to X every 15 minutes by IP address.
-            config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
 
             // Reject event posts in orgs over their max event limits.
-            config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             app.UseCors(CorsOptions.AllowAll);
 
@@ -151,9 +149,9 @@ namespace Exceptionless.Api {
             });
 
             if (registerExceptionlessClient)
-                ExceptionlessClient.Default.RegisterWebApi(config);
+                ExceptionlessClient.Default.RegisterWebApi(Config);
 
-            app.UseWebApi(config);
+            app.UseWebApi(Config);
             app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
 
             PhysicalFileSystem fileSystem = null;
@@ -203,5 +201,8 @@ namespace Exceptionless.Api {
 
             return container;
         }
+
+        private static readonly Lazy<HttpConfiguration> _config = new Lazy<HttpConfiguration>(() => new HttpConfiguration()); 
+        public static HttpConfiguration Config { get { return _config.Value; } }
     }
 }

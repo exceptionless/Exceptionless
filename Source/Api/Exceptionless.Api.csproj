@@ -36,9 +36,9 @@
     <Reference Include="AutoMapper.Net4">
       <HintPath>..\..\packages\AutoMapper.3.2.1\lib\net40\AutoMapper.Net4.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.17.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.20.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.17\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.20\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
