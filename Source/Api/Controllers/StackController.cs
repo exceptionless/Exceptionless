@@ -356,17 +356,22 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternal(null, filter, sort, time, offset, mode, page, limit);
+        }
+
+        public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            filter = GetAssociatedOrganizationsFilter(filter);
+            if (systemFilter == null)
+                systemFilter = GetAssociatedOrganizationsFilter();
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var stacks = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+            var stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
@@ -377,16 +382,22 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/stacks")]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return Get(String.Concat("organization:", organizationId, " ", filter), null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/stacks/new")]
+        public IHttpActionResult New(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternal(null, filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/new")]
-        public IHttpActionResult New(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult NewByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -394,12 +405,18 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId, " ", filter), "-first", String.Concat("first|", time), offset, mode, page, limit);
+            return GetInternal(String.Concat("project:", projectId), filter, "-first", String.Concat("first|", time), offset, mode, page, limit);
+        }
+
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/stacks/recent")]
+        public IHttpActionResult Recent(string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternal(null, filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stacks/recent")]
-        public IHttpActionResult Recent(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult RecentByProject(string projectId, string filter = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -407,7 +424,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId, " ", filter), "-last", String.Concat("last|", time), offset, mode, page, limit);
+            return GetInternal(String.Concat("project:", projectId), filter, "-last", String.Concat("last|", time), offset, mode, page, limit);
         }
 
         [HttpGet]
@@ -427,8 +444,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             var timeInfo = GetTimeInfo(time, offset);
-            filter = String.Concat("project:" + projectId, " ", filter);
-            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
+            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", String.Concat("project:", projectId), filter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
@@ -449,7 +465,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", "stack_id: (" + String.Join(" OR ", stacks.Select(r => r.Id)) + ")", offset, stacks.Count).Terms;
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", String.Join(" OR ", "stack: " + stacks.Select(r => r.Id)), null, offset, stacks.Count).Terms;
             return GetStackSummaries(stacks, terms);
         }
 

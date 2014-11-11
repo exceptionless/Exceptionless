@@ -156,6 +156,9 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
             _elasticClient.DisableTrace();
+            if (!results.IsValid)
+                throw new ApplicationException("Error occurred processing request.");
+
             Debug.WriteLine("Results: " + results.Total);
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 

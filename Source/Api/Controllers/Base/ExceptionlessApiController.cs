@@ -129,14 +129,11 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(string filter) {
+        public string GetAssociatedOrganizationsFilter() {
             if (Request.IsGlobalAdmin())
-                return filter;
+                return null;
 
-            if (String.IsNullOrEmpty(filter))
-                return String.Concat("organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()));
-            
-            return String.Concat("(organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()), ") AND (", filter, ")");
+            return String.Concat("organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()));
         }
 
         public string GetDefaultOrganizationId() {

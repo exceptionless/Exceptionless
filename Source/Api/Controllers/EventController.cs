@@ -58,17 +58,23 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+            return GetInternal(null, filter, sort, time, offset, mode, page, limit);
+        }
+
+        public IHttpActionResult GetInternal(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
-            
-            filter = GetAssociatedOrganizationsFilter(filter);
+
+            if (systemFilter == null)
+                systemFilter = GetAssociatedOrganizationsFilter();
+
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var events = _repository.GetByFilter(filter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+            var events = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             
             // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
@@ -91,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return Get(String.Concat("organization:", organizationId), null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("organization:", organizationId), null, null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
@@ -104,7 +110,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId), null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("project:", projectId), null, null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
@@ -117,7 +123,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("stack:", stackId), null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("stack:", stackId), null, null, time, offset, mode, page, limit);
         }
 
         [HttpGet]
@@ -138,7 +144,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId, " reference:", referenceId));
+            return GetInternal(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
         }
 
         [HttpPost]

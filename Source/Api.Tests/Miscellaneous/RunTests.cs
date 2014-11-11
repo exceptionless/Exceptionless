@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests.Miscelaneous {
                 throw new ApplicationException();
             }, tokenSource.Token, 1000, TimeSpan.FromMilliseconds(10));
             tokenSource.Token.WaitHandle.WaitOne();
-            Assert.InRange(runs, 7, 12);
+            Assert.InRange(runs, 3, 20);
         }
 
         [Fact]

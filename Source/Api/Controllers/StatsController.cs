@@ -33,10 +33,15 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route]
         public IHttpActionResult Get(string filter = null, string time = null, string offset = null) {
+            return GetInternal(null, filter, time, offset);
+        }
+
+        public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             // TODO: Handle UTC Retention Cutoff.
             var timeInfo = GetTimeInfo(time, offset);
-            filter = GetAssociatedOrganizationsFilter(filter);
-            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, filter, timeInfo.Offset);
+            if (String.IsNullOrEmpty(systemFilter))
+                systemFilter = GetAssociatedOrganizationsFilter();
+            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
 
             return Ok(result);
         }
@@ -51,7 +56,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("project:", projectId, " ", filter), time, offset);
+            return GetInternal(String.Concat("project:", projectId), filter, time, offset);
         }
 
         [HttpGet]
@@ -64,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            return Get(String.Concat("stack:", stackId, " ", filter), time, offset);
+            return GetInternal(String.Concat("stack:", stackId), filter, time, offset);
         }
     }
 }

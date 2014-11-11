@@ -65,7 +65,7 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => HideAllByClientIpAndDate(organizationId, clientIp, utcStartDate, utcEndDate));
         }
 
-        public ICollection<PersistentEvent> GetByFilter(string filter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
+        public ICollection<PersistentEvent> GetByFilter(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging) {
             if (String.IsNullOrEmpty(sort)) {
                 sort = "date";
                 sortOrder = SortOrder.Descending;
@@ -74,7 +74,8 @@ namespace Exceptionless.Core.Repositories {
             var search = new ElasticSearchOptions<PersistentEvent>()
                 .WithDateRange(utcStart, utcEnd, field ?? "date")
                 .WithIndicesFromDateRange()
-                .WithQuery(filter)
+                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
+                .WithQuery(userFilter)
                 .WithPaging(paging)
                 .WithSort(e => e.OnField(sort).Order(sortOrder == SortOrder.Descending ? Nest.SortOrder.Descending : Nest.SortOrder.Ascending));
 

@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Utility {
             _client = client;
         }
 
-        public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string query = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
+        public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
@@ -26,7 +26,11 @@ namespace Exceptionless.Core.Utility {
             if (!allowedTerms.Contains(term))
                 throw new ArgumentException("Must be a valid term.", "term");
             
-            var options = new ElasticSearchOptions<PersistentEvent>().WithQuery(query).WithDateRange(utcStart, utcEnd, "date").WithIndicesFromDateRange();
+            var options = new ElasticSearchOptions<PersistentEvent>()
+                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
+                .WithQuery(userFilter)
+                .WithDateRange(utcStart, utcEnd, "date")
+                .WithIndicesFromDateRange();
             _client.EnableTrace();
 
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
@@ -117,11 +121,15 @@ namespace Exceptionless.Core.Utility {
             return stats;
         }
 
-        public EventStatsResult GetOccurrenceStats(DateTime utcStart, DateTime utcEnd, string query = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
+        public EventStatsResult GetOccurrenceStats(DateTime utcStart, DateTime utcEnd, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int desiredDataPoints = 100) {
             if (!displayTimeOffset.HasValue)
                 displayTimeOffset = TimeSpan.Zero;
 
-            var options = new ElasticSearchOptions<PersistentEvent>().WithQuery(query).WithDateRange(utcStart, utcEnd, "date").WithIndicesFromDateRange();
+            var options = new ElasticSearchOptions<PersistentEvent>()
+                .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
+                .WithQuery(userFilter)
+                .WithDateRange(utcStart, utcEnd, "date")
+                .WithIndicesFromDateRange();
             _client.EnableTrace();
             utcStart = options.GetStartDate();
             utcEnd = options.GetEndDate();
