@@ -8,7 +8,7 @@
         replace: true,
         scope: true,
         templateUrl: 'components/filter/project-filter-directive.tpl.html',
-        controller: ['$state', 'filterService', 'projectService', function ($state, filterService, projectService) {
+        controller: ['$state', 'filterService', 'notificationService', 'projectService', function ($state, filterService, notificationService, projectService) {
           function get() {
             function onSuccess(response) {
               vm.projects = response.data.plain();
