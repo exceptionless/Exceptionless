@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Nest;
 using Xunit;

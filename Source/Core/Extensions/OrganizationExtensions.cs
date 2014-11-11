@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Extensions;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {

@@ -56,14 +56,14 @@ namespace Exceptionless.Api.Controllers {
             }
 
             var utcOffset = GetOffset(offset);
-            var localNow = DateTime.UtcNow.Add(utcOffset);
+
             // range parsing needs to be based on the user's local time.
-            var localRange = DateTimeRange.Parse(time, localNow);
+            var localRange = DateTimeRange.Parse(time, DateTime.UtcNow.Add(utcOffset));
             var utcRange = localRange != DateTimeRange.Empty ? localRange.Subtract(utcOffset) : localRange;
 
             return new TimeInfo {
                 Field = field,
-                Offset = GetOffset(offset),
+                Offset = utcOffset,
                 UtcRange = utcRange
             };
         }

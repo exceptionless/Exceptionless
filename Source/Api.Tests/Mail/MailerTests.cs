@@ -12,13 +12,13 @@
 using System;
 using System.Collections.Generic;
 using AutoMapper;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Enrichments;
 using Exceptionless.Models;
 using Exceptionless.Tests.Utility;

@@ -12,7 +12,7 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
-using CodeSmith.Core.Extensions;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 

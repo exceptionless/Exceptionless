@@ -19,6 +19,7 @@ using System.Threading;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
+using Exceptionless.DateTimeExtensions;
 
 namespace CodeSmith.Core.IO
 {

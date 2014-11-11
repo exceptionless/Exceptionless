@@ -14,11 +14,10 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Core;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Api.Utility {
     public class ThrottlingHandler : DelegatingHandler {

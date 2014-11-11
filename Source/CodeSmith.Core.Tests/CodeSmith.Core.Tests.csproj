@@ -87,8 +87,6 @@
     <Compile Include="ContentTypeLookupTest.cs" />
     <Compile Include="Extensions\EnumTests.cs" />
     <Compile Include="Extensions\NumberExtensionsTests.cs" />
-    <Compile Include="Extensions\TimeSpanTests.cs" />
-    <Compile Include="Extensions\DateTimeTests.cs" />
     <Compile Include="Extensions\StringExtensionsTest.cs" />
     <Compile Include="GenericTest.cs" />
     <Compile Include="IO\DirectoryLockTest.cs" />

@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Linq;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
 using Nest;
 using Xunit;
