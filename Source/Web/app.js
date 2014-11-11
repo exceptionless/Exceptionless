@@ -13,14 +13,13 @@
         'exceptionless.ui-scroll',
         'exceptionless.ui-shift',
         'exceptionless.ui-toggle-class',
+        'app.config',
         'app.account',
         'app.event',
         'app.organization',
         'app.project',
         'app.stack'
     ])
-    //.constant('BASE_URL', 'http://localhost:50000')
-    .constant('BASE_URL', 'https://new.exceptionless.com')
     .config(function ($stateProvider, $urlRouterProvider, RestangularProvider, BASE_URL) {
         RestangularProvider.setBaseUrl(BASE_URL + '/api/v2');
         RestangularProvider.setDefaultHttpFields({ withCredentials: true });

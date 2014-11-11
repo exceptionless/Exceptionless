@@ -119,7 +119,7 @@ module.exports = function (grunt) {
     copy: {
       main: {
         files: [
-          {src: ['*.png', '*.ico', 'img/**/{*.png,*.jpg,*.ico}'], dest: 'dist/'}
+          {src: ['*.png', '*.ico', 'img/**/{*.png,*.jpg,*.ico}', 'app.config.js'], dest: 'dist/'}
         ]
       }
     },
@@ -127,18 +127,18 @@ module.exports = function (grunt) {
       read: {
         options: {
           read:[
-            {selector:'script[data-concat!="false"]',attribute:'src',writeto:'appjs'},
-            {selector:'link[rel="stylesheet"][data-concat="true"]',attribute:'href',writeto:'appcss'}
+            { selector:'script[data-concat!="false"]',attribute:'src', writeto:'appjs' },
+            { selector:'link[rel="stylesheet"][data-concat="true"]', attribute:'href', writeto:'appcss' }
           ]
         },
         src: 'index.html'
       },
       update: {
         options: {
-          remove: ['script[data-remove!="false"]','link[data-remove="true"]'],
+          remove: ['script[data-remove!="false"]', 'link[data-remove="true"]'],
           append: [
-            {selector:'body',html:'<script src="app.full.min.js"></script>'},
-            {selector:'head',html:'<link rel="stylesheet" href="app.full.min.css">'}
+            { selector:'body', html:'<script src="app.min.js"></script><script src="app.config.js"></script>' },
+            { selector:'head', html:'<link rel="stylesheet" href="app.min.css">' }
           ]
         },
         src:'index.html',
@@ -148,7 +148,7 @@ module.exports = function (grunt) {
     cssmin: {
       main: {
         src:['temp/app.css','<%= dom_munger.data.appcss %>'],
-        dest:'dist/app.full.min.css'
+        dest:'dist/app.min.css'
       }
     },
     concat: {
@@ -170,7 +170,7 @@ module.exports = function (grunt) {
     uglify: {
       main: {
         src: 'temp/app.full.js',
-        dest:'dist/app.full.min.js'
+        dest:'dist/app.min.js'
       }
     },
     htmlmin: {
