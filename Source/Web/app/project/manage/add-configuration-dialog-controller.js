@@ -1,25 +1,25 @@
 (function () {
-    'use strict';
+  'use strict';
 
-    angular.module('app.project')
-        .controller('AddConfigurationDialog',['$modalInstance', function($modalInstance, configuration){
-            var vm = this;
+  angular.module('app.project')
+    .controller('AddConfigurationDialog', ['$modalInstance', function ($modalInstance, configuration) {
+      var vm = this;
 
-            function cancel(){
-                $modalInstance.dismiss('cancel');
-            }
+      function cancel() {
+        $modalInstance.dismiss('cancel');
+      }
 
-            function save(isValid){
-                if (!isValid){
-                    return;
-                }
+      function save(isValid) {
+        if (!isValid) {
+          return;
+        }
 
-                $modalInstance.close(vm.data);
-            }
+        $modalInstance.close(vm.data);
+      }
 
-            vm.cancel = cancel;
-            vm.configuration = configuration;
-            vm.data = {};
-            vm.save = save;
-        }]);
+      vm.cancel = cancel;
+      vm.configuration = configuration;
+      vm.data = {};
+      vm.save = save;
+    }]);
 }());

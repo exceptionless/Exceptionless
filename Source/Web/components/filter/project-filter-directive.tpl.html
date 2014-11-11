@@ -1,0 +1,23 @@
+<ul class="nav navbar-nav">
+  <li class="dropdown">
+    <a href="javascript:void(0);" class="dropdown-toggle">
+      <span class="hidden-sm hidden-md">All</span> <b
+      class="caret"></b>
+    </a>
+
+    <div class="dropdown-menu w-xl">
+      <div class="panel bg-white">
+        <div class="list-group" ng-repeat="(organization_id, projects) in vm.projects | groupBy: 'organization_id'">
+          <a ui-sref="app.organization.manage({ id: organization_id })" class="media list-group-item"><strong>{{projects[0].organization_name}}</strong></a>
+
+          <a ui-sref="app.dashboard({ project_id: project_id })" class="media list-group-item"
+             ng-repeat="project in projects">{{project.name}}</a>
+        </div>
+        <div class="panel-footer text-sm">
+          <a href="javascript:void(0);" class="pull-right"><i class="fa fa-cog"></i></a>
+          <a href="javascript:void(0);" data-toggle="class:show animated fadeInRight">Add New Project</a>
+        </div>
+      </div>
+    </div>
+  </li>
+</ul>

@@ -1,36 +1,36 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="StackChanged eventOccurrence" refresh-action="vm.get()">
-    <div class="wrapper-md">
-        <div class="row">
-                <div class="col-sm-12">
-                <div class="row row-sm text-center">
-                    <div class="col-xs-4">
-                        <div class="panel padder-v item">
-                            <div class="h1 font-thin h1">{{vm.stats.total || 0 | number : 0}}</div>
-                            <span class="text-muted text-xs hidden-xs">Total Occurrences</span>
-                            <span class="text-muted text-xs visible-xs"><abbr title="Total Occurrences">Total</abbr></span>
-                        </div>
-                    </div>
-                    <div class="col-xs-4">
-                        <a href="javascript:void(0);" class="block panel padder-v item">
-                            <span class="font-thin h1 block"><timeago date="vm.stats.first_occurrence"></timeago></span>
-                            <span class="text-muted text-xs hidden-xs">First Occurrence</span>
-                            <span class="text-muted text-xs visible-xs"><abbr title="First Occurrence">First</abbr></span>
-                        </a>
-                    </div>
-                    <div class="col-xs-4">
-                        <a href="javascript:void(0);" class="block panel padder-v item">
-                            <span class="font-thin h1 block"><timeago date="vm.stats.last_occurrence"></timeago></span>
-                            <span class="text-muted text-xs hidden-xs">Last Occurrence</span>
-                            <span class="text-muted text-xs visible-xs"><abbr title="Last Occurrence">Last</abbr></span>
-                        </a>
-                    </div>
-                </div>
+  <div class="wrapper-md">
+    <div class="row">
+      <div class="col-sm-12">
+        <div class="row row-sm text-center">
+          <div class="col-xs-4">
+            <div class="panel padder-v item">
+              <div class="h1 font-thin h1">{{vm.stats.total || 0 | number : 0}}</div>
+              <span class="text-muted text-xs hidden-xs">Total Occurrences</span>
+              <span class="text-muted text-xs visible-xs"><abbr title="Total Occurrences">Total</abbr></span>
             </div>
+          </div>
+          <div class="col-xs-4">
+            <a href="javascript:void(0);" class="block panel padder-v item">
+              <span class="font-thin h1 block"><timeago date="vm.stats.first_occurrence"></timeago></span>
+              <span class="text-muted text-xs hidden-xs">First Occurrence</span>
+              <span class="text-muted text-xs visible-xs"><abbr title="First Occurrence">First</abbr></span>
+            </a>
+          </div>
+          <div class="col-xs-4">
+            <a href="javascript:void(0);" class="block panel padder-v item">
+              <span class="font-thin h1 block"><timeago date="vm.stats.last_occurrence"></timeago></span>
+              <span class="text-muted text-xs hidden-xs">Last Occurrence</span>
+              <span class="text-muted text-xs visible-xs"><abbr title="Last Occurrence">Last</abbr></span>
+            </a>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                Stack
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        Stack
                 <span class="badge" ng-if="vm.isFixed()">
                     <span class="hidden-xs">FIXED</span>
                     <span class="visible-xs">F</span>
@@ -44,83 +44,95 @@
                     <span class="visible-xs">H</span>
                 </span>
 
-                <div class="pull-right btn-toolbar">
-                    <div class="btn-group btn-group-xs">
-                        <button class="btn btn-default" ng-click="vm.updateIsFixed()" title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">{{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}</button>
-                    </div>
-                    <div class="btn-group btn-group-xs">
-                        <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-                            <i class="visible-xs fa fa-fw fa-gear"></i><span class="hidden-xs">Options</span> <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
-                            <li><a ng-click="vm.updateIsHidden()" title="Hide this stack from reports and mutes occurrence notifications"><i ng-if="vm.isHidden()" class="fa fa-fw fa-check"></i>Hide</a></li>
-                            <li><a ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><i ng-if="vm.isCritical()" class="fa fa-fw fa-check"></i>Future Occurrences Are Critical</a></li>
-                            <li><a ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><i ng-if="vm.notificationsDisabled()" class="fa fa-fw fa-check"></i>Disable Notifications</a></li>
-                            <li class="divider"></li>
-                            <li><a ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To External</a></li>
-                            <li><a ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add Reference Link</a></li>
-                            <li class="divider"></li>
-                            <li><a ng-click="vm.remove()" title="Delete this stack">Delete</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel-body">
-                <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
-                    <tbody>
-                        <tr>
-                            <th>Title</th>
-                            <td><span truncate lines="3">{{vm.stack.title}}</span></td>
-                        </tr>
-                        <tr ng-if="vm.isFixed()">
-                            <th>Date Fixed</th>
-                            <td><span>{{vm.stack.date_fixed | date: 'medium'}}</span></td>
-                        </tr>
-                        <tr ng-if="vm.stack.description">
-                            <th>Description</th>
-                            <td><span truncate lines="2">{{vm.stack.description}}</span></td>
-                        </tr>
-                        <tr ng-if="vm.hasTags()">
-                            <th>Tags</th>
-                            <td><span class="label label-success" ng-repeat="tag in vm.stack.tags track by tag">{{tag}}</span></td>
-                        </tr>
-                        <tr ng-if="vm.hasReference()">
-                            <th>{{vm.hasReferences() ? 'Reference Links' : 'Reference Link'}}</th>
-                            <td>
-                                <ul ng-if="vm.hasReferences()" class="fa fa-fw-ul">
-                                    <li ng-repeat="reference in vm.stack.references track by reference">
-                                        <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
-                                        <a class="delete-link" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-fw fa-times"></i></a>
-                                    </li>
-                                </ul>
-
-                                <div ng-if="!vm.hasReferences()">
-                                    <a ng-href="{{::vm.stack.references[0]}}" target="_blank">{{::vm.stack.references[0]}}</a>
-                                    <a class="delete-link" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i class="fa fa-fw fa-times"></i></a>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <h4>Stacking Information</h4>
-                <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
-                    <tbody>
-                        <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
-                            <th>{{key}}</th>
-                            <td>{{value}}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
+        <div class="pull-right btn-toolbar">
+          <div class="btn-group btn-group-xs">
+            <button class="btn btn-default" ng-click="vm.updateIsFixed()"
+                    title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">
+              {{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}
+            </button>
+          </div>
+          <div class="btn-group btn-group-xs">
+            <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+              <i class="visible-xs fa fa-fw fa-gear"></i><span class="hidden-xs">Options</span> <span
+              class="caret"></span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-right" role="menu">
+              <li><a ng-click="vm.updateIsHidden()"
+                     title="Hide this stack from reports and mutes occurrence notifications"><i ng-if="vm.isHidden()"
+                                                                                                class="fa fa-fw fa-check"></i>Hide</a>
+              </li>
+              <li><a ng-click="vm.updateIsCritical()" title="All future occurrences will be marked as critical"><i
+                ng-if="vm.isCritical()" class="fa fa-fw fa-check"></i>Future Occurrences Are Critical</a></li>
+              <li><a ng-click="vm.updateNotifications()" title="Stop sending occurrence notifications for this stack"><i
+                ng-if="vm.notificationsDisabled()" class="fa fa-fw fa-check"></i>Disable Notifications</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.promoteToExternal()" title="Used to promote stacks to external systems.">Promote To
+                External</a></li>
+              <li><a ng-click="vm.addReferenceLink()" title="Add a reference link to an external resource.">Add
+                Reference Link</a></li>
+              <li class="divider"></li>
+              <li><a ng-click="vm.remove()" title="Delete this stack">Delete</a></li>
+            </ul>
+          </div>
         </div>
+      </div>
 
-        <div class="panel panel-default">
-            <div class="panel-heading"><i class="fa fa-fw fa-calendar"></i> Recent Occurrences</div>
-            <events settings="vm.recentOccurrences"></events>
-        </div>
+      <div class="panel-body">
+        <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
+          <tbody>
+          <tr>
+            <th>Title</th>
+            <td><span truncate lines="3">{{vm.stack.title}}</span></td>
+          </tr>
+          <tr ng-if="vm.isFixed()">
+            <th>Date Fixed</th>
+            <td><span>{{vm.stack.date_fixed | date: 'medium'}}</span></td>
+          </tr>
+          <tr ng-if="vm.stack.description">
+            <th>Description</th>
+            <td><span truncate lines="2">{{vm.stack.description}}</span></td>
+          </tr>
+          <tr ng-if="vm.hasTags()">
+            <th>Tags</th>
+            <td><span class="label label-success" ng-repeat="tag in vm.stack.tags track by tag">{{tag}}</span></td>
+          </tr>
+          <tr ng-if="vm.hasReference()">
+            <th>{{vm.hasReferences() ? 'Reference Links' : 'Reference Link'}}</th>
+            <td>
+              <ul ng-if="vm.hasReferences()" class="fa fa-fw-ul">
+                <li ng-repeat="reference in vm.stack.references track by reference">
+                  <a ng-href="{{::reference}}" target="_blank">{{::reference}}</a>
+                  <a class="delete-link" ng-click="vm.removeReferenceLink(reference)"><i class="fa fa-fw fa-times"></i></a>
+                </li>
+              </ul>
+
+              <div ng-if="!vm.hasReferences()">
+                <a ng-href="{{::vm.stack.references[0]}}" target="_blank">{{::vm.stack.references[0]}}</a>
+                <a class="delete-link" ng-click="vm.removeReferenceLink(vm.stack.references[0])"><i
+                  class="fa fa-fw fa-times"></i></a>
+              </div>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+
+        <h4>Stacking Information</h4>
+        <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
+          <tbody>
+          <tr ng-repeat="(key, value) in vm.stack.signature_info track by key">
+            <th>{{key}}</th>
+            <td>{{value}}</td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
     </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading"><i class="fa fa-fw fa-calendar"></i> Recent Occurrences</div>
+      <events settings="vm.recentOccurrences"></events>
+    </div>
+  </div>
 </div>

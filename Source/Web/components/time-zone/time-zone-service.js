@@ -1,23 +1,23 @@
 ﻿/*global moment:false*/
 (function () {
-    'use strict';
+  'use strict';
 
-    angular.module('exceptionless.time-zone', [])
-        .factory('timeZoneService', [function () {
-            function getCurrentTimeZoneOffset() {
-                return new Date().getTimezoneOffset();
-            }
+  angular.module('exceptionless.time-zone', [])
+    .factory('timeZoneService', [function () {
+      function getCurrentTimeZoneOffset() {
+        return new Date().getTimezoneOffset();
+      }
 
-            function getTimeZones() {
-                return moment.tz.names();
-            }
+      function getTimeZones() {
+        return moment.tz.names();
+      }
 
 
-            var service = {
-                getCurrentTimeZoneOffset: getCurrentTimeZoneOffset,
-                getTimeZones: getTimeZones
-            };
+      var service = {
+        getCurrentTimeZoneOffset: getCurrentTimeZoneOffset,
+        getTimeZones: getTimeZones
+      };
 
-            return service;
-        }]);
+      return service;
+    }]);
 }());

@@ -6,7 +6,8 @@
  --></span><!--
 
  --><div ng-repeat="exception in vm.exceptions | reverse"><!--
-    --><div class="stack-frame" ng-repeat="frame in exception.stack_trace"><!--
+    -->
+  <div class="stack-frame" ng-repeat="frame in exception.stack_trace"><!--
         -->at <!--
         --><span ng-if="!frame.name">&lt;null&gt;</span><!--
         --><span ng-if="frame.name"><!--
@@ -28,7 +29,10 @@
                 --><span ng-if="frame.column > 0">:col {{::frame.column}}</span><!--
             --></span><!--
         --></span><!--
-    --></div><!--
- --><div ng-if="!$last">--- End of inner exception stack trace ---</div><!--
- --></div><!--
+    --></div>
+  <!--
+   -->
+  <div ng-if="!$last">--- End of inner exception stack trace ---</div>
+  <!--
+   --></div><!--
 --></pre>

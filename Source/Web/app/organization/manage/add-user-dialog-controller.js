@@ -1,23 +1,23 @@
 (function () {
-    'use strict';
+  'use strict';
 
-    angular.module('app.organization')
-        .controller('AddUserDialog', ['$modalInstance', function($modalInstance){
-            var vm = this;
+  angular.module('app.organization')
+    .controller('AddUserDialog', ['$modalInstance', function ($modalInstance) {
+      var vm = this;
 
-            function cancel(){
-                $modalInstance.dismiss('cancel');
-            }
+      function cancel() {
+        $modalInstance.dismiss('cancel');
+      }
 
-            function save(isValid){
-                if (!isValid){
-                    return;
-                }
+      function save(isValid) {
+        if (!isValid) {
+          return;
+        }
 
-                $modalInstance.close(vm.data.email);
-            }
+        $modalInstance.close(vm.data.email);
+      }
 
-            vm.cancel = cancel;
-            vm.save = save;
-        }]);
+      vm.cancel = cancel;
+      vm.save = save;
+    }]);
 }());

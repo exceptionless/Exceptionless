@@ -1,66 +1,77 @@
-<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="OrganizationChanged" refresh-if="!vm.previous" refresh-action="vm.get()">
-    <div class="col">
-        <div class="bg-light lter b-b wrapper-md">
-            <div class="row">
-                <div class="col-sm-6 col-xs-12">
-                    <h1 class="m-n font-thin h3 text-black">My Organizations</h1>
-                </div>
-            </div>
+<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="OrganizationChanged" refresh-if="!vm.previous"
+     refresh-action="vm.get()">
+  <div class="col">
+    <div class="bg-light lter b-b wrapper-md">
+      <div class="row">
+        <div class="col-sm-6 col-xs-12">
+          <h1 class="m-n font-thin h3 text-black">My Organizations</h1>
         </div>
-        <div class="wrapper-md">
-            <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-group"></i> My Organizations</div>
-                <div class="table-responsive">
-                    <table class="table table-striped table-bordered table-fixed b-t b-light">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Plan</th>
-                                <th class="number hidden-xs" style="">Projects</th>
-                                <th class="number hidden-xs">Stacks</th>
-                                <th class="number hidden-xs">Errors</th>
-                                <th class="action">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="row-clickable" ng-repeat="organization in vm.organizations track by organization.id">
-                                <td ng-click="vm.open(organization.id, $event)">{{::organization.name}}</td>
-                                <td ng-click="vm.open(organization.id, $event)">{{::organization.plan_id}}</td>
-                                <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count | number:0}}</td>
-                                <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count | number:0}}</td>
-                                <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count | number:0}}</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
-                                            <i class="fa fa-fw fa-edit"></i> <span class="caret"></span>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-right" role="menu">
-                                            <li><a ui-sref="app.organization.manage({ id: organization.id })"><i class="fa fa-fw fa-edit"></i> Edit</a></li>
-                                            <li><a ng-click="vm.leave(organization)" ><i class="fa fa-fw fa-sign-out"></i> Leave Organization</a></li>
-                                            <li><a ng-click="vm.remove(organization)"><i class="fa fa-fw fa-times"></i> Delete</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div class="table-footer" ng-show="vm.previous || vm.next">
-                        <div class="row">
-                            <div class="col-sm-12 text-right">
-                                <ul class="pagination pagination-sm m-t-none m-b-none">
-                                    <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i class="fa fa-chevron-left"></i></a></li>
-                                    <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <footer class="panel-footer">
-                    <button ui-sref="app.project.dashboard" type="button" class="btn btn-default" role="button">Go To Dashboard</button>
-                    <button ng-click="vm.add()" type="button" class="btn btn-primary pull-right" role="button">New Organization</button>
-                </footer>
-            </div>
-        </div>
+      </div>
     </div>
+    <div class="wrapper-md">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-group"></i> My Organizations</div>
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered table-fixed b-t b-light">
+            <thead>
+            <tr>
+              <th>Name</th>
+              <th>Plan</th>
+              <th class="number hidden-xs" style="">Projects</th>
+              <th class="number hidden-xs">Stacks</th>
+              <th class="number hidden-xs">Errors</th>
+              <th class="action">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr class="row-clickable" ng-repeat="organization in vm.organizations track by organization.id">
+              <td ng-click="vm.open(organization.id, $event)">{{::organization.name}}</td>
+              <td ng-click="vm.open(organization.id, $event)">{{::organization.plan_id}}</td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count |
+                number:0}}
+              </td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count |
+                number:0}}
+              </td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count |
+                number:0}}
+              </td>
+              <td>
+                <div class="btn-group">
+                  <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+                    <i class="fa fa-fw fa-edit"></i> <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-right" role="menu">
+                    <li><a ui-sref="app.organization.manage({ id: organization.id })"><i class="fa fa-fw fa-edit"></i>
+                      Edit</a></li>
+                    <li><a ng-click="vm.leave(organization)"><i class="fa fa-fw fa-sign-out"></i> Leave Organization</a>
+                    </li>
+                    <li><a ng-click="vm.remove(organization)"><i class="fa fa-fw fa-times"></i> Delete</a></li>
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+          <div class="table-footer" ng-show="vm.previous || vm.next">
+            <div class="row">
+              <div class="col-sm-12 text-right">
+                <ul class="pagination pagination-sm m-t-none m-b-none">
+                  <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i
+                    class="fa fa-chevron-left"></i></a></li>
+                  <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <footer class="panel-footer">
+          <button ui-sref="app.dashboard" type="button" class="btn btn-default" role="button">Go To Dashboard</button>
+          <button ng-click="vm.add()" type="button" class="btn btn-primary pull-right" role="button">New Organization
+          </button>
+        </footer>
+      </div>
+    </div>
+  </div>
 </div>

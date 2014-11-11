@@ -1,42 +1,45 @@
 <h3 class="visible-print">Exception</h3>
 <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
-    <tr>
-        <th>Occurred On</th>
-        <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
-    </tr>
-    <tr>
-        <th>Error Type</th>
-        <td><span truncate>{{::vm.getErrorType()}}</span></td>
-    </tr>
-    <tr>
-        <th>Message</th>
-        <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
-    </tr>
-    <tr ng-if="vm.event.data.error.code">
-        <th>Code</th>
-        <td><span truncate>{{::vm.event.data.error.code}}</span></td>
-    </tr>
+  <tr>
+    <th>Occurred On</th>
+    <td>{{::vm.event.date | date: 'medium'}} (
+      <timeago date="vm.event.date"></timeago>
+      )
+    </td>
+  </tr>
+  <tr>
+    <th>Error Type</th>
+    <td><span truncate>{{::vm.getErrorType()}}</span></td>
+  </tr>
+  <tr>
+    <th>Message</th>
+    <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
+  </tr>
+  <tr ng-if="vm.event.data.error.code">
+    <th>Code</th>
+    <td><span truncate>{{::vm.event.data.error.code}}</span></td>
+  </tr>
 </table>
 
 <h4>Stack Trace</h4>
 <stack-trace exception="vm.event.data.error"></stack-trace>
 
 <div ng-if="vm.event.data.error.modules.length > 0">
-    <h4>Loaded Modules</h4>
-    <table class="table table-striped table-bordered table-fixed b-t b-light">
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th class="version">Version</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr ng-repeat="module in vm.event.data.error.modules track by module.module_id">
-                <td><span truncate>{{::module.name}}</span></td>
-                <td>{{::module.version}}</td>
-            </tr>
-        </tbody>
-    </table>
+  <h4>Loaded Modules</h4>
+  <table class="table table-striped table-bordered table-fixed b-t b-light">
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th class="version">Version</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="module in vm.event.data.error.modules track by module.module_id">
+      <td><span truncate>{{::module.name}}</span></td>
+      <td>{{::module.version}}</td>
+    </tr>
+    </tbody>
+  </table>
 </div>
 <!--
 TODO: implement this.

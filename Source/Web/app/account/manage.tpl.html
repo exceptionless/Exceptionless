@@ -1,182 +1,207 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm">
-    <div class="col">
-        <div class="bg-light lter b-b wrapper-md">
-            <div class="row">
-                <h1 class="m-n font-thin h3 text-black">My Account</h1>
-            </div>
-        </div>
-        <div class="wrapper-md">
-            <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-th-list"></i> My Account</div>
-                <div class="panel-body">
-                    <tabset>
-                        <tab heading="General">
-                            <form name="profileForm" role="form">
-                                <div class="form-group">
-                                    <label>Full Name</label>
-                                    <input name="name" type="text" class="form-control" placeholder="Your first and last name" ng-model="vm.profile.full_name" ng-model-options="{ debounce: 1000 }" ng-change="vm.save(profileForm.$valid)" required />
-                                    <div class="error" ng-if="profileForm.name.$touched || profileForm.$submitted">
-                                        <small ng-if="profileForm.name.$error.required">
-                                            Full Name is required.
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Email Address</label>
-                                    <input name="email" type="email" class="form-control" placeholder="Email Address" ng-model="vm.profile.email_address" required />
-                                    <div class="error" ng-if="profileForm.email.$touched || profileForm.$submitted">
-                                        <small ng-if="profileForm.email.$error.required">
-                                            Email Address is required.
-                                        </small>
-                                        <small ng-if="profileForm.email.$error.unique">
-                                            A user already exists with this email address.
-                                        </small>
-                                    </div>
-                                    <p ng-if="vm.isVerified()" class="help-block">Email not verified. <a ng-click="vm.resendVerificationEmail()">Resend</a> verification email.</p>
-                                </div>
-
-                                <div class="line line-dashed b-b line-lg pull-in"></div>
-                                <div class="form-group">
-                                    <button ui-sref="app.project.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
-                                </div>
-                            </form>
-                        </tab>
-                        <tab heading="Notifications">
-                            <form role="form">
-                                <div class="checkbox">
-                                    <label class="i-checks">
-                                        <input type="checkbox" ng-model="vm.profile.enable_email_notifications">
-                                        <i></i>
-                                        Enable email notifications
-                                    </label>
-                                </div>
-
-                                <div ng-if="vm.hasProjects()">
-                                    <hr />
-                                    <select class="form-control" ng-init="vm.currentProject = vm.projects[0]" ng-model="vm.currentProject" ng-options="project.name group by project.organization_name for project in vm.projects"></select>
-
-                                    <div class="checkbox">
-                                        <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.currentProject.send_daily_summary">
-                                            <i></i>
-                                            Send daily project summary
-                                        </label>
-                                    </div>
-
-
-                                    <hr ng-if="!vm.hasPremiumFeatures()" />
-                                    <div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures()">
-                                        <a href="javascript:void(0);">Upgrade now</a> to enable occurrence level notifications!
-                                    </div>
-
-                                    <div class="checkbox">
-                                        <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.currentProject.report_critical_events" ng-disabled="!vm.hasPremiumFeatures()">
-                                            <i></i>
-                                            Notify me on critical events
-                                        </label>
-                                    </div>
-
-                                    <div class="checkbox">
-                                        <label class="i-checks">
-                                            <input type="checkbox" ng-model="vm.currentProject.report_regressions" ng-disabled="!vm.hasPremiumFeatures()">
-                                            <i></i>
-                                            Notify me on event regressions
-                                        </label>
-                                    </div>
-
-                                    <hr />
-
-                                    <p>Choose how often you want to receive notifications for error occurrences in this project.</p>
-                                    <div class="form-group">
-                                        <div class="btn-group">
-                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'0'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>Never</label>
-                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'1'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>New Only</label>
-                                            <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'2'" ng-disabled="!vm.hasPremiumFeatures()" uncheckable>All Occurrences</label>
-                                        </div>
-                                    </div>
-
-                                    <div ng-if="vm.currentProject.mode > 0">
-                                        <div class="checkbox">
-                                            <label class="i-checks">
-                                                <input type="checkbox" ng-model="vm.currentProject.report_known_bot_events" ng-disabled="!vm.hasPremiumFeatures()">
-                                                <i></i>
-                                                Notify me on events from known bots
-                                            </label>
-                                        </div>
-
-                                        <div class="checkbox">
-                                            <label class="i-checks">
-                                                <input type="checkbox" ng-model="vm.currentProject.report_404_events" ng-disabled="!vm.hasPremiumFeatures()">
-                                                <i></i>
-                                                Notify me on 404 events
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div class="line line-dashed b-b line-lg pull-in"></div>
-                                    <div class="form-group">
-                                        <button ui-sref="app.project.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
-                                        <div class="pull-right">
-                                            <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
-                        </tab>
-                        <tab heading="Password">
-                            <form name="passwordForm" role="form">
-                                <div class="form-group">
-                                    <label>Current Password</label>
-                                    <input name="current" type="password" class="form-control" ng-model="vm.password.current" required />
-                                    <div class="error" ng-if="passwordForm.current.$touched || passwordForm.$submitted">
-                                        <small ng-if="passwordForm.current.$error.required">
-                                            The current password is required.
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>New Password</label>
-                                    <input name="newPassword" type="password" class="form-control" ng-model="vm.password.newPassword" min="6" required />
-                                    <div class="error" ng-if="passwordForm.newPassword.$touched || passwordForm.$submitted">
-                                        <small ng-if="passwordForm.newPassword.$error.required">
-                                            The new password is required.
-                                        </small>
-                                        <small ng-if="passwordForm.newPassword.$error.min">
-                                            The new password must be at least 6 characters long.
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Confirm password</label>
-                                    <input name="confirmPassword" type="password" class="form-control" ng-model="vm.password.confirmPassword" match="vm.password.newPassword" required>
-                                    <div class="error" ng-if="passwordForm.confirmPassword.$touched || passwordForm.$submitted">
-                                        <small ng-if="passwordForm.confirmPassword.$error.required">
-                                            The confirm password is required.
-                                        </small>
-                                        <small ng-if="passwordForm.confirmPassword.$error.match">
-                                            The new password and confirmation password do not match.
-                                        </small>
-                                    </div>
-                                </div>
-
-                                <div class="line line-dashed b-b line-lg pull-in"></div>
-                                <div class="form-group">
-                                    <button ui-sref="app.project.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
-                                    <div class="pull-right">
-                                        <button ng-click="vm.changePassword(passwordForm.$valid)" type="submit" class="btn btn-primary">Change Password</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </tab>
-                        <tab heading="External Logins">
-                        </tab>
-                    </tabset>
-                </div>
-            </div>
-        </div>
+  <div class="col">
+    <div class="bg-light lter b-b wrapper-md">
+      <div class="row">
+        <h1 class="m-n font-thin h3 text-black">My Account</h1>
+      </div>
     </div>
+    <div class="wrapper-md">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-th-list"></i> My Account</div>
+        <div class="panel-body">
+          <tabset>
+            <tab heading="General">
+              <form name="profileForm" role="form">
+                <div class="form-group">
+                  <label>Full Name</label>
+                  <input name="name" type="text" class="form-control" placeholder="Your first and last name"
+                         ng-model="vm.profile.full_name" ng-model-options="{ debounce: 1000 }"
+                         ng-change="vm.save(profileForm.$valid)" required/>
+
+                  <div class="error" ng-if="profileForm.name.$touched || profileForm.$submitted">
+                    <small ng-if="profileForm.name.$error.required">
+                      Full Name is required.
+                    </small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input name="email" type="email" class="form-control" placeholder="Email Address"
+                         ng-model="vm.profile.email_address" required/>
+
+                  <div class="error" ng-if="profileForm.email.$touched || profileForm.$submitted">
+                    <small ng-if="profileForm.email.$error.required">
+                      Email Address is required.
+                    </small>
+                    <small ng-if="profileForm.email.$error.unique">
+                      A user already exists with this email address.
+                    </small>
+                  </div>
+                  <p ng-if="vm.isVerified()" class="help-block">Email not verified. <a
+                    ng-click="vm.resendVerificationEmail()">Resend</a> verification email.</p>
+                </div>
+
+                <div class="line line-dashed b-b line-lg pull-in"></div>
+                <div class="form-group">
+                  <button ui-sref="app.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
+                </div>
+              </form>
+            </tab>
+            <tab heading="Notifications">
+              <form role="form">
+                <div class="checkbox">
+                  <label class="i-checks">
+                    <input type="checkbox" ng-model="vm.profile.enable_email_notifications">
+                    <i></i>
+                    Enable email notifications
+                  </label>
+                </div>
+
+                <div ng-if="vm.hasProjects()">
+                  <hr/>
+                  <select class="form-control" ng-init="vm.currentProject = vm.projects[0]" ng-model="vm.currentProject"
+                          ng-options="project.name group by project.organization_name for project in vm.projects"></select>
+
+                  <div class="checkbox">
+                    <label class="i-checks">
+                      <input type="checkbox" ng-model="vm.currentProject.send_daily_summary">
+                      <i></i>
+                      Send daily project summary
+                    </label>
+                  </div>
+
+
+                  <hr ng-if="!vm.hasPremiumFeatures()"/>
+                  <div class="alert in fade alert-success" ng-if="!vm.hasPremiumFeatures()">
+                    <a href="javascript:void(0);">Upgrade now</a> to enable occurrence level notifications!
+                  </div>
+
+                  <div class="checkbox">
+                    <label class="i-checks">
+                      <input type="checkbox" ng-model="vm.currentProject.report_critical_events"
+                             ng-disabled="!vm.hasPremiumFeatures()">
+                      <i></i>
+                      Notify me on critical events
+                    </label>
+                  </div>
+
+                  <div class="checkbox">
+                    <label class="i-checks">
+                      <input type="checkbox" ng-model="vm.currentProject.report_regressions"
+                             ng-disabled="!vm.hasPremiumFeatures()">
+                      <i></i>
+                      Notify me on event regressions
+                    </label>
+                  </div>
+
+                  <hr/>
+
+                  <p>Choose how often you want to receive notifications for error occurrences in this project.</p>
+
+                  <div class="form-group">
+                    <div class="btn-group">
+                      <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'0'"
+                             ng-disabled="!vm.hasPremiumFeatures()" uncheckable>Never</label>
+                      <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'1'"
+                             ng-disabled="!vm.hasPremiumFeatures()" uncheckable>New Only</label>
+                      <label class="btn btn-default" ng-model="vm.currentProject.mode" btn-radio="'2'"
+                             ng-disabled="!vm.hasPremiumFeatures()" uncheckable>All Occurrences</label>
+                    </div>
+                  </div>
+
+                  <div ng-if="vm.currentProject.mode > 0">
+                    <div class="checkbox">
+                      <label class="i-checks">
+                        <input type="checkbox" ng-model="vm.currentProject.report_known_bot_events"
+                               ng-disabled="!vm.hasPremiumFeatures()">
+                        <i></i>
+                        Notify me on events from known bots
+                      </label>
+                    </div>
+
+                    <div class="checkbox">
+                      <label class="i-checks">
+                        <input type="checkbox" ng-model="vm.currentProject.report_404_events"
+                               ng-disabled="!vm.hasPremiumFeatures()">
+                        <i></i>
+                        Notify me on 404 events
+                      </label>
+                    </div>
+                  </div>
+
+                  <div class="line line-dashed b-b line-lg pull-in"></div>
+                  <div class="form-group">
+                    <button ui-sref="app.dashboard({ project_id: vm.currentProject.id })" type="button"
+                            class="btn btn-default">Go To Dashboard
+                    </button>
+                    <div class="pull-right">
+                      <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </tab>
+            <tab heading="Password">
+              <form name="passwordForm" role="form">
+                <div class="form-group">
+                  <label>Current Password</label>
+                  <input name="current" type="password" class="form-control" ng-model="vm.password.current" required/>
+
+                  <div class="error" ng-if="passwordForm.current.$touched || passwordForm.$submitted">
+                    <small ng-if="passwordForm.current.$error.required">
+                      The current password is required.
+                    </small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>New Password</label>
+                  <input name="newPassword" type="password" class="form-control" ng-model="vm.password.newPassword"
+                         min="6" required/>
+
+                  <div class="error" ng-if="passwordForm.newPassword.$touched || passwordForm.$submitted">
+                    <small ng-if="passwordForm.newPassword.$error.required">
+                      The new password is required.
+                    </small>
+                    <small ng-if="passwordForm.newPassword.$error.min">
+                      The new password must be at least 6 characters long.
+                    </small>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>Confirm password</label>
+                  <input name="confirmPassword" type="password" class="form-control"
+                         ng-model="vm.password.confirmPassword" match="vm.password.newPassword" required>
+
+                  <div class="error" ng-if="passwordForm.confirmPassword.$touched || passwordForm.$submitted">
+                    <small ng-if="passwordForm.confirmPassword.$error.required">
+                      The confirm password is required.
+                    </small>
+                    <small ng-if="passwordForm.confirmPassword.$error.match">
+                      The new password and confirmation password do not match.
+                    </small>
+                  </div>
+                </div>
+
+                <div class="line line-dashed b-b line-lg pull-in"></div>
+                <div class="form-group">
+                  <button ui-sref="app.dashboard" type="button" class="btn btn-default">Go To Dashboard</button>
+                  <div class="pull-right">
+                    <button ng-click="vm.changePassword(passwordForm.$valid)" type="submit" class="btn btn-primary">
+                      Change Password
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </tab>
+            <tab heading="External Logins">
+            </tab>
+          </tabset>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

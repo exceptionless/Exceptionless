@@ -1,53 +1,80 @@
-<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="eventOccurrence" refresh-if="!vm.hasProjectData()" refresh-action="vm.navigateToDashboard()">
-    <div class="col">
-        <div class="bg-light lter b-b wrapper-md">
-            <div class="row">
-                <h1 class="m-n font-thin h3 text-black">Configure Exceptionless Client</h1>
-            </div>
-        </div>
-        <div class="wrapper-md">
-            <div class="panel panel-default">
-                <div class="panel-heading"><i class="fa fa-th-list"></i> Configure Exceptionless Client</div>
-                <div class="panel-body">
-                    <p>The Exceptionless client can be integrated into your application in just a few easy steps.</p>
-                    <ol>
-                        <li style="margin-bottom: 30px;">
-                            <p>Select your project type:</p>
-                            <select class="form-control" ng-init="vm.currentProjectType = vm.projectTypes[0]" ng-model="vm.currentProjectType" ng-options="projectType.name for projectType in vm.projectTypes"></select>
-                        </li>
-                        <li style="margin-bottom: 30px;">
-                            <p>Add the Exceptionless <a href="http://nuget.org" target="_blank">NuGet</a> package to your Visual Studio project by running this command in the <a href="http://docs.nuget.org/docs/start-here/using-the-package-manager-console">Package Manager Console</a>:</p>
-                            <pre><a ng-href="http://nuget.org/packages/{{vm.currentProjectType.key}}" target="_blank">Install-Package {{vm.currentProjectType.key}}</a></pre>
-                        </li>
-                        <li>
-                            <p>Update the <code>&lt;exceptionless apiKey="API_KEY_HERE" /&gt;</code> section located in the project's <span data-bind="text: applicationConfigName"></span> with your Exceptionless API key:</p>
-                            <div class="input-group">
-                                <input class="form-control" type="text" ng-model="vm.apiKey" />
-                                <a class="input-group-addon " title="Copy to Clipboard"><i class="fa fa-copy"></i></a>
-                            </div>
-                        </li>
-                        <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless'">
-                            <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Startup()</code> during the startup of your app.</p>
-                        </li>
-                        <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless.Nancy'">
-                            <p>Import the <code>Exceptionless</code> namespace and add a call to <code>Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)</code> with an instance of Nancy.Bootstrapper.IPipelines inside of your NancyBootstrapper's ApplicationStartup method.</p>
-                        </li>
-                        <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless.Windows' || vm.currentProjectType.key === 'Exceptionless.Wpf'">
-                            <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Register()</code> during the startup of your app.</p>
-                        </li>
-                        <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless.WebApi'">
-                            <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.RegisterWebApi(config)</code> with an instance of HttpConfiguration during the startup of your app.</p>
-                            <p>If you are hosting Web API inside of ASP.NET, you would register Exceptionless like: <code>Exceptionless.ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration)</code></p>
-                        </li>
-                    </ol>
-                    <p><strong>That's it!</strong> Your project should now automatically be sending all unhandled exceptions to Exceptionless.  You can also send handled exceptions to Exceptionless using <code>ex.ToExceptionless().Submit()</code>.</p>
-                    <div class="alert alert-success">For more information and troubleshooting tips, view the <a target="_blank" href="http://docs.exceptionless.com/contents/home/">Exceptionless docs</a>.</div>
-                </div>
-                <div class="panel-footer">
-                    <button ui-sref="app.project.manage({ id: vm.projectId })" type="submit" class="btn btn-default" role="button">Notification Settings</button>
-                    <button ui-sref="app.project.dashboard({ id: vm.projectId })" type="submit" class="btn btn-primary pull-right" role="button">Go To Dashboard</button>
-                </div>
-            </div>
-        </div>
+<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="eventOccurrence" refresh-if="!vm.hasProjectData()"
+     refresh-action="vm.navigateToDashboard()">
+  <div class="col">
+    <div class="bg-light lter b-b wrapper-md">
+      <div class="row">
+        <h1 class="m-n font-thin h3 text-black">Configure Exceptionless Client</h1>
+      </div>
     </div>
+    <div class="wrapper-md">
+      <div class="panel panel-default">
+        <div class="panel-heading"><i class="fa fa-th-list"></i> Configure Exceptionless Client</div>
+        <div class="panel-body">
+          <p>The Exceptionless client can be integrated into your application in just a few easy steps.</p>
+          <ol>
+            <li style="margin-bottom: 30px;">
+              <p>Select your project type:</p>
+              <select class="form-control" ng-init="vm.currentProjectType = vm.projectTypes[0]"
+                      ng-model="vm.currentProjectType"
+                      ng-options="projectType.name for projectType in vm.projectTypes"></select>
+            </li>
+            <li style="margin-bottom: 30px;">
+              <p>Add the Exceptionless <a href="http://nuget.org" target="_blank">NuGet</a> package to your Visual
+                Studio project by running this command in the <a
+                  href="http://docs.nuget.org/docs/start-here/using-the-package-manager-console">Package Manager
+                  Console</a>:</p>
+              <pre><a ng-href="http://nuget.org/packages/{{vm.currentProjectType.key}}" target="_blank">Install-Package
+                {{vm.currentProjectType.key}}</a></pre>
+            </li>
+            <li>
+              <p>Update the <code>&lt;exceptionless apiKey="API_KEY_HERE" /&gt;</code> section located in the project's
+                <span data-bind="text: applicationConfigName"></span> with your Exceptionless API key:</p>
+
+              <div class="input-group">
+                <input class="form-control" type="text" ng-model="vm.apiKey"/>
+                <a class="input-group-addon " title="Copy to Clipboard"><i class="fa fa-copy"></i></a>
+              </div>
+            </li>
+            <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless'">
+              <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Startup()</code>
+                during the startup of your app.</p>
+            </li>
+            <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless.Nancy'">
+              <p>Import the <code>Exceptionless</code> namespace and add a call to <code>Exceptionless.ExceptionlessClient.Current.RegisterNancy(pipelines)</code>
+                with an instance of Nancy.Bootstrapper.IPipelines inside of your NancyBootstrapper's ApplicationStartup
+                method.</p>
+            </li>
+            <li style="margin-top: 15px;"
+                ng-if="vm.currentProjectType.key === 'Exceptionless.Windows' || vm.currentProjectType.key === 'Exceptionless.Wpf'">
+              <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.Register()</code>
+                during the startup of your app.</p>
+            </li>
+            <li style="margin-top: 15px;" ng-if="vm.currentProjectType.key === 'Exceptionless.WebApi'">
+              <p>Import the <code>Exceptionless</code> namespace and add a call to <code>ExceptionlessClient.Current.RegisterWebApi(config)</code>
+                with an instance of HttpConfiguration during the startup of your app.</p>
+
+              <p>If you are hosting Web API inside of ASP.NET, you would register Exceptionless like: <code>Exceptionless.ExceptionlessClient.Current.RegisterWebApi(GlobalConfiguration.Configuration)</code>
+              </p>
+            </li>
+          </ol>
+          <p><strong>That's it!</strong> Your project should now automatically be sending all unhandled exceptions to
+            Exceptionless. You can also send handled exceptions to Exceptionless using <code>ex.ToExceptionless().Submit()</code>.
+          </p>
+
+          <div class="alert alert-success">For more information and troubleshooting tips, view the <a target="_blank"
+                                                                                                      href="http://docs.exceptionless.com/contents/home/">Exceptionless
+            docs</a>.
+          </div>
+        </div>
+        <div class="panel-footer">
+          <button ui-sref="app.project.manage({ id: vm.projectId })" type="submit" class="btn btn-default"
+                  role="button">Notification Settings
+          </button>
+          <button ui-sref="app.dashboard({ project_id: vm.projectId })" type="submit" class="btn btn-primary pull-right"
+                  role="button">Go To Dashboard
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

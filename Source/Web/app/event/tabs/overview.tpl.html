@@ -1,69 +1,74 @@
 <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
-    <tr>
-        <th>Occurred On</th>
-        <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
-    </tr>
-    <tr ng-if="vm.hasTags()">
-        <th>Tags</th>
-        <td><span class="label label-success" ng-repeat="tag in vm.event.tags track by tag">{{tag}}</span></td>
-    </tr>
-    <tr class="hidden-print" ng-if="vm.isError()">
-        <th>Error Type</th>
-        <td><span truncate>{{::vm.getErrorType()}}</span></td>
-    </tr>
-    <tr class="hidden-print">
-        <th>Message</th>
-        <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
-    </tr>
-    <tr class="hidden-print" ng-if="vm.event.code">
-        <th>Code</th>
-        <td><span truncate>{{::vm.event.code}}</span></td>
-    </tr>
+  <tr>
+    <th>Occurred On</th>
+    <td>{{::vm.event.date | date: 'medium'}} (
+      <timeago date="vm.event.date"></timeago>
+      )
+    </td>
+  </tr>
+  <tr ng-if="vm.hasTags()">
+    <th>Tags</th>
+    <td><span class="label label-success" ng-repeat="tag in vm.event.tags track by tag">{{tag}}</span></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.isError()">
+    <th>Error Type</th>
+    <td><span truncate>{{::vm.getErrorType()}}</span></td>
+  </tr>
+  <tr class="hidden-print">
+    <th>Message</th>
+    <td><span truncate lines="2">{{::vm.getMessage()}}</span></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.event.code">
+    <th>Code</th>
+    <td><span truncate>{{::vm.event.code}}</span></td>
+  </tr>
 
-    <tr class="hidden-print" ng-if="vm.hasRequestInfo()">
-        <th>URL</th>
-        <td><a ng-href="{{::vm.getRequestUrl()}}" target="_blank" truncate>{{::vm.getRequestUrl()}}</a></td>
-    </tr>
-    <tr class="hidden-print" ng-if="vm.hasRequestInfo()">
-        <th>Referrer</th>
-        <td>
+  <tr class="hidden-print" ng-if="vm.hasRequestInfo()">
+    <th>URL</th>
+    <td><a ng-href="{{::vm.getRequestUrl()}}" target="_blank" truncate>{{::vm.getRequestUrl()}}</a></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.hasRequestInfo()">
+    <th>Referrer</th>
+    <td>
             <span ng-if="vm.hasReferrer()">
                 <a ng-href="{{::vm.event.data.request.referrer}}" target="_blank" truncate>{{::vm.event.data.request.referrer}}</a>
             </span>
-            <em ng-if="!vm.hasReferrer()">None</em>
-        </td>
-    </tr>
+      <em ng-if="!vm.hasReferrer()">None</em>
+    </td>
+  </tr>
 
-    <tr class="hidden-print" ng-if="vm.hasUserAgent()">
-        <th>Browser</th>
-        <td><span truncate>{{::vm.getBrowser()}}</span></td>
-    </tr>
-    <tr class="hidden-print" ng-if="vm.hasUserAgent()">
-        <th>Browser OS</th>
-        <td>{{::vm.getBrowserOS()}}</td>
-    </tr>
+  <tr class="hidden-print" ng-if="vm.hasUserAgent()">
+    <th>Browser</th>
+    <td><span truncate>{{::vm.getBrowser()}}</span></td>
+  </tr>
+  <tr class="hidden-print" ng-if="vm.hasUserAgent()">
+    <th>Browser OS</th>
+    <td>{{::vm.getBrowserOS()}}</td>
+  </tr>
 </table>
 
 <div ng-if="vm.hasUserEmail() || vm.hasUserDescription() || vm.hasIdentity()">
-    <h4>User Info</h4>
-    <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
-        <tr ng-if="vm.hasUserEmail()">
-            <th>User Email</th>
-            <td><a ng-href="mailto:{{::vm.event.data.user_description.email_address}}" truncate>{{::vm.event.data.user_description.email_address}}</a></td>
-        </tr>
-        <tr ng-if="vm.hasIdentity()">
-            <th>User Name</th>
-            <td><span truncate>{{::vm.event.data.user.identity}}</span></td>
-        </tr>
-        <tr ng-if="vm.hasUserDescription()">
-            <th>User Description</th>
-            <td><span truncate lines="2">{{::vm.event.data.user_description.description}}</span></td>
-        </tr>
-    </table>
+  <h4>User Info</h4>
+  <table class="table table-striped table-bordered table-fixed table-key-value b-t b-light">
+    <tr ng-if="vm.hasUserEmail()">
+      <th>User Email</th>
+      <td><a ng-href="mailto:{{::vm.event.data.user_description.email_address}}" truncate>{{::vm.event.data.user_description.email_address}}</a>
+      </td>
+    </tr>
+    <tr ng-if="vm.hasIdentity()">
+      <th>User Name</th>
+      <td><span truncate>{{::vm.event.data.user.identity}}</span></td>
+    </tr>
+    <tr ng-if="vm.hasUserDescription()">
+      <th>User Description</th>
+      <td><span truncate lines="2">{{::vm.event.data.user_description.description}}</span></td>
+    </tr>
+  </table>
 </div>
 
 <div class="hidden-print" ng-if="vm.isError()">
-    <h4>Stack Trace</h4>
-    <stack-trace class="stack-trace-mini" exception="vm.event.data.error" ng-if="vm.event.data.error"></stack-trace>
-    <simple-stack-trace class="stack-trace-mini" exception="vm.event.data.simple_error" ng-if="vm.event.data.simple_error"></simple-stack-trace>
+  <h4>Stack Trace</h4>
+  <stack-trace class="stack-trace-mini" exception="vm.event.data.error" ng-if="vm.event.data.error"></stack-trace>
+  <simple-stack-trace class="stack-trace-mini" exception="vm.event.data.simple_error"
+                      ng-if="vm.event.data.simple_error"></simple-stack-trace>
 </div>

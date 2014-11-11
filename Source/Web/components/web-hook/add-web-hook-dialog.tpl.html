@@ -1,39 +1,43 @@
 <form name="addWebHookForm" role="form">
-    <div class="modal-header dialog-header-confirm">
-        <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
-        <h4 class="modal-title">Create a new Web Hook</h4>
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title">Create a new Web Hook</h4>
+  </div>
+
+  <div class="modal-body">
+    <div class="form-group">
+      <label for="url">URL</label>
+      <input type="url" class="form-control input-lg" id="url" name="url" ng-model="vm.data.url"
+             placeholder="Enter the URL to call" required>
+
+      <div class="error" ng-if="addWebHookForm.url.$touched || addWebHookForm.$submitted">
+        <small ng-if="addWebHookForm.url.$error.url">
+          Please enter a valid url.
+        </small>
+      </div>
     </div>
 
-    <div class="modal-body">
-        <div class="form-group">
-            <label for="url">URL</label>
-            <input type="url" class="form-control input-lg" id="url" name="url" ng-model="vm.data.url" placeholder="Enter the URL to call" required>
-            <div class="error" ng-if="addWebHookForm.url.$touched || addWebHookForm.$submitted">
-                <small ng-if="addWebHookForm.url.$error.url">
-                    Please enter a valid url.
-                </small>
-            </div>
-        </div>
+    <p>Control when the web hook is called by choosing the event types below.</p>
 
-        <p>Control when the web hook is called by choosing the event types below.</p>
-        <div class="form-group">
-            <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes">
-                <label class="i-checks">
-                    <input name="types" type="checkbox" checklist-model="vm.data.event_types" checklist-value="type.key" ng-required="!vm.hasEventTypeSelection()">
-                    <i></i>
-                    <abbr title="{{::type.description}}">{{::type.name}}</abbr>
-                </label>
-            </div>
-            <div class="error" ng-if="addWebHookForm.types.$touched || addWebHookForm.$submitted">
-                <small ng-if="addWebHookForm.types.$error.required">
-                    Please choose one or more event types
-                </small>
-            </div>
-        </div>
+    <div class="form-group">
+      <div class="checkbox checkbox-inline" style="margin-top: 0px;" ng-repeat="type in vm.eventTypes">
+        <label class="i-checks">
+          <input name="types" type="checkbox" checklist-model="vm.data.event_types" checklist-value="type.key"
+                 ng-required="!vm.hasEventTypeSelection()">
+          <i></i>
+          <abbr title="{{::type.description}}">{{::type.name}}</abbr>
+        </label>
+      </div>
+      <div class="error" ng-if="addWebHookForm.types.$touched || addWebHookForm.$submitted">
+        <small ng-if="addWebHookForm.types.$error.required">
+          Please choose one or more event types
+        </small>
+      </div>
     </div>
+  </div>
 
-    <div class="modal-footer">
-        <button type="submit" class="btn btn-default" ng-click="vm.save(addWebHookForm.$valid)">Create Web Hook</button>
-        <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
-    </div>
+  <div class="modal-footer">
+    <button type="submit" class="btn btn-default" ng-click="vm.save(addWebHookForm.$valid)">Create Web Hook</button>
+    <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
+  </div>
 </form>

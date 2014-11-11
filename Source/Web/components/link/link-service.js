@@ -1,32 +1,32 @@
 ﻿/*global li:false, queryString: false */
 (function () {
-    'use strict';
+  'use strict';
 
-    angular.module('exceptionless.link', [])
-        .factory('linkService', [function () {
-            function getLinks(linkHeader) {
-                if (linkHeader == null)
-                    return {};
+  angular.module('exceptionless.link', [])
+    .factory('linkService', [function () {
+      function getLinks(linkHeader) {
+        if (linkHeader == null)
+          return {};
 
-                return li.parse(linkHeader || {});
-            }
+        return li.parse(linkHeader || {});
+      }
 
-            function getLinksQueryParameters(linkHeader) {
-                var parsedLinks = getLinks(linkHeader);
-                var links = {};
-                for (var rel in parsedLinks) {
-                    var url = parsedLinks[rel];
-                    links[rel] = queryString.parse(url.slice(url.indexOf('?')));
-                }
+      function getLinksQueryParameters(linkHeader) {
+        var parsedLinks = getLinks(linkHeader);
+        var links = {};
+        for (var rel in parsedLinks) {
+          var url = parsedLinks[rel];
+          links[rel] = queryString.parse(url.slice(url.indexOf('?')));
+        }
 
-                return links;
-            }
+        return links;
+      }
 
-            var service = {
-                getLinks: getLinks,
-                getLinksQueryParameters: getLinksQueryParameters
-            };
+      var service = {
+        getLinks: getLinks,
+        getLinksQueryParameters: getLinksQueryParameters
+      };
 
-            return service;
-        }]);
+      return service;
+    }]);
 }());

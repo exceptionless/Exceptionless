@@ -1,85 +1,149 @@
-@loadingbar-height:               3px;
-@loadingbar-time:                 0.75s;
+@loadingbar-height: 3px;
+@loadingbar-time: 0.75s;
 
-.loadingbar{
-    position: relative;
-    margin-bottom: -@loadingbar-height;
-    height: @loadingbar-height;
-    .bar{
-        position: absolute;
-        height: 0;
-        width: 100%;
-        text-indent: -9999px;
-        background-color: @brand-info;
-        &:before{
-            content: "";
-            height: @loadingbar-height;
-            position: absolute;
-            left: 50%;
-            right: 50%;
-            background-color: inherit;
-        }
+.loadingbar {
+  position: relative;
+  margin-bottom: -@loadingbar-height;
+  height: @loadingbar-height;
+  .bar {
+    position: absolute;
+    height: 0;
+    width: 100%;
+    text-indent: -9999px;
+    background-color: @brand-info;
+    &:before {
+      content: "";
+      height: @loadingbar-height;
+      position: absolute;
+      left: 50%;
+      right: 50%;
+      background-color: inherit;
     }
+  }
 }
-.loadingbar.active{
-    -webkit-animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
-    -moz-animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
-    animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
-    .bar{
-        -webkit-animation: changebar @loadingbar-time*3 infinite;
-        -moz-animation: changebar @loadingbar-time*3 infinite;
-        animation: changebar @loadingbar-time*3 infinite;
-        &:before{
-            -webkit-animation: movingbar @loadingbar-time infinite;
-            -moz-animation: movingbar @loadingbar-time infinite;
-            animation: movingbar @loadingbar-time infinite;
-        }
+
+.loadingbar.active {
+  -webkit-animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
+  -moz-animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
+  animation: changebar @loadingbar-time*3 infinite @loadingbar-time;
+  .bar {
+    -webkit-animation: changebar @loadingbar-time*3 infinite;
+    -moz-animation: changebar @loadingbar-time*3 infinite;
+    animation: changebar @loadingbar-time*3 infinite;
+    &:before {
+      -webkit-animation: movingbar @loadingbar-time infinite;
+      -moz-animation: movingbar @loadingbar-time infinite;
+      animation: movingbar @loadingbar-time infinite;
     }
+  }
 }
 
 /* Moving bar */
-@-webkit-keyframes movingbar{
-    0%    { left:50%; right:50% }
-    99.9% { left:0%; right:0% }
-    100%  { left:50%; right:50%}
+@-webkit-keyframes movingbar {
+  0% {
+    left: 50%;
+    right: 50%
+  }
+  99.9% {
+    left: 0%;
+    right: 0%
+  }
+  100% {
+    left: 50%;
+    right: 50%
+  }
 }
 
-@-moz-keyframes movingbar{
-    0%    { left:50%; right:50% }
-    99.9% { left:0%; right:0% }
-    100%  { left:50%; right:50%}
+@-moz-keyframes movingbar {
+  0% {
+    left: 50%;
+    right: 50%
+  }
+  99.9% {
+    left: 0%;
+    right: 0%
+  }
+  100% {
+    left: 50%;
+    right: 50%
+  }
 }
 
-@keyframes movingbar{
-    0%    { left:50%; right:50% }
-    99.9% { left:0%; right:0% }
-    100%  { left:50%; right:50%}
+@keyframes movingbar {
+  0% {
+    left: 50%;
+    right: 50%
+  }
+  99.9% {
+    left: 0%;
+    right: 0%
+  }
+  100% {
+    left: 50%;
+    right: 50%
+  }
 }
 
 /* change bar */
-@-webkit-keyframes changebar{
-    0%      { background-color: @brand-info }
-    33.3%   { background-color: @brand-info }
-    33.33%  { background-color: @brand-warning }
-    66.6%   { background-color: @brand-warning }
-    66.66%  { background-color: @brand-primary }
-    99.9%    { background-color: @brand-primary }
+@-webkit-keyframes changebar {
+  0% {
+    background-color: @brand-info
+  }
+  33.3% {
+    background-color: @brand-info
+  }
+  33.33% {
+    background-color: @brand-warning
+  }
+  66.6% {
+    background-color: @brand-warning
+  }
+  66.66% {
+    background-color: @brand-primary
+  }
+  99.9% {
+    background-color: @brand-primary
+  }
 }
 
-@-moz-keyframes changebar{
-    0%      { background-color: @brand-info }
-    33.3%   { background-color: @brand-info }
-    33.33%  { background-color: @brand-warning }
-    66.6%   { background-color: @brand-warning }
-    66.66%  { background-color: @brand-primary }
-    99.9%    { background-color: @brand-primary }
+@-moz-keyframes changebar {
+  0% {
+    background-color: @brand-info
+  }
+  33.3% {
+    background-color: @brand-info
+  }
+  33.33% {
+    background-color: @brand-warning
+  }
+  66.6% {
+    background-color: @brand-warning
+  }
+  66.66% {
+    background-color: @brand-primary
+  }
+  99.9% {
+    background-color: @brand-primary
+  }
 }
 
-@keyframes changebar{
-    0%      { background-color: @brand-info }
-    33.3%   { background-color: @brand-info }
-    33.33%  { background-color: @brand-warning }
-    66.6%   { background-color: @brand-warning }
-    66.66%  { background-color: @brand-primary }
-    99.9%    { background-color: @brand-primary }
+@keyframes changebar {
+  0% {
+    background-color: @brand-info
+  }
+  33.3% {
+    background-color: @brand-info
+  }
+  33.33% {
+    background-color: @brand-warning
+  }
+  66.6% {
+    background-color: @brand-warning
+  }
+  66.66% {
+    background-color: @brand-primary
+  }
+  99.9% {
+    background-color: @brand-primary
+  }
 }

@@ -6,7 +6,9 @@
  --></span><!--
 
  --><div class="stack-frame" ng-repeat="exception in vm.exceptions | reverse"><!--
-    -->{{::exception.stack_trace | replace:'   ':''}}<!--
-    --><div ng-if="!$last">--- End of inner exception stack trace ---</div><!--
- --></div><!--
+    -->{{::exception.stack_trace | replace:' ':''}}<!--
+    -->
+  <div ng-if="!$last">--- End of inner exception stack trace ---</div>
+  <!--
+   --></div><!--
 --></pre>

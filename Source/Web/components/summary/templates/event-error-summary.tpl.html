@@ -1,16 +1,17 @@
 <div>
-    <strong>
-        <abbr title="{{::source.data.type_full_name}}">{{::source.data.type}}</abbr>
-        <span ng-if="!source.data.method">:</span>
-    </strong>
+  <strong>
+    <abbr title="{{::source.data.type_full_name}}">{{::source.data.type}}</abbr>
+    <span ng-if="!source.data.method">:</span>
+  </strong>
 
     <span ng-if="source.data.method"> in
         <strong>
-            <abbr title="{{::source.data.method_full_name}}">{{::source.data.method}}</abbr>
+          <abbr title="{{::source.data.method_full_name}}">{{::source.data.method}}</abbr>
         </strong>
     </span>
 
-    <a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.message}}</a>
+  <a ui-sref="app.event({ id: source.id })" truncate lines="2">{{::source.data.message}}</a>
 </div>
 
-<div class="hidden-xs error-path" ng-if="source.data.path"><i class="fa fa-caret-right"></i> <span truncate>{{::source.data.path}}</span></div>
+<div class="hidden-xs error-path" ng-if="source.data.path"><i class="fa fa-caret-right"></i> <span truncate>{{::source.data.path}}</span>
+</div>

@@ -1,24 +1,24 @@
 ﻿(function () {
-    'use strict';
+  'use strict';
 
-    angular.module('exceptionless.feature', [])
-        .factory('featureService', [function () {
-            var isPremium = true;
+  angular.module('exceptionless.feature', [])
+    .factory('featureService', [function () {
+      var isPremium = true;
 
-            function hasPremium() {
-                return isPremium;
-            }
+      function hasPremium() {
+        return isPremium;
+      }
 
-            function setPremium(value) {
-                isPremium = value === true;
-            }
+      function setPremium(value) {
+        isPremium = value === true;
+      }
 
-            var service = {
-                hasPremium: hasPremium,
-                setPremium: setPremium
-            };
+      var service = {
+        hasPremium: hasPremium,
+        setPremium: setPremium
+      };
 
-            return service;
-        }
+      return service;
+    }
     ]);
 }());

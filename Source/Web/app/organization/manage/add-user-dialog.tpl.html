@@ -1,23 +1,25 @@
 <form name="addUserForm" role="form">
-    <div class="modal-header dialog-header-confirm">
-        <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
-        <h4 class="modal-title">Invite User</h4>
-    </div>
+  <div class="modal-header dialog-header-confirm">
+    <button type="button" class="close" ng-click="vm.cancel()">&times;</button>
+    <h4 class="modal-title">Invite User</h4>
+  </div>
 
-    <div class="modal-body">
-        <div class="form-group">
-            <label>Email Address</label>
-            <input name="email" type="email" class="form-control input-lg" ng-model="vm.data.email" placeholder="Email Address" required>
-            <div class="error" ng-if="addUserForm.email.$touched || addUserForm.$submitted">
-                <small ng-if="addUserForm.email.$error.required || addUserForm.email.$error.email">
-                    Please enter a valid email address.
-                </small>
-            </div>
-        </div>
-    </div>
+  <div class="modal-body">
+    <div class="form-group">
+      <label>Email Address</label>
+      <input name="email" type="email" class="form-control input-lg" ng-model="vm.data.email"
+             placeholder="Email Address" required>
 
-    <div class="modal-footer">
-        <button type="submit" class="btn btn-default" ng-click="vm.save(addUserForm.$valid)">Invite User</button>
-        <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
+      <div class="error" ng-if="addUserForm.email.$touched || addUserForm.$submitted">
+        <small ng-if="addUserForm.email.$error.required || addUserForm.email.$error.email">
+          Please enter a valid email address.
+        </small>
+      </div>
     </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="submit" class="btn btn-default" ng-click="vm.save(addUserForm.$valid)">Invite User</button>
+    <button type="button" class="btn btn-primary" ng-click="vm.cancel()">Cancel</button>
+  </div>
 </form>
