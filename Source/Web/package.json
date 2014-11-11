@@ -19,6 +19,7 @@
     "grunt-html-angular-validate": "^0.4.0",
     "grunt-karma": "~0.9",
     "grunt-ng-annotate": "^0.5.0",
+    "grunt-ng-constant": "^1.0.0",
     "grunt-traceur": "^0.2.10",
     "jshint-stylish": "^1.0.0",
     "karma": "~0.12.24",
