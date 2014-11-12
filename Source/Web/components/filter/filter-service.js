@@ -1,7 +1,7 @@
 ﻿(function () {
   'use strict';
 
-  angular.module('exceptionless.filter')
+  angular.module('exceptionless.filter', [])
     .factory('filterService', ['$rootScope', function ($rootScope) {
       var _includeFixed;
       var _includeHidden;

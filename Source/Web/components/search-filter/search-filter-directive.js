@@ -1,13 +1,13 @@
 (function () {
   'use strict';
 
-  angular.module('exceptionless.filter')
+  angular.module('exceptionless.search-filter', [])
     .directive('searchFilter', function () {
       return {
         restrict: 'E',
         replace: true,
         scope: true,
-        templateUrl: 'components/filter/search-filter-directive.tpl.html',
+        templateUrl: 'components/search-filter/search-filter-directive.tpl.html',
         controller: ['filterService', function (filterService) {
           var vm = this;
 
