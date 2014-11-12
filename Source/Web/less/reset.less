@@ -35,6 +35,7 @@ a:focus {
 
 label{font-weight: normal;}
 small, .small{font-size: @font-size-sm;}
+.label { font-size: 90%; margin-right: 5px; }
 .badge, .label{ font-weight: bold; border-radius: 5px; }
 .badge.bg-light, .label.bg-light{text-shadow:none;}
 .badge{
@@ -376,6 +377,7 @@ blockquote{
 
 .panel{
   border-radius: @panel-border-radius;
+  box-shadow: none;
   .accordion-toggle{
     font-size: 14px;
     display: block;
@@ -394,6 +396,12 @@ blockquote{
 }
 
 .panel-heading{
+  font-size: 15px;
+  font-weight: bold;
+  color: @text-muted;
+  .fa {
+    margin-right: 5px;
+  }
   .panel-default &{
     background-color: @panel-heading-bg;
   }
@@ -423,6 +431,10 @@ blockquote{
   border-color: @panel-heading-border;
   border-radius: 0 0 @panel-border-radius @panel-border-radius;
   background-color: @panel-footer-bg;
+}
+
+.panel-default>.panel-heading {
+  color: @text-muted;
 }
 
 .panel-default{
@@ -456,7 +468,8 @@ blockquote{
   border-color: @table-border-color;
   > tbody{
     > tr{
-      > td{
+      > td,
+      > th {
         border-color: @table-border-color;
       }
     }
