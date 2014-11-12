@@ -3,9 +3,11 @@
 
   angular.module('exceptionless.filter')
     .factory('filterService', ['$rootScope', function ($rootScope) {
+      var _includeFixed;
+      var _includeHidden;
+      var _organizationId;
+      var _projectId;
       var _rawfilter;
-      var _organizationFilter;
-      var _projectFilter;
       var _timeFilter;
 
       function apply(source) {
@@ -14,14 +16,25 @@
 
       function buildFilter() {
         var filters = [];
-        if (_organizationFilter)
-          filters.push('organization:' + _organizationFilter);
+        if (_includeFixed) {
+          filters.push('fixed:' + _includeFixed === true);
+        }
 
-        if (_projectFilter)
-          filters.push('project:' + _projectFilter);
+        if (_includeHidden) {
+          filters.push('hidden:' + _includeHidden === true);
+        }
 
-        if (_rawfilter)
+        if (_organizationId) {
+          filters.push('organization:' + _organizationId);
+        }
+
+        if (_projectId) {
+          filters.push('project:' + _projectId);
+        }
+
+        if (_rawfilter) {
           filters.push(_rawfilter);
+        }
 
         return filters.join(' ');
       }
@@ -45,12 +58,24 @@
         return options;
       }
 
+      function getFilter() {
+        return _rawfilter;
+      }
+
+      function getIncludeFixed() {
+        return _includeFixed === true;
+      }
+
+      function getIncludeHidden() {
+        return _includeHidden === true;
+      }
+
       function getProjectId() {
-        return _projectFilter;
+        return _projectId;
       }
 
       function getOrganizationId() {
-        return _organizationFilter;
+        return _organizationId;
       }
 
       function getTimeZoneOffset() {
@@ -58,31 +83,49 @@
       }
 
       function clearOrganizationAndProjectFilter() {
-        if (!_organizationFilter && !_projectFilter) {
+        if (!_organizationId && !_projectId) {
           return;
         }
 
-        _organizationFilter = _projectFilter = null;
+        _organizationId = _projectId = null;
+        fireFilterChanged();
+      }
+
+      function setIncludeFixed(includeFixed) {
+        if (angular.equals(includeFixed, _includeFixed)) {
+          return;
+        }
+
+        _includeFixed = includeFixed === true;
+        fireFilterChanged();
+      }
+
+      function setIncludeHidden(includeHidden) {
+        if (angular.equals(includeHidden, _includeHidden)) {
+          return;
+        }
+
+        _includeHidden = includeHidden === true;
         fireFilterChanged();
       }
 
       function setOrganizationId(id) {
-        if (angular.equals(id, _organizationFilter)) {
+        if (angular.equals(id, _organizationId)) {
           return;
         }
 
-        _organizationFilter = id;
-        _projectFilter = null;
+        _organizationId = id;
+        _projectId = null;
         fireFilterChanged();
       }
 
       function setProjectId(id) {
-        if (angular.equals(id, _projectFilter)) {
+        if (angular.equals(id, _projectId)) {
           return;
         }
 
-        _projectFilter = id;
-        _organizationFilter = null;
+        _projectId = id;
+        _organizationId = null;
         fireFilterChanged();
       }
 
@@ -107,15 +150,19 @@
       var service = {
         apply: apply,
         clearOrganizationAndProjectFilter: clearOrganizationAndProjectFilter,
+        getFilter: getFilter,
+        getIncludeFixed: getIncludeFixed,
+        getIncludeHidden: getIncludeHidden,
         getProjectId: getProjectId,
         getOrganizationId: getOrganizationId,
         setFilter: setFilter,
+        setIncludeFixed: setIncludeFixed,
+        setIncludeHidden: setIncludeHidden,
         setOrganizationId: setOrganizationId,
         setProjectId: setProjectId,
         setTime: setTime
       };
 
       return service;
-    }
-    ]);
+    }]);
 }());

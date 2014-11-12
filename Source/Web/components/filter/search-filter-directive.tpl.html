@@ -1,8 +1,30 @@
-<div class="input-group">
-  <input type="search" class="form-control" placeholder="Search" ng-model="vm.filter"
-         ng-model-options="{ debounce: 1000 }" ng-change="vm.setFilter(vm.filter)">
-    <span class="input-group-btn">
-        <button class="btn btn-default" type="button" ng-click="vm.setFilter(vm.filter)"><i class="fa fa-search"></i>
-        </button>
-    </span>
-</div>
+<ul class="nav navbar-nav">
+  <li class="dropdown" is-open="vm.isDropDownOpen">
+    <a class="dropdown-toggle">
+      <i class="fa fa-fw fa-search fa-lg" ng-class="{'text-success': vm.hasFilter() }"></i>
+    </a>
+
+    <div class="dropdown-menu search-drop-down" role="menu">
+      <form role="form">
+        <div class="form-group">
+          <label for="search">Filter</label>
+          <input id="search" type="search" class="form-control" placeholder="Criteria" ng-model="vm.filter" ng-model-options="{ debounce: 1000 }" ng-change="vm.setFilter(vm.filter)">
+        </div>
+
+        <div class="form-group">
+          <label for="includeFixed">Include Fixed</label>
+          <label class="i-switch i-switch-md bg-info m-t-xs m-r">
+            <input id="includeFixed" type="checkbox" ng-model="vm.includeFixed" ng-model-options="{ debounce: 1000 }" ng-change="vm.setIncludeFixed(vm.includeFixed)"><i></i>
+          </label>
+         </div>
+
+        <div class="form-group">
+          <label for="includeHidden">Include Hidden</label>
+          <label class="i-switch i-switch-md bg-info m-t-xs m-r">
+            <input id="includeHidden" type="checkbox" ng-model="vm.includeHidden" ng-model-options="{ debounce: 1000 }" ng-change="vm.setIncludeHidden(vm.includeHidden)"><i></i>
+          </label>
+        </div>
+      </form>
+    </div>
+  </li>
+</ul>

@@ -27,6 +27,16 @@
 
   <project-filter></project-filter>
 
+  <ul class="nav navbar-nav">
+    <li class="dropdown">
+      <a href="javascript:void(0);" class="dropdown-toggle">
+        <i class="fa fa-fw fa-calendar fa-lg"></i>
+      </a>
+    </li>
+  </ul>
+
+  <search-filter></search-filter>
+
   <!-- navbar right -->
   <ul class="nav navbar-nav navbar-right">
     <li class="dropdown">
@@ -66,7 +76,6 @@
       <a href="javascript:void(0);" class="dropdown-toggle clear" data-toggle="dropdown">
         <span class="thumb-sm avatar pull-right m-t-n-sm m-b-n-sm m-l-sm">
             <img ng-src="{{appVm.user.avatar_url}}" alt="{{appVm.user.name}}">
-            <i class="on md b-white bottom"></i>
         </span>
       </a>
       <!-- dropdown -->
