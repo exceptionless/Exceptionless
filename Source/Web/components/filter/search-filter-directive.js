@@ -25,11 +25,11 @@
           }
 
           function setIncludeFixed(includeFixed) {
-            filterService.setIncludeFixed(includeFixed)
+            filterService.setIncludeFixed(includeFixed);
           }
 
           function setIncludeHidden(includeHidden) {
-            filterService.setIncludeHidden(includeHidden)
+            filterService.setIncludeHidden(includeHidden);
           }
 
           vm.clearFilter = clearFilter;

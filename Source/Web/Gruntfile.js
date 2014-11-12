@@ -69,6 +69,7 @@ module.exports = function (grunt) {
         options: {
           customtags: ['events', 'progressbar', 'project-filter', 'projects', 'rickshaw', 'search-filter', 'simple-stack-trace', 'stacks', 'stack-trace', 'summary', 'timeago', 'toaster-container'],
           customattrs: [
+            'is-*',
             'ui-*',
             'checklist-*',
             'refresh-*',
