@@ -24,7 +24,6 @@
           }
 
           function getFilterName() {
-            console.log(vm);
             var organizationId = filterService.getOrganizationId();
             if (organizationId) {
               for (var index = 0; index < vm.projects.length; index++) {
@@ -38,9 +37,9 @@
 
             var projectId = filterService.getProjectId();
             if (projectId) {
-              for (var index = 0; index < vm.projects.length; index++) {
-                if (vm.projects[index].id === projectId) {
-                  return vm.projects[index].name;
+              for (var index2 = 0; index2 < vm.projects.length; index2++) {
+                if (vm.projects[index2].id === projectId) {
+                  return vm.projects[index2].name;
                 }
               }
 
