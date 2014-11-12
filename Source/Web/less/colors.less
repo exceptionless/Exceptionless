@@ -22,17 +22,23 @@
 
 .bg-dark {
 	.color-variant(@brand-dark, 5%, 10%, 5%, 10%);
-	.font-variant(@brand-dark, lighten(@brand-dark,40%), lighten(@brand-dark,50%), #fff);	
+	.font-variant(@brand-dark, lighten(@brand-dark,40%), lighten(@brand-dark,50%), #fff);
+}
+
+.bg-dark .nav > li > a {
+  color: #e1e1e1;
 }
 
 .bg-black {
 	.color-variant(@brand-black, 5%, 10%, 5%, 10%);
 	.font-variant(@brand-black, lighten(@brand-black,40%), lighten(@brand-black,50%), #fff);
+  box-shadow: 0 5px 5px rgba(0,0,0,.25);
+  border-bottom: 2px solid @brand-primary;
 }
 
 .bg-primary {
 	.color-variant(@brand-primary, 5%, 10%, 5%, 10%);
-	.font-variant(@brand-primary, lighten(@brand-primary,40%), lighten(@brand-primary,50%), #fff);	
+	.font-variant(@brand-primary, lighten(@brand-primary,40%), lighten(@brand-primary,50%), #fff);
 }
 
 .bg-success {
