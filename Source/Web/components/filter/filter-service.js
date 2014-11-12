@@ -45,36 +45,44 @@
         return options;
       }
 
+      function getProjectId() {
+        return _projectFilter;
+      }
+
+      function getOrganizationId() {
+        return _organizationFilter;
+      }
+
       function getTimeZoneOffset() {
         return new Date().getTimezoneOffset() * -1;
       }
 
-      function setOrganization(id) {
+      function clearOrganizationAndProjectFilter() {
+        if (!_organizationFilter && !_projectFilter) {
+          return;
+        }
+
+        _organizationFilter = _projectFilter = null;
+        fireFilterChanged();
+      }
+
+      function setOrganizationId(id) {
         if (angular.equals(id, _organizationFilter)) {
           return;
         }
 
-        if (id) {
-          _organizationFilter = id;
-          _projectFilter = void 0;
-        } else {
-          _organizationFilter = void 0;
-        }
+        _organizationFilter = id;
+        _projectFilter = null;
         fireFilterChanged();
       }
 
-      function setProject(id) {
+      function setProjectId(id) {
         if (angular.equals(id, _projectFilter)) {
           return;
         }
 
-        if (id) {
-          _projectFilter = id;
-          _organizationFilter = void 0;
-        } else {
-          _projectFilter = void 0;
-        }
-
+        _projectFilter = id;
+        _organizationFilter = null;
         fireFilterChanged();
       }
 
@@ -83,8 +91,7 @@
           return;
         }
 
-        console.log(time);
-        _timeFilter = time ? time : void 0;
+        _timeFilter = time ? time : null;
         fireFilterChanged();
       }
 
@@ -99,9 +106,12 @@
 
       var service = {
         apply: apply,
+        clearOrganizationAndProjectFilter: clearOrganizationAndProjectFilter,
+        getProjectId: getProjectId,
+        getOrganizationId: getOrganizationId,
         setFilter: setFilter,
-        setOrganization: setOrganization,
-        setProject: setProject,
+        setOrganizationId: setOrganizationId,
+        setProjectId: setProjectId,
         setTime: setTime
       };
 

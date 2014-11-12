@@ -3,6 +3,7 @@
 
   angular.module('exceptionless.filter', [
     'angular.filter',
-    'exceptionless.project'
+    'exceptionless.project',
+    'exceptionless.refresh'
   ]);
 }());
