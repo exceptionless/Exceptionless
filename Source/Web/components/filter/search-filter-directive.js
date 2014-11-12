@@ -11,6 +11,11 @@
         controller: ['filterService', function (filterService) {
           var vm = this;
 
+          function clearFilter() {
+            filterService.clearFilterAndIncludeFixedAndIncludeHidden();
+            vm.isDropDownOpen = !vm.isDropDownOpen;
+          }
+
           function hasFilter() {
             return filterService.getFilter() || filterService.getIncludeFixed() || filterService.getIncludeHidden();
           }
@@ -27,6 +32,7 @@
             filterService.setIncludeHidden(includeHidden)
           }
 
+          vm.clearFilter = clearFilter;
           vm.hasFilter = hasFilter;
           vm.filter = filterService.getFilter();
           vm.includeFixed = filterService.getIncludeFixed();

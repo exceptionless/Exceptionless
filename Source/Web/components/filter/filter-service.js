@@ -39,6 +39,24 @@
         return filters.join(' ');
       }
 
+      function clearFilterAndIncludeFixedAndIncludeHidden() {
+        if (!_rawfilter && !_includeFixed && !_includeHidden) {
+          return;
+        }
+
+        _rawfilter = _includeFixed = _includeHidden = null;
+        fireFilterChanged();
+      }
+
+      function clearOrganizationAndProjectFilter() {
+        if (!_organizationId && !_projectId) {
+          return;
+        }
+
+        _organizationId = _projectId = null;
+        fireFilterChanged();
+      }
+
       function fireFilterChanged() {
         $rootScope.$emit('filterChanged', getDefaultOptions());
       }
@@ -80,15 +98,6 @@
 
       function getTimeZoneOffset() {
         return new Date().getTimezoneOffset() * -1;
-      }
-
-      function clearOrganizationAndProjectFilter() {
-        if (!_organizationId && !_projectId) {
-          return;
-        }
-
-        _organizationId = _projectId = null;
-        fireFilterChanged();
       }
 
       function setIncludeFixed(includeFixed) {
@@ -149,6 +158,7 @@
 
       var service = {
         apply: apply,
+        clearFilterAndIncludeFixedAndIncludeHidden: clearFilterAndIncludeFixedAndIncludeHidden,
         clearOrganizationAndProjectFilter: clearOrganizationAndProjectFilter,
         getFilter: getFilter,
         getIncludeFixed: getIncludeFixed,
