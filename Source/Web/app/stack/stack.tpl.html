@@ -31,27 +31,29 @@
     <div class="panel panel-default">
       <div class="panel-heading">
         Stack
-        <span class="badge" ng-if="vm.isFixed()">
-            <span class="hidden-xs">FIXED</span>
-            <span class="visible-xs">F</span>
-        </span>
-        <span class="badge" ng-if="vm.isRegressed()">
-            <span class="hidden-xs">REGRESSED</span>
-            <span class="visible-xs">R</span>
-        </span>
-        <span class="badge" ng-if="vm.isHidden()">
-            <span class="hidden-xs">HIDDEN</span>
-            <span class="visible-xs">H</span>
+        <span class="labels">
+          <span class="label label-success" ng-if="vm.isFixed()">
+              <span class="hidden-xs">FIXED</span>
+              <span class="visible-xs">F</span>
+          </span>
+          <span class="label label-success" ng-if="vm.isRegressed()">
+              <span class="hidden-xs">REGRESSED</span>
+              <span class="visible-xs">R</span>
+          </span>
+          <span class="label label-success" ng-if="vm.isHidden()">
+              <span class="hidden-xs">HIDDEN</span>
+              <span class="visible-xs">H</span>
+          </span>
         </span>
 
         <div class="pull-right btn-toolbar">
-          <div class="btn-group btn-group-xs">
+          <div class="btn-group btn-group-sm">
             <button class="btn btn-default" ng-click="vm.updateIsFixed()"
                     title="{{vm.isFixed() ? 'Mark this stack as not fixed' : 'Mark this stack as fixed'}}">
               {{vm.isFixed() ? 'Mark Not Fixed' : 'Mark Fixed' }}
             </button>
           </div>
-          <div class="btn-group btn-group-xs">
+          <div class="btn-group btn-group-sm">
             <button class="btn btn-default dropdown-toggle" data-toggle="dropdown">
               <i class="visible-xs fa fa-fw fa-gear"></i><span class="hidden-xs">Options</span> <span
               class="caret"></span>

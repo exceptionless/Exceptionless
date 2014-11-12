@@ -5,32 +5,52 @@
         <div class="col-sm-12">
           <div class="row row-sm text-center">
             <div class="col-md-3 col-sm-6">
-              <div class="panel padder-v item">
-                <div class="h1 font-thin h1">{{vm.stats.total || 0 | number : 0}}</div>
-                <span class="text-muted text-xs hidden-xs">Total Events</span>
-                <span class="text-muted text-xs visible-xs"><abbr title="Total Events">Total</abbr></span>
-              </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-              <a href="javascript:void(0);" class="block panel padder-v item">
-                <span class="font-thin h1 block">{{vm.stats.unique || 0 | number : 0}}</span>
-                <span class="text-muted text-xs hidden-xs">Unique Events</span>
-                <span class="text-muted text-xs visible-xs"><abbr title="Unique Events">Unique</abbr></span>
+              <a href="javascript:;" class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-calendar fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">Total Events</span>
+                  <span class="sub">{{vm.stats.total || 0 | number : 0}}</span>
+                </div><!--/details-->
+                <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
             <div class="col-md-3 col-sm-6">
-              <a href="javascript:void(0);" class="block panel padder-v item">
-                <span class="font-thin h1 block">{{vm.stats.new || 0 | number : 0}}</span>
-                <span class="text-muted text-xs hidden-xs">New Events</span>
-                <span class="text-muted text-xs visible-xs"><abbr title="New Events">New</abbr></span>
+              <a href="javascript:;" class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-key fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">Unique Events</span>
+                  <span class="sub">{{vm.stats.unique || 0 | number : 0}}</span>
+                </div><!--/details-->
+                <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
             <div class="col-md-3 col-sm-6">
-              <div class="panel padder-v item">
-                <div class="font-thin h1 block">{{vm.stats.avg_per_hour || 0 | number : 1}}</div>
-                <span class="text-muted text-xs hidden-xs">Events Per Hour</span>
-                <span class="text-muted text-xs visible-xs"><abbr title="Events Per Hour">Per Hour</abbr></span>
-              </div>
+              <a href="javascript:;" class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-asterisk fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">New Events</span>
+                  <span class="sub">{{vm.stats.new || 0 | number : 0}}</span>
+                </div><!--/details-->
+                <i class="fa fa-chevron-right fa-2x more"></i>
+              </a>
+            </div>
+            <div class="col-md-3 col-sm-6">
+              <a href="javascript:;" class="dashboard-block">
+                <div class="rotate">
+                  <i class="fa fa-line-chart fa-4x"></i>
+                </div>
+                <div class="details">
+                  <span class="title">Events Per Hour</span>
+                  <span class="sub">{{vm.stats.avg_per_hour || 0 | number : 1}}</span>
+                </div><!--/details-->
+                <i class="fa fa-chevron-right fa-2x more"></i>
+              </a>
             </div>
           </div>
         </div>

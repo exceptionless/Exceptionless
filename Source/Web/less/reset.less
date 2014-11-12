@@ -1,6 +1,6 @@
 // reset
 html {
-  background-color: @body-bg;  
+  background-color: @body-bg;
 }
 body {
   font-family: @font-family-base;
@@ -35,7 +35,7 @@ a:focus {
 
 label{font-weight: normal;}
 small, .small{font-size: @font-size-sm;}
-.badge, .label{font-weight: bold; text-shadow: 0 1px 0 rgb(0, 0, 0, 0.2)}
+.badge, .label{ font-weight: bold; border-radius: 5px; }
 .badge.bg-light, .label.bg-light{text-shadow:none;}
 .badge{
   background-color: @badge-bg;
@@ -149,7 +149,7 @@ blockquote{
   border-color: @input-border;
   border-radius: @input-border-radius;
   &,
-  &:focus {    
+  &:focus {
     .box-shadow(none);
   }
   &:focus{
@@ -175,7 +175,7 @@ blockquote{
 }
 
 .list-group{
-  border-radius: @border-radius-base;  
+  border-radius: @border-radius-base;
   &.no-radius {
     .list-group-item{
       border-radius: 0 !important;
@@ -219,12 +219,12 @@ blockquote{
     }
     a{
       color: #fff;
-    }    
+    }
   }
   &.select{
     background-color: @list-group-select-color;
   }
-  
+
   .list-group-alt & {
     &:nth-child(2n+2){
       background-color: rgba(0,0,0,0.02) !important;
@@ -315,13 +315,13 @@ blockquote{
   border-color: @border-color;
   > li{
     > a{
-      border-radius: @panel-border-radius @panel-border-radius 0 0;      
+      border-radius: @panel-border-radius @panel-border-radius 0 0;
       border-bottom-color: @border-color;
     }
     &:hover > a,
     &.active > a,
     &.active > a:hover{
-      border-color: @border-color;      
+      border-color: @border-color;
     }
     &.active > a{
       border-bottom-color: #fff !important;
@@ -343,9 +343,9 @@ blockquote{
       }
       &.active{
         > a {
-          border-bottom-color: @brand-info !important;          
+          border-bottom-color: @brand-info !important;
         }
-      }      
+      }
     }
   }
 }
@@ -356,7 +356,7 @@ blockquote{
     padding:15px;
     background-color: #fff;
     border: 1px solid @border-color;
-    border-top-width: 0; 
+    border-top-width: 0;
     border-radius: 0 0 @panel-border-radius @panel-border-radius;
   }
 }
@@ -407,6 +407,15 @@ blockquote{
   }
   .list-group{
     background: transparent;
+  }
+  .btn-group {
+    margin-top: -5px;
+  }
+  .labels {
+    margin-left: 3em;
+    .label {
+      font-size: 90%;
+    }
   }
 }
 
@@ -501,7 +510,7 @@ blockquote{
   > li > a:hover,
   > li > a:focus,
   > .active > a,
-  > .active > a:hover, 
+  > .active > a:hover,
   > .active > a:focus{
     background-image: none;
     filter:none;
@@ -521,7 +530,7 @@ blockquote{
     > a{
       background-color: @brand-light !important;
       color: @text-color;
-    }    
+    }
     > .dropdown-menu {
       display: block;
     }

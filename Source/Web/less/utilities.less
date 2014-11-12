@@ -231,13 +231,14 @@
 .avatar{
   position: relative;
   display: block;
-  border-radius: 500px;
+  border-radius: 5px;
   white-space: nowrap;
+  margin-right: -10px;
   img{
-    border-radius: 500px;
+    border-radius: 5px;
     width: 100%;
   }
-  i{    
+  i{
     position: absolute;
     left: 0;
     top: 0;
@@ -333,10 +334,10 @@
 .thumb-xs{width: 34px;display: inline-block}
 .thumb-xxs{width: 30px;display: inline-block}
 .thumb-wrapper{padding: 2px; border: 1px solid @border-color}
-.thumb, 
-.thumb-xs, 
-.thumb-sm, 
-.thumb-md, 
+.thumb,
+.thumb-xs,
+.thumb-sm,
+.thumb-md,
 .thumb-lg,
 .thumb-btn{
   img{
@@ -372,7 +373,7 @@
 .scroll-y{overflow-y:auto;}
 .scroll-x{overflow-x:auto;}
 .no-touch {
-  .scroll-x, 
+  .scroll-x,
   .scroll-y{
     overflow: hidden;
   }
@@ -389,11 +390,11 @@
     &:active{
       overflow-y: auto;
     }
-  }  
+  }
 }
 
 .hover-action{
-  display: none;    
+  display: none;
 }
 .hover-rotate{
   .transition(all .2s ease-in-out .1s)

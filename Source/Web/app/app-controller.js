@@ -6,7 +6,7 @@
       var vm = this;
       vm.settings = {
         headerFixed: true,
-        asideFixed: false,
+        asideFixed: true,
         asideFolded: false
       };
       vm.user = {
