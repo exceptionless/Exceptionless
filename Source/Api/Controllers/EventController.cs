@@ -68,7 +68,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            if (systemFilter == null)
+            if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter();
 
             var sortBy = GetSort(sort);
@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
-        [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
         public IHttpActionResult GetByReferenceId(string referenceId, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -185,7 +185,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
-        [Route("~/api/v2/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         public async Task<IHttpActionResult> SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
