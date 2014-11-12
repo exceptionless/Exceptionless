@@ -1,0 +1,20 @@
+<ul class="nav navbar-nav">
+  <li class="dropdown" is-open="vm.isDropDownOpen" ng-mouseenter="vm.isDropDownOpen = true"  ng-mouseleave="vm.isDropDownOpen = false">
+    <a class="dropdown-toggle">
+      <i class="fa fa-fw fa-calendar fa-lg" ng-class="{'text-success': vm.hasFilter() }"></i>
+    </a>
+
+    <div class="dropdown-menu w-md" role="menu">
+      <div class="panel bg-white">
+        <div class="list-group">
+          <strong class="media list-group-item text-center">Nov 11th - Nov 12th</strong>
+          <a class="media list-group-item" ng-click="vm.setFilter('last 24 hours')">Last 24 Hours</a>
+          <a class="media list-group-item" ng-click="vm.setFilter('last week')">Last Week</a>
+          <a class="media list-group-item" ng-click="vm.setFilter('last 30 days')">Last 30 Days</a>
+          <a class="media list-group-item" ng-click="vm.setFilter()">All Time</a>
+          <a class="media list-group-item" ng-click="vm.setCustomFilter()">Custom</a>
+        </div>
+      </div>
+    </div>
+  </li>
+</ul>

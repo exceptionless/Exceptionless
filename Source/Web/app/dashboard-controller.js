@@ -30,7 +30,9 @@
         options: {
           renderer: 'stack',
           stroke: true,
-          padding: {top: 0.085},
+          padding: {
+            top: 0.085
+          },
           series: [
             {
               name: 'Total',

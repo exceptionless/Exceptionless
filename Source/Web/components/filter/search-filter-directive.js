@@ -32,15 +32,21 @@
             filterService.setIncludeHidden(includeHidden);
           }
 
+          function setIncludeNotFound(includeNotFound) {
+            filterService.setIncludeNotFound(includeNotFound);
+          }
+
           vm.clearFilter = clearFilter;
           vm.hasFilter = hasFilter;
           vm.filter = filterService.getFilter();
           vm.includeFixed = filterService.getIncludeFixed();
           vm.includeHidden = filterService.getIncludeHidden();
+          vm.includeNotFound = filterService.getIncludeNotFound();
           vm.isDropDownOpen = false;
           vm.setFilter = setFilter;
           vm.setIncludeFixed = setIncludeFixed;
           vm.setIncludeHidden = setIncludeHidden;
+          vm.setIncludeNotFound = setIncludeNotFound;
         }],
         controllerAs: 'vm'
       };

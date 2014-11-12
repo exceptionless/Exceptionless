@@ -28,7 +28,7 @@
 
             var mainElement = angular.element(element);
             mainElement.empty();
-            var graphElement = $compile('<div></div>')(scope);
+            var graphElement = $compile('<div class="chart-holder-small"></div>')(scope);
             mainElement.append(graphElement);
             var settings = getSettings(graphElement[0]);
 
