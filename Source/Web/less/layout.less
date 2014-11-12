@@ -24,7 +24,6 @@ body{
 		top: 0;
 		right: 0;
     box-shadow: 0 2px 2px rgba(0, 0, 0, 0.25);
-    border-bottom: 2px solid #578f01;
   }
 }
 
@@ -175,18 +174,23 @@ body{
 		text-decoration: none;
 	}
 	img{
-    height: 40px;
+    height: 38px;
     margin-top: 7px;
     margin-left: -10px;
     vertical-align: middle;
-    margin-bottom: -2px;
+    margin-bottom: 0px;
   }
   img.icon {
     margin-top: 5px;
     height: 40px;
     margin-left: 10px;
-    margin-bottom: 5px;
     display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .app-aside-folded .navbar-brand img.icon {
+    display: block;
   }
 }
 
@@ -385,4 +389,11 @@ body{
 			margin-bottom: 0;
 		}
 	}
+}
+
+@media (max-width: 767px) {
+  .navbar .navbar-header {
+    box-shadow: 0 5px 5px rgba(0, 0, 0, .25);
+    border-bottom: 2px solid @brand-primary;
+  }
 }

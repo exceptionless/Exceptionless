@@ -30,7 +30,7 @@ a {
 a:hover,
 a:focus {
   color: @link-hover-color;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 label{font-weight: normal;}
@@ -277,6 +277,11 @@ blockquote{
   }
 }
 
+.primary-underline {
+  box-shadow: 0 5px 5px rgba(0, 0, 0, .25);
+  border-bottom: 2px solid @brand-primary;
+}
+
 .nav{
   > li{
     > a{
@@ -497,6 +502,10 @@ blockquote{
       }
     }
   }
+}
+
+.table-hover.table-clickable tbody tr:hover td, .table-hover tbody tr:hover th {
+  background-color: #eeffed;
 }
 
 .well, pre {
