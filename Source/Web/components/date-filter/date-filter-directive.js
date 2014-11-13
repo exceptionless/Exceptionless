@@ -7,7 +7,7 @@
         restrict: 'E',
         replace: true,
         scope: true,
-        templateUrl: '/components/date-filter/date-filter-directive.tpl.html',
+        templateUrl: 'components/date-filter/date-filter-directive.tpl.html',
         controller: ['$interval', '$scope', 'dialogs', 'filterService', function ($interval, $scope, dialogs, filterService) {
           function getFilterName() {
             var time = filterService.getTime();
