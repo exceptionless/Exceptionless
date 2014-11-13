@@ -5,52 +5,51 @@
         <div class="col-sm-12">
           <div class="row row-sm text-center">
             <div class="col-md-3 col-sm-6">
-              <a href="javascript:;" class="dashboard-block">
+              <a ui-sref="app.recent" href="/recent" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-calendar fa-4x"></i>
                 </div>
                 <div class="details">
                   <span class="title">Total Events</span>
                   <span class="sub">{{vm.stats.total || 0 | number : 0}}</span>
-                </div><!--/details-->
+                </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
             <div class="col-md-3 col-sm-6">
-              <a href="javascript:;" class="dashboard-block">
+              <a ui-sref="app.frequent" href="/frequent" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-key fa-4x"></i>
                 </div>
                 <div class="details">
                   <span class="title">Unique Events</span>
                   <span class="sub">{{vm.stats.unique || 0 | number : 0}}</span>
-                </div><!--/details-->
+                </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
             <div class="col-md-3 col-sm-6">
-              <a href="javascript:;" class="dashboard-block">
+              <a ui-sref="app.new" href="/new" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-asterisk fa-4x"></i>
                 </div>
                 <div class="details">
                   <span class="title">New Events</span>
                   <span class="sub">{{vm.stats.new || 0 | number : 0}}</span>
-                </div><!--/details-->
+                </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
             <div class="col-md-3 col-sm-6">
-              <a href="javascript:;" class="dashboard-block">
+              <div class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-line-chart fa-4x"></i>
                 </div>
                 <div class="details">
                   <span class="title">Events Per Hour</span>
                   <span class="sub">{{vm.stats.avg_per_hour || 0 | number : 1}}</span>
-                </div><!--/details-->
-                <i class="fa fa-chevron-right fa-2x more"></i>
-              </a>
+                </div>
+              </div>
             </div>
           </div>
         </div>
