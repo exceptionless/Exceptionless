@@ -16,7 +16,8 @@
 
       function buildFilter() {
         var filters = [];
-        filters.push('fixed:'.concat(_includeFixed === true));
+        // TODO: This needs to be fixed in the stack repository.
+        //filters.push('fixed:'.concat(_includeFixed === true));
         filters.push('hidden:'.concat(_includeHidden === true));
 
         if (_organizationId) {
