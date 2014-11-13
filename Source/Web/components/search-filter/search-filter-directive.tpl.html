@@ -9,27 +9,24 @@
         <form role="form">
           <div class="form-group">
             <label for="search">Filter</label>
-            <input id="search" type="search" class="form-control" placeholder="Criteria" ng-model="vm.filter" ng-model-options="{ debounce: 1000 }" ng-change="vm.setFilter(vm.filter)">
+            <input id="search" type="search" class="form-control" placeholder="Criteria" ng-model="vm.filter" ng-model-options="{ debounce: 500 }" ng-change="vm.setFilter(vm.filter)">
           </div>
 
-          <div class="form-group">
-            <label for="includeFixed">Include Fixed</label>
-            <label class="i-switch i-switch-md bg-info m-t-xs m-r">
-              <input id="includeFixed" type="checkbox" ng-model="vm.includeFixed" ng-model-options="{ debounce: 1000 }" ng-change="vm.setIncludeFixed(vm.includeFixed)"><i></i>
-            </label>
-           </div>
-
-          <div class="form-group">
-            <label for="includeHidden">Include Hidden</label>
-            <label class="i-switch i-switch-md bg-info m-t-xs m-r">
-              <input id="includeHidden" type="checkbox" ng-model="vm.includeHidden" ng-model-options="{ debounce: 1000 }" ng-change="vm.setIncludeHidden(vm.includeHidden)"><i></i>
+          <div class="checkbox">
+            <label class="i-checks">
+              <input id="includeFixed" type="checkbox" ng-model="vm.includeFixed" ng-change="vm.setIncludeFixed(vm.includeFixed)"><i></i>Include Fixed</a>
             </label>
           </div>
 
-          <div class="form-group">
-            <label for="includeNotFound">Include Not Found</label>
-            <label class="i-switch i-switch-md bg-info m-t-xs m-r">
-              <input id="includeNotFound" type="checkbox" ng-model="vm.includeNotFound" ng-model-options="{ debounce: 1000 }" ng-change="vm.setIncludeNotFound(vm.includeNotFound)"><i></i>
+          <div class="checkbox">
+            <label class="i-checks">
+              <input id="includeHidden" type="checkbox" ng-model="vm.includeHidden" ng-change="vm.setIncludeHidden(vm.includeHidden)"><i></i>Include Hidden</a>
+            </label>
+          </div>
+
+          <div class="checkbox">
+            <label class="i-checks">
+              <input id="includeNotFound" type="checkbox" ng-model="vm.includeNotFound" ng-change="vm.setIncludeNotFound(vm.includeNotFound)"><i></i>Include Not Found</a>
             </label>
           </div>
 
