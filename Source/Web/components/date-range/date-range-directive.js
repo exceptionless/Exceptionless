@@ -11,7 +11,7 @@
           end: '=',
           ngOptions: '='
         },
-        templateUrl: "/components/date-range/date-range-directive.tpl.html",
+        templateUrl: "components/date-range/date-range-directive.tpl.html",
         link: function (scope, element) {
           element.datepicker(scope.ngOptions);
         }

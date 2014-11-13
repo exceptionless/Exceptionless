@@ -7,7 +7,7 @@
       var vm = this;
 
       function addReferenceLink() {
-        dialogs.create('/app/stack/add-reference-dialog.tpl.html', 'AddReferenceDialog as vm').result.then(function (url) {
+        dialogs.create('app/stack/add-reference-dialog.tpl.html', 'AddReferenceDialog as vm').result.then(function (url) {
           function onSuccess() {
             vm.stack.references.push(url);
           }

@@ -7,7 +7,7 @@
       var vm = this;
 
       function addConfiguration() {
-        dialogs.create('/app/project/manage/add-configuration-dialog.tpl.html', 'AddConfigurationDialog as vm').result.then(function (data) {
+        dialogs.create('app/project/manage/add-configuration-dialog.tpl.html', 'AddConfigurationDialog as vm').result.then(function (data) {
           function onSuccess() {
             var found = false;
             vm.config.forEach(function (conf, index) {
@@ -44,7 +44,7 @@
       }
 
       function addWebHook() {
-        dialogs.create('/components/web-hook/add-web-hook-dialog.tpl.html', 'AddWebHookDialog as vm').result.then(function (data) {
+        dialogs.create('components/web-hook/add-web-hook-dialog.tpl.html', 'AddWebHookDialog as vm').result.then(function (data) {
           function onSuccess(response) {
             vm.webHooks.push(response.data);
           }

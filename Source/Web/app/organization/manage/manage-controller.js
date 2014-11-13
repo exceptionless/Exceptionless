@@ -8,7 +8,7 @@
       var vm = this;
 
       function addUser() {
-        dialogs.create('/app/organization/manage/add-user-dialog.tpl.html', 'AddUserDialog as vm').result.then(function (name) {
+        dialogs.create('app/organization/manage/add-user-dialog.tpl.html', 'AddUserDialog as vm').result.then(function (name) {
           function onSuccess(response) {
             vm.users.push(response.data);
           }

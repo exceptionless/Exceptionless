@@ -12,19 +12,19 @@
           function getFilterName() {
             var time = filterService.getTime();
             if (time === 'last hour') {
-              return moment().subtract('hours', 1).twix(moment()).format();
+              return moment().subtract(1, 'hours').twix(moment()).format();
             }
 
             if (time === 'last 24 hours') {
-              return moment().subtract('hours', 24).twix(moment()).format();
+              return moment().subtract(24, 'hours').twix(moment()).format();
             }
 
             if (time === 'last week') {
-              return moment().subtract('days', 7).startOf('day').twix(moment()).format();
+              return moment().subtract(7, 'days').startOf('day').twix(moment()).format();
             }
 
             if (time === 'last 30 days') {
-              return moment().subtract('days', 30).startOf('day').twix(moment()).format();
+              return moment().subtract(30, 'days').startOf('day').twix(moment()).format();
             }
 
             if (time) {
@@ -48,7 +48,7 @@
               setFilter(moment(range.start, 'MM/DD/YYYY').format('YYYY-MM-DDTHH:mm:ss') + '-' + moment(range.end, 'MM/DD/YYYY').format('YYYY-MM-DDTHH:mm:ss'));
             }
 
-            dialogs.create('/components/date-filter/custom-date-range-dialog.tpl.html', 'CustomDateRangeDialog as vm').result.then(onSuccess);
+            dialogs.create('components/date-filter/custom-date-range-dialog.tpl.html', 'CustomDateRangeDialog as vm').result.then(onSuccess);
           }
 
           function setFilter(filter) {
