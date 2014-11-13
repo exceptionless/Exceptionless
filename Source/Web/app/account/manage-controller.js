@@ -34,7 +34,7 @@
 
       }
 
-      function save(isValid) {
+      function saveProfile(isValid) {
         if (!isValid) {
           return;
         }
@@ -59,7 +59,7 @@
       vm.profile = {};
       vm.projects = [];
       vm.resendVerificationEmail = resendVerificationEmail;
-      vm.save = save;
+      vm.saveProfile = saveProfile;
       vm.saveNotificationSettings = saveNotificationSettings;
 
       getProjects();

@@ -23,11 +23,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
-            return new SummaryData { TemplateKey = "stack-summary" };
+            return new SummaryData { TemplateKey = "stack-summary", Data = stack.Type };
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData { TemplateKey ="event-summary", Data = new { Message = ev.Message } };
+            return new SummaryData { TemplateKey ="event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {

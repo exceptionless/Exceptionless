@@ -9,9 +9,12 @@
               <form name="profileForm" role="form">
                 <div class="form-group">
                   <label>Full Name</label>
-                  <input name="name" type="text" class="form-control" placeholder="Your first and last name"
-                         ng-model="vm.profile.full_name" ng-model-options="{ debounce: 1000 }"
-                         ng-change="vm.save(profileForm.$valid)" required/>
+                  <input name="name" type="text" class="form-control"
+                         placeholder="Your first and last name"
+                         ng-model="vm.profile.full_name"
+                         ng-model-options="{ debounce: 1000 }"
+                         ng-change="vm.saveProfile(profileForm.$valid)"
+                         required />
 
                   <div class="error" ng-if="profileForm.name.$touched || profileForm.$submitted">
                     <small ng-if="profileForm.name.$error.required">
@@ -22,8 +25,12 @@
 
                 <div class="form-group">
                   <label>Email Address</label>
-                  <input name="email" type="email" class="form-control" placeholder="Email Address"
-                         ng-model="vm.profile.email_address" required/>
+                  <input name="email" type="email" class="form-control"
+                         placeholder="Email Address"
+                         ng-model="vm.profile.email_address"
+                         ng-model-options="{ debounce: 1000 }"
+                         ng-change="vm.saveProfile(profileForm.$valid)"
+                         required/>
 
                   <div class="error" ng-if="profileForm.email.$touched || profileForm.$submitted">
                     <small ng-if="profileForm.email.$error.required">
