@@ -2,7 +2,7 @@
   'use strict';
 
   angular.module('app')
-    .controller('App', ['$window', 'BASE_URL', 'signalRService', function ($window, BASE_URL, signalRService) {
+    .controller('App', ['$window', 'BASE_URL', 'signalRService', 'VERSION', function ($window, BASE_URL, signalRService, VERSION) {
       var vm = this;
       vm.settings = {
         headerFixed: true,
@@ -14,7 +14,7 @@
         avatar_url: 'http://www.gravatar.com/avatar/3f307a0eedda99476af09a6568c16c14.png'
       };
       vm.project = {id: '537650f3b77efe23a47914f4'};
-      vm.version = '2.0.0';
+      vm.version = VERSION;
 
       function isSmartDevice($window) {
         var ua = $window['navigator']['userAgent'] || $window['navigator']['vendor'] || $window['opera'];
@@ -29,6 +29,5 @@
 
       // NOTE: we don't dispose of the SignalR timeout because it should never be disposed..
       signalRService.startDelayed(BASE_URL, 'd795c4406f6b4bc6ae8d787c65d0274d');
-    }
-    ]);
+    }]);
 }());

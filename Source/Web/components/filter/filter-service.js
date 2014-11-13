@@ -5,7 +5,6 @@
     .factory('filterService', ['$rootScope', function ($rootScope) {
       var _includeFixed;
       var _includeHidden;
-      var _includeNotFound;
       var _organizationId;
       var _projectId;
       var _rawfilter;
@@ -17,17 +16,8 @@
 
       function buildFilter() {
         var filters = [];
-        if (_includeFixed) {
-          filters.push('fixed:' + _includeFixed === true);
-        }
-
-        if (_includeHidden) {
-          filters.push('hidden:' + _includeHidden === true);
-        }
-
-        if (_includeNotFound) {
-          filters.push('notfound:' + _includeNotFound === true);
-        }
+        filters.push('fixed:'.concat(_includeFixed === true));
+        filters.push('hidden:'.concat(_includeHidden === true));
 
         if (_organizationId) {
           filters.push('organization:' + _organizationId);
@@ -67,15 +57,15 @@
       }
 
       function getDefaultOptions() {
-        var options = {offset: getTimeZoneOffset()};
+        var options = { offset: getTimeZoneOffset() };
 
         var filter = buildFilter();
         if (filter) {
-          angular.extend(options, {filter: filter});
+          angular.extend(options, { filter: filter });
         }
 
         if (_timeFilter) {
-          angular.extend(options, {time: _timeFilter});
+          angular.extend(options, { time: _timeFilter });
         }
 
         return options;
@@ -91,10 +81,6 @@
 
       function getIncludeHidden() {
         return _includeHidden === true;
-      }
-
-      function getIncludeNotFound() {
-        return _includeNotFound === true;
       }
 
       function getProjectId() {
@@ -128,15 +114,6 @@
         }
 
         _includeHidden = includeHidden === true;
-        fireFilterChanged();
-      }
-
-      function setIncludeNotFound(includeNotFound) {
-        if (angular.equals(includeNotFound, _includeNotFound)) {
-          return;
-        }
-
-        _includeNotFound = includeNotFound === true;
         fireFilterChanged();
       }
 
@@ -185,14 +162,12 @@
         getFilter: getFilter,
         getIncludeFixed: getIncludeFixed,
         getIncludeHidden: getIncludeHidden,
-        getIncludeNotFound: getIncludeNotFound,
         getProjectId: getProjectId,
         getOrganizationId: getOrganizationId,
         getTime: getTime,
         setFilter: setFilter,
         setIncludeFixed: setIncludeFixed,
         setIncludeHidden: setIncludeHidden,
-        setIncludeNotFound: setIncludeNotFound,
         setOrganizationId: setOrganizationId,
         setProjectId: setProjectId,
         setTime: setTime
