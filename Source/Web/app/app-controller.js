@@ -10,8 +10,8 @@
         asideFolded: false
       };
       vm.user = {
-        name: 'Blake Niemyjski',
-        avatar_url: 'https://secure.gravatar.com/avatar/89b10deee628535a5510db131f983541?s=55&amp;d=identicon&amp;r=PG'
+        name: 'Eric J. Smith',
+        avatar_url: 'http://www.gravatar.com/avatar/3f307a0eedda99476af09a6568c16c14.png'
       };
       vm.project = {id: '537650f3b77efe23a47914f4'};
       vm.version = '2.0.0';

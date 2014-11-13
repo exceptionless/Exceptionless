@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
@@ -21,26 +22,25 @@ using Exceptionless;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
+using Exceptionless.Models.Data;
 
 namespace SampleConsole {
     internal class Program {
-        private static readonly Random _random = new Random();
         private static bool _sendingContinuous = false;
 
         private static void Main() {
 
             ExceptionlessClient.Default.Startup();
             ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
-            //ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
+            ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
-            int errorCode = _random.Next();
-            ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }, name: "Test Object").Submit();
-            ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
-            ExceptionlessClient.Default.SubmitNotFound("/somepage");
-            ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
-            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data["TestKey"] = "Test");
+            //ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }, name: "Test Object").Submit();
+            //ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
+            //ExceptionlessClient.Default.SubmitNotFound("/somepage");
+            //ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             while (true) {
@@ -53,19 +53,19 @@ namespace SampleConsole {
                 Trace.WriteLine(String.Format("Key {0} pressed.", keyInfo.Key));
 
                 if (keyInfo.Key == ConsoleKey.D1)
-                    SendError(errorCode: errorCode);
+                    SendEvent();
                 if (keyInfo.Key == ConsoleKey.D2)
-                    SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 100, uniqueCount: 25);
+                    SendContinuousEvents(50, token, 100);
                 else if (keyInfo.Key == ConsoleKey.D3)
-                    SendContinuousErrors(1000, token, randomizeDates: true, uniqueCount: 5, maxDaysOld: 1);
+                    SendContinuousEvents(1000, token, maxDaysOld: 1);
                 else if (keyInfo.Key == ConsoleKey.D4)
-                    SendContinuousErrors(50, token, randomizeDates: true, uniqueCount: 5);
+                    SendContinuousEvents(50, token);
                 else if (keyInfo.Key == ConsoleKey.D5)
-                    SendContinuousErrors(50, token, randomizeDates: true, maxErrors: 1000, uniqueCount: 25);
+                    SendContinuousEvents(50, token, 1000);
                 else if (keyInfo.Key == ConsoleKey.D6)
                     ExceptionlessClient.Default.ProcessQueue();
                 else if (keyInfo.Key == ConsoleKey.D7)
-                    SendAllCapturedErrorsFromDisk();
+                    SendAllCapturedEventsFromDisk();
                 else if (keyInfo.Key == ConsoleKey.Q)
                     break;
                 else if (keyInfo.Key == ConsoleKey.S) {
@@ -78,61 +78,74 @@ namespace SampleConsole {
             }
         }
 
-        private static void SendContinuousErrors(int delay, CancellationToken token, bool randomizeDates = false, int maxErrors = Int32.MaxValue, int uniqueCount = 1, bool randomizeCritical = true, int maxDaysOld = 90) {
+        private static void SendContinuousEvents(int delay, CancellationToken token, int maxEvents = Int32.MaxValue, int maxDaysOld = 90) {
             _sendingContinuous = true;
             Console.WriteLine();
             Console.WriteLine("Press 's' to stop sending.");
-            int errorCount = 0;
-            if (uniqueCount <= 0)
-                uniqueCount = 1;
-
-            var errorCodeList = new List<int>();
-            for (int i = 0; i < uniqueCount; i++)
-                errorCodeList.Add(_random.Next());
+            int eventCount = 0;
 
             Task.Factory.StartNew(delegate {
-                while (errorCount < maxErrors) {
+                while (eventCount < maxEvents) {
                     if (token.IsCancellationRequested) {
                         _sendingContinuous = false;
                         break;
                     }
 
-                    SendError(randomizeDates, errorCodeList.Random(), randomizeCritical ? RandomHelper.GetBool() : false, writeToConsole: false, maxDaysOld: maxDaysOld);
-                    errorCount++;
+                    SendEvent(false, maxDaysOld);
+                    eventCount++;
 
                     Console.SetCursorPosition(0, 13);
-                    Console.WriteLine("Sent {0} errors.", errorCount);
-                    Trace.WriteLine(String.Format("Sent {0} errors.", errorCount));
+                    Console.WriteLine("Sent {0} events.", eventCount);
+                    Trace.WriteLine(String.Format("Sent {0} events.", eventCount));
 
                     Thread.Sleep(delay);
                 }
             }, token);
         }
 
-        private static void SendError(bool randomizeDates = false, int? errorCode = null, bool critical = false, bool writeToConsole = true, int maxDaysOld = 90) {
-            if (!errorCode.HasValue)
-                errorCode = _random.Next();
+        private static void SendEvent(bool writeToConsole = true, int maxDaysOld = 90) {
+            var ev = new Event();
+            ev.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
 
-            try {
-                new MyCustomClass<string>().ThrowNastyException("blah", new List<string>(), errorCode.Value);
-            } catch (Exception ex) {
-                var builder = ex.ToExceptionless()
-                    .AddObject(new {
-                        myApplicationVersion = new Version(1, 0),
-                        Date = DateTime.Now,
-                        __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23",
-                        SomeField10 = "testing"
-                    }, "Object From Code");
-                if (randomizeDates)
-                    builder.Target.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
-                if (critical)
-                    builder.MarkAsCritical();
-                if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
-                    builder.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
-
-                builder.AddRecentTraceLogEntries();
-                builder.Submit();
+            ev.Type = EventTypes.Random();
+            if (ev.Type == Event.KnownTypes.FeatureUsage)
+                ev.Source = FeatureNames.Random();
+            else if (ev.Type == Event.KnownTypes.NotFound)
+                ev.Source = PageNames.Random();
+            else if (ev.Type == Event.KnownTypes.Log) {
+                ev.Source = LogSources.Random();
+                ev.Message = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
             }
+
+            for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
+                string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 10));
+                while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
+                    key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+
+                ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+            }
+
+            for (int i = 0; i < RandomHelper.GetRange(1, 3); i++) {
+                string tag = EventTags.Random();
+                if (!ev.Tags.Contains(tag))
+                    ev.Tags.Add(tag);
+            }
+
+            if (ev.Type == Event.KnownTypes.Error) {
+                // limit error variation so that stacking will occur
+                if (_randomErrors == null)
+                    _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
+
+                ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+            }
+
+            // use server config to see if we should include this data
+            if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+                ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
+
+            //ev.AddRecentTraceLogEntries();
+
+            ExceptionlessClient.Default.SubmitEvent(ev);
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, 11);
@@ -141,7 +154,51 @@ namespace SampleConsole {
             }
         }
 
-        private static void SendAllCapturedErrorsFromDisk() {
+        private static List<Error> _randomErrors;
+
+        private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+            var error = new Error();
+            error.Message = @"Generated exception message.";
+            error.Type = ExceptionTypes.Random();
+            if (RandomHelper.GetBool())
+                error.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
+
+            if (generateData) {
+                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
+                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
+                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+
+                    error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                }
+            }
+
+            var stack = new StackFrameCollection();
+            for (int i = 0; i < RandomHelper.GetRange(1, 10); i++)
+                stack.Add(GenerateStackFrame());
+            error.StackTrace = stack;
+
+            if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
+                error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
+
+            return error;
+        }
+
+        private static Exceptionless.Models.Data.StackFrame GenerateStackFrame() {
+            return new Exceptionless.Models.Data.StackFrame {
+                DeclaringNamespace = Namespaces.Random(),
+                DeclaringType = TypeNames.Random(),
+                Name = MethodNames.Random(),
+                Parameters = new ParameterCollection {
+                    new Parameter {
+                        Type = "String",
+                        Name = "path"
+                    }
+                }
+            };
+        }
+
+        private static void SendAllCapturedEventsFromDisk() {
             string path = Path.GetFullPath(@"..\..\Errors\");
             if (!Directory.Exists(path))
                 return;
@@ -153,22 +210,67 @@ namespace SampleConsole {
             }
         }
 
-        public class MyException : ApplicationException {
-            public MyException(int code, string message) : base(message) {
-                ErrorCode = code;
-            }
+        public static readonly List<string> LogSources = new List<string> {
+            "Some.Class",
+            "MyClass",
+            "CodeGenerator",
+            "Exceptionless.Core.Parser.SomeClass"
+        };
 
-            public int ErrorCode { get; set; }
-        }
+        public static readonly List<string> FeatureNames = new List<string> {
+            "Feature1",
+            "Feature2",
+            "Feature3",
+            "Feature4"
+        };
 
-        public class MyCustomClass<T> {
-            public void ThrowNastyException<T, K>(T value, List<K> values, int? errorCode) {
-                try {
-                    throw new MyException(errorCode.HasValue ? errorCode.Value : 0, Guid.NewGuid().ToString());
-                } catch (Exception ex) {
-                    throw new Exception("Caught and Rethrown", ex);
-                }
-            }
-        }
+        public static readonly List<string> PageNames = new List<string> {
+            "/page1",
+            "/page2",
+            "/page3",
+            "/page4"
+        };
+
+        public static readonly List<string> EventTypes = new List<string> {
+            Event.KnownTypes.Error,
+            Event.KnownTypes.FeatureUsage,
+            Event.KnownTypes.Log,
+            Event.KnownTypes.NotFound
+        };
+
+        public static readonly List<string> ExceptionTypes = new List<string> {
+            "System.NullReferenceException",
+            "System.ApplicationException",
+            "System.AggregateException",
+            "System.InvalidArgumentException",
+            "System.InvalidOperationException"
+        };
+
+        public static readonly List<string> EventTags = new List<string> {
+            "Tag1",
+            "Tag2",
+            "Tag3",
+            "Tag4",
+            "Tag5"
+        };
+
+        public static readonly List<string> Namespaces = new List<string> {
+            "System",
+            "System.IO",
+            "CodeSmith",
+            "CodeSmith.Generator",
+            "SomeOther.Blah"
+        };
+
+        public static readonly List<string> TypeNames = new List<string> {
+            "DateTime",
+            "SomeType",
+            "ProjectGenerator"
+        };
+
+        public static readonly List<string> MethodNames = new List<string> {
+            "SomeMethod",
+            "GenerateCode"
+        };
     }
 }
