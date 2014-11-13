@@ -20,8 +20,15 @@
         }
 
         if (Object.keys(queryString).length > 0) {
-          url += '?';
+          var isFirst = true;
           for (var key in queryString) {
+            if (isFirst) {
+              url += '?';
+              isFirst = false;
+            } else {
+              url += '&';
+            }
+
             url += key + '=' + queryString[key];
           }
         }
