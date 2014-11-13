@@ -1,9 +1,21 @@
 <div class="hbox hbox-auto-xs hbox-auto-sm">
   <div class="wrapper-md">
-    <tabset class="tab-container">
-      <tab ng-repeat="tab in vm.tabs track by tab.template_key" heading="{{tab.title}}" active="tab.active">
-        <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"></div>
-      </tab>
-    </tabset>
+    <div class="panel panel-default">
+      <div class="panel-heading"><i class="fa fa-calendar"></i> Event Occurrence</div>
+      <div class="panel-body">
+        <tabset class="tab-container">
+          <tab ng-repeat="tab in vm.tabs track by tab.template_key" heading="{{tab.title}}" active="tab.active">
+            <div ng-include="'app/event/tabs/' + tab.template_key + '.tpl.html'"></div>
+          </tab>
+        </tabset>
+      </div>
+      <div class="table-footer">
+        <div class=" row">
+          <div class="col-sm-8 hidden-xs">
+            <button class="btn btn-sm btn-default" ng-click="vm.save()" ng-disabled="!vm.hasStacks()">Apply</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
