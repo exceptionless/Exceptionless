@@ -6,7 +6,7 @@
       var vm = this;
       vm.newest = {
         get: function (options) {
-          return stackService.get(options);
+          return stackService.getNew(options);
         },
         options: {
           limit: 20,

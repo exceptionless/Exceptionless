@@ -1,4 +1,3 @@
-<!-- navbar header -->
 <div class="navbar-header bg-black">
   <button class="pull-right visible-xs dk" ui-toggle-class="show" data-target=".navbar-collapse">
     <i class="glyphicon glyphicon-cog"></i>
@@ -6,16 +5,12 @@
   <button class="pull-right visible-xs" ui-toggle-class="off-screen" data-target=".app-aside" ui-scroll="app">
     <i class="glyphicon glyphicon-align-justify"></i>
   </button>
-  <!-- brand -->
   <a href="#/" class="navbar-brand text-lt">
     <img src="touch-icon-ipad-114.png" alt="exceptionless" class="icon">
     <img src="img/exceptionless-logo.png" alt="exceptionless" class="hidden-folded">
   </a>
-  <!-- / brand -->
 </div>
-<!-- / navbar header -->
 
-<!-- navbar collapse -->
 <div class="collapse navbar-collapse box-shadow bg-black primary-underline">
   <div class="nav navbar-nav m-l-sm hidden-xs">
     <a href="javascript:void(0);" class="btn no-shadow navbar-btn"
@@ -28,48 +23,14 @@
   <date-filter></date-filter>
   <search-filter></search-filter>
 
-  <!-- navbar right -->
   <ul class="nav navbar-nav navbar-right">
-    <li class="dropdown">
-      <a href="javascript:void(0);" class="dropdown-toggle">
-        <i class="fa fa-fw fa-bell"></i>
-        <span class="visible-xs-inline">Notifications</span>
-        <span class="badge badge-sm up bg-danger pull-right-xs">1</span>
-      </a>
-
-      <!-- dropdown -->
-      <div class="dropdown-menu w-xl">
-        <div class="panel bg-white">
-          <div class="panel-heading b-light bg-light">
-            <strong>You have <span>1</span> notifications</strong>
-          </div>
-          <div class="list-group">
-            <a href="javascript:void(0);" class="media list-group-item">
-                    <span class="pull-left thumb-sm">
-                      <img ng-src="{{appVm.user.avatar_url}}" alt="{{appVm.user.name}}" class="img-circle">
-                    </span>
-                    <span class="media-body block m-b-none">
-                      2.0 released!<br/>
-                      <small class="text-muted">10 minutes ago</small>
-                    </span>
-            </a>
-          </div>
-          <div class="panel-footer text-sm">
-            <a href="javascript:void(0);" class="pull-right"><i class="fa fa-cog"></i></a>
-            <a href="javascript:void(0);" data-toggle="class:show">See all the notifications</a>
-          </div>
-        </div>
-      </div>
-      <!-- / dropdown -->
-    </li>
-
     <li class="dropdown">
       <a href="javascript:void(0);" class="dropdown-toggle clear" data-toggle="dropdown">
         <span class="thumb-sm avatar pull-right m-t-n-sm m-b-n-sm m-l-sm">
             <img ng-src="{{appVm.user.avatar_url}}" alt="{{appVm.user.name}}">
         </span>
       </a>
-      <!-- dropdown -->
+
       <ul class="dropdown-menu">
         <li>
           <a ui-sref="app.account">
@@ -103,10 +64,6 @@
           </a>
         </li>
       </ul>
-      <!-- / dropdown -->
     </li>
   </ul>
-  <!-- / navbar right -->
-
 </div>
-<!-- / navbar collapse -->

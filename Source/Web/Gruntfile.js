@@ -67,7 +67,7 @@ module.exports = function (grunt) {
     htmlangular: {
       main: {
         options: {
-          customtags: ['date-filter', 'events', 'progressbar', 'project-filter', 'projects', 'rickshaw', 'search-filter', 'simple-stack-trace', 'stacks', 'stack-trace', 'summary', 'timeago', 'toaster-container'],
+          customtags: ['date-*', 'events', 'progressbar', 'project-filter', 'projects', 'rickshaw', 'search-filter', 'simple-stack-trace', 'stacks', 'stack-trace', 'summary', 'timeago', 'toaster-container'],
           customattrs: [
             'is-*',
             'ui-*',

@@ -2,12 +2,12 @@
   'use strict';
 
   angular.module('exceptionless.date-filter')
-    .directive('dateFilter', ['$interval', function ($interval) {
+    .directive('dateFilter', ['$interval', 'dateRangeParserService', function ($interval, dateRangeParserService) {
       return {
         restrict: 'E',
         replace: true,
         scope: true,
-        templateUrl: 'components/date-filter/date-filter-directive.tpl.html',
+        templateUrl: '/components/date-filter/date-filter-directive.tpl.html',
         controller: ['$interval', '$scope', 'dialogs', 'filterService', function ($interval, $scope, dialogs, filterService) {
           function getFilterName() {
             var time = filterService.getTime();
@@ -28,9 +28,9 @@
             }
 
             if (time) {
-              var range = time.split('-');
-              if (range.length === 2) {
-                return moment(range[0]).twix(moment(range[1])).format();
+              var range = dateRangeParserService.parse(time);
+              if (range && range.start && range.end) {
+                return moment(range.start).twix(moment(range.end)).format();
               } else {
                 setFilter();
               }
@@ -45,8 +45,7 @@
 
           function setCustomFilter() {
             function onSuccess(range) {
-              console.log(range);
-              setFilter();
+              setFilter(moment(range.start, 'MM/DD/YYYY').format('YYYY-MM-DDTHH:mm:ss') + '-' + moment(range.end, 'MM/DD/YYYY').format('YYYY-MM-DDTHH:mm:ss'));
             }
 
             dialogs.create('/components/date-filter/custom-date-range-dialog.tpl.html', 'CustomDateRangeDialog as vm').result.then(onSuccess);

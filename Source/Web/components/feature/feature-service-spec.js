@@ -6,15 +6,19 @@
     beforeEach(module('exceptionless.feature'));
 
     it('should set premium feature', inject(function (featureService) {
-      expect(featureService.hasPremium(), false);
+      featureService.setPremium(false);
+
+      expect(featureService.hasPremium()).toBe(false);
       featureService.setPremium(true);
-      expect(featureService.hasPremium(), true);
+      expect(featureService.hasPremium()).toBe(true);
     }));
 
     it('should not set invalid premium value', inject(function (featureService) {
-      expect(featureService.hasPremium(), false);
+      featureService.setPremium(false);
+
+      expect(featureService.hasPremium()).toBe(false);
       featureService.setPremium('test');
-      expect(featureService.hasPremium(), false);
+      expect(featureService.hasPremium()).toBe(false);
     }));
   });
 }());
