@@ -45,6 +45,30 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
+        public void CanGetEventStatsWithoutDateRange() {
+            // capture start date before generating data to make sure that our time range for stats includes all items
+            var startDate = DateTime.UtcNow.SubtractDays(60);
+            const int eventCount = 100;
+            RemoveData();
+            CreateData(eventCount, false);
+
+            _client.Refresh();
+            var result = _stats.GetOccurrenceStats(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
+            Assert.Equal(eventCount, result.Total);
+            Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
+            Assert.Equal(_stackRepository.Count(), result.Unique);
+            Assert.Equal(_stackRepository.Count(), result.Timeline.Sum(t => t.New));
+
+            var stacks = _stackRepository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
+            foreach (var stack in stacks) {
+                result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
+                Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
+                //Assert.Equal(stack.TotalOccurrences, result.Total);
+                //Assert.Equal(stack.TotalOccurrences, result.Timeline.Sum(t => t.Total));
+            }
+        }
+
+        [Fact]
         public void CanGetEventStatsForTimeZone() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
