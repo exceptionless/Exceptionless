@@ -1,34 +1,26 @@
 <div class="aside-wrap">
   <div class="navi-wrap">
-    <!-- user -->
     <div class="clearfix hidden-xs text-center hide" id="aside-user">
       <div class="dropdown wrapper">
         <a ui-sref="app.page.profile">
-                  <span class="thumb-lg w-auto-folded avatar m-t-sm">
-                    <img ng-src="{{appVm.user.avatar_url}}" class="img-full" alt="{{appVm.user.name}}">
-                  </span>
+          <span class="thumb-lg w-auto-folded avatar m-t-sm">
+            <img ng-src="{{appVm.user.avatar_url}}" class="img-full" alt="{{appVm.user.name}}">
+          </span>
         </a>
         <a href="javascript:void(0);" class="dropdown-toggle hidden-folded">
-                    <span class="clear">
-                        <span class="block m-t-sm">
-                            <strong class="font-bold text-lt">{{appVm.user.name}}</strong>
-                            <b class="caret"></b>
-                        </span>
-                        <span class="text-muted text-xs block">{{appVm.user.name}}</span>
-                    </span>
+          <span class="clear">
+              <span class="block m-t-sm">
+                  <strong class="font-bold text-lt">{{appVm.user.name}}</strong>
+                  <b class="caret"></b>
+              </span>
+              <span class="text-muted text-xs block">{{appVm.user.name}}</span>
+          </span>
         </a>
-        <!-- dropdown -->
         <ul class="dropdown-menu w hidden-folded">
           <li>
             <a ui-sref="app.account.manage">
               <i class="fa fa-user fa-fw"></i>
               My Account
-            </a>
-          </li>
-          <li>
-            <a href="javascript:void(0);">
-              <span class="badge bg-danger pull-right">1</span>
-              Notifications
             </a>
           </li>
           <li>
@@ -57,14 +49,10 @@
             </a>
           </li>
         </ul>
-        <!-- / dropdown -->
       </div>
       <div class="line dk hidden-folded"></div>
     </div>
-    <!-- / user -->
 
-    <!-- nav -->
     <nav ui-nav class="navi" ng-include="'app/blocks/nav.tpl.html'"></nav>
-    <!-- nav -->
   </div>
 </div>
