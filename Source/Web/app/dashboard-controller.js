@@ -103,7 +103,7 @@
           return stackService.getFrequent(options);
         },
         options: {
-          limit: 5,
+          limit: 10,
           mode: 'summary'
         }
       };
@@ -114,7 +114,7 @@
           return eventService.getAll(options);
         },
         options: {
-          limit: 5,
+          limit: 10,
           mode: 'summary'
         }
       };
