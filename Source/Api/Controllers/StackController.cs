@@ -443,7 +443,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter();
             var timeInfo = GetTimeInfo(time, offset);
-            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit)).Terms;
+            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
