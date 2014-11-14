@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Dynamic;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
@@ -23,7 +24,15 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetStackSummaryData(Stack stack) {
-            return new SummaryData { TemplateKey = "stack-summary", Data = stack.Type };
+            dynamic data = new ExpandoObject();
+            data.Type = stack.Type;
+
+            string value;
+            if (stack.SignatureInfo.TryGetValue("Source", out value)) {
+                data.Source = value;
+            }
+
+            return new SummaryData { TemplateKey = "stack-summary", Data = data };
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
