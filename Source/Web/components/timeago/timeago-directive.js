@@ -8,12 +8,18 @@
         scope: {
           date: '='
         },
-        link: function (scope, element, attrs) {
+        link: function (scope, element) {
           function setTimeagoText() {
-            element.text(moment(scope.date).fromNow());
+            if (!scope.date) {
+              element.text('Loading..');
+            } else {
+              element.text(moment(scope.date).fromNow());
+            }
           }
 
-          setTimeagoText();
+          scope.$watch('date', function(value) {
+            setTimeagoText();
+          });
 
           // TODO: implement smarter delay logic. We shouldn't be updating stuff it the interval period is a hour, day, month, year..
           var interval = $interval(setTimeagoText, 60 * 1000);

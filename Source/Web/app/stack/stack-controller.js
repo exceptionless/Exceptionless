@@ -27,7 +27,7 @@
 
       function getStack() {
         function onSuccess(response) {
-          vm.stack = response.data;
+          vm.stack = response.data.plain();
         }
 
         function onFailure() {
