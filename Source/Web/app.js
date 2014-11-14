@@ -22,7 +22,6 @@
     'exceptionless.stack',
     'exceptionless.stacks',
     'exceptionless.stat',
-    'exceptionless.ui-loading-bar',
     'exceptionless.ui-nav',
     'exceptionless.ui-scroll',
     'exceptionless.ui-shift',
