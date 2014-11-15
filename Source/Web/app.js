@@ -28,6 +28,7 @@
     'exceptionless.ui-toggle-class',
     'app.config',
     'app.account',
+    'app.admin',
     'app.event',
     'app.organization',
     'app.project',
