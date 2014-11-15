@@ -2,8 +2,7 @@
   'use strict';
 
   angular.module('app.admin', [
-    'ui.router',
-    'exceptionless-rickshaw'
+    'ui.router'
   ])
   .config(['$stateProvider', function ($stateProvider) {
     $stateProvider.state('app.admin', {
