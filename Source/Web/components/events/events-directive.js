@@ -63,15 +63,11 @@
           function save() {
             if (!hasSelection()) {
               notificationService.info(null, 'Please select one or more events');
-              return;
+            } else {
+              vm.selectedAction.run(vm.selectedIds);
             }
 
-            if (!vm.selectedAction) {
-              notificationService.info(null, 'Please select a bulk action');
-              return;
-            }
-
-            vm.selectedAction.run(vm.selectedIds);
+            vm.selectedAction = null;
           }
 
           vm.actions = eventsActionsService.getActions();

@@ -19,14 +19,11 @@
             <tr class="row-clickable" ng-repeat="organization in vm.organizations track by organization.id">
               <td ng-click="vm.open(organization.id, $event)">{{::organization.name}}</td>
               <td ng-click="vm.open(organization.id, $event)">{{::organization.plan_id}}</td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count |
-                number:0}}
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count | number:0}}
               </td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count |
-                number:0}}
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count | number:0}}
               </td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count |
-                number:0}}
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count | number:0}}
               </td>
               <td>
                 <div class="btn-group">
@@ -45,13 +42,12 @@
             </tr>
             </tbody>
           </table>
-          <div class="table-footer" ng-show="vm.previous || vm.next">
+          <div class="table-footer">
             <div class="row">
               <div class="col-sm-12 text-right">
                 <ul class="pagination pagination-sm m-t-none m-b-none">
-                  <li><a href="" ng-show="vm.previous" ng-click="vm.previousPage()"><i
-                    class="fa fa-chevron-left"></i></a></li>
-                  <li><a href="" ng-show="vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>
+                  <li ng-class="{'disabled': !vm.previous}"><a ng-disabled="!vm.previous" ng-click="vm.previousPage()"><i class="fa fa-chevron-left"></i></a></li>
+                  <li ng-class="{'disabled': !vm.next}"><a ng-disabled="!vm.next" ng-click="vm.nextPage()"><i class="fa fa-chevron-right"></i></a></li>
                 </ul>
               </div>
             </div>
@@ -60,8 +56,7 @@
 
         <footer class="panel-footer">
           <button ui-sref="app.dashboard" type="button" class="btn btn-default" role="button">Go To Dashboard</button>
-          <button ng-click="vm.add()" type="button" class="btn btn-primary pull-right" role="button">New Organization
-          </button>
+          <button ng-click="vm.add()" type="button" class="btn btn-primary pull-right" role="button">New Organization</button>
         </footer>
       </div>
     </div>
