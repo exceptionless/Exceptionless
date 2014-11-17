@@ -63,9 +63,9 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.23.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.24.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.23\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.24\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.configuration" />
