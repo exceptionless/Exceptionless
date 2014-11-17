@@ -34,11 +34,9 @@
   <div class="table-footer">
     <div class="row">
       <div class="col-sm-8 hidden-xs">
-        <select class="input-sm form-control w-sm inline v-middle" ng-model="vm.selectedAction"
-                ng-options="a.name for a in vm.actions" ng-disabled="!vm.hasEvents()">
+        <select class="input-sm form-control w-sm inline v-middle" ng-model="vm.selectedAction" ng-options="a.name for a in vm.actions" ng-disabled="!vm.hasEvents()" ng-change="vm.save()">
           <option value="">Bulk action</option>
         </select>
-        <button class="btn btn-sm btn-default" ng-click="vm.save()" ng-disabled="!vm.hasEvents()">Apply</button>
       </div>
       <div class="col-sm-4 col-xs-12 text-right">
         <ul class="pagination pagination-sm m-t-none m-b-none">
