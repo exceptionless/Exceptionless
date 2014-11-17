@@ -11,7 +11,7 @@
       };
       vm.user = {
         name: 'Eric J. Smith',
-        avatar_url: 'http://www.gravatar.com/avatar/3f307a0eedda99476af09a6568c16c14.png'
+        avatar_url: '//www.gravatar.com/avatar/3f307a0eedda99476af09a6568c16c14.png'
       };
       vm.project = {id: '537650f3b77efe23a47914f4'};
       vm.version = VERSION;
