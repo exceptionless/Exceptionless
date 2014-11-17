@@ -54,3 +54,25 @@
     border-bottom-right-radius: 5px;
     border-bottom-left-radius: 5px;
 }
+
+// Override default styles. This fixes dropdowns not being cut off and long content not running over other td's.
+.table-responsive {
+  overflow-x: inherit;
+
+  @media screen and (max-width: @screen-xs-max) {
+    overflow-y: inherit;
+
+    > .table {
+      > thead,
+      > tbody,
+      > tfoot {
+        > tr {
+          > th,
+          > td {
+            white-space: inherit;
+          }
+        }
+      }
+    }
+  }
+}

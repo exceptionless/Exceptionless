@@ -34,7 +34,6 @@
     "moment-timezone": "~0.2",
     "twix": "~0.5",
     "angular-input-match": "~0.0.2",
-    "ng-token-auth": "~0.0.23",
     "animate.css": "~3.2.0",
     "rickshaw": "~1.5.0",
     "d3": "~3.4.13",
