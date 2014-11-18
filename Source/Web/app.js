@@ -7,6 +7,7 @@
     'ui.utils',
     'ui.router',
     'restangular',
+    'angular-filters',
     'angular-rickshaw',
     'checklist-model',
     'debounce',
