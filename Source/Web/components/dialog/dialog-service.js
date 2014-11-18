@@ -4,14 +4,14 @@
   angular.module('exceptionless.dialog')
     .factory('dialogService', ['dialogs', function (dialogs) {
       function confirm(message, confirmButtonText) {
-        return dialogs.create('/components/dialog/confirm-dialog.tpl.html', 'confirmDialog as vm', {
+        return dialogs.create('components/dialog/confirm-dialog.tpl.html', 'confirmDialog as vm', {
           message: message,
           confirmButtonText: confirmButtonText
         }).result;
       }
 
       function confirmDanger(message, confirmButtonText) {
-        return dialogs.create('/components/dialog/confirm-dialog.tpl.html', 'confirmDialog as vm', {
+        return dialogs.create('components/dialog/confirm-dialog.tpl.html', 'confirmDialog as vm', {
           message: message,
           confirmButtonText: confirmButtonText,
           danger: true
