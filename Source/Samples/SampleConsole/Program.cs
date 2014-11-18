@@ -27,7 +27,7 @@ using Exceptionless.Models.Data;
 namespace SampleConsole {
     internal class Program {
         private static bool _sendingContinuous = false;
-        private static bool _randomizeDates = true;
+        private static bool _randomizeDates = false;
 
         private static void Main() {
 
@@ -66,10 +66,10 @@ namespace SampleConsole {
 
                     ExceptionlessClient.Default.ProcessQueue();
 
-                    Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                    ClearNonOptionsLines();
                 } else if (keyInfo.Key == ConsoleKey.D7) {
                     SendAllCapturedEventsFromDisk();
-                    Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                    ClearNonOptionsLines();
                 } else if (keyInfo.Key == ConsoleKey.D) {
                     _randomizeDates = !_randomizeDates;
                     WriteOptionsMenu();
@@ -79,7 +79,7 @@ namespace SampleConsole {
                     tokenSource.Cancel();
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
-                    Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                    ClearNonOptionsLines();
                 }
             }
         }
@@ -101,6 +101,10 @@ namespace SampleConsole {
                 Console.WriteLine("D: Turn random dates on");
             Console.WriteLine();
             Console.WriteLine("Q: Quit");
+        }
+
+        private static void ClearNonOptionsLines(int delay = 1000) {
+            Task.Factory.StartNewDelayed(delay, () => ClearConsoleLines(_optionsMenuLineCount));
         }
 
         private static void ClearConsoleLines(int startLine = 0, int endLine = -1) {
@@ -138,6 +142,8 @@ namespace SampleConsole {
 
                     Thread.Sleep(delay);
                 }
+
+                ClearNonOptionsLines();
             }, token);
         }
 
@@ -191,7 +197,7 @@ namespace SampleConsole {
                 Console.WriteLine("Sent 1 event.");
                 Trace.WriteLine("Sent 1 event.");
 
-                Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                ClearNonOptionsLines();
             }
         }
 
