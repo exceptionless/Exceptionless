@@ -47,12 +47,10 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual TimeInfo GetTimeInfo(string time, string offset) {
             string field = null;
-            if (!String.IsNullOrEmpty(time)) {
-                var parts = time.Split(new []{ '|' }, StringSplitOptions.RemoveEmptyEntries);
-                if (parts.Length > 1) {
-                    field = AllowedFields.Contains(parts[0]) ? parts[0] : null;
-                    time = parts[1];
-                }
+            if (!String.IsNullOrEmpty(time) && time.Contains("|")) {
+                var parts = time.Split(new[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+                field = parts.Length > 0 && AllowedFields.Contains(parts[0]) ? parts[0] : null;
+                time = parts.Length > 1 ? parts[1] : null;
             }
 
             var utcOffset = GetOffset(offset);
