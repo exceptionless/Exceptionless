@@ -3,6 +3,6 @@
   <tr>
     <th>Occurred On</th>
     <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
-    <object-dump content="vm.event.data"></object-dump>
   </tr>
 </table>
+<extended-data-item tab-data="item" project="vm.project" ng-repeat="item in tab.data"></extended-data-item>

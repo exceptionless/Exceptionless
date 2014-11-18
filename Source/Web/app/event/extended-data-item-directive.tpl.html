@@ -13,5 +13,7 @@
   </div>
 </div>
 <div class="clearfix"></div>
-<object-dump ng-if="!vm.showRaw" content="vm.tab.data"></object-dump>
+<div ng-if="!vm.showRaw">
+  <object-dump content="vm.tab.data"></object-dump>
+</div>
 <pre ng-if="vm.showRaw">{{::vm.tab.data | json }}</pre>

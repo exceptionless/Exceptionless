@@ -25,11 +25,18 @@
           tabs.push({title: 'Environment', template_key: 'environment'});
         }
 
-        angular.forEach(vm.project.promoted_tabs, function(tabName) {
-          if (vm.event.data[tabName]) {
-            tabs.push({ title: tabName, template_key: 'promoted', data: vm.event.data[tabName] });
+        var extendedDataItems = [];
+        angular.forEach(vm.event.data, function(data, key) {
+          if (isPromoted(key)) {
+            tabs.push({ title: key, template_key: 'promoted', data: data });
+          } else {
+            extendedDataItems.push({title: key, data: data });
           }
         }, tabs);
+
+        if (extendedDataItems.length > 0) {
+          tabs.push({title: 'Extended Data', template_key: 'extended-data', data: extendedDataItems});
+        }
 
         vm.tabs = tabs;
       }
@@ -153,6 +160,14 @@
 
       function isError() {
         return vm.event.type === 'error';
+      }
+
+      function isPromoted(tabName) {
+        if (!vm.project || !vm.project.promoted_tabs) {
+          return false;
+        }
+
+        return vm.project.promoted_tabs.filter(function (tab) { return tab === tabName; }).length > 0;
       }
 
       vm.event = {};
