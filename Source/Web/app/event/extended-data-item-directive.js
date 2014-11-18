@@ -10,7 +10,7 @@
         project: '='
       },
       templateUrl: 'app/event/extended-data-item-directive.tpl.html',
-      controller: ['$scope', 'projectService', function ($scope, projectService) {
+      controller: ['$scope', 'notificationService', 'projectService', function ($scope, notificationService, projectService) {
         var vm = this;
 
         function canBePromoted() {
@@ -54,7 +54,6 @@
           return projectService.promoteTab(vm.project.id, vm.tab.title).then(onSuccess, onFailure);
         }
 
-        var vm = this;
         vm.canBePromoted = canBePromoted;
         vm.demote = demote;
         vm.isPromoted = isPromoted;
