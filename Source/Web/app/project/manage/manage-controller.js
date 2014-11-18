@@ -10,7 +10,7 @@
         dialogs.create('app/project/manage/add-configuration-dialog.tpl.html', 'AddConfigurationDialog as vm').result.then(function (data) {
           function onSuccess() {
             var found = false;
-            vm.config.forEach(function (conf, index) {
+            vm.config.forEach(function (conf) {
               if (conf.key === data.key) {
                 found = true;
                 conf.value = data.value;
@@ -32,7 +32,7 @@
 
       function addToken() {
         function onSuccess(response) {
-          vm.tokens.push(response.data);
+          vm.tokens.push(response.data.plain());
         }
 
         function onFailure() {
@@ -47,6 +47,7 @@
         dialogs.create('components/web-hook/add-web-hook-dialog.tpl.html', 'AddWebHookDialog as vm').result.then(function (data) {
           function onSuccess(response) {
             vm.webHooks.push(response.data);
+            return response.data.plain();
           }
 
           function onFailure() {
@@ -60,46 +61,63 @@
       }
 
       function get() {
-        return projectService.getById(projectId)
-          .then(function (response) {
-            vm.project = response.data;
-          }, function () {
-            $state.go('app.dashboard');
-            notificationService.error('The project "' + $stateParams.id + '" could not be found.');
-          });
+        function onSuccess(response) {
+          vm.project = response.data.plain();
+          return vm.project;
+        }
+
+        function onFailure() {
+          $state.go('app.dashboard');
+          notificationService.error('The project "' + $stateParams.id + '" could not be found.');
+        }
+
+        return projectService.getById(projectId).then(onSuccess, onFailure);
       }
 
       function getTokens() {
-        return tokenService.getByProjectId(projectId)
-          .then(function (response) {
-            vm.tokens = response.data;
-          }, function () {
-            notificationService.error('An error occurred loading the api keys.');
-          });
+        function onSuccess(response) {
+          vm.tokens = response.data.plain();
+          return vm.tokens;
+        }
+
+        function onFailure() {
+          notificationService.error('An error occurred loading the api keys.');
+        }
+
+        return tokenService.getByProjectId(projectId).then(onSuccess, onFailure);
       }
 
       function getConfiguration() {
-        return projectService.getConfig(projectId)
-          .then(function (response) {
-            angular.forEach(response.data.settings, function (value, key) {
-              if (key === '@@DataExclusions') {
-                vm.data_exclusions = value;
-              } else {
-                vm.config.push({key: key, value: value});
-              }
-            });
-          }, function () {
-            notificationService.error('An error occurred loading the notification settings.');
+        function onSuccess(response) {
+          angular.forEach(response.data.settings, function (value, key) {
+            if (key === '@@DataExclusions') {
+              vm.data_exclusions = value;
+            } else {
+              vm.config.push({key: key, value: value});
+            }
           });
+
+          return vm.config;
+        }
+
+        function onFailure() {
+          notificationService.error('An error occurred loading the notification settings.');
+        }
+
+        return projectService.getConfig(projectId).then(onSuccess, onFailure);
       }
 
       function getWebHooks() {
-        return webHookService.getByProjectId(projectId)
-          .then(function (response) {
-            vm.webHooks = response.data;
-          }, function () {
-            notificationService.error('An error occurred loading the notification settings.');
-          });
+        function onSuccess(response) {
+          vm.webHooks = response.data.plain();
+          return vm.webHooks;
+        }
+
+        function onFailure() {
+          notificationService.error('An error occurred loading the notification settings.');
+        }
+
+        return webHookService.getByProjectId(projectId).then(onSuccess, onFailure);
       }
 
       function hasConfiguration() {

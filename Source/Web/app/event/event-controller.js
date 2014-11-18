@@ -2,12 +2,13 @@
   'use strict';
 
   angular.module('app.event')
-    .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', 'urlService', 'userAgentService', function ($state, $stateParams, errorService, eventService, notificationService, urlService, userAgentService) {
+    .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', 'projectService', 'urlService', 'userAgentService', function ($state, $stateParams, errorService, eventService, notificationService, projectService, urlService, userAgentService) {
       var eventId = $stateParams.id;
       var vm = this;
 
-      function createTabs() {
+      function buildTabs() {
         var tabs = [{title: 'Overview', template_key: 'overview'}];
+
         if (isError()) {
           if (vm.event.data.error) {
             tabs.push({title: 'Exception', template_key: 'error'});
@@ -24,17 +25,49 @@
           tabs.push({title: 'Environment', template_key: 'environment'});
         }
 
+        angular.forEach(vm.project.promoted_tabs, function(tabName) {
+          if (vm.event.data[tabName]) {
+            tabs.push({ title: tabName, template_key: 'promoted', data: vm.event.data[tabName] });
+          }
+        }, tabs);
+
         vm.tabs = tabs;
       }
 
-      function get() {
-        return eventService.getById(eventId)
-          .then(function (response) {
-            vm.event = response.data;
-          }, function () {
-            $state.go('app.dashboard');
-            notificationService.error('The stack "' + $stateParams.id + '" could not be found.');
-          });
+      function getEvent() {
+        function onSuccess(response) {
+          vm.event = response.data.plain();
+          return vm.event;
+        }
+
+        function onFailure() {
+          $state.go('app.dashboard');
+          notificationService.error('The event "' + $stateParams.id + '" could not be found.');
+        }
+
+        if (!eventId) {
+          onFailure();
+        }
+
+        return eventService.getById(eventId).then(onSuccess, onFailure);
+      }
+
+      function getProject() {
+        function onSuccess(project) {
+          vm.project = project;
+          vm.project.promoted_tabs.push('JsonDataFromConfig');
+          return vm.project;
+        }
+
+        function onFailure() {
+          $state.go('app.dashboard');
+        }
+
+        if (!vm.event || !vm.event.project_id) {
+          onFailure();
+        }
+
+        return projectService.getById(vm.event.project_id).then(onSuccess, onFailure);
       }
 
       function getBrowser() {
@@ -141,6 +174,6 @@
       vm.isError = isError;
       vm.tabs = [];
 
-      get().then(createTabs);
+      getEvent().then(getProject).then(buildTabs);
     }]);
 }());

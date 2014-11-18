@@ -7,6 +7,7 @@
     'exceptionless.error',
     'exceptionless.event',
     'exceptionless.notification',
+    'exceptionless.object-dump',
     'exceptionless.simple-error',
     'exceptionless.simple-stack-trace',
     'exceptionless.stack-trace',

@@ -1,0 +1,17 @@
+<h3 class="pull-left">{{::vm.tab.title | toSpacedWords}}</h3>
+<div class="pull-right hidden-print" style="margin-top: 1.2em;">
+  <button class="btn btn-gray btn-sm" title="Copy to Clipboard"><i class="fa fa-copy"></i></button>
+  <div class="btn-group">
+    <button class="btn btn-gray btn-sm" ng-click="vm.showRaw = !vm.showRaw">Toggle View</button>
+    <button ng-if="vm.canBePromoted()" class="btn btn-gray btn-sm dropdown-toggle" data-toggle="dropdown">
+      <span class="caret"></span>
+    </button>
+    <ul ng-if="vm.canBePromoted()"  class="dropdown-menu pull-right">
+      <li ng-if="vm.isPromoted()"><a ng-click="vm.promoteTab()">Promote to Tab</a></li>
+      <li ng-if="!vm.isPromoted()"><a ng-click="vm.demoteTab()">Demote Tab</a></li>
+    </ul>
+  </div>
+</div>
+<div class="clearfix"></div>
+<object-dump ng-if="!vm.showRaw" content="vm.tab.data"></object-dump>
+<pre ng-if="vm.showRaw">{{::vm.tab.data | json }}</pre>

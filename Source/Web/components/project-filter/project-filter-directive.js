@@ -5,7 +5,7 @@
     'angular.filter',
     'exceptionless.project'
   ])
-  .directive('projectFilter', function () {
+  .directive('projectFilter', [function () {
     return {
       restrict: 'E',
       replace: true,
@@ -22,8 +22,7 @@
             notificationService.error('An error occurred while loading your projects.');
           }
 
-          var options = {};
-          return projectService.getAll(options).then(onSuccess, onFailure);
+          return projectService.getAll().then(onSuccess, onFailure);
         }
 
         function getFilterName() {
@@ -76,5 +75,5 @@
       }],
       controllerAs: 'vm'
     };
-  });
+  }]);
 }());
