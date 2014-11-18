@@ -60,11 +60,17 @@ namespace SampleConsole {
                     SendContinuousEvents(50, token);
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousEvents(50, token, 1000);
-                else if (keyInfo.Key == ConsoleKey.D6)
+                else if (keyInfo.Key == ConsoleKey.D6) {
+                    Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+                    Console.WriteLine("Telling client to process the queue...");
+
                     ExceptionlessClient.Default.ProcessQueue();
-                else if (keyInfo.Key == ConsoleKey.D7)
+
+                    Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                } else if (keyInfo.Key == ConsoleKey.D7) {
                     SendAllCapturedEventsFromDisk();
-                else if (keyInfo.Key == ConsoleKey.D) {
+                    Task.Factory.StartNewDelayed(1000, () => ClearConsoleLines(_optionsMenuLineCount));
+                } else if (keyInfo.Key == ConsoleKey.D) {
                     _randomizeDates = !_randomizeDates;
                     WriteOptionsMenu();
                 } else if (keyInfo.Key == ConsoleKey.Q)
@@ -234,6 +240,9 @@ namespace SampleConsole {
         }
 
         private static void SendAllCapturedEventsFromDisk() {
+            Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+            Console.WriteLine("Sending captured events...");
+
             string path = Path.GetFullPath(@"..\..\Errors\");
             if (!Directory.Exists(path))
                 return;
@@ -245,7 +254,7 @@ namespace SampleConsole {
                 ExceptionlessClient.Default.SubmitEvent(e);
 
                 eventCount++;
-                Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+                Console.SetCursorPosition(0, _optionsMenuLineCount + 3);
                 Console.WriteLine("Sent {0} events.", eventCount);
             }
         }
