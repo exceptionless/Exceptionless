@@ -92,7 +92,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetMonthlyUsage(this Organization organization, long total, long blocked, long tooBig) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            organization.Usage.SetUsage(date, (int)total, (int)blocked, organization.MaxErrorsPerMonth, (int)tooBig, TimeSpan.FromDays(366));
+            organization.Usage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.MaxErrorsPerMonth, TimeSpan.FromDays(366));
         }
 
         public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
