@@ -477,7 +477,7 @@ namespace Exceptionless.Api.Controllers {
             if (stacks.Count == 0)
                 return new List<StackSummaryModel>();
 
-            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", String.Join(" OR ", stacks.Select(r => String.Concat("stack:", r.Id))), null, offset, stacks.Count).Terms;
+            var terms = _eventStats.GetTermsStats(utcStart, utcEnd, "stack_id", String.Join(" OR ", stacks.Select(r => "stack:" + r.Id)), null, offset, stacks.Count).Terms;
             return GetStackSummaries(stacks, terms);
         }
 
