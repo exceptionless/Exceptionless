@@ -16,7 +16,7 @@
     "angular-resource": "~1.3",
     "angular-mocks": "~1.3",
     "angular-ui-utils": "~0.1",
-    "angular-bootstrap": "~0.12",
+    "angular-bootstrap": "~0.11",
     "moment": "~2.8",
     "less.js": "~2.0",
     "font-awesome": "~4.2",
@@ -50,6 +50,6 @@
     "angular": "~1.3",
     "rickshaw": "~1.5",
     "jquery": "2.1.1",
-    "angular-bootstrap": "~0.12"
+    "angular-bootstrap": "~0.11"
   }
 }

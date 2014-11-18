@@ -37,7 +37,7 @@
         return Restangular.one('projects', id).one('notifications', userId).get();
       }
 
-      function promoteTab(id, key, value) {
+      function promoteTab(id, name) {
         return Restangular.one('projects', id).one('promotedtabs', name).post();
       }
 

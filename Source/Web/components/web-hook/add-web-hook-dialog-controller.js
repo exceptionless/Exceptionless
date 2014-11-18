@@ -45,7 +45,6 @@
       }
 
       function save(isValid) {
-        console.log(vm.data);
         if (!isValid) {
           return;
         }

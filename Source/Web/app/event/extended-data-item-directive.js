@@ -6,61 +6,33 @@
     return {
       restrict: 'E',
       scope: {
-        tabData: '=',
-        project: '='
+        demoteTab: '&',
+        isPromoted: '=',
+        promoteTab: '&',
+        tab: '=tabData'
       },
       templateUrl: 'app/event/extended-data-item-directive.tpl.html',
-      controller: ['$scope', 'notificationService', 'projectService', function ($scope, notificationService, projectService) {
+      controller: ['$scope', function ($scope) {
         var vm = this;
 
         function canBePromoted() {
           return true;
         }
 
-        function demote() {
-          function onSuccess(response) {
-            vm.project.promoted_tabs.splice(indexOf, 1);
-          }
-
-          function onFailure() {
-            notificationService.error('An error occurred promoting tab.');
-          }
-
-          var indexOf = vm.project.promoted_tabs.indexOf(vm.tab.title);
-          if (indexOf < 0) {
-            return;
-          }
-
-          return projectService.promoteTab(vm.project.id, vm.tab.title).then(onSuccess, onFailure);
+        function demoteTab() {
+          return $scope.demoteTab({ tabName: vm.tab.title });
         }
 
-        function isPromoted() {
-          if (!vm.project || !vm.project.promoted_tabs || !vm.tab) {
-            return false;
-          }
-
-          return vm.project.promoted_tabs.filter(function (tab) { return tab === vm.tab.name; }).length > 0;
-        }
-
-        function promote() {
-          function onSuccess(response) {
-            vm.project.promoted_tabs.push(vm.tab.title);
-          }
-
-          function onFailure() {
-            notificationService.error('An error occurred promoting tab.');
-          }
-
-          return projectService.promoteTab(vm.project.id, vm.tab.title).then(onSuccess, onFailure);
+        function promoteTab() {
+          return $scope.promoteTab({ tabName: vm.tab.title });
         }
 
         vm.canBePromoted = canBePromoted;
-        vm.demote = demote;
-        vm.isPromoted = isPromoted;
-        vm.project = $scope.project;
-        vm.promote = promote;
+        vm.demoteTab =  demoteTab;
+        vm.isPromoted =  $scope.isPromoted === true;
+        vm.promoteTab = promoteTab;
         vm.showRaw = false;
-        vm.tab = $scope.tabData;
+        vm.tab = $scope.tab;
       }],
       controllerAs: 'vm'
     };

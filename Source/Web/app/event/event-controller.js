@@ -6,7 +6,7 @@
       var eventId = $stateParams.id;
       var vm = this;
 
-      function buildTabs() {
+      function buildTabs(tabNameToActivate) {
         var tabs = [{title: 'Overview', template_key: 'overview'}];
 
         if (isError()) {
@@ -27,10 +27,14 @@
 
         var extendedDataItems = [];
         angular.forEach(vm.event.data, function(data, key) {
+          if ((/^__/).test(key)) {
+            return;
+          }
+
           if (isPromoted(key)) {
-            tabs.push({ title: key, template_key: 'promoted', data: data });
+            tabs.push({ title: key, template_key: 'promoted', data: data});
           } else {
-            extendedDataItems.push({title: key, data: data });
+            extendedDataItems.push({title: key, data: data});
           }
         }, tabs);
 
@@ -38,7 +42,34 @@
           tabs.push({title: 'Extended Data', template_key: 'extended-data', data: extendedDataItems});
         }
 
+        for(var index = 0; index < tabs.length; index++) {
+          if (tabs[index].title !== tabNameToActivate) {
+            continue;
+          }
+
+          tabs[index].active = true;
+          break;
+        }
+
         vm.tabs = tabs;
+      }
+
+      function demoteTab(tabName) {
+        function onSuccess() {
+          vm.project.promoted_tabs.splice(indexOf, 1);
+          buildTabs('Extended Data');
+        }
+
+        function onFailure() {
+          notificationService.error('An error occurred promoting tab.');
+        }
+
+        var indexOf = vm.project.promoted_tabs.indexOf(tabName);
+        if (indexOf < 0) {
+          return;
+        }
+
+        return projectService.demoteTab(vm.project.id, tabName).then(onSuccess, onFailure);
       }
 
       function getEvent() {
@@ -62,7 +93,6 @@
       function getProject() {
         function onSuccess(project) {
           vm.project = project;
-          vm.project.promoted_tabs.push('JsonDataFromConfig');
           return vm.project;
         }
 
@@ -170,6 +200,20 @@
         return vm.project.promoted_tabs.filter(function (tab) { return tab === tabName; }).length > 0;
       }
 
+      function promoteTab(tabName) {
+        function onSuccess(response) {
+          vm.project.promoted_tabs.push(tabName);
+          buildTabs(tabName);
+        }
+
+        function onFailure() {
+          notificationService.error('An error occurred promoting tab.');
+        }
+
+        return projectService.promoteTab(vm.project.id, tabName).then(onSuccess, onFailure);
+      }
+
+      vm.demoteTab = demoteTab;
       vm.event = {};
       vm.getBrowser = getBrowser;
       vm.getBrowserOS = getBrowserOS;
@@ -187,6 +231,8 @@
       vm.hasUserDescription = hasUserDescription;
       vm.hasUserEmail = hasUserEmail;
       vm.isError = isError;
+      vm.isPromoted = isPromoted;
+      vm.promoteTab = promoteTab;
       vm.tabs = [];
 
       getEvent().then(getProject).then(buildTabs);

@@ -7,8 +7,8 @@
       <span class="caret"></span>
     </button>
     <ul ng-if="vm.canBePromoted()"  class="dropdown-menu pull-right">
-      <li ng-if="vm.isPromoted()"><a ng-click="vm.promoteTab()">Promote to Tab</a></li>
-      <li ng-if="!vm.isPromoted()"><a ng-click="vm.demoteTab()">Demote Tab</a></li>
+      <li ng-if="!vm.isPromoted"><a ng-click="vm.promoteTab()">Promote to Tab</a></li>
+      <li ng-if="vm.isPromoted"><a ng-click="vm.demoteTab()">Demote Tab</a></li>
     </ul>
   </div>
 </div>
