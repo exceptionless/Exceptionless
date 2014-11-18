@@ -172,7 +172,7 @@ module.exports = function (grunt) {
     concat: {
       main: {
         src: ['<%= dom_munger.data.appjs %>', '<%= ngtemplates.main.dest %>'],
-        dest: 'temp/app.full.js'
+        dest: 'dist/app.js'
       }
     },
     ngAnnotate: {
@@ -181,7 +181,7 @@ module.exports = function (grunt) {
       },
       main: {
         files: {
-          'temp/app.full.js': ['temp/app.full.js']
+          'dist/app.js': ['dist/app.js']
         }
       }
     },
@@ -194,7 +194,7 @@ module.exports = function (grunt) {
         }
       },
       main: {
-        src: 'temp/app.full.js',
+        src: 'dist/app.js',
         dest: 'dist/app.min.js'
       }
     },
