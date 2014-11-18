@@ -27,6 +27,7 @@ using Exceptionless.Models.Data;
 namespace SampleConsole {
     internal class Program {
         private static bool _sendingContinuous = false;
+        private static bool _randomizeDates = false;
 
         private static void Main() {
 
@@ -43,14 +44,11 @@ namespace SampleConsole {
             ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
-            while (true) {
-                if (!_sendingContinuous) {
-                    Console.Clear();
-                    Console.WriteLine("1: Send 1\r\n2: Send 100\r\n3: Send 1 per second\r\n4: Send 10 per second\r\n5: Send 1,000\r\n6: Process queue\r\n7: Process directory\r\n\r\nQ: Quit");
-                }
+            WriteOptionsMenu();
 
+            while (true) {
+                Console.SetCursorPosition(0, _optionsMenuLineCount + 1);
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-                Trace.WriteLine(String.Format("Key {0} pressed.", keyInfo.Key));
 
                 if (keyInfo.Key == ConsoleKey.D1)
                     SendEvent();
@@ -62,25 +60,70 @@ namespace SampleConsole {
                     SendContinuousEvents(50, token);
                 else if (keyInfo.Key == ConsoleKey.D5)
                     SendContinuousEvents(50, token, 1000);
-                else if (keyInfo.Key == ConsoleKey.D6)
+                else if (keyInfo.Key == ConsoleKey.D6) {
+                    Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+                    Console.WriteLine("Telling client to process the queue...");
+
                     ExceptionlessClient.Default.ProcessQueue();
-                else if (keyInfo.Key == ConsoleKey.D7)
+
+                    ClearNonOptionsLines();
+                } else if (keyInfo.Key == ConsoleKey.D7) {
                     SendAllCapturedEventsFromDisk();
-                else if (keyInfo.Key == ConsoleKey.Q)
+                    ClearNonOptionsLines();
+                } else if (keyInfo.Key == ConsoleKey.D) {
+                    _randomizeDates = !_randomizeDates;
+                    WriteOptionsMenu();
+                } else if (keyInfo.Key == ConsoleKey.Q)
                     break;
                 else if (keyInfo.Key == ConsoleKey.S) {
                     tokenSource.Cancel();
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
+                    ClearNonOptionsLines();
                 }
-
-                Thread.Sleep(TimeSpan.FromSeconds(1));
             }
+        }
+
+        private const int _optionsMenuLineCount = 10;
+        private static void WriteOptionsMenu() {
+            Console.SetCursorPosition(0, 0);
+            ClearConsoleLines(0, _optionsMenuLineCount - 1);
+            Console.WriteLine("1: Send 1");
+            Console.WriteLine("2: Send 100");
+            Console.WriteLine("3: Send 1 per second");
+            Console.WriteLine("4: Send 10 per second");
+            Console.WriteLine("5: Send 1,000");
+            Console.WriteLine("6: Process queue");
+            Console.WriteLine("7: Process directory");
+            if (_randomizeDates)
+                Console.WriteLine("D: Turn random dates off");
+            else
+                Console.WriteLine("D: Turn random dates on");
+            Console.WriteLine();
+            Console.WriteLine("Q: Quit");
+        }
+
+        private static void ClearNonOptionsLines(int delay = 1000) {
+            Task.Factory.StartNewDelayed(delay, () => ClearConsoleLines(_optionsMenuLineCount));
+        }
+
+        private static void ClearConsoleLines(int startLine = 0, int endLine = -1) {
+            if (endLine < 0)
+                endLine = Console.WindowHeight - 2;
+
+            int currentLine = Console.CursorTop;
+            int currentPosition = Console.CursorLeft;
+
+            for (int i = startLine; i <= endLine; i++) {
+                Console.SetCursorPosition(0, i);
+                Console.Write(new string(' ', Console.WindowWidth));
+            }
+            Console.SetCursorPosition(currentPosition, currentLine);
         }
 
         private static void SendContinuousEvents(int delay, CancellationToken token, int maxEvents = Int32.MaxValue, int maxDaysOld = 90) {
             _sendingContinuous = true;
-            Console.WriteLine();
+            Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
             Console.WriteLine("Press 's' to stop sending.");
             int eventCount = 0;
 
@@ -93,19 +136,21 @@ namespace SampleConsole {
 
                     SendEvent(false, maxDaysOld);
                     eventCount++;
-
-                    Console.SetCursorPosition(0, 13);
+                    Console.SetCursorPosition(0, _optionsMenuLineCount + 4);
                     Console.WriteLine("Sent {0} events.", eventCount);
                     Trace.WriteLine(String.Format("Sent {0} events.", eventCount));
 
                     Thread.Sleep(delay);
                 }
+
+                ClearNonOptionsLines();
             }, token);
         }
 
         private static void SendEvent(bool writeToConsole = true, int maxDaysOld = 90) {
             var ev = new Event();
-            ev.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
+            if (_randomizeDates)
+                ev.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
 
             ev.Type = EventTypes.Random();
             if (ev.Type == Event.KnownTypes.FeatureUsage)
@@ -148,9 +193,11 @@ namespace SampleConsole {
             ExceptionlessClient.Default.SubmitEvent(ev);
 
             if (writeToConsole) {
-                Console.SetCursorPosition(0, 11);
+                Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
                 Console.WriteLine("Sent 1 event.");
                 Trace.WriteLine("Sent 1 event.");
+
+                ClearNonOptionsLines();
             }
         }
 
@@ -199,14 +246,22 @@ namespace SampleConsole {
         }
 
         private static void SendAllCapturedEventsFromDisk() {
+            Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+            Console.WriteLine("Sending captured events...");
+
             string path = Path.GetFullPath(@"..\..\Errors\");
             if (!Directory.Exists(path))
                 return;
 
+            int eventCount = 0;
             foreach (string file in Directory.GetFiles(path)) {
                 var serializer = DependencyResolver.Default.GetJsonSerializer();
                 var e = serializer.Deserialize<Event>(file);
                 ExceptionlessClient.Default.SubmitEvent(e);
+
+                eventCount++;
+                Console.SetCursorPosition(0, _optionsMenuLineCount + 3);
+                Console.WriteLine("Sent {0} events.", eventCount);
             }
         }
 

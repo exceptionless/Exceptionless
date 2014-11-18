@@ -40,6 +40,19 @@ namespace CodeSmith.Core.Helpers {
             return min + newSpan;
         }
 
+        public static DateTimeOffset GetDateTimeOffset(DateTimeOffset? start = null, DateTimeOffset? end = null) {
+            if (start.HasValue && end.HasValue && start.Value >= end.Value)
+                throw new Exception("Start date must be less than end date.");
+
+            DateTimeOffset min = start ?? DateTimeOffset.MinValue;
+            DateTimeOffset max = end ?? DateTimeOffset.MaxValue;
+
+            TimeSpan timeSpan = max - min;
+            var newSpan = new TimeSpan(GetLongRange(0, timeSpan.Ticks));
+
+            return min + newSpan;
+        }
+
         public static bool GetBool() {
             return Instance.NextDouble() > 0.5;
         }

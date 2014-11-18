@@ -79,6 +79,7 @@ task Init -depends Clean {
     $version = "$version.$build_number"
 
     TeamCity-SetBuildNumber $version
+    $env:BUILD_NUMBER = $version
     
     Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version	
 }

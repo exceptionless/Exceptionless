@@ -70,6 +70,8 @@ namespace Exceptionless.Core.Pipeline {
                     context.SetProperty(key, context.Project.Data[key]);
 
                 _statsClient.Time(() => base.Run(context, actionTypes), StatNames.EventsProcessingTime);
+                if (context.IsCancelled)
+                    _statsClient.Counter(StatNames.EventsProcessCancelled);
             } catch (Exception) {
                 _statsClient.Counter(StatNames.EventsProcessErrors);
                 throw;

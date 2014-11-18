@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Tests {
     public class SerializerTests {
         [Fact]
         public void CanDeserializeEventWithUnknownNamesAndProperties() {
-            const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}""}";
+            const string json = @"{""tags"":[""One"",""Two""],""reference_id"":""12"",""Message"":""Hello"",""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""error"":{""Message"":""SomeVal"",""SomeProp"":""SomeVal""},""Some2"":""{\""Blah\"":\""SomeVal\""}"",""UnknownSerializedProp"":""{\""Blah\"":\""SomeVal\""}""}";
             var settings = new JsonSerializerSettings();
             var knownDataTypes = new Dictionary<string, Type> {
                 { "Some", typeof(SomeModel) },
@@ -25,11 +25,12 @@ namespace Exceptionless.Api.Tests {
             settings.Converters.Add(new DataObjectConverter<Error>());
 
             var ev = json.FromJson<Event>(settings);
-            Assert.Equal(7, ev.Data.Count);
+            Assert.Equal(8, ev.Data.Count);
             Assert.Equal("Hi", ev.Data["SomeString"]);
             Assert.Equal(false, ev.Data["SomeBool"]);
             Assert.Equal(1L, ev.Data["SomeNum"]);
             Assert.Equal(typeof(JObject), ev.Data["UnknownProp"].GetType());
+            Assert.Equal(typeof(JObject), ev.Data["UnknownSerializedProp"].GetType());
             Assert.Equal("SomeVal", (string)((dynamic)ev.Data["UnknownProp"]).Blah);
             Assert.Equal(typeof(SomeModel), ev.Data["Some"].GetType());
             Assert.Equal(typeof(SomeModel), ev.Data["Some2"].GetType());
@@ -44,7 +45,7 @@ namespace Exceptionless.Api.Tests {
             Assert.True(ev.Tags.Contains("Two"));
             Assert.Equal("12", ev.ReferenceId);
 
-            const string expectedjson = @"{""Tags"":[""One"",""Two""],""Message"":""Hello"",""Data"":{""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""error"":{""Modules"":[],""Message"":""SomeVal"",""Data"":{""SomeProp"":""SomeVal""},""StackTrace"":[]},""Some2"":{""Blah"":""SomeVal""}},""ReferenceId"":""12""}";
+            const string expectedjson = @"{""Tags"":[""One"",""Two""],""Message"":""Hello"",""Data"":{""SomeString"":""Hi"",""SomeBool"":false,""SomeNum"":1,""UnknownProp"":{""Blah"":""SomeVal""},""Some"":{""Blah"":""SomeVal""},""error"":{""Modules"":[],""Message"":""SomeVal"",""Data"":{""SomeProp"":""SomeVal""},""StackTrace"":[]},""Some2"":{""Blah"":""SomeVal""},""UnknownSerializedProp"":{""Blah"":""SomeVal""}},""ReferenceId"":""12""}";
             string newjson = ev.ToJson(Formatting.None, new JsonSerializerSettings { DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore });
             Assert.Equal(expectedjson, newjson);
         }
