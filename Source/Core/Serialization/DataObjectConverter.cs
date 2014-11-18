@@ -83,10 +83,26 @@ namespace Exceptionless.Serializer {
                 target.Data[p.Name] = p.Value.ToObject<JObject>();
             else if (p.Value is JArray)
                 target.Data[p.Name] = p.Value.ToObject<JArray>();
-            else if (p.Value is JValue)
+            else if (p.Value is JValue && p.Value.Type != JTokenType.String)
                 target.Data[p.Name] = ((JValue)p.Value).Value;
-            else
-                target.Data[p.Name] = p.Value.ToString();
+            else {
+                string value = p.Value.ToString();
+                var jsonType = value.GetJsonType();
+                if (jsonType == JsonType.Object) {
+                    JObject obj;
+                    if (value.TryFromJson(out obj))
+                        target.Data[p.Name] = obj;
+                    else
+                        target.Data[p.Name] = value;
+                } else if (jsonType == JsonType.Array) {
+                    JArray obj;
+                    if (value.TryFromJson(out obj))
+                        target.Data[p.Name] = obj;
+                    else
+                        target.Data[p.Name] = value;
+                } else
+                    target.Data[p.Name] = value;
+            }
         }
 
         public override T Create(Type objectType) {
