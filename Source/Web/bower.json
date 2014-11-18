@@ -16,7 +16,7 @@
     "angular-resource": "~1.3",
     "angular-mocks": "~1.3",
     "angular-ui-utils": "~0.1",
-    "angular-bootstrap": "~0.11",
+    "angular-bootstrap": "~0.12",
     "moment": "~2.8",
     "less.js": "~2.0",
     "font-awesome": "~4.2",
@@ -25,7 +25,6 @@
     "query-string": "~1.0",
     "angular-signalr-hub": "~1.3",
     "ng-debounce": "~0.1",
-    "ng-filters": "~1.1",
     "trunk8": "~1.3",
     "checklist-model": "~0.1",
     "angularjs-toaster": "~0.4",
@@ -43,13 +42,14 @@
     "ng-stats": "~1.0.5",
     "handlebars": "~2.0.0",
     "ng-clip": "~0.2.4",
-    "a0-angular-storage": "~0.0.6"
+    "a0-angular-storage": "~0.0.6",
+    "ng-filters": "~1.1"
   },
   "resolutions": {
     "bootstrap": "~3.3",
     "angular": "~1.3",
     "rickshaw": "~1.5",
     "jquery": "2.1.1",
-    "angular-bootstrap": "~0.11"
+    "angular-bootstrap": "~0.12"
   }
 }

@@ -15,10 +15,6 @@
       controller: ['$scope', function ($scope) {
         var vm = this;
 
-        function canBePromoted() {
-          return true;
-        }
-
         function demoteTab() {
           return $scope.demoteTab({ tabName: vm.tab.title });
         }
@@ -27,7 +23,6 @@
           return $scope.promoteTab({ tabName: vm.tab.title });
         }
 
-        vm.canBePromoted = canBePromoted;
         vm.demoteTab =  demoteTab;
         vm.isPromoted =  $scope.isPromoted === true;
         vm.promoteTab = promoteTab;

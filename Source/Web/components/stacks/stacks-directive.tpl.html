@@ -42,9 +42,15 @@
   <div class="table-footer">
     <div class=" row">
       <div class="col-sm-8 hidden-xs">
-        <select class="input-sm form-control w-sm inline v-middle" ng-model="vm.selectedAction" ng-options="a.name for a in vm.actions" ng-change="vm.save()">
-          <option value="">Bulk action</option>
-        </select>
+        <div class="dropdown">
+          <button id="bulkActions" class="btn btn-default btn-sm dropdown-toggle" type="button" data-toggle="dropdown" aria-expanded="false">
+            Bulk Action
+            <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu" role="menu" aria-labelledby="bulkActions">
+            <li role="presentation"><a role="menuitem" tabindex="-1" ng-repeat="action in vm.actions" ng-click="vm.save(action)">{{::action.name}}</a></li>
+          </ul>
+        </div>
       </div>
       <div class="col-sm-4 col-xs-12 text-right">
         <ul class="pagination pagination-sm m-t-none m-b-none">

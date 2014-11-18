@@ -61,14 +61,12 @@
               });
           }
 
-          function save() {
+          function save(action) {
             if (!hasSelection()) {
               notificationService.info(null, 'Please select one or more stacks');
             } else {
-              vm.selectedAction.run(vm.selectedIds);
+              action.run(vm.selectedIds);
             }
-
-            vm.selectedAction = null;
           }
 
           vm.actions = stacksActionsService.getActions();
@@ -80,7 +78,6 @@
           vm.previousPage = previousPage;
           vm.save = save;
           vm.selectedIds = [];
-          vm.selectedAction = null;
           vm.updateSelection = updateSelection;
 
           get();
