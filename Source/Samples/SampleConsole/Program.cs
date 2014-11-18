@@ -30,17 +30,27 @@ namespace SampleConsole {
         private static bool _randomizeDates = false;
 
         private static void Main() {
-
             ExceptionlessClient.Default.Startup();
             ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
             ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
-            //ExceptionlessClient.Default.CreateLog("SampleConsole", "Some message.").AddObject(new { Blah = "Test" }, name: "Test Object").Submit();
-            //ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
-            //ExceptionlessClient.Default.SubmitNotFound("/somepage");
-            //ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            ExceptionlessClient.Default.CreateLog("SampleConsole", "Has lots of extended data")
+                .AddObject(new {
+                    myApplicationVersion = new Version(1, 0),
+                    Date = DateTime.Now,
+                    __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23",
+                    SomeField10 = "testing"
+                }, "Object From Code")
+                .AddObject(new { Blah = "Test" }, name: "Test Object")
+                .AddObject("Exceptionless is awesome", "String Content")
+                .AddObject(new int[] { 1, 2, 3, 4, 5 }, "Array Content")
+                .AddObject(new object[] { new { This = "This" }, new { Is = "Is" }, new { A = "A" }, new { Test = "Test", Data = new { Punctuation = "!!!!" } } }, "Array With Nested Content")
+                .Submit();
+            ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
+            ExceptionlessClient.Default.SubmitNotFound("/somepage");
+            ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
             ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
