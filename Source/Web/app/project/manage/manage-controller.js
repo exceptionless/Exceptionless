@@ -62,7 +62,7 @@
 
       function get() {
         function onSuccess(response) {
-          vm.project = response.data.plain();
+          vm.project = response.plain();
           return vm.project;
         }
 

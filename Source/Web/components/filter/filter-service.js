@@ -5,10 +5,8 @@
     .factory('filterService', ['$rootScope', 'filterStoreService', function ($rootScope, filterStoreService) {
       var _includeFixed = filterStoreService.getIncludeFixed();
       var _includeHidden = filterStoreService.getIncludeHidden();
-      var _organizationId = filterStoreService.getOrganizationId();
-      var _projectId = filterStoreService.getProjectId();
-      var _rawfilter = filterStoreService.getRawFilter();
-      var _timeFilter = filterStoreService.getTimeFilter();
+      var _time = filterStoreService.getTimeFilter();
+      var _eventType, _organizationId, _projectId, _raw;
 
       function apply(source) {
         return angular.extend({}, getDefaultOptions(), source);
@@ -28,19 +26,23 @@
           filters.push('project:' + _projectId);
         }
 
-        if (_rawfilter) {
-          filters.push(_rawfilter);
+        if (_eventType) {
+          filters.push('type:' + _eventType);
+        }
+
+        if (_raw) {
+          filters.push(_raw);
         }
 
         return filters.join(' ');
       }
 
       function clearFilterAndIncludeFixedAndIncludeHidden() {
-        if (!_rawfilter && !_includeFixed && !_includeHidden) {
+        if (!_raw && !_includeFixed && !_includeHidden) {
           return;
         }
 
-        _rawfilter = _includeFixed = _includeHidden = null;
+        _raw = _includeFixed = _includeHidden = null;
         fireFilterChanged();
       }
 
@@ -65,15 +67,15 @@
           angular.extend(options, { filter: filter });
         }
 
-        if (_timeFilter) {
-          angular.extend(options, { time: _timeFilter });
+        if (_time) {
+          angular.extend(options, { time: _time });
         }
 
         return options;
       }
 
       function getFilter() {
-        return _rawfilter;
+        return _raw;
       }
 
       function getIncludeFixed() {
@@ -92,12 +94,25 @@
         return _organizationId;
       }
 
+      function getEventType() {
+        return _eventType;
+      }
+
       function getTime() {
-        return _timeFilter;
+        return _time;
       }
 
       function getTimeZoneOffset() {
         return new Date().getTimezoneOffset() * -1;
+      }
+
+      function setEventType(eventType) {
+        if (angular.equals(eventType, _eventType)) {
+          return;
+        }
+
+        _eventType = eventType;
+        fireFilterChanged();
       }
 
       function setIncludeFixed(includeFixed) {
@@ -106,7 +121,7 @@
         }
 
         _includeFixed = includeFixed === true;
-        filterStoreService.setIncludeFixed(_includeFixed, { setHistory: true });
+        filterStoreService.setIncludeFixed(_includeFixed);
         fireFilterChanged();
       }
 
@@ -116,7 +131,7 @@
         }
 
         _includeHidden = includeHidden === true;
-        filterStoreService.setIncludeHidden(_includeHidden, { setHistory: true });
+        filterStoreService.setIncludeHidden(_includeHidden);
         fireFilterChanged();
       }
 
@@ -126,11 +141,7 @@
         }
 
         _organizationId = id;
-        filterStoreService.setOrganizationId(_organizationId, { setHistory: true });
-
         _projectId = null;
-        filterStoreService.setProjectId(_projectId, { replaceHistory: true });
-
         fireFilterChanged();
       }
 
@@ -140,30 +151,26 @@
         }
 
         _projectId = id;
-        filterStoreService.setProjectId(_projectId, { setHistory: true });
         _organizationId = null;
-        filterStoreService.setOrganizationId(_organizationId, { replaceHistory: true });
-
         fireFilterChanged();
       }
 
       function setTime(time) {
-        if (angular.equals(time, _timeFilter)) {
+        if (angular.equals(time, _time)) {
           return;
         }
 
-        _timeFilter = time ? time : null;
-        filterStoreService.setTimeFilter(_timeFilter, { setHistory: true });
+        _time = time ? time : null;
+        filterStoreService.setTimeFilter(_time);
         fireFilterChanged();
       }
 
-      function setFilter(filter) {
-        if (angular.equals(filter, _rawfilter)) {
+      function setFilter(raw) {
+        if (angular.equals(raw, _raw)) {
           return;
         }
 
-        _rawfilter = filter;
-        filterStoreService.setRawFilter(_timeFilter, { setHistory: true });
+        _raw = raw;
         fireFilterChanged();
       }
 
@@ -171,12 +178,14 @@
         apply: apply,
         clearFilterAndIncludeFixedAndIncludeHidden: clearFilterAndIncludeFixedAndIncludeHidden,
         clearOrganizationAndProjectFilter: clearOrganizationAndProjectFilter,
+        getEventType: getEventType,
         getFilter: getFilter,
         getIncludeFixed: getIncludeFixed,
         getIncludeHidden: getIncludeHidden,
         getProjectId: getProjectId,
         getOrganizationId: getOrganizationId,
         getTime: getTime,
+        setEventType: setEventType,
         setFilter: setFilter,
         setIncludeFixed: setIncludeFixed,
         setIncludeHidden: setIncludeHidden,
