@@ -1,14 +1,14 @@
 ﻿(function () {
   'use strict';
 
-  angular.module('exceptionless.filter', [])
-    .factory('filterService', ['$rootScope', function ($rootScope) {
-      var _includeFixed;
-      var _includeHidden;
-      var _organizationId;
-      var _projectId;
-      var _rawfilter;
-      var _timeFilter;
+  angular.module('exceptionless.filter')
+    .factory('filterService', ['$rootScope', 'filterStoreService', function ($rootScope, filterStoreService) {
+      var _includeFixed = filterStoreService.getIncludeFixed();
+      var _includeHidden = filterStoreService.getIncludeHidden();
+      var _organizationId = filterStoreService.getOrganizationId();
+      var _projectId = filterStoreService.getProjectId();
+      var _rawfilter = filterStoreService.getRawFilter();
+      var _timeFilter = filterStoreService.getTimeFilter();
 
       function apply(source) {
         return angular.extend({}, getDefaultOptions(), source);
@@ -106,6 +106,7 @@
         }
 
         _includeFixed = includeFixed === true;
+        filterStoreService.setIncludeFixed(_includeFixed, { setHistory: true });
         fireFilterChanged();
       }
 
@@ -115,6 +116,7 @@
         }
 
         _includeHidden = includeHidden === true;
+        filterStoreService.setIncludeHidden(_includeHidden, { setHistory: true });
         fireFilterChanged();
       }
 
@@ -124,7 +126,11 @@
         }
 
         _organizationId = id;
+        filterStoreService.setOrganizationId(_organizationId, { setHistory: true });
+
         _projectId = null;
+        filterStoreService.setProjectId(_projectId, { replaceHistory: true });
+
         fireFilterChanged();
       }
 
@@ -134,7 +140,10 @@
         }
 
         _projectId = id;
+        filterStoreService.setProjectId(_projectId, { setHistory: true });
         _organizationId = null;
+        filterStoreService.setOrganizationId(_organizationId, { replaceHistory: true });
+
         fireFilterChanged();
       }
 
@@ -144,6 +153,7 @@
         }
 
         _timeFilter = time ? time : null;
+        filterStoreService.setTimeFilter(_timeFilter, { setHistory: true });
         fireFilterChanged();
       }
 
@@ -153,6 +163,7 @@
         }
 
         _rawfilter = filter;
+        filterStoreService.setRawFilter(_timeFilter, { setHistory: true });
         fireFilterChanged();
       }
 
