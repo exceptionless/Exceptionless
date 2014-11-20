@@ -24,21 +24,6 @@
         return urlService.buildFilterUrl({ route: 'new', projectId: filterService.getProjectId(), organizationId: filterService.getOrganizationId(),  type: type });
       }
 
-      function isTypeMenuActive(params) {
-        return $state.includes('app.type-dashboard', params) ||
-          $state.includes('app.project-type-dashboard', params) ||
-          $state.includes('app.organization-type-dashboard', params) ||
-          $state.includes('app.type-frequent', params) ||
-          $state.includes('app.project-type-frequent', params) ||
-          $state.includes('app.organization-type-frequent', params) ||
-          $state.includes('app.type-new', params) ||
-          $state.includes('app.project-type-new', params) ||
-          $state.includes('app.organization-type-new', params) ||
-          $state.includes('app.type-recent', params) ||
-          $state.includes('app.project-type-recent', params) ||
-          $state.includes('app.organization-type-recent', params);
-      }
-
       function isAllMenuActive() {
         return $state.includes('app.dashboard', $stateParams) ||
           $state.includes('app.project-dashboard', $stateParams) ||
@@ -54,16 +39,21 @@
           $state.includes('app.organization-recent', $stateParams);
       }
 
-      function isExceptionsMenuActive() {
-        return isTypeMenuActive(angular.extend({}, $stateParams, { type: 'error' }));
-      }
+      function isTypeMenuActive(type) {
+        var params = angular.extend({}, $stateParams, { type: type });
 
-      function isLogsMenuActive() {
-        return isTypeMenuActive(angular.extend({}, $stateParams, { type: 'log' }));
-      }
-
-      function isFeaturesMenuActive() {
-        return isTypeMenuActive(angular.extend({}, $stateParams, { type: 'usage' }));
+        return $state.includes('app.type-dashboard', params) ||
+          $state.includes('app.project-type-dashboard', params) ||
+          $state.includes('app.organization-type-dashboard', params) ||
+          $state.includes('app.type-frequent', params) ||
+          $state.includes('app.project-type-frequent', params) ||
+          $state.includes('app.organization-type-frequent', params) ||
+          $state.includes('app.type-new', params) ||
+          $state.includes('app.project-type-new', params) ||
+          $state.includes('app.organization-type-new', params) ||
+          $state.includes('app.type-recent', params) ||
+          $state.includes('app.project-type-recent', params) ||
+          $state.includes('app.organization-type-recent', params);
       }
 
       if (!!navigator.userAgent.match(/MSIE/i))
@@ -81,9 +71,7 @@
       vm.getFrequentUrl = getFrequentUrl;
       vm.getNewUrl = getNewUrl;
       vm.isAllMenuActive = isAllMenuActive;
-      vm.isExceptionsMenuActive = isExceptionsMenuActive;
-      vm.isLogsMenuActive = isLogsMenuActive;
-      vm.isFeaturesMenuActive = isFeaturesMenuActive;
+      vm.isTypeMenuActive = isTypeMenuActive;
       vm.project = {id: '537650f3b77efe23a47914f4'};
       vm.settings = {
         headerFixed: true,

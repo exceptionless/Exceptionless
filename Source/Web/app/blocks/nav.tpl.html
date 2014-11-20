@@ -1,5 +1,5 @@
 <ul class="nav">
-  <li ng-class="{active: appVm.isExceptionsMenuActive()}">
+  <li ng-class="{active: appVm.isTypeMenuActive('error')}">
     <a title="Exceptions">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
@@ -35,7 +35,7 @@
       </li>
     </ul>
   </li>
-  <li ng-class="{active: appVm.isLogsMenuActive()}">
+  <li ng-class="{active: appVm.isTypeMenuActive('log')}">
     <a title="Log Messages">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
@@ -71,7 +71,7 @@
       </li>
     </ul>
   </li>
-  <li ng-class="{active: appVm.is404MenuActive()}">
+  <li ng-class="{active: appVm.isTypeMenuActive('404')}">
     <a title="Broken Links">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
@@ -107,7 +107,7 @@
       </li>
     </ul>
   </li>
-  <li ng-class="{active: appVm.isFeaturesMenuActive()}">
+  <li ng-class="{active: appVm.isTypeMenuActive('usage')}">
     <a title="Feature Usages">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
