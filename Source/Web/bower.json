@@ -42,8 +42,9 @@
     "ng-stats": "~1.0.5",
     "handlebars": "~2.0.0",
     "ng-clip": "~0.2.4",
-    "a0-angular-storage": "~0.0.6",
-    "ng-filters": "~1.1"
+    "a0-angular-storage": "~0.0.7",
+    "ng-filters": "~1.1",
+    "es6-shim": "~0.20.4"
   },
   "resolutions": {
     "bootstrap": "~3.3",

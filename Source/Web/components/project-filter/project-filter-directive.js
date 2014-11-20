@@ -11,7 +11,7 @@
       replace: true,
       scope: true,
       templateUrl: 'components/project-filter/project-filter-directive.tpl.html',
-      controller: ['$state', 'filterService', 'notificationService', 'projectService', function ($state, filterService, notificationService, projectService) {
+      controller: ['$state', '$stateParams', 'filterService', 'notificationService', 'projectService', 'urlService', function ($state, $stateParams, filterService, notificationService, projectService, urlService) {
         function get() {
           function onSuccess(response) {
             vm.projects = response.data.plain();
@@ -25,6 +25,10 @@
           return projectService.getAll().then(onSuccess, onFailure);
         }
 
+        function getAllProjectsUrl() {
+          return urlService.buildFilterUrl({ route: getStateName(), type: $stateParams.type });
+        }
+
         function getFilterName() {
           var organizationId = filterService.getOrganizationId();
           if (organizationId) {
@@ -33,8 +37,6 @@
                 return vm.projects[index].organization_name;
               }
             }
-
-            clearFilter();
           }
 
           var projectId = filterService.getProjectId();
@@ -44,32 +46,42 @@
                 return vm.projects[index2].name;
               }
             }
-
-            clearFilter();
           }
 
           return 'All Projects';
         }
 
-        function clearFilter() {
-          filterService.clearOrganizationAndProjectFilter();
+        function getOrganizationUrl(project) {
+          return urlService.buildFilterUrl({ route: getStateName(), organizationId: project.organization_id, type: $stateParams.type });
         }
 
-        function setProject(project) {
-          filterService.setProjectId(project.id);
+        function getProjectUrl(project) {
+          return urlService.buildFilterUrl({ route: getStateName(), projectId: project.id, type: $stateParams.type });
         }
 
-        function setOrganization(project) {
-          filterService.setOrganizationId(project.organization_id);
+        function getStateName() {
+          if ($state.current.name.endsWith('frequent')) {
+            return 'frequent';
+          }
+
+          if ($state.current.name.endsWith('new')) {
+            return 'new';
+          }
+
+          if ($state.current.name.endsWith('recent')) {
+            return 'recent';
+          }
+
+          return 'dashboard';
         }
 
         var vm = this;
-        vm.clearFilter = clearFilter;
         vm.filterName = 'Loading';
+        vm.getAllProjectsUrl = getAllProjectsUrl;
         vm.getFilterName = getFilterName;
+        vm.getOrganizationUrl = getOrganizationUrl;
+        vm.getProjectUrl = getProjectUrl;
         vm.projects = [];
-        vm.setProject = setProject;
-        vm.setOrganization = setOrganization;
 
         get();
       }],

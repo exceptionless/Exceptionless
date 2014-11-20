@@ -2,10 +2,26 @@
   'use strict';
 
   angular.module('app')
-    .controller('App', ['$state', '$stateParams', '$window', 'BASE_URL', 'signalRService', 'VERSION', function ($state, $stateParams, $window, BASE_URL, signalRService, VERSION) {
+    .controller('App', ['$state', '$stateParams', '$window', 'BASE_URL', 'filterService', 'signalRService', 'urlService', 'VERSION', function ($state, $stateParams, $window, BASE_URL, filterService, signalRService, urlService, VERSION) {
       function isSmartDevice($window) {
         var ua = $window['navigator']['userAgent'] || $window['navigator']['vendor'] || $window['opera'];
         return (/iPhone|iPod|iPad|Silk|Android|BlackBerry|Opera Mini|IEMobile/).test(ua);
+      }
+
+      function getDashboardUrl(type){
+        return urlService.buildFilterUrl({ route: 'dashboard', projectId: filterService.getProjectId(), organizationId: filterService.getOrganizationId(),  type: type });
+      }
+
+      function getRecentUrl(type){
+        return urlService.buildFilterUrl({ route: 'recent', projectId: filterService.getProjectId(), organizationId: filterService.getOrganizationId(),  type: type });
+      }
+
+      function getFrequentUrl(type){
+        return urlService.buildFilterUrl({ route: 'frequent', projectId: filterService.getProjectId(), organizationId: filterService.getOrganizationId(),  type: type });
+      }
+
+      function getNewUrl(type){
+        return urlService.buildFilterUrl({ route: 'new', projectId: filterService.getProjectId(), organizationId: filterService.getOrganizationId(),  type: type });
       }
 
       function isTypeMenuActive(params) {
@@ -49,6 +65,10 @@
       signalRService.startDelayed(BASE_URL, 'd795c4406f6b4bc6ae8d787c65d0274d');
 
       var vm = this;
+      vm.getDashboardUrl = getDashboardUrl;
+      vm.getRecentUrl = getRecentUrl;
+      vm.getFrequentUrl = getFrequentUrl;
+      vm.getNewUrl = getNewUrl;
       vm.isAllMenuActive = isAllMenuActive;
       vm.isExceptionsMenuActive = isExceptionsMenuActive;
       vm.isLogsMenuActive = isLogsMenuActive;

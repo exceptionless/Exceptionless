@@ -2,7 +2,27 @@
   'use strict';
 
   angular.module('exceptionless.url', [])
-    .factory('urlService', [function () {
+    .factory('urlService', ['$state', function ($state) {
+      function buildFilterUrl(options) {
+        var routeParts = [];
+        var routeParams = {};
+
+        if (options.organizationId) {
+          routeParts.push('organization');
+          routeParams.organizationId = options.organizationId;
+        } else if (options.projectId) {
+          routeParts.push('project');
+          routeParams.projectId = options.projectId;
+        }
+
+        if (options.type) {
+          routeParts.push('type');
+          routeParams.type = options.type;
+        }
+
+        routeParts.push(options.route);
+        return $state.href('app.' + routeParts.join('-'), routeParams);
+      }
 
       function buildUrl(isSecure, host, port, path, queryString) {
         var url = (isSecure ? 'https://' : 'http://') + host;
@@ -37,6 +57,7 @@
       }
 
       var service = {
+        buildFilterUrl: buildFilterUrl,
         buildUrl: buildUrl
       };
 

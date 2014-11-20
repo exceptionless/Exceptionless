@@ -58,6 +58,7 @@
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['filterService', function (filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
         }]
       });
 
@@ -81,7 +82,6 @@
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
-          console.log('onexit');
           filterService.setEventType(null);
         }]
       });
@@ -93,6 +93,7 @@
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
           filterService.setOrganizationId($stateParams.organizationId);
+          filterService.setEventType(null);
         }]
       });
 
@@ -116,6 +117,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
+          filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -130,6 +133,7 @@
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['filterService', function (filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
         }]
       });
 
@@ -162,12 +166,9 @@
         controller: 'app.Frequent',
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
-        resolve: {
-          id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.organizationId);
-            return $stateParams.id;
-          }]
-        }
+        onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
+          filterService.setOrganizationId($stateParams.organizationId);
+        }]
       });
 
       $stateProvider.state('app.organization-type-frequent', {
@@ -191,6 +192,7 @@
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -205,6 +207,7 @@
         templateUrl: 'app/new.tpl.html',
         onEnter: ['filterService', function (filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
         }]
       });
 
@@ -237,12 +240,9 @@
         controller: 'app.New',
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
-        resolve: {
-          id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.organizationId);
-            return $stateParams.id;
-          }]
-        }
+        onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
+          filterService.setOrganizationId($stateParams.organizationId);
+        }]
       });
 
       $stateProvider.state('app.organization-type-new', {
@@ -266,6 +266,7 @@
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -280,6 +281,7 @@
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['filterService', function (filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
         }]
       });
 
@@ -312,12 +314,9 @@
         controller: 'app.Recent',
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
-        resolve: {
-          id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.organizationId);
-            return $stateParams.id;
-          }]
-        }
+        onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
+          filterService.setOrganizationId($stateParams.organizationId);
+        }]
       });
 
       $stateProvider.state('app.organization-type-recent', {
@@ -341,6 +340,7 @@
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
           filterService.setOrganizationId(null);
+          filterService.setProjectId(null);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
