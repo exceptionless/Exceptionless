@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -13,7 +13,7 @@ using Exceptionless.Models.Data;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class ProcessEventUserDescriptionsJob : Job {
+    public class ProcessEventUserDescriptionsJob : JobBase {
         private readonly IQueue<EventUserDescription> _queue;
         private readonly IEventRepository _eventRepository;
         private readonly IAppStatsClient _statsClient;
@@ -24,51 +24,42 @@ namespace Exceptionless.Core.Jobs {
             _statsClient = statsClient;
         }
 
-        public void Run(int totalUserDescriptionsToProcess) {
-            Run(new JobRunContext().WithWorkItemLimit(totalUserDescriptionsToProcess));
-        }
-
-        protected async override Task<JobResult> RunInternalAsync() {
+        protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
             Log.Info().Message("Process user description job starting").Write();
-            int totalUserDescriptionsProcessed = 0;
-            int totalUserDescriptionsToProcess = Context.GetWorkItemLimit();
 
-            while (!CancelPending && (totalUserDescriptionsToProcess == -1 || totalUserDescriptionsProcessed < totalUserDescriptionsToProcess)) {
-                QueueEntry<EventUserDescription> queueEntry = null;
-                try {
-                    queueEntry = await _queue.DequeueAsync();
-                } catch (Exception ex) {
-                    if (!(ex is TimeoutException)) {
-                        Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventUserDescription: {0}", ex.Message).Write();
-                        return JobResult.FromException(ex);
-                    }
-                }
-                if (queueEntry == null)
-                    continue;
-                
-                _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
-                Log.Info().Message("Processing EventUserDescription '{0}'.", queueEntry.Id).Write();
-
-                try {
-                    ProcessUserDescription(queueEntry.Value);
-                    totalUserDescriptionsProcessed++;
-                    _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
-                } catch (DocumentNotFoundException ex){
-                    _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
-                    queueEntry.AbandonAsync().Wait();
-                    Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
-                    continue;
-                } catch (Exception ex) {
-                    _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
-                    queueEntry.AbandonAsync().Wait();
-
-                    // TODO: Add the EventUserDescription to the logged exception.
-                    Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
+            QueueEntry<EventUserDescription> queueEntry = null;
+            try {
+                queueEntry = await _queue.DequeueAsync();
+            } catch (Exception ex) {
+                if (!(ex is TimeoutException)) {
+                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventUserDescription: {0}", ex.Message).Write();
                     return JobResult.FromException(ex);
                 }
-
-                await queueEntry.CompleteAsync();
             }
+            if (queueEntry == null)
+                return JobResult.Success;
+                
+            _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
+            Log.Info().Message("Processing EventUserDescription '{0}'.", queueEntry.Id).Write();
+
+            try {
+                ProcessUserDescription(queueEntry.Value);
+                _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
+            } catch (DocumentNotFoundException ex){
+                _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
+                queueEntry.AbandonAsync().Wait();
+                Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
+                return JobResult.FromException(ex);
+            } catch (Exception ex) {
+                _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
+                queueEntry.AbandonAsync().Wait();
+
+                // TODO: Add the EventUserDescription to the logged exception.
+                Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
+                return JobResult.FromException(ex);
+            }
+
+            await queueEntry.CompleteAsync();
 
             return JobResult.Success;
         }

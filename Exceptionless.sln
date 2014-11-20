@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Models", "Source\Models\Exceptionless.Models.csproj", "{A14E78DE-A085-4647-BA2D-E6237D7D8057}"
 EndProject
@@ -35,8 +35,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Migrations", "Migrations", "{E37C2237-3223-421C-B94A-2B9FC2411A77}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RunMongoMigrations", "Source\RunMongoMigrations\RunMongoMigrations.csproj", "{0B4F8485-F0A8-48F7-876F-65490E788DC7}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SchedulerService", "Source\SchedulerService\SchedulerService.csproj", "{26B3C998-1516-477B-8612-8259EDBF97A8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RazorSharpEmail", "Source\RazorSharpEmail\RazorSharpEmail.csproj", "{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}"
 EndProject
@@ -83,14 +81,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.JobRunner", "Source\JobRunner\Exceptionless.JobRunner.csproj", "{1ADFB25D-B702-4969-8818-F393BB5C2F05}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{9AA4BD09-51C8-4467-A81A-8B1BFCD561F1}"
-	ProjectSection(SolutionItems) = preProject
-		Source\JobRunner\RunDailyNotificationJob.bat = Source\JobRunner\RunDailyNotificationJob.bat
-		Source\JobRunner\RunEnforceRetentionLimitsJob.bat = Source\JobRunner\RunEnforceRetentionLimitsJob.bat
-		Source\JobRunner\RunProcessEventPostsJob.bat = Source\JobRunner\RunProcessEventPostsJob.bat
-		Source\JobRunner\RunProcessEventUserDescriptionsJob.bat = Source\JobRunner\RunProcessEventUserDescriptionsJob.bat
-		Source\JobRunner\RunProcessMailMessageJob.bat = Source\JobRunner\RunProcessMailMessageJob.bat
-		Source\JobRunner\RunRemoveStaleAccountsJob.bat = Source\JobRunner\RunRemoveStaleAccountsJob.bat
-	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\EventMigration\EventMigration.csproj", "{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}"
 EndProject
@@ -176,16 +166,6 @@ Global
 		{0B4F8485-F0A8-48F7-876F-65490E788DC7}.Release|Mixed Platforms.Build.0 = Release|x86
 		{0B4F8485-F0A8-48F7-876F-65490E788DC7}.Release|x86.ActiveCfg = Release|x86
 		{0B4F8485-F0A8-48F7-876F-65490E788DC7}.Release|x86.Build.0 = Release|x86
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{26B3C998-1516-477B-8612-8259EDBF97A8}.Release|x86.ActiveCfg = Release|Any CPU
 		{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

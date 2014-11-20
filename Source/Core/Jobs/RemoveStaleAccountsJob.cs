@@ -12,14 +12,15 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Scheduler;
+using Exceptionless.Core.Lock;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class RemoveStaleAccountsJob : Job {
+    public class RemoveStaleAccountsJob : JobBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
@@ -30,16 +31,18 @@ namespace Exceptionless.Core.Jobs {
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,
-            IStackRepository stackRepository)
+            IStackRepository stackRepository,
+            ILockProvider lockProvider)
         {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
+            LockProvider = lockProvider;
         }
 
-        protected override Task<JobResult> RunInternalAsync() {
+        protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
             var organizations = _organizationRepository.GetAbandoned();

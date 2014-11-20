@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.UI.WebControls;
 
 namespace CodeSmith.Core.Helpers
 {
@@ -41,20 +40,44 @@ namespace CodeSmith.Core.Helpers
             if (action == null)
                 throw new ArgumentNullException("action");
 
-            if (!retryInterval.HasValue)
-                retryInterval = TimeSpan.FromMilliseconds(100);
-
             do {
                 try {
                     return action();
                 } catch {
                     if (attempts <= 0)
                         throw;
-                    Thread.Sleep(retryInterval.Value);
+
+                    if (retryInterval != null)
+                        Thread.Sleep(retryInterval.Value);
+                    else
+                        SleepBackOffMultiplier(attempts);
                 }
             } while (attempts-- > 1);
 
             throw new ApplicationException("Should not get here.");
+        }
+
+        public static void UntilTrue(Func<bool> action, TimeSpan? timeOut) {
+            var i = 0;
+            var firstAttempt = DateTime.UtcNow;
+
+            while (timeOut == null || DateTime.UtcNow - firstAttempt < timeOut.Value) {
+                i++;
+                if (action())
+                    return;
+                
+                SleepBackOffMultiplier(i);
+            }
+
+            throw new TimeoutException(string.Format("Exceeded timeout of {0}", timeOut.Value));
+        }
+
+        private static void SleepBackOffMultiplier(int i) {
+            var rand = new Random(Guid.NewGuid().GetHashCode());
+            var nextTry = rand.Next(
+                (int)Math.Pow(i, 2), (int)Math.Pow(i + 1, 2) + 1);
+
+            Thread.Sleep(nextTry);
         }
 
         public static Task InBackground(Action action, int? maxFaults = null, TimeSpan? restartInterval = null) {

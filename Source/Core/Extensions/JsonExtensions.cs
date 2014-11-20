@@ -189,12 +189,20 @@ namespace Exceptionless.Core.Extensions {
             return data.ToObject<T>(serializer);
         }
 
+        public static object FromJson(this string data, Type objectType, JsonSerializerSettings settings = null) {
+            JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
+
+            using (var sw = new StringReader(data))
+            using (var sr = new JsonTextReader(sw))
+                return serializer.Deserialize(sr, objectType);
+        }
+
         public static T FromJson<T>(this string data, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
 
             using (var sw = new StringReader(data))
-                using (var sr = new JsonTextReader(sw))
-                    return serializer.Deserialize<T>(sr);
+            using (var sr = new JsonTextReader(sw))
+                return serializer.Deserialize<T>(sr);
         }
 
         public static bool TryFromJson<T>(this string data, out T value, JsonSerializerSettings settings = null) {

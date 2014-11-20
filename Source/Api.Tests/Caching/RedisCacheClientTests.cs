@@ -3,20 +3,19 @@ using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
+using StackExchange.Redis;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Caching {
-    public class AzureCacheClientTests {
-        private readonly AzureCacheClient _cache;
+    public class RedisCacheClientTests {
+        private readonly RedisCacheClient _cache;
 
-        public AzureCacheClientTests() {
-            if (!Settings.Current.UseAzureCache)
-                return;
+        public RedisCacheClientTests() {
+            //if (!Settings.Current.UseAzureCache)
+            //    return;
 
-            _cache = new AzureCacheClient(
-                endpointUrl: Settings.Current.AzureCacheEndpoint,
-                authorizationToken: Settings.Current.AzureCacheAuthorizationToken,
-                useLocalCache: false);
+            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+            _cache = new RedisCacheClient(muxer.GetDatabase());
         }
 
         [Fact]
@@ -37,7 +36,7 @@ namespace Exceptionless.Api.Tests.Caching {
             _cache.Set("test", 1, TimeSpan.FromMilliseconds(100));
             var value = _cache.Get<int>("test");
             Assert.Equal(1, value);
-            Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+            Task.Delay(TimeSpan.FromMilliseconds(150)).Wait();
             var newvalue = _cache.Get<int>("test");
             Assert.Equal(0, newvalue);
         }

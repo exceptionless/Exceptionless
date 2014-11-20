@@ -12,9 +12,11 @@ namespace Exceptionless.JobRunner {
         private static int Main(string[] args) {
             OutputHeader();
             
+            // TODO: Add parameter for indicating that a job shouldn't have multiple instances running at the same time
+            // TODO: Use job locker.
             // TODO: Hook up nlog to write to the console.
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-                
+            
             try {
                 var ca = new ConsoleArguments();
                 if (Parser.ParseHelp(args)) {

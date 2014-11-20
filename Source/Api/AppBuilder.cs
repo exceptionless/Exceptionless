@@ -175,9 +175,9 @@ namespace Exceptionless.Api {
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
 
             if (Settings.Current.EnableJobsModule) {
-                Run.InBackground(t => container.GetInstance<ProcessEventPostsJob>().Run(null, token), token);
-                Run.InBackground(t => container.GetInstance<ProcessEventUserDescriptionsJob>().Run(null, token), token);
-                Run.InBackground(t => container.GetInstance<ProcessMailMessageJob>().Run(null, token), token);
+                Run.InBackground(t => container.GetInstance<ProcessEventPostsJob>().Run(token), token);
+                Run.InBackground(t => container.GetInstance<ProcessEventUserDescriptionsJob>().Run(token), token);
+                Run.InBackground(t => container.GetInstance<ProcessMailMessageJob>().Run(token), token);
             }
         }
 

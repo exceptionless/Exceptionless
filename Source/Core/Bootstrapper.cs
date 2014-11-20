@@ -16,10 +16,10 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Lock;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
-using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
@@ -96,8 +96,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IStackRepository, StackRepository>();
             container.RegisterSingle<IEventRepository, EventRepository>();
             container.RegisterSingle<IOrganizationRepository, OrganizationRepository>();
-            container.RegisterSingle<IJobLockRepository, JobLockRepository>();
-            container.RegisterSingle<IJobHistoryRepository, JobHistoryRepository>();
             container.RegisterSingle<IProjectRepository, ProjectRepository>();
             container.RegisterSingle<IUserRepository, UserRepository>();
             container.RegisterSingle<IWebHookRepository, WebHookRepository>();
@@ -106,8 +104,6 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
             container.RegisterSingle<IValidator<Event>, EventValidator>();
-            container.RegisterSingle<IValidator<JobHistory>, JobHistoryValidator>();
-            container.RegisterSingle<IValidator<JobLockInfo>, JobLockInfoValidator>();
             container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
             container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
             container.RegisterSingle<IValidator<Project>, ProjectValidator>();
@@ -124,9 +120,7 @@ namespace Exceptionless.Core {
             else
                 container.RegisterSingle<IMailSender>(() => new InMemoryMailSender());
 
-            container.Register<MongoJobHistoryProvider>();
-            container.Register<MongoJobLockProvider>();
-            container.Register<MongoMachineJobLockProvider>();
+            container.Register<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();
