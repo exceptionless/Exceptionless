@@ -32,10 +32,16 @@
             }
           }
 
-          var timeout = $timeout(setActive, 1);
-          var unbind = scope.$on('$locationChangeSuccess', setActive);
+          function setActiveWithTimeout() {
+            var timeout = $timeout(setActive, 10);
+            scope.$on('$destroy', function() {
+              $timeout.cancel(timeout);
+            });
+          }
+
+          setActiveWithTimeout();
+          var unbind = scope.$on('$locationChangeSuccess', setActiveWithTimeout);
           scope.$on('$destroy', function() {
-            $timeout.cancel(timeout);
             unbind();
           });
         }
