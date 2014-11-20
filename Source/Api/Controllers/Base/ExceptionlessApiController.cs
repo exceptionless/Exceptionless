@@ -138,8 +138,8 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetDefaultOrganizationId();
         }
 
-        public IHttpActionResult BadRequest<T>(T model) {
-            return new NegotiatedContentResult<T>(HttpStatusCode.BadRequest, model, this);
+        protected IHttpActionResult BadRequest(ModelActionResults results) {
+            return new NegotiatedContentResult<ModelActionResults>(HttpStatusCode.BadRequest, results, this);
         }
 
         public PermissionActionResult Permission(PermissionResult permission) {
