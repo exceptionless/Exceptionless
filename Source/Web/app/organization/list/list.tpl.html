@@ -1,4 +1,4 @@
-<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="OrganizationChanged" refresh-if="!vm.previous" refresh-action="vm.get()">
+<div class="hbox hbox-auto-xs hbox-auto-sm" refresh-on="OrganizationChanged" refresh-if="!vm.previous" refresh-action="vm.get()" refresh-debounce="1000">
   <div class="col">
     <div class="wrapper-md">
       <div class="panel panel-default">
@@ -19,12 +19,9 @@
             <tr class="row-clickable" ng-repeat="organization in vm.organizations track by organization.id">
               <td ng-click="vm.open(organization.id, $event)">{{::organization.name}}</td>
               <td ng-click="vm.open(organization.id, $event)">{{::organization.plan_id}}</td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count | number:0}}
-              </td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count | number:0}}
-              </td>
-              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count | number:0}}
-              </td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.project_count | number:0}}</td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.stack_count | number:0}}</td>
+              <td ng-click="vm.open(organization.id, $event)" class="hidden-xs">{{::organization.event_count | number:0}}</td>
               <td>
                 <div class="btn-group">
                   <button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">

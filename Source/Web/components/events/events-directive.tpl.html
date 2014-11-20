@@ -1,4 +1,4 @@
-<div class="table-responsive" refresh-on="eventOccurrence" refresh-always="filterChanged" refresh-if="!vm.previous" refresh-action="vm.get()">
+<div class="table-responsive" refresh-on="eventOccurrence" refresh-always="filterChanged" refresh-if="!vm.previous" refresh-action="vm.get()" refresh-debounce="1000">
   <table class="table table-striped table-bordered table-fixed b-t b-light table-hover table-clickable">
     <thead>
     <tr>

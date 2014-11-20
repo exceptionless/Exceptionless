@@ -1,11 +1,10 @@
-<div class="table-responsive" refresh-on="StackChanged eventOccurrence" refresh-always="filterChanged" refresh-if="!vm.previous" refresh-action="vm.get()">
+<div class="table-responsive" refresh-on="StackChanged eventOccurrence" refresh-always="filterChanged" refresh-if="!vm.previous" refresh-action="vm.get()" refresh-debounce="1000">
   <table class="table table-striped table-bordered table-fixed b-t b-light table-hover table-clickable">
     <thead>
     <tr>
       <th class="selection hidden-xs">
         <label class="i-checks m-b-none">
-          <input type="checkbox" ng-click="vm.updateSelection()" ng-checked="vm.hasSelection()"
-                 ng-disabled="!vm.hasStacks()"><i></i>
+          <input type="checkbox" ng-click="vm.updateSelection()" ng-checked="vm.hasSelection()" ng-disabled="!vm.hasStacks()"><i></i>
         </label>
       </th>
       <th>Summary</th>
@@ -16,8 +15,7 @@
     </thead>
     <tbody>
     <tr class="row-clickable" ng-repeat="stack in vm.stacks track by stack.id" ng-if="vm.hasStacks()">
-      <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds"
-                                                                    checklist-value="stack.id"><i></i></label></td>
+      <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds" checklist-value="stack.id"><i></i></label></td>
       <td ng-click="vm.open(stack.id, $event)">
         <summary source="stack" show-type="vm.showType"></summary>
       </td>

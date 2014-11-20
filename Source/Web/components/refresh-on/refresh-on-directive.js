@@ -1,8 +1,8 @@
 (function () {
   'use strict';
 
-  angular.module('exceptionless.refresh', [])
-    .directive('refreshOn', ['$parse', '$rootScope', function ($parse, $rootScope) {
+  angular.module('exceptionless.refresh', ['debounce'])
+    .directive('refreshOn', ['$parse', '$rootScope', 'debounce', function ($parse, $rootScope, debounce) {
       return {
         restrict: 'AE',
         link: function (scope, element, attrs) {
@@ -22,7 +22,7 @@
             return;
           }
 
-          var action = $parse(attrs.refreshAction);
+          var action = attrs.refreshDebounce ? debounce($parse(attrs.refreshAction), attrs.refreshDebounce, true) : $parse(attrs.refreshAction);
 
           if (attrs.refreshOn) {
             angular.forEach(attrs.refreshOn.split(" "), function (name) {
