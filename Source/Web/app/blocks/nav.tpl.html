@@ -1,110 +1,5 @@
 <ul class="nav">
-  <li>
-    <a ui-sref="app.dashboard({ type: 'error' })" title="Exception Dashboard">
-      <span class="pull-right text-muted">
-        <i class="fa fa-fw fa-angle-right text"></i>
-        <i class="fa fa-fw fa-angle-down text-active"></i>
-      </span>
-      <i class="fa fa-ambulance fa-fw"></i>
-      <span>Exceptions</span>
-    </a>
-    <ul class="nav nav-sub dk">
-      <li>
-        <a ui-sref="app.type-dashboard({ type: 'error' })" title="Dashboard">
-          <i class="fa fa-dashboard fa-fw"></i>
-          <span>Dashboard</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-recent({ type: 'error' })" title="Most Recent">
-          <i class="fa fa-calendar fa-fw"></i>
-          <span>Most Recent</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-frequent({ type: 'error' })" title="Most Frequent">
-          <i class="fa fa-signal fa-fw"></i>
-          <span>Most Frequent</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-new({ type: 'error' })" title="New">
-          <i class="fa fa-asterisk fa-fw"></i>
-          <span>New</span>
-        </a>
-      </li>
-    </ul>
-  </li>
-
-  <li>
-    <a ui-sref="app.dashboard({ type: 'log' })" title="Log Dashboard">
-      <span class="pull-right text-muted">
-        <i class="fa fa-fw fa-angle-right text"></i>
-        <i class="fa fa-fw fa-angle-down text-active"></i>
-      </span>
-      <i class="fa fa-book fa-fw"></i>
-      <span>Logs</span>
-    </a>
-    <ul class="nav nav-sub dk">
-      <li>
-        <a ui-sref="app.type-dashboard({ type: 'log' })" title="Dashboard">
-          <i class="fa fa-dashboard fa-fw"></i>
-          <span>Dashboard</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-recent({ type: 'log' })" title="Most Recent">
-          <i class="fa fa-calendar fa-fw"></i>
-          <span>Most Recent</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-frequent({ type: 'log' })" title="Most Frequent">
-          <i class="fa fa-signal fa-fw"></i>
-          <span>Most Frequent</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-new({ type: 'log' })" title="New">
-          <i class="fa fa-asterisk fa-fw"></i>
-          <span>New</span>
-        </a>
-      </li>
-    </ul>
-  </li>
-
-  <li>
-    <a ui-sref="app.dashboard({ type: 'usage' })" title="Feature Dashboard">
-      <span class="pull-right text-muted">
-        <i class="fa fa-fw fa-angle-right text"></i>
-        <i class="fa fa-fw fa-angle-down text-active"></i>
-      </span>
-      <i class="fa fa-send fa-fw"></i>
-      <span>Features</span>
-    </a>
-    <ul class="nav nav-sub dk">
-      <li>
-        <a ui-sref="app.type-dashboard({ type: 'usage' })" title="Dashboard">
-          <i class="fa fa-dashboard fa-fw"></i>
-          <span>Dashboard</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-recent({ type: 'usage' })" title="Most Recent">
-          <i class="fa fa-calendar fa-fw"></i>
-          <span>Most Recent</span>
-        </a>
-      </li>
-      <li>
-        <a ui-sref="app.type-frequent({ type: 'usage' })" title="Most Frequent">
-          <i class="fa fa-signal fa-fw"></i>
-          <span>Most Frequent</span>
-        </a>
-      </li>
-    </ul>
-  </li>
-
-  <li>
+  <li ng-class="{active: appVm.isAllMenuActive()}">
     <a ui-sref="app.dashboard" title="Dashboard">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
@@ -114,25 +9,25 @@
       <span>All</span>
     </a>
     <ul class="nav nav-sub dk">
-      <li>
+      <li ui-sref-active="active">
         <a ui-sref="app.dashboard" title="Dashboard">
           <i class="fa fa-dashboard fa-fw"></i>
           <span>Dashboard</span>
         </a>
       </li>
-      <li>
+      <li ui-sref-active="active">
         <a ui-sref="app.recent" title="Most Recent">
           <i class="fa fa-calendar fa-fw"></i>
           <span>Most Recent</span>
         </a>
       </li>
-      <li>
+      <li ui-sref-active="active">
         <a ui-sref="app.frequent" title="Most Frequent">
           <i class="fa fa-signal fa-fw"></i>
           <span>Most Frequent</span>
         </a>
       </li>
-      <li>
+      <li ui-sref-active="active">
         <a ui-sref="app.new" title="New">
           <i class="fa fa-asterisk fa-fw"></i>
           <span>New</span>
@@ -140,26 +35,127 @@
       </li>
     </ul>
   </li>
-
-  <li>
+  <li ng-class="{active: appVm.isExceptionsMenuActive()}">
+    <a ui-sref="app.type-dashboard({ type: 'error' })" title="Exception Dashboard">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
+      <i class="fa fa-ambulance fa-fw"></i>
+      <span>Exceptions</span>
+    </a>
+    <ul class="nav nav-sub dk">
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-dashboard({ type: 'error' })" title="Dashboard">
+          <i class="fa fa-dashboard fa-fw"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-recent({ type: 'error' })" title="Most Recent">
+          <i class="fa fa-calendar fa-fw"></i>
+          <span>Most Recent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-frequent({ type: 'error' })" title="Most Frequent">
+          <i class="fa fa-signal fa-fw"></i>
+          <span>Most Frequent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-new({ type: 'error' })" title="New">
+          <i class="fa fa-asterisk fa-fw"></i>
+          <span>New</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+  <li ng-class="{active: appVm.isLogsMenuActive()}">
+    <a ui-sref="app.type-dashboard({ type: 'log' })" title="Log Dashboard">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
+      <i class="fa fa-book fa-fw"></i>
+      <span>Logs</span>
+    </a>
+    <ul class="nav nav-sub dk">
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-dashboard({ type: 'log' })" title="Dashboard">
+          <i class="fa fa-dashboard fa-fw"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-recent({ type: 'log' })" title="Most Recent">
+          <i class="fa fa-calendar fa-fw"></i>
+          <span>Most Recent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-frequent({ type: 'log' })" title="Most Frequent">
+          <i class="fa fa-signal fa-fw"></i>
+          <span>Most Frequent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-new({ type: 'log' })" title="New">
+          <i class="fa fa-asterisk fa-fw"></i>
+          <span>New</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+  <li ng-class="{active: appVm.isFeaturesMenuActive()}">
+    <a ui-sref="app.type-dashboard({ type: 'usage' })" title="Feature Dashboard">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
+      <i class="fa fa-send fa-fw"></i>
+      <span>Features</span>
+    </a>
+    <ul class="nav nav-sub dk">
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-dashboard({ type: 'usage' })" title="Dashboard">
+          <i class="fa fa-dashboard fa-fw"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-recent({ type: 'usage' })" title="Most Recent">
+          <i class="fa fa-calendar fa-fw"></i>
+          <span>Most Recent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-frequent({ type: 'usage' })" title="Most Frequent">
+          <i class="fa fa-signal fa-fw"></i>
+          <span>Most Frequent</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+  <li ui-sref-active="active">
     <a ui-sref="app.project.list" title="My Projects">
       <i class="fa fa-briefcase fa-fw"></i>
       <span>My Projects</span>
     </a>
   </li>
-  <li>
+  <li ui-sref-active="active">
     <a ui-sref="app.organization.list" title="My Organizations">
       <i class="fa fa-group fa-fw"></i>
       <span>My Organizations</span>
     </a>
   </li>
-  <li>
+  <li ui-sref-active="active">
     <a ui-sref="app.account.manage" title="My Account">
       <i class="fa fa-user fa-fw"></i>
       <span>My Account</span>
     </a>
   </li>
-  <li>
+  <li ui-sref-active="active">
     <a ui-sref="app.admin.dashboard" title="Admin">
       <i class="fa fa-cog fa-fw"></i>
       <span>Admin</span>
@@ -172,3 +168,5 @@
     </a>
   </li>
 </ul>
+
+  {{$state | json}}
