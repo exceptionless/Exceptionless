@@ -39,6 +39,13 @@
           $state.includes('app.organization-recent', $stateParams);
       }
 
+      function isAdminMenuActive() {
+        return $state.includes('app.project.list', $stateParams) ||
+          $state.includes('app.organization.list', $stateParams) ||
+          $state.includes('app.account.manage', $stateParams) ||
+          $state.includes('app.admin.dashboard', $stateParams);
+      }
+
       function isTypeMenuActive(type) {
         var params = angular.extend({}, $stateParams, { type: type });
 
@@ -71,6 +78,7 @@
       vm.getFrequentUrl = getFrequentUrl;
       vm.getNewUrl = getNewUrl;
       vm.isAllMenuActive = isAllMenuActive;
+      vm.isAdminMenuActive = isAdminMenuActive;
       vm.isTypeMenuActive = isTypeMenuActive;
       vm.project = {id: '537650f3b77efe23a47914f4'};
       vm.settings = {

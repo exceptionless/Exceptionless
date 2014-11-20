@@ -11,7 +11,7 @@
       replace: true,
       scope: true,
       templateUrl: 'components/project-filter/project-filter-directive.tpl.html',
-      controller: ['$state', '$stateParams', 'filterService', 'notificationService', 'projectService', 'urlService', function ($state, $stateParams, filterService, notificationService, projectService, urlService) {
+      controller: ['$scope', '$state', '$stateParams', 'filterService', 'notificationService', 'projectService', 'urlService', function ($scope, $state, $stateParams, filterService, notificationService, projectService, urlService) {
         function get() {
           function onSuccess(response) {
             vm.projects = response.data.plain();
@@ -74,6 +74,13 @@
 
           return 'dashboard';
         }
+
+        // NOTE: We need to watch on getFilterName because the filterChangedEvents might not be called depending on suspendNotifications option.
+        var unbind = $scope.$watch(function() { return vm.getFilterName(); }, function (filterName) {
+          vm.filterName = filterName;
+        });
+
+        $scope.$on('$destroy', unbind);
 
         var vm = this;
         vm.filterName = 'Loading';
