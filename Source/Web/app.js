@@ -43,7 +43,7 @@
       RestangularProvider.setFullResponse(true);
       //RestangularProvider.setDefaultHeaders({  'Content-Type': 'application/json' });
 
-      $urlRouterProvider.otherwise('/dashboard');
+      $urlRouterProvider.otherwise('/type/error/dashboard');
       $stateProvider.state('app', {
         abstract: true,
         templateUrl: 'app/app.tpl.html'
@@ -60,22 +60,22 @@
       });
 
       $stateProvider.state('app.project-dashboard', {
-        url: '/project/:id/dashboard',
+        url: '/project/:projectId/dashboard',
         controller: 'app.Dashboard',
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
         }]
       });
 
       $stateProvider.state('app.project-type-dashboard', {
-        url: '/project/:id/:type/dashboard',
+        url: '/project/:projectId/:type/dashboard',
         controller: 'app.Dashboard',
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -85,22 +85,22 @@
       });
 
       $stateProvider.state('app.organization-dashboard', {
-        url: '/organization/:id/dashboard',
+        url: '/organization/:organizationId/dashboard',
         controller: 'app.Dashboard',
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.id);
+          filterService.setOrganizationId($stateParams.organizationId);
         }]
       });
 
       $stateProvider.state('app.organization-type-dashboard', {
-        url: '/organization/:id/:type/dashboard',
+        url: '/organization/:organizationId/:type/dashboard',
         controller: 'app.Dashboard',
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.id);
+          filterService.setOrganizationId($stateParams.organizationId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -132,22 +132,22 @@
       });
 
       $stateProvider.state('app.project-frequent', {
-        url: '/project/:id/frequent',
+        url: '/project/:projectId/frequent',
         controller: 'app.Frequent',
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
         }]
       });
 
       $stateProvider.state('app.project-type-frequent', {
-        url: '/project/:id/:type/frequent',
+        url: '/project/:projectId/:type/frequent',
         controller: 'app.Frequent',
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -156,25 +156,25 @@
       });
 
       $stateProvider.state('app.organization-frequent', {
-        url: '/organization/:id/frequent',
+        url: '/organization/:organizationId/frequent',
         controller: 'app.Frequent',
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         resolve: {
           id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.id);
+            filterService.setOrganizationId($stateParams.organizationId);
             return $stateParams.id;
           }]
         }
       });
 
       $stateProvider.state('app.organization-type-frequent', {
-        url: '/organization/:id/:type/frequent',
+        url: '/organization/:organizationId/:type/frequent',
         controller: 'app.Frequent',
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.id);
+          filterService.setOrganizationId($stateParams.organizationId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -207,22 +207,22 @@
       });
 
       $stateProvider.state('app.project-new', {
-        url: '/project/:id/new',
+        url: '/project/:projectId/new',
         controller: 'app.New',
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
         }]
       });
 
       $stateProvider.state('app.project-type-new', {
-        url: '/project/:id/:type/new',
+        url: '/project/:projectId/:type/new',
         controller: 'app.New',
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -231,25 +231,25 @@
       });
 
       $stateProvider.state('app.organization-new', {
-        url: '/organization/:id/new',
+        url: '/organization/:organizationId/new',
         controller: 'app.New',
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         resolve: {
           id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.id);
+            filterService.setOrganizationId($stateParams.organizationId);
             return $stateParams.id;
           }]
         }
       });
 
       $stateProvider.state('app.organization-type-new', {
-        url: '/organization/:id/:type/new',
+        url: '/organization/:organizationId/:type/new',
         controller: 'app.New',
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.id);
+          filterService.setOrganizationId($stateParams.organizationId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -282,22 +282,22 @@
       });
 
       $stateProvider.state('app.project-recent', {
-        url: '/project/:id/recent',
+        url: '/project/:projectId/recent',
         controller: 'app.Recent',
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
         }]
       });
 
       $stateProvider.state('app.project-type-recent', {
-        url: '/project/:id/:type/recent',
+        url: '/project/:projectId/:type/recent',
         controller: 'app.Recent',
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.id);
+          filterService.setProjectId($stateParams.projectId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
@@ -306,25 +306,25 @@
       });
 
       $stateProvider.state('app.organization-recent', {
-        url: '/organization/:id/recent',
+        url: '/organization/:organizationId/recent',
         controller: 'app.Recent',
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         resolve: {
           id: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-            filterService.setOrganizationId($stateParams.id);
+            filterService.setOrganizationId($stateParams.organizationId);
             return $stateParams.id;
           }]
         }
       });
 
       $stateProvider.state('app.organization-type-recent', {
-        url: '/organization/:id/:type/recent',
+        url: '/organization/:organizationId/:type/recent',
         controller: 'app.Recent',
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.id);
+          filterService.setOrganizationId($stateParams.organizationId);
           filterService.setEventType($stateParams.type);
         }],
         onExit: ['filterService', function (filterService) {
