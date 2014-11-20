@@ -107,7 +107,7 @@
 
           if (response.status === 501) {
             return dialogService.confirm(response.data.message, 'Manage Integrations').then(function () {
-              $state.go('app.project.manage', {id: vm.stack.project_id});
+              $state.go('app.project.manage', { id: vm.stack.project_id });
             });
           }
 
@@ -135,7 +135,7 @@
         var message = 'Are you sure you want to delete this stack?';
         return dialogService.confirmDanger(message, 'DELETE STACK').then(function () {
           function onSuccess() {
-            $state.go('app.dashboard', {project_id: vm.stack.project_id});
+            $state.go('app.project-dashboard', { projectId: vm.stack.project_id });
           }
 
           function onFailure() {

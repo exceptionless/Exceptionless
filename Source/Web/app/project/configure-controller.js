@@ -35,7 +35,7 @@
       }
 
       function navigateToDashboard() {
-        $state.go('app.dashboard', {project_id: vm.projectId});
+        $state.go('app.project-dashboard', {projectId: vm.projectId});
       }
 
       var vm = this;

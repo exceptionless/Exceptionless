@@ -56,7 +56,7 @@
         if (event.ctrlKey || event.which === 2) {
           $window.open('/#/organization/' + id + '/manage/', '_blank');
         } else {
-          $state.go('app.organization.manage', {id: id});
+          $state.go('app.organization.manage', { id: id });
         }
       }
 

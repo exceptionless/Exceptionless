@@ -134,12 +134,9 @@
 
                   <div class="line line-dashed b-b line-lg pull-in"></div>
                   <div class="form-group">
-                    <button ui-sref="app.dashboard({ project_id: vm.currentProject.id })" type="button"
-                            class="btn btn-default">Go To Dashboard
-                    </button>
+                    <button ui-sref="app.project-dashboard({ projectId: vm.currentProject.id })" type="button" class="btn btn-default">Go To Dashboard</button>
                     <div class="pull-right">
-                      <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save
-                      </button>
+                      <button type="submit" ng-click="vm.saveNotificationSettings()" class="btn btn-primary">Save</button>
                     </div>
                   </div>
                 </div>

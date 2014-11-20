@@ -21,9 +21,7 @@
                 </div>
                 <div class="line line-dashed b-b line-lg pull-in"></div>
                 <div class="form-group">
-                  <button ui-sref="app.dashboard({ organization_id: vm.organization.id })" type="submit"
-                          class="btn btn-default">Go To Dashboard
-                  </button>
+                  <button ui-sref="app.organization-dashboard({ organizationId: vm.organization.id })" type="submit" class="btn btn-default">Go To Dashboard</button>
                 </div>
               </form>
             </tab>
@@ -32,9 +30,7 @@
 
               <div class="line line-dashed b-b line-lg pull-in"></div>
               <div class="form-group">
-                <button ui-sref="app.dashboard({ organization_id: vm.organization.id })" type="submit"
-                        class="btn btn-default">Go To Dashboard
-                </button>
+                <button ui-sref="app.organization-dashboard({ organizationId: vm.organization.id })" type="submit" class="btn btn-default">Go To Dashboard</button>
                 <div class="pull-right">
                   <button ui-sref="app.project.add" type="button" class="btn btn-primary">New Project</button>
                 </div>
@@ -75,8 +71,7 @@
 
               <div class="line line-dashed b-b line-lg pull-in"></div>
               <div class="form-group">
-                <button ui-sref="app.dashboard({ organization_id: vm.organization.id })" type="submit"
-                        class="btn btn-default">Go To Dashboard
+                <button ui-sref="app.organization-dashboard({ organizationId: vm.organization.id })" type="submit" class="btn btn-default">Go To Dashboard
                 </button>
                 <div class="pull-right">
                   <button ng-click="vm.addUser()" class="btn btn-primary">Invite User</button>

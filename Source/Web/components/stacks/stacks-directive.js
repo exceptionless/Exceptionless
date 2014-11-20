@@ -37,7 +37,7 @@
             if (event.ctrlKey || event.which === 2) {
               $window.open('/#/app/stack/' + id, '_blank');
             } else {
-              $state.go('app.stack', {id: id});
+              $state.go('app.stack', { id: id });
             }
           }
 

@@ -57,8 +57,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['filterService', function (filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
         }]
       });
 
@@ -68,7 +68,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
+          filterService.setProjectId($stateParams.projectId, true);
         }]
       });
 
@@ -78,11 +78,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
-          filterService.setEventType($stateParams.type);
+          filterService.setProjectId($stateParams.projectId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -92,8 +92,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
-          filterService.setEventType(null);
+          filterService.setOrganizationId($stateParams.organizationId, true);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -103,11 +103,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId($stateParams.organizationId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -117,12 +117,12 @@
         controllerAs: 'vm',
         templateUrl: 'app/dashboard.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -132,8 +132,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['filterService', function (filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
         }]
       });
 
@@ -143,7 +143,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
+          filterService.setProjectId($stateParams.projectId, true);
         }]
       });
 
@@ -153,11 +153,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
-          filterService.setEventType($stateParams.type);
+          filterService.setProjectId($stateParams.projectId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -167,7 +167,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
+          filterService.setOrganizationId($stateParams.organizationId, true);
         }]
       });
 
@@ -177,11 +177,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId($stateParams.organizationId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -191,12 +191,12 @@
         controllerAs: 'vm',
         templateUrl: 'app/frequent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -206,8 +206,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['filterService', function (filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
         }]
       });
 
@@ -217,7 +217,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
+          filterService.setProjectId($stateParams.projectId, true);
         }]
       });
 
@@ -227,11 +227,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
-          filterService.setEventType($stateParams.type);
+          filterService.setProjectId($stateParams.projectId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -241,7 +241,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
+          filterService.setOrganizationId($stateParams.organizationId, true);
         }]
       });
 
@@ -251,11 +251,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId($stateParams.organizationId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -265,12 +265,12 @@
         controllerAs: 'vm',
         templateUrl: 'app/new.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -280,8 +280,8 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['filterService', function (filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
         }]
       });
 
@@ -291,7 +291,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
+          filterService.setProjectId($stateParams.projectId, true);
         }]
       });
 
@@ -301,11 +301,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setProjectId($stateParams.projectId);
-          filterService.setEventType($stateParams.type);
+          filterService.setProjectId($stateParams.projectId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -315,7 +315,7 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
+          filterService.setOrganizationId($stateParams.organizationId, true);
         }]
       });
 
@@ -325,11 +325,11 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId($stateParams.organizationId);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId($stateParams.organizationId, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
 
@@ -339,12 +339,12 @@
         controllerAs: 'vm',
         templateUrl: 'app/recent.tpl.html',
         onEnter: ['$stateParams', 'filterService', function ($stateParams, filterService) {
-          filterService.setOrganizationId(null);
-          filterService.setProjectId(null);
-          filterService.setEventType($stateParams.type);
+          filterService.setOrganizationId(null, true);
+          filterService.setProjectId(null, true);
+          filterService.setEventType($stateParams.type, true);
         }],
         onExit: ['filterService', function (filterService) {
-          filterService.setEventType(null);
+          filterService.setEventType(null, true);
         }]
       });
     }]);

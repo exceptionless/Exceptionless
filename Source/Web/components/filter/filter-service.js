@@ -106,72 +106,93 @@
         return new Date().getTimezoneOffset() * -1;
       }
 
-      function setEventType(eventType) {
+      function setEventType(eventType, suspendNotifications) {
         if (angular.equals(eventType, _eventType)) {
           return;
         }
 
         _eventType = eventType;
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setIncludeFixed(includeFixed) {
+      function setIncludeFixed(includeFixed, suspendNotifications) {
         if (angular.equals(includeFixed, _includeFixed)) {
           return;
         }
 
         _includeFixed = includeFixed === true;
         filterStoreService.setIncludeFixed(_includeFixed);
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setIncludeHidden(includeHidden) {
+      function setIncludeHidden(includeHidden, suspendNotifications) {
         if (angular.equals(includeHidden, _includeHidden)) {
           return;
         }
 
         _includeHidden = includeHidden === true;
         filterStoreService.setIncludeHidden(_includeHidden);
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setOrganizationId(id) {
+      function setOrganizationId(id, suspendNotifications) {
         if (angular.equals(id, _organizationId)) {
           return;
         }
 
         _organizationId = id;
         _projectId = null;
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setProjectId(id) {
+      function setProjectId(id, suspendNotifications) {
         if (angular.equals(id, _projectId)) {
           return;
         }
 
         _projectId = id;
         _organizationId = null;
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setTime(time) {
+      function setTime(time, suspendNotifications) {
         if (angular.equals(time, _time)) {
           return;
         }
 
         _time = time ? time : null;
         filterStoreService.setTimeFilter(_time);
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
-      function setFilter(raw) {
+      function setFilter(raw, suspendNotifications) {
         if (angular.equals(raw, _raw)) {
           return;
         }
 
         _raw = raw;
-        fireFilterChanged();
+
+        if (!suspendNotifications) {
+          fireFilterChanged();
+        }
       }
 
       var service = {
