@@ -10,6 +10,12 @@ namespace CodeSmith.Core.Scheduler
     public abstract class Job : IJob
     {
         /// <summary>
+        /// Gets the job lock provider to use when attempting to run the job.
+        /// </summary>
+        /// <value>The job lock provider.</value>
+        protected JobLockProvider LockProvider { get; private set; }
+
+        /// <summary>
         /// Gets the job run context used while running the job.
         /// </summary>
         /// <value>The job run context.</value>
@@ -58,6 +64,26 @@ namespace CodeSmith.Core.Scheduler
         /// </returns>
         public JobResult Run(JobRunContext context = null, CancellationToken? token = null) {
             return RunAsync(context, token).Result;
+        }
+
+        /// <summary>
+        /// Runs this job in a continuous loop.
+        /// </summary>
+        /// <param name="delay">Amount of time to delay between job runs.</param>
+        /// <param name="iterationLimit">Maximum number of job run iterations.</param>
+        /// <param name="context">The job context.</param>
+        /// <param name="token">The cancellation token used to cancel the job from running.</param>
+        public async Task RunContinuousAsync(int delay = 0, int iterationLimit = -1, JobRunContext context = null, CancellationToken? token = null) {
+            if (iterationLimit <= 0)
+                iterationLimit = Int32.MaxValue;
+
+            int iterations = 0;
+            while (!CancelPending && iterations < iterationLimit) {
+                await RunAsync(context, token);
+                iterations++;
+                if (delay > 0)
+                    Thread.Sleep(delay);
+            }
         }
 
         /// <summary>

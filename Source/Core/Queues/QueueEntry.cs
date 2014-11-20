@@ -16,12 +16,12 @@ namespace Exceptionless.Core.Queues {
 
         public T Value { get; private set; }
 
-        public Task CompleteAsync() {
+        public virtual Task CompleteAsync() {
             _isCompleted = true;
             return _queue.CompleteAsync(Id);
         }
 
-        public Task AbandonAsync() {
+        public virtual Task AbandonAsync() {
             return _queue.AbandonAsync(Id);
         }
 

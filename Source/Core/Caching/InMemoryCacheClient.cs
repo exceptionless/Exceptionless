@@ -76,7 +76,8 @@ namespace Exceptionless.Core.Caching {
             }
 
             if (checkLastModified.HasValue
-                && entry.LastModifiedTicks != checkLastModified.Value) return false;
+                && entry.LastModifiedTicks != checkLastModified.Value)
+                return false;
 
             entry.Value = value;
             entry.ExpiresAt = expiresAt;
@@ -140,15 +141,18 @@ namespace Exceptionless.Core.Caching {
             return default(T);
         }
 
+        private static readonly object _lockObject = new object();
         private long UpdateCounter(string key, long value) {
-            if (!_memory.ContainsKey(key)) {
-                Set(key, value);
-                return value;
-            }
+            lock (_lockObject) {
+                if (!_memory.ContainsKey(key)) {
+                    Set(key, value);
+                    return value;
+                }
 
-            var current = Get<long>(key);
-            Set(key, current += value);
-            return current;
+                var current = Get<long>(key);
+                Set(key, current += value);
+                return current;
+            }
         }
 
         public long Increment(string key, uint amount) {

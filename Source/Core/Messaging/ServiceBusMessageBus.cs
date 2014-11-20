@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Microsoft.ServiceBus;
 using Microsoft.ServiceBus.Messaging;
-using MongoDB.Bson;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Messaging {
@@ -35,7 +34,7 @@ namespace Exceptionless.Core.Messaging {
         }
 
         private Task OnMessage(BrokeredMessage brokeredMessage) {
-            var message = brokeredMessage.GetBody<ServiceBusMessage>();
+            var message = brokeredMessage.GetBody<MessageBusData>();
 
             Type messageType = null;
             try {
@@ -44,7 +43,7 @@ namespace Exceptionless.Core.Messaging {
                 Log.Error().Exception(ex).Message("Error getting message body type: {0}", ex.Message).Write();
             }
 
-            object body = message.Data.FromBson(messageType);
+            object body = message.Data.FromJson(messageType);
             foreach (var subscriber in _subscribers.Where(s => s.Type.IsAssignableFrom(messageType)).ToList()) {
                 try {
                     subscriber.Action(body);
@@ -58,7 +57,7 @@ namespace Exceptionless.Core.Messaging {
         }
 
         public Task PublishAsync<T>(T message) where T : class {
-            return _topicClient.SendAsync(new BrokeredMessage(new ServiceBusMessage { Type = typeof(T).AssemblyQualifiedName, Data = message.ToBson() }));
+            return _topicClient.SendAsync(new BrokeredMessage(new MessageBusData { Type = typeof(T).AssemblyQualifiedName, Data = message.ToJson() }));
         }
 
         public void Subscribe<T>(Action<T> handler) where T : class {
@@ -77,10 +76,5 @@ namespace Exceptionless.Core.Messaging {
             public Type Type { get; set; }
             public Action<object> Action { get; set; }
         }
-    }
-
-    public class ServiceBusMessage {
-        public string Type { get; set; }
-        public byte[] Data { get; set; }
     }
 }

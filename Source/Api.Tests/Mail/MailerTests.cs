@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 EmailAddress = Settings.Current.TestEmailAddress,
                 Token = "1"
             }).Wait();
-            mailJob.Run(1);
+            mailJob.Run();
 
             Assert.Equal(1, mailerSender.TotalSent);
             Assert.Equal(Settings.Current.TestEmailAddress, mailerSender.LastMessage.To);

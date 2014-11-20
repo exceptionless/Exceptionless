@@ -11,25 +11,27 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Lock;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class EnforceRetentionLimitsJob : Job {
+    public class EnforceRetentionLimitsJob : JobBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
 
-        public EnforceRetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository) {
+        public EnforceRetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ILockProvider lockProvider) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
+            LockProvider = lockProvider;
         }
 
-        protected override Task<JobResult> RunInternalAsync() {
+        protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
             Log.Info().Message("Enforce retention limits job starting").Write();
 
             var page = 1;

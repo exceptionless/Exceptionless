@@ -166,10 +166,17 @@
     <Compile Include="AppStats\AppStatsClient.cs" />
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
+    <Compile Include="Caching\RedisCacheClient.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Jobs\JobResult.cs" />
+    <Compile Include="Lock\DisposableLock.cs" />
+    <Compile Include="Lock\ILockProvider.cs" />
+    <Compile Include="Jobs\JobBase.cs" />
+    <Compile Include="Messaging\MessageBusData.cs" />
+    <Compile Include="Messaging\RedisMessageBus.cs" />
+    <Compile Include="Queues\RedisQueue.cs" />
     <Compile Include="Repositories\Base\SortOrder.cs" />
     <Compile Include="Utility\EventStats.cs" />
-    <Compile Include="Extensions\JobRunContextExtensions.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
     <Compile Include="Mail\InMemoryMailSender.cs" />
@@ -250,8 +257,7 @@
     <Compile Include="Jobs\ProcessEventPostsJob.cs" />
     <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
     <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
-    <Compile Include="Jobs\MongoJobHistoryProvider.cs" />
-    <Compile Include="Jobs\CacheJobLockProvider.cs" />
+    <Compile Include="Lock\CacheLockProvider.cs" />
     <Compile Include="Queues\Models\EventUserDescription.cs" />
     <Compile Include="Queues\Models\MailMessage.cs" />
     <Compile Include="Repositories\Base\DuplicateDocumentException.cs" />
@@ -271,8 +277,6 @@
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\EventValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />
-    <Compile Include="Validation\JobHistoryValidator.cs" />
-    <Compile Include="Validation\JobLockInfoValidator.cs" />
     <Compile Include="Validation\OrganizationValidator.cs" />
     <Compile Include="Validation\PersistentEventValidator.cs" />
     <Compile Include="Validation\ProjectValidator.cs" />
@@ -373,10 +377,7 @@
     <Compile Include="Pipeline\040_SaveEventAction.cs" />
     <Compile Include="Pipeline\060_UpdateStatsAction.cs" />
     <Compile Include="Queues\Models\EventNotification.cs" />
-    <Compile Include="Repositories\Interfaces\IJobHistoryRepository.cs" />
-    <Compile Include="Repositories\JobHistoryRepository.cs" />
     <Compile Include="Repositories\Base\IRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Interfaces\IJobLockRepository.cs" />
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
@@ -386,9 +387,6 @@
     <Compile Include="Repositories\Base\IMongoRepositoryManagement.cs" />
     <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
     <Compile Include="Utility\ErrorSignature.cs" />
-    <Compile Include="Jobs\JobLockInfo.cs" />
-    <Compile Include="Jobs\MongoJobLockProvider.cs" />
-    <Compile Include="Jobs\MongoMachineJobLockProvider.cs" />
     <Compile Include="Repositories\Base\IReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\MongoReadOnlyRepository.cs" />
     <Compile Include="Repositories\Base\IRepository.cs" />
@@ -396,7 +394,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\StackRepository.cs" />
     <Compile Include="Repositories\OrganizationRepository.cs" />
-    <Compile Include="Repositories\JobLockRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
   </ItemGroup>

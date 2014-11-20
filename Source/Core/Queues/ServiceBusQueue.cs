@@ -65,7 +65,6 @@ namespace Exceptionless.Core.Queues {
         public int WorkerErrors { get { return _workerErrorsCounter; } }
 
         private Task OnMessage(BrokeredMessage message) {
-            _isListening = true;
             Interlocked.Increment(ref _dequeuedCounter);
             var data = message.GetBody<T>();
 
@@ -97,8 +96,11 @@ namespace Exceptionless.Core.Queues {
 
         public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
             _workers.Add(new Worker { Action = handler, AutoComplete = autoComplete });
-            if (_workers.Count > 0 && !_isListening)
+
+            if (_workers.Count > 0 && !_isListening) {
+                _isListening = true;
                 _queueClient.OnMessageAsync(OnMessage);
+            }
         }
 
         public async Task<QueueEntry<T>> DequeueAsync(int millisecondsTimeout = 30 * 1000) {

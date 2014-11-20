@@ -120,6 +120,9 @@
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.6.1\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="StackExchange.Redis">
+      <HintPath>..\..\packages\StackExchange.Redis.1.0.371\lib\net45\StackExchange.Redis.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Microsoft.CSharp" />
@@ -148,12 +151,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\RedisCacheClientTests.cs" />
     <Compile Include="Caching\AzureCacheClientTests.cs" />
     <Compile Include="Caching\InMemoryCachingClientTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Controllers\MongoTestHelper.cs" />
+    <Compile Include="Lock\LockTests.cs" />
     <Compile Include="Mail\MailerTests.cs" />
     <Compile Include="Mail\NullMailer.cs" />
+    <Compile Include="Messaging\RedisMessageBusTests.cs" />
     <Compile Include="Miscellaneous\DeltaTests.cs" />
     <Compile Include="Miscellaneous\EfficientPagingTests.cs" />
     <Compile Include="Miscellaneous\RunTests.cs" />
@@ -161,6 +167,7 @@
     <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Queue\InMemoryQueueTests.cs" />
     <Compile Include="Queue\Samples.cs" />
+    <Compile Include="Queue\RedisQueueTests.cs" />
     <Compile Include="Queue\ServiceBusQueueTests.cs" />
     <Compile Include="Messaging\Samples.cs" />
     <Compile Include="Messaging\ServiceBusMessagingTests.cs" />
