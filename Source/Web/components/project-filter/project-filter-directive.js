@@ -4,7 +4,8 @@
   angular.module('exceptionless.project-filter', [
     'angular.filter',
     'exceptionless.auto-active',
-    'exceptionless.project'
+    'exceptionless.project',
+    'exceptionless.refresh'
   ])
   .directive('projectFilter', [function () {
     return {
@@ -85,6 +86,7 @@
 
         var vm = this;
         vm.filterName = 'Loading';
+        vm.get = get;
         vm.getAllProjectsUrl = getAllProjectsUrl;
         vm.getFilterName = getFilterName;
         vm.getOrganizationUrl = getOrganizationUrl;
