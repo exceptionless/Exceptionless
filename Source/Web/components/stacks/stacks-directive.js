@@ -11,7 +11,7 @@
           settings: "="
         },
         templateUrl: 'components/stacks/stacks-directive.tpl.html',
-        controller: ['$window', '$state', 'linkService', 'notificationService', 'stacksActionsService', function ($window, $state, linkService, notificationService, stacksActionsService) {
+        controller: ['$window', '$state', '$stateParams', 'linkService', 'notificationService', 'stacksActionsService', function ($window, $state, $stateParams, linkService, notificationService, stacksActionsService) {
           var vm = this;
 
           function get(options) {
@@ -57,10 +57,6 @@
             }
           }
 
-          function showType() {
-            return !!$stateParams.type;
-          }
-
           function updateSelection() {
             if (!hasStacks())
               return;
@@ -82,7 +78,7 @@
           vm.previousPage = previousPage;
           vm.save = save;
           vm.selectedIds = [];
-          vm.showType = showType;
+          vm.showType = !$stateParams.type;
           vm.updateSelection = updateSelection;
 
           get();

@@ -40,7 +40,18 @@
       }
 
       function isAllMenuActive() {
-        return $state.is('app.dashboard') || $state.is('app.recent') || $state.is('app.frequent') || $state.is('app.new');
+        return $state.includes('app.dashboard', $stateParams) ||
+          $state.includes('app.project-dashboard', $stateParams) ||
+          $state.includes('app.organization-dashboard', $stateParams) ||
+          $state.includes('app.frequent', $stateParams) ||
+          $state.includes('app.project-frequent', $stateParams) ||
+          $state.includes('app.organization-frequent', $stateParams) ||
+          $state.includes('app.new', $stateParams) ||
+          $state.includes('app.project-new', $stateParams) ||
+          $state.includes('app.organization-new', $stateParams) ||
+          $state.includes('app.recent', $stateParams) ||
+          $state.includes('app.project-recent', $stateParams) ||
+          $state.includes('app.organization-recent', $stateParams);
       }
 
       function isExceptionsMenuActive() {

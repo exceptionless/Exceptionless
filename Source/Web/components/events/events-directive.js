@@ -56,10 +56,6 @@
             }
           }
 
-          function showType() {
-            return !!$stateParams.type;
-          }
-
           function updateSelection() {
             if (!hasEvents())
               return;
@@ -81,7 +77,7 @@
           vm.previousPage = previousPage;
           vm.save = save;
           vm.selectedIds = [];
-          vm.showType = showType;
+          vm.showType = !$stateParams.type;
           vm.updateSelection = updateSelection;
 
           get();

@@ -16,7 +16,7 @@
       <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds"
                                                                     checklist-value="event.id"><i></i></label></td>
       <td ng-click="vm.open(event.id, $event)">
-        <summary source="event" showType="vm.showType()"></summary>
+        <summary source="event" show-type="vm.showType"></summary>
       </td>
       <td ng-click="vm.open(event.id, $event)"><abbr title="{{::event.date | date : 'medium'}}">
         <timeago date="event.date"></timeago>
