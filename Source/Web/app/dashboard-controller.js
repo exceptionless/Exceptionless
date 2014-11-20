@@ -36,11 +36,11 @@
           series: [
             {
               name: 'Total',
-              color: 'rgba(115, 192, 58, 0.5)',
+              color: 'rgba(124, 194, 49, .9)',
               stroke: 'rgba(0, 0, 0, 0.15)'
             }, {
               name: 'Unique',
-              color: 'rgba(95, 157, 47, 0.5)',
+              color: 'rgba(60, 116, 0, .9)',
               stroke: 'rgba(0, 0, 0, 0.15)'
             }
           ]

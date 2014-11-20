@@ -29,6 +29,21 @@
   color: #e1e1e1;
 }
 
+.bg-dark .nav > li:hover > a,
+.bg-dark .nav > li:focus > a,
+.bg-dark .nav > li.active > a {
+  background-color: #2c2c2c;
+}
+
+.bg-dark .nav.nav-sub > li:hover > a,
+.bg-dark .nav.nav-sub > li:focus > a {
+  background-color: #6E6E6E;
+}
+
+.bg-dark .nav.nav-sub > li.active > a {
+  background-color: #64A500;
+}
+
 .bg-black {
 	.color-variant(@brand-black, 5%, 10%, 5%, 10%);
 	.font-variant(@brand-black, lighten(@brand-black,40%), lighten(@brand-black,50%), #fff);

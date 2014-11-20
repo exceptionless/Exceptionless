@@ -223,7 +223,7 @@
           padding: {top: 0.085},
           series: [{
             name: 'Occurrences',
-            color: 'rgba(115, 192, 58, 0.5)',
+            color: 'rgba(124, 194, 49, .9)',
             stroke: 'rgba(0, 0, 0, 0.15)'
           }]
         },
