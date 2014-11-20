@@ -8,7 +8,7 @@
     $stateProvider.state('app.admin', {
       abstract: true,
       url: '/admin',
-      template: '<ui-view/>'
+      template: '<ui-view autoscroll="true"/>'
     });
 
     $stateProvider.state('app.admin.dashboard', {

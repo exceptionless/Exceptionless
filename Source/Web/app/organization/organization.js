@@ -22,7 +22,7 @@
       $stateProvider.state('app.organization', {
         abstract: true,
         url: '/organization',
-        template: '<ui-view/>'
+        template: '<ui-view autoscroll="true" />'
       });
 
       $stateProvider.state('app.organization.list', {

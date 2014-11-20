@@ -19,7 +19,7 @@
     $stateProvider.state('app.project', {
       abstract: true,
       url: '/project',
-      template: '<ui-view/>'
+      template: '<ui-view autoscroll="true" />'
     });
 
     $stateProvider.state('app.project.add', {

@@ -11,7 +11,7 @@
       $stateProvider.state('app.account', {
         abstract: true,
         url: '/account',
-        template: '<ui-view/>'
+        template: '<ui-view autoscroll="true" />'
       });
 
       $stateProvider.state('app.account.manage', {

@@ -37,7 +37,7 @@
         <link href="app.less" type="text/css" rel="stylesheet/less" data-concat="true" data-remove="true" />
     </head>
     <body ng-controller="App as appVm">
-        <div class="app" id="app" ng-class="{'app-header-fixed': appVm.settings.headerFixed, 'app-aside-fixed': appVm.settings.asideFixed, 'app-aside-folded': appVm.settings.asideFolded}" ui-view></div>
+        <div class="app" id="app" ng-class="{'app-header-fixed': appVm.settings.headerFixed, 'app-aside-fixed': appVm.settings.asideFixed, 'app-aside-folded': appVm.settings.asideFolded}" ui-view autoscroll="true"></div>
 
         <script src="//code.jquery.com/jquery-2.1.1.min.js" data-concat="false" data-remove="false"></script>
         <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.1/js/bootstrap.min.js" data-concat="false" data-remove="false"></script>
