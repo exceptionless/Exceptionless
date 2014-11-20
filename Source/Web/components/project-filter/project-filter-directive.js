@@ -3,6 +3,7 @@
 
   angular.module('exceptionless.project-filter', [
     'angular.filter',
+    'exceptionless.auto-active',
     'exceptionless.project'
   ])
   .directive('projectFilter', [function () {
