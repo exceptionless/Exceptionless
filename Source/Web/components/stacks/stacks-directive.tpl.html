@@ -19,7 +19,7 @@
       <td class="hidden-xs"><label class="i-checks m-b-none"><input type="checkbox" checklist-model="vm.selectedIds"
                                                                     checklist-value="stack.id"><i></i></label></td>
       <td ng-click="vm.open(stack.id, $event)">
-        <summary source="stack"></summary>
+        <summary source="stack" showType="vm.showType()"></summary>
       </td>
       <td ng-click="vm.open(stack.id, $event)">{{stack.total | number:0}}</td>
       <td ng-click="vm.open(stack.id, $event)" class="hidden-xs"><abbr

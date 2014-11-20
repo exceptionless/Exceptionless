@@ -297,7 +297,7 @@
           return eventService.getByStackId(stackId, options);
         },
         options: {
-          limit: 4,
+          limit: 10,
           mode: 'summary'
         }
       };

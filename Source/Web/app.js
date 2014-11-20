@@ -43,7 +43,7 @@
       RestangularProvider.setFullResponse(true);
       //RestangularProvider.setDefaultHeaders({  'Content-Type': 'application/json' });
 
-      $urlRouterProvider.otherwise('/dashboard');
+      $urlRouterProvider.otherwise('/type/error/dashboard');
       $stateProvider.state('app', {
         abstract: true,
         templateUrl: 'app/app.tpl.html'

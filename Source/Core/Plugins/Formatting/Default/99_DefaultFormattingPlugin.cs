@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public SummaryData GetEventSummaryData(PersistentEvent ev) {
-            return new SummaryData { TemplateKey ="event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
+            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {

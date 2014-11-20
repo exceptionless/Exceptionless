@@ -11,7 +11,7 @@
           settings: "="
         },
         templateUrl: 'components/events/events-directive.tpl.html',
-        controller: ['$window', '$state', 'linkService', 'notificationService', 'eventsActionsService', function ($window, $state, linkService, notificationService, eventsActionsService) {
+        controller: ['$window', '$state', '$stateParams', 'linkService', 'notificationService', 'eventsActionsService', function ($window, $state, $stateParams, linkService, notificationService, eventsActionsService) {
           var vm = this;
 
           function get(options) {
@@ -48,6 +48,18 @@
             get(vm.previous);
           }
 
+          function save(action) {
+            if (!hasSelection()) {
+              notificationService.info(null, 'Please select one or more events');
+            } else {
+              action.run(vm.selectedIds);
+            }
+          }
+
+          function showType() {
+            return !!$stateParams.type;
+          }
+
           function updateSelection() {
             if (!hasEvents())
               return;
@@ -60,14 +72,6 @@
               });
           }
 
-          function save(action) {
-            if (!hasSelection()) {
-              notificationService.info(null, 'Please select one or more events');
-            } else {
-              action.run(vm.selectedIds);
-            }
-          }
-
           vm.actions = eventsActionsService.getActions();
           vm.get = get;
           vm.hasEvents = hasEvents;
@@ -77,6 +81,7 @@
           vm.previousPage = previousPage;
           vm.save = save;
           vm.selectedIds = [];
+          vm.showType = showType;
           vm.updateSelection = updateSelection;
 
           get();
