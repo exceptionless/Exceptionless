@@ -1,47 +1,11 @@
 <ul class="nav">
-  <li ng-class="{active: appVm.isAllMenuActive()}">
-    <a ui-sref="app.dashboard" title="Dashboard">
-      <span class="pull-right text-muted">
-        <i class="fa fa-fw fa-angle-right text"></i>
-        <i class="fa fa-fw fa-angle-down text-active"></i>
-      </span>
-      <i class="fa fa-dashboard fa-fw"></i>
-      <span>All</span>
-    </a>
-    <ul class="nav nav-sub dk">
-      <li ui-sref-active="active">
-        <a ui-sref="app.dashboard" title="Dashboard">
-          <i class="fa fa-dashboard fa-fw"></i>
-          <span>Dashboard</span>
-        </a>
-      </li>
-      <li ui-sref-active="active">
-        <a ui-sref="app.recent" title="Most Recent">
-          <i class="fa fa-calendar fa-fw"></i>
-          <span>Most Recent</span>
-        </a>
-      </li>
-      <li ui-sref-active="active">
-        <a ui-sref="app.frequent" title="Most Frequent">
-          <i class="fa fa-signal fa-fw"></i>
-          <span>Most Frequent</span>
-        </a>
-      </li>
-      <li ui-sref-active="active">
-        <a ui-sref="app.new" title="New">
-          <i class="fa fa-asterisk fa-fw"></i>
-          <span>New</span>
-        </a>
-      </li>
-    </ul>
-  </li>
   <li ng-class="{active: appVm.isExceptionsMenuActive()}">
-    <a ui-sref="app.type-dashboard({ type: 'error' })" title="Exception Dashboard">
+    <a title="Exceptions">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
       </span>
-      <i class="fa fa-ambulance fa-fw"></i>
+      <i class="fa fa-warning fa-fw"></i>
       <span>Exceptions</span>
     </a>
     <ul class="nav nav-sub dk">
@@ -72,13 +36,13 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isLogsMenuActive()}">
-    <a ui-sref="app.type-dashboard({ type: 'log' })" title="Log Dashboard">
+    <a title="Log Messages">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
       </span>
-      <i class="fa fa-book fa-fw"></i>
-      <span>Logs</span>
+      <i class="fa fa-file-text-o fa-fw"></i>
+      <span>Log Messages</span>
     </a>
     <ul class="nav nav-sub dk">
       <li ui-sref-active="active">
@@ -107,14 +71,50 @@
       </li>
     </ul>
   </li>
-  <li ng-class="{active: appVm.isFeaturesMenuActive()}">
-    <a ui-sref="app.type-dashboard({ type: 'usage' })" title="Feature Dashboard">
+  <li ng-class="{active: appVm.is404MenuActive()}">
+    <a title="Broken Links">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
       </span>
-      <i class="fa fa-send fa-fw"></i>
-      <span>Features</span>
+      <i class="fa fa-unlink fa-fw"></i>
+      <span>Broken Links</span>
+    </a>
+    <ul class="nav nav-sub dk">
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-dashboard({ type: '404' })" title="Dashboard">
+          <i class="fa fa-dashboard fa-fw"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-recent({ type: '404' })" title="Most Recent">
+          <i class="fa fa-calendar fa-fw"></i>
+          <span>Most Recent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-frequent({ type: '404' })" title="Most Frequent">
+          <i class="fa fa-signal fa-fw"></i>
+          <span>Most Frequent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.type-new({ type: '404' })" title="New">
+          <i class="fa fa-asterisk fa-fw"></i>
+          <span>New</span>
+        </a>
+      </li>
+    </ul>
+  </li>
+  <li ng-class="{active: appVm.isFeaturesMenuActive()}">
+    <a title="Feature Usages">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
+      <i class="fa fa-check-square-o fa-fw"></i>
+      <span>Feature Usages</span>
     </a>
     <ul class="nav nav-sub dk">
       <li ui-sref-active="active">
@@ -137,30 +137,77 @@
       </li>
     </ul>
   </li>
-  <li ui-sref-active="active">
-    <a ui-sref="app.project.list" title="My Projects">
-      <i class="fa fa-briefcase fa-fw"></i>
-      <span>My Projects</span>
+  <li ng-class="{active: appVm.isAllMenuActive()}">
+    <a title="All Events">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
+      <i class="fa fa-calendar fa-fw"></i>
+      <span>All Events</span>
     </a>
+    <ul class="nav nav-sub dk">
+      <li ui-sref-active="active">
+        <a ui-sref="app.dashboard" title="Dashboard">
+          <i class="fa fa-dashboard fa-fw"></i>
+          <span>Dashboard</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.recent" title="Most Recent">
+          <i class="fa fa-calendar fa-fw"></i>
+          <span>Most Recent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.frequent" title="Most Frequent">
+          <i class="fa fa-signal fa-fw"></i>
+          <span>Most Frequent</span>
+        </a>
+      </li>
+      <li ui-sref-active="active">
+        <a ui-sref="app.new" title="New">
+          <i class="fa fa-asterisk fa-fw"></i>
+          <span>New</span>
+        </a>
+      </li>
+    </ul>
   </li>
-  <li ui-sref-active="active">
-    <a ui-sref="app.organization.list" title="My Organizations">
-      <i class="fa fa-group fa-fw"></i>
-      <span>My Organizations</span>
-    </a>
-  </li>
-  <li ui-sref-active="active">
-    <a ui-sref="app.account.manage" title="My Account">
-      <i class="fa fa-user fa-fw"></i>
-      <span>My Account</span>
-    </a>
-  </li>
-  <li ui-sref-active="active">
-    <a ui-sref="app.admin.dashboard" title="Admin">
+  <li ng-class="{active: appVm.isAdminMenuActive()}">
+    <a title="Admin">
+      <span class="pull-right text-muted">
+        <i class="fa fa-fw fa-angle-right text"></i>
+        <i class="fa fa-fw fa-angle-down text-active"></i>
+      </span>
       <i class="fa fa-cog fa-fw"></i>
       <span>Admin</span>
     </a>
-  </li>
+    <ul class="nav nav-sub dk">
+    <li ui-sref-active="active">
+      <a ui-sref="app.project.list" title="My Projects">
+        <i class="fa fa-briefcase fa-fw"></i>
+        <span>My Projects</span>
+      </a>
+    </li>
+    <li ui-sref-active="active">
+      <a ui-sref="app.organization.list" title="My Organizations">
+        <i class="fa fa-group fa-fw"></i>
+        <span>My Organizations</span>
+      </a>
+    </li>
+    <li ui-sref-active="active">
+      <a ui-sref="app.account.manage" title="My Account">
+        <i class="fa fa-user fa-fw"></i>
+        <span>My Account</span>
+      </a>
+    </li>
+    <li ui-sref-active="active">
+      <a ui-sref="app.admin.dashboard" title="System">
+        <i class="fa fa-cogs fa-fw"></i>
+        <span>System</span>
+      </a>
+    </li>
+  </ul>
   <li>
     <a href="http://docs.exceptionless.com" target="_blank" title="Documentation">
       <i class="fa fa-book fa-fw"></i>
