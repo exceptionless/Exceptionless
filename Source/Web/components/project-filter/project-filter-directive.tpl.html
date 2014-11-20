@@ -8,9 +8,9 @@
       <div class="panel bg-white">
         <div class="list-group">
           <div ng-repeat="(organization_id, projects) in vm.projects | groupBy: 'organization_id'">
-            <a class="media list-group-item" ng-if="$first" ng-href="{{vm.getAllProjectsUrl()}}" ui-sref-active="active">All Projects</a>
-            <a class="media list-group-item" ng-href="{{vm.getOrganizationUrl(projects[0])}}" ui-sref-active="active"><strong>{{projects[0].organization_name}}</strong></a>
-            <a class="media list-group-item project-name" ng-href="{{vm.getProjectUrl(project)}}" ui-sref-active="active" ng-repeat="project in projects">{{project.name}}</a>
+            <a class="media list-group-item" ng-if="$first" ng-href="{{vm.getAllProjectsUrl()}}" auto-active>All Projects</a>
+            <a class="media list-group-item" ng-href="{{vm.getOrganizationUrl(projects[0])}}" auto-active><strong>{{projects[0].organization_name}}</strong></a>
+            <a class="media list-group-item project-name" ng-href="{{vm.getProjectUrl(project)}}" auto-active ng-repeat="project in projects">{{project.name}}</a>
           </div>
         </div>
         <div class="panel-footer text-sm">

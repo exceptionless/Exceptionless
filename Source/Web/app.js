@@ -12,6 +12,7 @@
     'checklist-model',
     'debounce',
 
+    'exceptionless.auto-active',
     'exceptionless.date-filter',
     'exceptionless.event',
     'exceptionless.events',
