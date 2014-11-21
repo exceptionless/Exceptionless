@@ -1,7 +1,9 @@
 ﻿using System;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
+using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
@@ -30,7 +32,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (signature.SignatureInfo.Count <= 0)
                 return;
 
-            error.Data.Add(Error.KnownDataKeys.SignatureInfo, signature.SignatureInfo);
+            var targetInfo = new SettingsDictionary(signature.SignatureInfo);
+            var stackingTarget = error.GetStackingTarget();
+            if (stackingTarget != null && stackingTarget.Error != null)
+                targetInfo.Add("Message", error.GetStackingTarget().Error.Message);
+
+            error.Data.Add(Error.KnownDataKeys.TargetInfo, targetInfo);
 
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
