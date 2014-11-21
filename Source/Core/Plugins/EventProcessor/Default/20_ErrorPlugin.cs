@@ -37,7 +37,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (stackingTarget != null && stackingTarget.Error != null)
                 targetInfo.Add("Message", error.GetStackingTarget().Error.Message);
 
-            error.Data.Add(Error.KnownDataKeys.TargetInfo, targetInfo);
+            error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
 
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
