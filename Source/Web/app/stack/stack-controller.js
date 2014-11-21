@@ -237,7 +237,7 @@
                 return a.order - b.order;
               }).forEach(function (d) {
                 var swatch = '<span class="detail-swatch" style="background-color: ' + d.series.color.replace('0.5', '1') + '"></span>';
-                content += swatch + $filter('number')(d.name === 'Total' ? d.value.data.total : d.value.data.unique) + ' ' + d.series.name + ' <br />';
+                content += swatch + $filter('number')(d.value.data.total) + ' ' + d.series.name + ' <br />';
               }, this);
 
               var xLabel = document.createElement('div');

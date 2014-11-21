@@ -30,6 +30,8 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (signature.SignatureInfo.Count <= 0)
                 return;
 
+            error.Data.Add(Error.KnownDataKeys.SignatureInfo, signature.SignatureInfo);
+
             foreach (var key in signature.SignatureInfo.Keys)
                 context.StackSignatureData.Add(key, signature.SignatureInfo[key]);
         }
