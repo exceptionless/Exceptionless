@@ -5,14 +5,14 @@
     </a>
 
     <div class="dropdown-menu w-xl">
-      <div class="panel bg-white">
+      <div class="panel bg-dark">
         <div class="list-group">
           <div ng-repeat="(organization_id, projects) in vm.projects | groupBy: 'organization_id'">
             <a class="media list-group-item" ng-if="$first" ng-href="{{vm.getAllProjectsUrl()}}" auto-active>All Projects</a>
-            <a class="media list-group-item" ng-href="{{vm.getOrganizationUrl(projects[0])}}" auto-active><strong>{{projects[0].organization_name}}</strong></a>
+            <a class="media list-group-item" ng-href="{{vm.getOrganizationUrl(projects[0])}}" auto-active>{{projects[0].organization_name}}</a>
             <a class="media list-group-item project-name" ng-href="{{vm.getProjectUrl(project)}}" auto-active ng-repeat="project in projects">{{project.name}}</a>
           </div>
-          <a class="panel-footer  media list-group-item" ui-sref="app.project.add" ui-sref-active="active">Add New Project</a>
+          <a class="panel-footer media list-group-item" ui-sref="app.project.add">Add New Project</a>
         </div>
       </div>
     </div>

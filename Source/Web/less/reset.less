@@ -175,6 +175,32 @@ blockquote{
   background-color: @brand-light;
 }
 
+.navbar-nav>li>.dropdown-menu {
+  margin-top: -1px;
+}
+
+.app-header .panel.bg-dark > .list-group .panel-footer {
+  border-top: 2px solid #e2e2e2;
+  background-color: #494545;
+}
+
+.app-header .panel.bg-dark > .list-group:first-child .list-group-item:first-child,
+.app-header .panel.bg-dark > .panel-collapse > .list-group:first-child .list-group-item:first-child {
+  border: none;
+  border-radius: 0;
+}
+
+.app-header .bg-dark .list-group-item {
+  background-color: #545454;
+  border: none;
+  color: #e1e1e1;
+}
+
+.app-header .bg-dark a.list-group-item:hover,
+.app-header .bg-dark a.list-group-item:active {
+  background-color: #4E8018;
+}
+
 .list-group{
   border-radius: @border-radius-base;
   &.no-radius {

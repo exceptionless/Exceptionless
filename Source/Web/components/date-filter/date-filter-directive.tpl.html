@@ -5,9 +5,9 @@
     </a>
 
     <div class="dropdown-menu w-md" role="menu">
-      <div class="panel bg-white">
+      <div class="panel bg-dark">
         <div class="list-group">
-          <strong class="media list-group-item text-center" refresh-on="filterChanged" refresh-action="vm.updateFilterName()">{{vm.filterName}}</strong>
+          <strong class="media list-group-item text-center" ng-show="vm.isActive('Custom')" refresh-on="filterChanged" refresh-action="vm.updateFilterName()">{{vm.filterName}}</strong>
           <a class="media list-group-item" ng-class="{ active: vm.isActive('last hour')}" ng-click="vm.setFilter('last hour')">Last Hour</a>
           <a class="media list-group-item" ng-class="{ active: vm.isActive('last 24 hours')}" ng-click="vm.setFilter('last 24 hours')">Last 24 Hours</a>
           <a class="media list-group-item" ng-class="{ active: vm.isActive('last week')}" ng-click="vm.setFilter('last week')">Last Week</a>
