@@ -1,1 +1,0 @@
-<strong ng-if="showType">{{::source.data.type}}</strong><span ng-if="showType && source.data.source">&nbsp;in&nbsp;</span><strong ng-if="source.data.source">{{::source.data.source}}</strong><span ng-if="showType || source.data.source">:&nbsp;</span><a ui-sref="app.stack({ id: source.id })" truncate lines="2">{{::source.title}}</a>
