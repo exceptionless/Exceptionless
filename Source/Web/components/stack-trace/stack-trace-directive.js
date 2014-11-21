@@ -2,24 +2,44 @@
   'use strict';
 
   angular.module('exceptionless.stack-trace', [
-    'angular-filters',
     'exceptionless.error'
   ])
     .directive('stackTrace', ['errorService', function (errorService) {
-      function buildParameters(parameters) {
+      function buildParameter(parameter) {
         var result = '';
+
+        var parts = [];
+        if (parameter.type_namespace) {
+          parts.push(parameter.type_namespace);
+        }
+
+        if (parameter.type) {
+          parts.push(parameter.type);
+        }
+
+        result += parts.join('.').replace('+', '.');
+
+        if (parameter.generic_arguments.length > 0) {
+          result += '[' + parameter.generic_arguments.join(',') + ']';
+        }
+
+        if (parameter.name) {
+          result += ' ' + parameter.name;
+        }
+
+        return result;
+      }
+
+      function buildParameters(parameters) {
+        var result = '(';
         for (var index = 0; index < parameters.length; index++) {
           if (index > 0) {
             result += ', ';
           }
 
-          result += [parameters[index].type_namespace, parameters[index].type].join('.').replace('+', '.');
-          if (parameters[index].generic_arguments.length > 0) {
-            result += '[' + parameters[index].generic_arguments.join(',') + ']';
-          }
+          result += buildParameter(parameters[index]);
         }
-
-        return result;
+        return result + ')';
       }
 
       function buildStackFrame(frame) {
@@ -27,7 +47,7 @@
           return '<null>';
         }
 
-        var result = [frame.declaring_namespace, frame.declaring_type, frame.name].join('.').replace('+', '.');
+        var result = 'at ' + [frame.declaring_namespace, frame.declaring_type, frame.name].join('.').replace('+', '.');
         if (frame.generic_arguments.length > 0) {
           result += '[' + frame.generic_arguments.join(',') + ']';
         }
@@ -63,11 +83,11 @@
             frames += buildStackFrame(exceptions[index].stack_trace[frameIndex]);
           }
 
-          frames += '</div>';
-
           if (index < (exceptions.length - 1)) {
             frames += '<div>--- End of inner exception stack trace ---</div>';
           }
+
+          frames += '</div>';
         }
 
         return frames;
