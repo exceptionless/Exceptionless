@@ -3,7 +3,8 @@
 
   angular.module('app.event')
     .controller('Event', ['$state', '$stateParams', 'errorService', 'eventService', 'notificationService', 'projectService', 'urlService', 'userAgentService', function ($state, $stateParams, errorService, eventService, notificationService, projectService, urlService, userAgentService) {
-      var eventId = $stateParams.id;
+      var _eventId = $stateParams.id;
+      var _knownDataKeys = ['error', 'simple_error', 'request', 'trace', 'environment', 'user', 'user_description', 'version'];
       var vm = this;
 
       function buildTabs(tabNameToActivate) {
@@ -27,7 +28,7 @@
 
         var extendedDataItems = [];
         angular.forEach(vm.event.data, function(data, key) {
-          if ((/^__/).test(key)) {
+          if (_knownDataKeys.filter(function (knownKey) { return knownKey === key; }).length > 0) {
             return;
           }
 
@@ -83,11 +84,11 @@
           notificationService.error('The event "' + $stateParams.id + '" could not be found.');
         }
 
-        if (!eventId) {
+        if (!_eventId) {
           onFailure();
         }
 
-        return eventService.getById(eventId).then(onSuccess, onFailure);
+        return eventService.getById(_eventId).then(onSuccess, onFailure);
       }
 
       function getProject() {
@@ -121,7 +122,10 @@
 
       function getErrorType() {
         if (vm.event.data.error) {
-          return errorService.getTargetMethodType(vm.event.data.error);
+          var type = errorService.getTargetInfoExceptionType(vm.event.data.error);
+          if (type) {
+            return type;
+          }
         }
 
         if (vm.event.data.simple_error) {
@@ -133,7 +137,10 @@
 
       function getMessage() {
         if (vm.event.data.error) {
-          return errorService.getTargetException(vm.event.data.error).message;
+          var message = errorService.getTargetInfoMessage(vm.event.data.error);
+          if (message) {
+            return message;
+          }
         }
 
         return vm.event.message;
@@ -142,6 +149,10 @@
       function getRequestUrl() {
         var request = vm.event.data.request;
         return urlService.buildUrl(request.is_secure, request.host, request.port, request.path, request.query_string);
+      }
+
+      function getVersion() {
+        return vm.event.data.version;
       }
 
       function hasCookies() {
@@ -188,6 +199,10 @@
         return vm.event.tags && vm.event.tags.length > 0;
       }
 
+      function hasVersion() {
+        return vm.event.data && vm.event.data.version;
+      }
+
       function isError() {
         return vm.event.type === 'error';
       }
@@ -221,6 +236,7 @@
       vm.getErrorType = getErrorType;
       vm.getMessage = getMessage;
       vm.getRequestUrl = getRequestUrl;
+      vm.getVersion = getVersion;
       vm.hasCookies = hasCookies;
       vm.hasDevice = hasDevice;
       vm.hasIdentity = hasIdentity;
@@ -230,6 +246,7 @@
       vm.hasUserAgent = hasUserAgent;
       vm.hasUserDescription = hasUserDescription;
       vm.hasUserEmail = hasUserEmail;
+      vm.hasVersion = hasVersion;
       vm.isError = isError;
       vm.isPromoted = isPromoted;
       vm.promoteTab = promoteTab;

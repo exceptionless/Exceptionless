@@ -30,9 +30,9 @@
   <tr class="hidden-print" ng-if="vm.hasRequestInfo()">
     <th>Referrer</th>
     <td>
-            <span ng-if="vm.hasReferrer()">
-                <a ng-href="{{::vm.event.data.request.referrer}}" target="_blank" truncate>{{::vm.event.data.request.referrer}}</a>
-            </span>
+      <span ng-if="vm.hasReferrer()">
+          <a ng-href="{{::vm.event.data.request.referrer}}" target="_blank" truncate>{{::vm.event.data.request.referrer}}</a>
+      </span>
       <em ng-if="!vm.hasReferrer()">None</em>
     </td>
   </tr>
@@ -44,6 +44,11 @@
   <tr class="hidden-print" ng-if="vm.hasUserAgent()">
     <th>Browser OS</th>
     <td>{{::vm.getBrowserOS()}}</td>
+  </tr>
+
+  <tr class="hidden-print" ng-if="vm.hasVersion()">
+    <th>Version</th>
+    <td>{{::vm.getVersion()}}</td>
   </tr>
 </table>
 
