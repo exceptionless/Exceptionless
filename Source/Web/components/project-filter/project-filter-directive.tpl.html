@@ -13,7 +13,7 @@
             <a class="media list-group-item project-name" ng-href="{{vm.getProjectUrl(project)}}" auto-active ng-repeat="project in projects">{{project.name}}</a>
           </div>
         </div>
-        <div class="panel-footer text-sm">
+        <div class="panel-footer text-sm" ui-sref="app.project.add">
           <a ui-sref="app.project.add">Add New Project</a>
         </div>
       </div>
