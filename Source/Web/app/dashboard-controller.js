@@ -9,11 +9,11 @@
         function onSuccess(response) {
           vm.stats = response.data.plain();
 
-          vm.chart.options.series[0].data = vm.stats.timeline.map(function (item) {
+          vm.chart.options.series[1].data = vm.stats.timeline.map(function (item) {
             return {x: moment.utc(item.date).unix(), y: item.total, data: item};
           });
 
-          vm.chart.options.series[1].data = vm.stats.timeline.map(function (item) {
+          vm.chart.options.series[0].data = vm.stats.timeline.map(function (item) {
             return {x: moment.utc(item.date).unix(), y: item.unique, data: item};
           });
         }
@@ -35,12 +35,12 @@
           },
           series: [
             {
-              name: 'Total',
-              color: 'rgba(124, 194, 49, .9)',
-              stroke: 'rgba(0, 0, 0, 0.15)'
-            }, {
               name: 'Unique',
               color: 'rgba(60, 116, 0, .9)',
+              stroke: 'rgba(0, 0, 0, 0.15)'
+            }, {
+              name: 'Total',
+              color: 'rgba(124, 194, 49, .9)',
               stroke: 'rgba(0, 0, 0, 0.15)'
             }
           ]
