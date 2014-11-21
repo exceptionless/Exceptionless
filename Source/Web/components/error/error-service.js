@@ -14,48 +14,31 @@
         return exceptions;
       }
 
-      function getTargetException(exception) {
-        var currentException = exception;
-        while (currentException) {
-          if (currentException.target_method && currentException.target_method.is_signature_target) {
-            return currentException;
-          }
-          currentException = currentException.inner;
-        }
-
-        return exception;
+      function getTargetInfo(exception) {
+        return exception && exception.data ? exception.data.target : null;
       }
 
-      function getTargetMethod(exception) {
-        var target = getTargetException(exception);
-        return target.target_method;
+      function getTargetInfoExceptionType(exception) {
+        var target = getTargetInfo(exception);
+        return target && target.ExceptionType ? target.ExceptionType : null;
       }
 
-      function getTargetMethodType(exception) {
-        var method = getTargetMethod(exception);
-        var parts = [];
-        if (method.declaring_namespace) {
-          parts.push(method.declaring_namespace);
-        }
+      function getTargetInfoMethod(exception) {
+        var target = getTargetInfo(exception);
+        return target && target.Method ? target.Method : null;
+      }
 
-        if (method.declaring_type) {
-          parts.push(method.declaring_type);
-        }
-
-        if (method.name) {
-          parts.push(method.name);
-        }
-
-        return parts.join('.').replace('+', '.');
+      function getTargetInfoMessage(exception) {
+        var target = getTargetInfo(exception);
+        return target && target.Message ? target.Message : null;
       }
 
       var service = {
         getExceptions: getExceptions,
-        getTargetException: getTargetException,
-        getTargetMethod: getTargetMethod,
-        getTargetMethodType: getTargetMethodType
+        getTargetInfoExceptionType: getTargetInfoExceptionType,
+        getTargetInfoMethod: getTargetInfoMethod,
+        getTargetInfoMessage: getTargetInfoMessage
       };
       return service;
-    }
-    ]);
+    }]);
 }());
