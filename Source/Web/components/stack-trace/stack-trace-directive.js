@@ -74,7 +74,7 @@
       }
 
       function buildStackTrace(exceptions) {
-        return buildStackTraceHeader(exceptions) + buildStackFrames(exceptions.reverse());;
+        return buildStackTraceHeader(exceptions) + buildStackFrames(exceptions.reverse());
       }
 
       function buildStackTraceHeader(exceptions) {
