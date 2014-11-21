@@ -1,4 +1,4 @@
-<ul class="nav navbar-nav">
+<ul class="nav navbar-nav" refresh-on="ProjectChanged OrganizationChanged" refresh-always="filterChanged" refresh-action="vm.get()" refresh-debounce="1000">
   <li class="dropdown" dropdown >
     <a class="dropdown-toggle" dropdown-toggle>
       <span>{{vm.filterName}}</span> <b class="caret"></b>
