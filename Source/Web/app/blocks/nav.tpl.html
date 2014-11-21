@@ -1,6 +1,6 @@
 <ul class="nav">
   <li ng-class="{active: appVm.isTypeMenuActive('error')}">
-    <a title="Exceptions">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
@@ -9,6 +9,11 @@
       <span>Exceptions</span>
     </a>
     <ul class="nav nav-sub dk" auto-active>
+      <li class="nav-sub-header">
+        <a href>
+          <span>Exceptions</span>
+        </a>
+      </li>
       <li>
         <a ng-href="{{appVm.getDashboardUrl('error')}}" title="Dashboard">
           <i class="fa fa-dashboard fa-fw"></i>
@@ -36,7 +41,7 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isTypeMenuActive('log')}">
-    <a title="Log Messages">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
@@ -72,7 +77,7 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isTypeMenuActive('404')}">
-    <a title="Broken Links">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
@@ -108,7 +113,7 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isTypeMenuActive('usage')}">
-    <a title="Feature Usages">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
@@ -138,7 +143,7 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isAllMenuActive()}">
-    <a title="All Events">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
@@ -174,7 +179,7 @@
     </ul>
   </li>
   <li ng-class="{active: appVm.isAdminMenuActive()}">
-    <a title="Admin">
+    <a href class="auto">
       <span class="pull-right text-muted">
         <i class="fa fa-fw fa-angle-right text"></i>
         <i class="fa fa-fw fa-angle-down text-active"></i>
