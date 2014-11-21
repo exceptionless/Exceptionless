@@ -39,6 +39,16 @@
             return 'All Time';
           }
 
+          function isActive(filterName) {
+            var time = filterService.getTime();
+            if (time && filterName === 'Custom') {
+              var range = dateRangeParserService.parse(time);
+              return range && range.start && range.end;
+            }
+
+            return filterName === time || (!time && filterName === 'All Time');
+          }
+
           function hasFilter() {
             return filterService.getTime();
           }
@@ -66,6 +76,7 @@
 
           var vm = this;
           vm.hasFilter = hasFilter;
+          vm.isActive = isActive;
           vm.filterName = getFilterName();
           vm.isDropDownOpen = false;
           vm.setCustomFilter = setCustomFilter;
