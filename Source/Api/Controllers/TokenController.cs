@@ -15,6 +15,7 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -94,7 +95,7 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete(string[] ids) {
+        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 

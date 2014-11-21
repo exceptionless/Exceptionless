@@ -286,7 +286,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete(string[] ids) {
+        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 

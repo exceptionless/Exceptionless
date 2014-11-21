@@ -44,7 +44,7 @@
       RestangularProvider.setDefaultHttpFields({withCredentials: true});
       RestangularProvider.setDefaultRequestParams({access_token: 'd795c4406f6b4bc6ae8d787c65d0274d'});
       RestangularProvider.setFullResponse(true);
-      //RestangularProvider.setDefaultHeaders({  'Content-Type': 'application/json' });
+      //RestangularProvider.setDefaultHeaders({ 'Content-Type': 'application/json' });
 
       $urlRouterProvider.otherwise('/type/error/dashboard');
       $stateProvider.state('app', {
