@@ -261,11 +261,11 @@ task PackageServer -depends TestServer {
 
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
+    
+    robocopy "$workingDirectory\src\Source\JobRunner\bin\$configuration" "$source_dir\Api.IIS\App_Data\JobRunner" /S /NP
 
     TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
-    TeamCity-ReportBuildProgress "Building Server NuGet Package: SchedulerService"
-    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\SchedulerService\SchedulerService.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
 
 task PackageWebContent -depends TestWeb {

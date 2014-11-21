@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 using Exceptionless.Configuration;
 using Exceptionless.Extensions;
 using Exceptionless.Extras.Extensions;
+using Exceptionless.Json.Linq;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Submission;
@@ -47,7 +48,7 @@ namespace Exceptionless.Extras.Submission {
             if (Int32.TryParse(response.Headers[ExceptionlessHeaders.ConfigurationVersion], out settingsVersion))
                 SettingsManager.CheckVersion(settingsVersion, config);
 
-            return new SubmissionResponse((int)response.StatusCode, response.IsSuccessful() ? null : response.GetResponseText());
+            return new SubmissionResponse((int)response.StatusCode, GetResponseMessage(response));
         }
 
         public SubmissionResponse PostUserDescription(string referenceId, UserDescription description, ExceptionlessConfiguration config, IJsonSerializer serializer) {
@@ -67,7 +68,7 @@ namespace Exceptionless.Extras.Submission {
                 return new SubmissionResponse(500, message: ex.Message);
             }
 
-            return new SubmissionResponse((int)response.StatusCode, response.IsSuccessful() ? null : response.GetResponseText());
+            return new SubmissionResponse((int)response.StatusCode, GetResponseMessage(response));
         }
 
         public SettingsResponse GetSettings(ExceptionlessConfiguration config, IJsonSerializer serializer) {
@@ -81,7 +82,7 @@ namespace Exceptionless.Extras.Submission {
             }
 
             if (response == null || response.StatusCode != HttpStatusCode.OK)
-                return new SettingsResponse(false, message: "Unable to retrieve configuration settings.");
+                return new SettingsResponse(false, message: String.Format("Unable to retrieve configuration settings: {0}", GetResponseMessage(response)));
 
             var json = response.GetResponseText();
             if (String.IsNullOrWhiteSpace(json))
@@ -89,6 +90,24 @@ namespace Exceptionless.Extras.Submission {
 
             var settings = serializer.Deserialize<ClientConfiguration>(json);
             return new SettingsResponse(true, settings.Settings, settings.Version);
+        }
+
+        private static string GetResponseMessage(HttpWebResponse response) {
+            if (response.IsSuccessful())
+                return null;
+
+            int statusCode = (int)response.StatusCode;
+            string responseText = response.GetResponseText();
+            string message = statusCode == 404 ? "404 Page not found." : responseText.Length < 500 ? responseText : "";
+
+            if (responseText.Trim().StartsWith("{")) {
+                try {
+                    var responseJson = JObject.Parse(responseText);
+                    message = responseJson["message"].Value<string>();
+                } catch { }
+            }
+
+            return message;
         }
 
         private HttpWebRequest CreateHttpWebRequest(ExceptionlessConfiguration config, string endPoint) {
