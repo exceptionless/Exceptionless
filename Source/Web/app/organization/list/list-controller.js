@@ -40,7 +40,7 @@
             // TODO: Show upgrade dialog.
             var message = 'An error occurred while trying to leave the organization.';
             if (response.status === 400) {
-              message += 'Message: ' + response.data.message;
+              message += ' Message: ' + response.data.message;
             }
 
             notificationService.error(message);
@@ -74,8 +74,13 @@
             vm.organizations.splice(vm.organizations.indexOf(organization), 1);
           }
 
-          function onFailure() {
-            notificationService.error('An error occurred while trying to remove the organization.');
+          function onFailure(response) {
+            var message = 'An error occurred while trying to remove the organization.';
+            if (response.status === 400) {
+              message += ' Message: ' + response.data.message;
+            }
+
+            notificationService.error(message);
           }
 
           return organizationService.remove(organization.id).then(onSuccess, onFailure);
