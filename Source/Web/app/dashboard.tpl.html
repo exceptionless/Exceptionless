@@ -4,49 +4,49 @@
       <div class="row">
         <div class="col-sm-12">
           <div class="row row-sm text-center">
-            <div class="col-md-3 col-sm-6">
+            <div class="col-md-3 col-sm-6 col-xs-6">
               <a ui-sref="app.recent" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-calendar fa-4x"></i>
                 </div>
                 <div class="details">
-                  <span class="title">Total Events</span>
+                  <span class="title">Total</span>
                   <span class="sub">{{vm.stats.total || 0 | number : 0}}</span>
                 </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
-            <div class="col-md-3 col-sm-6">
+            <div class="col-md-3 col-sm-6 col-xs-6">
               <a ui-sref="app.frequent" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-key fa-4x"></i>
                 </div>
                 <div class="details">
-                  <span class="title">Unique Events</span>
+                  <span class="title">Unique</span>
                   <span class="sub">{{vm.stats.unique || 0 | number : 0}}</span>
                 </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
-            <div class="col-md-3 col-sm-6">
+            <div class="col-md-3 col-sm-6 col-xs-6">
               <a ui-sref="app.new" class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-asterisk fa-4x"></i>
                 </div>
                 <div class="details">
-                  <span class="title">New Events</span>
+                  <span class="title">New</span>
                   <span class="sub">{{vm.stats.new || 0 | number : 0}}</span>
                 </div>
                 <i class="fa fa-chevron-right fa-2x more"></i>
               </a>
             </div>
-            <div class="col-md-3 col-sm-6">
+            <div class="col-md-3 col-sm-6 col-xs-6">
               <div class="dashboard-block">
                 <div class="rotate">
                   <i class="fa fa-line-chart fa-4x"></i>
                 </div>
                 <div class="details">
-                  <span class="title">Events Per Hour</span>
+                  <span class="title">Per Hour</span>
                   <span class="sub">{{vm.stats.avg_per_hour || 0 | number : 1}}</span>
                 </div>
               </div>
@@ -56,19 +56,19 @@
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-bar-chart-o"></i> Event History</div>
+        <div class="panel-heading"><i class="fa fa-bar-chart-o"></i>History</div>
         <div class="panel-body">
           <rickshaw options="vm.chart.options" features="vm.chart.features"></rickshaw>
         </div>
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-signal"></i> Most Frequent</div>
+        <div class="panel-heading"><i class="fa fa-signal"></i>Most Frequent</div>
         <stacks settings="vm.mostFrequent"></stacks>
       </div>
 
       <div class="panel panel-default">
-        <div class="panel-heading"><i class="fa fa-calendar"></i> Most Recent</div>
+        <div class="panel-heading"><i class="fa fa-calendar"></i>Most Recent</div>
         <events settings="vm.mostRecent"></events>
       </div>
     </div>
