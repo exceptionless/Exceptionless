@@ -1,19 +1,21 @@
-<h3 class="pull-left">{{::vm.tab.title | toSpacedWords}}</h3>
-<div class="pull-right hidden-print" style="margin-top: 1.2em;">
-  <button class="btn btn-dark btn-xs" title="Copy to Clipboard"><i class="fa fa-copy"></i></button>
-  <div class="btn-group">
-    <button class="btn btn-dark btn-xs" ng-click="vm.showRaw = !vm.showRaw">Toggle View</button>
-    <button class="btn btn-dark btn-xs dropdown-toggle" data-toggle="dropdown">
-      <span class="caret"></span>
-    </button>
-    <ul class="dropdown-menu pull-right">
-      <li ng-if="!vm.isPromoted"><a ng-click="vm.promoteTab()">Promote to Tab</a></li>
-      <li ng-if="vm.isPromoted"><a ng-click="vm.demoteTab()">Demote Tab</a></li>
-    </ul>
+<div ng-if="vm.hasData()">
+  <h3 class="pull-left">{{::vm.title | toSpacedWords}}</h3>
+  <div class="pull-right hidden-print" style="margin-top: 1.2em;">
+    <button class="btn btn-dark btn-xs" title="Copy to Clipboard"><i class="fa fa-copy"></i></button>
+    <div class="btn-group">
+      <button class="btn btn-dark btn-xs" ng-click="vm.showRaw = !vm.showRaw">Toggle View</button>
+      <button class="btn btn-dark btn-xs dropdown-toggle" data-toggle="dropdown" ng-if="vm.canPromote">
+        <span class="caret"></span>
+      </button>
+      <ul class="dropdown-menu pull-right"  ng-if="vm.canPromote">
+        <li ng-if="!vm.isPromoted"><a ng-click="vm.promoteTab()">Promote to Tab</a></li>
+        <li ng-if="vm.isPromoted"><a ng-click="vm.demoteTab()">Demote Tab</a></li>
+      </ul>
+    </div>
   </div>
+  <div class="clearfix"></div>
+  <div ng-if="!vm.showRaw">
+    <object-dump content="vm.data"></object-dump>
+  </div>
+  <pre ng-if="vm.showRaw">{{::vm.data | json }}</pre>
 </div>
-<div class="clearfix"></div>
-<div ng-if="!vm.showRaw">
-  <object-dump content="vm.tab.data"></object-dump>
-</div>
-<pre ng-if="vm.showRaw">{{::vm.tab.data | json }}</pre>

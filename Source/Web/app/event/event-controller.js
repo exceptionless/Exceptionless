@@ -28,13 +28,9 @@
 
         var extendedDataItems = [];
         angular.forEach(vm.event.data, function(data, key) {
-          if (_knownDataKeys.filter(function (knownKey) { return knownKey === key; }).length > 0) {
-            return;
-          }
-
           if (isPromoted(key)) {
             tabs.push({ title: key, template_key: 'promoted', data: data});
-          } else {
+          } else if (_knownDataKeys.indexOf(key) < 0) {
             extendedDataItems.push({title: key, data: data});
           }
         }, tabs);
@@ -73,41 +69,6 @@
         return projectService.demoteTab(vm.project.id, tabName).then(onSuccess, onFailure);
       }
 
-      function getEvent() {
-        function onSuccess(response) {
-          vm.event = response.data.plain();
-          return vm.event;
-        }
-
-        function onFailure() {
-          $state.go('app.dashboard');
-          notificationService.error('The event "' + $stateParams.id + '" could not be found.');
-        }
-
-        if (!_eventId) {
-          onFailure();
-        }
-
-        return eventService.getById(_eventId).then(onSuccess, onFailure);
-      }
-
-      function getProject() {
-        function onSuccess(project) {
-          vm.project = project;
-          return vm.project;
-        }
-
-        function onFailure() {
-          $state.go('app.dashboard');
-        }
-
-        if (!vm.event || !vm.event.project_id) {
-          onFailure();
-        }
-
-        return projectService.getById(vm.event.project_id).then(onSuccess, onFailure);
-      }
-
       function getBrowser() {
         return userAgentService.getBrowser(vm.event.data.request.user_agent);
       }
@@ -135,6 +96,24 @@
         return 'Unknown';
       }
 
+      function getEvent() {
+        function onSuccess(response) {
+          vm.event = response.data.plain();
+          return vm.event;
+        }
+
+        function onFailure() {
+          $state.go('app.dashboard');
+          notificationService.error('The event "' + $stateParams.id + '" could not be found.');
+        }
+
+        if (!_eventId) {
+          onFailure();
+        }
+
+        return eventService.getById(_eventId).then(onSuccess, onFailure);
+      }
+
       function getMessage() {
         if (vm.event.data.error) {
           var message = errorService.getTargetInfoMessage(vm.event.data.error);
@@ -144,6 +123,23 @@
         }
 
         return vm.event.message;
+      }
+
+      function getProject() {
+        function onSuccess(project) {
+          vm.project = project;
+          return vm.project;
+        }
+
+        function onFailure() {
+          $state.go('app.dashboard');
+        }
+
+        if (!vm.event || !vm.event.project_id) {
+          onFailure();
+        }
+
+        return projectService.getById(vm.event.project_id).then(onSuccess, onFailure);
       }
 
       function getRequestUrl() {

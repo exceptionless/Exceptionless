@@ -52,7 +52,6 @@
       }
 
       function open(id, event) {
-        // TODO: implement this.
         if (event.ctrlKey || event.which === 2) {
           $window.open('/#/organization/' + id + '/manage/', '_blank');
         } else {

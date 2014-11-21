@@ -5,4 +5,4 @@
     <td>{{::vm.event.date | date: 'medium'}} (<timeago date="vm.event.date"></timeago>)</td>
   </tr>
 </table>
-<extended-data-item tab-data="item" promote-tab="vm.promoteTab(tabName)" ng-repeat="item in tab.data"></extended-data-item>
+<extended-data-item title="item.title" data="item.data" promote-tab="vm.promoteTab(tabName)" ng-repeat="item in tab.data"></extended-data-item>
