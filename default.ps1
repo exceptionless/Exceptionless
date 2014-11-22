@@ -57,7 +57,6 @@ task server -depends PackageServer
 
 task Clean {
     Delete-Directory $build_dir
-	Delete-Directory $source_dir\Web\dist
 }
 
 task Init -depends Clean {
@@ -119,19 +118,7 @@ task BuildServer -depends Init {
     TeamCity-ReportBuildFinish "Finished building Server"
 }
 
-task BuildWeb -depends Init {			
-    TeamCity-ReportBuildStart "Building Web" 
-	
-	Push-Location -Path $source_dir\Web
-	
-	exec { grunt build }
-	
-	Pop-Location
-	
-	TeamCity-ReportBuildFinish "Finished building Web"
-}
-
-task Build -depends BuildClient, BuildServer, BuildWeb
+task Build -depends BuildClient, BuildServer
 
 task TestClient -depends BuildClient {
     TeamCity-ReportBuildProgress "Running Client Tests"
@@ -157,17 +144,7 @@ task TestServer -depends BuildServer {
     }
 }
 
-task TestWeb -depends BuildWeb {			
-    TeamCity-ReportBuildStart "Running Web Tests" 
-	
-	Push-Location -Path $source_dir\Web
-	
-	exec { grunt test }
-	
-	Pop-Location
-}
-
-task Test -depends TestClient, TestServer, TestWeb
+task Test -depends TestClient, TestServer
 
 task PackageClient -depends TestClient {
     Create-Directory $deploy_dir
@@ -268,17 +245,7 @@ task PackageServer -depends TestServer {
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
 
-task PackageWebContent -depends TestWeb {
-    Create-Directory $deploy_dir
-
-    $packageDir = "$deploy_dir\ServerPackages"
-    Create-Directory $packageDir
-
-    TeamCity-ReportBuildProgress "Building Web Content NuGet Package"
-    exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Web\Exceptionless.WebContent.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
-}
-
-task Package -depends PackageClient, PackageServer, PackageWebContent
+task Package -depends PackageClient, PackageServer
 
 Function Update-GlobalAssemblyInfo ([string] $filename, [string] $assemblyVersionNumber, [string] $assemblyFileVersionNumber, [string] $assemblyInformationalVersionNumber) {
     $assemblyVersion = "AssemblyVersion(`"$assemblyVersionNumber`")"
