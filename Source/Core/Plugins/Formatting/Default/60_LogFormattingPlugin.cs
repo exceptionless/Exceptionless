@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return new SummaryData { TemplateKey = "event-summary", Data = new { Source = ev.Source } };
+            return new SummaryData { TemplateKey = "event-summary", Data = new { Message = ev.Message, Source = ev.Source, Type = ev.Type } };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
