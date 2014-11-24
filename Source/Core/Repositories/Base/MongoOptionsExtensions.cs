@@ -12,16 +12,6 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static T WithBeforeQuery<T>(this T options, IMongoQuery before) where T : MongoOptions {
-            options.BeforeQuery = before;
-            return options;
-        }
-
-        public static T WithAfterQuery<T>(this T options, IMongoQuery after) where T : MongoOptions {
-            options.AfterQuery = after;
-            return options;
-        }
-
         public static T WithReadPreference<T>(this T options, ReadPreference readPreference) where T : MongoOptions {
             options.ReadPreference = readPreference;
             return options;
@@ -44,23 +34,7 @@ namespace Exceptionless.Core.Repositories {
             if (options.UseDateRange)
                 query = query.And(Query.GTE(options.DateField, options.GetStartDate()).And(Query.LTE(options.DateField, options.GetEndDate())));
 
-            if (!String.IsNullOrEmpty(mongoOptions.BeforeValue) && mongoOptions.BeforeQuery == null) {
-                try {
-                    mongoOptions.BeforeQuery = Query.LT(CommonFieldNames.Id, getIdValue(mongoOptions.BeforeValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(mongoOptions.BeforeQuery, "BeforeQuery").Submit();
-                }
-            }
-
-            if (!String.IsNullOrEmpty(mongoOptions.AfterValue) && mongoOptions.AfterQuery == null) {
-                try {
-                    mongoOptions.AfterQuery = Query.GT(CommonFieldNames.Id, getIdValue(mongoOptions.AfterValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(mongoOptions.AfterQuery, "AfterQuery").Submit();
-                }
-            }
-
-            return query.And(mongoOptions.BeforeQuery, mongoOptions.AfterQuery);
+            return query;
         }
 
         public static IMongoQuery GetMongoQuery(this QueryOptions options, Func<string, BsonValue> getIdValue = null) {
@@ -106,13 +80,9 @@ namespace Exceptionless.Core.Repositories {
 
             var mongoPagingOptions = paging as MongoPagingOptions;
             if (mongoPagingOptions != null) {
-                options.BeforeQuery = mongoPagingOptions.BeforeFilter;
-                options.AfterQuery = mongoPagingOptions.AfterFilter;
                 options.SortBy = mongoPagingOptions.SortBy;
             }
 
-            options.BeforeValue = paging.Before;
-            options.AfterValue = paging.After;
             options.Page = paging.Page;
             options.Limit = paging.Limit;
 

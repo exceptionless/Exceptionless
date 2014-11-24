@@ -134,13 +134,9 @@ namespace Exceptionless.Core.Repositories {
             
             var elasticSearchPagingOptions = paging as ElasticSearchPagingOptions<T>;
             if (elasticSearchPagingOptions != null) {
-                options.BeforeQuery = elasticSearchPagingOptions.BeforeFilter;
-                options.AfterQuery = elasticSearchPagingOptions.AfterFilter;
                 options.SortBy.AddRange(elasticSearchPagingOptions.SortBy);
             }
 
-            options.BeforeValue = paging.Before;
-            options.AfterValue = paging.After;
             options.Page = paging.Page;
             options.Limit = paging.Limit;
 

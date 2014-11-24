@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         
-        [Fact(Skip = "TODO")]
+        [Fact]
         public void GetPaged() {
             RemoveData();
 
@@ -30,62 +30,15 @@ namespace Exceptionless.Api.Tests.Repositories {
             _client.Refresh(r => r.Force(false));
             Assert.Equal(events.Count, _repository.Count());
 
-            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithAfter(String.Concat(events[1].Date.UtcTicks.ToString(), "-", events[1].Id)));
+            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
             Assert.Equal(2, results.Count);
             Assert.Equal(results.First().Id, events[2].Id);
             Assert.Equal(results.Last().Id, events[3].Id);
 
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithAfter(String.Concat(events[3].Date.UtcTicks.ToString(), "-", events[3].Id)));
+            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(3).WithLimit(2));
             Assert.Equal(2, results.Count);
             Assert.Equal(results.First().Id, events[4].Id);
             Assert.Equal(results.Last().Id, events[5].Id);
-
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(2).WithBefore(String.Concat(events[3].Date.UtcTicks.ToString(), "-", events[3].Id)));
-            Assert.Equal(2, results.Count);
-            Assert.Equal(results.First().Id, events[1].Id);
-            Assert.Equal(results.Last().Id, events[2].Id);
-        }
-
-        [Fact]
-        public void GetByOrganizationIdsPaged() {
-            RemoveData();
-            CreateData();
-
-            Debug.WriteLine("Sorted order:");
-            List<Tuple<string, DateTime>> sortedIds = _ids.OrderByDescending(t => t.Item2.Ticks).ThenByDescending(t => t.Item1).ToList();
-            foreach (var t in sortedIds)
-                Debug.WriteLine("{0}: {1}", t.Item1, t.Item2.ToLongTimeString());
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
-            _client.Refresh(r => r.Force(false));
-            var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithBefore(String.Concat(sortedIds[2].Item2.ToUniversalTime().Ticks.ToString(), "-", sortedIds[2].Item1))).ToArray();
-            Assert.True(results.Length > 0);
-
-            for (int i = 0; i < sortedIds.Count - 3; i++) {
-                Debug.WriteLine("{0}: {1}", sortedIds[i + 3].Item1, sortedIds[i + 3].Item2.ToLongTimeString());
-                Assert.Equal(sortedIds[i + 3].Item1, results[i].Id);
-            }
-
-            Debug.WriteLine("");
-            Debug.WriteLine("After {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithAfter(String.Concat(sortedIds[2].Item2.ToUniversalTime().Ticks.ToString(), "-", sortedIds[2].Item1))).ToArray();
-            Assert.True(results.Length > 0);
-
-            for (int i = 0; i < results.Length; i++) {
-                Debug.WriteLine("{0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-                Assert.Equal(sortedIds[i].Item1, results[i].Id);
-            }
-
-            Debug.WriteLine("");
-            Debug.WriteLine("Between {0}: {1} and {2}: {3}", sortedIds[4].Item1, sortedIds[4].Item2.ToLongTimeString(), sortedIds[1].Item1, sortedIds[1].Item2.ToLongTimeString());
-            results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(20).WithAfter(String.Concat(sortedIds[4].Item2.ToUniversalTime().Ticks.ToString(), "-", sortedIds[4].Item1)).WithBefore(String.Concat(sortedIds[1].Item2.ToUniversalTime().Ticks.ToString(), "-", sortedIds[1].Item1))).ToArray();
-            Assert.True(results.Length > 0);
-
-            for (int i = 0; i < results.Length; i++) {
-                Debug.WriteLine("{0}: {1}", sortedIds[i + 2].Item1, sortedIds[i + 2].Item2.ToLongTimeString());
-                Assert.Equal(sortedIds[i + 2].Item1, results[i].Id);
-            }
         }
 
         [Fact]
@@ -201,15 +154,11 @@ namespace Exceptionless.Api.Tests.Repositories {
                 Assert.False(ev.IsFixed);
         }
         
-        [Fact]
-        public void RemoveOldestEventsTest() {
-            
-        }
-        
-        [Fact]
-        public void RemoveAllByDateTest() {
-            
-        }
+        [Fact(Skip = "TODO")]
+        public void RemoveOldestEventsTest() { }
+
+        [Fact(Skip = "TODO")]
+        public void RemoveAllByDateTest() { }
         
         [Fact]
         public void RemoveAllByClientIpAndDate() {

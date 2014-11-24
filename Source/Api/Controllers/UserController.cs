@@ -29,8 +29,9 @@ namespace Exceptionless.Api.Controllers {
             if (org.Invites.Any())
                 results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
+            page = GetPage(page);
             limit = GetLimit(limit);
-            return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit);
+            return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit, page);
         }
 
         [HttpPost]

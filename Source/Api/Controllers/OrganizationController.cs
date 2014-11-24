@@ -40,20 +40,24 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+        public IHttpActionResult Get(int page = 1, int limit = 10) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/admin/organizations")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, string before = null, string after = null, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
-            var options = new PagingOptions().WithBefore(before).WithAfter(after).WithLimit(limit);
+        public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, i => i.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]

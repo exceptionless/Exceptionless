@@ -1,26 +1,14 @@
 ﻿using System;
 
 namespace Exceptionless.Core.Repositories {
-    internal class PagingWithBeforeAfterSortByOptions<TQuery, TSortBy> : PagingOptions {
+    internal class PagingWitSortByOptions<TQuery, TSortBy> : PagingOptions {
         private readonly PagingOptions _options;
 
-        public PagingWithBeforeAfterSortByOptions(PagingOptions options) {
+        public PagingWitSortByOptions(PagingOptions options) {
             _options = options ?? new PagingOptions();
         }
 
-        public TQuery BeforeFilter { get; set; }
-        public TQuery AfterFilter { get; set; }
         public TSortBy SortBy { get; set; }
-
-        public override string Before {
-            get { return _options.Before; }
-            set { _options.Before = value; }
-        }
-
-        public override string After {
-            get { return _options.After; }
-            set { _options.After = value; }
-        }
 
         public override int? Limit {
             get { return _options.Limit; }

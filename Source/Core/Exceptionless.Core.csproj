@@ -272,7 +272,7 @@
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack.cs" />
-    <Compile Include="Repositories\Base\PagingWithBeforeAfterSortByOptions.cs" />
+    <Compile Include="Repositories\Base\PagingWitSortByOptions.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />

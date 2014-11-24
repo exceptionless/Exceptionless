@@ -33,12 +33,10 @@ namespace Exceptionless.Api.Utility.Results {
         }
     }
 
-    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>>
-        where TEntity : class {
+    public class OkWithResourceLinks<TEntity> : OkWithHeadersContentResult<ICollection<TEntity>> where TEntity : class {
         public OkWithResourceLinks(ICollection<TEntity> content, IContentNegotiator contentNegotiator, HttpRequestMessage request, IEnumerable<MediaTypeFormatter> formatters) : base(content, contentNegotiator, request, formatters) { }
 
-        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false)
-            : base(content, controller) {
+        public OkWithResourceLinks(ICollection<TEntity> content, ApiController controller, bool hasMore, int? page = null, Func<TEntity, string> pagePropertyAccessor = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null, bool isDescending = false) : base(content, controller) {
             if (content == null)
                 return;
 
