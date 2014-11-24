@@ -22,7 +22,6 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return ev.IsLog();
         }
 
-        
         public override SummaryData GetStackSummaryData(Stack stack) {
             if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
                 return null;
@@ -30,12 +29,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             return new SummaryData { TemplateKey = "stack-log-summary", Data = new { Title = stack.Title } };
         }
 
-
         public override string GetStackTitle(PersistentEvent ev) {
             if (!ShouldHandle(ev))
                 return null;
 
-            return ev.Source;
+            return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Global)";
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
