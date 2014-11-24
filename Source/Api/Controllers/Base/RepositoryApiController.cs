@@ -5,6 +5,7 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
@@ -100,11 +101,23 @@ namespace Exceptionless.Api.Controllers {
             }
 
             var viewModel = Mapper.Map<TModel, TViewModel>(model);
-            return Created(GetEntityLink(model.Id), viewModel);
+            return Created(new Uri(GetEntityLink(model.Id)), viewModel);
         }
 
-        protected virtual Uri GetEntityLink(string id) {
-            return new Uri(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id }));
+        protected virtual string GetEntityLink(string id) {
+            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id });
+        }
+
+        protected virtual string GetEntityResourceLink(string id, string type) {
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id }), type);
+        }
+
+        protected virtual string GetEntityLink<TEntityType>(string id) {
+            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id });
+        }
+
+        protected virtual string GetEntityResourceLink<TEntityType>(string id, string type) {
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id }), type);
         }
 
         protected virtual PermissionResult CanAdd(TModel value) {

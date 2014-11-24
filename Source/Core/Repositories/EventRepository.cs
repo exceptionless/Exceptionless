@@ -143,19 +143,23 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(options));
         }
 
-        public string GetPreviousEventIdInStack(string id) {
+        public string GetPreviousEventId(string id, string systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd) {
             PersistentEvent data = GetById(id, true);
             if (data == null)
                 return null;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(data.Date.ToUniversalTime().DateTime));
+                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(data.Date.ToUniversalTime().DateTime))
+                && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
+
             var documents = Find(new ElasticSearchOptions<PersistentEvent>()
-                .WithStackId(data.StackId)
+                .WithDateRange(utcStart, utcEnd, "date")
+                .WithIndicesFromDateRange()
                 .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithLimit(10)
-                .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
-                .WithFilter(filter));
+                .WithFields("id", "date")
+                .WithFilter(filter)
+                .WithQuery(userFilter));
 
             if (documents.Count == 0)
                 return null;
@@ -174,19 +178,23 @@ namespace Exceptionless.Core.Repositories {
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
-        public string GetNextEventIdInStack(string id) {
+        public string GetNextEventId(string id, string systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd) {
             PersistentEvent data = GetById(id, true);
             if (data == null)
                 return null;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(data.Date.ToUniversalTime().DateTime));
+                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(data.Date.ToUniversalTime().DateTime))
+                && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
+
             var documents = Find(new ElasticSearchOptions<PersistentEvent>()
-                .WithStackId(data.StackId)
+                .WithDateRange(utcStart, utcEnd, "date")
+                .WithIndicesFromDateRange()
                 .WithSort(s => s.OnField(e => e.Date).Ascending())
                 .WithLimit(10)
-                .WithFields("id", "date")// FieldNames.Id, FieldNames.Date)
-                .WithFilter(filter));
+                .WithFields("id", "date")
+                .WithFilter(filter)
+                .WithQuery(userFilter));
 
             if (documents.Count == 0)
                 return null;

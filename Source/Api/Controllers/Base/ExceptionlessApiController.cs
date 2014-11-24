@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Web.Http;
 using System.Web.Http.Results;
@@ -154,6 +155,18 @@ namespace Exceptionless.Api.Controllers {
             return new NotImplementedActionResult(message, Request);
         }
 
+        public OkWithHeadersContentResult<T> OkWithLinks<T>(T content, params string[] links) {
+            return new OkWithHeadersContentResult<T>(content, this, links.Where(l => l != null).Select(l => new KeyValuePair<string, IEnumerable<string>>("Link", new[] { l })));
+        }
+
+        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string>[] headers) {
+            return new OkWithHeadersContentResult<T>(content, this, headers.Where(h => h != null).Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Item1, new[] { h.Item2 })));
+        }
+
+        public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, params Tuple<string, string[]>[] headers) {
+            return new OkWithHeadersContentResult<T>(content, this, headers.Select(h => new KeyValuePair<string, IEnumerable<string>>(h.Item1, h.Item2)));
+        }
+
         public OkWithHeadersContentResult<T> OkWithHeaders<T>(T content, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers) {
             return new OkWithHeadersContentResult<T>(content, this, headers);
         }
@@ -171,6 +184,10 @@ namespace Exceptionless.Api.Controllers {
             if (totalLimitedByPlan > 0)
                 headers.Add(ExceptionlessHeaders.LimitedByPlan, new[] { totalLimitedByPlan.ToString() });
             return headers;
+        }
+
+        protected string GetResourceLink(string url, string type) {
+            return url != null ? String.Format("<{0}>; rel=\"{1}\"", url, type) : null;
         }
     }
 }

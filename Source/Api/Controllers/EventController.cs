@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models;
+using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -50,9 +53,21 @@ namespace Exceptionless.Api.Controllers {
         }
         
         [HttpGet]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+        [Route("{id:objectid}", Name = "GetPersistentEventById")]
+        public IHttpActionResult GetById(string id, string filter = null, string time = null) {
+            PersistentEvent model = GetModel(id);
+            if (model == null)
+                return NotFound();
+
+            var timeInfo = GetTimeInfo(time, null);
+            var systemFilter = GetAssociatedOrganizationsFilter();
+            if (String.IsNullOrEmpty(filter))
+                filter = "stack:" + model.StackId;
+
+            return OkWithLinks(model,
+                GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
+                GetEntityResourceLink(_repository.GetNextEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
+                GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
         [HttpGet]

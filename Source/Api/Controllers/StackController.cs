@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}")]
+        [Route("{id:objectid}", Name = "GetStackById")]
         public IHttpActionResult GetById(string id, string offset = null) {
             var stack = GetModel(id);
             if (stack == null)

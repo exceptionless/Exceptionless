@@ -86,9 +86,9 @@ namespace Exceptionless.Api.Tests.Repositories {
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
                 if (i == 0)
-                    Assert.Null(_repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
+                    Assert.Null(_repository.GetPreviousEventId(sortedIds[i].Item1));
                 else
-                    Assert.Equal(sortedIds[i - 1].Item1, _repository.GetPreviousEventIdInStack(sortedIds[i].Item1));
+                    Assert.Equal(sortedIds[i - 1].Item1, _repository.GetPreviousEventId(sortedIds[i].Item1));
             }
         }
 
@@ -113,7 +113,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(_ids.Count, _repository.Count());
             for (int i = 0; i < sortedIds.Count; i++) {
                 Debug.WriteLine("Current - {0}: {1}", sortedIds[i].Item1, sortedIds[i].Item2.ToLongTimeString());
-                string nextId = _repository.GetNextEventIdInStack(sortedIds[i].Item1);
+                string nextId = _repository.GetNextEventId(sortedIds[i].Item1);
                 if (i == sortedIds.Count - 1)
                     Assert.Null(nextId);
                 else
