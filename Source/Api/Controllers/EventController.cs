@@ -61,8 +61,6 @@ namespace Exceptionless.Api.Controllers {
 
             var timeInfo = GetTimeInfo(time, null);
             var systemFilter = GetAssociatedOrganizationsFilter();
-            if (String.IsNullOrEmpty(filter))
-                filter = "stack:" + model.StackId;
 
             return OkWithLinks(model,
                 GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),

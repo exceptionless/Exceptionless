@@ -143,10 +143,19 @@ namespace Exceptionless.Core.Repositories {
                 .WithPaging(options));
         }
 
-        public string GetPreviousEventId(string id, string systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd) {
+        public string GetPreviousEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             PersistentEvent data = GetById(id, true);
             if (data == null)
                 return null;
+
+            if (!utcStart.HasValue)
+                utcStart = DateTime.MinValue;
+
+            if (!utcEnd.HasValue)
+                utcEnd = DateTime.MaxValue;
+
+            if (String.IsNullOrEmpty(userFilter))
+                userFilter = "stack:" + data.StackId;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { id })
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(data.Date.ToUniversalTime().DateTime))
@@ -178,10 +187,19 @@ namespace Exceptionless.Core.Repositories {
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
-        public string GetNextEventId(string id, string systemFilter, string userFilter, DateTime utcStart, DateTime utcEnd) {
+        public string GetNextEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
             PersistentEvent data = GetById(id, true);
             if (data == null)
                 return null;
+
+            if (!utcStart.HasValue)
+                utcStart = DateTime.MinValue;
+
+            if (!utcEnd.HasValue)
+                utcEnd = DateTime.MaxValue;
+
+            if (String.IsNullOrEmpty(userFilter))
+                userFilter = "stack:" + data.StackId;
 
             var filter = !Filter<PersistentEvent>.Ids(new[] { id })
                 && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(data.Date.ToUniversalTime().DateTime))
