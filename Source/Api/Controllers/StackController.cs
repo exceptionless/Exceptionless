@@ -82,7 +82,7 @@ namespace Exceptionless.Api.Controllers {
             if (!stacks.Any())
                 return NotFound();
 
-            stacks = stacks.Where(s => s.DateFixed.HasValue).ToList();
+            stacks = stacks.Where(s => !s.DateFixed.HasValue).ToList();
             if (stacks.Count > 0) {
                 foreach (var stack in stacks) {
                     // TODO: Implement Fixed in version.

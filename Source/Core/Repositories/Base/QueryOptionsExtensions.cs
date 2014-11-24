@@ -115,8 +115,6 @@ namespace Exceptionless.Core.Repositories {
             if (paging == null)
                 return options;
 
-            options.BeforeValue = paging.Before;
-            options.AfterValue = paging.After;
             options.Page = paging.Page;
             options.Limit = paging.Limit;
 

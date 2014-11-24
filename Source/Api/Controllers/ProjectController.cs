@@ -31,15 +31,17 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route]
-        public IHttpActionResult Get(string before = null, string after = null, int limit = 10) {
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+        public IHttpActionResult Get(int page = 1, int limit = 10) {
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
-        public IHttpActionResult GetByOrganization(string organization, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByOrganization(string organization, int page = 1, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
 
@@ -49,9 +51,11 @@ namespace Exceptionless.Api.Controllers {
             else
                 organizationIds.AddRange(GetAssociatedOrganizationIds());
 
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]

@@ -38,18 +38,20 @@ namespace Exceptionless.App.Controllers.API {
     
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
-        public IHttpActionResult GetByOrganization(string organizationId, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
-        public IHttpActionResult GetByProject(string projectId, string before = null, string after = null, int limit = 10) {
+        public IHttpActionResult GetByProject(string projectId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -57,9 +59,11 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var options = new PagingOptions { Before = before, After = after, Limit = limit };
+            page = GetPage(page);
+            limit = GetLimit(limit);
+            var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, e => e.Id);
+            return OkWithResourceLinks(results, options.HasMore, page);
         }
 
         [HttpGet]
