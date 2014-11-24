@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return ev.IsSessionStart() ? "Session Starts" : "Session Ends";
+            return ev.IsSessionStart() ? "Session Start" : "Session End";
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {

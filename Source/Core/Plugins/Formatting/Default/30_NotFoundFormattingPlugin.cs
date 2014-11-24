@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!ShouldHandle(ev))
                 return null;
 
-            return ev.Source;
+            return !String.IsNullOrEmpty(ev.Source) ? ev.Source : "(Unknown)";
         }
 
         public override SummaryData GetEventSummaryData(PersistentEvent ev) {
