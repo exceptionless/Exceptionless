@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Net;
 using Exceptionless.Configuration;
 using Exceptionless.Extensions;
-using Exceptionless.Json;
 using Exceptionless.Json.Linq;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;

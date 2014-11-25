@@ -377,7 +377,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore, page);
 
-            return OkWithResourceLinks(stacks, options.HasMore, page);
+            return OkWithResourceLinks(stacks, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]

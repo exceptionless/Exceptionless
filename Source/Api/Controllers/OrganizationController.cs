@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]

@@ -63,7 +63,7 @@ namespace Exceptionless.App.Controllers.API {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]

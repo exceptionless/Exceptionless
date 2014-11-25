@@ -189,5 +189,9 @@ namespace Exceptionless.Api.Controllers {
         protected string GetResourceLink(string url, string type) {
             return url != null ? String.Format("<{0}>; rel=\"{1}\"", url, type) : null;
         }
+
+        protected bool NextPageExceedsSkipLimit(int page, int limit) {
+            return (page + 1) * limit >= MAXIMUM_SKIP;
+        }
     }
 }

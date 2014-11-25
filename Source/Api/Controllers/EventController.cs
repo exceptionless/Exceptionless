@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Controllers {
                     };
                 }).ToList(), options.HasMore, page);
 
-            return OkWithResourceLinks(events, options.HasMore, page);
+            return OkWithResourceLinks(events, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]
