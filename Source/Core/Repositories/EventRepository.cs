@@ -23,7 +23,6 @@ namespace Exceptionless.Core.Repositories {
     public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
         public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, cacheClient, messagePublisher) {
-            EnableNotifications = false;
         }
 
         protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
