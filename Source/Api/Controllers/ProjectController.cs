@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -147,6 +148,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("{id:objectid}/notifications")]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -162,10 +164,11 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!project.NotificationSettings.ContainsKey(userId))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
                 return NotFound();
 
-            return Ok(project.NotificationSettings[userId]);
+            NotificationSettings settings;
+            return Ok(project.NotificationSettings.TryGetValue(userId, out settings) ? settings : new NotificationSettings());
         }
 
         [HttpPut]
@@ -176,8 +179,14 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            // TODO: Validate that they can change these settings for their project.
-            project.NotificationSettings[userId] = settings;
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
+                return NotFound();
+
+            if (settings == null)
+                project.NotificationSettings.Remove(userId);
+            else
+                project.NotificationSettings[userId] = settings;
+
             _repository.Save(project);
 
             return Ok();
@@ -188,6 +197,9 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)
+                return NotFound();
+
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
                 return NotFound();
 
             if (project.NotificationSettings.ContainsKey(userId)) {
@@ -232,13 +244,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
-            if (String.IsNullOrWhiteSpace(name))
-                return NotFound();
-
-            if (_repository.GetByOrganizationIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase)))
+            if (IsNameAvailableInternal(name))
                 return Ok();
 
             return NotFound();
+        }
+
+        private bool IsNameAvailableInternal(string name) {
+            return !String.IsNullOrWhiteSpace(name) && _repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         [HttpPost]
@@ -278,6 +291,9 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithMessage("Project name is required.");
 
+            if (!IsNameAvailableInternal(value.Name))
+                return PermissionResult.DenyWithMessage("A project with this name already exists.");
+
             if (!_billingManager.CanAddProject(value))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add additional projects.");
 
@@ -286,9 +302,18 @@ namespace Exceptionless.Api.Controllers {
 
         protected override Project AddModel(Project value) {
             value.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            value.AddDefaultOwnerNotificationSettings(ExceptionlessUser.Id);
             var project = base.AddModel(value);
 
             return project;
+        }
+
+        protected override PermissionResult CanUpdate(Project original, Delta<UpdateProject> changes) {
+            var changed = changes.GetEntity();
+            if (changes.ContainsChangedProperty(p => p.Name) && !IsNameAvailableInternal(changed.Name))
+                return PermissionResult.DenyWithPlanLimitReached("A project with this name already exists.");
+
+            return base.CanUpdate(original, changes);
         }
     }
 }
