@@ -1,21 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models.User;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, User> {
+    public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
+        private readonly IMailer _mailer;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository) : base(userRepository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, IMailer mailer) : base(userRepository) {
             _organizationRepository = organizationRepository;
+            _mailer = mailer;
+        }
+
+        [HttpGet]
+        [Route("me")]
+        public IHttpActionResult GetCurrentUser() {
+            return base.GetById(ExceptionlessUser.Id);
+        }
+
+        [HttpGet]
+        [Route("{id:objectid}", Name = "GetUserById")]
+        public override IHttpActionResult GetById(string id) {
+            return base.GetById(id);
         }
 
         [HttpGet]
@@ -32,6 +51,89 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit, page);
+        }
+
+        [HttpPatch]
+        [HttpPut]
+        [Route("{id:objectid}")]
+        public override IHttpActionResult Patch(string id, Delta<UpdateUser> changes) {
+            return base.Patch(id, changes);
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("check-email-address/{email:minlength(1)}")]
+        public IHttpActionResult IsEmailAddressAvailable(string email) {
+            if (IsEmailAddressAvailableInternal(email))
+                return Ok();
+
+            return NotFound();
+        }
+
+        private bool IsEmailAddressAvailableInternal(string email) {
+            if (String.IsNullOrWhiteSpace(email))
+                return false;
+
+            email = email.ToLower();
+            if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return _repository.GetByEmailAddress(email) == null;
+        }
+
+        [HttpPost]
+        [Route("{id:objectid}/email-address/{email:minlength(1)}")]
+        public async Task<IHttpActionResult> UpdateEmailAddress(string id, string email) {
+            var user = GetModel(id, false);
+            if (user == null)
+                return NotFound();
+
+            email = email.ToLower();
+            if (!IsEmailAddressAvailableInternal(email))
+                return BadRequest("A user with this email address already exists.");
+
+            if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+                return Ok();
+
+            user.EmailAddress = email;
+            user.IsEmailAddressVerified = user.IsEmailAddressVerified || user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
+            _repository.Save(user);
+
+            if (!user.IsEmailAddressVerified)
+                return await ResendVerificationEmail(id);
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("verify/{token:minlength(1)}")]
+        public IHttpActionResult Verify(string token) {
+            User user = _repository.GetByVerifyEmailAddressToken(token);
+            if (user == null)
+                return NotFound();
+
+            user.IsEmailAddressVerified = true;
+            user.VerifyEmailAddressToken = null;
+            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
+            _repository.Save(user);
+
+            return Ok();
+        }
+
+        [HttpGet]
+        [Route("{id:objectid}/resend-verification-email")]
+        public async Task<IHttpActionResult> ResendVerificationEmail(string id) {
+            var user = GetModel(id, false);
+            if (user == null)
+                return NotFound();
+            
+            if (!user.IsEmailAddressVerified) {
+                // TODO: Set the VerifyEmailAddressToken
+                //user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
+                await _mailer.SendVerifyEmailAsync(user);
+            }
+
+            return Ok();
         }
 
         [HttpPost]
@@ -65,7 +167,21 @@ namespace Exceptionless.Api.Controllers {
                 _repository.Save(user, true);
             }
 
-            return Ok();
+            return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        protected override User GetModel(string id, bool useCache = true) {
+            if (Request.IsGlobalAdmin() || String.Equals(ExceptionlessUser.Id, id))
+                return base.GetModel(id, useCache);
+
+            return null;
+        }
+
+        protected override ICollection<User> GetModels(string[] ids, bool useCache = true) {
+            if (Request.IsGlobalAdmin())
+                return base.GetModels(ids, useCache);
+
+            return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
 
         protected override void CreateMaps() {

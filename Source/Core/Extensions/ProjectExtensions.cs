@@ -14,10 +14,6 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Core.Extensions {
     public static class ProjectExtensions {
-        public static NotificationSettings GetNotificationSettings(this Project project, string userId) {
-            return project.NotificationSettings.ContainsKey(userId) ? project.NotificationSettings[userId] : null;
-        }
-
         public static void AddDefaultOwnerNotificationSettings(this Project project, string userId, NotificationSettings settings = null) {
             if (project.NotificationSettings.ContainsKey(userId))
                 return;
