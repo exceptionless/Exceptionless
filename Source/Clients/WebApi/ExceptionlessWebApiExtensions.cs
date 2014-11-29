@@ -25,6 +25,10 @@ namespace Exceptionless {
             client.Configuration.AddEnrichment<ExceptionlessWebApiEnrichment>();
             client.Configuration.IncludePrivateInformation = true;
 
+#if WEBAPI21
+            config.Services.Add(typeof(IExceptionLogger), new ExceptionlessExceptionLogger());
+#endif
+
             ReplaceHttpErrorHandler(config);
         }
 

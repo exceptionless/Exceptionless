@@ -17,6 +17,9 @@ namespace Exceptionless.Core.Queues {
         public T Value { get; private set; }
 
         public virtual Task CompleteAsync() {
+            if (_isCompleted)
+                return Task.FromResult(0);
+
             _isCompleted = true;
             return _queue.CompleteAsync(Id);
         }
