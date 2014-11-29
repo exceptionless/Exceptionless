@@ -33,7 +33,7 @@ namespace Client.Tests {
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
                 Assert.NotNull(queue);
-                Assert.Equal(0, queue.Count);
+                Assert.Equal(0, queue.GetQueueCountAsync().Result);
                 
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 Assert.NotNull(statsCounter);
@@ -49,7 +49,7 @@ namespace Client.Tests {
 
                 statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
 
-                Assert.Equal(0, queue.Count);
+                Assert.Equal(0, queue.GetQueueCountAsync().Result);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
@@ -64,7 +64,7 @@ namespace Client.Tests {
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
                 Assert.NotNull(queue);
-                Assert.Equal(0, queue.Count);
+                Assert.Equal(0, queue.GetQueueCountAsync().Result);
 
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 Assert.NotNull(statsCounter);
@@ -87,7 +87,7 @@ namespace Client.Tests {
                 
                 statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
 
-                Assert.Equal(0, queue.Count);
+                Assert.Equal(0, queue.GetQueueCountAsync().Result);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
