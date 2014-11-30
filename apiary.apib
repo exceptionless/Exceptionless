@@ -55,10 +55,30 @@ You can also save an end users contact information and a description of the even
     
 + Response 202
 
-## Get [/events/{id}]
+## Mark occurrences as critical [/events/{ids}/mark-critical]
++ Parameters
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ... The event identifiers.
+
+### Mark occurrences as critical [POST]
++ Response 200
+
+### Mark occurrences as not critical [DELETE]
++ Response 204
+
+## Remove  [/events/{ids}]
++ Parameters
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ... The event identifiers.
+
+### Remove event occurrences [DELETE]
++ Response 204
+
+## Get [/events/{id}{?filter,time,offset}]
 ### Get by id [GET]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + id (required, string, `537b7255b77efe2474bfdd80`) ... The identifier of the event.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     
 + Response 200 (application/json)
 
@@ -82,13 +102,17 @@ You can also save an end users contact information and a description of the even
           "is_error": false
         }
 
-## Get all [/events{?before,after,limit}]
+## Get all [/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events [GET]
 + Parameters
-    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-id`) ... Controls the `sort` order that the data is returned in. In this example -id returns the results descending by id.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
+    
 + Response 200 (application/json)
 
         [{
@@ -112,7 +136,7 @@ You can also save an end users contact information and a description of the even
           }]
 
 ## Get by reference id [/projects/{id}/events/by-ref/{reference_id}]
-### List all events for a given project [GET]
+### List all events for a given reference id [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
@@ -141,12 +165,52 @@ You can also save an end users contact information and a description of the even
           }
         ]
 
-## Get by project [/projects/{id}/events{?before,after,limit}]
+## Get by organization [/organizations/{id}/events{?filter,sort,time,offset,mode,page,limit}]
+### List all events for a given organization [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-id`) ... Controls the `sort` order that the data is returned in. In this example -id returns the results descending by id.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [
+          {
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "summary_html": null,
+            "is_fixed": false,
+            "is_hidden": false,
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null,
+            "is_critical": false,
+            "is_not_found": false,
+            "is_error": false
+          }
+        ]
+
+## Get by project [/projects/{id}/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events for a given project [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-id`) ... Controls the `sort` order that the data is returned in. In this example -id returns the results descending by id.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -173,12 +237,16 @@ You can also save an end users contact information and a description of the even
           }
         ]
         
-## Get by stack [/stacks/{id}/events{?before,after,limit}]
+## Get by stack [/stacks/{id}/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events for a given stack [GET]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
-    + before (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd80`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-id`) ... Controls the `sort` order that the data is returned in. In this example -id returns the results descending by id.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
