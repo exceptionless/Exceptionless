@@ -92,7 +92,7 @@ namespace Client.Tests.Submission {
                     Assert.Null(response.Message);
                 });
                 statsCounter.DisplayStats();
-                Debug.WriteLine(descQueue.Count);
+                Debug.WriteLine(descQueue.GetQueueCountAsync().Result);
 
                 Debug.WriteLine("Before Post Event");
                 statsCounter.WaitForCounter(StatNames.EventsProcessed, work: () => {

@@ -55,6 +55,7 @@
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="ExceptionlessExceptionLogger.cs" />
     <Compile Include="ExceptionlessHandleErrorAttribute.cs" />
     <Compile Include="ExceptionlessWebApiExtensions.cs" />
     <Compile Include="ExceptionlessWebApiEnrichment.cs" />

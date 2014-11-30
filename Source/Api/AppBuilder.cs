@@ -3,9 +3,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Web.Http;
+using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
@@ -149,8 +149,10 @@ namespace Exceptionless.Api {
                 });
             });
 
-            if (registerExceptionlessClient)
+            if (registerExceptionlessClient) {
                 ExceptionlessClient.Default.RegisterWebApi(Config);
+                Config.Services.Add(typeof(IExceptionLogger), new ExceptionlessExceptionLogger());
+            }
 
             app.UseWebApi(Config);
             app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });

@@ -1,8 +1,10 @@
-﻿#if !PFX_LEGACY_3_5
+﻿using System.Threading;
+#if !PFX_LEGACY_3_5
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 #if !EMBEDDED
 namespace CodeSmith.Core.Component {
@@ -91,6 +93,78 @@ namespace Exceptionless.Utility {
             var result = source as Task<TResult>;
 
             return tcs.TrySetResult(result ?? FromResult(default(TResult)));
+        }
+
+        public static async Task RunPeriodic(Func<Task> action, TimeSpan period, CancellationToken? cancellationToken = null, TimeSpan? initialDelay = null) {
+            if (!cancellationToken.HasValue)
+                cancellationToken = CancellationToken.None;
+
+            if (initialDelay.HasValue && initialDelay.Value > TimeSpan.Zero)
+                await Task.Delay(initialDelay.Value, cancellationToken.Value);
+
+            while (!cancellationToken.Value.IsCancellationRequested) {
+                await Task.Delay(period, cancellationToken.Value);
+                try {
+                    await action();
+                } catch (Exception ex) {
+                    Trace.TraceError(ex.Message);
+                }
+            }
+        }
+
+        public async static Task<bool> DelayUntil(Func<bool> condition, TimeSpan? timeout = null, int checkInterval = 100) {
+            DateTime start = DateTime.Now;
+            while (!condition()) {
+                if (timeout.HasValue && DateTime.Now.Subtract(start) > timeout.Value)
+                    return false;
+
+                await Task.Delay(TimeSpan.FromMilliseconds(checkInterval));
+            }
+
+            return true;
+        }
+
+        public static Task TimeoutAfter(this Task task, TimeSpan timeout) {
+            if (task.IsCompleted || (timeout == Timeout.InfiniteTimeSpan))
+                return task;
+
+            var tcs = new TaskCompletionSource<AsyncVoid>();
+
+            if (timeout == TimeSpan.Zero) {
+                tcs.SetException(new TimeoutException());
+                return tcs.Task;
+            }
+
+            var timer = new Timer(state => {
+                var myTcs = (TaskCompletionSource<AsyncVoid>)state;
+                myTcs.TrySetException(new TimeoutException());
+            }, tcs, timeout, Timeout.InfiniteTimeSpan);
+
+            task.ContinueWith((antecedent, state) => {
+                var tuple = (Tuple<Timer, TaskCompletionSource<AsyncVoid>>)state;
+                tuple.Item1.Dispose();
+
+                MarshalTaskResults(antecedent, tuple.Item2);
+            },
+            Tuple.Create(timer, tcs), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+            return tcs.Task;
+        }
+
+        internal static void MarshalTaskResults<TResult>(
+            Task source, TaskCompletionSource<TResult> proxy) {
+            switch (source.Status) {
+            case TaskStatus.Faulted:
+                proxy.TrySetException(source.Exception);
+                break;
+            case TaskStatus.Canceled:
+                proxy.TrySetCanceled();
+                break;
+            case TaskStatus.RanToCompletion:
+                var castedSource = source as Task<TResult>;
+                proxy.TrySetResult(castedSource == null ? default(TResult) : castedSource.Result);
+                break;
+            }
         }
 
         [StructLayout(LayoutKind.Sequential, Size = 1)]

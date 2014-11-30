@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
 using CodeSmith.Core.Helpers;
 using Exceptionless;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
@@ -27,7 +28,20 @@ using Exceptionless.Models.Data;
 namespace SampleConsole {
     internal class Program {
         private static bool _sendingContinuous = false;
-        private static bool _randomizeDates = false;
+
+        private static int[] _delays = new[] { 0, 50, 100, 1000 };
+        private static int _delayIndex = 2;
+
+        private static TimeSpan[] _dateSpans = new TimeSpan[] {
+            TimeSpan.Zero,
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromHours(1),
+            TimeSpan.FromDays(1),
+            TimeSpan.FromDays(7),
+            TimeSpan.FromDays(TimeSpanExtensions.AvgDaysInAMonth),
+            TimeSpan.FromDays(TimeSpanExtensions.AvgDaysInAMonth * 3)
+        };
+        private static int _dateSpanIndex = 3;
 
         private static void Main() {
             ExceptionlessClient.Default.Startup();
@@ -36,21 +50,18 @@ namespace SampleConsole {
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
-            ExceptionlessClient.Default.CreateLog("SampleConsole", "Has lots of extended data")
-                .AddObject(new {
-                    myApplicationVersion = new Version(1, 0),
-                    Date = DateTime.Now,
-                    __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23",
-                    SomeField10 = "testing"
-                }, "Object From Code")
-                .AddObject(new { Blah = "Test" }, name: "Test Object")
-                .AddObject("Exceptionless is awesome", "String Content")
-                .AddObject(new int[] { 1, 2, 3, 4, 5 }, "Array Content")
-                .AddObject(new object[] { new { This = "This" }, new { Is = "Is" }, new { A = "A" }, new { Test = "Test", Data = new { Punctuation = "!!!!" } } }, "Array With Nested Content")
-                .Submit();
-            ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
-            ExceptionlessClient.Default.SubmitNotFound("/somepage");
-            ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            if (false) {
+                ExceptionlessClient.Default.CreateLog("SampleConsole", "Has lots of extended data")
+                    .AddObject(new { myApplicationVersion = new Version(1, 0), Date = DateTime.Now, __sessionId = "9C72E4E8-20A2-469B-AFB9-492B6E349B23", SomeField10 = "testing" }, "Object From Code")
+                    .AddObject(new { Blah = "Test" }, name: "Test Object")
+                    .AddObject("Exceptionless is awesome", "String Content")
+                    .AddObject(new int[] { 1, 2, 3, 4, 5 }, "Array Content")
+                    .AddObject(new object[] { new { This = "This" }, new { Is = "Is" }, new { A = "A" }, new { Test = "Test", Data = new { Punctuation = "!!!!" } } }, "Array With Nested Content")
+                    .Submit();
+                ExceptionlessClient.Default.SubmitFeatureUsage("MyFeature");
+                ExceptionlessClient.Default.SubmitNotFound("/somepage");
+                ExceptionlessClient.Default.SubmitSessionStart(Guid.NewGuid().ToString("N"));
+            }
             ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
@@ -62,26 +73,29 @@ namespace SampleConsole {
 
                 if (keyInfo.Key == ConsoleKey.D1)
                     SendEvent();
-                if (keyInfo.Key == ConsoleKey.D2)
+                else if (keyInfo.Key == ConsoleKey.D2)
                     SendContinuousEvents(50, token, 100);
                 else if (keyInfo.Key == ConsoleKey.D3)
-                    SendContinuousEvents(1000, token, maxDaysOld: 1);
-                else if (keyInfo.Key == ConsoleKey.D4)
-                    SendContinuousEvents(50, token);
-                else if (keyInfo.Key == ConsoleKey.D5)
-                    SendContinuousEvents(50, token, 1000);
-                else if (keyInfo.Key == ConsoleKey.D6) {
+                    SendContinuousEvents(_delays[_delayIndex], token);
+                else if (keyInfo.Key == ConsoleKey.D4) {
                     Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
                     Console.WriteLine("Telling client to process the queue...");
 
                     ExceptionlessClient.Default.ProcessQueue();
 
                     ClearNonOptionsLines();
-                } else if (keyInfo.Key == ConsoleKey.D7) {
+                } else if (keyInfo.Key == ConsoleKey.D5) {
                     SendAllCapturedEventsFromDisk();
                     ClearNonOptionsLines();
                 } else if (keyInfo.Key == ConsoleKey.D) {
-                    _randomizeDates = !_randomizeDates;
+                    _dateSpanIndex++;
+                    if (_dateSpanIndex == _dateSpans.Length)
+                        _dateSpanIndex = 0;
+                    WriteOptionsMenu();
+                } else if (keyInfo.Key == ConsoleKey.T) {
+                    _delayIndex++;
+                    if (_delayIndex == _delays.Length)
+                        _delayIndex = 0;
                     WriteOptionsMenu();
                 } else if (keyInfo.Key == ConsoleKey.Q)
                     break;
@@ -94,21 +108,17 @@ namespace SampleConsole {
             }
         }
 
-        private const int _optionsMenuLineCount = 10;
+        private const int _optionsMenuLineCount = 9;
         private static void WriteOptionsMenu() {
             Console.SetCursorPosition(0, 0);
             ClearConsoleLines(0, _optionsMenuLineCount - 1);
             Console.WriteLine("1: Send 1");
             Console.WriteLine("2: Send 100");
-            Console.WriteLine("3: Send 1 per second");
-            Console.WriteLine("4: Send 10 per second");
-            Console.WriteLine("5: Send 1,000");
-            Console.WriteLine("6: Process queue");
-            Console.WriteLine("7: Process directory");
-            if (_randomizeDates)
-                Console.WriteLine("D: Turn random dates off");
-            else
-                Console.WriteLine("D: Turn random dates on");
+            Console.WriteLine("3: Send continous");
+            Console.WriteLine("4: Process queue");
+            Console.WriteLine("5: Process directory");
+            Console.WriteLine("D: Change date range (" + _dateSpans[_dateSpanIndex].ToWords() + ")");
+            Console.WriteLine("T: Change continuous delay (" + _delays[_delayIndex].ToString("N0") + ")");
             Console.WriteLine();
             Console.WriteLine("Q: Quit");
         }
@@ -144,7 +154,7 @@ namespace SampleConsole {
                         break;
                     }
 
-                    SendEvent(false, maxDaysOld);
+                    SendEvent(false);
                     eventCount++;
                     Console.SetCursorPosition(0, _optionsMenuLineCount + 4);
                     Console.WriteLine("Sent {0} events.", eventCount);
@@ -157,10 +167,10 @@ namespace SampleConsole {
             }, token);
         }
 
-        private static void SendEvent(bool writeToConsole = true, int maxDaysOld = 90) {
+        private static void SendEvent(bool writeToConsole = true) {
             var ev = new Event();
-            if (_randomizeDates)
-                ev.Date = RandomHelper.GetDateTime(DateTime.Now.AddDays(-maxDaysOld), DateTime.Now);
+            if (_dateSpans[_dateSpanIndex] != TimeSpan.Zero)
+                ev.Date = RandomHelper.GetDateTime(DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]), DateTime.Now);
 
             ev.Type = EventTypes.Random();
             if (ev.Type == Event.KnownTypes.FeatureUsage)
@@ -194,8 +204,8 @@ namespace SampleConsole {
                 ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
             }
 
-            // use server config to see if we should include this data
-            if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData"))
+            // use server settings to see if we should include this data
+            if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData", true))
                 ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
 
             //ev.AddRecentTraceLogEntries();

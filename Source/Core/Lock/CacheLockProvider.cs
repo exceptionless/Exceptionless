@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core.Caching;
 
@@ -22,20 +23,27 @@ namespace Exceptionless.Core.Lock {
         }
 
         public IDisposable AcquireLock(string name, TimeSpan? lockTimeout = null, TimeSpan? acquireTimeout = null) {
+            Debug.WriteLine("AcquireLock: " + name);
             string cacheKey = GetCacheKey(name);
 
             Run.UntilTrue(() => {
+                Debug.WriteLine("Checking to see if lock exists: " + name);
                 var lockValue = _cacheClient.Get<object>(cacheKey);
+                if (lockValue != null)
+                    Debug.WriteLine("Lock exists: " + name);
                 if (lockValue != null)
                     return false;
 
+                Debug.WriteLine("Lock doesn't exist: " + name);
                 return _cacheClient.Add(cacheKey, DateTime.Now, lockTimeout ?? TimeSpan.FromMinutes(20));
             }, acquireTimeout);
 
+            Debug.WriteLine("Returning lock: " + name);
             return new DisposableLock(name, this);
         }
 
         public void ReleaseLock(string name) {
+            Debug.WriteLine("ReleaseLock: " + name);
             _cacheClient.Remove(GetCacheKey(name));
         }
 
