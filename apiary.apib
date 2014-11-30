@@ -38,40 +38,6 @@ You can also post a multiline string. We automatically split strings by the `\n`
 
 + Response 202
 
-## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
-You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
-
-### Sets the user description for a specific event [POST]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
-
-+ Request UserDescription from JSON (application/json)
-
-        { 
-            "email_address": "noreply@exceptionless.com",
-            "description": "This product is amazing!"
-        }
-    
-+ Response 202
-
-## Mark occurrences as critical [/events/{ids}/mark-critical]
-+ Parameters
-    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of event identifiers.
-
-### Mark occurrences as critical [POST]
-+ Response 200
-
-### Mark occurrences as not critical [DELETE]
-+ Response 204
-
-## Remove [/events/{ids}]
-+ Parameters
-    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ... A comma delimited list of event identifiers.
-
-### Remove event occurrences [DELETE]
-+ Response 204
-
 ## Get [/events/{id}{?filter,time,offset}]
 ### Get by id [GET]
 + Parameters
@@ -272,6 +238,40 @@ You can also save an end users contact information and a description of the even
             "is_error": false
           }
         ]
+
+## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
+You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
+
+### Sets the user description for a specific event [POST]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    + reference_id (required, string, `1234567890`) ... An identifier used that references an event instance. The identifier must contain between 8 and 32 characters.
+
++ Request UserDescription from JSON (application/json)
+
+        { 
+            "email_address": "noreply@exceptionless.com",
+            "description": "This product is amazing!"
+        }
+    
++ Response 202
+
+## Mark occurrences as critical [/events/{ids}/mark-critical]
++ Parameters
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of event identifiers.
+
+### Mark occurrences as critical [POST]
++ Response 200
+
+### Mark occurrences as not critical [DELETE]
++ Response 204
+
+## Remove [/events/{ids}]
++ Parameters
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ... A comma delimited list of event identifiers.
+
+### Remove event occurrences [DELETE]
++ Response 204
 
 # Group Organizations
 Organizations related resources of the **Organization API**
@@ -518,7 +518,10 @@ Project related resources of the **Projects API**
 ### Create new project [POST]
 + Request (application/json)
 
-        { "organization_id": "537650f3b77efe23a47914f3", "name": "Disintegrating Pistol" }
+        { 
+            "organization_id": "537650f3b77efe23a47914f3", 
+            "name": "Disintegrating Pistol" 
+        }
 
 + Response 201 (application/json)
 
@@ -527,22 +530,19 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "organization_name": "Acme",
             "name": "Disintegrating Pistol",
-            "time_zone": "Central Standard Time",
-            "time_zone_offset": -21600000.0,
+            "delete_bot_data_enabled": true,
             "data": {},
             "promoted_tabs": [],
-            "custom_content": null,
             "stack_count": 2,
             "event_count": 62,
             "total_event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.166Z"
         }
 
-## Get all [/projects{?before,after,limit}]
+## Get all [/projects{?page,limit}]
 ### List all projects [GET]
 + Parameters
-    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -552,23 +552,20 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "organization_name": "Acme",
             "name": "Disintegrating Pistol",
-            "time_zone": "Central Standard Time",
-            "time_zone_offset": -21600000.0,
+            "delete_bot_data_enabled": true,
             "data": {},
             "promoted_tabs": [],
-            "custom_content": null,
             "stack_count": 2,
             "event_count": 62,
             "total_event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.166Z"
         }]
 
-## Get by organization [/organizations/{id}/projects{?before,after,limit}]
+## Get by organization [/organizations/{id}/projects{?page,limit}]
 ### List all projects for a given organization [GET]
 + Parameters
     + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -578,18 +575,16 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "organization_name": "Acme",
             "name": "Disintegrating Pistol",
-            "time_zone": "Central Standard Time",
-            "time_zone_offset": -21600000.0,
+            "delete_bot_data_enabled": true,
             "data": {},
             "promoted_tabs": [],
-            "custom_content": null,
             "stack_count": 2,
             "event_count": 62,
             "total_event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.166Z"
         }]
 
-## Get, Update, Remove [/projects/{id}]
+## Get, Update [/projects/{id}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
 
@@ -601,11 +596,9 @@ Project related resources of the **Projects API**
             "organization_id": "537650f3b77efe23a47914f3",
             "organization_name": "Acme",
             "name": "Disintegrating Pistol",
-            "time_zone": "Central Standard Time",
-            "time_zone_offset": -21600000.0,
+            "delete_bot_data_enabled": true,
             "data": {},
             "promoted_tabs": [],
-            "custom_content": null,
             "stack_count": 2,
             "event_count": 62,
             "total_event_count": 62,
@@ -615,7 +608,10 @@ Project related resources of the **Projects API**
 ### Update project [PATCH]
 + Request (application/json)
 
-        { "name": "Updated Disintegrating Pistol" }
+        { 
+            "name": "Updated Disintegrating Pistol",
+            "delete_bot_data_enabled": true
+        }
 
 + Response 201 (application/json)
 
@@ -623,19 +619,21 @@ Project related resources of the **Projects API**
             "id": "537650f3b77efe23a47914f4",
             "organization_id": "537650f3b77efe23a47914f3",
             "organization_name": "Acme",
-            "name": "Updated Disintegrating Pistol",
-            "time_zone": "Central Standard Time",
-            "time_zone_offset": -21600000.0,
+            "name": "Disintegrating Pistol",
+            "delete_bot_data_enabled": true,
             "data": {},
             "promoted_tabs": [],
-            "custom_content": null,
             "stack_count": 2,
             "event_count": 62,
             "total_event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.166Z"
         }
 
-### Remove project [DELETE]
+## Remove [/projects/{ids}]
++ Parameters
+    + ids (required, string, `537650f3b77efe23a47914f4,637650f3b77efe23a4791455`) ... A comma delimited list of project identifiers.
+    
+### Remove projects [DELETE]
 + Response 204
 
 ## Reset project data [/projects/{id}/reset-data]
@@ -704,32 +702,6 @@ Project related resources of the **Projects API**
 ### Demote Tab [DELETE]
 + Response 200
 
-## Get all notification settings [/projects/{id}/notifications]
-### Get the project's notification settings [GET]
-+ Parameters
-    + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    
-+ Response 200 (application/json)
-
-        {
-          "537b6e77b77efe102444053d": {
-            "mode": 1,
-            "send_daily_summary": true,
-            "report_critical_errors": true,
-            "report_regressions": true,
-            "report404_errors": false,
-            "report_known_bot_errors": false
-          },
-          "537b6e77b77efe102444053e": {
-            "mode": 2,
-            "send_daily_summary": true,
-            "report_critical_errors": true,
-            "report_regressions": true,
-            "report404_errors": false,
-            "report_known_bot_errors": false
-          }
-        }
-    
 ## User notification settings [/projects/{id}/notifications/{user_id}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
