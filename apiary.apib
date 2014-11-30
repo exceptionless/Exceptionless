@@ -314,46 +314,7 @@ Organizations related resources of the **Organization API**
             "data": {}
         }
 
-## Get all [/organizations{?before,after,limit}]
-### List all organizations [GET]
-+ Parameters
-    + before (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `100650f3b77efe23a4791400`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
-    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-
-+ Response 200 (application/json)
-
-        [{
-            "id": "537650f3b77efe23a47914f3",
-            "name": "Acme",
-            "plan_id": "EX_UNLIMITED",
-            "card_last4": null,
-            "subscribe_date": null,
-            "billing_change_date": "2020-10-16T18:59:09.579Z",
-            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
-            "billing_status": 0,
-            "billing_price": 0.0,
-            "max_errors_per_day": 0,
-            "retention_days": -1,
-            "is_suspended": false,
-            "suspension_code": null,
-            "suspension_notes": null,
-            "suspension_date": null,
-            "has_premium_features": true,
-            "max_users": -1,
-            "max_projects": -1,
-            "project_count": 2,
-            "stack_count": 2,
-            "event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.165Z",
-            "total_event_count": 62,
-            "invites": [],
-            "overage_hours": [],
-            "usage": [],
-            "data": {}
-        }]
-
-## Get, Update, Remove [/organizations/{id}]
+## Get, Update [/organizations/{id}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
 
@@ -427,8 +388,85 @@ Organizations related resources of the **Organization API**
             "data": {}
         }
 
-### Remove organization [DELETE]
+## Remove [/organizations/{ids}]
++ Parameters
+    + ids (required, string, `537650f3b77efe23a47914f3,637650f3b77efe23a47914fe`) ...  A comma delimited list of organization identifiers.
+
+### Remove organizations [DELETE]
 + Response 204
+
+## Get all [/organizations{?page,limit}]
+### List all organizations [GET]
++ Parameters
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537650f3b77efe23a47914f3",
+            "name": "Acme",
+            "plan_id": "EX_UNLIMITED",
+            "card_last4": null,
+            "subscribe_date": null,
+            "billing_change_date": "2020-10-16T18:59:09.579Z",
+            "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
+            "billing_status": 0,
+            "billing_price": 0.0,
+            "max_errors_per_day": 0,
+            "retention_days": -1,
+            "is_suspended": false,
+            "suspension_code": null,
+            "suspension_notes": null,
+            "suspension_date": null,
+            "has_premium_features": true,
+            "max_users": -1,
+            "max_projects": -1,
+            "project_count": 2,
+            "stack_count": 2,
+            "event_count": 62,
+            "last_event_date": "2020-10-16T19:28:36.165Z",
+            "total_event_count": 62,
+            "invites": [],
+            "overage_hours": [],
+            "usage": [],
+            "data": {}
+        }]
+
+## Get invoices [/organizations/{id}/invoices{?before,after,limit}]
+### Get invoices [GET]
+Returns a collection of invoices.
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
+    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + limit = `12` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+    
++ Response 200 (application/json)
+
+        [{
+            "id": "112650f3b77efe23a4791455",
+            "date": "2020-10-16T18:59:09.579Z",
+            "paid": true
+        }]
+
+## Change plan [/organizations/{id}/change-plan{?planId,stripeToken,last4}]
+### Change plan [GET]
+Upgrades or downgrades the organizations plan.
+
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + planId (required, string, `EX_LARGE`) ... The identifier of the plan.
+    + stripeToken (optional, string, `abcdefg`) ... The token returned from the stripe service.
+    + last4 (optional, string, `4242`) ... The last four numbers of the card.
+
++ Response 200 (application/json)
+
+        {
+            "success": true,
+            "message": ""
+        }
 
 ## Manage users [/organizations/{id}/user/{email}]
 + Parameters
