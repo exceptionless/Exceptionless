@@ -44,7 +44,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + id (required, string, `537b7255b77efe2474bfdd80`) ... The identifier of the event.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     
 + Response 200 (application/json)
 
@@ -74,7 +74,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -138,7 +138,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -174,7 +174,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -210,7 +210,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `10` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -754,13 +754,18 @@ Returns a `404` status code if an existing project with the specified name does 
 # Group Stacks
 Stack related resources of the **Stacks API**
 
-## Get all [/stacks{?before,after,limit}]
-### List all projects [GET]
 
+## Get all [/stacks{?filter,sort,time,offset,mode,page,limit}]
+### List all stacks [GET]
 + Parameters
-    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
 + Response 200 (application/json)
 
         [{
@@ -785,12 +790,85 @@ Stack related resources of the **Stacks API**
             "tags": []
         }]
 
-## Get newest by project [/projects/{id}/stacks/new{?before,after,limit}]
+## Get by organization [/organizations/{id}/stacks{?filter,sort,time,offset,mode,page,limit}]
+### List all stacks for a given organization [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + sort (optional, string, `-first`) ... Controls the `sort` order that the data is returned in. In this example -first returns the results descending by first.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get newest [/new{?filter,time,offset,mode,page,limit}]
+### Get newest [GET]
++ Parameters
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get newest by project [/projects/{id}/stacks/new{?filter,time,offset,mode,page,limit}]
 ### Get newest by project [GET]
 + Parameters
     + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -817,12 +895,49 @@ Stack related resources of the **Stacks API**
             "tags": []
         }]
 
-## Get most recent by project [/projects/{id}/stacks/recent{?before,after,limit}]
+## Get most recent [/recent{?filter,time,offset,mode,page,limit}]
+### Get most recent [GET]
++ Parameters
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+
+## Get most recent by project [/projects/{id}/stacks/recent{?filter,time,offset,mode,page,limit}]
 ### Get most recent by project [GET]
 + Parameters
     + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b7255b77efe2474bfdd7f`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -849,17 +964,15 @@ Stack related resources of the **Stacks API**
             "tags": []
         }]
 
-## Get most frequent by project [/projects/{id}/stacks/frequent{?page,limit,start,end,hidden,fixed,notfound}]
-### Gets most frequent by project [GET]
+## Get most frequent [/frequent{?filter,time,offset,mode,page,limit}]
+### Gets most frequent [GET]
 + Parameters
-    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
-    + start (optional, date, `2015-01-1T00:00:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2015-12-31T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
-    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
-    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
-    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
 
 + Response 200 (application/json)
 
@@ -885,10 +998,46 @@ Stack related resources of the **Stacks API**
             "tags": []
         }]
         
-## Get [/stacks/{id}]
+## Get most frequent by project [/projects/{id}/stacks/frequent{?filter,time,offset,mode,page,limit}]
+### Gets most frequent by project [GET]
++ Parameters
+    + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
+    + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
+
++ Response 200 (application/json)
+
+        [{
+            "id": "537b7255b77efe2474bfdd7f",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
+            "signature_info": {
+              "type": "log"
+            },
+            "fixed_in_version": null,
+            "date_fixed": null,
+            "title": null,
+            "summary_html": null,
+            "total_occurrences": 1,
+            "description": null,
+            "disable_notifications": false,
+            "is_hidden": false,
+            "is_regressed": false,
+            "occurrences_are_critical": false,
+            "references": [],
+            "tags": []
+        }]
+        
+## Get [/stacks/{id}{?offset}]
 ### Get by id [GET]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
@@ -914,6 +1063,13 @@ Stack related resources of the **Stacks API**
             "tags": []
         }
 
+## Remove [/stacks/{ids}]
++ Parameters
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of stack identifiers.
+    
+### Remove stacks [DELETE]
++ Response 204
+
 ## Reset data [/stacks/{id}/reset-data]
 ### Reset data [GET]
 + Parameters
@@ -921,9 +1077,9 @@ Stack related resources of the **Stacks API**
 
 + Response 200
 
-## Mark future occurrences as critical [/stacks/{id}/mark-critical]
+## Mark future occurrences as critical [/stacks/{ids}/mark-critical]
 + Parameters
-    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of stack identifiers.
 
 ### Mark future occurrences as critical [POST]
 + Response 200
@@ -931,9 +1087,9 @@ Stack related resources of the **Stacks API**
 ### Mark future occurrences as not critical [DELETE]
 + Response 204
 
-## Mark fixed [/stacks/{id}/mark-fixed]
+## Mark fixed [/stacks/{ids}/mark-fixed]
 + Parameters
-    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of stack identifiers.
 
 ### Mark fixed [POST]
 + Response 200
@@ -941,9 +1097,9 @@ Stack related resources of the **Stacks API**
 ### Mark not fixed [DELETE]
 + Response 204
 
-## Mark hidden [/stacks/{id}/mark-hidden]
+## Mark hidden [/stacks/{ids}/mark-hidden]
 + Parameters
-    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of stack identifiers.
 
 ### Mark hidden [POST]
 + Response 200
@@ -951,9 +1107,9 @@ Stack related resources of the **Stacks API**
 ### Mark not hidden [DELETE]
 + Response 204
 
-## Notifications [/stacks/{id}/notifications]
+## Notifications [/stacks/{ids}/notifications]
 + Parameters
-    + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
+    + ids (required, string, `537b7255b77efe2474bfdd7f,637b7255b77efe2474bfdd7e`) ...  A comma delimited list of stack identifiers.
 
 ### Enable notifications [POST]
 + Response 200
@@ -992,7 +1148,6 @@ Stack related resources of the **Stacks API**
 
 # Group Tokens
 Token related resources of the **Tokens API**
-
 
 ## Create [/tokens]
 ### Create new token [POST]
