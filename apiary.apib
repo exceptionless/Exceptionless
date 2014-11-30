@@ -1179,7 +1179,7 @@ To create a new token, you must specify an organization_id. There are three vali
             "notes": "My client access token for project Acme."
         }
 
-## Get, Remove [/tokens/{id}]
+## Get [/tokens/{id}]
 + Parameters
     + id (required, string, `e3d51ea621464280bbcb79c11fd6483e`) ... The identifier of the token.
 
@@ -1199,15 +1199,19 @@ To create a new token, you must specify an organization_id. There are three vali
             "notes": null
         }
 
-### Remove web hook [DELETE]
+## Remove [/tokens/{ids}]
++ Parameters
+    + ids (required, string, `e3d51ea621464280bbcb79c11fd6483e,54d51ea621464280bbcb79c11fd64866`) ...  A comma delimited list of token identifiers.
+    
+### Remove tokens [DELETE]
 + Response 204
 
-## Get by organization [/organizations/{id}/tokens{?before,after,limit}]
+
+## Get by organization [/organizations/{id}/tokens{?page,limit}]
 ### List all tokens for a given organization [GET]
 + Parameters
     + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -1225,12 +1229,11 @@ To create a new token, you must specify an organization_id. There are three vali
             "notes": null
         }]
 
-## Get by project [/projects/{id}/tokens{?before,after,limit}]
+## Get by project [/projects/{id}/tokens{?page,limit}]
 ### List all tokens for a given project [GET]
 + Parameters
     + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537650f3b77efe23a47914f4`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
@@ -1299,7 +1302,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             ]
         }
 
-## Get, Update, Remove [/webhooks/{id}]
+## Get, Update [/webhooks/{id}]
 + Parameters
     + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the web hook.
 
@@ -1339,15 +1342,19 @@ To create a new web hook, you must specify project_id, url and event_types.
             ]
         }
 
+## Remove [/webhooks/{ids}]
++ Parameters
+    + ids (required, string, `537b84cfb77efe2474072488,647b84cfb77efe2474072499`) ...  A comma delimited list of web hook identifiers.
+    
 ### Remove web hook [DELETE]
 + Response 204
 
-## Get by project [/projects/{id}/webhooks{?before,after,limit}]
+
+## Get by project [/projects/{id}/webhooks{?page,limit}]
 ### List all web hooks for a given project [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
-    + before (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `before` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with `obj_bar`, your subsequent call can include `before=obj_bar` in order to fetch the previous page of the list.
-    + after (optional, string, `537b84cfb77efe2474072488`) ... A cursor for use in pagination. `after` is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with `obj_foo`, your subsequent call can include `after=obj_foo` in order to fetch the next page of the list.
+    + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
 
 + Response 200 (application/json)
