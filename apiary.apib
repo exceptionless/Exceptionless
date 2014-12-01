@@ -754,7 +754,6 @@ Returns a `404` status code if an existing project with the specified name does 
 # Group Stacks
 Stack related resources of the **Stacks API**
 
-
 ## Get all [/stacks{?filter,sort,time,offset,mode,page,limit}]
 ### List all stacks [GET]
 + Parameters
@@ -1206,7 +1205,6 @@ To create a new token, you must specify an organization_id. There are three vali
 ### Remove tokens [DELETE]
 + Response 204
 
-
 ## Get by organization [/organizations/{id}/tokens{?page,limit}]
 ### List all tokens for a given organization [GET]
 + Parameters
@@ -1349,7 +1347,6 @@ To create a new web hook, you must specify project_id, url and event_types.
 ### Remove web hook [DELETE]
 + Response 204
 
-
 ## Get by project [/projects/{id}/webhooks{?page,limit}]
 ### List all web hooks for a given project [GET]
 + Parameters
@@ -1375,15 +1372,457 @@ To create a new web hook, you must specify project_id, url and event_types.
 # Group Stats
 Stat related resources of the **Stats API**
 
-## Get by project [/projects/{id}/stats{?start,end,hidden,fixed,notfound}]
+## Get all [/stats{?filter,time,offset}]
+### Get all [GET]
++ Parameters
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+
++ Response 200 (application/json)
+
+        {
+          "unique_total": 1,
+          "new_total": 1,
+          "most_frequent": null,
+          "most_recent": null,
+          "total_limited_by_plan": 0,
+          "start_date": "2020-10-16T09:15:00-05:00",
+          "end_date": "2020-10-17T00:00:00Z",
+          "stats": [
+            {
+              "unique_total": 1,
+              "new_total": 1,
+              "date": "2020-10-16T09:15:00",
+              "per_hour_average": 0.0,
+              "total": 1
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T09:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T09:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T10:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T11:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T12:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T13:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T14:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T15:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T16:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T17:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T18:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T19:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T20:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T21:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T22:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:15:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:30:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-16T23:45:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            },
+            {
+              "unique_total": 0,
+              "new_total": 0,
+              "date": "2020-10-17T00:00:00",
+              "per_hour_average": 0.0,
+              "total": 0
+            }
+          ],
+          "per_day_average": 1.0,
+          "per_hour_average": 0.1,
+          "total": 1
+        }
+        
+## Get by project [/projects/{id}/stats{?filter,time,offset}]
 ### Get stats for a given project [GET]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
-    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
-    + hidden = `false` (optional, boolean, `false`) ... Controls whether hidden events/stacks are included in the results.
-    + fixed = `false` (optional, boolean, `false`) ... Controls whether fixed events/stacks are included in the results.
-    + notfound = `false` (optional, boolean, `false`) ... Controls whether 404 events/stacks are included in the results.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
@@ -1822,12 +2261,13 @@ Stat related resources of the **Stats API**
           "total": 1
         }
 
-## Get by stack [/stacks/{id}/stats{?start,end}]
+## Get by stack [/stacks/{id}/stats{?filter,time,offset}]
 ### Get stats for a given stack [GET]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
-    + start (optional, date, `2020-10-16T09:15:00`) ... The starting date that the stats should be limited by. If start is not specified then thats will not be limited by a starting date.
-    + end (optional, date, `2020-10-17T00:00:00`) ... The ending date that the stats should be limited by. If end is not specified then the current date will be used.
+    + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
+    + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
+    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
