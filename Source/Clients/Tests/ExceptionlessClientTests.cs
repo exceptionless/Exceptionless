@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.Api;
 using Exceptionless.Core;
@@ -28,7 +29,7 @@ namespace Client.Tests {
         }
 
         [Fact]
-        public void CanSubmitSimpleEvent() {
+        public async Task CanSubmitSimpleEvent() {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
@@ -37,7 +38,7 @@ namespace Client.Tests {
                 
                 var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 Assert.NotNull(statsCounter);
-          
+                
                 EnsureSampleData(container);
 
                 var client = CreateClient();
@@ -47,7 +48,7 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
 
-                statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
+                Assert.True(await statsCounter.WaitForCounter(StatNames.EventsProcessed, work: async () => await client.ProcessQueueAsync()));
 
                 Assert.Equal(0, queue.GetQueueCountAsync().Result);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
@@ -59,7 +60,7 @@ namespace Client.Tests {
         }
 
         [Fact]
-        public void CanSubmitSimpleException() {
+        public async Task CanSubmitSimpleException() {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
                 var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
@@ -85,7 +86,7 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
                 
-                statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue);
+                Assert.True(await statsCounter.WaitForCounter(StatNames.EventsProcessed, work: async () => await client.ProcessQueueAsync()));
 
                 Assert.Equal(0, queue.GetQueueCountAsync().Result);
                 Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));

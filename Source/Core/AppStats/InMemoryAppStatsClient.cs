@@ -15,13 +15,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
+using Nito.AsyncEx;
 
 namespace Exceptionless.Core.AppStats {
     public class InMemoryAppStatsClient : IAppStatsClient {
         private readonly ConcurrentDictionary<string, long> _counters = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, Stack<double>> _gauges = new ConcurrentDictionary<string, Stack<double>>();
         private readonly ConcurrentDictionary<string, Stack<long>> _timings = new ConcurrentDictionary<string, Stack<long>>();
-        private readonly ConcurrentDictionary<string, EventWaitHandle> _counterEvents = new ConcurrentDictionary<string, EventWaitHandle>();
+        private readonly ConcurrentDictionary<string, AsyncAutoResetEvent> _counterEvents = new ConcurrentDictionary<string, AsyncAutoResetEvent>();
         private Timer _statsDisplayTimer;
 
         public InMemoryAppStatsClient() {
@@ -51,29 +54,34 @@ namespace Exceptionless.Core.AppStats {
 
         public void Counter(string statName, int value = 1) {
             _counters.AddOrUpdate(statName, value, (key, current) => current + value);
-            EventWaitHandle waitHandle;
+            AsyncAutoResetEvent waitHandle;
             _counterEvents.TryGetValue(statName, out waitHandle);
             if (waitHandle != null)
                 waitHandle.Set();
         }
 
-        public void WaitForCounter(string statName, long count = 1, double timeoutInSeconds = 10, Action work = null) {
+        public async Task<bool> WaitForCounter(string statName, long count = 1, double timeoutInSeconds = 10, Func<Task> work = null) {
             if (count == 0)
-                return;
+                return true;
 
             long currentCount = GetCount(statName);
             if (work != null)
-                work();
+                await work();
 
             count = count - (GetCount(statName) - currentCount);
 
-            var waitHandle = _counterEvents.GetOrAdd(statName, s => new AutoResetEvent(false));
+            if (count == 0)
+                return true;
+
+            var waitHandle = _counterEvents.GetOrAdd(statName, s => new AsyncAutoResetEvent(false));
             do {
-                if (!waitHandle.WaitOne(TimeSpan.FromSeconds(timeoutInSeconds)))
-                    throw new TimeoutException();
+                if (!await waitHandle.WaitAsync(TimeSpan.FromSeconds(timeoutInSeconds)))
+                    return false;
 
                 count--;
             } while (count > 0);
+
+            return true;
         }
 
         public void Gauge(string statName, double value) {

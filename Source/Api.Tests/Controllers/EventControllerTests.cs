@@ -17,10 +17,12 @@ using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
@@ -41,20 +43,26 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public void CanPostString() {
+        public async Task CanPostString() {
             RemoveAllEvents();
 
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
+
+                var statsCounter = IoC.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                Assert.NotNull(statsCounter);
                 
-                var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string")).Result;
-                Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCountAsync().Result);
+                Assert.True(await statsCounter.WaitForCounter(StatNames.PostsQueued, work: async () => {
+                    var actionResult = await _eventController.Post(Encoding.UTF8.GetBytes("simple string"));
+                    Assert.IsType<StatusCodeResult>(actionResult);
+                }));
+
+                Assert.Equal(1, await _eventQueue.GetQueueCountAsync());
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 processEventsJob.Run();
 
-                Assert.Equal(0, _eventQueue.GetQueueCountAsync().Result);
+                Assert.Equal(0, await _eventQueue.GetQueueCountAsync());
                 Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();

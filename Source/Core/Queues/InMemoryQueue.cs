@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Queues {
         }
 
         private async Task DoMaintenance() {
-            Trace.WriteLine("DoMaintenance");
+            Trace.WriteLine("DoMaintenance: " + Thread.CurrentThread.ManagedThreadId);
             foreach (var item in _dequeued.Where(kvp => DateTime.Now.Subtract(kvp.Value.TimeDequeued).Milliseconds > _workItemTimeout.TotalMilliseconds)) {
                 Trace.WriteLine("DoMaintenance: Abandon " + item.Key);
                 await AbandonAsync(item.Key);
@@ -64,6 +64,7 @@ namespace Exceptionless.Core.Queues {
         }
 
         private async Task WorkerLoop(CancellationToken token) {
+            Trace.WriteLine("WorkerLoop: " + Thread.CurrentThread.ManagedThreadId);
             while (!token.IsCancellationRequested) {
                 if (_queue.Count == 0 || _workerAction == null)
                     await _autoEvent.WaitAsync(token);
