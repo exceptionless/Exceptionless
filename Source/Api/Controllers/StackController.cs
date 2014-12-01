@@ -36,7 +36,6 @@ namespace Exceptionless.Api.Controllers {
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
         private readonly IStackRepository _stackRepository;
-        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IWebHookRepository _webHookRepository;
@@ -46,13 +45,12 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
 
-        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
+        public StackController(IStackRepository stackRepository, 
             IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
             EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
-            _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
             _webHookRepository = webHookRepository;

@@ -164,7 +164,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             NotificationSettings settings;
@@ -179,7 +179,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             if (settings == null)
@@ -199,7 +199,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, id))
+            if (!Request.IsGlobalAdmin() && !String.Equals(ExceptionlessUser.Id, userId))
                 return NotFound();
 
             if (project.NotificationSettings.ContainsKey(userId)) {
@@ -245,9 +245,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (IsNameAvailableInternal(name))
-                return Ok();
+                return NotFound();
 
-            return NotFound();
+            return Ok();
         }
 
         private bool IsNameAvailableInternal(string name) {

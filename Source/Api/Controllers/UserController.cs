@@ -65,9 +65,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-email-address/{email:minlength(1)}")]
         public IHttpActionResult IsEmailAddressAvailable(string email) {
             if (IsEmailAddressAvailableInternal(email))
-                return Ok();
+                return NotFound();
 
-            return NotFound();
+            return Ok();
         }
 
         private bool IsEmailAddressAvailableInternal(string email) {
@@ -102,12 +102,12 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified)
                 return await ResendVerificationEmail(id);
 
-            return Ok();
+            return Ok(new { IsVerified = user.IsEmailAddressVerified });
         }
 
         [HttpGet]
-        [Route("verify/{token:minlength(1)}")]
-        public IHttpActionResult Verify(string token) {
+        [Route("verify-email-address/{token:minlength(1)}")]
+        public IHttpActionResult VerifyEmailAddress(string token) {
             User user = _repository.GetByVerifyEmailAddressToken(token);
             if (user == null)
                 return NotFound();
