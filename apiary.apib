@@ -44,7 +44,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + id (required, string, `537b7255b77efe2474bfdd80`) ... The identifier of the event.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     
 + Response 200 (application/json)
 
@@ -74,7 +74,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -138,7 +138,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -174,7 +174,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -210,7 +210,7 @@ You can also post a multiline string. We automatically split strings by the `\n`
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -657,7 +657,7 @@ Project related resources of the **Projects API**
           }
         }
 
-## Add configuration setting [/projects/{id}/config/{key}]
+## Add and remove configuration settings [/projects/{id}/config/{key}]
 ### Add configuration value [POST]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -669,7 +669,6 @@ Project related resources of the **Projects API**
 
 + Response 200
 
-## Remove configuration setting [/projects/{id}/config/{key}]
 ### Remove configuration setting [DELETE]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
@@ -763,7 +762,7 @@ Stack related resources of the **Stacks API**
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-date`) ... Controls the `sort` order that the data is returned in. In this example -date returns the results descending by date.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -799,7 +798,7 @@ Stack related resources of the **Stacks API**
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + sort (optional, string, `-first`) ... Controls the `sort` order that the data is returned in. In this example -first returns the results descending by first.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -833,7 +832,7 @@ Stack related resources of the **Stacks API**
 + Parameters
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -868,7 +867,7 @@ Stack related resources of the **Stacks API**
     + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -902,7 +901,7 @@ Stack related resources of the **Stacks API**
 + Parameters
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -937,7 +936,7 @@ Stack related resources of the **Stacks API**
     + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -971,7 +970,7 @@ Stack related resources of the **Stacks API**
 + Parameters
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -1006,7 +1005,7 @@ Stack related resources of the **Stacks API**
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
     + mode (optional, string, `summary`) ... If no `mode` is set then the whole event object will be returned. If the `mode` is set to `summary` than a light weight object will be returned.
     + page = `1` (optional, number, `1`) ... The `page` parameter is used for pagination. This value must be greater than 0.
     + limit = `10` (optional, number, `5`) ... A limit on the number of objects to be returned. Limit can range between 1 and 100 items.
@@ -1039,7 +1038,7 @@ Stack related resources of the **Stacks API**
 ### Get by id [GET]
 + Parameters
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
@@ -1380,7 +1379,7 @@ Stat related resources of the **Stats API**
 + Parameters
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
@@ -1825,7 +1824,7 @@ Stat related resources of the **Stats API**
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the project.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
@@ -2270,7 +2269,7 @@ Stat related resources of the **Stats API**
     + id (required, string, `537b7255b77efe2474bfdd7f`) ... The identifier of the stack.
     + filter (optional, string, `tag:Critical`) ... A filter that controls what data is returned from the server.
     + time (optional, string, `last 30 days`) ... The `time` filter that limits the data being returned to a specific date range.
-    + offset = `-365` (optional, number, `5`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
+    + offset (optional, number, `-360`) ... The `time offset in minutes that controls what data is returned based on the `time` filter. This is used for time zone support.
 
 + Response 200 (application/json)
 
