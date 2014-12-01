@@ -24,6 +24,8 @@ namespace Exceptionless.Core.Lock {
 
         public IDisposable AcquireLock(string name, TimeSpan? lockTimeout = null, TimeSpan? acquireTimeout = null) {
             Debug.WriteLine("AcquireLock: " + name);
+            if (!acquireTimeout.HasValue)
+                acquireTimeout = TimeSpan.FromMinutes(1);
             string cacheKey = GetCacheKey(name);
 
             Run.UntilTrue(() => {

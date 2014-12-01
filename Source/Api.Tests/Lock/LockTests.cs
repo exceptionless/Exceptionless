@@ -16,7 +16,10 @@ namespace Exceptionless.Api.Tests {
 
         [Fact]
         public void CanAcquireAndReleaseLock() {
-            using (_locker.AcquireLock("test")) {
+            _cacheClient.Remove("counter");
+            _locker.ReleaseLock("test");
+
+            using (_locker.AcquireLock("test", acquireTimeout: TimeSpan.FromSeconds(1))) {
                 Assert.NotNull(_cacheClient.Get<DateTime?>("lock:test"));
                 Assert.Throws<TimeoutException>(() => _locker.AcquireLock("test", acquireTimeout: TimeSpan.FromMilliseconds(50)));
             }
@@ -36,6 +39,8 @@ namespace Exceptionless.Api.Tests {
 
         [Fact]
         public void LockWillTimeout() {
+            _locker.ReleaseLock("test");
+
             var testLock = _locker.AcquireLock("test", TimeSpan.FromSeconds(1));
             Assert.NotNull(testLock);
 
