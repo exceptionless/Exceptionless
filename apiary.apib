@@ -2585,6 +2585,21 @@ Stat related resources of the **Stats API**
 # Group Users
 User related resources of the **Users API**
 
+## Get current user [/users/me]
+
+### Get current user [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "537b6e77b77efe102444053d",
+            "full_name": "Test User",
+            "email_address": "noreply@exceptionless.com",
+            "email_notifications_enabled": true,
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
+        }
+
 ## Get, Update [/users/{id}]
 + Parameters
     + id (required, string, `537b6e77b77efe102444053d`) ... The identifier of the user.
@@ -2622,6 +2637,59 @@ User related resources of the **Users API**
             "has_admin_role": false
         }
         
+## Update email address [/users/{id}/email-address/{email}]
++ Parameters
+    + id (required, string, `537b6e77b77efe102444053d`) ... The identifier of the user.
+    + email (required, string, `noreply@exceptionless.com`) ... The new email adress.
+
+
+### Update user [POST]
+
++ Response 200 (application/json)
+
+        {
+            "id": "537b6e77b77efe102444053d",
+            "full_name": "Test User2",
+            "email_address": "noreply@exceptionless.com",
+            "email_notifications_enabled": false,
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
+        }
+
+## Verify email address [/users/verify-email-address/{token}]
++ Parameters
+    + token (required, string, `537b6e77b77efe102444053d`) ... The token identifier.
+
+### Verify email address [GET]
+Validates the email address via a token that was sent to the specified email account.
+
++ Response 200      
+
+## Resend verification email [/users/{id}/resend-verification-email]
++ Parameters
+    + id (required, string, `537b6e77b77efe102444053d`) ... The identifier of the user.
+
+### Resend verification email [GET]
+Sends a verification email with a unique validation token.
+
++ Response 200      
+
+## Check for unique email address [/users/check-email-address/{email}]
+### Check for unique email address [GET]
+Returns a `404` status code if an account with the specified email address does not exist.
+
++ Parameters
+    + email (required, string, `noreply@exceptionless.com`) ... The email adress to check.
+
++ Response 404
+    `404` status code is returned if the email adress is available.
+    + Body
+    
++ Response 200
+    `200` status code is returned if the email adress is not available.
+    + Body
+    
 ## Get by organization [/organizations/{id}/users{?page,limit}]
 ### List all users for an organization [GET]
 + Parameters
