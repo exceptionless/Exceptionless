@@ -2585,6 +2585,43 @@ Stat related resources of the **Stats API**
 # Group Users
 User related resources of the **Users API**
 
+## Get, Update [/users/{id}]
++ Parameters
+    + id (required, string, `537b6e77b77efe102444053d`) ... The identifier of the user.
+
+### Get by id [GET]
++ Response 200 (application/json)
+
+        {
+            "id": "537b6e77b77efe102444053d",
+            "full_name": "Test User",
+            "email_address": "noreply@exceptionless.com",
+            "email_notifications_enabled": true,
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
+        }
+        
+### Update user [PATCH]
++ Request (application/json)
+
+        { 
+            "full_name": "Test User2",
+            "email_notifications_enabled": false
+        }
+
++ Response 200 (application/json)
+
+        {
+            "id": "537b6e77b77efe102444053d",
+            "full_name": "Test User2",
+            "email_address": "noreply@exceptionless.com",
+            "email_notifications_enabled": false,
+            "is_email_address_verified": false,
+            "is_invite": false,
+            "has_admin_role": false
+        }
+        
 ## Get by organization [/organizations/{id}/users{?page,limit}]
 ### List all users for an organization [GET]
 + Parameters
@@ -2596,8 +2633,9 @@ User related resources of the **Users API**
 
         [{
             "id": "537b6e77b77efe102444053d",
-            "email_address": "noreply@exceptionless.com",
             "full_name": "Test User",
+            "email_address": "noreply@exceptionless.com",
+            "email_notifications_enabled": true,
             "is_email_address_verified": false,
             "is_invite": false,
             "has_admin_role": false
