@@ -28,9 +28,9 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
 
 ## Hosting Options
 
-1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better!
+1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 2. If you would rather host Exceptionless yourself, you will need to follow these steps:
-  1. Setup Mongo and Redis servers. We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
+  1. Setup Mongo ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and Redis servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
   2. Setup IIS and add the Exceptionless website.
   3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
   4. Change the WebsiteMode to Production in the Web.config appSettings section.
