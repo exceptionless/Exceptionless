@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Models;
-using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -54,12 +51,12 @@ namespace Exceptionless.Api.Controllers {
         
         [HttpGet]
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
-        public IHttpActionResult GetById(string id, string filter = null, string time = null) {
+        public IHttpActionResult GetById(string id, string filter = null, string time = null, string offset = null) {
             PersistentEvent model = GetModel(id);
             if (model == null)
                 return NotFound();
 
-            var timeInfo = GetTimeInfo(time, null);
+            var timeInfo = GetTimeInfo(time, offset);
             var systemFilter = GetAssociatedOrganizationsFilter();
 
             return OkWithLinks(model,
@@ -106,16 +103,16 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
-        public IHttpActionResult GetByOrganization(string organizationId = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("organization:", organizationId), null, null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-        public IHttpActionResult GetByProjectId(string projectId, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult GetByProjectId(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -123,12 +120,12 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("project:", projectId), null, null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
         }
 
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-        public IHttpActionResult GetByStackId(string stackId, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        public IHttpActionResult GetByStackId(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
@@ -136,7 +133,7 @@ namespace Exceptionless.Api.Controllers {
             if (stack == null || !CanAccessOrganization(stack.OrganizationId))
                 return NotFound();
 
-            return GetInternal(String.Concat("stack:", stackId), null, null, time, offset, mode, page, limit);
+            return GetInternal(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit);
         }
 
         [HttpGet]

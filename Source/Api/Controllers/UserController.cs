@@ -65,9 +65,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-email-address/{email:minlength(1)}")]
         public IHttpActionResult IsEmailAddressAvailable(string email) {
             if (IsEmailAddressAvailableInternal(email))
-                return Ok();
+                return NotFound();
 
-            return NotFound();
+            return Ok();
         }
 
         private bool IsEmailAddressAvailableInternal(string email) {

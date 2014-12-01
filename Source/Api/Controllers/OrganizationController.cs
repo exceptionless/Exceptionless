@@ -355,9 +355,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (IsNameAvailableInternal(name))
-                return Ok();
+                return NotFound();
 
-            return NotFound();
+            return Ok();
         }
 
         private bool IsNameAvailableInternal(string name) {
