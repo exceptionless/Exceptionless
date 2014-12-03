@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using NLog.Fluent;
 using StackExchange.Redis;
@@ -38,11 +37,11 @@ namespace Exceptionless.Core.Messaging {
             }
         }
 
-        public Task PublishAsync<T>(T message) where T: class {
+        public void Publish<T>(T message) where T: class {
             if (message == null)
                 throw new ArgumentNullException("message");
 
-            return _subscriber.PublishAsync(_topic, new MessageBusData { Type = typeof(T).AssemblyQualifiedName, Data = message.ToJson() }.ToJson());
+            _subscriber.Publish(_topic, new MessageBusData { Type = typeof(T).AssemblyQualifiedName, Data = message.ToJson() }.ToJson());
         }
 
         public void Subscribe<T>(Action<T> handler) where T: class {

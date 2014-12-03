@@ -226,7 +226,7 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 
-            await _eventUserDescriptionQueue.EnqueueAsync(eventUserDescription);
+            _eventUserDescriptionQueue.Enqueue(eventUserDescription);
             _statsClient.Counter(StatNames.EventsUserDescriptionQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
@@ -280,7 +280,7 @@ namespace Exceptionless.Api.Controllers {
                 contentEncoding = "gzip";
             }
 
-            await _eventPostQueue.EnqueueAsync(new EventPost {
+            _eventPostQueue.Enqueue(new EventPost {
                 MediaType = Request.Content.Headers.ContentType.MediaType,
                 CharSet = Request.Content.Headers.ContentType.CharSet,
                 ProjectId = projectId,

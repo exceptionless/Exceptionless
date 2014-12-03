@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Data.Odbc;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Component;
-using Exceptionless.Core.Extensions;
-using Nito.AsyncEx;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Queues {
@@ -16,8 +13,8 @@ namespace Exceptionless.Core.Queues {
         private readonly ConcurrentQueue<QueueInfo<T>> _queue = new ConcurrentQueue<QueueInfo<T>>();
         private readonly ConcurrentDictionary<string, QueueInfo<T>> _dequeued = new ConcurrentDictionary<string, QueueInfo<T>>();
         private readonly ConcurrentQueue<QueueInfo<T>> _deadletterQueue = new ConcurrentQueue<QueueInfo<T>>();
-        private readonly AsyncAutoResetEvent _autoEvent = new AsyncAutoResetEvent(false);
-        private Func<QueueEntry<T>, Task> _workerAction;
+        private readonly AutoResetEvent _autoEvent = new AutoResetEvent(false);
+        private Action<QueueEntry<T>> _workerAction;
         private bool _workerAutoComplete;
         private readonly TimeSpan _workItemTimeout = TimeSpan.FromMinutes(1);
         private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(1);
@@ -45,11 +42,11 @@ namespace Exceptionless.Core.Queues {
             Trace.WriteLine("DoMaintenance: " + Thread.CurrentThread.ManagedThreadId);
             foreach (var item in _dequeued.Where(kvp => DateTime.Now.Subtract(kvp.Value.TimeDequeued).Milliseconds > _workItemTimeout.TotalMilliseconds)) {
                 Trace.WriteLine("DoMaintenance: Abandon " + item.Key);
-                await AbandonAsync(item.Key);
+                Abandon(item.Key);
             }
         }
 
-        public Task EnqueueAsync(T data) {
+        public void Enqueue(T data) {
             Trace.WriteLine("Enqueue");
             var info = new QueueInfo<T> {
                 Data = data,
@@ -59,43 +56,37 @@ namespace Exceptionless.Core.Queues {
             Trace.WriteLine("Enqueue: Set Event");
             _autoEvent.Set();
             Interlocked.Increment(ref _enqueuedCount);
-
-            return Task.FromResult(0);
         }
 
         private async Task WorkerLoop(CancellationToken token) {
             Trace.WriteLine("WorkerLoop: " + Thread.CurrentThread.ManagedThreadId);
             while (!token.IsCancellationRequested) {
                 if (_queue.Count == 0 || _workerAction == null)
-                    await _autoEvent.WaitAsync(token);
+                    _autoEvent.WaitOne(TimeSpan.FromMilliseconds(250));
 
                 Debug.WriteLine("WorkerLoop");
                 QueueEntry<T> queueEntry = null;
                 try {
-                    queueEntry = await DequeueAsync(TimeSpan.Zero);
+                    queueEntry = Dequeue(TimeSpan.Zero);
                 } catch (TimeoutException) { }
 
                 if (queueEntry == null || _workerAction == null)
                     return;
 
                 try {
-                    await _workerAction(queueEntry);
+                    _workerAction(queueEntry);
                     if (_workerAutoComplete)
-                        await queueEntry.CompleteAsync();
+                        queueEntry.Complete();
                 } catch (Exception ex) {
                     Debug.WriteLine("Worker error: {0}", ex.Message);
                     Log.Error().Exception(ex).Message("Worker error: {0}", ex.Message).Write();
-                    queueEntry.AbandonAsync().Wait();
+                    queueEntry.Abandon();
                     Interlocked.Increment(ref _workerErrorCount);
                 }
             }
         }
 
         public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
-            StartWorking(async entry => handler(entry), autoComplete);
-        }
-
-        public void StartWorking(Func<QueueEntry<T>, Task> handler, bool autoComplete = false) {
             if (handler == null)
                 throw new ArgumentNullException("handler");
 
@@ -116,12 +107,12 @@ namespace Exceptionless.Core.Queues {
             _workerAction = null;
         }
 
-        public async Task<QueueEntry<T>> DequeueAsync(TimeSpan? timeout = null) {
+        public QueueEntry<T> Dequeue(TimeSpan? timeout = null) {
             if (!timeout.HasValue)
                 timeout = TimeSpan.FromSeconds(30);
 
             Trace.WriteLine("Dequeue Count: " + _queue.Count);
-            await _autoEvent.WaitAsync(timeout.Value);
+            _autoEvent.WaitOne(timeout.Value);
             if (_queue.Count == 0)
                 return null;
 
@@ -142,15 +133,15 @@ namespace Exceptionless.Core.Queues {
             return new QueueEntry<T>(info.Id, info.Data, this);
         }
 
-        public Task<long> GetQueueCountAsync() { return Task.FromResult((long)_queue.Count); }
-        public Task<long> GetWorkingCountAsync() { return Task.FromResult((long)_dequeued.Count); }
-        public Task<long> GetDeadletterCountAsync() { return Task.FromResult((long)_deadletterQueue.Count); }
+        public long GetQueueCount() { return _queue.Count; }
+        public long GetWorkingCount() { return _dequeued.Count; }
+        public long GetDeadletterCount() { return _deadletterQueue.Count; }
 
-        public Task<IEnumerable<T>> GetDeadletterItemsAsync() {
-            return Task.FromResult(_deadletterQueue.Select(i => i.Data));
+        public IEnumerable<T> GetDeadletterItems() {
+            return _deadletterQueue.Select(i => i.Data);
         }
 
-        public Task ResetQueueAsync() {
+        public void DeleteQueue() {
             _queue.Clear();
             _deadletterQueue.Clear();
             _dequeued.Clear();
@@ -159,8 +150,6 @@ namespace Exceptionless.Core.Queues {
             _completedCount = 0;
             _abandonedCount = 0;
             _workerErrorCount = 0;
-
-            return Task.FromResult(0);
         }
 
         public long EnqueuedCount { get { return _enqueuedCount; } }
@@ -169,25 +158,21 @@ namespace Exceptionless.Core.Queues {
         public long AbandonedCount { get { return _abandonedCount; } }
         public long WorkerErrorCount { get { return _workerErrorCount; } }
 
-        public Task CompleteAsync(string id) {
+        public void Complete(string id) {
             QueueInfo<T> info = null;
             if (!_dequeued.TryRemove(id, out info) || info == null)
                 throw new ApplicationException("Unable to remove item from the dequeued list.");
 
             Interlocked.Increment(ref _completedCount);
-            return Task.FromResult(0);
         }
 
-        public Task AbandonAsync(string id) {
-            Trace.WriteLine("Abandon");
-            QueueInfo<T> info = null;
+        public void Abandon(string id) {
+            QueueInfo<T> info;
             if (!_dequeued.TryRemove(id, out info) || info == null)
                 throw new ApplicationException("Unable to remove item from the dequeued list.");
 
-            Trace.WriteLine("Abandon: Removed");
             Interlocked.Increment(ref _abandonedCount);
             if (info.Attempts < _retries + 1) {
-                Trace.WriteLine("Abandon: Retrying");
                 if (_retryDelay > TimeSpan.Zero)
                     Task.Factory.StartNewDelayed((int)_retryDelay.TotalMilliseconds, () => Retry(info));
                 else
@@ -196,8 +181,6 @@ namespace Exceptionless.Core.Queues {
                 Trace.WriteLine("Abandon: Deadletter");
                 _deadletterQueue.Enqueue(info);
             }
-
-            return Task.FromResult(0);
         }
 
         private void Retry(QueueInfo<T> info) {

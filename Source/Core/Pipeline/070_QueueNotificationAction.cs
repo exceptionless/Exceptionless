@@ -45,14 +45,14 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            _notificationQueue.EnqueueAsync(new EventNotification {
+            _notificationQueue.Enqueue(new EventNotification {
                 Event = ctx.Event,
                 IsNew = ctx.IsNew,
                 IsCritical = ctx.Event.IsCritical(),
                 IsRegression = ctx.IsRegression,
                 //TotalOccurrences = ctx.Stack.TotalOccurrences,
                 ProjectName = ctx.Project.Name
-            }).Wait();
+            });
 
             foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
                 bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
@@ -66,12 +66,12 @@ namespace Exceptionless.Core.Pipeline {
 
                 // TODO: Should we be using the hook's project id and organization id?
                 var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
-                _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+                _webHookNotificationQueue.Enqueue(new WebHookNotification {
                     OrganizationId = ctx.Event.OrganizationId,
                     ProjectId = ctx.Event.ProjectId, 
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromEvent(context)
-                }).Wait();
+                });
             }
         }
     }

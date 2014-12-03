@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Component;
@@ -8,33 +9,34 @@ using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
-using Nito.AsyncEx;
 using NLog.Fluent;
 using StackExchange.Redis;
 
 namespace Exceptionless.Core.Queues {
-    public class RedisQueue<T> : IDisposable, IQueue<T> where T: class {
+    public class RedisQueue<T> : IQueue<T> where T: class {
         private readonly string _queueName;
         private readonly IDatabase _db;
         private readonly ISubscriber _subscriber;
         private readonly RedisCacheClient _cache;
         private readonly ILockProvider _lockProvider;
-        private Func<QueueEntry<T>, Task> _workerAction;
-        private bool _workerAutoComplete = false;
+        private Action<QueueEntry<T>> _workerAction;
+        private bool _workerAutoComplete;
         private long _enqueuedCount;
         private long _dequeuedCount;
         private long _completedCount;
         private long _abandonedCount;
         private long _workerErrorCount;
-        private readonly TimeSpan _payloadTtl = TimeSpan.FromDays(3);
+        private readonly TimeSpan _payloadTtl;
         private readonly TimeSpan _workItemTimeout = TimeSpan.FromMinutes(10);
+        private readonly TimeSpan _retryDelay = TimeSpan.FromMinutes(1);
+        private readonly int[] _retryMultipliers = { 1, 3, 5, 10 };
         private readonly int _retries = 2;
         private readonly TimeSpan _deadLetterTtl = TimeSpan.FromDays(1);
         private CancellationTokenSource _workerCancellationTokenSource;
-        private CancellationTokenSource _queueDisposedCancellationTokenSource;
-        private readonly AsyncAutoResetEvent _autoEvent = new AsyncAutoResetEvent(false);
+        private readonly CancellationTokenSource _queueDisposedCancellationTokenSource;
+        private readonly AutoResetEvent _autoEvent = new AutoResetEvent(false);
 
-        public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true) {
+        public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true) {
             _db = connection.GetDatabase();
             _subscriber = connection.GetSubscriber();
             _cache = new RedisCacheClient(_db);
@@ -45,27 +47,35 @@ namespace Exceptionless.Core.Queues {
             WorkListName = "q:" + _queueName + ":work";
             WaitListName = "q:" + _queueName + ":wait";
             DeadListName = "q:" + _queueName + ":dead";
+            // TODO: Make queue settings immutable and stored in redis so that multiple clients can't have different settings.
             _retries = retries;
+            if (retryDelay.HasValue)
+                _retryDelay = retryDelay.Value;
+            if (retryMultipliers != null)
+                _retryMultipliers = retryMultipliers;
             if (workItemTimeout.HasValue)
                 _workItemTimeout = workItemTimeout.Value;
             if (deadLetterTimeToLive.HasValue)
                 _deadLetterTtl = deadLetterTimeToLive.Value;
+
+            _payloadTtl = GetPayloadTtl();
+
             if (runMaintenanceTasks) {
                 _queueDisposedCancellationTokenSource = new CancellationTokenSource();
                 TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
             }
         }
 
-        public Task<long> GetQueueCountAsync() {
-            return _db.ListLengthAsync(QueueListName);
+        public long GetQueueCount() {
+            return _db.ListLength(QueueListName);
         }
 
-        public Task<long> GetWorkingCountAsync() {
-            return _db.ListLengthAsync(WorkListName);
+        public long GetWorkingCount() {
+            return _db.ListLength(WorkListName);
         }
 
-        public Task<long> GetDeadletterCountAsync() {
-            return _db.ListLengthAsync(DeadListName);
+        public long GetDeadletterCount() {
+            return _db.ListLength(DeadListName);
         }
 
         public long EnqueuedCount { get { return _enqueuedCount; } }
@@ -83,15 +93,40 @@ namespace Exceptionless.Core.Queues {
             return String.Concat("q:", _queueName, ":", id);
         }
 
+        private TimeSpan GetPayloadTtl() {
+            var ttl = TimeSpan.Zero;
+
+            int maxMultiplier = _retryMultipliers.Length > 0 ? _retryMultipliers.Last() : 1;
+            for (int i = 1; i <= _retries + 1; i++) {
+                int multiplier = _retryMultipliers.Length < i ? _retryMultipliers[i - 1] : maxMultiplier;
+                ttl = ttl.Add(TimeSpan.FromMilliseconds(_retryDelay.TotalMilliseconds * multiplier));
+            }
+
+            // minimum of 7 days for payload
+            return TimeSpan.FromMilliseconds(Math.Max(ttl.TotalMilliseconds, TimeSpan.FromDays(7).TotalMilliseconds));
+        }
+
         private string GetAttemptsKey(string id) {
             return String.Concat("q:", _queueName, ":", id, ":attempts");
+        }
+
+        private TimeSpan GetAttemptsTtl() {
+            return _payloadTtl;
         }
 
         private string GetDequeuedTimeKey(string id) {
             return String.Concat("q:", _queueName, ":", id, ":dequeued");
         }
 
+        private TimeSpan GetDequeuedTimeTtl() {
+            return TimeSpan.FromMilliseconds(Math.Max(_workItemTimeout.TotalMilliseconds * 1.5, TimeSpan.FromHours(1).TotalMilliseconds));
+        }
+
         private string GetWaitTimeKey(string id) {
+            return String.Concat("q:", _queueName, ":", id, ":wait");
+        }
+
+        private string GetWaitTimeTtl(string id) {
             return String.Concat("q:", _queueName, ":", id, ":wait");
         }
 
@@ -99,23 +134,19 @@ namespace Exceptionless.Core.Queues {
             return String.Concat("q:", _queueName, ":in");
         }
 
-        public async Task EnqueueAsync(T data) {
+        public void Enqueue(T data) {
             string id = Guid.NewGuid().ToString("N");
             Debug.WriteLine("EnqueueAsync: " + id);
-            bool success = await _db.StringSetAsync(GetPayloadKey(id), data.ToJson(), _payloadTtl, When.NotExists);
+            bool success = _cache.Add(GetPayloadKey(id), data, _payloadTtl);
             if (!success)
                 throw new InvalidOperationException("Attempt to set payload failed.");
-            await _db.ListLeftPushAsync(QueueListName, id);
-            await _subscriber.PublishAsync(GetTopicName(), id);
+            _db.ListLeftPush(QueueListName, id);
+            _subscriber.Publish(GetTopicName(), id);
             Interlocked.Increment(ref _enqueuedCount);
             Debug.WriteLine("EnqueueAsync Done: " + id);
         }
 
         public void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false) {
-            StartWorking(async entry => handler(entry), autoComplete);
-        }
-
-        public void StartWorking(Func<QueueEntry<T>, Task> handler, bool autoComplete = false) {
             if (handler == null)
                 throw new ArgumentNullException("handler");
 
@@ -138,27 +169,26 @@ namespace Exceptionless.Core.Queues {
                 _workerCancellationTokenSource.Cancel();
         }
 
-        public async Task<QueueEntry<T>> DequeueAsync(TimeSpan? timeout = null) {
+        public QueueEntry<T> Dequeue(TimeSpan? timeout = null) {
             if (!timeout.HasValue)
                 timeout = TimeSpan.FromSeconds(30);
             Debug.WriteLine("DequeueAsync");
-            RedisValue value = await _db.ListRightPopLeftPushAsync(QueueListName, WorkListName);
+            RedisValue value = _db.ListRightPopLeftPush(QueueListName, WorkListName);
 
-            DateTime started = DateTime.Now;
-            while (timeout > TimeSpan.Zero && value.IsNullOrEmpty && DateTime.Now.Subtract(started) < timeout) {
+            DateTime started = DateTime.UtcNow;
+            while (timeout > TimeSpan.Zero && value.IsNullOrEmpty && DateTime.UtcNow.Subtract(started) < timeout) {
                 Debug.WriteLine("Waiting for queue item...");
-                Task.WaitAny(_autoEvent.WaitAsync(timeout.Value), Task.Delay(1000));
-                value = await _db.ListRightPopLeftPushAsync(QueueListName, WorkListName);
+                _autoEvent.WaitOne(timeout.Value);
+                value = _db.ListRightPopLeftPush(QueueListName, WorkListName);
             }
 
             if (value.IsNullOrEmpty)
                 return null;
 
             Debug.WriteLine("Dequeued item");
-            IDisposable workItemLock;
             try {
                 Debug.WriteLine("Getting item lock...");
-                workItemLock = _lockProvider.AcquireLock(value, _workItemTimeout, TimeSpan.FromSeconds(2));
+                IDisposable workItemLock = _lockProvider.AcquireLock(value, _workItemTimeout, TimeSpan.FromSeconds(2));
                 if (workItemLock == null)
                     return null;
             } catch (TimeoutException) {
@@ -166,37 +196,37 @@ namespace Exceptionless.Core.Queues {
             }
 
             Debug.WriteLine("Got item lock");
-            await _db.StringSetAsync(GetDequeuedTimeKey(value), DateTime.Now.ToJson());
-            RedisValue payloadValue = await _db.StringGetAsync(GetPayloadKey(value));
-            if (payloadValue.IsNullOrEmpty) {
-                await _db.ListRemoveAsync(WorkListName, value);
-                return null;
-            }
+            _cache.Set(GetDequeuedTimeKey(value), DateTime.UtcNow, GetDequeuedTimeTtl());
 
             try {
-                var payload = ((string)payloadValue).FromJson<T>();
+                var payload = _cache.Get<T>(GetPayloadKey(value));
+                if (payload == null) {
+                    _db.ListRemove(WorkListName, value);
+                    return null;
+                }
 
                 Interlocked.Increment(ref _dequeuedCount);
-                return new RedisQueueEntry<T>(value, payload, this, workItemLock);
+                return new QueueEntry<T>(value, payload, this);
             } catch (Exception ex) {
                 Debug.WriteLine(ex.ToString());
                 throw;
             }
         }
 
-        public async Task CompleteAsync(string id) {
+        public void Complete(string id) {
             Debug.WriteLine("Complete: " + id);
-            await _db.ListRemoveAsync(WorkListName, id);
-            await _db.KeyDeleteAsync(GetPayloadKey(id));
-            await _db.KeyDeleteAsync(GetAttemptsKey(id));
-            await _db.KeyDeleteAsync(GetDequeuedTimeKey(id));
+            _db.ListRemove(WorkListName, id);
+            _db.KeyDelete(GetPayloadKey(id));
+            _db.KeyDelete(GetAttemptsKey(id));
+            _db.KeyDelete(GetDequeuedTimeKey(id));
+            _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _completedCount);
             Debug.WriteLine("Complete Done: " + id);
         }
 
-        public async Task AbandonAsync(string id) {
+        public void Abandon(string id) {
             Debug.WriteLine("AbandonAsync: " + id);
-            var attemptsValue = await _db.StringGetAsync(GetAttemptsKey(id));
+            var attemptsValue = _db.StringGet(GetAttemptsKey(id));
             int attempts = 1;
             if (attemptsValue.HasValue)
                 attempts = (int)attemptsValue + 1;
@@ -204,40 +234,52 @@ namespace Exceptionless.Core.Queues {
 
             if (attempts > _retries) {
                 Debug.WriteLine("Exceeded retry limit moving to deadletter: " + id);
-                await _db.ListRemoveAsync(WorkListName, id);
-                await _db.ListLeftPushAsync(DeadListName, id);
-                await _db.KeyExpireAsync(GetPayloadKey(id), _deadLetterTtl);
+                _db.ListRemove(WorkListName, id);
+                _db.ListLeftPush(DeadListName, id);
+                _db.KeyExpire(GetPayloadKey(id), _deadLetterTtl);
             } else {
                 Debug.WriteLine("Adding item back to queue for retry: " + id);
                 var tx = _db.CreateTransaction();
                 tx.ListRemoveAsync(WorkListName, id);
                 tx.ListLeftPushAsync(QueueListName, id);
-                var success = await tx.ExecuteAsync();
+                var success = tx.Execute();
                 if (!success)
                     throw new Exception("Unable to abandon.");
 
-                await _db.StringIncrementAsync(GetAttemptsKey(id));
-                await _subscriber.PublishAsync(GetTopicName(), id);
+                _db.StringIncrement(GetAttemptsKey(id));
+                _subscriber.Publish(GetTopicName(), id);
             }
 
+            _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _abandonedCount);
             Debug.WriteLine("AbandonAsync Complete: " + id);
         }
 
-        public Task<IEnumerable<T>> GetDeadletterItemsAsync() {
+        public IEnumerable<T> GetDeadletterItems() {
             throw new NotImplementedException();
         }
 
-        public async Task ResetQueueAsync() {
-            await _db.KeyDeleteAsync(QueueListName);
-            await _db.KeyDeleteAsync(WorkListName);
-            await _db.KeyDeleteAsync(WaitListName);
-            await _db.KeyDeleteAsync(DeadListName);
+        public void DeleteQueue() {
+            DeleteList(QueueListName);
+            DeleteList(WorkListName);
+            DeleteList(WaitListName);
+            DeleteList(DeadListName);
             _enqueuedCount = 0;
             _dequeuedCount = 0;
             _completedCount = 0;
             _abandonedCount = 0;
             _workerErrorCount = 0;
+        }
+
+        private void DeleteList(string name) {
+            var itemIds = _db.ListRange(name);
+            foreach (var id in itemIds) {
+                _db.KeyDelete(GetPayloadKey(id));
+                _db.KeyDelete(GetAttemptsKey(id));
+                _db.KeyDelete(GetDequeuedTimeKey(id));
+                _lockProvider.ReleaseLock(id);
+            }
+            _db.KeyDelete(name);
         }
 
         private void OnTopicMessage(RedisChannel redisChannel, RedisValue redisValue) {
@@ -248,25 +290,25 @@ namespace Exceptionless.Core.Queues {
         private async Task WorkerLoop(CancellationToken token) {
             Debug.WriteLine("WorkerLoop Start: " + Thread.CurrentThread.ManagedThreadId);
             while (!token.IsCancellationRequested && _workerAction != null) {
-                await _autoEvent.WaitAsync(token);
+                _autoEvent.WaitOne(TimeSpan.FromMilliseconds(250));
 
                 Debug.WriteLine("WorkerLoop Signaled");
                 QueueEntry<T> queueEntry = null;
                 try {
-                    queueEntry = await DequeueAsync(TimeSpan.Zero);
+                    queueEntry = Dequeue(TimeSpan.Zero);
                 } catch (TimeoutException) { }
 
                 if (queueEntry == null)
                     continue;
 
                 try {
-                    await _workerAction(queueEntry);
+                    _workerAction(queueEntry);
                     if (_workerAutoComplete)
-                        await queueEntry.CompleteAsync();
+                        queueEntry.Complete();
                 } catch (Exception ex) {
                     Debug.WriteLine("Worker error: {0}", ex.Message);
                     Log.Error().Exception(ex).Message("Worker error: {0}", ex.Message).Write();
-                    queueEntry.AbandonAsync().Wait();
+                    queueEntry.Abandon();
                     Interlocked.Increment(ref _workerErrorCount);
                 }
             }
@@ -274,21 +316,28 @@ namespace Exceptionless.Core.Queues {
 
         private async Task DoMaintenanceWork() {
             Debug.WriteLine("OnMaintenance");
-            var workItems = await _db.ListRangeAsync(WorkListName);
+            var workItems = _db.ListRange(WorkListName);
             foreach (var workItem in workItems) {
                 var dequeuedTime = _cache.Get<DateTime?>(GetDequeuedTimeKey(workItem));
+
+                // dequeue time should be set, use current time
+                if (!dequeuedTime.HasValue) {
+                    _cache.Set(GetDequeuedTimeKey(workItem), DateTime.UtcNow, GetDequeuedTimeTtl());
+                    continue;
+                }
+
                 Debug.WriteLine("Dequeue time: " + dequeuedTime);
-                if (!dequeuedTime.HasValue || DateTime.Now.Subtract(dequeuedTime.Value) <= _workItemTimeout)
+                if (DateTime.UtcNow.Subtract(dequeuedTime.Value) <= _workItemTimeout)
                     continue;
 
                 Debug.WriteLine("Getting work time out lock");
                 try {
                     using (_lockProvider.AcquireLock(workItem, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5))) {
                         Debug.WriteLine("Got item lock for work time out");
-                        await AbandonAsync(workItem);
+                        Abandon(workItem);
                         Debug.WriteLine("Abandoned item item lock for work time out");
                     }
-                } catch { }
+                } catch {}
             }
         }
 
@@ -297,36 +346,6 @@ namespace Exceptionless.Core.Queues {
             StopWorking();
             if (_queueDisposedCancellationTokenSource != null)
                 _queueDisposedCancellationTokenSource.Cancel();
-        }
-
-        private class RedisQueueEntry<T> : QueueEntry<T> where T : class {
-            private readonly IDisposable _workItemLock;
-
-            public RedisQueueEntry(string id, T value, IQueue<T> queue, IDisposable workItemLock) : base(id, value, queue) {
-                _workItemLock = workItemLock;
-            }
-
-            public override async Task CompleteAsync() {
-                Debug.WriteLine("CompleteEntry");
-                await base.CompleteAsync();
-                ReleaseLock();
-            }
-
-            public async override Task AbandonAsync() {
-                Debug.WriteLine("AbandonEntry");
-                await base.AbandonAsync();
-                ReleaseLock();
-            }
-
-            private void ReleaseLock() {
-                if (_workItemLock != null)
-                    _workItemLock.Dispose();
-            }
-
-            public override void Dispose() {
-                ReleaseLock();
-                base.Dispose();
-            }
         }
     }
 }

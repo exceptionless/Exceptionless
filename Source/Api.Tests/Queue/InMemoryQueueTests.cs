@@ -5,9 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Helpers;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues;
-using Nito.AsyncEx;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
@@ -26,21 +24,21 @@ namespace Exceptionless.Api.Tests.Queue {
             using (var queue = GetQueue()) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
-                Assert.Equal(1, await queue.GetQueueCountAsync());
+                Assert.Equal(1, queue.GetQueueCount());
 
-                var workItem = await queue.DequeueAsync(TimeSpan.Zero);
+                var workItem = queue.Dequeue(TimeSpan.Zero);
                 Assert.NotNull(workItem);
                 Assert.Equal("Hello", workItem.Value.Data);
                 Assert.Equal(1, queue.DequeuedCount);
 
-                await workItem.CompleteAsync();
+                workItem.Complete();
                 Assert.Equal(1, queue.CompletedCount);
-                Assert.Equal(0, await queue.GetQueueCountAsync());
+                Assert.Equal(0, queue.GetQueueCount());
             }
         }
 
@@ -49,23 +47,24 @@ namespace Exceptionless.Api.Tests.Queue {
             using (var queue = GetQueue()) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
                 TimeSpan timeToWait = TimeSpan.FromSeconds(1);
                 var sw = new Stopwatch();
                 sw.Start();
-                var workItem = await queue.DequeueAsync(timeToWait);
+                var workItem = queue.Dequeue(timeToWait);
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
                 Assert.Null(workItem);
-                Assert.True(sw.Elapsed > timeToWait);
+                Assert.True(sw.Elapsed > timeToWait.Subtract(TimeSpan.FromMilliseconds(10)));
 
-                Task.Factory.StartNewDelayed(100, async () => await queue.EnqueueAsync(new SimpleWorkItem {
+                Task.Factory.StartNewDelayed(100, () => queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 }));
                 sw.Reset();
                 sw.Start();
-                workItem = await queue.DequeueAsync(timeToWait);
+                workItem = queue.Dequeue(timeToWait);
+                workItem.Complete();
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
                 Assert.NotNull(workItem);
@@ -73,36 +72,36 @@ namespace Exceptionless.Api.Tests.Queue {
         }
 
         [Fact]
-        public async Task CanUseQueueWorker() {
+        public void CanUseQueueWorker() {
             using (var queue = GetQueue()) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
-                var resetEvent = new AsyncAutoResetEvent();
-                queue.StartWorking(async w => {
+                var resetEvent = new AutoResetEvent(false);
+                queue.StartWorking(w => {
                     Assert.Equal("Hello", w.Value.Data);
-                    await w.CompleteAsync();
+                    w.Complete();
                     resetEvent.Set();
                 });
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
 
-                Assert.Equal(1, await queue.GetQueueCountAsync());
-                await resetEvent.WaitAsync(TimeSpan.FromSeconds(5));
+                Assert.Equal(1, queue.GetQueueCount());
+                resetEvent.WaitOne(TimeSpan.FromSeconds(5));
                 Assert.Equal(1, queue.CompletedCount);
-                Assert.Equal(0, await queue.GetQueueCountAsync());
+                Assert.Equal(0, queue.GetQueueCount());
                 Assert.Equal(0, queue.WorkerErrorCount);
             }
         }
 
         [Fact]
-        public async Task CanHandleErrorInWorker() {
+        public void CanHandleErrorInWorker() {
             using (var queue = GetQueue(1, retryDelay: TimeSpan.Zero)) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
                 queue.StartWorking(w => {
                     Debug.WriteLine("WorkAction");
@@ -110,7 +109,7 @@ namespace Exceptionless.Api.Tests.Queue {
                     queue.StopWorking();
                     throw new ApplicationException();
                 });
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
 
@@ -119,126 +118,125 @@ namespace Exceptionless.Api.Tests.Queue {
                 Assert.Equal(0, queue.CompletedCount);
                 Assert.Equal(1, queue.WorkerErrorCount);
 
-                success = await TaskHelper.DelayUntil(() => queue.GetQueueCountAsync().Result > 0, TimeSpan.FromSeconds(5));
+                success = await TaskHelper.DelayUntil(() => queue.GetQueueCount() > 0, TimeSpan.FromSeconds(5));
                 Assert.True(success);
-                Assert.Equal(1, await queue.GetQueueCountAsync());
+                Assert.Equal(1, queue.GetQueueCount());
             }
         }
 
         [Fact]
-        public async Task WorkItemsWillTimeout() {
+        public void WorkItemsWillTimeout() {
             using (var queue = GetQueue(workItemTimeout: TimeSpan.FromMilliseconds(50))) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
-                var workItem = await queue.DequeueAsync(TimeSpan.Zero);
+                var workItem = queue.Dequeue(TimeSpan.Zero);
                 Assert.NotNull(workItem);
                 Assert.Equal("Hello", workItem.Value.Data);
 
-                Assert.Equal(0, await queue.GetQueueCountAsync());
+                Assert.Equal(0, queue.GetQueueCount());
                 // wait for the task to be auto abandoned
                 var sw = new Stopwatch();
                 sw.Start();
-                workItem = await queue.DequeueAsync(TimeSpan.FromSeconds(5));
+                workItem = queue.Dequeue(TimeSpan.FromSeconds(5));
                 sw.Stop();
                 Trace.WriteLine(sw.Elapsed);
                 Assert.NotNull(workItem);
-                await workItem.CompleteAsync();
-                Assert.Equal(0, await queue.GetQueueCountAsync());
+                workItem.Complete();
+                Assert.Equal(0, queue.GetQueueCount());
             }
         }
 
         [Fact]
-        public async Task WorkItemsWillGetMovedToDeadletter() {
+        public void WorkItemsWillGetMovedToDeadletter() {
             using (var queue = GetQueue(retryDelay: TimeSpan.Zero)) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
-                var workItem = await queue.DequeueAsync(TimeSpan.Zero);
+                var workItem = queue.Dequeue(TimeSpan.Zero);
                 Assert.Equal("Hello", workItem.Value.Data);
                 Assert.Equal(1, queue.DequeuedCount);
 
-                Assert.Equal(0, await queue.GetQueueCountAsync());
-                await workItem.AbandonAsync();
+                Assert.Equal(0, queue.GetQueueCount());
+                workItem.Abandon();
                 Assert.Equal(1, queue.AbandonedCount);
 
                 // work item should be retried 1 time.
-                workItem = await queue.DequeueAsync(TimeSpan.FromSeconds(5));
+                workItem = queue.Dequeue(TimeSpan.FromSeconds(5));
                 Assert.NotNull(workItem);
                 Assert.Equal("Hello", workItem.Value.Data);
                 Assert.Equal(2, queue.DequeuedCount);
 
-                await workItem.AbandonAsync();
+                workItem.Abandon();
                 // work item should be moved to deadletter _queue after retries.
-                Assert.Equal(1, await queue.GetDeadletterCountAsync());
+                Assert.Equal(1, queue.GetDeadletterCount());
                 Assert.Equal(2, queue.AbandonedCount);
             }
         }
 
         [Fact]
-        public async Task CanAutoCompleteWorker() {
+        public void CanAutoCompleteWorker() {
             using (var queue = GetQueue()) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
-                var resetEvent = new AsyncAutoResetEvent();
-                queue.StartWorking(async w => {
+                var resetEvent = new AutoResetEvent(false);
+                queue.StartWorking(w => {
                     Assert.Equal("Hello", w.Value.Data);
                     resetEvent.Set();
                 }, true);
-                await queue.EnqueueAsync(new SimpleWorkItem {
+                queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello"
                 });
 
                 Assert.Equal(1, queue.EnqueuedCount);
-                await resetEvent.WaitAsync(TimeSpan.FromSeconds(5));
-                await Task.Delay(1000);
-                Assert.Equal(0, await queue.GetQueueCountAsync());
+                resetEvent.WaitOne(TimeSpan.FromSeconds(5));
+                Thread.Sleep(1000);
+                Assert.Equal(0, queue.GetQueueCount());
                 Assert.Equal(1, queue.CompletedCount);
                 Assert.Equal(0, queue.WorkerErrorCount);
             }
         }
 
         [Fact]
-        public async Task CanHaveMultipleQueueInstances() {
+        public void CanHaveMultipleQueueInstances() {
             using (var queue = GetQueue(retries: 0, retryDelay: TimeSpan.Zero)) {
                 if (queue == null)
                     return;
-                await ResetQueue();
+                ResetQueue();
 
                 const int workItemCount = 10;
                 const int workerCount = 3;
-                var latch = new AsyncCountdownEvent(workItemCount);
+                var latch = new CountdownEvent(workItemCount);
                 var info = new WorkInfo();
                 var workers = new List<IQueue<SimpleWorkItem>>();
 
                 for (int i = 0; i < workerCount; i++) {
-                    workers.Add(await Task.Factory.StartNew(() => {
+                    workers.Add(Task.Run(() => {
                         var q = GetQueue(retries: 0, retryDelay: TimeSpan.Zero);
-                        q.StartWorking(async w => await DoWork(w, latch, info));
-                        return q;
+                        q.StartWorking(w => DoWork(w, latch, info));
                     }));
                 }
 
-                Parallel.For(0, workItemCount, async i => await queue.EnqueueAsync(new SimpleWorkItem {
+                Parallel.For(0, workItemCount, i => queue.Enqueue(new SimpleWorkItem {
                     Data = "Hello",
                     Id = i
                 }));
 
-                latch.Wait(CancellationTokenHelpers.Timeout(TimeSpan.FromSeconds(10)).Token);
-                await Task.Delay(TimeSpan.FromSeconds(3));
+                latch.Wait(TimeSpan.FromSeconds(10));
+                Thread.Sleep(TimeSpan.FromSeconds(3));
                 Debug.WriteLine("Completed: {0} Abandoned: {1} Error: {2}", info.CompletedCount, info.AbandonCount, info.ErrorCount);
-                Debug.WriteLine("Count: {0} Work: {1} Dead: {2}", await queue.GetQueueCountAsync(), await queue.GetWorkingCountAsync(), await queue.GetDeadletterCountAsync());
-                Assert.Equal(workItemCount, queue.CompletedCount + await queue.GetDeadletterCountAsync());
+                Debug.WriteLine("Count: {0} Work: {1} Dead: {2}", queue.GetQueueCount(), queue.GetWorkingCount(), queue.GetDeadletterCount());
+                Assert.Equal(workItemCount, queue.CompletedCount + queue.GetDeadletterCount());
                 Assert.Equal(info.ErrorCount, queue.WorkerErrorCount);
                 Assert.Equal(info.AbandonCount + info.ErrorCount, queue.AbandonedCount);
                 
@@ -246,15 +244,15 @@ namespace Exceptionless.Api.Tests.Queue {
             }
         }
 
-        protected async Task ResetQueue() {
+        protected void ResetQueue() {
             var queue = GetQueue();
             if (queue == null)
                 return;
 
-            await queue.ResetQueueAsync();
+            queue.DeleteQueue();
         }
 
-        private async Task DoWork(QueueEntry<SimpleWorkItem> w, AsyncCountdownEvent latch, WorkInfo info) {
+        private void DoWork(QueueEntry<SimpleWorkItem> w, CountdownEvent latch, WorkInfo info) {
             Debug.WriteLine("DoWork: " + Thread.CurrentThread.ManagedThreadId);
             Assert.Equal("Hello", w.Value.Data);
             latch.Signal();
@@ -262,11 +260,11 @@ namespace Exceptionless.Api.Tests.Queue {
             // randomly complete, abandon or blowup.
             if (RandomHelper.GetBool()) {
                 Debug.WriteLine("Completing: {0}", w.Value.Id);
-                await w.CompleteAsync();
+                w.Complete();
                 info.IncrementCompletedCount();
             } else if (RandomHelper.GetBool()) {
                 Debug.WriteLine("Abandoning: {0}", w.Value.Id);
-                await w.AbandonAsync();
+                w.Abandon();
                 info.IncrementAbandonCount();
             } else {
                 Debug.WriteLine("Erroring: {0}", w.Value.Id);

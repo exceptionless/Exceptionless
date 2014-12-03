@@ -225,7 +225,7 @@ namespace Exceptionless.Api.Controllers {
                     _userRepository.Save(user);
                 }
 
-                await _mailer.SendAddedToOrganizationAsync(currentUser, organization, user);
+                _mailer.SendAddedToOrganization(currentUser, organization, user);
             } else {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
@@ -238,7 +238,7 @@ namespace Exceptionless.Api.Controllers {
                     _repository.Save(organization);
                 }
 
-                await _mailer.SendInviteAsync(currentUser, organization, invite);
+                _mailer.SendInvite(currentUser, organization, invite);
             }
 
             if (user != null)

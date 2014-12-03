@@ -86,17 +86,17 @@ namespace Client.Tests.Submission {
                 var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
                 Debug.WriteLine("Before Submit Description");
                 statsCounter.DisplayStats();
-                Assert.True(await statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: async () => {
+                Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
                     var response = client.PostUserDescription(referenceId, description, configuration, serializer);
                     Debug.WriteLine("After Submit Description");
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 }));
                 statsCounter.DisplayStats();
-                Debug.WriteLine(descQueue.GetQueueCountAsync().Result);
+                Debug.WriteLine(descQueue.GetQueueCount());
 
                 Debug.WriteLine("Before Post Event");
-                Assert.True(await statsCounter.WaitForCounter(StatNames.EventsProcessed, work: async () => {
+                Assert.True(statsCounter.WaitForCounter(StatNames.EventsProcessed, work: () => {
                     var response = client.PostEvents(events, configuration, serializer);
                     Debug.WriteLine("After Post Event");
                     Assert.True(response.Success, response.Message);
@@ -104,7 +104,7 @@ namespace Client.Tests.Submission {
                 }));
                 statsCounter.DisplayStats();
                 if (statsCounter.GetCount(StatNames.EventsUserDescriptionProcessed) == 0)
-                    Assert.True(await statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed));
+                    Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed));
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
@@ -113,7 +113,7 @@ namespace Client.Tests.Submission {
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
 
                 Assert.InRange(statsCounter.GetCount(StatNames.EventsUserDescriptionErrors), 1, 5);
-                Assert.True(await statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: async () => {
+                Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
                     var response = client.PostUserDescription(badReferenceId, description, configuration, serializer);
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);

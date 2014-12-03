@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Threading.Tasks;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
@@ -18,32 +17,12 @@ using Exceptionless.Models;
 
 namespace Exceptionless.Api.Tests.Mail {
     public class NullMailer : IMailer {
-        public Task SendPasswordResetAsync(User user) {
-            return Task.Delay(0);
-        }
-
-        public Task SendVerifyEmailAsync(User user) {
-            return Task.Delay(0);
-        }
-
-        public Task SendInviteAsync(User sender, Organization organization, Invite invite) {
-            return Task.Delay(0);
-        }
-
-        public Task SendPaymentFailedAsync(User owner, Organization organization) {
-            return Task.Delay(0);
-        }
-
-        public Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
-            return Task.Delay(0);
-        }
-
-        public Task SendNoticeAsync(string emailAddress, EventNotification model) {
-            return Task.Delay(0);
-        }
-
-        public Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {
-            return Task.Delay(0);
-        }
+        public void SendPasswordReset(User user) {}
+        public void SendVerifyEmail(User user) {}
+        public void SendInvite(User sender, Organization organization, Invite invite) {}
+        public void SendPaymentFailed(User owner, Organization organization) {}
+        public void SendAddedToOrganization(User sender, Organization organization, User user) {}
+        public void SendNotice(string emailAddress, EventNotification model) {}
+        public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {}
     }
 }

@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Tests.Messaging {
             if (_messageBus == null)
                 return;
 
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -138,13 +138,13 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
-            _messageBus.PublishAsync(new SimpleMessageB {
+            _messageBus.Publish(new SimpleMessageB {
                 Data = "Hello"
             });
-            _messageBus.PublishAsync(new SimpleMessageC {
+            _messageBus.Publish(new SimpleMessageC {
                 Data = "Hello"
             });
 
@@ -161,13 +161,13 @@ namespace Exceptionless.Api.Tests.Messaging {
             _messageBus.Subscribe<object>(msg => {
                 latch.Signal();
             });
-            _messageBus.PublishAsync(new SimpleMessageA {
+            _messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
-            _messageBus.PublishAsync(new SimpleMessageB {
+            _messageBus.Publish(new SimpleMessageB {
                 Data = "Hello"
             });
-            _messageBus.PublishAsync(new SimpleMessageC {
+            _messageBus.Publish(new SimpleMessageC {
                 Data = "Hello"
             });
 

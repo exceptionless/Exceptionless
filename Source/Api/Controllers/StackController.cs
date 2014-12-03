@@ -328,7 +328,7 @@ namespace Exceptionless.Api.Controllers {
 
             foreach (WebHook hook in promotedProjectHooks) {
                 var context = new WebHookDataContext(hook.Version, stack, isNew: stack.TotalOccurrences == 1, isRegression: stack.IsRegressed);
-                _webHookNotificationQueue.EnqueueAsync(new WebHookNotification {
+                _webHookNotificationQueue.Enqueue(new WebHookNotification {
                     OrganizationId = hook.OrganizationId,
                     ProjectId = hook.ProjectId,
                     Url = hook.Url,

@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Repositories {
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
                 if (EnableNotifications)
-                    PublishMessageAsync(EntityChangeType.Added, document);
+                    PublishMessage(EntityChangeType.Added, document);
             }
         }
 
@@ -106,7 +106,7 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(document);
 
                 if (sendNotification && EnableNotifications)
-                    PublishMessageAsync(EntityChangeType.Removed, document);
+                    PublishMessage(EntityChangeType.Removed, document);
             }
         }
 
@@ -178,7 +178,7 @@ namespace Exceptionless.Core.Repositories {
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
                 if (EnableNotifications)
-                    PublishMessageAsync(EntityChangeType.Saved, document);
+                    PublishMessage(EntityChangeType.Saved, document);
             }
         }
 
@@ -189,14 +189,14 @@ namespace Exceptionless.Core.Repositories {
 
             if (options.OrganizationIds.Any()) {
                 foreach (var orgId in options.OrganizationIds) {
-                    PublishMessageAsync(new EntityChanged {
+                    PublishMessage(new EntityChanged {
                         ChangeType = EntityChangeType.UpdatedAll,
                         OrganizationId = orgId,
                         Type = _entityType
                     });
                 }
             } else {
-                PublishMessageAsync(new EntityChanged {
+                PublishMessage(new EntityChanged {
                     ChangeType = EntityChangeType.UpdatedAll,
                     Type = _entityType
                 });
@@ -205,7 +205,7 @@ namespace Exceptionless.Core.Repositories {
             return result.DocumentsAffected;
         }
 
-        protected virtual async Task PublishMessageAsync(EntityChangeType changeType, T document) {
+        protected virtual void PublishMessage(EntityChangeType changeType, T document) {
             var orgEntity = document as IOwnedByOrganization;
             var message = new EntityChanged {
                 ChangeType = changeType,
@@ -214,11 +214,12 @@ namespace Exceptionless.Core.Repositories {
                 Type = _entityType
             };
 
-            await PublishMessageAsync(message);
+            PublishMessage(message);
         }
 
-        protected Task PublishMessageAsync<TMessageType>(TMessageType message) where TMessageType : class {
-            return _messagePublisher != null ? _messagePublisher.PublishAsync(message) : Task.FromResult(0);
+        protected void PublishMessage<TMessageType>(TMessageType message) where TMessageType : class {
+            if (_messagePublisher != null)
+                _messagePublisher.Publish(message);
         }
     }
 }
