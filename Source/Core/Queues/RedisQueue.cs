@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
 using NLog.Fluent;
 using StackExchange.Redis;
@@ -97,15 +96,11 @@ namespace Exceptionless.Core.Queues {
 
         private TimeSpan GetPayloadTtl() {
             var ttl = TimeSpan.Zero;
-
-            int maxMultiplier = _retryMultipliers.Length > 0 ? _retryMultipliers.Last() : 1;
-            for (int i = 1; i <= _retries + 1; i++) {
-                int multiplier = _retryMultipliers.Length < i ? _retryMultipliers[i - 1] : maxMultiplier;
-                ttl = ttl.Add(TimeSpan.FromMilliseconds(_retryDelay.TotalMilliseconds * multiplier));
-            }
+            for (int attempt = 1; attempt <= _retries + 1; attempt++)
+                ttl = ttl.Add(GetRetryDelay(attempt));
 
             // minimum of 7 days for payload
-            return TimeSpan.FromMilliseconds(Math.Max(ttl.TotalMilliseconds, TimeSpan.FromDays(7).TotalMilliseconds));
+            return TimeSpan.FromMilliseconds(Math.Max(ttl.TotalMilliseconds * 1.5, TimeSpan.FromDays(7).TotalMilliseconds));
         }
 
         private string GetAttemptsKey(string id) {
@@ -128,8 +123,8 @@ namespace Exceptionless.Core.Queues {
             return String.Concat("q:", _queueName, ":", id, ":wait");
         }
 
-        private string GetWaitTimeTtl(string id) {
-            return String.Concat("q:", _queueName, ":", id, ":wait");
+        private TimeSpan GetWaitTimeTtl() {
+            return _payloadTtl;
         }
 
         private string GetTopicName() {
@@ -220,6 +215,7 @@ namespace Exceptionless.Core.Queues {
             _db.KeyDelete(GetPayloadKey(id));
             _db.KeyDelete(GetAttemptsKey(id));
             _db.KeyDelete(GetDequeuedTimeKey(id));
+            _db.KeyDelete(GetWaitTimeKey(id));
             _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _completedCount);
             Debug.WriteLine("Complete Done: " + id);
@@ -233,11 +229,24 @@ namespace Exceptionless.Core.Queues {
                 attempts = (int)attemptsValue + 1;
             Debug.WriteLine("Attempts: " + attempts);
 
+            var retryDelay = GetRetryDelay(attempts);
             if (attempts > _retries) {
                 Debug.WriteLine("Exceeded retry limit moving to deadletter: " + id);
                 _db.ListRemove(WorkListName, id);
                 _db.ListLeftPush(DeadListName, id);
                 _db.KeyExpire(GetPayloadKey(id), _deadLetterTtl);
+            } else if (retryDelay > TimeSpan.Zero) {
+                Debug.WriteLine("Adding item to wait list for future retry: " + id);
+                var tx = _db.CreateTransaction();
+                tx.ListRemoveAsync(WorkListName, id);
+                tx.ListLeftPushAsync(WaitListName, id);
+                var success = tx.Execute();
+                if (!success)
+                    throw new Exception("Unable to move item to wait list.");
+
+                _cache.Set(GetWaitTimeKey(id), DateTime.UtcNow.Add(retryDelay), GetWaitTimeTtl());
+                _db.StringIncrement(GetAttemptsKey(id));
+                _db.KeyExpire(GetAttemptsKey(id), GetAttemptsTtl());
             } else {
                 Debug.WriteLine("Adding item back to queue for retry: " + id);
                 var tx = _db.CreateTransaction();
@@ -245,15 +254,22 @@ namespace Exceptionless.Core.Queues {
                 tx.ListLeftPushAsync(QueueListName, id);
                 var success = tx.Execute();
                 if (!success)
-                    throw new Exception("Unable to abandon.");
+                    throw new Exception("Unable to move item to queue list.");
 
                 _db.StringIncrement(GetAttemptsKey(id));
+                _db.KeyExpire(GetAttemptsKey(id), GetAttemptsTtl());
                 _subscriber.Publish(GetTopicName(), id);
             }
 
             _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _abandonedCount);
             Debug.WriteLine("AbandonAsync Complete: " + id);
+        }
+
+        private TimeSpan GetRetryDelay(int attempts) {
+            int maxMultiplier = _retryMultipliers.Length > 0 ? _retryMultipliers.Last() : 1;
+            int multiplier = attempts <= _retryMultipliers.Length ? _retryMultipliers[attempts - 1] : maxMultiplier;
+            return TimeSpan.FromMilliseconds(_retryDelay.TotalMilliseconds * multiplier);
         }
 
         public IEnumerable<T> GetDeadletterItems() {
@@ -278,6 +294,7 @@ namespace Exceptionless.Core.Queues {
                 _db.KeyDelete(GetPayloadKey(id));
                 _db.KeyDelete(GetAttemptsKey(id));
                 _db.KeyDelete(GetDequeuedTimeKey(id));
+                _db.KeyDelete(GetWaitTimeKey(id));
                 _lockProvider.ReleaseLock(id);
             }
             _db.KeyDelete(name);
@@ -317,13 +334,13 @@ namespace Exceptionless.Core.Queues {
 
         private async Task DoMaintenanceWork() {
             Debug.WriteLine("OnMaintenance");
-            var workItems = _db.ListRange(WorkListName);
-            foreach (var workItem in workItems) {
-                var dequeuedTime = _cache.Get<DateTime?>(GetDequeuedTimeKey(workItem));
+            var workIds = _db.ListRange(WorkListName);
+            foreach (var workId in workIds) {
+                var dequeuedTime = _cache.Get<DateTime?>(GetDequeuedTimeKey(workId));
 
                 // dequeue time should be set, use current time
                 if (!dequeuedTime.HasValue) {
-                    _cache.Set(GetDequeuedTimeKey(workItem), DateTime.UtcNow, GetDequeuedTimeTtl());
+                    _cache.Set(GetDequeuedTimeKey(workId), DateTime.UtcNow, GetDequeuedTimeTtl());
                     continue;
                 }
 
@@ -333,10 +350,36 @@ namespace Exceptionless.Core.Queues {
 
                 Debug.WriteLine("Getting work time out lock");
                 try {
-                    using (_lockProvider.AcquireLock(workItem, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5))) {
+                    using (_lockProvider.AcquireLock(workId, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5))) {
                         Debug.WriteLine("Got item lock for work time out");
-                        Abandon(workItem);
+                        Abandon(workId);
                         Debug.WriteLine("Abandoned item item lock for work time out");
+                    }
+                } catch {}
+            }
+
+            var waitIds = _db.ListRange(WaitListName);
+            foreach (var waitId in waitIds) {
+                var waitTime = _cache.Get<DateTime?>(GetWaitTimeKey(waitId));
+                Debug.WriteLine("Wait time: " + waitTime);
+
+                if (waitTime.HasValue && waitTime.Value > DateTime.UtcNow)
+                    continue;
+
+                Debug.WriteLine("Getting retry lock");
+
+                try {
+                    using (_lockProvider.AcquireLock(waitId, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(5))) {
+                        Debug.WriteLine("Adding item back to queue for retry: " + waitId);
+                        var tx = _db.CreateTransaction();
+                        tx.ListRemoveAsync(WaitListName, waitId);
+                        tx.ListLeftPushAsync(QueueListName, waitId);
+                        var success = tx.Execute();
+                        if (!success)
+                            throw new Exception("Unable to move item to queue list.");
+
+                        _db.KeyDelete(GetWaitTimeKey(waitId));
+                        _subscriber.Publish(GetTopicName(), waitId);
                     }
                 } catch {}
             }

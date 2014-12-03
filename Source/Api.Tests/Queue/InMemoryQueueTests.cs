@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Queue {
 
         protected virtual IQueue<SimpleWorkItem> GetQueue(int retries = 1, TimeSpan? workItemTimeout = null, TimeSpan? retryDelay = null) {
             if (_queue == null)
-                _queue = new InMemoryQueue<SimpleWorkItem>(retries, workItemTimeout, retryDelay);
+                _queue = new InMemoryQueue<SimpleWorkItem>(retries, retryDelay, workItemTimeout: workItemTimeout);
 
             return _queue;
         }
@@ -119,7 +119,7 @@ namespace Exceptionless.Api.Tests.Queue {
 
         [Fact]
         public void WorkItemsWillTimeout() {
-            using (var queue = GetQueue(workItemTimeout: TimeSpan.FromMilliseconds(50))) {
+            using (var queue = GetQueue(retryDelay: TimeSpan.Zero, workItemTimeout: TimeSpan.FromMilliseconds(50))) {
                 queue.DeleteQueue();
 
                 queue.Enqueue(new SimpleWorkItem {
@@ -237,6 +237,37 @@ namespace Exceptionless.Api.Tests.Queue {
                 }
 
                 workers.ForEach(w => w.Dispose());
+            }
+        }
+
+        [Fact]
+        public void CanDelayRetry() {
+            using (var queue = GetQueue(workItemTimeout: TimeSpan.FromMilliseconds(50), retryDelay: TimeSpan.FromSeconds(1))) {
+                queue.DeleteQueue();
+
+                queue.Enqueue(new SimpleWorkItem {
+                    Data = "Hello"
+                });
+
+                var workItem = queue.Dequeue(TimeSpan.Zero);
+                Assert.NotNull(workItem);
+                Assert.Equal("Hello", workItem.Value.Data);
+                Assert.Equal(0, queue.GetQueueCount());
+
+                // wait for the task to be auto abandoned
+                var sw = new Stopwatch();
+                sw.Start();
+
+                workItem.Abandon();
+                Assert.Equal(1, queue.AbandonedCount);
+
+                workItem = queue.Dequeue(TimeSpan.FromSeconds(5));
+                sw.Stop();
+                Trace.WriteLine(sw.Elapsed);
+                Assert.NotNull(workItem);
+                Assert.True(sw.Elapsed > TimeSpan.FromSeconds(1));
+                workItem.Complete();
+                Assert.Equal(0, queue.GetQueueCount());
             }
         }
 

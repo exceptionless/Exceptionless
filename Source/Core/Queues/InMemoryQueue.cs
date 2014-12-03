@@ -16,23 +16,26 @@ namespace Exceptionless.Core.Queues {
         private readonly AutoResetEvent _autoEvent = new AutoResetEvent(false);
         private Action<QueueEntry<T>> _workerAction;
         private bool _workerAutoComplete;
-        private readonly TimeSpan _workItemTimeout = TimeSpan.FromMinutes(1);
-        private readonly TimeSpan _retryDelay = TimeSpan.FromSeconds(1);
-        private readonly int _retries;
-        private int _enqueuedCount = 0;
-        private int _dequeuedCount = 0;
-        private int _completedCount = 0;
-        private int _abandonedCount = 0;
-        private int _workerErrorCount = 0;
+        private readonly TimeSpan _workItemTimeout = TimeSpan.FromMinutes(10);
+        private readonly TimeSpan _retryDelay = TimeSpan.FromMinutes(1);
+        private readonly int[] _retryMultipliers = { 1, 3, 5, 10 };
+        private readonly int _retries = 2;
+        private int _enqueuedCount;
+        private int _dequeuedCount;
+        private int _completedCount;
+        private int _abandonedCount;
+        private int _workerErrorCount;
         private CancellationTokenSource _workerCancellationTokenSource;
-        private CancellationTokenSource _queueDisposedCancellationTokenSource;
+        private readonly CancellationTokenSource _queueDisposedCancellationTokenSource;
 
-        public InMemoryQueue(int retries = 2, TimeSpan? workItemTimeout = null, TimeSpan? retryDelay = null) {
+        public InMemoryQueue(int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null) {
             _retries = retries;
-            if (workItemTimeout.HasValue)
-                _workItemTimeout = workItemTimeout.Value;
             if (retryDelay.HasValue)
                 _retryDelay = retryDelay.Value;
+            if (retryMultipliers != null)
+                _retryMultipliers = retryMultipliers;
+            if (workItemTimeout.HasValue)
+                _workItemTimeout = workItemTimeout.Value;
 
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
             TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
@@ -174,7 +177,7 @@ namespace Exceptionless.Core.Queues {
             Interlocked.Increment(ref _abandonedCount);
             if (info.Attempts < _retries + 1) {
                 if (_retryDelay > TimeSpan.Zero)
-                    Task.Factory.StartNewDelayed((int)_retryDelay.TotalMilliseconds, () => Retry(info));
+                    Task.Factory.StartNewDelayed(GetRetryDelay(info.Attempts), () => Retry(info));
                 else
                     Retry(info);
             } else {
@@ -188,6 +191,12 @@ namespace Exceptionless.Core.Queues {
             _queue.Enqueue(info);
             Trace.WriteLine("Retry: Set Event");
             _autoEvent.Set();
+        }
+
+        private int GetRetryDelay(int attempts) {
+            int maxMultiplier = _retryMultipliers.Length > 0 ? _retryMultipliers.Last() : 1;
+            int multiplier = attempts <= _retryMultipliers.Length ? _retryMultipliers[attempts - 1] : maxMultiplier;
+            return (int)(_retryDelay.TotalMilliseconds * multiplier);
         }
 
         public void Dispose() {
