@@ -23,6 +23,7 @@ using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
+using MongoDB.Driver.Linq;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : MongoRepository<User>, IUserRepository {
@@ -33,6 +34,20 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+        }
+
+        public User GetByPasswordResetToken(string token) {
+            if (String.IsNullOrEmpty(token))
+                return null;
+
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.PasswordResetToken, token)));
+        }
+
+        public User GetUserByOAuthProvider(string provider, string providerUserId) {
+            if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
+                return null;
+
+            return _collection.AsQueryable().FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider && o.ProviderUserId == providerUserId));
         }
 
         public User GetByVerifyEmailAddressToken(string token) {
@@ -68,6 +83,7 @@ namespace Exceptionless.Core.Repositories {
             public const string OrganizationIds = "OrganizationIds";
             public const string OAuthAccounts_Provider = "OAuthAccounts.Provider";
             public const string OAuthAccounts_ProviderUserId = "OAuthAccounts.ProviderUserId";
+            public const string PasswordResetToken = "PasswordResetToken";
         }
 
         protected override void InitializeCollection(MongoDatabase database) {
