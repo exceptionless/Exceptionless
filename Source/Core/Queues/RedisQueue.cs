@@ -38,7 +38,6 @@ namespace Exceptionless.Core.Queues {
 
         public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true) {
             _db = connection.GetDatabase();
-            _subscriber = connection.GetSubscriber();
             _cache = new RedisCacheClient(_db);
             _lockProvider = new CacheLockProvider(_cache);
             _queueName = queueName ?? typeof(T).Name;
@@ -59,6 +58,9 @@ namespace Exceptionless.Core.Queues {
                 _deadLetterTtl = deadLetterTimeToLive.Value;
 
             _payloadTtl = GetPayloadTtl();
+
+            _subscriber = connection.GetSubscriber();
+            _subscriber.Subscribe(GetTopicName(), OnTopicMessage);
 
             if (runMaintenanceTasks) {
                 _queueDisposedCancellationTokenSource = new CancellationTokenSource();
@@ -156,7 +158,6 @@ namespace Exceptionless.Core.Queues {
             if (_workerCancellationTokenSource != null)
                 return;
 
-            _subscriber.Subscribe(GetTopicName(), OnTopicMessage);
             _workerCancellationTokenSource = new CancellationTokenSource();
             Task.Factory.StartNew(() => WorkerLoop(_workerCancellationTokenSource.Token));
         }
