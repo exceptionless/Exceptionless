@@ -10,25 +10,18 @@
 #endregion
 
 using System;
-using System.Threading.Tasks;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Mail {
     public interface IMailer {
-        Task SendPasswordResetAsync(User user);
-
-        Task SendVerifyEmailAsync(User user);
-
-        Task SendInviteAsync(User sender, Organization organization, Invite invite);
-
-        Task SendPaymentFailedAsync(User owner, Organization organization);
-
-        Task SendAddedToOrganizationAsync(User sender, Organization organization, User user);
-
-        Task SendNoticeAsync(string emailAddress, EventNotification model);
-
-        Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification);
+        void SendPasswordReset(User user);
+        void SendVerifyEmail(User user);
+        void SendInvite(User sender, Organization organization, Invite invite);
+        void SendPaymentFailed(User owner, Organization organization);
+        void SendAddedToOrganization(User sender, Organization organization, User user);
+        void SendNotice(string emailAddress, EventNotification model);
+        void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification);
     }
 }

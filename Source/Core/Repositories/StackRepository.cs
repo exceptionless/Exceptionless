@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Repositories {
             InvalidateCache(stackId);
 
             if (EnableNotifications) {
-                PublishMessageAsync(new EntityChanged {
+                PublishMessage(new EntityChanged {
                     ChangeType = EntityChangeType.Saved,
                     Id = stackId,
                     OrganizationId = organizationId,

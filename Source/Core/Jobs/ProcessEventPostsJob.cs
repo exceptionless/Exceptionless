@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Jobs {
 
             QueueEntry<EventPost> queueEntry = null;
             try {
-                queueEntry = await _queue.DequeueAsync();
+                queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
                     Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost: {0}", ex.Message).Write();
@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Jobs {
                 _statsClient.Gauge(StatNames.PostsBatchSize, events.Count);
             } catch (Exception ex) {
                 _statsClient.Counter(StatNames.PostsParseErrors);
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
 
                 // TODO: Add the EventPost to the logged exception.
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
             }
        
             if (events == null) {
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
                 return JobResult.Success;
             }
 
@@ -97,13 +97,13 @@ namespace Exceptionless.Core.Jobs {
 
                     if (!isSingleEvent) {
                         // Put this single event back into the queue so we can retry it separately.
-                        _queue.EnqueueAsync(new EventPost {
+                        _queue.Enqueue(new EventPost {
                             Data = Encoding.UTF8.GetBytes(ev.ToJson()).Compress(),
                             ContentEncoding = "gzip",
                             ProjectId = ev.ProjectId,
                             CharSet = "utf-8",
                             MediaType = "application/json",
-                        }).Wait();
+                        });
                     }
 
                     errorCount++;
@@ -111,9 +111,9 @@ namespace Exceptionless.Core.Jobs {
             }
 
             if (isSingleEvent && errorCount > 0)
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
             else
-                queueEntry.CompleteAsync().Wait();
+                queueEntry.Complete();
 
             return JobResult.Success;
         }

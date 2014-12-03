@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Mail {
             _statsClient = statsClient;
         }
 
-        public async Task SendPasswordResetAsync(User user) {
+        public void SendPasswordReset(User user) {
             if (user == null || String.IsNullOrEmpty(user.PasswordResetToken))
                 return;
 
@@ -48,19 +48,19 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "PasswordReset");
             msg.To.Add(user.EmailAddress);
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        public async Task SendVerifyEmailAsync(User user) {
+        public void SendVerifyEmail(User user) {
             MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
             }, "VerifyEmail");
             msg.To.Add(user.EmailAddress);
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        public async Task SendInviteAsync(User sender, Organization organization, Invite invite) {
+        public void SendInvite(User sender, Organization organization, Invite invite) {
             MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
                 Sender = sender,
                 Organization = organization,
@@ -68,20 +68,20 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "Invite");
             msg.To.Add(invite.EmailAddress);
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        public async Task SendPaymentFailedAsync(User owner, Organization organization) {
+        public void SendPaymentFailed(User owner, Organization organization) {
             MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
                 Owner = owner,
                 Organization = organization,
                 BaseUrl = Settings.Current.BaseURL
             }, "PaymentFailed");
             msg.To.Add(owner.EmailAddress);
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        public async Task SendAddedToOrganizationAsync(User sender, Organization organization, User user) {
+        public void SendAddedToOrganization(User sender, Organization organization, User user) {
             MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
                 Sender = sender,
                 Organization = organization,
@@ -90,29 +90,29 @@ namespace Exceptionless.Core.Mail {
             }, "AddedToOrganization");
             msg.To.Add(user.EmailAddress);
 
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        public async Task SendNoticeAsync(string emailAddress, EventNotification model) {
+        public void SendNotice(string emailAddress, EventNotification model) {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
             if (message == null)
                 return;
 
             message.To = emailAddress;
-            await QueueMessage(message.ToMailMessage());
+            QueueMessage(message.ToMailMessage());
         }
 
-        public async Task SendSummaryNotificationAsync(string emailAddress, SummaryNotificationModel notification) {
+        public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {
             notification.BaseUrl = Settings.Current.BaseURL;
             MailMessage msg = _emailGenerator.GenerateMessage(notification, "SummaryNotification");
             msg.To.Add(emailAddress);
-            await QueueMessage(msg);
+            QueueMessage(msg);
         }
 
-        private async Task QueueMessage(MailMessage message) {
+        private void QueueMessage(MailMessage message) {
             CleanAddresses(message);
 
-            await _queue.EnqueueAsync(message.ToMailMessage());
+            _queue.Enqueue(message.ToMailMessage());
             _statsClient.Counter(StatNames.EmailsQueued);
         }
 

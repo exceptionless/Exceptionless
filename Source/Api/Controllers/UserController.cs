@@ -130,7 +130,7 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified) {
                 // TODO: Set the VerifyEmailAddressToken
                 //user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
-                await _mailer.SendVerifyEmailAsync(user);
+                _mailer.SendVerifyEmail(user);
             }
 
             return Ok();

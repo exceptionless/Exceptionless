@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs {
 
             QueueEntry<MailMessage> queueEntry = null;
             try {
-                queueEntry = await _queue.DequeueAsync();
+                queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
                     Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next MailMessageNotification: {0}", ex.Message).Write();
@@ -43,12 +43,12 @@ namespace Exceptionless.Core.Jobs {
                 _statsClient.Counter(StatNames.EmailsSent);
             } catch (Exception ex) {
                 _statsClient.Counter(StatNames.EmailsSendErrors);
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
 
                 Log.Error().Exception(ex).Message("Error sending message '{0}': {1}", queueEntry.Id, ex.Message).Write();
             }
 
-            await queueEntry.CompleteAsync();
+            queueEntry.Complete();
 
             return JobResult.Success;
         }

@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Queues {
     public interface IQueue<T> : IDisposable where T : class {
-        Task EnqueueAsync(T data);
+        void Enqueue(T data);
         void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false);
-        void StartWorking(Func<QueueEntry<T>, Task> handler, bool autoComplete = false);
         void StopWorking();
-        Task<QueueEntry<T>> DequeueAsync(TimeSpan? timeout = null);
-        Task CompleteAsync(string id);
-        Task AbandonAsync(string id);
-        Task<long> GetQueueCountAsync();
-        Task<long> GetWorkingCountAsync();
-        Task<long> GetDeadletterCountAsync();
-        Task<IEnumerable<T>> GetDeadletterItemsAsync();
-        Task ResetQueueAsync();
+        QueueEntry<T> Dequeue(TimeSpan? timeout = null);
+        void Complete(string id);
+        void Abandon(string id);
+        long GetQueueCount();
+        long GetWorkingCount();
+        long GetDeadletterCount();
+        IEnumerable<T> GetDeadletterItems();
+        void DeleteQueue();
         long EnqueuedCount { get; }
         long DequeuedCount { get; }
         long CompletedCount { get; }

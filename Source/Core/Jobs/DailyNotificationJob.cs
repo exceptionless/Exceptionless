@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Jobs {
                         };
 
                         Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
-                        _summaryNotificationQueue.EnqueueAsync(notification);
+                        _summaryNotificationQueue.Enqueue(notification);
                     } else
                         Log.Error().Message("Message Factory is null").Write();
                 }

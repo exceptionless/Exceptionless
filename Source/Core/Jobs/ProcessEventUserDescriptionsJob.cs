@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Jobs {
 
             QueueEntry<EventUserDescription> queueEntry = null;
             try {
-                queueEntry = await _queue.DequeueAsync();
+                queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
                     Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventUserDescription: {0}", ex.Message).Write();
@@ -47,19 +47,19 @@ namespace Exceptionless.Core.Jobs {
                 _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
             } catch (DocumentNotFoundException ex){
                 _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
                 Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
                 _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
-                queueEntry.AbandonAsync().Wait();
+                queueEntry.Abandon();
 
                 // TODO: Add the EventUserDescription to the logged exception.
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }
 
-            await queueEntry.CompleteAsync();
+            queueEntry.Complete();
 
             return JobResult.Success;
         }

@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -61,7 +61,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 resetEvent.Set();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
 
@@ -96,13 +96,13 @@ namespace Exceptionless.Api.Tests.Messaging {
                 Assert.Equal("Hello", msg.Data);
                 latch.Signal();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
-            messageBus.PublishAsync(new SimpleMessageB {
+            messageBus.Publish(new SimpleMessageB {
                 Data = "Hello"
             });
-            messageBus.PublishAsync(new SimpleMessageC {
+            messageBus.Publish(new SimpleMessageC {
                 Data = "Hello"
             });
 
@@ -117,13 +117,13 @@ namespace Exceptionless.Api.Tests.Messaging {
             messageBus.Subscribe<object>(msg => {
                 latch.Signal();
             });
-            messageBus.PublishAsync(new SimpleMessageA {
+            messageBus.Publish(new SimpleMessageA {
                 Data = "Hello"
             });
-            messageBus.PublishAsync(new SimpleMessageB {
+            messageBus.Publish(new SimpleMessageB {
                 Data = "Hello"
             });
-            messageBus.PublishAsync(new SimpleMessageC {
+            messageBus.Publish(new SimpleMessageC {
                 Data = "Hello"
             });
 

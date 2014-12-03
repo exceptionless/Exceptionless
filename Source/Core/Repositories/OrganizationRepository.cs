@@ -222,9 +222,9 @@ namespace Exceptionless.Core.Repositories {
             bool justWentOverMonthly = monthlyTotal > org.MaxEventsPerMonth && monthlyTotal <= org.MaxEventsPerMonth + count;
 
             if (justWentOverMonthly)
-                PublishMessageAsync(new PlanOverage { OrganizationId = org.Id });
+                PublishMessage(new PlanOverage { OrganizationId = org.Id });
             else if (justWentOverHourly)
-                PublishMessageAsync(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
+                PublishMessage(new PlanOverage { OrganizationId = org.Id, IsHourly = true });
 
             bool shouldSaveUsage = false;
             var lastCounterSavedDate = Cache.Get<DateTime?>(GetUsageSavedCacheKey(organizationId));

@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _publisher.PublishAsync(new EventOccurrence {
+            _publisher.Publish(new EventOccurrence {
                 Id = ctx.Event.Id,
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,

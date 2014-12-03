@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Billing {
             _mailer = mailer;
         }
 
-        public async Task HandleEventAsync(StripeEvent stripeEvent) {
+        public void HandleEvent(StripeEvent stripeEvent) {
             switch (stripeEvent.Type) {
                 case "customer.subscription.updated": {
                     StripeSubscription stripeSubscription = Mapper<StripeSubscription>.MapFromJson(stripeEvent.Data.Object.ToString());
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Billing {
                 }
                 case "invoice.payment_failed": {
                     StripeInvoice stripeInvoice = Mapper<StripeInvoice>.MapFromJson(stripeEvent.Data.Object.ToString());
-                    await InvoicePaymentFailedAsync(stripeInvoice);
+                    InvoicePaymentFailed(stripeInvoice);
                     break;
                 }
                 default: {
@@ -148,7 +148,7 @@ namespace Exceptionless.Core.Billing {
             //_mailer.SendPaymentSuccessAsync(user, org);
         }
 
-        private async Task InvoicePaymentFailedAsync(StripeInvoice inv) {
+        private void InvoicePaymentFailed(StripeInvoice inv) {
             var org = _organizationRepository.GetByStripeCustomerId(inv.CustomerId);
             if (org == null) {
                 Log.Error().Message("Unknown customer id in payment failed notification: {0}", inv.CustomerId).Write();
@@ -163,7 +163,7 @@ namespace Exceptionless.Core.Billing {
 
             Log.Info().Message("Stripe payment failed. Customer: {0} Org: {1} Org Name: {2} Email: {3}", inv.CustomerId, org.Id, org.Name, user.EmailAddress).Write();
 
-            await _mailer.SendPaymentFailedAsync(user, org);
+            _mailer.SendPaymentFailed(user, org);
         }
     }
 }

@@ -121,7 +121,7 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(String.Concat("org:", organizationId));
         }
 
-        protected override async Task PublishMessageAsync(EntityChangeType changeType, User user) {
+        protected override void PublishMessage(EntityChangeType changeType, User user) {
             if (user.OrganizationIds.Any()) {
                 foreach (var organizationId in user.OrganizationIds) {
                     var message = new EntityChanged {
@@ -131,10 +131,10 @@ namespace Exceptionless.Core.Repositories {
                         Type = _entityType
                     };
 
-                    await _messagePublisher.PublishAsync(message);
+                    _messagePublisher.Publish(message);
                 }
             } else {
-                await base.PublishMessageAsync(changeType, user);
+                base.PublishMessage(changeType, user);
             }
         }
     }

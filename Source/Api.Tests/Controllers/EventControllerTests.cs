@@ -52,17 +52,17 @@ namespace Exceptionless.Api.Tests.Controllers {
                 var statsCounter = IoC.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
                 Assert.NotNull(statsCounter);
                 
-                Assert.True(await statsCounter.WaitForCounter(StatNames.PostsQueued, work: async () => {
-                    var actionResult = await _eventController.Post(Encoding.UTF8.GetBytes("simple string"));
+                Assert.True(statsCounter.WaitForCounter(StatNames.PostsQueued, work: () => {
+                    var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));
 
-                Assert.Equal(1, await _eventQueue.GetQueueCountAsync());
+                Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 processEventsJob.Run();
 
-                Assert.Equal(0, await _eventQueue.GetQueueCountAsync());
+                Assert.Equal(0, _eventQueue.GetQueueCount());
                 Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();
@@ -77,12 +77,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCountAsync().Result);
+                Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 processEventsJob.Run();
 
-                Assert.Equal(0, _eventQueue.GetQueueCountAsync().Result);
+                Assert.Equal(0, _eventQueue.GetQueueCount());
                 Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();
@@ -97,12 +97,12 @@ namespace Exceptionless.Api.Tests.Controllers {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                 var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress()).Result;
                 Assert.IsType<StatusCodeResult>(actionResult);
-                Assert.Equal(1, _eventQueue.GetQueueCountAsync().Result);
+                Assert.Equal(1, _eventQueue.GetQueueCount());
 
                 var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
                 processEventsJob.Run();
 
-                Assert.Equal(0, _eventQueue.GetQueueCountAsync().Result);
+                Assert.Equal(0, _eventQueue.GetQueueCount());
                 Assert.Equal(1, EventCount());
             } finally {
                 RemoveAllEvents();

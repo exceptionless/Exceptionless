@@ -8,7 +8,7 @@ namespace Exceptionless.Core.Messaging {
     public class InMemoryMessageBus : IMessagePublisher, IMessageSubscriber {
         private readonly BlockingCollection<Subscriber> _subscribers = new BlockingCollection<Subscriber>();
 
-        public Task PublishAsync<T>(T message) where T: class {
+        public void Publish<T>(T message) where T: class {
             if (message == null)
                 throw new ArgumentNullException("message");
 
@@ -21,8 +21,6 @@ namespace Exceptionless.Core.Messaging {
                     }
                 }
             });
-
-            return Task.FromResult(0);
         }
 
         public void Subscribe<T>(Action<T> handler) where T: class {

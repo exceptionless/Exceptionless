@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
             _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
             _repository.Save(organization);
-            _messagePublisher.PublishAsync(new PlanChanged {
+            _messagePublisher.Publish(new PlanChanged {
                 OrganizationId = organization.Id
             });
 
