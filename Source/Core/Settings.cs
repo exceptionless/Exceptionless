@@ -65,7 +65,7 @@ namespace Exceptionless.Core {
 
         public RedisConnectionInfo RedisConnectionInfo { get; private set; }
 
-        public bool EnableRedis { get { return RedisConnectionInfo != null; } }
+        public bool EnableRedis { get; private set; }
 
         public string MongoConnectionString { get; private set; }
 
@@ -151,6 +151,7 @@ namespace Exceptionless.Core {
             ConnectionStringSettings redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
             if (redisConnectionInfo != null)
                 settings.RedisConnectionInfo = String.IsNullOrEmpty(redisConnectionInfo.ConnectionString) ? null : RedisConnectionInfo.Parse(redisConnectionInfo.ConnectionString);
+            settings.EnableRedis = ConfigurationManager.AppSettings.GetBool("EnableRedis", settings.RedisConnectionInfo != null);
 
             ConnectionStringSettings mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
             if (mongoConnectionString != null)
