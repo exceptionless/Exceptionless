@@ -180,6 +180,9 @@ namespace Exceptionless.Api {
                 Run.InBackground(t => container.GetInstance<ProcessEventPostsJob>().Run(token), token);
                 Run.InBackground(t => container.GetInstance<ProcessEventUserDescriptionsJob>().Run(token), token);
                 Run.InBackground(t => container.GetInstance<ProcessMailMessageJob>().Run(token), token);
+                Run.InBackground(t => container.GetInstance<DailyNotificationJob>().Run(token), token);
+                Run.InBackground(t => container.GetInstance<EnforceRetentionLimitsJob>().Run(token), token);
+                Run.InBackground(t => container.GetInstance<RemoveStaleAccountsJob>().Run(token), token);
             }
         }
 

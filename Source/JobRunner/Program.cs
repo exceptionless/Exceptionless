@@ -2,8 +2,8 @@
 using System.Diagnostics;
 using System.IO;
 using CodeSmith.Core.CommandLine;
-using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
 using SimpleInjector;
 
@@ -11,11 +11,6 @@ namespace Exceptionless.JobRunner {
     internal class Program {
         private static int Main(string[] args) {
             OutputHeader();
-            
-            // TODO: Add parameter for indicating that a job shouldn't have multiple instances running at the same time
-            // TODO: Use job locker.
-            // TODO: Hook up nlog to write to the console.
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
             
             try {
                 var ca = new ConsoleArguments();
@@ -41,14 +36,17 @@ namespace Exceptionless.JobRunner {
                 }
 
                 var container = CreateContainer();
-                var job = container.GetInstance(Type.GetType(ca.JobType)) as Job;
+                var job = container.GetInstance(Type.GetType(ca.JobType)) as JobBase;
                 if (job == null) {
                     Console.Error.WriteLine("Job Type must derive from Job.");
                     PauseIfDebug();
                     return 1;
                 }
 
-                job.Run();
+                if (ca.RunContinuously)
+                    job.RunContinuous(ca.Delay);
+                else
+                    job.Run();
 
                 PauseIfDebug();
             } catch (FileNotFoundException e) {
@@ -76,7 +74,7 @@ namespace Exceptionless.JobRunner {
 
         private static void PauseIfDebug() {
             if (Debugger.IsAttached)
-                Console.Read();
+                Console.ReadKey();
         }
 
         private static void OutputHeader() {

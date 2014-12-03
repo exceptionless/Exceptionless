@@ -45,15 +45,12 @@ namespace Exceptionless.Core.Jobs {
             if (!token.HasValue)
                 token = CancellationToken.None;
 
-            if (iterationLimit <= 0)
-                iterationLimit = Int32.MaxValue;
-
             int iterations = 0;
-            while (!IsCancelPending(token) && iterations < iterationLimit) {
+            while (!IsCancelPending(token) && (iterationLimit < 0 || iterations < iterationLimit)) {
                 var result = await RunAsync(token);
                 iterations++;
                 if (delay > 0)
-                    Thread.Sleep(delay);
+                    await Task.Delay(delay, token.Value);
             }
         }
 

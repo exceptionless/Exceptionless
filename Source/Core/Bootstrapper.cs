@@ -37,6 +37,7 @@ using Nest;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
+using StackExchange.Redis;
 using Token = Exceptionless.Models.Admin.Token;
 
 namespace Exceptionless.Core {
@@ -49,11 +50,7 @@ namespace Exceptionless.Core {
             else
                 container.RegisterSingle<IAppStatsClient, InMemoryAppStatsClient>();
 
-            if (Settings.Current.RedisConnectionInfo == null)
-                throw new ConfigurationErrorsException("RedisConnectionString was not found in the Web.config.");
-
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))
@@ -71,17 +68,25 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
-            if (Settings.Current.UseAzureServiceBus) {
-                //container.RegisterSingle<IQueue<EventPost>>(() => new ServiceBusQueue<EventPost>(Settings.Current.AzureServiceBusConnectionString));
-                //container.RegisterSingle<IQueue<EventUserDescription>>(() => new ServiceBusQueue<EventUserDescription>(Settings.Current.AzureServiceBusConnectionString));
-                //container.RegisterSingle<IQueue<EventNotification>>(() => new ServiceBusQueue<EventNotification>(Settings.Current.AzureServiceBusConnectionString));
-                //container.RegisterSingle<IQueue<WebHookNotification>>(() => new ServiceBusQueue<WebHookNotification>(Settings.Current.AzureServiceBusConnectionString));
-                //container.RegisterSingle<IQueue<MailMessage>>(() => new ServiceBusQueue<MailMessage>(Settings.Current.AzureServiceBusConnectionString));
+            if (Settings.Current.EnableRedis) {
+                var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+                container.RegisterSingle(muxer);
+                container.Register<IDatabase>(() => container.GetInstance<ConnectionMultiplexer>().GetDatabase());
 
-                //container.RegisterSingle<ServiceBusMessageBus>();
-                //container.Register<IMessagePublisher>(container.GetInstance<ServiceBusMessageBus>);
-                //container.Register<IMessageSubscriber>(container.GetInstance<ServiceBusMessageBus>);
+                container.Register<ICacheClient, RedisCacheClient>();
+                
+                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer));
+
+                container.RegisterSingle<RedisMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
+                container.Register<IMessagePublisher>(container.GetInstance<RedisMessageBus>);
+                container.Register<IMessageSubscriber>(container.GetInstance<RedisMessageBus>);
             } else {
+                container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
+
                 container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>());
                 container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
