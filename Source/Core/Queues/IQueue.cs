@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace Exceptionless.Core.Queues {
     public interface IQueue<T> : IDisposable where T : class {
-        void Enqueue(T data);
+        string Enqueue(T data);
         void StartWorking(Action<QueueEntry<T>> handler, bool autoComplete = false);
         void StopWorking();
         QueueEntry<T> Dequeue(TimeSpan? timeout = null);
@@ -19,5 +19,6 @@ namespace Exceptionless.Core.Queues {
         long CompletedCount { get; }
         long AbandonedCount { get; }
         long WorkerErrorCount { get; }
+        string QueueId { get; }
     }
 }

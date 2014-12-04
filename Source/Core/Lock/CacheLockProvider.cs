@@ -13,6 +13,7 @@ using System;
 using System.Diagnostics;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Core.Caching;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Lock {
     public class CacheLockProvider : ILockProvider {
@@ -23,29 +24,28 @@ namespace Exceptionless.Core.Lock {
         }
 
         public IDisposable AcquireLock(string name, TimeSpan? lockTimeout = null, TimeSpan? acquireTimeout = null) {
-            Debug.WriteLine("AcquireLock: " + name);
+            Log.Trace().Message("AcquireLock: {0}", name).Write();
             if (!acquireTimeout.HasValue)
                 acquireTimeout = TimeSpan.FromMinutes(1);
             string cacheKey = GetCacheKey(name);
 
             Run.UntilTrue(() => {
-                Debug.WriteLine("Checking to see if lock exists: " + name);
+                Log.Trace().Message("Checking to see if lock exists: {0}", name).Write();
                 var lockValue = _cacheClient.Get<object>(cacheKey);
-                if (lockValue != null)
-                    Debug.WriteLine("Lock exists: " + name);
+                Log.Trace().Message("Lock: {0} Value: {1}", name, lockValue ?? "<null>").Write();
                 if (lockValue != null)
                     return false;
 
-                Debug.WriteLine("Lock doesn't exist: " + name);
+                Log.Trace().Message("Lock doesn't exist: {0}", name).Write();
                 return _cacheClient.Add(cacheKey, DateTime.Now, lockTimeout ?? TimeSpan.FromMinutes(20));
             }, acquireTimeout);
 
-            Debug.WriteLine("Returning lock: " + name);
+            Log.Trace().Message("Returning lock: {0}", name).Write();
             return new DisposableLock(name, this);
         }
 
         public void ReleaseLock(string name) {
-            Debug.WriteLine("ReleaseLock: " + name);
+            Log.Trace().Message("ReleaseLock: {0}", name).Write();
             _cacheClient.Remove(GetCacheKey(name));
         }
 

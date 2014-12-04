@@ -70,6 +70,25 @@ namespace Exceptionless.Api.Tests.Queue {
         }
 
         [Fact]
+        public void DequeueWaitWillGetSignaled() {
+            using (var queue = GetQueue()) {
+                queue.DeleteQueue();
+
+                Task.Factory.StartNewDelayed(250, () => GetQueue().Enqueue(new SimpleWorkItem {
+                    Data = "Hello"
+                }));
+
+                var sw = new Stopwatch();
+                sw.Start();
+                var workItem = queue.Dequeue();
+                sw.Stop();
+                Trace.WriteLine(sw.Elapsed);
+                Assert.NotNull(workItem);
+                Assert.True(sw.Elapsed < TimeSpan.FromSeconds(2));
+            }
+        }
+
+        [Fact]
         public void CanUseQueueWorker() {
             using (var queue = GetQueue()) {
                 queue.DeleteQueue();
@@ -197,6 +216,7 @@ namespace Exceptionless.Api.Tests.Queue {
         [Fact]
         public void CanHaveMultipleQueueInstances() {
             using (var queue = GetQueue(retries: 0, retryDelay: TimeSpan.Zero)) {
+                Debug.WriteLine(String.Format("Queue Id: {0}", queue.QueueId));
                 queue.DeleteQueue();
 
                 const int workItemCount = 10;
@@ -207,16 +227,20 @@ namespace Exceptionless.Api.Tests.Queue {
 
                 for (int i = 0; i < workerCount; i++) {
                     var q = GetQueue(retries: 0, retryDelay: TimeSpan.Zero);
+                    Debug.WriteLine(String.Format("Queue Id: {0}", q.QueueId));
                     q.StartWorking(w => DoWork(w, latch, info));
                     workers.Add(q);
                 }
 
-                Parallel.For(0, workItemCount, i => queue.Enqueue(new SimpleWorkItem {
-                    Data = "Hello",
-                    Id = i
-                }));
+                Parallel.For(0, workItemCount, i => {
+                    var id = queue.Enqueue(new SimpleWorkItem {
+                        Data = "Hello",
+                        Id = i
+                    });
+                    Debug.WriteLine("Enqueued Index: {0} Id: {1}", i, id);
+                });
 
-                latch.Wait(TimeSpan.FromSeconds(10));
+                Assert.True(latch.Wait(TimeSpan.FromSeconds(10)));
                 Debug.WriteLine("Completed: {0} Abandoned: {1} Error: {2}", info.CompletedCount, info.AbandonCount, info.ErrorCount);
                 for (int i = 0; i < workers.Count; i++)
                     Debug.WriteLine("Worker#{0} Completed: {1} Abandoned: {2} Error: {3}", i, workers[i].CompletedCount, workers[i].AbandonedCount, workers[i].WorkerErrorCount);
@@ -270,23 +294,26 @@ namespace Exceptionless.Api.Tests.Queue {
         }
 
         private void DoWork(QueueEntry<SimpleWorkItem> w, CountdownEvent latch, WorkInfo info) {
-            Debug.WriteLine("DoWork: " + Thread.CurrentThread.ManagedThreadId);
+            Debug.WriteLine("Starting: {0}", w.Value.Id);
             Assert.Equal("Hello", w.Value.Data);
-            latch.Signal();
 
-            // randomly complete, abandon or blowup.
-            if (RandomHelper.GetBool()) {
-                Debug.WriteLine("Completing: {0}", w.Value.Id);
-                w.Complete();
-                info.IncrementCompletedCount();
-            } else if (RandomHelper.GetBool()) {
-                Debug.WriteLine("Abandoning: {0}", w.Value.Id);
-                w.Abandon();
-                info.IncrementAbandonCount();
-            } else {
-                Debug.WriteLine("Erroring: {0}", w.Value.Id);
-                info.IncrementErrorCount();
-                throw new ApplicationException();
+            try {
+                // randomly complete, abandon or blowup.
+                if (RandomHelper.GetBool()) {
+                    Debug.WriteLine("Completing: {0}", w.Value.Id);
+                    w.Complete();
+                    info.IncrementCompletedCount();
+                } else if (RandomHelper.GetBool()) {
+                    Debug.WriteLine("Abandoning: {0}", w.Value.Id);
+                    w.Abandon();
+                    info.IncrementAbandonCount();
+                } else {
+                    Debug.WriteLine("Erroring: {0}", w.Value.Id);
+                    info.IncrementErrorCount();
+                    throw new ApplicationException();
+                }
+            } finally {
+                latch.Signal();
             }
         }
     }

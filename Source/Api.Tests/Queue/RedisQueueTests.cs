@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Queues;
 using StackExchange.Redis;
@@ -14,7 +15,9 @@ namespace Exceptionless.Api.Tests.Queue {
             if (_muxer == null)
                 _muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
 
-            return new RedisQueue<SimpleWorkItem>(_muxer, workItemTimeout: workItemTimeout, retries: retries, retryDelay: retryDelay);
+            var queue = new RedisQueue<SimpleWorkItem>(_muxer, workItemTimeout: workItemTimeout, retries: retries, retryDelay: retryDelay);
+            Debug.WriteLine(String.Format("Queue Id: {0}", queue.QueueId));
+            return queue;
         }
     }
 }
