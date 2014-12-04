@@ -32,7 +32,7 @@ namespace Client.Tests {
         public async Task CanSubmitSimpleEvent() {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
-                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                var queue = container.GetInstance<IQueue<EventPost>>();
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());
                 
@@ -63,7 +63,7 @@ namespace Client.Tests {
         public async Task CanSubmitSimpleException() {
             var container = AppBuilder.CreateContainer();
             using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
-                var queue = container.GetInstance<IQueue<EventPost>>() as InMemoryQueue<EventPost>;
+                var queue = container.GetInstance<IQueue<EventPost>>();
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());
 
