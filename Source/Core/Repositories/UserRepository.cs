@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
@@ -33,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(emailAddress))
                 return null;
 
-            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress.ToLowerInvariant())).WithCacheKey(emailAddress));
         }
 
         public User GetByPasswordResetToken(string token) {
@@ -109,6 +108,20 @@ namespace Exceptionless.Core.Repositories {
         }
         
         #endregion
+
+        protected override void BeforeAdd(ICollection<User> documents) {
+            foreach (var user in documents.Where(user => !String.IsNullOrEmpty(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant();
+
+            base.BeforeAdd(documents);
+        }
+
+        protected override void BeforeSave(ICollection<User> documents) {
+            foreach (var user in documents.Where(user => !String.IsNullOrEmpty(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant();
+
+            base.BeforeSave(documents);
+        }
 
         public override void InvalidateCache(User user) {
             if (Cache == null)
