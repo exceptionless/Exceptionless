@@ -93,6 +93,10 @@ namespace Exceptionless.Core {
 
         public string GitHubAppSecret { get; private set; }
 
+        public string GoogleAppId { get; private set; }
+
+        public string GoogleAppSecret { get; private set; }
+
         public bool EnableBilling { get { return !String.IsNullOrEmpty(StripeApiKey); } }
 
         public string StripeApiKey { get; private set; }
@@ -139,6 +143,8 @@ namespace Exceptionless.Core {
             settings.EnableAppStats = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
             settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
             settings.GoogleAnalyticsId = ConfigurationManager.AppSettings["GoogleAnalyticsId"];
+            settings.GoogleAppId = ConfigurationManager.AppSettings["GoogleAppId"];
+            settings.GoogleAppSecret = ConfigurationManager.AppSettings["GoogleAppSecret"];
             settings.MicrosoftAppId = ConfigurationManager.AppSettings["MicrosoftAppId"];
             settings.MicrosoftAppSecret = ConfigurationManager.AppSettings["MicrosoftAppSecret"];
             settings.FacebookAppId = ConfigurationManager.AppSettings["FacebookAppId"];

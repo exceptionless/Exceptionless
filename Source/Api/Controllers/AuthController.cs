@@ -1,14 +1,15 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Json.Linq;
 using Exceptionless.Models;
-using Flurl;
-using Flurl.Http;
+using OAuth2.Client.Impl;
+using OAuth2.Configuration;
+using OAuth2.Infrastructure;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
@@ -23,77 +24,96 @@ namespace Exceptionless.Api.Controllers {
             _userRepository = userRepository;
         }
 
-        public class AuthPayload {
-            public string Code { get; set; }
-            public string ClientId { get; set; }
-            public string RedirectUri { get; set; }
+        [HttpPost]
+        [AllowAnonymous]
+        [Route("google")]
+        public IHttpActionResult Google(JObject value) {
+            var authInfo = value.ToObject<AuthInfo>();
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
+                return NotFound();
+
+            if (String.IsNullOrEmpty(Settings.Current.GoogleAppId) || String.IsNullOrEmpty(Settings.Current.GoogleAppSecret))
+                return NotFound();
+
+            var google = new GoogleClient(new RequestFactory(), new RuntimeClientConfiguration {
+                ClientId = Settings.Current.GoogleAppId,
+                ClientSecret = Settings.Current.GoogleAppSecret,
+                RedirectUri = authInfo.RedirectUri
+            });
+
+            OAuth2.Models.UserInfo userInfo;
+
+            try {
+                userInfo = google.GetUserInfo(authInfo.Code);
+            } catch (Exception ex) {
+                return BadRequest("Unable to get user info.");
+            }
+
+            User user;
+
+            try {
+                user = AddExternalLogin(userInfo);
+            } catch (Exception ex) {
+                return BadRequest("An error occurred while processing user info.");
+            }
+
+            if (user == null)
+                return BadRequest("Unable to process user info.");
+
+            string token = "d795c4406f6b4bc6ae8d787c65d0274d";
+            return Ok(new { Token = token });
         }
 
-        [HttpPost]
-        [Route("google")]
-        public async Task<IHttpActionResult> Google(AuthPayload payload) {
-            const string provider = "github";
-            const string accessTokenUrl = "https://accounts.google.com/o/oauth2/token";
-            const string userApiUrl = "https://www.googleapis.com/plus/v1/people/me/openIdConnect";
+        private User AddExternalLogin(OAuth2.Models.UserInfo userInfo) {
+            User existingUser = _userRepository.GetUserByOAuthProvider(userInfo.ProviderName, userInfo.Id);
 
-            var parameters = new {
-                code = payload.Code,
-                //client_id = payload.ClientId,
-                client_secret = Settings.Current.GitHubAppSecret,
-                //redirect_uri = payload.RedirectUri
-                grant_type = "authorization_code"
-            };
-            try {
-                // Step 1. Exchange authorization code for access token.
-                var token = await accessTokenUrl.PostJsonAsync(parameters);
+            // Link user accounts.
+            if (ExceptionlessUser != null) {
+                if (existingUser != null) {
+                    if (existingUser.Id != ExceptionlessUser.Id) {
+                        // Existing user account is not the current user. Remove it and we'll add it to the current user below.
+                        if (!existingUser.RemoveOAuthAccount(userInfo.ProviderName, userInfo.Id))
+                            return null;
 
-                // Step 2. Retrieve profile information about the current user.
-                var profile = await userApiUrl.WithOAuthBearerToken("").GetJsonAsync();
-
-                User existingUser = _userRepository.GetUserByOAuthProvider(provider, profile.id);
-
-                // Step 3a. Link user accounts.
-                if (ExceptionlessUser != null) {
-                    // There is already a GitHub account that belongs to you
-                    if (existingUser != null)
-                        return Conflict();
-
-                    ExceptionlessUser.OAuthAccounts.Add(new OAuthAccount { Provider = provider, ProviderUserId = profile.id, Username = profile.name });
-                    _userRepository.Save(ExceptionlessUser);
-                    return Ok(new { Token = "TODO" });
+                        _userRepository.Save(existingUser);
+                    } else {
+                        // User is already logged in.
+                        return ExceptionlessUser;
+                    }
                 }
 
-                // Step 3b. Create a new user account or return an existing one.
-                if (existingUser != null)
-                    return Ok(new { Token = "TODO" });
-
-                var user = new User { FullName = profile.name, EmailAddress = profile.name };
-                user.OAuthAccounts.Add(new OAuthAccount { Provider = provider, ProviderUserId = profile.id, Username = profile.name });
-                user = _userRepository.Add(user);
-                return Ok(new { Token = "TODO" });
-            } catch (Exception ex) {
-                throw;
+                // Add it to the current user if it doesn't already exist and save it.
+                ExceptionlessUser.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+                _userRepository.Save(ExceptionlessUser);
+                return ExceptionlessUser;
             }
-        }
 
-        public bool HasLocalAccount(string emailAddress) {
-            User user = _userRepository.GetByEmailAddress(emailAddress);
-            return user != null && !String.IsNullOrEmpty(user.Password);
-        }
+            // Create a new user account or return an existing one.
+            if (existingUser != null) {
+                if (!existingUser.IsEmailAddressVerified) {
+                    existingUser.IsEmailAddressVerified = true;
+                    _userRepository.Save(existingUser);
+                }
 
-        private bool DeleteOAuthAccount(string provider, string providerUserId) {
-            User user = _userRepository.GetUserByOAuthProvider(provider, providerUserId);
-            if (user == null)
-                return false;
+                return existingUser;
+            }
 
-            // allow the account to be deleted only if there is a local password or there is more than one external login
-            if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
-                return false;
+            // Check to see if a user already exists with this email address.
+            if (!String.IsNullOrEmpty(userInfo.Email))
+                existingUser = _userRepository.GetByEmailAddress(userInfo.Email);
 
-            OAuthAccount account = user.OAuthAccounts.Single(o => o.Provider == provider && o.ProviderUserId == providerUserId);
-            user.OAuthAccounts.Remove(account);
-            _userRepository.Save(user);
-            return true;
+            if (existingUser != null) {
+                if (!existingUser.IsEmailAddressVerified) {
+                    existingUser.IsEmailAddressVerified = true;
+                    _userRepository.Save(existingUser);
+                }
+
+                return existingUser;
+            }
+
+            var user = new User { FullName = userInfo.FirstName + " " + userInfo.LastName, EmailAddress = userInfo.Email, IsEmailAddressVerified = true };
+            user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
+            return _userRepository.Add(user);
         }
     }
 }
