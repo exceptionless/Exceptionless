@@ -187,7 +187,7 @@ namespace Exceptionless.Api.Tests.Queue {
 
                 Assert.Equal(1, queue.EnqueuedCount);
                 resetEvent.WaitOne(TimeSpan.FromSeconds(5));
-                Thread.Sleep(1000);
+                Thread.Sleep(50);
                 Assert.Equal(0, queue.GetQueueCount());
                 Assert.Equal(1, queue.CompletedCount);
                 Assert.Equal(0, queue.WorkerErrorCount);
@@ -217,11 +217,9 @@ namespace Exceptionless.Api.Tests.Queue {
                 }));
 
                 latch.Wait(TimeSpan.FromSeconds(10));
-                Thread.Sleep(TimeSpan.FromSeconds(3));
                 Debug.WriteLine("Completed: {0} Abandoned: {1} Error: {2}", info.CompletedCount, info.AbandonCount, info.ErrorCount);
-                for (int i = 0; i < workers.Count; i++) {
+                for (int i = 0; i < workers.Count; i++)
                     Debug.WriteLine("Worker#{0} Completed: {1} Abandoned: {2} Error: {3}", i, workers[i].CompletedCount, workers[i].AbandonedCount, workers[i].WorkerErrorCount);
-                }
 
                 Assert.Equal(workItemCount, info.CompletedCount + info.AbandonCount + info.ErrorCount);
 
