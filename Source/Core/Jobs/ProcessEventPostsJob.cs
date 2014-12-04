@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Jobs {
 
             QueueEntry<EventPost> queueEntry = null;
             try {
-                queueEntry = _queue.Dequeue(TimeSpan.FromSeconds(1));
+                queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
                     Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventPost: {0}", ex.Message).Write();

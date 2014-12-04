@@ -7,6 +7,7 @@ using CodeSmith.Core.Component;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Lock;
+using Nito.AsyncEx;
 using NLog.Fluent;
 using StackExchange.Redis;
 
@@ -32,7 +33,7 @@ namespace Exceptionless.Core.Queues {
         private readonly TimeSpan _deadLetterTtl = TimeSpan.FromDays(1);
         private CancellationTokenSource _workerCancellationTokenSource;
         private readonly CancellationTokenSource _queueDisposedCancellationTokenSource;
-        private readonly AutoResetEvent _autoEvent = new AutoResetEvent(false);
+        private readonly AsyncAutoResetEvent _autoEvent = new AsyncAutoResetEvent(false);
 
         public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true) {
             QueueId = Guid.NewGuid().ToString("N");
@@ -179,12 +180,17 @@ namespace Exceptionless.Core.Queues {
             if (!timeout.HasValue)
                 timeout = TimeSpan.FromSeconds(30);
             RedisValue value = _db.ListRightPopLeftPush(QueueListName, WorkListName);
-            Log.Trace().Message("List value: {0}", (value.IsNullOrEmpty ? "<null>" : value.ToString())).Write();
+            Log.Trace().Message("Initial list value: {0}", (value.IsNullOrEmpty ? "<null>" : value.ToString())).Write();
 
             DateTime started = DateTime.UtcNow;
             while (timeout > TimeSpan.Zero && value.IsNullOrEmpty && DateTime.UtcNow.Subtract(started) < timeout) {
                 Log.Trace().Message("Waiting to dequeue item...").Write();
-                _autoEvent.WaitOne(timeout.Value);
+
+                // wait for timeout or signal or dispose
+                Task.WaitAny(Task.Delay(timeout.Value), _autoEvent.WaitAsync(_queueDisposedCancellationTokenSource.Token));
+                if (_queueDisposedCancellationTokenSource.IsCancellationRequested)
+                    return null;
+
                 value = _db.ListRightPopLeftPush(QueueListName, WorkListName);
                 Log.Trace().Message("List value: {0}", (value.IsNullOrEmpty ? "<null>" : value.ToString())).Write();
             }
