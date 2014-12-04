@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reflection;
 using Exceptionless;
+using Exceptionless.Core.Serialization;
+using Exceptionless.Json;
+using Exceptionless.Json.Serialization;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Extensions;
@@ -74,6 +79,23 @@ namespace Client.Tests.Serializer {
             string json = serializer.Serialize(data, new[] { "Date" });
             Assert.Equal(@"{""message"":""Testing""}", json);
         }
+
+        // TODO: Ability to deserialize objects without underscores
+        //[Fact]
+        public void CanDeserializeDataWithoutUnderscores() {
+            const string json = @"{""BlahId"":""Hello""}";
+            var settings = new JsonSerializerSettings();
+            settings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
+
+            var m = JsonConvert.DeserializeObject<Blah>(json, settings);
+            Assert.Equal("Hello", m.BlahId);
+
+            string newJson = JsonConvert.SerializeObject(m, settings);
+        }
+    }
+
+    public class Blah {
+        public string BlahId { get; set; }
     }
 
     public class SampleModel {
@@ -85,5 +107,22 @@ namespace Client.Tests.Serializer {
         public IDictionary<string, string> Dictionary { get; set; }
         public ICollection<string> Collection { get; set; } 
         public SampleModel Nested { get; set; }
+    }
+
+    public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
+        public LowerCaseUnderscorePropertyNamesContractResolver() : base(true) { }
+
+        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
+            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
+                return base.CreateDictionaryContract(objectType);
+
+            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
+            contract.PropertyNameResolver = propertyName => propertyName;
+            return contract;
+        }
+
+        protected override string ResolvePropertyName(string propertyName) {
+            return propertyName.ToLowerUnderscoredWords();
+        }
     }
 }
