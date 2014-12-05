@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Web.Http;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Models;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Json.Linq;
@@ -14,20 +17,83 @@ using OAuth2.Infrastructure;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
-        private readonly IMessagePublisher _messagePublisher;
         private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
+        private readonly MembershipSecurity _encoder = new MembershipSecurity();
 
-        public AuthController(IMessagePublisher messagePublisher, ITokenRepository tokenRepository, IUserRepository userRepository) {
-            _messagePublisher = messagePublisher;
+        private static bool _isFirstUserChecked;
+
+        public AuthController(ITokenRepository tokenRepository, IUserRepository userRepository) {
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
         }
 
         [HttpPost]
+        [Route("login")]
+        public IHttpActionResult Login(LoginModel model) {
+            if (model == null || String.IsNullOrEmpty(model.Email) || String.IsNullOrEmpty(model.Password))
+                return BadRequest("Email or Password was not specified.");
+
+            User user;
+            try {
+                user = _userRepository.GetByEmailAddress(model.Email);
+            } catch (Exception) {
+                return Unauthorized();
+            }
+
+            if (user == null || !user.IsActive)
+                return Unauthorized();
+
+            if (String.IsNullOrEmpty(user.Salt))
+                return Unauthorized();
+
+            string encodedPassword = _encoder.GetSaltedHash(model.Password, user.Salt);
+            if (!String.Equals(encodedPassword, user.Password))
+                return Unauthorized();
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Login").AddObject(user).Submit();
+            return Ok(new { Token = GetToken(user) });
+        }
+
+        [HttpPost]
+        [Route("signup")]
+        public IHttpActionResult Signup(SignupModel model) {
+            if (model == null || String.IsNullOrEmpty(model.Name) || String.IsNullOrEmpty(model.Email) || String.IsNullOrEmpty(model.Password))
+                return BadRequest("Name, Email or Password was not specified.");
+
+            User user;
+            try {
+                user = _userRepository.GetByEmailAddress(model.Email);
+            } catch (Exception) {
+                return BadRequest();
+            }
+
+            if (user != null)
+                return BadRequest("A user already exists with this email address.");
+
+            user = new User { EmailAddress = model.Email, Password = model.Password, FullName = model.Name };
+            user.Roles.Add(AuthorizationRoles.User);
+            AddGlobalAdminRoleIfFirstUser(user);
+
+            user.Salt = _encoder.GenerateSalt();
+            user.Password = _encoder.GetSaltedHash(user.Password, user.Salt);
+            user.IsActive = true;
+
+            try {
+                user = _userRepository.Save(user, true);
+            } catch (Exception ex) {
+                ex.ToExceptionless().AddObject(user).MarkAsCritical().AddTags("signup").Submit();
+                return BadRequest("An error occurred.");
+            }
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Signup").AddObject(user).Submit();
+            return Ok(new { Token = GetToken(user) });
+        }
+
+        [HttpPost]
         [Route("github")]
         public IHttpActionResult Github(JObject value) {
-            var authInfo = value.ToObject<AuthInfo>();
+            var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
 
@@ -63,7 +129,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("google")]
         public IHttpActionResult Google(JObject value) {
-            var authInfo = value.ToObject<AuthInfo>();
+            var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
 
@@ -99,7 +165,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("facebook")]
         public IHttpActionResult Facebook(JObject value) {
-            var authInfo = value.ToObject<AuthInfo>();
+            var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
 
@@ -137,7 +203,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("live")]
         public IHttpActionResult Live(JObject value) {
-            var authInfo = value.ToObject<AuthInfo>();
+            var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
 
@@ -172,7 +238,18 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new { Token = GetToken(user) });
         }
 
+        private void AddGlobalAdminRoleIfFirstUser(User user) {
+            if (_isFirstUserChecked)
+                return;
+
+            if (_userRepository.Count() == 0)
+                user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+
+            _isFirstUserChecked = true;
+        }
+
         private User AddExternalLogin(OAuth2.Models.UserInfo userInfo) {
+            ExceptionlessClient.Default.CreateFeatureUsage("External Login").AddObject(userInfo).Submit();
             User existingUser = _userRepository.GetUserByOAuthProvider(userInfo.ProviderName, userInfo.Id);
 
             // Link user accounts.
@@ -208,12 +285,14 @@ namespace Exceptionless.Api.Controllers {
 
             // Check to see if a user already exists with this email address.
             User user = !String.IsNullOrEmpty(userInfo.Email) ? _userRepository.GetByEmailAddress(userInfo.Email) : null;
-            if (user == null)
-                user = new User { FullName = userInfo.FirstName + " " + userInfo.LastName, EmailAddress = userInfo.Email };
-
+            if (user == null) {
+                user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
+                AddGlobalAdminRoleIfFirstUser(user);
+            }
+            
             user.IsEmailAddressVerified = true;
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            return _userRepository.Save(user);
+            return _userRepository.Save(user, true);
         }
 
         private string GetToken(User user) {

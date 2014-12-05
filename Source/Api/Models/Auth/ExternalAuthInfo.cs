@@ -1,7 +1,7 @@
 using System;
 
-namespace Exceptionless.Api.Controllers {
-    public class AuthInfo {
+namespace Exceptionless.Api.Models {
+    public class ExternalAuthInfo {
         public string ClientId { get; set; }
         public string Code { get; set; }
         public string RedirectUri { get; set; }
