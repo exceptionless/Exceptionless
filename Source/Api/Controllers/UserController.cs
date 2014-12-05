@@ -60,30 +60,9 @@ namespace Exceptionless.Api.Controllers {
             return base.Patch(id, changes);
         }
 
-        [HttpGet]
-        [AllowAnonymous]
-        [Route("check-email-address/{email:minlength(1)}")]
-        public IHttpActionResult IsEmailAddressAvailable(string email) {
-            if (IsEmailAddressAvailableInternal(email))
-                return NotFound();
-
-            return Ok();
-        }
-
-        private bool IsEmailAddressAvailableInternal(string email) {
-            if (String.IsNullOrWhiteSpace(email))
-                return false;
-
-            email = email.ToLower();
-            if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-                return true;
-
-            return _repository.GetByEmailAddress(email) == null;
-        }
-
         [HttpPost]
         [Route("{id:objectid}/email-address/{email:minlength(1)}")]
-        public async Task<IHttpActionResult> UpdateEmailAddress(string id, string email) {
+        public IHttpActionResult UpdateEmailAddress(string id, string email) {
             var user = GetModel(id, false);
             if (user == null)
                 return NotFound();
@@ -100,36 +79,21 @@ namespace Exceptionless.Api.Controllers {
             _repository.Save(user);
 
             if (!user.IsEmailAddressVerified)
-                return await ResendVerificationEmail(id);
+                ResendVerificationEmail(id);
 
             return Ok(new { IsVerified = user.IsEmailAddressVerified });
         }
 
         [HttpGet]
-        [Route("verify-email-address/{token:minlength(1)}")]
-        public IHttpActionResult VerifyEmailAddress(string token) {
-            User user = _repository.GetByVerifyEmailAddressToken(token);
-            if (user == null)
-                return NotFound();
-
-            user.IsEmailAddressVerified = true;
-            user.VerifyEmailAddressToken = null;
-            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
-            _repository.Save(user);
-
-            return Ok();
-        }
-
-        [HttpGet]
         [Route("{id:objectid}/resend-verification-email")]
-        public async Task<IHttpActionResult> ResendVerificationEmail(string id) {
+        public IHttpActionResult ResendVerificationEmail(string id) {
             var user = GetModel(id, false);
             if (user == null)
                 return NotFound();
             
             if (!user.IsEmailAddressVerified) {
-                // TODO: Set the VerifyEmailAddressToken
-                //user.VerifyEmailAddressToken = _membershipProvider.GenerateVerifyEmailToken(user.EmailAddress);
+                user.VerifyEmailAddressToken = Guid.NewGuid().ToString("N");
+                user.VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440);
                 _mailer.SendVerifyEmail(user);
             }
 
@@ -168,6 +132,16 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return StatusCode(HttpStatusCode.NoContent);
+        }
+
+        private bool IsEmailAddressAvailableInternal(string email) {
+            if (String.IsNullOrWhiteSpace(email))
+                return false;
+
+            if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            return _repository.GetByEmailAddress(email) == null;
         }
 
         protected override User GetModel(string id, bool useCache = true) {
