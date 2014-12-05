@@ -155,7 +155,7 @@ namespace Exceptionless.Api {
             }
 
             app.UseWebApi(Config);
-            app.MapSignalR(new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
+            app.MapSignalR("/api/v2/push-messages", new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
 
             PhysicalFileSystem fileSystem = null;
             var root = AppDomain.CurrentDomain.BaseDirectory;
