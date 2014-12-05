@@ -17,7 +17,7 @@ namespace Exceptionless {
     public static class UserExtensions {
         public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary data = null) {
             var account = new OAuthAccount {
-                Provider = providerName,
+                Provider = providerName.ToLowerInvariant(),
                 ProviderUserId = providerUserId,
                 Username = username
             };
@@ -32,7 +32,7 @@ namespace Exceptionless {
             if (user.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(user.Password))
                 return false;
 
-            var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName && o.ProviderUserId == providerUserId);
+            var account = user.OAuthAccounts.FirstOrDefault(o => o.Provider == providerName.ToLowerInvariant() && o.ProviderUserId == providerUserId);
             if (account == null)
                 return true;
 

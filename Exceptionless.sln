@@ -17,8 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{DAA0
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.SampleConsole", "Source\Samples\SampleConsole\Exceptionless.SampleConsole.csproj", "{8B71F45D-0828-4B46-A8FE-F6DCA64F6C9E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Membership", "Source\Membership\Exceptionless.Membership.csproj", "{9C987907-BD64-4100-89D4-F4BCFB77768B}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{98A5A2F7-BBA9-4B65-91C9-88E18D474341}"
 	ProjectSection(SolutionItems) = preProject
 		CONTRIBUTING.md = CONTRIBUTING.md
@@ -43,8 +41,6 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api", "Source\Api\Exceptionless.Api.csproj", "{6819B8D7-2364-426B-A944-1B4CBAF4BC32}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Api.Tests", "Source\Api.Tests\Exceptionless.Api.Tests.csproj", "{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDB.AspNet.Identity", "Source\Identity\MongoDB.AspNet.Identity.csproj", "{0FF87680-235F-4231-8302-9BF6FCAC7476}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.WebApi", "Source\Clients\WebApi\Exceptionless.WebApi.csproj", "{D6E6EE87-5869-4A62-8F67-7A685205BCAD}"
 EndProject
@@ -136,16 +132,6 @@ Global
 		{8B71F45D-0828-4B46-A8FE-F6DCA64F6C9E}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{8B71F45D-0828-4B46-A8FE-F6DCA64F6C9E}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{8B71F45D-0828-4B46-A8FE-F6DCA64F6C9E}.Release|x86.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|x86.ActiveCfg = Release|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -206,16 +192,6 @@ Global
 		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5D52E3FE-A13B-4B27-9259-FCD1F66B751C}.Release|x86.ActiveCfg = Release|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Release|Any CPU.Build.0 = Release|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{0FF87680-235F-4231-8302-9BF6FCAC7476}.Release|x86.ActiveCfg = Release|Any CPU
 		{D6E6EE87-5869-4A62-8F67-7A685205BCAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D6E6EE87-5869-4A62-8F67-7A685205BCAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6E6EE87-5869-4A62-8F67-7A685205BCAD}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU

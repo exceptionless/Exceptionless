@@ -46,6 +46,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(provider) || String.IsNullOrEmpty(providerUserId))
                 return null;
 
+            provider = provider.ToLowerInvariant();
             return _collection.AsQueryable().FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider && o.ProviderUserId == providerUserId));
         }
 
