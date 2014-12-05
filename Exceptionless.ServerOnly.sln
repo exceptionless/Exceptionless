@@ -11,8 +11,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{295DE1D5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Core", "Source\Core\Exceptionless.Core.csproj", "{3E5B39D5-7ACD-486B-9F90-59116B67952D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Membership", "Source\Membership\Exceptionless.Membership.csproj", "{9C987907-BD64-4100-89D4-F4BCFB77768B}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{98A5A2F7-BBA9-4B65-91C9-88E18D474341}"
 	ProjectSection(SolutionItems) = preProject
 		CONTRIBUTING.md = CONTRIBUTING.md
@@ -82,16 +80,6 @@ Global
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Release|x86.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{9C987907-BD64-4100-89D4-F4BCFB77768B}.Release|x86.ActiveCfg = Release|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
