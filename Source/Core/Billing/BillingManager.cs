@@ -40,8 +40,8 @@ namespace Exceptionless.Core.Billing {
             if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
                 return false;
 
-            List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
-            return organization.MaxUsers <= -1 || users.Count < organization.MaxUsers;
+            int numberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Count + organization.Invites.Count;
+            return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
         }
 
         public bool CanAddProject(Project project) {
