@@ -25,7 +25,7 @@ using Exceptionless.Models.Admin;
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
+    public class TokenController : RepositoryApiController<ITokenRepository, Token, Token, NewToken, Token> {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
@@ -35,7 +35,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #region CRUD
-    
+        
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
@@ -89,8 +89,6 @@ namespace Exceptionless.App.Controllers.API {
             return base.GetById(id);
         }
 
-        // TODO: Verify that we can create new tokens at an org or 
-        // project level with specified scopes (Client, User, Admin).
         [Route]
         [HttpPost]
         public override IHttpActionResult Post(NewToken value) {

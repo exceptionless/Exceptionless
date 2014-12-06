@@ -10,10 +10,11 @@ using System.Web.Http.Routing;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Providers;
+using Exceptionless.Api.Security;
 using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
@@ -25,7 +26,6 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Microsoft.Owin.FileSystems;
-using Microsoft.Owin.Security.OAuth;
 using Microsoft.Owin.StaticFiles;
 using MongoDB.Driver;
 using Newtonsoft.Json;
@@ -55,7 +55,6 @@ namespace Exceptionless.Api {
 
             Config = new HttpConfiguration();
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
-            Config.Filters.Add(new HostAuthenticationFilter(OAuthDefaults.AuthenticationType));
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
@@ -89,8 +88,9 @@ namespace Exceptionless.Api {
                 throw;
             }
 
-            Config.MessageHandlers.Add(new XHttpMethodOverrideDelegatingHandler());
-            Config.MessageHandlers.Add(new EncodingDelegatingHandler());
+            Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<AuthTokenMessageHandler>());
 
             // Throttle api calls to X every 15 minutes by IP address.
             Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
@@ -99,26 +99,6 @@ namespace Exceptionless.Api {
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             app.UseCors(CorsOptions.AllowAll);
-
-            var oauthProvider = container.GetInstance<ExceptionlessOAuthAuthorizationServerProvider>();
-            var tokenProvider = container.GetInstance<ExceptionlessTokenProvider>();
-            var authProvider = container.GetInstance<ExceptionlessOAuthBearerAuthenticationProvider>();
-            app.UseOAuthAuthorizationServer(new OAuthAuthorizationServerOptions {
-                TokenEndpointPath = new PathString("/token"),
-                AuthorizeEndpointPath = new PathString("/account/authorize"),
-                Provider = oauthProvider,
-                AccessTokenExpireTimeSpan = TimeSpan.FromDays(14),
-                AllowInsecureHttp = true,
-                AccessTokenProvider = tokenProvider,
-                RefreshTokenProvider = tokenProvider,
-                AuthorizationCodeProvider = tokenProvider
-            });
-
-            app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions {
-                Provider = authProvider,
-                AccessTokenProvider = tokenProvider,
-                Realm = "Exceptionless"
-            });
 
             app.CreatePerContext<Lazy<User>>("User", ctx => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
@@ -192,7 +172,13 @@ namespace Exceptionless.Api {
             var userRepository = container.GetInstance<IUserRepository>();
             var user = userRepository.GetByEmailAddress("test@exceptionless.com");
             if (user == null)
-                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue});
+                user = userRepository.Add(new User {
+                    FullName = "Test User",
+                    EmailAddress = "test@exceptionless.com",
+                    VerifyEmailAddressToken = Guid.NewGuid().ToString(),
+                    VerifyEmailAddressTokenExpiration = DateTime.MaxValue,
+                    Roles = AuthorizationRoles.GlobalAll
+                });
             _userId = user.Id;
             dataHelper.CreateSampleOrganizationAndProject(user.Id);
         }

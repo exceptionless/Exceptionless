@@ -103,6 +103,18 @@ namespace Exceptionless.Api.Extensions {
             return builder.ToString();
         }
 
+        public static string GetQueryString(this HttpRequestMessage request, string key) {
+            var queryStrings = request.GetQueryNameValuePairs();
+            if (queryStrings == null)
+                return null;
+
+            var match = queryStrings.FirstOrDefault(kv => kv.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (String.IsNullOrEmpty(match.Value))
+                return null;
+
+            return match.Value;
+        }
+
         /// <summary>
         /// Formats an error with the stack trace included.
         /// </summary>
