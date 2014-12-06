@@ -8,7 +8,7 @@ using System.Threading;
 using System.Web.Security;
 
 namespace Exceptionless.Api.Security {
-    public class MembershipSecurity {
+    public class SecurityEncoder {
         private const string MACHINE_KEY_PURPOSE = "Membership:Username:{0}";
         private const string ANONYMOUS = "<anonymous>";
         private const int SALT_SIZE = 128 / 8; // 128 bits

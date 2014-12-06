@@ -31,7 +31,6 @@ using SimpleInjector;
 using Xunit;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
-using System.Threading;
 
 namespace Client.Tests.Submission {
     public class DefaultSubmissionClientTests {

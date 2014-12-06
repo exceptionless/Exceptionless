@@ -22,7 +22,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly IMailer _mailer;
-        private readonly MembershipSecurity _encoder = new MembershipSecurity();
+        private readonly SecurityEncoder _encoder = new SecurityEncoder();
 
         private static bool _isFirstUserChecked;
 

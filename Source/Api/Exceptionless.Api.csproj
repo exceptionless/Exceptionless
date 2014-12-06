@@ -197,7 +197,7 @@
     <Compile Include="Serialization\DefaultJsonSettingsAttribute.cs" />
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
-    <Compile Include="Security\MembershipSecurity.cs" />
+    <Compile Include="Security\SecurityEncoder.cs" />
     <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
     <Compile Include="Utility\ExceptionlessExceptionLogger.cs" />
     <Compile Include="Utility\ObjectIdsRouteConstraint.cs" />
