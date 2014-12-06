@@ -103,6 +103,14 @@ namespace Exceptionless.Api.Extensions {
             return builder.ToString();
         }
 
+        public static string GetClientIpAddress(this HttpRequestMessage request) {
+            var context = request.GetOwinContext();
+            if (context != null)
+                return context.Request.RemoteIpAddress;
+
+            return null;
+        }
+
         public static string GetQueryString(this HttpRequestMessage request, string key) {
             var queryStrings = request.GetQueryNameValuePairs();
             if (queryStrings == null)

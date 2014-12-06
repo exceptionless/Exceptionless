@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Web.Security;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Api.Security {
     public class MembershipSecurity {
         private const string MACHINE_KEY_PURPOSE = "Membership:Username:{0}";
         private const string ANONYMOUS = "<anonymous>";

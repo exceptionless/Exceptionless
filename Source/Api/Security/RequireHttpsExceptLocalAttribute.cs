@@ -12,7 +12,7 @@
 using System;
 using System.Web.Http.Controllers;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Api.Security {
     public class RequireHttpsExceptLocalAttribute : RequireHttpsAttribute {
         protected override void HandleNonHttpsRequest(HttpActionContext context) {
             if (context == null)

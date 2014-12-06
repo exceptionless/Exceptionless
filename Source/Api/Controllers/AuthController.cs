@@ -2,14 +2,13 @@
 using System.Web.Http;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Utility;
+using Exceptionless.Api.Security;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Json.Linq;
 using Exceptionless.Models;
-using Exceptionless.Models.Admin;
 using NLog.Fluent;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;

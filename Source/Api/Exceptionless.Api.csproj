@@ -158,6 +158,7 @@
     <Compile Include="Controllers\Base\ModelActionResults.cs" />
     <Compile Include="Controllers\TokenController.cs" />
     <Compile Include="Models\Auth\LoginModel.cs" />
+    <Compile Include="Models\Auth\ResetPasswordModel.cs" />
     <Compile Include="Models\Auth\SignupModel.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
@@ -180,9 +181,7 @@
     <Compile Include="Controllers\UtilityController.cs" />
     <Compile Include="Extensions\AppBuilderExtensions.cs" />
     <Compile Include="Extensions\DeltaExtensions.cs" />
-    <Compile Include="Extensions\HttpClientExtensions.cs" />
     <Compile Include="Extensions\HttpExtensions.cs" />
-    <Compile Include="Extensions\HttpRouteCollectionExtensions.cs" />
     <Compile Include="Hubs\MessageBusHub.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
@@ -195,10 +194,10 @@
     <Compile Include="AppBuilder.cs" />
     <Compile Include="Security\AuthTokenMessageHandler.cs" />
     <Compile Include="Security\TokenManager.cs" />
-    <Compile Include="Serialization\CamelCasedJsonAttribute.cs" />
+    <Compile Include="Serialization\DefaultJsonSettingsAttribute.cs" />
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
-    <Compile Include="Utility\MembershipSecurity.cs" />
+    <Compile Include="Security\MembershipSecurity.cs" />
     <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
     <Compile Include="Utility\ExceptionlessExceptionLogger.cs" />
     <Compile Include="Utility\ObjectIdsRouteConstraint.cs" />
@@ -217,8 +216,8 @@
     <Compile Include="Utility\ObjectIdRouteConstraint.cs" />
     <Compile Include="Utility\Results\OkWithHeadersContentResult.cs" />
     <Compile Include="Utility\OverageHandler.cs" />
-    <Compile Include="Utility\RequireHttpsAttribute.cs" />
-    <Compile Include="Utility\RequireHttpsExceptLocalAttribute.cs" />
+    <Compile Include="Security\RequireHttpsAttribute.cs" />
+    <Compile Include="Security\RequireHttpsExceptLocalAttribute.cs" />
     <Compile Include="Utility\Results\NotImplementedActionResult.cs" />
     <Compile Include="Utility\Results\PlanLimitReachedActionResult.cs" />
     <Compile Include="Utility\ThrottlingHandler.cs" />

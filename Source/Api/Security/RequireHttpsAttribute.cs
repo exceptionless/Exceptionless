@@ -18,7 +18,7 @@ using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
 using Exceptionless.Core;
 
-namespace Exceptionless.Api.Utility {
+namespace Exceptionless.Api.Security {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequireHttpsAttribute : FilterAttribute, IAuthorizationFilter {
         protected virtual void HandleNonHttpsRequest(HttpActionContext context) {

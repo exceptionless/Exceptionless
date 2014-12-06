@@ -16,6 +16,7 @@ using System.Net;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
