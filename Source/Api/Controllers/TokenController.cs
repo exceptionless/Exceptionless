@@ -45,7 +45,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
+            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, Token>).ToList();
             return OkWithResourceLinks(results, options.HasMore, page);
         }
 
@@ -62,7 +62,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
+            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, Token>).ToList();
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -78,7 +78,7 @@ namespace Exceptionless.App.Controllers.API {
 
             var token = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).FirstOrDefault();
             if (token != null)
-                return Ok(Mapper.Map<Token, ViewToken>(token));
+                return Ok(Mapper.Map<Token, Token>(token));
 
             return Post(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }

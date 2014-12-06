@@ -157,12 +157,5 @@ namespace Exceptionless.Api.Controllers {
 
             return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
-
-        protected override void CreateMaps() {
-            Mapper.CreateMap<User, ViewUser>().AfterMap((u, vu) => {
-                vu.HasAdminRole = User.IsInRole(AuthorizationRoles.GlobalAdmin) && u.Roles.Contains(AuthorizationRoles.GlobalAdmin);
-            });
-            base.CreateMaps();
-        }
     }
 }

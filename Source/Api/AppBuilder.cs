@@ -100,7 +100,7 @@ namespace Exceptionless.Api {
 
             app.UseCors(CorsOptions.AllowAll);
 
-            app.CreatePerContext<Lazy<User>>("User", ctx => {
+            app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
@@ -108,26 +108,22 @@ namespace Exceptionless.Api {
                 if (String.IsNullOrEmpty(userId))
                     return null;
 
-                return new Lazy<User>(() => {
-                    var userRepository = container.GetInstance<IUserRepository>();
-                    return userRepository.GetById(userId, true);
-                });
-            });
+                var userRepository = container.GetInstance<IUserRepository>();
+                return userRepository.GetById(userId, true);
+            }));
 
-            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => {
+            app.CreatePerContext<Lazy<Project>>("DefaultProject", ctx => new Lazy<Project>(() => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
-                return new Lazy<Project>(() => {
-                    string projectId = ctx.Request.User.GetDefaultProjectId();
-                    var projectRepository = container.GetInstance<IProjectRepository>();
+                string projectId = ctx.Request.User.GetDefaultProjectId();
+                var projectRepository = container.GetInstance<IProjectRepository>();
 
-                    if (String.IsNullOrEmpty(projectId))
-                        return projectRepository.GetByOrganizationIds(ctx.Request.User.GetOrganizationIds(), useCache: true).FirstOrDefault();
+                if (String.IsNullOrEmpty(projectId))
+                    return projectRepository.GetByOrganizationIds(ctx.Request.User.GetOrganizationIds(), useCache: true).FirstOrDefault();
 
-                    return projectRepository.GetById(projectId, true);
-                });
-            });
+                return projectRepository.GetById(projectId, true);
+            }));
 
             if (registerExceptionlessClient) {
                 ExceptionlessClient.Default.RegisterWebApi(Config);
