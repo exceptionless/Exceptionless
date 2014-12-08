@@ -244,14 +244,18 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
-            if (IsNameAvailableInternal(name))
+            if (IsProjectNameAvailableInternal(null, name))
                 return NotFound();
 
             return Ok();
         }
 
-        private bool IsNameAvailableInternal(string name) {
-            return !String.IsNullOrWhiteSpace(name) && _repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+        private bool IsProjectNameAvailableInternal(string organizationId, string name) {
+            if (String.IsNullOrWhiteSpace(name))
+                return false;
+
+            ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
+            return !_repository.GetByOrganizationIds(organizationIds).Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         [HttpPost]
@@ -291,7 +295,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithMessage("Project name is required.");
 
-            if (!IsNameAvailableInternal(value.Name))
+            if (!IsProjectNameAvailableInternal(value.OrganizationId, value.Name))
                 return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
             if (!_billingManager.CanAddProject(value))
@@ -310,7 +314,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanUpdate(Project original, Delta<UpdateProject> changes) {
             var changed = changes.GetEntity();
-            if (changes.ContainsChangedProperty(p => p.Name) && !IsNameAvailableInternal(changed.Name))
+            if (changes.ContainsChangedProperty(p => p.Name) && !IsProjectNameAvailableInternal(original.OrganizationId, changed.Name))
                 return PermissionResult.DenyWithPlanLimitReached("A project with this name already exists.");
 
             return base.CanUpdate(original, changes);

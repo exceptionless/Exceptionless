@@ -198,7 +198,8 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
-        public async Task<IHttpActionResult> SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
+        [ConfigurationResponseFilter]
+        public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
             _statsClient.Counter(StatNames.EventsUserDescriptionSubmitted);
             
             if (String.IsNullOrEmpty(referenceId))
@@ -237,7 +238,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.UserOrClient)]
         [ConfigurationResponseFilter]
-        public async Task<IHttpActionResult> LegacyPatch(string id, Delta<UpdateEvent> changes) {
+        public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -250,7 +251,7 @@ namespace Exceptionless.Api.Controllers {
             var userDescription = new UserDescription();
             changes.Patch(userDescription);
 
-            return await SetUserDescription(id, userDescription);
+            return SetUserDescription(id, userDescription);
         }
 
         [HttpPost]
