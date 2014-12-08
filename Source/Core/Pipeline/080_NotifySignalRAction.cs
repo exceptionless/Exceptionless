@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Threading.Tasks;
 using CodeSmith.Core.Component;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
@@ -27,7 +28,7 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _publisher.Publish(new EventOccurrence {
+            Task.Factory.StartNewDelayed(1000, () => _publisher.Publish(new EventOccurrence {
                 Id = ctx.Event.Id,
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,
@@ -37,7 +38,6 @@ namespace Exceptionless.Core.Pipeline {
                 IsFixed = ctx.Event.IsFixed,
                 IsNotFound = ctx.Event.IsNotFound(),
                 IsRegression = ctx.IsRegression
-            });
+            }));
         }
-    }
 }
