@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
@@ -19,7 +18,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 
 namespace Exceptionless.Api.Hubs {
-    [HubName("message-bus")]
+    [HubName("messages")]
     public class MessageBusHub : Hub {
         public MessageBusHub(IMessageSubscriber subscriber) {
             subscriber.Subscribe<EntityChanged>(OnEntityChanged);
