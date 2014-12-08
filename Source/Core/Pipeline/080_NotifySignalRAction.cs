@@ -25,7 +25,9 @@ namespace Exceptionless.Core.Pipeline {
             _publisher = publisher;
         }
 
-        protected override bool ContinueOnError { get { return true; } }
+        protected override bool ContinueOnError {
+            get { return true; }
+        }
 
         public override void Process(EventContext ctx) {
             Task.Factory.StartNewDelayed(1000, () => _publisher.Publish(new EventOccurrence {
@@ -40,4 +42,5 @@ namespace Exceptionless.Core.Pipeline {
                 IsRegression = ctx.IsRegression
             }));
         }
+    }
 }
