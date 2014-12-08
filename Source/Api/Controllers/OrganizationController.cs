@@ -354,21 +354,21 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
-            if (IsNameAvailableInternal(name))
+            if (IsOrganizationNameAvailableInternal(name))
                 return NotFound();
 
             return Ok();
         }
 
-        private bool IsNameAvailableInternal(string name) {
-            return !String.IsNullOrWhiteSpace(name) && _repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+        private bool IsOrganizationNameAvailableInternal(string name) {
+            return !String.IsNullOrWhiteSpace(name) && !_repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override PermissionResult CanAdd(Organization value) {
             if (String.IsNullOrEmpty(value.Name))
                 return PermissionResult.DenyWithMessage("Organization name is required.");
 
-            if (!IsNameAvailableInternal(value.Name))
+            if (!IsOrganizationNameAvailableInternal(value.Name))
                 return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
             if (!_billingManager.CanAddOrganization(ExceptionlessUser))
@@ -390,7 +390,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected override PermissionResult CanUpdate(Organization original, Delta<NewOrganization> changes) {
             var changed = changes.GetEntity();
-            if (!IsNameAvailableInternal(changed.Name))
+            if (!IsOrganizationNameAvailableInternal(changed.Name))
                 return PermissionResult.DenyWithPlanLimitReached("A organization with this name already exists.");
 
             return base.CanUpdate(original, changes);
