@@ -10,9 +10,9 @@ namespace Exceptionless.Api.Models {
 
         public string OrganizationId { get; set; }
         public string ProjectId { get; set; }
-        public string ApplicationId { get; set; }
         public string DefaultProjectId { get; set; }
         public HashSet<string> Scopes { get; set; }
+        public DateTime? ExpiresUtc { get; set; }
         public string Notes { get; set; }
     }
 }

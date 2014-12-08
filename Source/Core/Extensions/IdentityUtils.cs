@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Extensions {
                 return WindowsIdentity.GetAnonymous();
 
             if (!String.IsNullOrEmpty(token.UserId))
-                return CreateUserIdentity(token.UserId, token.Scopes.ToArray(), userRepository);
+                return CreateUserIdentity(token.UserId, token.Scopes.ToArray(), userRepository, token.ProjectId ?? token.DefaultProjectId);
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, token.Id),
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
 
-        public static ClaimsIdentity CreateUserIdentity(string userId, string[] scopes, IUserRepository userRepository) {
+        public static ClaimsIdentity CreateUserIdentity(string userId, string[] scopes, IUserRepository userRepository, string defaultProjectId = null) {
             if (String.IsNullOrEmpty(userId))
                 throw new ArgumentNullException("userId");
             if (userRepository == null)
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Extensions {
             if (roles.Count == 0)
                 roles.AddRange(user.Roles);
 
-            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), roles.ToArray());
+            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), roles.ToArray(), defaultProjectId);
         }
 
         public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {

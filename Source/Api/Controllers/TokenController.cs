@@ -132,7 +132,6 @@ namespace Exceptionless.App.Controllers.API {
             value.Id = Guid.NewGuid().ToString("N");
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
-            value.UserId = User.GetUserId();
 
             return base.AddModel(value);
         }
