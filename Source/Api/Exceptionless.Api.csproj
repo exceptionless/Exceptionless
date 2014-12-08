@@ -91,15 +91,16 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NLog.Xml.3.1.0.30\lib\net45\NLog.Xml.dll</HintPath>
     </Reference>
-    <Reference Include="OAuth2">
+    <Reference Include="OAuth2, Version=0.8.34.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\OAuth2.0.8.34\lib\OAuth2.dll</HintPath>
     </Reference>
     <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="RestSharp, Version=105.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="RestSharp, Version=104.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\RestSharp.105.0.1\lib\net4\RestSharp.dll</HintPath>
+      <HintPath>..\..\packages\RestSharp.104.0\lib\net4\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="SimpleInjector">
       <HintPath>..\..\packages\SimpleInjector.2.6.1\lib\net45\SimpleInjector.dll</HintPath>
