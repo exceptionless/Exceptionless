@@ -115,7 +115,7 @@ namespace Exceptionless.Api.Controllers {
 
             project.Configuration.Settings[key] = value;
             project.Configuration.IncrementVersion();
-            _repository.Save(project);
+            _repository.Save(project, true);
 
             return Ok();
         }
@@ -128,7 +128,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Configuration.Settings.Remove(key))
-                _repository.Save(project);
+                _repository.Save(project, true);
 
             return Ok();
         }
@@ -187,7 +187,7 @@ namespace Exceptionless.Api.Controllers {
             else
                 project.NotificationSettings[userId] = settings;
 
-            _repository.Save(project);
+            _repository.Save(project, true);
 
             return Ok();
         }
@@ -204,7 +204,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.NotificationSettings.ContainsKey(userId)) {
                 project.NotificationSettings.Remove(userId);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
@@ -220,7 +220,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (!project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Add(name);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
@@ -235,7 +235,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (project.PromotedTabs.Contains(name)) {
                 project.PromotedTabs.Remove(name);
-                _repository.Save(project);
+                _repository.Save(project, true);
             }
 
             return Ok();
@@ -266,7 +266,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             project.Data[key] = value;
-            _repository.Save(project);
+            _repository.Save(project, true);
 
             return Ok();
         }
@@ -279,7 +279,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             if (project.Data.Remove(key))
-                _repository.Save(project);
+                _repository.Save(project, true);
 
             return Ok();
         }
