@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         public override void Process(EventContext ctx) {
-            Task.Factory.StartNewDelayed(1000, () => _publisher.Publish(new EventOccurrence {
+            Task.Factory.StartNewDelayed(1500, () => _publisher.Publish(new EventOccurrence {
                 Id = ctx.Event.Id,
                 OrganizationId = ctx.Event.OrganizationId,
                 ProjectId = ctx.Event.ProjectId,
