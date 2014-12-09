@@ -127,8 +127,10 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            if (project.Configuration.Settings.Remove(key))
+            if (project.Configuration.Settings.Remove(key)) {
+                project.Configuration.IncrementVersion(); 
                 _repository.Save(project, true);
+            }
 
             return Ok();
         }
