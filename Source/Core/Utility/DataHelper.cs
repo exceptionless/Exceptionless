@@ -56,8 +56,8 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             try {
-                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
                 await _eventRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
+                await _stackRepository.RemoveAllByProjectIdsAsync(new [] { projectId });
 
                 _projectRepository.Save(project);
             } catch (Exception e) {

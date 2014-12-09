@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
 
             ExceptionlessClient.Default.CreateFeatureUsage("Login").AddObject(user).Submit();
-            return Ok(new { Token = GetToken(user) });
+            return Ok(new { Token = GetToken(user, model.Remember) });
         }
 
         [HttpPost]
@@ -440,7 +440,7 @@ namespace Exceptionless.Api.Controllers {
             _organizationRepository.Save(organization);
         }
 
-        private string GetToken(User user) {
+        private string GetToken(User user, bool remember = true) {
             return "d795c4406f6b4bc6ae8d787c65d0274d";
         }
     }
