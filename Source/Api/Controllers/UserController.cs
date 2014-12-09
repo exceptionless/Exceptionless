@@ -160,5 +160,12 @@ namespace Exceptionless.Api.Controllers {
 
             return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
         }
+
+        protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<User, ViewCurrentUser>() == null)
+                Mapper.CreateMap<User, ViewCurrentUser>().AfterMap((u, vcu) => vcu.HasLocalAccount = !String.IsNullOrWhiteSpace(u.Password));
+
+            base.CreateMaps();
+        }
     }
 }
