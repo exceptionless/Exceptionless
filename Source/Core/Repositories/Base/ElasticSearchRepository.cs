@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
-        protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
+        protected static readonly bool _isStack = typeof(T) == typeof(Stack);
 
         protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
@@ -145,6 +145,8 @@ namespace Exceptionless.Core.Repositories {
                 fields.Add("project_id");//CommonFieldNames.ProjectId);
             if (_isOwnedByStack)
                 fields.Add("stack_id");//CommonFieldNames.StackId);
+            if (_isStack)
+                fields.Add("signature_hash");
 
             long recordsAffected = 0;
 
