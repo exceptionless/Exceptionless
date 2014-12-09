@@ -165,6 +165,7 @@
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
     <Compile Include="Models\User\UpdateUser.cs" />
+    <Compile Include="Models\User\ViewCurrentUser.cs" />
     <Compile Include="Models\WebHook\NewWebHook.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Controllers\Base\ExceptionlessApiController.cs" />

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
@@ -28,7 +27,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("me")]
         public IHttpActionResult GetCurrentUser() {
-            return base.GetById(ExceptionlessUser.Id);
+            var currentUser = GetModel(ExceptionlessUser.Id);
+            if (currentUser == null)
+                return NotFound();
+
+            return Ok(Mapper.Map<User, ViewCurrentUser>(currentUser));
         }
 
         [HttpGet]
