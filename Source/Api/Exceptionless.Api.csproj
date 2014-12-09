@@ -153,6 +153,7 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Controllers\AuthController.cs" />
+    <Compile Include="Models\Auth\ChangePasswordModel.cs" />
     <Compile Include="Models\Auth\ExternalAuthInfo.cs" />
     <Compile Include="Extensions\OAuth2Extensions.cs" />
     <Compile Include="Controllers\Base\TimeInfo.cs" />

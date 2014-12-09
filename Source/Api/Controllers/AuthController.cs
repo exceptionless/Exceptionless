@@ -36,8 +36,11 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("login")]
         public IHttpActionResult Login(LoginModel model) {
-            if (model == null || String.IsNullOrEmpty(model.Email) || String.IsNullOrEmpty(model.Password))
-                return BadRequest("Email or Password was not specified.");
+            if (model == null || String.IsNullOrEmpty(model.Email))
+                return BadRequest("Email Address is required.");
+
+            if (String.IsNullOrEmpty(model.Password))
+                return BadRequest("Password is required.");
 
             User user;
             try {
@@ -63,8 +66,14 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("signup")]
         public IHttpActionResult Signup(SignupModel model) {
-            if (model == null || String.IsNullOrEmpty(model.Name) || String.IsNullOrEmpty(model.Email) || String.IsNullOrEmpty(model.Password))
-                return BadRequest("Name, Email or Password was not specified.");
+            if (model == null || String.IsNullOrWhiteSpace(model.Email))
+                return BadRequest("Email Address is required.");
+
+            if (String.IsNullOrWhiteSpace(model.Name))
+                return BadRequest("Name is required.");
+
+            if (!IsValidPassword(model.Password))
+                return BadRequest("Password must be at least 6 characters long.");
 
             User user;
             try {
@@ -280,6 +289,30 @@ namespace Exceptionless.Api.Controllers {
             if (ExceptionlessUser.RemoveOAuthAccount(providerName, providerUserId))
                 _userRepository.Save(ExceptionlessUser);
 
+            ExceptionlessClient.Default.CreateFeatureUsage("Remove External Login").AddTags(providerName).AddObject(ExceptionlessUser).Submit();
+            return Ok();
+        }
+
+        [HttpPost]
+        [Route("change-password")]
+        [Authorize(Roles = AuthorizationRoles.User)]
+        public IHttpActionResult ChangePassword(ChangePasswordModel model) {
+            if (model == null || !IsValidPassword(model.Password))
+                return BadRequest("The New Password must be at least 6 characters long.");
+
+            // User has a local account..
+            if (!String.IsNullOrWhiteSpace(ExceptionlessUser.Password)) {
+                if (String.IsNullOrWhiteSpace(model.CurrentPassword))
+                    return BadRequest("The current password is incorrect.");
+
+                string encodedPassword = _encoder.GetSaltedHash(model.CurrentPassword, ExceptionlessUser.Salt);
+                if (!String.Equals(encodedPassword, model.CurrentPassword))
+                    return BadRequest("The current password is incorrect.");
+            }
+
+            ChangePassword(ExceptionlessUser, model.Password);
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Change Password").AddObject(ExceptionlessUser).Submit();
             return Ok();
         }
 
@@ -301,7 +334,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("forgot-password/{email:minlength(1)}")]
         public IHttpActionResult ForgotPassword(string email) {
-            if (String.IsNullOrEmpty(email))
+            if (String.IsNullOrWhiteSpace(email))
                 return BadRequest("Please specify a valid Email Address.");
 
             var user = _userRepository.GetByEmailAddress(email);
@@ -314,14 +347,15 @@ namespace Exceptionless.Api.Controllers {
 
             _mailer.SendPasswordReset(user);
 
+            ExceptionlessClient.Default.CreateFeatureUsage("Forgot Password").AddObject(user).Submit();
             return Ok();
         }
 
-        [HttpGet]
+        [HttpPost]
         [Route("reset-password")]
         public IHttpActionResult ResetPassword(ResetPasswordModel model) {
-            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken) || String.IsNullOrEmpty(model.Password))
-                return BadRequest("Token or Password was not specified.");
+            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken))
+                return BadRequest("Invalid Password Reset Token.");
 
             var user = _userRepository.GetByPasswordResetToken(model.PasswordResetToken);
             if (user == null)
@@ -329,16 +363,13 @@ namespace Exceptionless.Api.Controllers {
 
             if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
                 return BadRequest("Verify Email Address Token has expired.");
-            
-            if (String.IsNullOrEmpty(user.Salt))
-                user.Salt = _encoder.GenerateSalt();
 
-            user.IsEmailAddressVerified = true;
-            user.Password = _encoder.GetSaltedHash(model.Password, user.Salt);
-            user.PasswordResetToken = null;
-            user.PasswordResetTokenExpiration = DateTime.MinValue;
-            _userRepository.Save(user);
+            if (!IsValidPassword(model.Password))
+                return BadRequest("The New Password must be at least 6 characters long.");
 
+            ChangePassword(user, model.Password);
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Reset Password").AddObject(user).Submit();
             return Ok();
         }
 
@@ -357,6 +388,7 @@ namespace Exceptionless.Api.Controllers {
             user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
             _userRepository.Save(user);
 
+            ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
             return Ok( new { Token = GetToken(user) });
         }
 
@@ -371,7 +403,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private User AddExternalLogin(UserInfo userInfo) {
-            ExceptionlessClient.Default.CreateFeatureUsage("External Login").AddObject(userInfo).Submit();
+            ExceptionlessClient.Default.CreateFeatureUsage("External Login").AddTags(userInfo.ProviderName).AddObject(userInfo).Submit();
             User existingUser = _userRepository.GetUserByOAuthProvider(userInfo.ProviderName, userInfo.Id);
 
             // Link user accounts.
@@ -440,8 +472,27 @@ namespace Exceptionless.Api.Controllers {
             _organizationRepository.Save(organization);
         }
 
+        private void ChangePassword(User user, string password) {
+            if (String.IsNullOrEmpty(user.Salt))
+                user.Salt = _encoder.GenerateSalt();
+
+            user.IsEmailAddressVerified = true;
+            user.Password = _encoder.GetSaltedHash(password, user.Salt);
+            user.PasswordResetToken = null;
+            user.PasswordResetTokenExpiration = DateTime.MinValue;
+            _userRepository.Save(user);
+        }
+
         private string GetToken(User user, bool remember = true) {
             return "d795c4406f6b4bc6ae8d787c65d0274d";
+        }
+
+        private static bool IsValidPassword(string password) {
+            if (String.IsNullOrWhiteSpace(password))
+                return false;
+
+            password = password.Trim();
+            return password.Length >= 6 && password.Length <= 100;
         }
     }
 }
