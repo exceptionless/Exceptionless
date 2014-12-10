@@ -314,7 +314,7 @@ namespace Exceptionless.Api.Controllers {
                     return BadRequest("The current password is incorrect.");
 
                 string encodedPassword = _encoder.GetSaltedHash(model.CurrentPassword, ExceptionlessUser.Salt);
-                if (!String.Equals(encodedPassword, model.CurrentPassword))
+                if (!String.Equals(encodedPassword, ExceptionlessUser.Password))
                     return BadRequest("The current password is incorrect.");
             }
 
