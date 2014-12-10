@@ -160,7 +160,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
             var project = GetModel(id);
             if (project == null)
@@ -175,7 +175,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPut]
         [HttpPost]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult SetNotificationSettings(string id, string userId, NotificationSettings settings) {
             var project = GetModel(id, false);
             if (project == null)
@@ -195,7 +195,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpDelete]
-        [Route("{id:objectid}/notifications/{userId:objectid}")]
+        [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
             var project = GetModel(id, false);
             if (project == null)
