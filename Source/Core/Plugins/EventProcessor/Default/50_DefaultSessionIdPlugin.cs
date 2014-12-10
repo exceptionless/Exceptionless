@@ -1,11 +1,13 @@
 ﻿using System;
+using CodeSmith.Core.Component;
 using Exceptionless.Core.Caching;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
+    [Priority(50)]
     public class DefaultSessionIdPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
-        private static TimeSpan _sessionTimeout = TimeSpan.FromMinutes(30);
+        private static readonly TimeSpan _sessionTimeout = TimeSpan.FromMinutes(30);
 
         public DefaultSessionIdPlugin(ICacheClient cacheClient) {
             _cacheClient = cacheClient;
@@ -13,10 +15,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
 
         public override void EventProcessing(EventContext context) {
             var user = context.Event.GetUserIdentity();
-            if (user == null || String.IsNullOrEmpty(user.Identity))
+            if (user == null || String.IsNullOrEmpty(user.Identity) || !String.IsNullOrEmpty(context.Event.SessionId))
                 return;
 
-            string cacheKey = "id-session:" + user.Identity;
+            string cacheKey = String.Format("session:{0}:{1}", context.Event.ProjectId, user.Identity);
             var sessionId = context.Event.Type != Event.KnownTypes.SessionStart ? _cacheClient.Get<string>(cacheKey) : null;
             if (sessionId == null) {
                 sessionId = Guid.NewGuid().ToString("N");
@@ -26,6 +28,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
 
             context.Event.SessionId = sessionId;
+
+            if (context.Event.Type == Event.KnownTypes.SessionEnd)
+                _cacheClient.Remove(cacheKey);
         }
     }
 }
