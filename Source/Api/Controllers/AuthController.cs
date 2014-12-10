@@ -22,15 +22,17 @@ namespace Exceptionless.Api.Controllers {
         private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly IMailer _mailer;
+        private readonly TokenManager _tokenManager;
         private readonly SecurityEncoder _encoder = new SecurityEncoder();
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IMailer mailer) {
+        public AuthController(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager) {
             _organizationRepository = organizationRepository;
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
             _mailer = mailer;
+            _tokenManager = tokenManager;
         }
 
         [HttpPost]
@@ -441,7 +443,8 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private string GetToken(User user) {
-            return "d795c4406f6b4bc6ae8d787c65d0274d";
+            var token = _tokenManager.Create(user);
+            return token.Id;
         }
     }
 }

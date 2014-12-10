@@ -44,7 +44,7 @@ namespace Exceptionless.JobRunner {
                 }
 
                 if (ca.RunContinuously)
-                    job.RunContinuous(ca.Delay);
+                    job.RunContinuous(TimeSpan.FromMilliseconds(ca.Delay));
                 else
                     job.Run();
 

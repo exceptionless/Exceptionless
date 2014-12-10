@@ -34,8 +34,10 @@ namespace Exceptionless.Api.Utility {
             return base.SendAsync(request, cancellationToken).ContinueWith(responseToCompleteTask => {
                 HttpResponseMessage response = responseToCompleteTask.Result;
 
-                if (response.RequestMessage.Headers.AcceptEncoding != null &&
-                    response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
+                if (response.RequestMessage != null
+                    && response.RequestMessage.Headers != null
+                    && response.RequestMessage.Headers.AcceptEncoding != null
+                    && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                     string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
                     if (response.Content != null)

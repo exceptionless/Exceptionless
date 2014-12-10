@@ -14,18 +14,19 @@ using System.Linq;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
+using FluentValidation.Validators;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
     [Authorize(Roles = AuthorizationRoles.User)]
-    public class TokenController : RepositoryApiController<ITokenRepository, Token, Token, NewToken, Token> {
+    public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
 
@@ -45,7 +46,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, Token>).ToList();
+            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
             return OkWithResourceLinks(results, options.HasMore, page);
         }
 
@@ -62,7 +63,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, Token>).ToList();
+            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -78,7 +79,7 @@ namespace Exceptionless.App.Controllers.API {
 
             var token = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).FirstOrDefault();
             if (token != null)
-                return Ok(Mapper.Map<Token, Token>(token));
+                return Ok(Mapper.Map<Token, ViewToken>(token));
 
             return Post(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
@@ -95,8 +96,28 @@ namespace Exceptionless.App.Controllers.API {
             return base.Post(value);
         }
 
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
+        [HttpPost]
+        public IHttpActionResult PostByProject(string projectId, NewToken value) {
+            if (value == null)
+                value = new NewToken();
+            value.ProjectId = projectId;
+            return base.Post(value);
+        }
+
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
+        [HttpPost]
+        public IHttpActionResult PostByOrganization(string organizationId, NewToken value) {
+            if (value == null)
+                value = new NewToken();
+            value.OrganizationId = organizationId;
+            return base.Post(value);
+        }
+
         [HttpDelete]
         [Route("{ids:objectids}")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/{ids:objectids}")]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens/{ids:objectids}")]
         public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
@@ -104,20 +125,54 @@ namespace Exceptionless.App.Controllers.API {
         #endregion
 
         protected override Token GetModel(string id, bool useCache = true) {
-            var model = base.GetModel(id);
-            return model != null && model.Type == TokenType.Access && IsInProject(model.ProjectId) ? model : null;
+            if (String.IsNullOrEmpty(id))
+                return null;
+
+            var model = _repository.GetById(id, useCache);
+            if (model == null)
+                return null;
+
+            if (!String.IsNullOrEmpty(model.OrganizationId) && !IsInOrganization(model.OrganizationId))
+                return null;
+
+            if (!String.IsNullOrEmpty(model.UserId) && model.UserId != Request.GetUser().Id)
+                return null;
+
+            if (model.Type != TokenType.Access)
+                return null;
+
+            if (!String.IsNullOrEmpty(model.ProjectId) && !IsInProject(model.ProjectId))
+                return null;
+
+            return model;
         }
 
         protected override PermissionResult CanAdd(Token value) {
             if (String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            if (value.Scopes.Contains("admin") && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
+            if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
+                return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
+
+            if (value.Scopes.Count == 0)
+                value.Scopes.Add(AuthorizationRoles.Client);
+
+            if (value.Scopes.Contains(AuthorizationRoles.Client) && !User.IsInRole(AuthorizationRoles.User))
                 return PermissionResult.Deny;
 
-            Project project = _projectRepository.GetById(value.ProjectId, true);
-            if (!IsInProject(project))
+            if (value.Scopes.Contains(AuthorizationRoles.User) && !User.IsInRole(AuthorizationRoles.User) )
                 return PermissionResult.Deny;
+
+            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin) && !User.IsInRole(AuthorizationRoles.GlobalAdmin))
+                return PermissionResult.Deny;
+
+            if (!String.IsNullOrEmpty(value.ProjectId)) {
+                Project project = _projectRepository.GetById(value.ProjectId, true);
+                value.OrganizationId = project.OrganizationId;
+
+                if (!IsInProject(project))
+                    return PermissionResult.Deny;
+            }
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
                 var application = _applicationRepository.GetById(value.ApplicationId, true);
@@ -132,12 +187,20 @@ namespace Exceptionless.App.Controllers.API {
             value.Id = Guid.NewGuid().ToString("N");
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
+            value.CreatedBy = Request.GetUser().Id;
+
+            // add implied scopes
+            if (value.Scopes.Contains(AuthorizationRoles.GlobalAdmin))
+                value.Scopes.Add(AuthorizationRoles.User);
+
+            if (value.Scopes.Contains(AuthorizationRoles.User))
+                value.Scopes.Add(AuthorizationRoles.Client);
 
             return base.AddModel(value);
         }
 
         protected override PermissionResult CanDelete(Token value) {
-            if (!IsInProject(value.ProjectId))
+            if (!String.IsNullOrEmpty(value.ProjectId) && !IsInProject(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
             return base.CanDelete(value);

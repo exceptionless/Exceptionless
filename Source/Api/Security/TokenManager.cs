@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Security.Claims;
-using Exceptionless.Api.Models;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
@@ -16,8 +15,18 @@ namespace Exceptionless.Api.Security {
             _tokenRepository = tokenRepository;
         }
 
-        public Token Create(User actingUser, NewToken request) {
-            return null;
+        public Token Create(User user) {
+            var token = new Token {
+                Id = Guid.NewGuid().ToString("N"),
+                UserId = user.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                CreatedBy = user.Id,
+                Type = TokenType.Access
+            };
+            _tokenRepository.Add(token);
+
+            return token;
         }
 
         public ClaimsPrincipal Validate(string token) {

@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Lock;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public abstract class JobBase {
@@ -24,6 +24,8 @@ namespace Exceptionless.Core.Jobs {
                     return TryRunAsync(token.Value);
             } catch (TimeoutException) {
                 return Task.FromResult(JobResult.FailedWithMessage("Timeout attempting to acquire lock."));
+            } catch (Exception ex) {
+                return Task.FromResult(JobResult.FromException(ex));
             }
         }
 
@@ -41,20 +43,22 @@ namespace Exceptionless.Core.Jobs {
             return RunAsync(token).Result;
         }
 
-        public async Task RunContinuousAsync(int delay = 0, int iterationLimit = -1, CancellationToken? token = null) {
+        public async Task RunContinuousAsync(TimeSpan? delay = null, int iterationLimit = -1, CancellationToken? token = null) {
             if (!token.HasValue)
                 token = CancellationToken.None;
 
             int iterations = 0;
             while (!IsCancelPending(token) && (iterationLimit < 0 || iterations < iterationLimit)) {
                 var result = await RunAsync(token);
+                if (!result.IsSuccess)
+                    Log.Error().Message("Job failed: {0}", result.Message).Exception(result.Error).Write();
                 iterations++;
-                if (delay > 0)
-                    await Task.Delay(delay, token.Value);
+                if (delay.HasValue && delay.Value > TimeSpan.Zero)
+                    await Task.Delay(delay.Value, token.Value);
             }
         }
 
-        public void RunContinuous(int delay = 0, int iterationLimit = -1, CancellationToken? token = null) {
+        public void RunContinuous(TimeSpan? delay = null, int iterationLimit = -1, CancellationToken? token = null) {
             RunContinuousAsync(delay, iterationLimit, token).Wait();
         }
     }

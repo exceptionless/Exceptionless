@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
             var user = userRepository.GetById(userId, true);
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
-
+            
             var roles = scopes.ToList();
             if (roles.Count == 0)
                 roles.AddRange(user.Roles);

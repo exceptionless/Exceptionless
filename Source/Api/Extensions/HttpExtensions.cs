@@ -13,9 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Web.Http;
+using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
@@ -123,6 +125,34 @@ namespace Exceptionless.Api.Extensions {
             return match.Value;
         }
 
+        public static string GetCookie(this HttpRequestMessage request, string cookieName) {
+            CookieHeaderValue cookie = request.Headers.GetCookies(cookieName).FirstOrDefault();
+            if (cookie != null)
+                return cookie[cookieName].Value;
+
+            return null;
+        }
+
+        public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {
+            var authHeader = request.Headers.Authorization;
+
+            if (authHeader == null || authHeader.Scheme.ToLower() != "basic")
+                return null;
+
+            string data = Encoding.UTF8.GetString(Convert.FromBase64String(authHeader.Parameter));
+            if (String.IsNullOrEmpty(data))
+                return null;
+
+            string[] authParts = data.Split(new[] { ':' }, StringSplitOptions.RemoveEmptyEntries);
+            if (authParts.Length != 2)
+                return null;
+
+            return new AuthInfo {
+                Username = authParts[0],
+                Password = authParts[1]
+            };
+        }
+
         /// <summary>
         /// Formats an error with the stack trace included.
         /// </summary>
@@ -134,5 +164,10 @@ namespace Exceptionless.Api.Extensions {
 
             return String.Format("[{0}] {1}\r\nStack Trace:\r\n{2}{3}", error["ExceptionType"], error["ExceptionMessage"], error["StackTrace"], Environment.NewLine);
         }
+    }
+
+    public class AuthInfo {
+        public string Username { get; set; }
+        public string Password { get; set; }
     }
 }

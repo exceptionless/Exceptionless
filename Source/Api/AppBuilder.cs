@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
@@ -90,7 +91,7 @@ namespace Exceptionless.Api {
 
             Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
             Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
-            Config.MessageHandlers.Add(container.GetInstance<AuthTokenMessageHandler>());
+            Config.MessageHandlers.Add(container.GetInstance<AuthMessageHandler>());
 
             // Throttle api calls to X every 15 minutes by IP address.
             Config.MessageHandlers.Add(container.GetInstance<ThrottlingHandler>());
@@ -153,12 +154,12 @@ namespace Exceptionless.Api {
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
 
             if (Settings.Current.EnableJobsModule) {
-                Run.InBackground(t => container.GetInstance<ProcessEventPostsJob>().Run(token), token);
-                Run.InBackground(t => container.GetInstance<ProcessEventUserDescriptionsJob>().Run(token), token);
-                Run.InBackground(t => container.GetInstance<ProcessMailMessageJob>().Run(token), token);
-                Run.InBackground(t => container.GetInstance<DailyNotificationJob>().Run(token), token);
-                Run.InBackground(t => container.GetInstance<EnforceRetentionLimitsJob>().Run(token), token);
-                Run.InBackground(t => container.GetInstance<RemoveStaleAccountsJob>().Run(token), token);
+                Task.Factory.StartNew(() => container.GetInstance<ProcessEventPostsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                Task.Factory.StartNew(() => container.GetInstance<ProcessEventUserDescriptionsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                Task.Factory.StartNew(() => container.GetInstance<ProcessMailMessageJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                Task.Factory.StartNew(() => container.GetInstance<DailyNotificationJob>().RunContinuousAsync(delay: TimeSpan.FromMinutes(15), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                Task.Factory.StartNew(() => container.GetInstance<EnforceRetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+                Task.Factory.StartNew(() => container.GetInstance<RemoveStaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
 

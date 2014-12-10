@@ -163,6 +163,7 @@
     <Compile Include="Models\Auth\SignupModel.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
+    <Compile Include="Models\Token\ViewToken.cs" />
     <Compile Include="Models\User\UpdateUser.cs" />
     <Compile Include="Models\WebHook\NewWebHook.cs" />
     <Compile Include="Bootstrapper.cs" />
@@ -192,7 +193,7 @@
     <Compile Include="Models\User\ViewUser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="AppBuilder.cs" />
-    <Compile Include="Security\AuthTokenMessageHandler.cs" />
+    <Compile Include="Security\AuthMessageHandler.cs" />
     <Compile Include="Security\TokenManager.cs" />
     <Compile Include="Serialization\DefaultJsonSettingsAttribute.cs" />
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />

@@ -133,6 +133,9 @@ namespace Exceptionless.Api.Controllers {
             if (Request.IsGlobalAdmin())
                 return null;
 
+            if (GetAssociatedOrganizationIds().Count == 0)
+                return "organization:none";
+
             return String.Concat("organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()));
         }
 
