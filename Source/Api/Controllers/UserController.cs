@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok();
 
             user.EmailAddress = email;
-            user.IsEmailAddressVerified = user.IsEmailAddressVerified || user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
+            user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
             _repository.Save(user);
 
             if (!user.IsEmailAddressVerified)
