@@ -46,7 +46,6 @@ namespace Exceptionless.Api.Extensions {
             return null;
         }
 
-
         public static Project GetDefaultProject(this HttpRequestMessage message) {
             if (message == null)
                 return null;
@@ -56,6 +55,14 @@ namespace Exceptionless.Api.Extensions {
                 return project.Value;
 
             return null;
+        }
+
+        public static string GetDefaultProjectId(this HttpRequestMessage message) {
+            var project = message.GetDefaultProject();
+            if (project != null)
+                return project.Id;
+
+            return message.GetClaimsPrincipal().GetDefaultProjectId();
         }
 
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {

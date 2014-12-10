@@ -264,7 +264,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             _statsClient.Counter(StatNames.PostsSubmitted);
             if (projectId == null)
-                projectId = DefaultProject.Id;
+                projectId = Request.GetDefaultProjectId();
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
