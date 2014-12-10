@@ -156,6 +156,13 @@ namespace Exceptionless.Core.Repositories {
             InvalidateCache(GetStackSignatureCacheKey(projectId, signatureHash));
         }
 
+        protected override void BeforeRemove(ICollection<Stack> documents) {
+            foreach (Stack document in documents)
+                InvalidateCache(GetStackSignatureCacheKey(document));
+
+            base.BeforeRemove(documents);
+        }
+
         protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
             foreach (Stack document in documents)
                 InvalidateCache(GetStackSignatureCacheKey(document));

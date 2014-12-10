@@ -89,7 +89,10 @@ namespace Exceptionless.Core.Repositories {
             Remove(new[] { document });
         }
 
-        protected virtual void BeforeRemove(ICollection<T> documents) { }
+        protected virtual void BeforeRemove(ICollection<T> documents) {
+            foreach (var document in documents)
+                InvalidateCache(document);
+        }
 
         public void Remove(ICollection<T> documents, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
