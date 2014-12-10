@@ -271,7 +271,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("No project id specified and no default project was found.");
 
             var project = _projectRepository.GetById(projectId, true);
-            if (project == null || !Request.GetUser().OrganizationIds.Contains(project.OrganizationId))
+            if (project == null || !Request.GetAssociatedOrganizationIds().Contains(project.OrganizationId))
                 return NotFound();
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();

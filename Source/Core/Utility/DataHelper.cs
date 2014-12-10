@@ -138,7 +138,7 @@ namespace Exceptionless.Core.Utility {
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
-            project = _projectRepository.Add(project);
+            project = _projectRepository.Add(project, true);
 
             _tokenRepository.Add(new Token {
                 Id = SAMPLE_API_KEY,
@@ -158,7 +158,7 @@ namespace Exceptionless.Core.Utility {
             });
 
             user.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(user);
+            _userRepository.Save(user, true);
         }
     }
 }

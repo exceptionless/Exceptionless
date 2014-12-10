@@ -132,6 +132,8 @@ namespace Exceptionless.Core.Repositories {
 
             foreach (var organizationId in user.OrganizationIds)
                 InvalidateCache(String.Concat("org:", organizationId));
+
+            base.InvalidateCache(user);
         }
 
         protected override void PublishMessage(EntityChangeType changeType, User user) {
