@@ -102,7 +102,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("~/api/v{version:int=1}/stack/mark-fixed")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult MarkFixed(JObject data, int version = 1) {
             string id = null;
             if (version == 1)
@@ -144,7 +144,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("~/api/v{version:int=1}/stack/add-link")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult AddLink(JObject data, int version = 1) {
             string id = null;
             if (version == 1)

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Net;
-using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
@@ -142,9 +142,9 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult GetByReferenceId(string referenceId, string projectId = null) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
-
+            
             if (projectId == null)
-                projectId = User.GetDefaultProjectId();
+                projectId = DefaultProject.Id;
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -197,7 +197,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
             _statsClient.Counter(StatNames.EventsUserDescriptionSubmitted);
@@ -213,7 +213,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest(result.Errors.ToErrorMessage());
 
             if (projectId == null)
-                projectId = User.GetDefaultProjectId();
+                projectId = DefaultProject.Id;
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
@@ -236,7 +236,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [Route("~/api/v1/error/{id:objectid}")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
@@ -259,19 +259,19 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/api/v{version:int=1}/events")]
         [Route("~/api/v{version:int=1}/projects/{projectId:objectid}/events")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
             _statsClient.Counter(StatNames.PostsSubmitted);
             if (projectId == null)
-                projectId = User.GetDefaultProjectId();
+                projectId = DefaultProject.Id;
 
             // must have a project id
             if (String.IsNullOrEmpty(projectId))
                 return BadRequest("No project id specified and no default project was found.");
 
             var project = _projectRepository.GetById(projectId, true);
-            if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
+            if (project == null || !Request.GetUser().OrganizationIds.Contains(project.OrganizationId))
                 return NotFound();
 
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();

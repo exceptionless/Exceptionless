@@ -120,8 +120,18 @@ namespace Exceptionless.Api {
                 string projectId = ctx.Request.User.GetDefaultProjectId();
                 var projectRepository = container.GetInstance<IProjectRepository>();
 
-                if (String.IsNullOrEmpty(projectId))
-                    return projectRepository.GetByOrganizationIds(ctx.Request.User.GetOrganizationIds(), useCache: true).FirstOrDefault();
+                if (String.IsNullOrEmpty(projectId)) {
+                    var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
+                    if (!String.IsNullOrEmpty(firstOrgId)) {
+                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).FirstOrDefault();
+                        if (project != null)
+                            return project;
+                    }
+
+                    var dataHelper = container.GetInstance<DataHelper>();
+                    // create a default org and project
+                    projectId = dataHelper.CreateDefaultOrganizationAndProject(ctx.Request.GetUser());
+                }
 
                 return projectRepository.GetById(projectId, true);
             }));
@@ -146,10 +156,6 @@ namespace Exceptionless.Api {
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
-            // TODO: Figure out what data we want to create when the db is empty in production mode.
-            if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
-                EnsureSampleData(container);
-
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
 
@@ -163,23 +169,6 @@ namespace Exceptionless.Api {
             }
         }
 
-        private static string _userId;
-        private static void EnsureSampleData(Container container) {
-            var dataHelper = container.GetInstance<DataHelper>();
-            var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.GetByEmailAddress("test@exceptionless.com");
-            if (user == null)
-                user = userRepository.Add(new User {
-                    FullName = "Test User",
-                    EmailAddress = "test@exceptionless.com",
-                    VerifyEmailAddressToken = Guid.NewGuid().ToString(),
-                    VerifyEmailAddressTokenExpiration = DateTime.MaxValue,
-                    Roles = AuthorizationRoles.GlobalAll
-                });
-            _userId = user.Id;
-            dataHelper.CreateSampleOrganizationAndProject(user.Id);
-        }
-
         public static Container CreateContainer() {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
@@ -191,7 +180,6 @@ namespace Exceptionless.Api {
             return container;
         }
 
-        //private static readonly Lazy<HttpConfiguration> _config = new Lazy<HttpConfiguration>(() => new HttpConfiguration()); 
         public static HttpConfiguration Config { get; private set; }
     }
 }

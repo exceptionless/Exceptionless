@@ -383,7 +383,7 @@ namespace Exceptionless.Api.Controllers {
             var organization = base.AddModel(value);
 
             ExceptionlessUser.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(ExceptionlessUser);
+            _userRepository.Save(ExceptionlessUser, true);
 
             return organization;
         }

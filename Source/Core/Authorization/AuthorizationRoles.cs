@@ -16,8 +16,5 @@ namespace Exceptionless.Core.Authorization {
         public const string Client = "client";
         public const string User = "user";
         public const string GlobalAdmin = "global";
-        public const string UserOrClient = "user,client";
-        public static readonly string[] All = { Client, User };
-        public static readonly string[] GlobalAll = { Client, User, GlobalAdmin };
     }
 }

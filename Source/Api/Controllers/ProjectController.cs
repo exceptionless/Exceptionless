@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/config")]
         [Route("~/api/v1/project/config")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult GetConfig(string id = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();

@@ -17,10 +17,10 @@ using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 using System.Web.Http;
-using Exceptionless.Api.Models;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
+using Microsoft.Owin;
 
 namespace Exceptionless.Api.Extensions {
     public static class HttpExtensions {
@@ -34,6 +34,18 @@ namespace Exceptionless.Api.Extensions {
 
             return null;
         }
+
+        public static User GetUser(this IOwinRequest request) {
+            if (request == null)
+                return null;
+
+            var user = request.Context.Get<Lazy<User>>("User");
+            if (user != null)
+                return user.Value;
+
+            return null;
+        }
+
 
         public static Project GetDefaultProject(this HttpRequestMessage message) {
             if (message == null)
@@ -79,6 +91,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
+            if (message.GetUser() != null)
+                return message.GetUser().OrganizationIds;
+
             var principal = message.GetClaimsPrincipal();
             return principal.GetOrganizationIds();
         }

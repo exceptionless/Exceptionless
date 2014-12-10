@@ -156,6 +156,7 @@
     <Compile Include="Messaging\MessageBusData.cs" />
     <Compile Include="Messaging\RedisMessageBus.cs" />
     <Compile Include="Migrations\v1.0.34.cs" />
+    <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Queues\RedisQueue.cs" />
     <Compile Include="Repositories\Base\SortOrder.cs" />

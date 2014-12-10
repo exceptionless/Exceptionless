@@ -44,11 +44,12 @@ namespace Exceptionless.Api.Utility {
             if (_cacheClient.TryGet("ApiDisabled", false))
                 return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
-            string organizationId = request.GetDefaultOrganizationId();
-            if (String.IsNullOrEmpty(organizationId))
+            // TODO: Need to handle posts to /projects/{projectId:objectid}/events should be using the specified project
+            var project = request.GetDefaultProject();
+            if (project == null)
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
-            bool overLimit = _organizationRepository.IncrementUsage(organizationId);
+            bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId);
             return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.") : base.SendAsync(request, cancellationToken);
         }
 

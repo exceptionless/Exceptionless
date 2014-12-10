@@ -7,6 +7,7 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.Json.Linq;
 using Exceptionless.Models;
 using NLog.Fluent;
@@ -24,15 +25,17 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMailer _mailer;
         private readonly TokenManager _tokenManager;
         private readonly SecurityEncoder _encoder = new SecurityEncoder();
+        private readonly DataHelper _dataHelper;
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager) {
+        public AuthController(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager, DataHelper dataHelper) {
             _organizationRepository = organizationRepository;
             _tokenRepository = tokenRepository;
             _userRepository = userRepository;
             _mailer = mailer;
             _tokenManager = tokenManager;
+            _dataHelper = dataHelper;
         }
 
         [HttpPost]
@@ -95,14 +98,17 @@ namespace Exceptionless.Api.Controllers {
                 VerifyEmailAddressToken = Guid.NewGuid().ToString("N"),
                 VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440)
             };
+            user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
-            AddGlobalAdminRoleIfFirstUser(user);
+            bool isFirstUser = AddGlobalAdminRoleIfFirstUser(user);
 
             user.Salt = _encoder.GenerateSalt();
             user.Password = _encoder.GetSaltedHash(model.Password, user.Salt);
 
             try {
                 user = _userRepository.Save(user);
+                if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                    _dataHelper.CreateSampleOrganizationAndProject(user.Id);
             } catch (Exception ex) {
                 ex.ToExceptionless().AddObject(user).MarkAsCritical().AddTags("signup").Submit();
                 return BadRequest("An error occurred.");
@@ -394,14 +400,16 @@ namespace Exceptionless.Api.Controllers {
             return Ok( new { Token = GetToken(user) });
         }
 
-        private void AddGlobalAdminRoleIfFirstUser(User user) {
+        private bool AddGlobalAdminRoleIfFirstUser(User user) {
             if (_isFirstUserChecked)
-                return;
+                return false;
 
-            if (_userRepository.Count() == 0)
+            bool isFirstUser = _userRepository.Count() == 0;
+            if (isFirstUser)
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
             _isFirstUserChecked = true;
+            return isFirstUser;
         }
 
         private User AddExternalLogin(UserInfo userInfo) {
@@ -440,15 +448,22 @@ namespace Exceptionless.Api.Controllers {
             }
 
             // Check to see if a user already exists with this email address.
+            bool isFirstUser = false;
             User user = !String.IsNullOrEmpty(userInfo.Email) ? _userRepository.GetByEmailAddress(userInfo.Email) : null;
             if (user == null) {
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
-                AddGlobalAdminRoleIfFirstUser(user);
+                user.Roles.Add(AuthorizationRoles.Client);
+                user.Roles.Add(AuthorizationRoles.User);
+                isFirstUser = AddGlobalAdminRoleIfFirstUser(user);
             }
-            
+
             user.IsEmailAddressVerified = true;
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
-            return _userRepository.Save(user);
+            _userRepository.Save(user);
+            if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                _dataHelper.CreateSampleOrganizationAndProject(user.Id);
+
+            return user;
         }
 
         private void AddInvitedUserToOrganization(string token, User user) {

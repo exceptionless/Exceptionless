@@ -91,7 +91,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("subscribe")]
         [Route("~/api/v1/projecthook/subscribe")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult Subscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
             var eventType = data.GetValue("event").Value<string>();
@@ -141,7 +141,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("test")]
         [Route("~/api/v1/projecthook/test")]
         [OverrideAuthorization]
-        [Authorize(Roles = AuthorizationRoles.UserOrClient)]
+        [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult Test() {
             return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },
