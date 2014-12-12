@@ -163,6 +163,8 @@
     <Compile Include="Models\Auth\ResetPasswordModel.cs" />
     <Compile Include="Models\Auth\SignupModel.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
+    <Compile Include="Models\Organization\Invoice.cs" />
+    <Compile Include="Models\Organization\InvoiceLineItem.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
     <Compile Include="Models\Token\ViewToken.cs" />
     <Compile Include="Models\User\UpdateUser.cs" />

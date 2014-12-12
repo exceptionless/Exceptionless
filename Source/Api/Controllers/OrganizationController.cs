@@ -6,7 +6,6 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Models.Organization;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -101,17 +100,71 @@ namespace Exceptionless.Api.Controllers {
         #endregion
 
         [HttpGet]
-        [Route("{id:objectid}/invoices")]
-        public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
-            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
+        [Route("invoice/{id:minlength(10)}")]
+        public IHttpActionResult GetInvoice(string id) {
+            if (!id.StartsWith("in_"))
+                id = "in_" + id;
+
+            var invoiceService = new StripeInvoiceService();
+            var stripeInvoice = invoiceService.Get(id);
+            if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
                 return NotFound();
 
-            Organization organization = _repository.GetById(id, true);
+            var organization = _repository.GetByStripeCustomerId(stripeInvoice.CustomerId);
+            if (organization == null || !IsInOrganization(organization.Id))
+                return NotFound();
+
+            var invoice = new Invoice {
+                Id = stripeInvoice.Id.Substring(4),
+                OrganizationId = organization.Id,
+                OrganizationName = organization.Name,
+                Date = stripeInvoice.Date.GetValueOrDefault(),
+                Paid = stripeInvoice.Paid.GetValueOrDefault(),
+                Total = stripeInvoice.Total.GetValueOrDefault() / 100.0
+            };
+
+            foreach (var line in stripeInvoice.StripeInvoiceLines.StripeInvoiceItems) {
+                var item = new InvoiceLineItem { Amount = line.Amount.GetValueOrDefault() / 100.0 };
+
+                if (line.Plan != null)
+                    item.Description = String.Format("Exceptionless - {0} Plan ({1}/{2})", line.Plan.Name, (line.Plan.Amount / 100.0).ToString("c"), line.Plan.Interval);
+                else
+                    item.Description = line.Description;
+
+                if (line.Period.Start.GetValueOrDefault() == line.Period.End.GetValueOrDefault())
+                    item.Date = line.Period.Start.GetValueOrDefault().ToShortDateString();
+                else
+                    item.Date = String.Format("{0} - {1}", line.Period.Start.GetValueOrDefault().ToShortDateString(), line.Period.End.GetValueOrDefault().ToShortDateString());
+
+                invoice.Items.Add(item);
+            }
+
+            var coupon = stripeInvoice.StripeDiscount != null ? stripeInvoice.StripeDiscount.StripeCoupon : null;
+            if (coupon != null) {
+                double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal.GetValueOrDefault() * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+                string description = String.Format("{0} {1}", coupon.Id, coupon.PercentOff.HasValue ? String.Format("({0}% off)", coupon.PercentOff.Value) : String.Format("({0} off)", (coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")));
+               
+                invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
+            }
+
+            return Ok(invoice);
+        }
+
+        [HttpGet]
+        [Route("{id:objectid}/invoices")]
+        public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
+            var organization = GetModel(id);
             if (organization == null)
                 return NotFound();
 
             if (String.IsNullOrWhiteSpace(organization.StripeCustomerId))
                 return Ok(new List<InvoiceGridModel>());
+
+            if (!String.IsNullOrEmpty(before) && !before.StartsWith("in_"))
+                before = "in_" + before;
+
+            if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
+                after = "in_" + after;
 
             var invoiceService = new StripeInvoiceService();
             var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after }).Select(Mapper.Map<InvoiceGridModel>).ToList();
@@ -122,10 +175,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}/plans")]
         public IHttpActionResult GetPlans(string id) {
-            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
-                return NotFound();
-
-            Organization organization = _repository.GetById(id, true);
+            var organization = GetModel(id);
             if (organization == null)
                 return NotFound();
 
@@ -503,6 +553,13 @@ namespace Exceptionless.Api.Controllers {
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 base.DeleteModels(new[] { organization });
             }
+        }
+
+        protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
+                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(4));
+
+            base.CreateMaps();
         }
     }
 }
