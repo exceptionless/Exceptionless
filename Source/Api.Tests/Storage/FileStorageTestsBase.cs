@@ -21,6 +21,9 @@ namespace Exceptionless.Api.Tests.Storage {
             Reset();
 
             IFileStorage storage = GetStorage();
+            if (storage == null)
+                return;
+
             storage.SaveFile("test.txt", "test");
             Assert.Equal(1, storage.GetFileList().Count());
             var file = storage.GetFileList().FirstOrDefault();
@@ -36,6 +39,9 @@ namespace Exceptionless.Api.Tests.Storage {
 
         protected void Reset() {
             var storage = GetStorage();
+            if (storage == null)
+                return;
+
             var files = storage.GetFileList().ToList();
             if (files.Any())
                 Debug.WriteLine("Got files");
@@ -50,6 +56,9 @@ namespace Exceptionless.Api.Tests.Storage {
             Reset();
 
             IFileStorage storage = GetStorage();
+            if (storage == null)
+                return;
+
             const string queueFolder = "q";
             const string archiveFolder = "archive";
             var queueItems = new BlockingCollection<int>();
@@ -69,11 +78,12 @@ namespace Exceptionless.Api.Tests.Storage {
                 queueItems.Add(i);
             });
             Assert.Equal(25, storage.GetFileList().Count());
-            var working = new ConcurrentDictionary<string, object>();
 
             Parallel.For(0, 50, i => {
                 string path = Path.Combine(queueFolder, queueItems.Random() + ".json");
                 var eventPost = storage.GetEventPostAndSetActive(Path.Combine(queueFolder, RandomHelper.GetRange(0, 25) + ".json"));
+                if (eventPost == null)
+                    return;
 
                 if (RandomHelper.GetBool()) {
                     storage.CompleteEventPost(path, eventPost.ProjectId, DateTime.UtcNow, true);
