@@ -5,7 +5,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 
@@ -33,7 +32,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            BillingPlan plan = _billingManager.GetBillingPlan(planId);
+            var plan = BillingManager.GetBillingPlan(planId);
             if (plan == null)
                 return Ok(new { Success = false, Message = "Invalid PlanId." });
 

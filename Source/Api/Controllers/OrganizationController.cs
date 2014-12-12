@@ -163,7 +163,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid OrganizationId." });
 
-            BillingPlan plan = _billingManager.GetBillingPlan(planId);
+            BillingPlan plan = BillingManager.GetBillingPlan(planId);
             if (plan == null)
                 return Ok(new { Success = false, Message = "Invalid PlanId." });
 
