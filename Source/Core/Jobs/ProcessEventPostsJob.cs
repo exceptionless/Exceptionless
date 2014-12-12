@@ -121,7 +121,7 @@ namespace Exceptionless.Core.Jobs {
                             MediaType = eventPost.MediaType,
                             ProjectId = eventPost.ProjectId,
                             UserAgent = eventPost.UserAgent
-                        }, _storage);
+                        }, _storage, false);
                     }
 
                     errorCount++;
@@ -133,7 +133,12 @@ namespace Exceptionless.Core.Jobs {
                 _storage.SetNotActive(queueEntry.Value.FilePath);
             } else {
                 queueEntry.Complete();
-                _storage.ArchiveEventPost(queueEntry.Value.FilePath, eventPost.ProjectId, created);
+                if (queueEntry.Value.ShouldArchive)
+                    _storage.CompleteEventPost(queueEntry.Value.FilePath, eventPost.ProjectId, created, queueEntry.Value.ShouldArchive);
+                else {
+                    _storage.DeleteFile(queueEntry.Value.FilePath);
+                    _storage.SetNotActive(queueEntry.Value.FilePath);
+                }
             }
 
             return JobResult.Success;

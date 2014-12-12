@@ -155,6 +155,10 @@
     <Compile Include="Repositories\MongoRepositoryTests.cs" />
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Stats\StatsTests.cs" />
+    <Compile Include="Storage\AzureStorageTests.cs" />
+    <Compile Include="Storage\FileStorageTestsBase.cs" />
+    <Compile Include="Storage\FolderFileStorageTests.cs" />
+    <Compile Include="Storage\InMemoryFileStorageTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
