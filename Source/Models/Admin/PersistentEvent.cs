@@ -38,5 +38,10 @@ namespace Exceptionless.Models {
         /// Wether the event has been marked as hidden or not.
         /// </summary>
         public bool IsHidden { get; set; }
+
+        /// <summary>
+        /// The date that the event was created in the system.
+        /// </summary>
+        public DateTime CreatedUtc { get; set; }
     }
 }

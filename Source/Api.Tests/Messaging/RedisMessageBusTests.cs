@@ -11,8 +11,8 @@ namespace Exceptionless.Api.Tests.Messaging {
         private readonly RedisMessageBus _messageBus;
 
         public RedisMessageBusTests() {
-            //if (!Settings.Current.UseAzureServiceBus)
-            //    return;
+            if (Settings.Current.RedisConnectionInfo == null)
+                return;
 
             var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
             _messageBus = new RedisMessageBus(muxer.GetSubscriber());   

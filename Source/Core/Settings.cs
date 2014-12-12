@@ -102,6 +102,8 @@ namespace Exceptionless.Core {
         public string StripeApiKey { get; private set; }
 
         public string StripePublishableApiKey { get; private set; }
+
+        public string StorageFolder { get; private set; }
         
         private static Settings Init() {
             var settings = new Settings();
@@ -153,6 +155,7 @@ namespace Exceptionless.Core {
             settings.GitHubAppSecret = ConfigurationManager.AppSettings["GitHubAppSecret"];
             settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
             settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
+            settings.StorageFolder = ConfigurationManager.AppSettings["StorageFolder"];
             
             ConnectionStringSettings redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
             if (redisConnectionInfo != null)

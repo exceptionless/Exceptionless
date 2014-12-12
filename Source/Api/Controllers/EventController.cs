@@ -14,6 +14,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core.Storage;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using FluentValidation;
@@ -24,20 +25,22 @@ namespace Exceptionless.Api.Controllers {
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IQueue<EventPost> _eventPostQueue;
+        private readonly IQueue<EventPostFileInfo> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
+        private readonly IFileStorage _storage;
 
         public EventController(IEventRepository repository, 
             IProjectRepository projectRepository, 
             IStackRepository stackRepository,
-            IQueue<EventPost> eventPostQueue, 
+            IQueue<EventPostFileInfo> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator,
-            FormattingPluginManager formattingPluginManager) : base(repository) {
+            FormattingPluginManager formattingPluginManager,
+            IFileStorage storage) : base(repository) {
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
@@ -45,6 +48,7 @@ namespace Exceptionless.Api.Controllers {
             _statsClient = statsClient;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
+            _storage = storage;
 
             AllowedFields.Add("date");
         }
@@ -289,7 +293,7 @@ namespace Exceptionless.Api.Controllers {
                 ApiVersion = version,
                 Data = data,
                 ContentEncoding = contentEncoding
-            });
+            }, _storage);
             _statsClient.Counter(StatNames.PostsQueued);
 
             return StatusCode(HttpStatusCode.Accepted);

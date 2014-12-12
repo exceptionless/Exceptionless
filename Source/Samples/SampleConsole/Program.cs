@@ -27,12 +27,10 @@ using Exceptionless.Models.Data;
 
 namespace SampleConsole {
     internal class Program {
-        private static bool _sendingContinuous = false;
-
-        private static int[] _delays = new[] { 0, 50, 100, 1000 };
+        private static readonly int[] _delays = { 0, 50, 100, 1000 };
         private static int _delayIndex = 2;
 
-        private static TimeSpan[] _dateSpans = new TimeSpan[] {
+        private static readonly TimeSpan[] _dateSpans = {
             TimeSpan.Zero,
             TimeSpan.FromMinutes(5),
             TimeSpan.FromHours(1),
@@ -52,13 +50,14 @@ namespace SampleConsole {
             CancellationToken token = tokenSource.Token;
             if (false)
                 SampleApiUsages();
+
             ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             WriteOptionsMenu();
 
             while (true) {
-                Console.SetCursorPosition(0, _optionsMenuLineCount + 1);
+                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 1);
                 ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
                 if (keyInfo.Key == ConsoleKey.D1)
@@ -68,7 +67,7 @@ namespace SampleConsole {
                 else if (keyInfo.Key == ConsoleKey.D3)
                     SendContinuousEvents(_delays[_delayIndex], token);
                 else if (keyInfo.Key == ConsoleKey.D4) {
-                    Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+                    Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
                     Console.WriteLine("Telling client to process the queue...");
 
                     ExceptionlessClient.Default.ProcessQueue();
@@ -118,10 +117,10 @@ namespace SampleConsole {
             }
         }
 
-        private const int _optionsMenuLineCount = 9;
+        private const int OPTIONS_MENU_LINE_COUNT = 9;
         private static void WriteOptionsMenu() {
             Console.SetCursorPosition(0, 0);
-            ClearConsoleLines(0, _optionsMenuLineCount - 1);
+            ClearConsoleLines(0, OPTIONS_MENU_LINE_COUNT - 1);
             Console.WriteLine("1: Send 1");
             Console.WriteLine("2: Send 100");
             Console.WriteLine("3: Send continous");
@@ -134,7 +133,7 @@ namespace SampleConsole {
         }
 
         private static void ClearNonOptionsLines(int delay = 1000) {
-            Task.Factory.StartNewDelayed(delay, () => ClearConsoleLines(_optionsMenuLineCount));
+            Task.Factory.StartNewDelayed(delay, () => ClearConsoleLines(OPTIONS_MENU_LINE_COUNT));
         }
 
         private static void ClearConsoleLines(int startLine = 0, int endLine = -1) {
@@ -152,21 +151,18 @@ namespace SampleConsole {
         }
 
         private static void SendContinuousEvents(int delay, CancellationToken token, int maxEvents = Int32.MaxValue, int maxDaysOld = 90) {
-            _sendingContinuous = true;
-            Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+            Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
             Console.WriteLine("Press 's' to stop sending.");
             int eventCount = 0;
 
             Task.Factory.StartNew(delegate {
                 while (eventCount < maxEvents) {
-                    if (token.IsCancellationRequested) {
-                        _sendingContinuous = false;
+                    if (token.IsCancellationRequested)
                         break;
-                    }
 
                     SendEvent(false);
                     eventCount++;
-                    Console.SetCursorPosition(0, _optionsMenuLineCount + 4);
+                    Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 4);
                     Console.WriteLine("Sent {0} events.", eventCount);
                     Trace.WriteLine(String.Format("Sent {0} events.", eventCount));
 
@@ -192,6 +188,8 @@ namespace SampleConsole {
                 ev.Message = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
             }
 
+            ev.SetUserIdentity(Identities.Random());
+
             for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
                 string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 10));
                 while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
@@ -200,7 +198,8 @@ namespace SampleConsole {
                 ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
             }
 
-            for (int i = 0; i < RandomHelper.GetRange(1, 3); i++) {
+            int tagCount = RandomHelper.GetRange(1, 3);
+            for (int i = 0; i < tagCount; i++) {
                 string tag = EventTags.Random();
                 if (!ev.Tags.Contains(tag))
                     ev.Tags.Add(tag);
@@ -223,7 +222,7 @@ namespace SampleConsole {
             ExceptionlessClient.Default.SubmitEvent(ev);
 
             if (writeToConsole) {
-                Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
                 Console.WriteLine("Sent 1 event.");
                 Trace.WriteLine("Sent 1 event.");
 
@@ -276,7 +275,7 @@ namespace SampleConsole {
         }
 
         private static void SendAllCapturedEventsFromDisk() {
-            Console.SetCursorPosition(0, _optionsMenuLineCount + 2);
+            Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
             Console.WriteLine("Sending captured events...");
 
             string path = Path.GetFullPath(@"..\..\Errors\");
@@ -290,10 +289,16 @@ namespace SampleConsole {
                 ExceptionlessClient.Default.SubmitEvent(e);
 
                 eventCount++;
-                Console.SetCursorPosition(0, _optionsMenuLineCount + 3);
+                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 3);
                 Console.WriteLine("Sent {0} events.", eventCount);
             }
         }
+
+        public static readonly List<string> Identities = new List<string> {
+            "eric@exceptionless.com",
+            "blake@exceptionless.com",
+            "marylou@exceptionless.com"
+        };
 
         public static readonly List<string> LogSources = new List<string> {
             "Some.Class",
@@ -320,7 +325,9 @@ namespace SampleConsole {
             Event.KnownTypes.Error,
             Event.KnownTypes.FeatureUsage,
             Event.KnownTypes.Log,
-            Event.KnownTypes.NotFound
+            Event.KnownTypes.NotFound,
+            Event.KnownTypes.SessionEnd,
+            Event.KnownTypes.SessionEnd
         };
 
         public static readonly List<string> ExceptionTypes = new List<string> {
@@ -336,7 +343,12 @@ namespace SampleConsole {
             "Tag2",
             "Tag3",
             "Tag4",
-            "Tag5"
+            "Tag5",
+            "Tag6",
+            "Tag7",
+            "Tag8",
+            "Tag9",
+            "Tag10"
         };
 
         public static readonly List<string> Namespaces = new List<string> {
