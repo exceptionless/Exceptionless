@@ -11,8 +11,8 @@ namespace Exceptionless.Api.Tests.Caching {
         private readonly RedisCacheClient _cache;
 
         public RedisCacheClientTests() {
-            //if (!Settings.Current.UseAzureCache)
-            //    return;
+            if (Settings.Current.RedisConnectionInfo == null)
+                return;
 
             var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
             _cache = new RedisCacheClient(muxer.GetDatabase());

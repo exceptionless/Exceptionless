@@ -9,8 +9,8 @@ namespace Exceptionless.Api.Tests.Queue {
         private ConnectionMultiplexer _muxer;
 
         protected override IQueue<SimpleWorkItem> GetQueue(int retries = 1, TimeSpan? workItemTimeout = null, TimeSpan? retryDelay = null) {
-            //if (!Settings.Current.UseAzureServiceBus)
-            //      return;
+            if (Settings.Current.RedisConnectionInfo == null)
+                return null;
 
             if (_muxer == null)
                 _muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());

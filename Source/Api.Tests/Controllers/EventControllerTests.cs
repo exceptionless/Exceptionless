@@ -35,7 +35,7 @@ using Xunit;
 namespace Exceptionless.Api.Tests.Controllers {
     public class EventControllerTests : MongoTestHelper {
         private readonly EventController _eventController = IoC.GetInstance<EventController>();
-        private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
+        private readonly IQueue<EventPostFileInfo> _eventQueue = IoC.GetInstance<IQueue<EventPostFileInfo>>();
 
         public EventControllerTests() {
             ResetDatabase();

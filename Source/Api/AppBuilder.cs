@@ -9,13 +9,11 @@ using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
-using CodeSmith.Core.Helpers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
@@ -175,7 +173,7 @@ namespace Exceptionless.Api {
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
             container.RegisterPackage<Core.Bootstrapper>();
-            container.RegisterPackage<Api.Bootstrapper>();
+            container.RegisterPackage<Bootstrapper>();
 
             return container;
         }

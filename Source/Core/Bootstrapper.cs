@@ -26,6 +26,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
+using Exceptionless.Core.Storage;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Exceptionless.Models;
@@ -74,8 +75,8 @@ namespace Exceptionless.Core {
                 container.Register<IDatabase>(() => container.GetInstance<ConnectionMultiplexer>().GetDatabase());
 
                 container.Register<ICacheClient, RedisCacheClient>();
-                
-                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer));
+
+                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new RedisQueue<EventPostFileInfo>(muxer));
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer));
                 container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer));
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer));
@@ -87,7 +88,7 @@ namespace Exceptionless.Core {
             } else {
                 container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>());
+                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new InMemoryQueue<EventPostFileInfo>());
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>());
                 container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
@@ -97,6 +98,12 @@ namespace Exceptionless.Core {
                 container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
                 container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
             }
+
+            // TODO: Use Azure file storage if configured.
+            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
+                container.RegisterSingle<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
+            else
+                container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());
 
             container.RegisterSingle<IStackRepository, StackRepository>();
             container.RegisterSingle<IEventRepository, EventRepository>();

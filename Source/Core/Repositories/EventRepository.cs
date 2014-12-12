@@ -30,6 +30,9 @@ namespace Exceptionless.Core.Repositories {
             foreach (var ev in documents.Where(ev => ev.Id == null))
                 ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
 
+            foreach (var ev in documents.Where(ev => ev.CreatedUtc == default(DateTime)))
+                ev.CreatedUtc = DateTime.UtcNow;
+
             base.BeforeAdd(documents);
         }
 

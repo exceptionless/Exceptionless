@@ -58,6 +58,26 @@
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Data.Edm, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Data.Edm.5.6.2\lib\net40\Microsoft.Data.Edm.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Data.OData, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Data.OData.5.6.2\lib\net40\Microsoft.Data.OData.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Data.Services.Client, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.Data.Services.Client.5.6.2\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Configuration, Version=1.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.1.8.0.0\lib\net35-full\Microsoft.WindowsAzure.Configuration.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Storage, Version=4.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\WindowsAzure.Storage.4.3.0\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
     <Reference Include="MongoDB.Bson, Version=1.9.2.235, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\mongocsharpdriver.1.9.2\lib\net35\MongoDB.Bson.dll</HintPath>
@@ -123,6 +143,10 @@
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
+    <Reference Include="System.Spatial, Version=5.6.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\System.Spatial.5.6.2\lib\net40\System.Spatial.dll</HintPath>
+    </Reference>
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.2.2\lib\net45\System.Web.Razor.dll</HintPath>
@@ -149,6 +173,8 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Caching\RedisCacheClient.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Extensions\QueueExtensions.cs" />
+    <Compile Include="Extensions\StorageExtensions.cs" />
     <Compile Include="Jobs\JobResult.cs" />
     <Compile Include="Lock\DisposableLock.cs" />
     <Compile Include="Lock\ILockProvider.cs" />
@@ -160,6 +186,10 @@
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Queues\RedisQueue.cs" />
     <Compile Include="Repositories\Base\SortOrder.cs" />
+    <Compile Include="Storage\AzureFileStorage.cs" />
+    <Compile Include="Storage\FolderFileStorage.cs" />
+    <Compile Include="Storage\IFileStorage.cs" />
+    <Compile Include="Storage\InMemoryFileStorage.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Mail\IMailSender.cs" />
@@ -257,6 +287,7 @@
     <Compile Include="Repositories\Base\PagingWitSortByOptions.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
+    <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\EventValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />

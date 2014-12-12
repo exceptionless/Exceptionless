@@ -9,5 +9,10 @@ namespace Exceptionless.Core.Models {
         public int ApiVersion { get; set; }
         public string UserAgent { get; set; }
         public string ContentEncoding { get; set; }
+        public string IpAddress { get; set; }
+    }
+
+    public class EventPostFileInfo {
+        public string FilePath { get; set; }
     }
 }
