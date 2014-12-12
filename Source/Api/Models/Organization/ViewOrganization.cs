@@ -7,6 +7,8 @@ namespace Exceptionless.Api.Models {
         public string Id { get; set; }
         public string Name { get; set; }
         public string PlanId { get; set; }
+        public string PlanName { get; set; }
+        public string PlanDescription { get; set; }
         public string CardLast4 { get; set; }
         public DateTime? SubscribeDate { get; set; }
         public DateTime? BillingChangeDate { get; set; }

@@ -15,6 +15,8 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using NLog.Fluent;
 using Stripe;
@@ -28,13 +30,15 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
+        private readonly IMessagePublisher _messagePublisher;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher) : base(organizationRepository) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
             _projectController = projectController;
             _mailer = mailer;
+            _messagePublisher = messagePublisher;
         }
 
         #region CRUD
@@ -152,7 +156,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
-        public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null) {
+        public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return BadRequest("Invalid organization id.");
 
@@ -195,11 +199,17 @@ namespace Exceptionless.Api.Controllers {
 
                     organization.SubscribeDate = DateTime.Now;
 
-                    StripeCustomer customer = customerService.Create(new StripeCustomerCreateOptions {
+                    var createCustomer = new StripeCustomerCreateOptions {
                         TokenId = stripeToken,
                         PlanId = planId,
-                        Description = organization.Name
-                    });
+                        Description = organization.Name,
+                        Email = ExceptionlessUser.EmailAddress
+                    };
+
+                    if (!String.IsNullOrWhiteSpace(couponId))
+                        createCustomer.CouponId = couponId;
+
+                    StripeCustomer customer = customerService.Create(createCustomer);
 
                     organization.BillingStatus = BillingStatus.Active;
                     organization.RemoveSuspension();
@@ -207,7 +217,7 @@ namespace Exceptionless.Api.Controllers {
                     if (customer.StripeCardList.StripeCards.Count > 0)
                         organization.CardLast4 = customer.StripeCardList.StripeCards[0].Last4;
                 } else {
-                    var update = new StripeSubscriptionUpdateOptions {  PlanId = planId };
+                    var update = new StripeSubscriptionUpdateOptions { PlanId = planId };
                     var create = new StripeSubscriptionCreateOptions();
                     bool cardUpdated = false;
 
@@ -223,6 +233,10 @@ namespace Exceptionless.Api.Controllers {
                     else
                         subscriptionService.Create(organization.StripeCustomerId, planId, create);
 
+                    customerService.Update(organization.StripeCustomerId, new StripeCustomerUpdateOptions {
+                        Email = ExceptionlessUser.EmailAddress
+                    });
+
                     if (cardUpdated)
                         organization.CardLast4 = last4;
 
@@ -232,6 +246,10 @@ namespace Exceptionless.Api.Controllers {
 
                 _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
                 _repository.Save(organization);
+
+                _messagePublisher.Publish(new PlanChanged {
+                    OrganizationId = organization.Id
+                });
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
                 return Ok(new { Success = false, Message = e.Message });

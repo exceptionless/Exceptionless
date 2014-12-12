@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            Organization organization = _repository.GetById(organizationId);
+            var organization = _repository.GetById(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
