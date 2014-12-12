@@ -104,7 +104,11 @@ namespace Exceptionless.Core {
         public string StripePublishableApiKey { get; private set; }
 
         public string StorageFolder { get; private set; }
-        
+
+        public string AzureStorageConnectionString { get; set; }
+
+        public bool EnableAzureStorage { get; private set; }
+       
         private static Settings Init() {
             var settings = new Settings();
 
@@ -157,16 +161,21 @@ namespace Exceptionless.Core {
             settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
             settings.StorageFolder = ConfigurationManager.AppSettings["StorageFolder"];
             
-            ConnectionStringSettings redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
+            var redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
             if (redisConnectionInfo != null)
                 settings.RedisConnectionInfo = String.IsNullOrEmpty(redisConnectionInfo.ConnectionString) ? null : RedisConnectionInfo.Parse(redisConnectionInfo.ConnectionString);
             settings.EnableRedis = ConfigurationManager.AppSettings.GetBool("EnableRedis", settings.RedisConnectionInfo != null);
 
-            ConnectionStringSettings mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
+            var azureConnectionInfo = ConfigurationManager.ConnectionStrings["AzureStorageConnectionString"];
+            if (azureConnectionInfo != null)
+                settings.AzureStorageConnectionString = azureConnectionInfo.ConnectionString;
+            settings.EnableAzureStorage = ConfigurationManager.AppSettings.GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+
+            var mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
             if (mongoConnectionString != null)
                 settings.MongoConnectionString = mongoConnectionString.ConnectionString;
 
-            ConnectionStringSettings elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
+            var elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
             if (elasticSearchConnectionString != null)
                 settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
 

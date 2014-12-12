@@ -13,6 +13,11 @@ namespace Exceptionless.Core.Models {
     }
 
     public class EventPostFileInfo {
+        public EventPostFileInfo() {
+            ShouldArchive = true;
+        }
+
+        public bool ShouldArchive { get; set; }
         public string FilePath { get; set; }
     }
 }

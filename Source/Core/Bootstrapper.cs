@@ -99,8 +99,9 @@ namespace Exceptionless.Core {
                 container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
             }
 
-            // TODO: Use Azure file storage if configured.
-            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
+            if (Settings.Current.EnableAzureStorage)
+                container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));
+            else if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
                 container.RegisterSingle<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
             else
                 container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());

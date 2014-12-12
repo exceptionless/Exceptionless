@@ -6,7 +6,7 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {
     public static class QueueExtensions {
-        public static string Enqueue(this IQueue<EventPostFileInfo> queue, EventPost data, IFileStorage storage) {
+        public static string Enqueue(this IQueue<EventPostFileInfo> queue, EventPost data, IFileStorage storage, bool shouldArchive = true) {
             string path = String.Format("q\\{0}.json", Guid.NewGuid().ToString("N"));
             try {
                 if (!storage.SaveObject(path, data))
@@ -16,7 +16,8 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return queue.Enqueue(new EventPostFileInfo {
-                FilePath = path
+                FilePath = path,
+                ShouldArchive = shouldArchive
             });
         }
     }
