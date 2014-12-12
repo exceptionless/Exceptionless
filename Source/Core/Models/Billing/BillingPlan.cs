@@ -10,8 +10,10 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 
 namespace Exceptionless.Core.Models.Billing {
+    [DebuggerDisplay("Id: {Id} Name: {Name} Price: {Price}")]
     public class BillingPlan {
         public string Id { get; set; }
         public string Name { get; set; }

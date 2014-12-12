@@ -39,9 +39,19 @@ namespace Exceptionless.Models {
         public string StripeCustomerId { get; set; }
 
         /// <summary>
-        /// Billing plan that the organization belongs to.
+        /// Billing plan id that the organization belongs to.
         /// </summary>
         public string PlanId { get; set; }
+
+        /// <summary>
+        /// Billing plan name that the organization belongs to.
+        /// </summary>
+        public string PlanName { get; set; }
+
+        /// <summary>
+        /// Billing plan description that the organization belongs to.
+        /// </summary>
+        public string PlanDescription { get; set; }
 
         /// <summary>
         /// Last 4 digits of the credit card used for billing.
@@ -116,7 +126,7 @@ namespace Exceptionless.Models {
         /// <summary>
         /// Maximum number of users allowed by the current plan.
         /// </summary>
-        public long MaxUsers { get; set; }
+        public int MaxUsers { get; set; }
 
         /// <summary>
         /// Maximum number of projects allowed by the current plan.

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Models.Organization;
 using Exceptionless.Core;
@@ -112,6 +113,41 @@ namespace Exceptionless.Api.Controllers {
             var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after }).Select(Mapper.Map<InvoiceGridModel>).ToList();
 
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
+        }
+
+        [HttpGet]
+        [Route("{id:objectid}/plans")]
+        public IHttpActionResult GetPlans(string id) {
+            if (String.IsNullOrWhiteSpace(id) || !CanAccessOrganization(id))
+                return NotFound();
+
+            Organization organization = _repository.GetById(id, true);
+            if (organization == null)
+                return NotFound();
+
+            var plans = BillingManager.Plans.ToList();
+            if (!Request.IsGlobalAdmin())
+                plans = plans.Where(p => !p.IsHidden || p.Id == organization.PlanId).ToList();
+
+            var currentPlan = new BillingPlan {
+                Id = organization.PlanId,
+                Name = organization.PlanName,
+                Description = organization.PlanDescription,
+                IsHidden = false,
+                Price = organization.BillingPrice,
+                MaxProjects = organization.MaxProjects,
+                MaxUsers = organization.MaxUsers,
+                RetentionDays = organization.RetentionDays,
+                MaxEventsPerMonth = organization.MaxEventsPerMonth,
+                HasPremiumFeatures = organization.HasPremiumFeatures
+            };
+
+            if (plans.All(p => p.Id != organization.PlanId))
+                plans.Add(currentPlan);
+            else
+                plans[plans.FindIndex(p => p.Id == organization.PlanId)] = currentPlan;
+
+            return Ok(plans);
         }
 
         [HttpPost]

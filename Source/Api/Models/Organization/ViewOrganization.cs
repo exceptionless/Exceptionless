@@ -20,7 +20,7 @@ namespace Exceptionless.Api.Models {
         public string SuspensionNotes { get; set; }
         public DateTime? SuspensionDate { get; set; }
         public bool HasPremiumFeatures { get; set; }
-        public long MaxUsers { get; set; }
+        public int MaxUsers { get; set; }
         public int MaxProjects { get; set; }
         public int ProjectCount { get; set; }
         public long StackCount { get; set; }

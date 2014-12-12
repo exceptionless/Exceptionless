@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using Exceptionless.Core.Billing;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
@@ -41,6 +42,14 @@ namespace Exceptionless.Core.Migrations {
                 SuspensionCode suspensionCode;
                 if (value.IsString && Enum.TryParse(value.AsString, true, out suspensionCode))
                     document.Set("SuspensionCode", suspensionCode);
+            }
+
+            if (document.Contains("PlanId")) {
+                string planId = document.GetValue("PlanId").AsString;
+                var currentPlan = BillingManager.GetBillingPlan(planId);
+
+                document.Set("PlanName", currentPlan != null ? currentPlan.Name : planId);
+                document.Set("PlanDescription", currentPlan != null ? currentPlan.Description : planId);
             }
 
             collection.Save(document);
