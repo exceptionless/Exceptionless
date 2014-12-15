@@ -130,9 +130,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("github")]
         public IHttpActionResult Github(JObject value) {
-            if (!Settings.Current.EnableAccountCreation) 
-                return BadRequest("Account Creation is currently disabled.");
-
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -150,13 +147,17 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
                 return BadRequest("Unable to get user info.");
             }
 
             User user;
             try {
                 user = AddExternalLogin(userInfo);
+            } catch (ApplicationException) {
+                return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
@@ -172,9 +173,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("google")]
         public IHttpActionResult Google(JObject value) {
-            if (!Settings.Current.EnableAccountCreation) 
-                return BadRequest("Account Creation is currently disabled.");
-
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -192,13 +190,17 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
                 return BadRequest("Unable to get user info.");
             }
 
             User user;
             try {
                 user = AddExternalLogin(userInfo);
+            } catch (ApplicationException) {
+                return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
@@ -214,9 +216,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("facebook")]
         public IHttpActionResult Facebook(JObject value) {
-            if (!Settings.Current.EnableAccountCreation) 
-                return BadRequest("Account Creation is currently disabled.");
-
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -241,8 +240,10 @@ namespace Exceptionless.Api.Controllers {
             User user;
             try {
                 user = AddExternalLogin(userInfo);
+            } catch (ApplicationException) {
+                return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
@@ -258,9 +259,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("live")]
         public IHttpActionResult Live(JObject value) {
-            if (!Settings.Current.EnableAccountCreation) 
-                return BadRequest("Account Creation is currently disabled.");
-
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -285,8 +283,10 @@ namespace Exceptionless.Api.Controllers {
             User user;
             try {
                 user = AddExternalLogin(userInfo);
+            } catch (ApplicationException) {
+                return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
@@ -465,6 +465,9 @@ namespace Exceptionless.Api.Controllers {
             bool isFirstUser = false;
             User user = !String.IsNullOrEmpty(userInfo.Email) ? _userRepository.GetByEmailAddress(userInfo.Email) : null;
             if (user == null) {
+                if (!Settings.Current.EnableAccountCreation)
+                    throw new ApplicationException("Account Creation is currently disabled.");
+
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
                 user.Roles.Add(AuthorizationRoles.Client);
                 user.Roles.Add(AuthorizationRoles.User);
