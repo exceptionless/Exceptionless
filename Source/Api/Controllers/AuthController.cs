@@ -71,6 +71,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("signup")]
         public IHttpActionResult Signup(SignupModel model) {
+            if (!Settings.Current.EnableAccountCreation) 
+                return BadRequest("Account Creation is currently disabled.");
+
             if (model == null || String.IsNullOrWhiteSpace(model.Email))
                 return BadRequest("Email Address is required.");
 
@@ -127,6 +130,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("github")]
         public IHttpActionResult Github(JObject value) {
+            if (!Settings.Current.EnableAccountCreation) 
+                return BadRequest("Account Creation is currently disabled.");
+
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -166,6 +172,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("google")]
         public IHttpActionResult Google(JObject value) {
+            if (!Settings.Current.EnableAccountCreation) 
+                return BadRequest("Account Creation is currently disabled.");
+
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -205,6 +214,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("facebook")]
         public IHttpActionResult Facebook(JObject value) {
+            if (!Settings.Current.EnableAccountCreation) 
+                return BadRequest("Account Creation is currently disabled.");
+
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -246,6 +258,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("live")]
         public IHttpActionResult Live(JObject value) {
+            if (!Settings.Current.EnableAccountCreation) 
+                return BadRequest("Account Creation is currently disabled.");
+
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
