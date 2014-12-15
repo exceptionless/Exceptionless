@@ -108,3 +108,15 @@ if (Test-Path $configPath) {
 } else {
   Write-Host "Could not resolve config path."
 }
+
+if (Test-Path ($OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\App_Data\JobRunner\Job.exe.config")) {
+  $jobConfigPath = $OctopusParameters["Octopus.Action.Package.CustomInstallationDirectory"] + "\App_Data\JobRunner\Job.exe.config"
+} else {
+  $jobConfigPath = $OctopusParameters["OctopusOriginalPackageDirectoryPath"] + "\App_Data\JobRunner\Job.exe.config"
+}
+
+if (Test-Path $jobConfigPath) {
+  Update-ApplicationConfig -configPath $jobConfigPath -variables $config
+} else {
+  Write-Host "Could not resolve job config path."
+}

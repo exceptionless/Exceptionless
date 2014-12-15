@@ -57,6 +57,8 @@ task server -depends PackageServer
 
 task Clean {
     Delete-Directory $build_dir
+    Delete-Directory "$source_dir\JobRunner\bin"
+    Delete-Directory "$source_dir\Api.IIS\App_Data"
 }
 
 task Init -depends Clean {
@@ -78,7 +80,7 @@ task Init -depends Clean {
     $version = "$version.$build_number"
 
     TeamCity-SetBuildNumber $version
-    $env:BUILD_NUMBER = $version
+    #$env:BUILD_NUMBER = $version
     
     Update-GlobalAssemblyInfo "$source_dir\GlobalAssemblyInfo.cs" $version $version $info_version	
 }
@@ -239,7 +241,11 @@ task PackageServer -depends TestServer {
     $packageDir = "$deploy_dir\ServerPackages"
     Create-Directory $packageDir
     
-    robocopy "$workingDirectory\src\Source\JobRunner\bin\$configuration" "$source_dir\Api.IIS\App_Data\JobRunner" /S /NP
+    robocopy "$source_dir\JobRunner\bin\$configuration" "$source_dir\JobRunner\bin\$configuration\bin" /XF Job.* NLog.config /MOVE /XD jobs Mail bin /E /NP
+
+    robocopy "$source_dir\JobRunner\bin\$configuration" "$source_dir\Api.IIS\App_Data\JobRunner" /S /NP
+
+    robocopy "$source_dir\Api.IIS\App_Data\JobRunner\jobs" "$source_dir\Api.IIS\App_Data\jobs" /MOVE /E /NP
 
     TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }

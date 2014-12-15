@@ -1,1 +1,0 @@
-job.exe /jobtype:"Exceptionless.Core.Jobs.EnforceRetentionLimitsJob, Exceptionless.Core"

@@ -75,22 +75,22 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="Jobs\DailyNotification\run.bat">
+    <None Include="jobs\triggered\DailyNotification\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Jobs\EnforceRetentionLimits\run.bat">
+    <None Include="jobs\triggered\EnforceRetentionLimits\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Jobs\ProcessEventPosts\run.bat">
+    <None Include="jobs\continuous\ProcessEventPosts\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Jobs\ProcessEventUserDescriptions\run.bat">
+    <None Include="jobs\continuous\ProcessEventUserDescriptions\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Jobs\ProcessMailMessage\run.bat">
+    <None Include="jobs\continuous\ProcessMailMessage\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Jobs\RemoveStaleAccounts\run.bat">
+    <None Include="jobs\triggered\RemoveStaleAccounts\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="NLog.config">
