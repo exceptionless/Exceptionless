@@ -33,5 +33,8 @@ namespace Exceptionless.Api.Models {
         public ICollection<UsageInfo> OverageHours { get; set; }
         public ICollection<UsageInfo> Usage { get; set; }
         public DataDictionary Data { get; set; }
+
+        public bool IsOverHourlyLimit { get; set; }
+        public bool IsOverMonthlyLimit { get; set; }
     }
 }

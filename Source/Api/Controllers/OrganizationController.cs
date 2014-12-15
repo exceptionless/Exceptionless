@@ -556,6 +556,12 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override void CreateMaps() {
+            if (Mapper.FindTypeMapFor<Organization, ViewOrganization>() == null)
+                Mapper.CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
+                    vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
+                    vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
+                });
+
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
                 Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(4));
 
