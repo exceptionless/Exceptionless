@@ -148,7 +148,7 @@ task TestServer -depends BuildServer {
 
 task Test -depends TestClient, TestServer
 
-task PackageClient -depends BuildClient {
+task PackageClient -depends TestClient {
     Create-Directory $deploy_dir
 
     ForEach ($p in $client_projects) {
@@ -235,7 +235,7 @@ task PackageClient -depends BuildClient {
     Delete-Directory $working_dir
 }
 
-task PackageServer -depends BuildServer {
+task PackageServer -depends TestServer {
     Create-Directory $deploy_dir
 
     $packageDir = "$deploy_dir\ServerPackages"
