@@ -17,9 +17,18 @@ namespace Exceptionless.Diagnostics {
     public class ExceptionlessTraceListener : TraceListener {
         private readonly int _limit = 10;
 
-        public ExceptionlessTraceListener(int limit) {
-            _limit = limit;
+        public ExceptionlessTraceListener() {
             _innerList = new Queue<string>();
+        }
+
+        public ExceptionlessTraceListener(int limit) : this() {
+            _limit = limit;
+        }
+
+        public ExceptionlessTraceListener(string limit) : this() {
+            int value;
+            if (Int32.TryParse(limit, out value))
+                _limit = value;
         }
 
         public override void WriteLine(string message) {
