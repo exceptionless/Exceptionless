@@ -354,7 +354,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public IHttpActionResult RemoveUser(string id, string email) {
-            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
+            if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
                 return BadRequest();
 
             Organization organization = _repository.GetById(id);

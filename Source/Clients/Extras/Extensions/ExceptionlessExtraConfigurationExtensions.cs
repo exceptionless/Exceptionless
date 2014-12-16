@@ -5,12 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Dependency;
+using Exceptionless.Diagnostics;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Extras;
 using Exceptionless.Extras.Storage;
 using Exceptionless.Logging;
 using Exceptionless.Storage;
-using Exceptionless.Utility;
 
 namespace Exceptionless {
     public static class ExceptionlessExtraConfigurationExtensions {
@@ -43,16 +43,22 @@ namespace Exceptionless {
             config.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(new IsolatedStorageFileExceptionlessLog("exceptionless.log")));
         }
 
-        public static void UseTraceLogEntriesEnrichment(this ExceptionlessConfiguration config, int maxEntriesToInclude = TraceLogEnrichment.DefaultMaxEntriesToInclude) {
-            if (!Trace.Listeners.OfType<ExceptionlessTraceListener>().Any())
-                Trace.Listeners.Add(new ExceptionlessTraceListener());
+        public static void UseTraceLogEntriesEnrichment(this ExceptionlessConfiguration config, int? defaultMaxEntriesToInclude = null) {
+            int maxEntriesToInclude = config.Settings.GetInt32(TraceLogEnrichment.MaxEntriesToIncludeKey, defaultMaxEntriesToInclude ?? 0);
 
-            config.Settings.Add(TraceLogEnrichment.MaxEntriesToIncludeKey, maxEntriesToInclude.ToString());
-            config.AddEnrichment<TraceLogEnrichment>();
+            if (!Trace.Listeners.OfType<ExceptionlessTraceListener>().Any())
+                Trace.Listeners.Add(new ExceptionlessTraceListener(maxEntriesToInclude));
+
+            if (!config.Settings.ContainsKey(TraceLogEnrichment.MaxEntriesToIncludeKey) && defaultMaxEntriesToInclude.HasValue)
+                config.Settings.Add(TraceLogEnrichment.MaxEntriesToIncludeKey, maxEntriesToInclude.ToString());
+
+            config.AddEnrichment(typeof(TraceLogEnrichment).Name, c => new TraceLogEnrichment(c));
         }
 
         public static void ReadAllConfig(this ExceptionlessConfiguration config, params Assembly[] configAttributesAssemblies) {
-            config.UseIsolatedStorage();
+            if (!config.Resolver.HasRegistration<IFileStorage>())
+                config.UseIsolatedStorage();
+
             if (configAttributesAssemblies == null || configAttributesAssemblies.Length == 0)
                 config.ReadFromAttributes(Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly());
             else

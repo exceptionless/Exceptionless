@@ -9,6 +9,13 @@ using Exceptionless.Submission;
 
 namespace Exceptionless.Dependency {
     public static class DependencyResolverExtensions {
+        public static bool HasRegistration<TService>(this IDependencyResolver resolver) where TService : class {
+            if (resolver == null)
+                return false;
+            
+            return resolver.Resolve(typeof(TService)) != null;
+        }
+
         public static object Resolve(this IDependencyResolver resolver, Type type) {
             if (resolver == null)
                 throw new ArgumentNullException("resolver");

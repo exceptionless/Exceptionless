@@ -42,9 +42,9 @@ namespace SampleConsole {
         private static int _dateSpanIndex = 3;
 
         private static void Main() {
-            ExceptionlessClient.Default.Startup();
             ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
             ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
+            ExceptionlessClient.Default.Startup();
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
@@ -233,9 +233,7 @@ namespace SampleConsole {
         private static List<Error> _randomErrors;
 
         private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new Error();
-            error.Message = @"Generated exception message.";
-            error.Type = ExceptionTypes.Random();
+            var error = new Error { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
             if (RandomHelper.GetBool())
                 error.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
 
