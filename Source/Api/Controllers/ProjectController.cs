@@ -317,7 +317,7 @@ namespace Exceptionless.Api.Controllers {
         protected override PermissionResult CanUpdate(Project original, Delta<UpdateProject> changes) {
             var changed = changes.GetEntity();
             if (changes.ContainsChangedProperty(p => p.Name) && !IsProjectNameAvailableInternal(original.OrganizationId, changed.Name))
-                return PermissionResult.DenyWithPlanLimitReached("A project with this name already exists.");
+                return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
             return base.CanUpdate(original, changes);
         }
