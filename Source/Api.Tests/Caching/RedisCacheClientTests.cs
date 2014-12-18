@@ -11,10 +11,10 @@ namespace Exceptionless.Api.Tests.Caching {
         private readonly RedisCacheClient _cache;
 
         public RedisCacheClientTests() {
-            if (Settings.Current.RedisConnectionInfo == null)
+            if (Settings.Current.RedisConnectionString == null)
                 return;
 
-            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
             _cache = new RedisCacheClient(muxer.GetDatabase());
         }
 

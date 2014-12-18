@@ -11,10 +11,10 @@ namespace Exceptionless.Api.Tests.Messaging {
         private readonly RedisMessageBus _messageBus;
 
         public RedisMessageBusTests() {
-            if (Settings.Current.RedisConnectionInfo == null)
+            if (Settings.Current.RedisConnectionString == null)
                 return;
 
-            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
             _messageBus = new RedisMessageBus(muxer.GetSubscriber());   
         }
 

@@ -7,7 +7,7 @@ using StackExchange.Redis;
 namespace Exceptionless.Api.Tests {
     public class RedisLockTests : LockTests {
         public RedisLockTests() {
-            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+            var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
             _cacheClient = new RedisCacheClient(muxer.GetDatabase());
             _locker = new CacheLockProvider(_cacheClient);
         }

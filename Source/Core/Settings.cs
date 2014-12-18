@@ -197,52 +197,6 @@ namespace Exceptionless.Core {
         #endregion
     }
 
-    public class RedisConnectionInfo {
-        public string Host { get; set; }
-        public int Port { get; set; }
-        public string Password { get; set; }
-
-        public override string ToString() {
-            var builder = new StringBuilder();
-
-            if (!String.IsNullOrWhiteSpace(Password))
-                builder.Append(Password).Append("@");
-
-            builder.Append(Host);
-
-            if (Port != 0 && Port != 6379)
-                builder.Append(":").Append(Port);
-
-            return builder.ToString();
-        }
-
-        public static RedisConnectionInfo Parse(string connectionString) {
-            string host = "localhost";
-            string password = "";
-            int port = 6379;
-
-            string[] parts = connectionString.Split('@');
-            if (parts.Length == 1)
-                host = parts[0];
-            else if (parts.Length == 2) {
-                password = parts[0];
-                host = parts[1];
-            }
-
-            parts = host.Split(':');
-            if (parts.Length > 1) {
-                host = parts[0];
-                Int32.TryParse(parts[1], out port);
-            }
-
-            return new RedisConnectionInfo {
-                Host = host,
-                Port = port,
-                Password = password
-            };
-        }
-    }
-
     public enum WebsiteMode {
         Production,
         QA,
