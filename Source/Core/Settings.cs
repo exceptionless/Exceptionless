@@ -63,7 +63,7 @@ namespace Exceptionless.Core {
 
         public bool EnableAppStats { get; private set; }
 
-        public RedisConnectionInfo RedisConnectionInfo { get; private set; }
+        public string RedisConnectionString { get; private set; }
 
         public bool EnableRedis { get; private set; }
 
@@ -160,11 +160,11 @@ namespace Exceptionless.Core {
             settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
             settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
             settings.StorageFolder = ConfigurationManager.AppSettings["StorageFolder"];
-            
-            var redisConnectionInfo = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
-            if (redisConnectionInfo != null)
-                settings.RedisConnectionInfo = String.IsNullOrEmpty(redisConnectionInfo.ConnectionString) ? null : RedisConnectionInfo.Parse(redisConnectionInfo.ConnectionString);
-            settings.EnableRedis = ConfigurationManager.AppSettings.GetBool("EnableRedis", settings.RedisConnectionInfo != null);
+
+            var redisConnectionString = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
+            if (redisConnectionString != null)
+                settings.RedisConnectionString = redisConnectionString.ConnectionString;
+            settings.EnableRedis = ConfigurationManager.AppSettings.GetBool("EnableRedis", !String.IsNullOrEmpty(settings.RedisConnectionString));
 
             var azureConnectionInfo = ConfigurationManager.ConnectionStrings["AzureStorageConnectionString"];
             if (azureConnectionInfo != null)

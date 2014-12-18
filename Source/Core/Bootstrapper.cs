@@ -70,7 +70,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {
-                var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionInfo.ToString());
+                var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                 container.RegisterSingle(muxer);
                 container.Register<IDatabase>(() => container.GetInstance<ConnectionMultiplexer>().GetDatabase());
 
