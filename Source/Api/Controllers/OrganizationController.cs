@@ -327,6 +327,11 @@ namespace Exceptionless.Api.Controllers {
                 if (!user.OrganizationIds.Contains(organization.Id)) {
                     user.OrganizationIds.Add(organization.Id);
                     _userRepository.Save(user);
+                    _messagePublisher.Publish(new UserMembershipChanged {
+                        ChangeType = ChangeType.Added,
+                        UserId = user.Id,
+                        OrganizationId = organization.Id
+                    });
                 }
 
                 _mailer.SendAddedToOrganization(currentUser, organization, user);
@@ -386,6 +391,11 @@ namespace Exceptionless.Api.Controllers {
 
                 user.OrganizationIds.Remove(organization.Id);
                 _userRepository.Save(user);
+                _messagePublisher.Publish(new UserMembershipChanged {
+                    ChangeType = ChangeType.Removed,
+                    UserId = user.Id,
+                    OrganizationId = organization.Id
+                });
             }
 
             return Ok();
@@ -488,6 +498,11 @@ namespace Exceptionless.Api.Controllers {
 
             ExceptionlessUser.OrganizationIds.Add(organization.Id);
             _userRepository.Save(ExceptionlessUser, true);
+            _messagePublisher.Publish(new UserMembershipChanged {
+                UserId = ExceptionlessUser.Id,
+                OrganizationId = organization.Id,
+                ChangeType = ChangeType.Added
+            });
 
             return organization;
         }

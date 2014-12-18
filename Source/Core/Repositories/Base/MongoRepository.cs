@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Repositories {
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
                 if (EnableNotifications)
-                    PublishMessage(EntityChangeType.Added, document);
+                    PublishMessage(ChangeType.Added, document);
             }
         }
 
@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(document);
 
                 if (sendNotification && EnableNotifications)
-                    PublishMessage(EntityChangeType.Removed, document);
+                    PublishMessage(ChangeType.Removed, document);
             }
         }
 
@@ -180,7 +180,7 @@ namespace Exceptionless.Core.Repositories {
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
                 if (EnableNotifications)
-                    PublishMessage(EntityChangeType.Saved, document);
+                    PublishMessage(ChangeType.Saved, document);
             }
         }
 
@@ -192,14 +192,14 @@ namespace Exceptionless.Core.Repositories {
             if (options.OrganizationIds.Any()) {
                 foreach (var orgId in options.OrganizationIds) {
                     PublishMessage(new EntityChanged {
-                        ChangeType = EntityChangeType.UpdatedAll,
+                        ChangeType = ChangeType.UpdatedAll,
                         OrganizationId = orgId,
                         Type = _entityType
                     });
                 }
             } else {
                 PublishMessage(new EntityChanged {
-                    ChangeType = EntityChangeType.UpdatedAll,
+                    ChangeType = ChangeType.UpdatedAll,
                     Type = _entityType
                 });
             }
@@ -207,7 +207,7 @@ namespace Exceptionless.Core.Repositories {
             return result.DocumentsAffected;
         }
 
-        protected virtual void PublishMessage(EntityChangeType changeType, T document) {
+        protected virtual void PublishMessage(ChangeType changeType, T document) {
             var orgEntity = document as IOwnedByOrganization;
             var message = new EntityChanged {
                 ChangeType = changeType,

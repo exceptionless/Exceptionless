@@ -180,6 +180,8 @@
     <Compile Include="Lock\ILockProvider.cs" />
     <Compile Include="Jobs\JobBase.cs" />
     <Compile Include="Messaging\MessageBusData.cs" />
+    <Compile Include="Messaging\Models\ChangeType.cs" />
+    <Compile Include="Messaging\Models\UserMembershipChanged.cs" />
     <Compile Include="Messaging\RedisMessageBus.cs" />
     <Compile Include="Migrations\v1.0.34.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />

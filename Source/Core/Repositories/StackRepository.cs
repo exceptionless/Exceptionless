@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Repositories {
 
             if (EnableNotifications) {
                 PublishMessage(new EntityChanged {
-                    ChangeType = EntityChangeType.Saved,
+                    ChangeType = ChangeType.Saved,
                     Id = stackId,
                     OrganizationId = organizationId,
                     Type = _entityType
