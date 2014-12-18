@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Models {
         public string BillingChangedByUserId { get; set; }
         public BillingStatus BillingStatus { get; set; }
         public decimal BillingPrice { get; set; }
-        public int MaxErrorsPerDay { get; set; }
+        public int MaxEventsPerMonth { get; set; }
         public int RetentionDays { get; set; }
         public bool IsSuspended { get; set; }
         public string SuspensionCode { get; set; }
@@ -24,7 +24,6 @@ namespace Exceptionless.Api.Models {
         public bool HasPremiumFeatures { get; set; }
         public int MaxUsers { get; set; }
         public int MaxProjects { get; set; }
-        public int ProjectCount { get; set; }
         public long StackCount { get; set; }
         public long EventCount { get; set; }
         public DateTime LastEventDate { get; set; }

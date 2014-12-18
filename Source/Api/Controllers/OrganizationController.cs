@@ -495,7 +495,7 @@ namespace Exceptionless.Api.Controllers {
         protected override PermissionResult CanUpdate(Organization original, Delta<NewOrganization> changes) {
             var changed = changes.GetEntity();
             if (!IsOrganizationNameAvailableInternal(changed.Name))
-                return PermissionResult.DenyWithPlanLimitReached("A organization with this name already exists.");
+                return PermissionResult.DenyWithMessage("A organization with this name already exists.");
 
             return base.CanUpdate(original, changes);
         }
