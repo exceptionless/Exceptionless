@@ -135,22 +135,5 @@ namespace Exceptionless.Core.Repositories {
 
             base.InvalidateCache(user);
         }
-
-        protected override void PublishMessage(ChangeType changeType, User user) {
-            if (user.OrganizationIds.Any()) {
-                foreach (var organizationId in user.OrganizationIds) {
-                    var message = new EntityChanged {
-                        ChangeType = changeType,
-                        Id = user.Id,
-                        OrganizationId = organizationId,
-                        Type = _entityType
-                    };
-
-                    _messagePublisher.Publish(message);
-                }
-            } else {
-                base.PublishMessage(changeType, user);
-            }
-        }
     }
 }
