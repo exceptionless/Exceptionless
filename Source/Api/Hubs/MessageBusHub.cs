@@ -41,12 +41,11 @@ namespace Exceptionless.Api.Hubs {
             // manage user organization group membership
             foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
                 if (userMembershipChanged.ChangeType == ChangeType.Added)
-                    Groups.Add(connectionId, userMembershipChanged.OrganizationId);
+                    Groups.Add(connectionId, userMembershipChanged.OrganizationId).Wait();
                 else if (userMembershipChanged.ChangeType == ChangeType.Removed)
-                    Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
+                    Groups.Remove(connectionId, userMembershipChanged.OrganizationId).Wait();
             }
 
-            Thread.Sleep(100);
             Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
         }
 
