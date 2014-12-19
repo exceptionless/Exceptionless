@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("A user with this email address already exists.");
 
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-                return Ok();
+				return Ok(new { IsVerified = user.IsEmailAddressVerified });
 
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
