@@ -73,9 +73,11 @@ namespace Exceptionless.Core {
 
         public string Version { get; private set; }
 
-        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId); } }
+        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId) && !String.IsNullOrEmpty(IntercomAppSecret); ; } }
 
         public string IntercomAppId { get; private set; }
+
+        public string IntercomAppSecret { get; private set; }
 
         public bool EnableAccountCreation { get; private set; }
 
@@ -148,6 +150,7 @@ namespace Exceptionless.Core {
             settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);
             settings.EnableAppStats = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
             settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
+            settings.IntercomAppSecret = ConfigurationManager.AppSettings["IntercomAppSecret"];
             settings.EnableAccountCreation = ConfigurationManager.AppSettings.GetBool("EnableAccountCreation", true);
             settings.GoogleAppId = ConfigurationManager.AppSettings["GoogleAppId"];
             settings.GoogleAppSecret = ConfigurationManager.AppSettings["GoogleAppSecret"];

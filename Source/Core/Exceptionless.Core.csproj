@@ -309,7 +309,6 @@
     <Compile Include="Models\Billing\BillingPlan.cs" />
     <Compile Include="Models\EventPost.cs" />
     <Compile Include="Models\WebHookStack.cs" />
-    <Compile Include="Models\IntercomModel.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
     <Compile Include="Mail\Models\SummaryNotificationModel.cs" />
     <Compile Include="Models\WebHookEvent.cs" />
