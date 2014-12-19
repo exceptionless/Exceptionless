@@ -102,13 +102,15 @@ namespace Exceptionless.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
             if (searchPattern == null)
                 searchPattern = "*";
+            if (!maxCreatedDate.HasValue)
+                maxCreatedDate = DateTime.MaxValue;
 
             var regex = new Regex("^" + Regex.Escape(searchPattern).Replace("\\*", ".*?") + "$");
             lock (_lock)
-                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1).Take(limit ?? Int32.MaxValue).ToList();
+                return _storage.Keys.Where(k => regex.IsMatch(k)).Select(k => _storage[k].Item1).Where(f => f.Created <= maxCreatedDate).Take(limit ?? Int32.MaxValue).ToList();
         }
 
         public void Dispose() {

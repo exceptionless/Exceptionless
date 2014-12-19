@@ -11,6 +11,8 @@ using System;
 
 namespace Exceptionless.Logging {
     public interface IExceptionlessLog {
+        LogLevel MinimumLogLevel { get; set; }
+
         void Error(string message, string source = null, Exception exception = null);
 
         void Info(string message, string source = null);

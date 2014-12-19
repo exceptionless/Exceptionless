@@ -31,16 +31,18 @@ namespace Exceptionless {
             config.Resolver.Register<IFileStorage>(new FolderFileStorage(folder));
         }
 
-        public static void UseTraceLogger(this ExceptionlessConfiguration config) {
-            config.Resolver.Register<IExceptionlessLog, TraceExceptionlessLog>();
+        public static void UseTraceLogger(this ExceptionlessConfiguration config, LogLevel minLogLevel = LogLevel.Info) {
+            config.Resolver.Register<IExceptionlessLog>(new TraceExceptionlessLog { MinimumLogLevel = minLogLevel });
         }
 
-        public static void UseFileLogger(this ExceptionlessConfiguration config, string logPath) {
-            config.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(new FileExceptionlessLog(logPath)));
+        public static void UseFileLogger(this ExceptionlessConfiguration config, string logPath, LogLevel minLogLevel = LogLevel.Info) {
+            var log = new SafeExceptionlessLog(new FileExceptionlessLog(logPath)) { MinimumLogLevel = minLogLevel };
+            config.Resolver.Register<IExceptionlessLog>(log);
         }
 
-        public static void UseIsolatedStorageLogger(this ExceptionlessConfiguration config) {
-            config.Resolver.Register<IExceptionlessLog>(new SafeExceptionlessLog(new IsolatedStorageFileExceptionlessLog("exceptionless.log")));
+        public static void UseIsolatedStorageLogger(this ExceptionlessConfiguration config, LogLevel minLogLevel = LogLevel.Info) {
+            var log = new SafeExceptionlessLog(new IsolatedStorageFileExceptionlessLog("exceptionless.log")) { MinimumLogLevel = minLogLevel };
+            config.Resolver.Register<IExceptionlessLog>(log);
         }
 
         public static void UseTraceLogEntriesEnrichment(this ExceptionlessConfiguration config, int? defaultMaxEntriesToInclude = null) {
@@ -108,7 +110,7 @@ namespace Exceptionless {
                     config.UseFileLogger(section.LogPath);
                 else if (!String.IsNullOrEmpty(section.StoragePath))
                     config.UseFileLogger(Path.Combine(section.StoragePath, "exceptionless.log"));
-                else
+                else if (!config.Resolver.HasRegistration<IExceptionlessLog>())
                     config.UseIsolatedStorageLogger();
             }
 

@@ -32,7 +32,7 @@ namespace Exceptionless.Queue {
             if (processQueueInterval.HasValue)
                 _processQueueInterval = processQueueInterval.Value;
 
-            _queueTimer = new Timer(OnProcessQueue, null, queueStartDelay ?? TimeSpan.FromSeconds(10), _processQueueInterval);
+            _queueTimer = new Timer(OnProcessQueue, null, queueStartDelay ?? TimeSpan.FromSeconds(2), _processQueueInterval);
         }
 
         public void Enqueue(Event ev) {
@@ -52,7 +52,7 @@ namespace Exceptionless.Queue {
             if (_processingQueue)
                 return;
 
-            _log.Info(typeof(DefaultEventQueue), "Processing queue...");
+            _log.Trace(typeof(DefaultEventQueue), "Processing queue...");
             if (!_config.Enabled) {
                 _log.Info(typeof(DefaultEventQueue), "Configuration is disabled. The queue will not be processed.");
                 return;
@@ -64,13 +64,16 @@ namespace Exceptionless.Queue {
                 _storage.CleanupQueueFiles(_config.GetQueueName());
                 _storage.ReleaseStaleLocks(_config.GetQueueName());
 
-                var batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer);
+                DateTime maxCreatedDate = DateTime.Now;
+                var batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, maxCreatedDate: maxCreatedDate);
                 while (batch.Any()) {
                     bool deleteBatch = true;
 
                     try {
                         var response = _client.PostEvents(batch.Select(b => b.Item2), _config, _serializer);
-                        if (response.ServiceUnavailable) {
+                        if (response.Success) {
+                            _log.FormattedInfo(typeof(DefaultEventQueue), "Sent {0} events to the server.", batch.Count);
+                        } else if (response.ServiceUnavailable) {
                             // You are currently over your rate limit or the servers are under stress.
                             _log.Error(typeof(DefaultEventQueue), "Server returned service unavailable.");
                             SuspendProcessing();
@@ -106,7 +109,7 @@ namespace Exceptionless.Queue {
                     if (!deleteBatch || IsQueueProcessingSuspended)
                         break;
 
-                    batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer);
+                    batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, maxCreatedDate: maxCreatedDate);
                 }
             } catch (Exception ex) {
                 _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while processing the queue: ", ex.Message));

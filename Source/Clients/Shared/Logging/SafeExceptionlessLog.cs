@@ -17,6 +17,17 @@ namespace Exceptionless.Logging {
         public SafeExceptionlessLog(IExceptionlessLog log, IExceptionlessLog fallbackLog = null) {
             _log = log;
             _fallbackLog = fallbackLog ?? new NullExceptionlessLog();
+            MinimumLogLevel = LogLevel.Info;
+        }
+
+        private LogLevel _logLevel;
+        public LogLevel MinimumLogLevel {
+            get { return _logLevel; }
+            set {
+                _logLevel = value;
+                _log.MinimumLogLevel = value;
+                _fallbackLog.MinimumLogLevel = value;
+            }
         }
 
         public void Error(string message, string source = null, Exception exception = null) {

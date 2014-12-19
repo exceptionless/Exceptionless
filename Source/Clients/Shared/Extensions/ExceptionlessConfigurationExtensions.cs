@@ -53,8 +53,8 @@ namespace Exceptionless {
             return persistedClientData[INSTALL_ID_KEY];
         }
 
-        public static void UseDebugLogger(this ExceptionlessConfiguration config) {
-            config.Resolver.Register<IExceptionlessLog, DebugExceptionlessLog>();
+        public static void UseDebugLogger(this ExceptionlessConfiguration config, LogLevel minLogLevel = LogLevel.Info) {
+            config.Resolver.Register<IExceptionlessLog>(new DebugExceptionlessLog { MinimumLogLevel = minLogLevel });
         }
 
         public static void UseLogger(this ExceptionlessConfiguration config, IExceptionlessLog logger) {

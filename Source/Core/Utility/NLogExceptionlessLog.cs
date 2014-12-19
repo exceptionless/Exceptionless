@@ -15,6 +15,9 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class NLogExceptionlessLog : IExceptionlessLog {
+        // ignore and let NLog determine what should be captured.
+        public LogLevel MinimumLogLevel { get; set; }
+
         public void Error(string message, string source = null, Exception exception = null) {
             Log.Error().Message(message).LoggerName(source).Exception(exception).Report().Write();
         }

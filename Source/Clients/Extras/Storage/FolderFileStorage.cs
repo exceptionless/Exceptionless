@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Exceptionless.Extras.Utility;
 using Exceptionless.Storage;
 using FileInfo = Exceptionless.Storage.FileInfo;
@@ -101,15 +100,18 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
             if (String.IsNullOrEmpty(searchPattern))
                 searchPattern = "*";
 
+            if (!maxCreatedDate.HasValue)
+                maxCreatedDate = DateTime.MaxValue;
+
             var list = new List<FileInfo>();
 
-            foreach (var path in Directory.GetFiles(Folder, searchPattern, SearchOption.AllDirectories).Take(limit ?? Int32.MaxValue)) {
+            foreach (var path in Directory.GetFiles(Folder, searchPattern, SearchOption.AllDirectories)) {
                 var info = new System.IO.FileInfo(path);
-                if (!info.Exists)
+                if (!info.Exists || info.CreationTime > maxCreatedDate)
                     continue;
 
                 list.Add(new FileInfo {
@@ -118,6 +120,9 @@ namespace Exceptionless.Extras.Storage {
                     Modified = info.LastWriteTime,
                     Size = info.Length
                 });
+
+                if (list.Count == limit)
+                    break;
             }
 
             return list;

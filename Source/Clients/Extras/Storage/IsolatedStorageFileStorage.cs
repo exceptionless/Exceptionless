@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.IsolatedStorage;
 using System.Linq;
@@ -21,8 +22,10 @@ namespace Exceptionless.Extras.Storage {
         private long GetFileSize(IsolatedStorageFile store, string path) {
             string fullPath = store.GetFullPath(path);
             try {
-                if (File.Exists(fullPath))
+                if (File.Exists(fullPath)) {
+                    Debug.WriteLine(fullPath);
                     return new System.IO.FileInfo(fullPath).Length;
+                }
             } catch (IOException ex) {
                 System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
             }
@@ -31,7 +34,7 @@ namespace Exceptionless.Extras.Storage {
         }
 
         public IEnumerable<string> GetFiles(string searchPattern = null, int? limit = null) {
-            var result = new List<string>();
+            int count = 0;
             var stack = new Stack<string>();
 
             const string initialDirectory = "*";
@@ -50,22 +53,26 @@ namespace Exceptionless.Extras.Storage {
                     directoryPath = dir + @"\*";
 
                 using (var store = GetIsolatedStorage()) {
-                    var filesInCurrentDirectory = store.GetFileNames(directoryPath).Take(limit ?? Int32.MaxValue).ToList();
-                    var filesInCurrentDirectoryWithFolderName = filesInCurrentDirectory.Select(file => Path.Combine(dir, file)).ToList();
-                    if (dir != "*")
-                        result.AddRange(searchPatternRegex != null ? filesInCurrentDirectoryWithFolderName.Where(k => searchPatternRegex.IsMatch(k)) : filesInCurrentDirectoryWithFolderName);
-                    else
-                        result.AddRange(searchPatternRegex != null ? filesInCurrentDirectory.Where(k => searchPatternRegex.IsMatch(k)) : filesInCurrentDirectory);
+                    foreach (string file in store.GetFileNames(directoryPath)) {
+                        if (dir != "*") {
+                            if (searchPatternRegex != null && !searchPatternRegex.IsMatch(Path.Combine(dir, file)))
+                                continue;
+                        } else {
+                            if (searchPatternRegex != null && !searchPatternRegex.IsMatch(file))
+                                continue;
+                        }
 
-                    if (limit.HasValue && result.Count >= limit)
-                        return result;
+                        yield return file;
+                        count++;
+
+                        if (limit.HasValue && count >= limit)
+                            yield break;
+                    }
 
                     foreach (string directoryName in store.GetDirectoryNames(directoryPath))
                         stack.Push(dir == "*" ? directoryName : Path.Combine(dir, directoryName));
                 }
             }
-
-            return result;
         }
 
         public FileInfo GetFileInfo(string path) {
@@ -97,7 +104,7 @@ namespace Exceptionless.Extras.Storage {
                     using (var reader = new StreamReader(stream))
                         return reader.ReadToEnd();
                 });
-            } catch (Exception) {}
+            } catch (Exception) { }
 
             return null;
         }
@@ -164,19 +171,35 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null) {
-            IEnumerable<string> files = GetFiles(searchPattern, limit);
-            using (var store = GetIsolatedStorage()) {
-                return files.Select(path => new FileInfo {
-                    Path = path,
-                    Modified = store.GetLastWriteTime(path).LocalDateTime,
-                    Created = store.GetCreationTime(path).LocalDateTime,
-                    Size = GetFileSize(store, path)
-                }).ToList();
+        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
+            int count = 0;
+            if (!maxCreatedDate.HasValue)
+                maxCreatedDate = DateTime.MaxValue;
+
+            foreach (string path in GetFiles(searchPattern)) {
+                FileInfo info;
+                using (var store = GetIsolatedStorage()) {
+                    info = new FileInfo {
+                        Path = path,
+                        Modified = store.GetLastWriteTime(path).LocalDateTime,
+                        Created = store.GetCreationTime(path).LocalDateTime,
+                        Size = GetFileSize(store, path)
+                    };
+                }
+
+                if (info.Created > maxCreatedDate)
+                    continue;
+
+                yield return info;
+                count++;
+
+                if (limit.HasValue && count >= limit)
+                    yield break;
+
             }
         }
 
-        private readonly Collection<string> _ensuredDirectories = new Collection<string>(); 
+        private readonly Collection<string> _ensuredDirectories = new Collection<string>();
         private void EnsureDirectory(string path) {
             string directory = Path.GetDirectoryName(path);
             if (String.IsNullOrEmpty(directory))
@@ -189,6 +212,7 @@ namespace Exceptionless.Extras.Storage {
                 using (var store = GetIsolatedStorage()) {
                     if (!store.DirectoryExists(directory))
                         store.CreateDirectory(directory);
+                    _ensuredDirectories.Add(directory);
                 }
             });
         }
@@ -206,7 +230,7 @@ namespace Exceptionless.Extras.Storage {
                     string directory = field.GetValue(storage).ToString();
                     return String.IsNullOrEmpty(path) ? directory : Path.Combine(Path.GetFullPath(directory), path);
                 }
-            } catch {}
+            } catch { }
             return null;
         }
     }

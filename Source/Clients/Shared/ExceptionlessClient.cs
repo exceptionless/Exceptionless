@@ -66,7 +66,7 @@ namespace Exceptionless {
             try {
                 var response = _submissionClient.Value.PostUserDescription(referenceId, new UserDescription(email, description), Configuration, Configuration.Resolver.GetJsonSerializer());
                 if (!response.Success)
-                    _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Failed to submit user email and description for event: {0} {1}", response.StatusCode, response.Message);
+                    _log.Value.FormattedError(typeof(ExceptionlessClient), "Failed to submit user email and description for event: {0} {1}", response.StatusCode, response.Message);
 
                 return response.Success;
             } catch (Exception ex) {
@@ -130,13 +130,13 @@ namespace Exceptionless {
                 return;
             }
 
-            _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Submitting event: type={0}{1}", ev.Type, !String.IsNullOrEmpty(ev.ReferenceId) ? " refid=" + ev.ReferenceId : String.Empty);
+            _log.Value.FormattedTrace(typeof(ExceptionlessClient), "Submitting event: type={0}{1}", ev.Type, !String.IsNullOrEmpty(ev.ReferenceId) ? " refid=" + ev.ReferenceId : String.Empty);
             _queue.Value.Enqueue(ev);
 
             if (String.IsNullOrEmpty(ev.ReferenceId))
                 return;
 
-            _log.Value.FormattedInfo(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);
+            _log.Value.FormattedTrace(typeof(ExceptionlessClient), "Setting last reference id '{0}'", ev.ReferenceId);
             _lastReferenceIdManager.Value.SetLast(ev.ReferenceId);
         }
 

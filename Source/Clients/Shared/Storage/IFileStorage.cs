@@ -9,7 +9,7 @@ namespace Exceptionless.Storage {
         bool SaveFile(string path, string contents);
         bool RenameFile(string oldpath, string newpath);
         bool DeleteFile(string path);
-        IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null);
+        IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null);
     }
 
     public class FileInfo {

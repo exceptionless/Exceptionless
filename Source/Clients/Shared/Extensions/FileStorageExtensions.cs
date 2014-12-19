@@ -33,9 +33,8 @@ namespace Exceptionless.Extensions {
             }
         }
 
-        public static ICollection<FileInfo> GetQueueFiles(this IFileStorage storage, string queueName, int? limit = null) {
-            var files = storage.GetFileList(queueName + "\\q\\*.json", limit.HasValue ? limit * 2 : null).OrderByDescending(f => f.Created);
-            return limit.HasValue ? files.Take(limit.Value).ToList() : files.ToList();
+        public static ICollection<FileInfo> GetQueueFiles(this IFileStorage storage, string queueName, int? limit = null, DateTime? maxCreatedDate = null) {
+            return storage.GetFileList(queueName + "\\q\\*.json", limit, maxCreatedDate).OrderByDescending(f => f.Created).ToList();
         }
 
         public static bool IncrementAttempts(this IFileStorage storage, FileInfo info) {
@@ -103,11 +102,11 @@ namespace Exceptionless.Extensions {
                 storage.ReleaseFile(file);
         }
 
-        public static IList<Tuple<FileInfo, Event>> GetEventBatch(this IFileStorage storage, string queueName, IJsonSerializer serializer, int batchSize = 20) {
+        public static IList<Tuple<FileInfo, Event>> GetEventBatch(this IFileStorage storage, string queueName, IJsonSerializer serializer, int batchSize = 50, DateTime? maxCreatedDate = null) {
             var events = new List<Tuple<FileInfo, Event>>();
 
             lock (_lockObject) {
-                foreach (var file in storage.GetQueueFiles(queueName, batchSize * 5)) {
+                foreach (var file in storage.GetQueueFiles(queueName, batchSize * 5, maxCreatedDate)) {
                     if (!storage.LockFile(file))
                         continue;
 

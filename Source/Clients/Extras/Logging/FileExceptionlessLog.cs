@@ -65,42 +65,44 @@ namespace Exceptionless.Logging {
 
         public string FilePath { get; private set; }
 
+        public LogLevel MinimumLogLevel { get; set; }
+
         public void Error(string message, string source = null, Exception exception = null) {
             if (source != null)
-                WriteLine(String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Error, String.Concat(source, ": ", message));
             else
-                WriteLine(message);
+                WriteEntry(LogLevel.Error, message);
 
             if (exception != null)
-                WriteLine(exception.ToString());
+                WriteEntry(LogLevel.Error, exception.ToString());
         }
 
         public void Info(string message, string source = null) {
             if (source != null)
-                WriteLine(String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Info, String.Concat(source, ": ", message));
             else
-                WriteLine(message);
+                WriteEntry(LogLevel.Info, message);
         }
 
         public void Debug(string message, string source = null) {
             if (source != null)
-                WriteLine(String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Debug, String.Concat(source, ": ", message));
             else
-                WriteLine(message);
+                WriteEntry(LogLevel.Debug, message);
         }
 
         public void Warn(string message, string source = null) {
             if (source != null)
-                WriteLine(String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Warning, String.Concat(source, ": ", message));
             else
-                WriteLine(message);
+                WriteEntry(LogLevel.Warning, message);
         }
 
         public void Trace(string message, string source = null) {
             if (source != null)
-                WriteLine(String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Trace, String.Concat(source, ": ", message));
             else
-                WriteLine(message);
+                WriteEntry(LogLevel.Trace, message);
         }
 
         public void Flush() {
@@ -120,8 +122,11 @@ namespace Exceptionless.Logging {
 
                         try {
                             using (var writer = GetWriter(append)) {
-                                while (_buffer.Count > 0)
-                                    writer.Value.WriteLine(_buffer.Dequeue());
+                                while (_buffer.Count > 0) {
+                                    var entry = _buffer.Dequeue();
+                                    if (entry != null && entry.LogLevel >= MinimumLogLevel)
+                                        writer.Value.WriteLine(entry.Message);
+                                }
                             }
                         } catch (Exception ex) {
                             System.Diagnostics.Trace.TraceError("Unable flush the logs. " + ex.Message);
@@ -137,13 +142,13 @@ namespace Exceptionless.Logging {
             }
         }
 
-        private readonly Queue<string> _buffer = new Queue<string>(1000);
+        private readonly Queue<LogEntry> _buffer = new Queue<LogEntry>(1000);
 
-        private void WriteLine(string entry) {
+        private void WriteEntry(LogLevel level, string entry) {
             try {
                 Run.WithRetries(() => {
                     using (new SingleGlobalInstance(FilePath.GetHashCode().ToString(), 500))
-                        _buffer.Enqueue(entry);
+                        _buffer.Enqueue(new LogEntry(level, entry));
                 });
             } catch (Exception ex) {
                 System.Diagnostics.Trace.WriteLine("Exceptionless: Error enqueuing log message: {0}", ex.Message);
@@ -234,6 +239,16 @@ namespace Exceptionless.Logging {
 
                 return Encoding.ASCII.GetString(buffer);
             }
+        }
+
+        private class LogEntry {
+            public LogEntry(LogLevel level, string message) {
+                LogLevel = level;
+                Message = message;
+            }
+
+            public LogLevel LogLevel { get; set; }
+            public string Message { get; set; }
         }
     }
 }
