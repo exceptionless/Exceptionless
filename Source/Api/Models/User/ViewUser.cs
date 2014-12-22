@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Models;
 
-namespace Exceptionless.Api.Models.User {
+namespace Exceptionless.Api.Models {
     public class ViewUser : IIdentity {
         public string Id { get; set; }
         public ICollection<string> OrganizationIds { get; set; }

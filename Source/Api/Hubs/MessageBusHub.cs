@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
@@ -38,18 +39,21 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             // manage user organization group membership
-            var connectionId = _userIdConnections.GetConnections(userMembershipChanged.UserId).FirstOrDefault();
-            if (connectionId != null && userMembershipChanged.ChangeType == ChangeType.Added)
-                Groups.Add(connectionId, userMembershipChanged.OrganizationId);
-            else if (connectionId != null && userMembershipChanged.ChangeType == ChangeType.Removed)
-                Groups.Remove(connectionId, userMembershipChanged.OrganizationId);
+            foreach (var connectionId in _userIdConnections.GetConnections(userMembershipChanged.UserId)) {
+                if (userMembershipChanged.ChangeType == ChangeType.Added)
+                    Groups.Add(connectionId, userMembershipChanged.OrganizationId).Wait();
+                else if (userMembershipChanged.ChangeType == ChangeType.Removed)
+                    Groups.Remove(connectionId, userMembershipChanged.OrganizationId).Wait();
+            }
 
             Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
-            if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null)
+            if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
                 Clients.User(entityChanged.Id).entityChanged(entityChanged);
+                return;
+            }
 
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return;
@@ -89,6 +93,9 @@ namespace Exceptionless.Api.Hubs {
         }
 
         public override Task OnReconnected() {
+            foreach (string organizationId in Context.User.GetOrganizationIds())
+                Groups.Add(Context.ConnectionId, organizationId);
+
             if (!_userIdConnections.GetConnections(Context.User.GetUserId()).Contains(Context.ConnectionId))
                 _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);
 

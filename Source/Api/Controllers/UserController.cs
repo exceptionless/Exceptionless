@@ -5,7 +5,7 @@ using System.Net;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models.User;
+using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Mail;
@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Controllers {
             if (currentUser == null)
                 return NotFound();
 
-            return Ok(Mapper.Map<User, ViewCurrentUser>(currentUser));
+            return Ok(new ViewCurrentUser(currentUser));
         }
 
         [HttpGet]
@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("A user with this email address already exists.");
 
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-                return Ok();
+				return Ok(new { IsVerified = user.IsEmailAddressVerified });
 
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
@@ -159,13 +159,6 @@ namespace Exceptionless.Api.Controllers {
                 return base.GetModels(ids, useCache);
 
             return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
-        }
-
-        protected override void CreateMaps() {
-            if (Mapper.FindTypeMapFor<User, ViewCurrentUser>() == null)
-                Mapper.CreateMap<User, ViewCurrentUser>().AfterMap((u, vcu) => vcu.HasLocalAccount = !String.IsNullOrWhiteSpace(u.Password));
-
-            base.CreateMaps();
         }
     }
 }
