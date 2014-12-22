@@ -27,7 +27,7 @@ namespace Exceptionless.Extras.Storage {
                     return new System.IO.FileInfo(fullPath).Length;
                 }
             } catch (IOException ex) {
-                System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
+                Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
             }
 
             return -1;
@@ -52,26 +52,26 @@ namespace Exceptionless.Extras.Storage {
                 else
                     directoryPath = dir + @"\*";
 
+                string[] files, directories;
                 using (var store = GetIsolatedStorage()) {
-                    foreach (string file in store.GetFileNames(directoryPath)) {
-                        if (dir != "*") {
-                            if (searchPatternRegex != null && !searchPatternRegex.IsMatch(Path.Combine(dir, file)))
-                                continue;
-                        } else {
-                            if (searchPatternRegex != null && !searchPatternRegex.IsMatch(file))
-                                continue;
-                        }
-
-                        yield return file;
-                        count++;
-
-                        if (limit.HasValue && count >= limit)
-                            yield break;
-                    }
-
-                    foreach (string directoryName in store.GetDirectoryNames(directoryPath))
-                        stack.Push(dir == "*" ? directoryName : Path.Combine(dir, directoryName));
+                    files = store.GetFileNames(directoryPath);
+                    directories = store.GetDirectoryNames(directoryPath);
                 }
+
+                foreach (string file in files) {
+                    string fullPath = dir != "*" ? Path.Combine(dir, file) : file;
+                    if (searchPatternRegex != null && !searchPatternRegex.IsMatch(fullPath))
+                        continue;
+
+                    yield return fullPath;
+                    count++;
+
+                    if (limit.HasValue && count >= limit)
+                        yield break;
+                }
+
+                foreach (string directoryName in directories)
+                    stack.Push(dir == "*" ? directoryName : Path.Combine(dir, directoryName));
             }
         }
 
@@ -79,14 +79,20 @@ namespace Exceptionless.Extras.Storage {
             if (!Exists(path))
                 return null;
 
+            DateTime createdDate, modifiedDate;
+            long fileSize;
             using (var store = GetIsolatedStorage()) {
-                return new FileInfo {
-                    Path = path,
-                    Modified = store.GetLastWriteTime(path).LocalDateTime,
-                    Created = store.GetCreationTime(path).LocalDateTime,
-                    Size = GetFileSize(store, path)
-                };
+                createdDate = store.GetCreationTime(path).LocalDateTime;
+                modifiedDate = store.GetLastWriteTime(path).LocalDateTime;
+                fileSize = GetFileSize(store, path);
             }
+
+            return new FileInfo {
+                Path = path,
+                Modified = modifiedDate,
+                Created = createdDate,
+                Size = fileSize
+            };
         }
 
         public bool Exists(string path) {
@@ -140,9 +146,8 @@ namespace Exceptionless.Extras.Storage {
             try {
                 lock (_lockObject) {
                     Run.WithRetries(() => {
-                        using (var store = GetIsolatedStorage()) {
+                        using (var store = GetIsolatedStorage())
                             store.MoveFile(oldpath, newpath);
-                        }
                     });
                 }
             } catch (Exception) {
@@ -159,9 +164,8 @@ namespace Exceptionless.Extras.Storage {
             try {
                 lock (_lockObject) {
                     Run.WithRetries(() => {
-                        using (var store = GetIsolatedStorage()) {
+                        using (var store = GetIsolatedStorage())
                             store.DeleteFile(path);
-                        }
                     });
                 }
             } catch (Exception) {
@@ -177,17 +181,9 @@ namespace Exceptionless.Extras.Storage {
                 maxCreatedDate = DateTime.MaxValue;
 
             foreach (string path in GetFiles(searchPattern)) {
-                FileInfo info;
-                using (var store = GetIsolatedStorage()) {
-                    info = new FileInfo {
-                        Path = path,
-                        Modified = store.GetLastWriteTime(path).LocalDateTime,
-                        Created = store.GetCreationTime(path).LocalDateTime,
-                        Size = GetFileSize(store, path)
-                    };
-                }
+                FileInfo info = GetFileInfo(path);
 
-                if (info.Created > maxCreatedDate)
+                if (info == null || info.Created > maxCreatedDate)
                     continue;
 
                 yield return info;

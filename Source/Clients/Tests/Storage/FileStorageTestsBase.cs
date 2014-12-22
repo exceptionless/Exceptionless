@@ -22,6 +22,7 @@ namespace Client.Tests.Storage {
 
             IFileStorage storage = GetStorage();
             storage.SaveFile("test.txt", "test");
+            Assert.Equal(1, storage.GetFileList("test.txt").Count());
             Assert.Equal(1, storage.GetFileList().Count());
             var file = storage.GetFileList().FirstOrDefault();
             Assert.NotNull(file);
@@ -32,6 +33,10 @@ namespace Client.Tests.Storage {
             Assert.True(storage.GetFileList().Any(f => f.Path == "new.txt"));
             storage.DeleteFile("new.txt");
             Assert.Equal(0, storage.GetFileList().Count());
+            storage.SaveFile("test\\q\\test.txt", "test");
+            Assert.Equal(1, storage.GetFileList("test\\q\\*.txt").Count());
+            Assert.Equal(1, storage.GetFileList("*", null, DateTime.Now).Count());
+            Assert.Equal(0, storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromMinutes(5))).Count());
         }
 
         [Fact]
