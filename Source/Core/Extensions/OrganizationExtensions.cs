@@ -38,6 +38,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool IsOverMonthlyLimit(this Organization organization) {
+            if (organization.MaxEventsPerMonth < 0)
+                return false;
+            
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
             return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.MaxEventsPerMonth;
