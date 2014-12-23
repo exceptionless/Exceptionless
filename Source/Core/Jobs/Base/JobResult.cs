@@ -28,6 +28,14 @@ namespace Exceptionless.Core.Jobs {
             };
         }
 
+        public static JobResult FromException(Exception exception, string format, params object[] args) {
+            return new JobResult {
+                Error = exception,
+                IsSuccess = false,
+                Message = String.Format(format, args)
+            };
+        }
+
         public static JobResult SuccessWithMessage(string message) {
             return new JobResult {
                 IsSuccess = true,

@@ -45,10 +45,8 @@ namespace Exceptionless.Core.Jobs {
             try {
                 queueEntry = _queue.Dequeue();
             } catch (Exception ex) {
-                if (!(ex is TimeoutException)) {
-                    Log.Error().Exception(ex).Message("An error occurred while trying to dequeue the next EventNotification: {0}", ex.Message).Write();
-                    return JobResult.FromException(ex);
-                }
+                if (!(ex is TimeoutException))
+                    return JobResult.FromException(ex, "An error occurred while trying to dequeue the next EventNotification: {0}", ex.Message);
             }
             if (queueEntry == null)
                 return JobResult.Success;
@@ -58,33 +56,27 @@ namespace Exceptionless.Core.Jobs {
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).Write();
 
             var project = _projectRepository.GetById(eventNotification.Event.ProjectId, true);
-            if (project == null) {
-                Log.Error().Message("Could not load project {0}.", eventNotification.Event.ProjectId).Write();
+            if (project == null)
                 return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
-            }
             Log.Trace().Message("Loaded project: name={0}", project.Name).Write();
 
             var organization = _organizationRepository.GetById(project.OrganizationId, true);
-            if (organization == null) {
-                Log.Error().Message("Could not load organization {0}.", project.OrganizationId).Write();
-                return null;
-            }
+            if (organization == null)
+                return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
             Log.Trace().Message("Loaded organization: name={0}", organization.Name).Write();
 
             var stack = _stackRepository.GetById(eventNotification.Event.StackId);
-            if (stack == null) {
-                Log.Error().Message("Could not load stack {0}.", eventNotification.Event.StackId).Write();
-                return null;
-            }
+            if (stack == null)
+                return JobResult.FailedWithMessage("Could not load stack {0}.", eventNotification.Event.StackId);
 
             if (!organization.HasPremiumFeatures) {
                 Log.Trace().Message("Skipping because organization does not have premium features.").Write();
-                return null;
+                return JobResult.Success;
             }
 
             if (stack.DisableNotifications || stack.IsHidden) {
-                Log.Trace().Message("Skipping because stack notifications are disabled or it's hidden.").Write();
-                return null;
+                Log.Trace().Message("Skipping because stack notifications are disabled or stack is hidden.").Write();
+                return JobResult.Success;
             }
 
             Log.Trace().Message("Loaded stack: title={0}", stack.Title).Write();
@@ -97,7 +89,7 @@ namespace Exceptionless.Core.Jobs {
                 && lastTimeSent != DateTime.MinValue
                 && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
                 Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
-                return null;
+                return JobResult.Success;
             }
 
             // don't send more than 10 notifications for a given project every 30 minutes
@@ -106,7 +98,7 @@ namespace Exceptionless.Core.Jobs {
             long notificationCount = _cacheClient.Increment(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !eventNotification.IsRegression) {
                 Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).Write();
-                return null;
+                return JobResult.Success;
             }
 
             foreach (var kv in project.NotificationSettings) {
@@ -202,8 +194,10 @@ namespace Exceptionless.Core.Jobs {
             }
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
-            if (emailsSent > 0)
+            if (emailsSent > 0) {
                 _cacheClient.Set(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
+                Log.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).Write();
+            }
 
             queueEntry.Complete();
 
