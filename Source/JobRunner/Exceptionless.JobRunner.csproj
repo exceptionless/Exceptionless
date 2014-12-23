@@ -75,22 +75,28 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="jobs\continuous\WebHooks\run.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="jobs\continuous\EventNotifications\run.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="jobs\triggered\DailyNotification\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\triggered\EnforceRetentionLimits\run.bat">
+    <None Include="jobs\triggered\RetentionLimits\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\continuous\ProcessEventPosts\run.bat">
+    <None Include="jobs\continuous\EventPosts\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\continuous\ProcessEventUserDescriptions\run.bat">
+    <None Include="jobs\continuous\EventUserDescriptions\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\continuous\ProcessMailMessage\run.bat">
+    <None Include="jobs\continuous\MailMessage\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\triggered\RemoveStaleAccounts\run.bat">
+    <None Include="jobs\triggered\StaleAccounts\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Content Include="NLog.config">

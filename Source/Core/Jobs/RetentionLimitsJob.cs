@@ -21,11 +21,11 @@ using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class EnforceRetentionLimitsJob : JobBase {
+    public class RetentionLimitsJob : JobBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
 
-        public EnforceRetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ILockProvider lockProvider) {
+        public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ILockProvider lockProvider) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
             LockProvider = lockProvider;

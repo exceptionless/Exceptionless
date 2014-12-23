@@ -34,8 +34,17 @@ namespace Exceptionless.Core.Extensions {
                 return Int32.MaxValue;
 
             // allow any single hour to have 5 times the monthly limit converted to hours
-            return (int)Math.Ceiling(organization.MaxEventsPerMonth / 730d * 5d);
+            return (int)Math.Ceiling(organization.GetMaxEventsPerMonthWithBonus() / 730d * 5d);
         }
+
+        public static int GetMaxEventsPerMonthWithBonus(this Organization organization) {
+            if (organization.MaxEventsPerMonth <= 0)
+                return -1;
+
+            int bonusEvents = organization.BonusExpiration.HasValue && organization.BonusExpiration > DateTime.Now ? organization.BonusEventsPerMonth : 0;
+
+            return organization.MaxEventsPerMonth + bonusEvents;
+        } 
 
         public static bool IsOverMonthlyLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth < 0)
@@ -43,7 +52,7 @@ namespace Exceptionless.Core.Extensions {
             
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
-            return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.MaxEventsPerMonth;
+            return usageInfo != null && (usageInfo.Total - usageInfo.Blocked) >= organization.GetMaxEventsPerMonthWithBonus();
         }
 
         public static bool IsOverHourlyLimit(this Organization organization) {
@@ -83,7 +92,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static void SetMonthlyUsage(this Organization organization, long total, long blocked) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            organization.Usage.SetUsage(date, (int)total, (int)blocked, organization.MaxEventsPerMonth, TimeSpan.FromDays(366));
+            organization.Usage.SetUsage(date, (int)total, (int)blocked, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
         }
 
         public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int limit, TimeSpan? maxUsageAge = null) {

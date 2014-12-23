@@ -20,14 +20,14 @@ using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class RemoveStaleAccountsJob : JobBase {
+    public class StaleAccountsJob : JobBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
 
-        public RemoveStaleAccountsJob(OrganizationRepository organizationRepository,
+        public StaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,

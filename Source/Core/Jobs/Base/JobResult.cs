@@ -35,10 +35,24 @@ namespace Exceptionless.Core.Jobs {
             };
         }
 
+        public static JobResult SuccessWithMessage(string format, params object[] args) {
+            return new JobResult {
+                IsSuccess = true,
+                Message = String.Format(format, args)
+            };
+        }
+
         public static JobResult FailedWithMessage(string message) {
             return new JobResult {
                 IsSuccess = false,
                 Message = message
+            };
+        }
+
+        public static JobResult FailedWithMessage(string format, params object[] args) {
+            return new JobResult {
+                IsSuccess = false,
+                Message = String.Format(format, args)
             };
         }
     }

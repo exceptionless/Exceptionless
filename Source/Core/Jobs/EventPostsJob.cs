@@ -18,7 +18,7 @@ using FluentValidation;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class ProcessEventPostsJob : JobBase {
+    public class EventPostsJob : JobBase {
         private readonly IQueue<EventPostFileInfo> _queue;
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public ProcessEventPostsJob(IQueue<EventPostFileInfo> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
+        public EventPostsJob(IQueue<EventPostFileInfo> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
             _queue = queue;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Info().Message("Process events job starting").Write();
+            Log.Trace().Message("Process events job starting").Write();
 
             QueueEntry<EventPostFileInfo> queueEntry = null;
             try {

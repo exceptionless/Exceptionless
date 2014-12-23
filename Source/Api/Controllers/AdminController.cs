@@ -47,5 +47,22 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(new { Success = true });
         }
+
+        [HttpPost]
+        [Route("set-bonus")]
+        public IHttpActionResult ChangePlan(string organizationId, int bonusEvents, DateTime? expires = null) {
+            if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
+                return Ok(new { Success = false, Message = "Invalid Organization Id." });
+
+            var organization = _repository.GetById(organizationId);
+            if (organization == null)
+                return Ok(new { Success = false, Message = "Invalid Organization Id." });
+
+            organization.BonusEventsPerMonth = bonusEvents;
+            organization.BonusExpiration = expires;
+            _repository.Save(organization);
+
+            return Ok(new { Success = true });
+        }
     }
 }

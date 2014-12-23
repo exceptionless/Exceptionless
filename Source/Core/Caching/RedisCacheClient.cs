@@ -32,8 +32,32 @@ namespace Exceptionless.Core.Caching {
             return _db.StringIncrement(key, amount);
         }
 
+        public long Increment(string key, uint amount, DateTime expiresAt) {
+            var result = _db.StringIncrement(key, amount);
+            _db.KeyExpire(key, expiresAt);
+            return result;
+        }
+
+        public long Increment(string key, uint amount, TimeSpan expiresIn) {
+            var result = _db.StringIncrement(key, amount);
+            _db.KeyExpire(key, expiresIn);
+            return result;
+        }
+
         public long Decrement(string key, uint amount) {
             return _db.StringDecrement(key, amount);
+        }
+
+        public long Decrement(string key, uint amount, DateTime expiresAt) {
+            var result = _db.StringDecrement(key, amount);
+            _db.KeyExpire(key, expiresAt);
+            return result;
+        }
+
+        public long Decrement(string key, uint amount, TimeSpan expiresIn) {
+            var result = _db.StringDecrement(key, amount);
+            _db.KeyExpire(key, expiresIn);
+            return result;
         }
 
         public bool Add<T>(string key, T value) {

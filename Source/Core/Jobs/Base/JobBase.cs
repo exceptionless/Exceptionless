@@ -52,6 +52,8 @@ namespace Exceptionless.Core.Jobs {
                 var result = await RunAsync(token);
                 if (!result.IsSuccess)
                     Log.Error().Message("Job failed: {0}", result.Message).Exception(result.Error).Write();
+                else if (!String.IsNullOrEmpty(result.Message))
+                    Log.Info().Message("Job succeeded: {0}", result.Message).Write();
                 iterations++;
                 if (delay.HasValue && delay.Value > TimeSpan.Zero)
                     await Task.Delay(delay.Value, token.Value);

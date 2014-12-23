@@ -142,15 +142,21 @@ namespace Exceptionless.Core.Caching {
         }
 
         private static readonly object _lockObject = new object();
-        private long UpdateCounter(string key, long value) {
+        private long UpdateCounter(string key, long value, TimeSpan? expiresIn = null) {
             lock (_lockObject) {
                 if (!_memory.ContainsKey(key)) {
-                    Set(key, value);
+                    if (expiresIn.HasValue)
+                        Set(key, value, expiresIn.Value);
+                    else
+                        Set(key, value);
                     return value;
                 }
 
                 var current = Get<long>(key);
-                Set(key, current += value);
+                if (expiresIn.HasValue)
+                    Set(key, current += value, expiresIn.Value);
+                else
+                    Set(key, current += value);
                 return current;
             }
         }
@@ -159,8 +165,24 @@ namespace Exceptionless.Core.Caching {
             return UpdateCounter(key, amount);
         }
 
+        public long Increment(string key, uint amount, DateTime expiresAt) {
+            return UpdateCounter(key, amount, expiresAt.Subtract(DateTime.Now));
+        }
+
+        public long Increment(string key, uint amount, TimeSpan expiresIn) {
+            return UpdateCounter(key, amount, expiresIn);
+        }
+
         public long Decrement(string key, uint amount) {
             return UpdateCounter(key, amount * -1);
+        }
+
+        public long Decrement(string key, uint amount, DateTime expiresAt) {
+            return UpdateCounter(key, amount * -1, expiresAt.Subtract(DateTime.Now));
+        }
+
+        public long Decrement(string key, uint amount, TimeSpan expiresIn) {
+            return UpdateCounter(key, amount * -1, expiresIn);
         }
 
         public bool Add<T>(string key, T value) {

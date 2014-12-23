@@ -8,12 +8,12 @@ using NLog.Fluent;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Jobs {
-    public class ProcessMailMessageJob : JobBase {
+    public class MailMessageJob : JobBase {
         private readonly IQueue<MailMessage> _queue;
         private readonly IMailSender _mailSender;
         private readonly IAppStatsClient _statsClient;
 
-        public ProcessMailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IAppStatsClient statsClient) {
+        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IAppStatsClient statsClient) {
             _queue = queue;
             _mailSender = mailSender;
             _statsClient = statsClient;

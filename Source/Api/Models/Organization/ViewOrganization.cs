@@ -16,6 +16,8 @@ namespace Exceptionless.Api.Models {
         public BillingStatus BillingStatus { get; set; }
         public decimal BillingPrice { get; set; }
         public int MaxEventsPerMonth { get; set; }
+        public int BonusEventsPerMonth { get; set; }
+        public DateTime? BonusExpiration { get; set; }
         public int RetentionDays { get; set; }
         public bool IsSuspended { get; set; }
         public string SuspensionCode { get; set; }

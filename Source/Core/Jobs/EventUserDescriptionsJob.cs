@@ -3,7 +3,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Scheduler;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
@@ -13,12 +12,12 @@ using Exceptionless.Models.Data;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class ProcessEventUserDescriptionsJob : JobBase {
+    public class EventUserDescriptionsJob : JobBase {
         private readonly IQueue<EventUserDescription> _queue;
         private readonly IEventRepository _eventRepository;
         private readonly IAppStatsClient _statsClient;
 
-        public ProcessEventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IAppStatsClient statsClient) {
+        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IAppStatsClient statsClient) {
             _queue = queue;
             _eventRepository = eventRepository;
             _statsClient = statsClient;

@@ -133,7 +133,7 @@ namespace Exceptionless.Api.Tests.Mail {
         public void SendInvite() {
             var mailer = IoC.GetInstance<Mailer>();
             var mailerSender = IoC.GetInstance<IMailSender>() as InMemoryMailSender;
-            var mailJob = IoC.GetInstance<ProcessMailMessageJob>();
+            var mailJob = IoC.GetInstance<MailMessageJob>();
             Assert.NotNull(mailerSender);
 
             User user = UserData.GenerateSampleUser();

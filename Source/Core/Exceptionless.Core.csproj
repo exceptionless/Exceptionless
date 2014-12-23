@@ -140,6 +140,12 @@
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Extensions">
+      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.28\lib\net45\System.Net.Http.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Primitives">
+      <HintPath>..\..\packages\Microsoft.Net.Http.2.2.28\lib\net45\System.Net.Http.Primitives.dll</HintPath>
+    </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
@@ -156,6 +162,9 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
+    <Reference Include="UAParser">
+      <HintPath>..\..\packages\UAParser.1.2.0.0\lib\net35-Client\UAParser.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\GlobalAssemblyInfo.cs">
@@ -173,12 +182,15 @@
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Caching\RedisCacheClient.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Extensions\HttpClientExtensions.cs" />
     <Compile Include="Extensions\QueueExtensions.cs" />
     <Compile Include="Extensions\StorageExtensions.cs" />
-    <Compile Include="Jobs\JobResult.cs" />
+    <Compile Include="Jobs\Base\JobResult.cs" />
+    <Compile Include="Jobs\EventNotificationsJob.cs" />
+    <Compile Include="Jobs\WebHooksJob.cs" />
     <Compile Include="Lock\DisposableLock.cs" />
     <Compile Include="Lock\ILockProvider.cs" />
-    <Compile Include="Jobs\JobBase.cs" />
+    <Compile Include="Jobs\Base\JobBase.cs" />
     <Compile Include="Messaging\MessageBusData.cs" />
     <Compile Include="Messaging\Models\ChangeType.cs" />
     <Compile Include="Messaging\Models\UserMembershipChanged.cs" />
@@ -203,8 +215,8 @@
     <Compile Include="Extensions\MailerExtensions.cs" />
     <Compile Include="Extensions\MongoQueryExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
-    <Compile Include="Jobs\ProcessEventUserDescriptionsJob.cs" />
-    <Compile Include="Jobs\ProcessMailMessageJob.cs" />
+    <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
+    <Compile Include="Jobs\MailMessageJob.cs" />
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
@@ -268,9 +280,9 @@
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
     <Compile Include="Jobs\DailyNotificationJob.cs" />
-    <Compile Include="Jobs\ProcessEventPostsJob.cs" />
-    <Compile Include="Jobs\RemoveStaleAccountsJob.cs" />
-    <Compile Include="Jobs\EnforceRetentionLimitsJob.cs" />
+    <Compile Include="Jobs\EventPostsJob.cs" />
+    <Compile Include="Jobs\StaleAccountsJob.cs" />
+    <Compile Include="Jobs\RetentionLimitsJob.cs" />
     <Compile Include="Lock\CacheLockProvider.cs" />
     <Compile Include="Queues\Models\EventUserDescription.cs" />
     <Compile Include="Queues\Models\MailMessage.cs" />
@@ -517,4 +529,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\AutoMapper.3.3.0\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.0\tools\AutoMapper.targets')" />
+  <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" />
+  <Target Name="EnsureBclBuildImported" BeforeTargets="BeforeBuild" Condition="'$(BclBuildImported)' == ''">
+    <Error Condition="!Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" Text="This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=317567." HelpKeyword="BCLBUILD2001" />
+    <Error Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.14\tools\Microsoft.Bcl.Build.targets')" Text="The build restored NuGet packages. Build the project again to include these packages in the build. For more information, see http://go.microsoft.com/fwlink/?LinkID=317568." HelpKeyword="BCLBUILD2002" />
+  </Target>
 </Project>

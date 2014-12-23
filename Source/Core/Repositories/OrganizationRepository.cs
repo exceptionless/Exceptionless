@@ -201,25 +201,23 @@ namespace Exceptionless.Core.Repositories {
             long hourlyTotal = Cache.Increment(GetHourlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromMinutes(61), (uint)org.GetCurrentHourlyTotal());
             long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
             long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
-            bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth;
+            bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
 
             long totalBlocked = count;
 
             // If the original count is less than the max events per month and original count + hourly limit is greater than the max events per month then use the monthly limit.
-            if ((monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth && (monthlyTotal - monthlyBlocked - count + org.GetHourlyEventLimit()) >= org.MaxEventsPerMonth)
-                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth ? monthlyTotal - monthlyBlocked - org.MaxEventsPerMonth : count;
+            if ((monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() && (monthlyTotal - monthlyBlocked - count + org.GetHourlyEventLimit()) >= org.GetMaxEventsPerMonthWithBonus())
+                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
             else if (hourlyTotal > org.GetHourlyEventLimit())
                 totalBlocked = (hourlyTotal - count) < org.GetHourlyEventLimit() ? hourlyTotal - org.GetHourlyEventLimit() : count;
-            else if ((monthlyTotal - monthlyBlocked) > org.MaxEventsPerMonth)
-                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.MaxEventsPerMonth ? monthlyTotal - monthlyBlocked - org.MaxEventsPerMonth : count;
-            
-            Debug.Assert(totalBlocked > 0);
+            else if ((monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus())
+                totalBlocked = (monthlyTotal - monthlyBlocked - count) < org.GetMaxEventsPerMonthWithBonus() ? monthlyTotal - monthlyBlocked - org.GetMaxEventsPerMonthWithBonus() : count;
             
             long hourlyBlocked = Cache.IncrementIf(GetHourlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromMinutes(61), overLimit, (uint)org.GetCurrentHourlyBlocked());
             monthlyBlocked = Cache.IncrementIf(GetMonthlyBlockedCacheKey(organizationId), (uint)totalBlocked, TimeSpan.FromDays(32), overLimit, (uint)monthlyBlocked);
 
             bool justWentOverHourly = hourlyTotal > org.GetHourlyEventLimit() && hourlyTotal <= org.GetHourlyEventLimit() + count;
-            bool justWentOverMonthly = monthlyTotal > org.MaxEventsPerMonth && monthlyTotal <= org.MaxEventsPerMonth + count;
+            bool justWentOverMonthly = monthlyTotal > org.GetMaxEventsPerMonthWithBonus() && monthlyTotal <= org.GetMaxEventsPerMonthWithBonus() + count;
 
             if (justWentOverMonthly)
                 PublishMessage(new PlanOverage { OrganizationId = org.Id });
@@ -264,7 +262,7 @@ namespace Exceptionless.Core.Repositories {
             if (!monthlyErrorCount.HasValue)
                 monthlyErrorCount = 0;
 
-            return Math.Max(0, org.MaxEventsPerMonth - (int)monthlyErrorCount.Value);
+            return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
         }
 
         #region Collection Setup

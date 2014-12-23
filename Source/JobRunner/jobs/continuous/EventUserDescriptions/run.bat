@@ -5,4 +5,4 @@ if exist ..\..\..\JobRunner\job.exe (
 	set JobRunner=..\..\..\job.exe
 )
 
-%JobRunner% /jobtype:"Exceptionless.Core.Jobs.EnforceRetentionLimitsJob, Exceptionless.Core"
+%JobRunner% /jobtype:"Exceptionless.Core.Jobs.EventUserDescriptionsJob, Exceptionless.Core" /c

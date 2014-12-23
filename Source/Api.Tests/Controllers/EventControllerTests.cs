@@ -60,7 +60,7 @@ namespace Exceptionless.Api.Tests.Controllers {
 
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
-                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
+                var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 processEventsJob.Run();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
-                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
+                var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 processEventsJob.Run();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
@@ -102,7 +102,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Assert.IsType<StatusCodeResult>(actionResult);
                 Assert.Equal(1, _eventQueue.GetQueueCount());
 
-                var processEventsJob = IoC.GetInstance<ProcessEventPostsJob>();
+                var processEventsJob = IoC.GetInstance<EventPostsJob>();
                 processEventsJob.Run();
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());

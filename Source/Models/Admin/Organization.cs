@@ -89,7 +89,17 @@ namespace Exceptionless.Models {
         public int MaxEventsPerMonth { get; set; }
 
         /// <summary>
-        /// Number of days stats data is retained.
+        /// Bonus number of event occurrences allowed per month.
+        /// </summary>
+        public int BonusEventsPerMonth { get; set; }
+
+        /// <summary>
+        /// Date that the bonus events expire.
+        /// </summary>
+        public DateTime? BonusExpiration { get; set; }
+
+        /// <summary>
+        /// Number of days event data is retained.
         /// </summary>
         public int RetentionDays { get; set; }
 
@@ -114,7 +124,7 @@ namespace Exceptionless.Models {
         public DateTime? SuspensionDate { get; set; }
 
         /// <summary>
-        /// User id that the suspended the account.
+        /// User id that suspended the account.
         /// </summary>
         public string SuspendedByUserId { get; set; }
 
