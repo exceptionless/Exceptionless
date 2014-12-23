@@ -1,8 +1,3 @@
 @echo off
-if exist ..\..\..\JobRunner\job.exe (
-	set JobRunner=..\..\..\JobRunner\job.exe
-) else (
-	set JobRunner=..\..\..\job.exe
-)
-
-%JobRunner% /jobtype:"Exceptionless.Core.Jobs.EventNotificationsJob, Exceptionless.Core" /c
+robocopy %WEBROOT_PATH%\App_Data\JobRunner JobRunner /MIR /NP /NJH /NJS /NFL /NDL /NC /NS
+JobRunner\job.exe /jobtype:"Exceptionless.Core.Jobs.EventNotificationsJob, Exceptionless.Core" /c
