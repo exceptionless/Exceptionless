@@ -56,25 +56,33 @@ namespace Exceptionless.Core.Jobs {
             Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).Write();
 
             var project = _projectRepository.GetById(eventNotification.Event.ProjectId, true);
-            if (project == null)
+            if (project == null) {
+                queueEntry.Abandon();
                 return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
+            }
             Log.Trace().Message("Loaded project: name={0}", project.Name).Write();
 
             var organization = _organizationRepository.GetById(project.OrganizationId, true);
-            if (organization == null)
+            if (organization == null) {
+                queueEntry.Abandon();
                 return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
+            }
             Log.Trace().Message("Loaded organization: name={0}", organization.Name).Write();
 
             var stack = _stackRepository.GetById(eventNotification.Event.StackId);
-            if (stack == null)
+            if (stack == null) {
+                queueEntry.Abandon();
                 return JobResult.FailedWithMessage("Could not load stack {0}.", eventNotification.Event.StackId);
+            }
 
             if (!organization.HasPremiumFeatures) {
+                queueEntry.Complete();
                 Log.Trace().Message("Skipping because organization does not have premium features.").Write();
                 return JobResult.Success;
             }
 
             if (stack.DisableNotifications || stack.IsHidden) {
+                queueEntry.Complete();
                 Log.Trace().Message("Skipping because stack notifications are disabled or stack is hidden.").Write();
                 return JobResult.Success;
             }
@@ -88,6 +96,7 @@ namespace Exceptionless.Core.Jobs {
                 && !eventNotification.IsRegression
                 && lastTimeSent != DateTime.MinValue
                 && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
+                queueEntry.Complete();
                 Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
                 return JobResult.Success;
             }
@@ -97,6 +106,7 @@ namespace Exceptionless.Core.Jobs {
             string cacheKey = String.Concat("notify:project-throttle:", eventNotification.Event.ProjectId, "-", DateTime.UtcNow.Floor(projectTimeWindow).Ticks);
             long notificationCount = _cacheClient.Increment(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !eventNotification.IsRegression) {
+                queueEntry.Complete();
                 Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).Write();
                 return JobResult.Success;
             }
