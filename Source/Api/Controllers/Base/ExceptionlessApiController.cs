@@ -143,6 +143,11 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetDefaultOrganizationId();
         }
 
+        protected StatusCodeActionResult StatusCode(HttpStatusCode statusCode, string message = null) {
+            return new StatusCodeActionResult(statusCode, Request, message);
+        }
+
+
         protected IHttpActionResult BadRequest(ModelActionResults results) {
             return new NegotiatedContentResult<ModelActionResults>(HttpStatusCode.BadRequest, results, this);
         }

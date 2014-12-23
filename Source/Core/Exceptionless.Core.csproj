@@ -301,6 +301,7 @@
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
     <Compile Include="Utility\PathHelper.cs" />
+    <Compile Include="Utility\SystemHealthChecker.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\EventValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />
