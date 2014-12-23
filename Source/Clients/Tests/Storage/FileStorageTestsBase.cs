@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using CodeSmith.Core.Helpers;
@@ -36,7 +38,9 @@ namespace Client.Tests.Storage {
             storage.SaveFile("test\\q\\test.txt", "test");
             Assert.Equal(1, storage.GetFileList("test\\q\\*.txt").Count());
             Assert.Equal(1, storage.GetFileList("*", null, DateTime.Now).Count());
-            Assert.Equal(0, storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromMinutes(5))).Count());
+            List<FileInfo> files = storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromHours(1))).ToList();
+            Debug.WriteLine(String.Join(",", files.Select(f => f.Path + " " + f.Created)));
+            Assert.Equal(0, files.Count);
         }
 
         [Fact]
