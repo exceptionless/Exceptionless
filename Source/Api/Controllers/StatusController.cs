@@ -12,11 +12,11 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("status")]
+        [Route(API_PREFIX + "/status")]
         public IHttpActionResult Index() {
             var result = _healthChecker.CheckAll();
             if (!result.IsHealthy)
-                return StatusCode(HttpStatusCode.ServiceUnavailable, result.Message);
+                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message);
 
             return Ok(new { Message = "All Systems Check" });
         }
