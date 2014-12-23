@@ -11,6 +11,7 @@
 
 using System;
 using Exceptionless.Core.Caching;
+using Nest;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
@@ -23,6 +24,30 @@ namespace Exceptionless.Extensions {
                 return client.Get<T>(key);
             } catch (Exception) {
                 return defaultValue;
+            }
+        }
+
+        public static bool TrySet<T>(this ICacheClient client, string key, T value) {
+            try {
+                return client.Set(key, value);
+            } catch (Exception) {
+                return false;
+            }
+        }
+
+        public static bool TrySet<T>(this ICacheClient client, string key, T value, DateTime expiresAt) {
+            try {
+                return client.Set(key, value, expiresAt);
+            } catch (Exception) {
+                return false;
+            }
+        }
+
+        public static bool TrySet<T>(this ICacheClient client, string key, T value, TimeSpan expiresIn) {
+            try {
+                return client.Set(key, value, expiresIn);
+            } catch (Exception) {
+                return false;
             }
         }
 

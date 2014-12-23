@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
@@ -98,7 +99,7 @@ namespace Exceptionless.Core.Repositories {
 
             TModel result = null;
             if (options.UseCache)
-                result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
+                result = Cache.TryGet<TModel>(GetScopedCacheKey(options.CacheKey));
 
             if (result != null)
                 return result;
@@ -114,7 +115,7 @@ namespace Exceptionless.Core.Repositories {
 
             result = _collection.FindOneAs<TModel>(findArgs);
             if (result != null && options.UseCache)
-                Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
+                Cache.TrySet(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
         }

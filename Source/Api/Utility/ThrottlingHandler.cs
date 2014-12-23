@@ -61,10 +61,13 @@ namespace Exceptionless.Api.Utility {
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
 
-            string cacheKey = GetCacheKey(identifier);
-            long requestCount = _cacheClient.Increment(cacheKey, 1);
-            if (requestCount == 1)
-                _cacheClient.SetExpiration(cacheKey, _period);
+            long requestCount = 1;
+            try {
+                string cacheKey = GetCacheKey(identifier);
+                requestCount = _cacheClient.Increment(cacheKey, 1);
+                if (requestCount == 1)
+                    _cacheClient.SetExpiration(cacheKey, _period);
+            } catch {}
 
             Task<HttpResponseMessage> response = null;
             long maxRequests = _maxRequestsForUserIdentifier(identifier);
