@@ -120,3 +120,5 @@ if (Test-Path $jobConfigPath) {
 } else {
   Write-Host "Could not resolve job config path."
 }
+
+gci App_Data\jobs -recurse -filter "run.bat" -File -ErrorAction SilentlyContinue | % { Add-Content $_.FullName ("`r`n`r`nREM Revision Date: {0}" -f (Get-Date)) }
