@@ -35,10 +35,10 @@ namespace Client.Tests.Storage {
             Assert.True(storage.GetFileList().Any(f => f.Path == "new.txt"));
             storage.DeleteFile("new.txt");
             Assert.Equal(0, storage.GetFileList().Count());
-            storage.SaveFile("test\\q\\test.txt", "test");
+            storage.SaveFile("test\\q\\" + Guid.NewGuid().ToString("N") + ".txt", "test");
             Assert.Equal(1, storage.GetFileList("test\\q\\*.txt").Count());
             Assert.Equal(1, storage.GetFileList("*", null, DateTime.Now).Count());
-            List<FileInfo> files = storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromHours(1))).ToList();
+            List<FileInfo> files = storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromMinutes(5))).ToList();
             Debug.WriteLine(String.Join(",", files.Select(f => f.Path + " " + f.Created)));
             Assert.Equal(0, files.Count);
         }
