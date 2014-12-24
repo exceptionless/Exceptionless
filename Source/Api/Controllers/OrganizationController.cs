@@ -105,8 +105,14 @@ namespace Exceptionless.Api.Controllers {
             if (!id.StartsWith("in_"))
                 id = "in_" + id;
 
-            var invoiceService = new StripeInvoiceService();
-            var stripeInvoice = invoiceService.Get(id);
+            StripeInvoice stripeInvoice = null;
+            try {
+                var invoiceService = new StripeInvoiceService();
+                stripeInvoice = invoiceService.Get(id);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Write();
+            }
+
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
                 return NotFound();
 
