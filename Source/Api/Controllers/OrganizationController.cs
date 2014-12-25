@@ -121,7 +121,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var invoice = new Invoice {
-                Id = stripeInvoice.Id.Substring(4),
+                Id = stripeInvoice.Id.Substring(3),
                 OrganizationId = organization.Id,
                 OrganizationName = organization.Name,
                 Date = stripeInvoice.Date.GetValueOrDefault(),
@@ -584,7 +584,7 @@ namespace Exceptionless.Api.Controllers {
                 });
 
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
-                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(4));
+                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
             base.CreateMaps();
         }
