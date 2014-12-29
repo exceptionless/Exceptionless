@@ -23,6 +23,7 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class EventController : RepositoryApiController<IEventRepository, PersistentEvent, PersistentEvent, PersistentEvent, UpdateEvent> {
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPostFileInfo> _eventPostQueue;
@@ -33,6 +34,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IFileStorage _storage;
 
         public EventController(IEventRepository repository, 
+            IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, 
             IStackRepository stackRepository,
             IQueue<EventPostFileInfo> eventPostQueue, 
@@ -41,6 +43,7 @@ namespace Exceptionless.Api.Controllers {
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage) : base(repository) {
+            _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
@@ -61,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var timeInfo = GetTimeInfo(time, offset);
-            var systemFilter = GetAssociatedOrganizationsFilter();
+            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
 
             return OkWithLinks(model,
                 GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
@@ -83,7 +86,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter();
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);

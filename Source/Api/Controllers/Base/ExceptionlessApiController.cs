@@ -129,14 +129,20 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter() {
+        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository) {
             if (Request.IsGlobalAdmin())
                 return null;
 
-            if (GetAssociatedOrganizationIds().Count == 0)
+            var organizationIds = GetAssociatedOrganizationIds();
+            if (organizationIds.Count > 0) {
+                var organizations = repository.GetByIds(organizationIds, useCache: true);
+                organizationIds = organizations.Where(o => !o.IsSuspended).Select(o => o.Id).ToList();
+            }
+
+            if (organizationIds.Count == 0)
                 return "organization:none";
 
-            return String.Concat("organization:", String.Join(" OR organization:", GetAssociatedOrganizationIds()));
+            return String.Concat("organization:", String.Join(" OR organization:", organizationIds));
         }
 
         public string GetDefaultOrganizationId() {

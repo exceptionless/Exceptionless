@@ -346,7 +346,7 @@ namespace Exceptionless.Api.Controllers {
                 if (invite == null) {
                     invite = new Invite {
                         Token = Guid.NewGuid().ToString("N").ToLower(),
-                        EmailAddress = email,
+                        EmailAddress = email.ToLowerInvariant(),
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
@@ -356,10 +356,7 @@ namespace Exceptionless.Api.Controllers {
                 _mailer.SendInvite(currentUser, organization, invite);
             }
 
-            if (user != null)
-                return Ok(new User { EmailAddress = user.EmailAddress });
-
-            return Ok();
+            return Ok(new User { EmailAddress = email });
         }
 
         [HttpDelete]

@@ -35,8 +35,9 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stacks")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StackController : RepositoryApiController<IStackRepository, Stack, Stack, Stack, Stack> {
-        private readonly IStackRepository _stackRepository;
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
@@ -45,12 +46,13 @@ namespace Exceptionless.Api.Controllers {
         private readonly BillingManager _billingManager;
         private readonly FormattingPluginManager _formattingPluginManager;
 
-        public StackController(IStackRepository stackRepository, 
+        public StackController(IStackRepository stackRepository, IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, IEventRepository eventRepository, IWebHookRepository webHookRepository, 
             WebHookDataPluginManager webHookDataPluginManager, IQueue<WebHookNotification> webHookNotificationQueue, 
             EventStats eventStats, BillingManager billingManager,
             FormattingPluginManager formattingPluginManager) : base(stackRepository) {
             _stackRepository = stackRepository;
+            _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _eventRepository = eventRepository;
             _webHookRepository = webHookRepository;
@@ -365,7 +367,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter();
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
@@ -439,7 +441,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter();
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
             var timeInfo = GetTimeInfo(time, offset);
             var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             if (terms.Count == 0)
