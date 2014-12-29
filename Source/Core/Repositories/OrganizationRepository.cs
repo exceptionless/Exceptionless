@@ -202,6 +202,9 @@ namespace Exceptionless.Core.Repositories {
         public bool IncrementUsage(string organizationId, bool tooBig, int count = 1) {
             const int USAGE_SAVE_MINUTES = 5;
 
+            if (String.IsNullOrEmpty(organizationId))
+                return false;
+
             var org = GetById(organizationId, true);
             if (org == null || org.MaxEventsPerMonth < 0)
                 return false;
