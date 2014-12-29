@@ -19,6 +19,7 @@ namespace Exceptionless.Core.AppStats {
         public const string EventsPaidProcessed = "events.paid.processed";
         public const string EventsProcessErrors = "events.processing.errors";
         public const string EventsProcessCancelled = "events.processing.cancelled";
+        public const string EventsBotThrottleTriggered = "events.bot-throttle.triggered";
 
         public const string EventsUserDescriptionSubmitted = "events.description.submitted";
         public const string EventsUserDescriptionQueued = "events.description.queued";
