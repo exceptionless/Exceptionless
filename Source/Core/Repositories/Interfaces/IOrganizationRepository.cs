@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
         void IncrementEventCounter(string organizationId, long eventCount = 1);
         ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         BillingPlanStats GetBillingPlanStats();
-        bool IncrementUsage(string organizationId, int count = 1);
+        bool IncrementUsage(string organizationId, bool tooBig, int count = 1);
         int GetRemainingEventLimit(string organizationId);
     }
 }

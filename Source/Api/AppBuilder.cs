@@ -157,7 +157,7 @@ namespace Exceptionless.Api {
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
 
-            if (Settings.Current.EnableJobsModule) {
+            if (Settings.Current.RunJobsInProcess) {
                 Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 Task.Factory.StartNew(() => container.GetInstance<MailMessageJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);

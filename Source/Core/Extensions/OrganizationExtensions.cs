@@ -73,6 +73,12 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo != null ? usageInfo.Blocked : 0;
         }
 
+        public static int GetCurrentHourlyTooBig(this Organization organization) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            var usageInfo = organization.OverageHours.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.TooBig : 0;
+        }
+
         public static int GetCurrentMonthlyTotal(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
@@ -85,30 +91,38 @@ namespace Exceptionless.Core.Extensions {
             return usageInfo != null ? usageInfo.Blocked : 0;
         }
 
-        public static void SetHourlyOverage(this Organization organization, long total, long blocked) {
-            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
-            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, organization.GetHourlyEventLimit(), TimeSpan.FromDays(32));
-        }
-
-        public static void SetMonthlyUsage(this Organization organization, long total, long blocked) {
+        public static int GetCurrentMonthlyTooBig(this Organization organization) {
             var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
-            organization.Usage.SetUsage(date, (int)total, (int)blocked, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
+            var usageInfo = organization.Usage.FirstOrDefault(o => o.Date == date);
+            return usageInfo != null ? usageInfo.TooBig : 0;
         }
 
-        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int limit, TimeSpan? maxUsageAge = null) {
+        public static void SetHourlyOverage(this Organization organization, long total, long blocked, long tooBig) {
+            var date = DateTime.UtcNow.Floor(TimeSpan.FromHours(1));
+            organization.OverageHours.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetHourlyEventLimit(), TimeSpan.FromDays(32));
+        }
+
+        public static void SetMonthlyUsage(this Organization organization, long total, long blocked, long tooBig) {
+            var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            organization.Usage.SetUsage(date, (int)total, (int)blocked, (int)tooBig, organization.GetMaxEventsPerMonthWithBonus(), TimeSpan.FromDays(366));
+        }
+
+        public static void SetUsage(this ICollection<UsageInfo> usages, DateTime date, int total, int blocked, int tooBig, int limit, TimeSpan? maxUsageAge = null) {
             var usageInfo = usages.FirstOrDefault(o => o.Date == date);
             if (usageInfo == null) {
                 usageInfo = new UsageInfo {
                     Date = date,
                     Total = total,
                     Blocked = blocked,
-                    Limit = limit
+                    Limit = limit,
+                    TooBig = tooBig
                 };
                 usages.Add(usageInfo);
             } else {
                 usageInfo.Limit = limit;
                 usageInfo.Total = total;
                 usageInfo.Blocked = blocked;
+                usageInfo.TooBig = tooBig;
             }
 
             if (!maxUsageAge.HasValue)

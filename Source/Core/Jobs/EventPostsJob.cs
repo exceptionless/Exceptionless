@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Jobs {
                     events = ParseEventPost(eventPost);
                 }, StatNames.PostsParsingTime);
                 _statsClient.Counter(StatNames.PostsParsed);
-                _statsClient.Gauge(StatNames.PostsBatchSize, events.Count);
+                _statsClient.Gauge(StatNames.PostsEventCount, events.Count);
             } catch (Exception ex) {
                 _statsClient.Counter(StatNames.PostsParseErrors);
                 queueEntry.Abandon();
@@ -97,7 +97,7 @@ namespace Exceptionless.Core.Jobs {
                     eventsToProcess += 1;
 
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
-                _organizationRepository.IncrementUsage(project.OrganizationId, events.Count - 1);
+                _organizationRepository.IncrementUsage(project.OrganizationId, false, events.Count - 1);
             }
             int errorCount = 0;
             DateTime created = DateTime.UtcNow;

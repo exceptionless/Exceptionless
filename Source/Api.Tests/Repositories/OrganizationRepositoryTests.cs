@@ -25,14 +25,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             messagePublisher.Subscribe<PlanOverage>(messages.Add);
 
             var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            Assert.False(_repository.IncrementUsage(o.Id, 4));
+            Assert.False(_repository.IncrementUsage(o.Id, false, 4));
             Assert.Equal(0, messages.Count);
             Assert.Equal(4, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
             Assert.Equal(4, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
             Assert.Equal(0, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
             Assert.Equal(0, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
-            Assert.True(_repository.IncrementUsage(o.Id, 3));
+            Assert.True(_repository.IncrementUsage(o.Id, false, 3));
             Assert.Equal(1, messages.Count);
             Assert.Equal(7, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
             Assert.Equal(7, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
             o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
-            Assert.True(_repository.IncrementUsage(o.Id, 751));
+            Assert.True(_repository.IncrementUsage(o.Id, false, 751));
             //Assert.Equal(2, messages.Count);
             Assert.Equal(751, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
             Assert.Equal(751, cache.Get<long>(GetMonthlyTotalCacheKey(o.Id)));
