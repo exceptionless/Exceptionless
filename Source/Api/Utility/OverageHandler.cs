@@ -71,7 +71,12 @@ namespace Exceptionless.Api.Utility {
             if (tooBig)
                 return CreateResponse(request, HttpStatusCode.Accepted, "Event submission discarded for being too large.");
 
-            return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.") : base.SendAsync(request, cancellationToken);
+            if (overLimit) {
+                _statsClient.Counter(StatNames.PostsBlocked);
+                return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
+            }
+
+            return base.SendAsync(request, cancellationToken);
         }
 
         private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
