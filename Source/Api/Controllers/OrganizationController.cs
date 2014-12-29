@@ -105,8 +105,14 @@ namespace Exceptionless.Api.Controllers {
             if (!id.StartsWith("in_"))
                 id = "in_" + id;
 
-            var invoiceService = new StripeInvoiceService();
-            var stripeInvoice = invoiceService.Get(id);
+            StripeInvoice stripeInvoice = null;
+            try {
+                var invoiceService = new StripeInvoiceService();
+                stripeInvoice = invoiceService.Get(id);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Write();
+            }
+
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
                 return NotFound();
 
@@ -115,7 +121,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var invoice = new Invoice {
-                Id = stripeInvoice.Id.Substring(4),
+                Id = stripeInvoice.Id.Substring(3),
                 OrganizationId = organization.Id,
                 OrganizationName = organization.Name,
                 Date = stripeInvoice.Date.GetValueOrDefault(),
@@ -340,7 +346,7 @@ namespace Exceptionless.Api.Controllers {
                 if (invite == null) {
                     invite = new Invite {
                         Token = Guid.NewGuid().ToString("N").ToLower(),
-                        EmailAddress = email,
+                        EmailAddress = email.ToLowerInvariant(),
                         DateAdded = DateTime.UtcNow
                     };
                     organization.Invites.Add(invite);
@@ -350,10 +356,7 @@ namespace Exceptionless.Api.Controllers {
                 _mailer.SendInvite(currentUser, organization, invite);
             }
 
-            if (user != null)
-                return Ok(new User { EmailAddress = user.EmailAddress });
-
-            return Ok();
+            return Ok(new User { EmailAddress = email });
         }
 
         [HttpDelete]
@@ -578,7 +581,7 @@ namespace Exceptionless.Api.Controllers {
                 });
 
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)
-                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(4));
+                Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
             base.CreateMaps();
         }

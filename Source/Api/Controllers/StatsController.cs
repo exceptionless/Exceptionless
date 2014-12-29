@@ -20,13 +20,15 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class StatsController : ExceptionlessApiController {
-        private readonly IStackRepository _stackRepository;
+        private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly IStackRepository _stackRepository;
         private readonly EventStats _stats;
 
-        public StatsController(IStackRepository stackRepository, IProjectRepository projectRepository, EventStats stats) {
-            _stackRepository = stackRepository;
+        public StatsController(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository, EventStats stats) {
+            _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
+            _stackRepository = stackRepository;
             _stats = stats;
         }
 
@@ -40,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
             // TODO: Handle UTC Retention Cutoff.
             var timeInfo = GetTimeInfo(time, offset);
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter();
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
             var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
 
             return Ok(result);
