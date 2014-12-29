@@ -29,7 +29,7 @@ namespace Exceptionless.Core {
 
         public List<string> AllowedOutboundAddresses { get; private set; }
 
-        public bool EnableJobsModule { get; private set; }
+        public bool RunJobsInProcess { get; private set; }
 
         public bool LogJobLocks { get; private set; }
 
@@ -52,6 +52,8 @@ namespace Exceptionless.Core {
         public int BotThrottleLimit { get; private set; }
 
         public int ApiThrottleLimit { get; private set; }
+
+        public long MaximumEventPostSize { get; private set; }
 
         public bool EnableSummaryNotifications { get; private set; }
 
@@ -110,7 +112,7 @@ namespace Exceptionless.Core {
         public string AzureStorageConnectionString { get; set; }
 
         public bool EnableAzureStorage { get; private set; }
-       
+        
         private static Settings Init() {
             var settings = new Settings();
 
@@ -132,7 +134,7 @@ namespace Exceptionless.Core {
             settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
             settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.com").Select(v => v.ToLowerInvariant()).ToList();
-            settings.EnableJobsModule = ConfigurationManager.AppSettings.GetBool("EnableJobsModule", true);
+            settings.RunJobsInProcess = ConfigurationManager.AppSettings.GetBool("RunJobsInProcess", true);
             settings.LogJobLocks = ConfigurationManager.AppSettings.GetBool("LogJobLocks", false);
             settings.LogJobEvents = ConfigurationManager.AppSettings.GetBool("LogJobEvents", false);
             settings.LogJobCompleted = ConfigurationManager.AppSettings.GetBool("LogJobCompleted", false);
@@ -144,6 +146,7 @@ namespace Exceptionless.Core {
             settings.EnableSignalR = ConfigurationManager.AppSettings.GetBool("EnableSignalR", true);
             settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
             settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
+            settings.MaximumEventPostSize = ConfigurationManager.AppSettings.GetInt("MaximumEventPostSize", Int32.MaxValue);
             settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", false);
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
             settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";

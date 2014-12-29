@@ -15,18 +15,23 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Core;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Extensions;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ICacheClient _cacheClient;
+        private readonly IAppStatsClient _statsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IAppStatsClient statsClient) {
             _organizationRepository = organizationRepository;
             _cacheClient = cacheClient;
+            _statsClient = statsClient;
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
@@ -49,7 +54,23 @@ namespace Exceptionless.Api.Utility {
             if (project == null)
                 return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
-            bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId);
+            bool tooBig = false;
+            if (request.Content != null && request.Content.Headers != null) {
+                long size = request.Content.Headers.ContentLength.GetValueOrDefault();
+                _statsClient.Gauge(StatNames.PostsSize, size);
+                if (size > Settings.Current.MaximumEventPostSize) {
+                    Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
+                    _statsClient.Counter(StatNames.PostsDiscarded);
+                    tooBig = true;
+                }
+            }
+
+            bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId, tooBig);
+
+            // block large submissions, but return success status code so the client doesn't keep sending them
+            if (tooBig)
+                return CreateResponse(request, HttpStatusCode.Accepted, "Event submission discarded for being too large.");
+
             return overLimit ? CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.") : base.SendAsync(request, cancellationToken);
         }
 

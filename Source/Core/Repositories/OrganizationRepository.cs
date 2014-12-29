@@ -179,6 +179,10 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
+        private string GetHourlyTooBigCacheKey(string organizationId) {
+            return String.Concat("usage-toobig", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
+        }
+
         private string GetMonthlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
@@ -187,11 +191,15 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
+        private string GetMonthlyTooBigCacheKey(string organizationId) {
+            return String.Concat("usage-toobig", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
+        }
+
         private string GetUsageSavedCacheKey(string organizationId) {
             return String.Concat("usage-saved", ":", organizationId);
         }
 
-        public bool IncrementUsage(string organizationId, int count = 1) {
+        public bool IncrementUsage(string organizationId, bool tooBig, int count = 1) {
             const int USAGE_SAVE_MINUTES = 5;
 
             var org = GetById(organizationId, true);
@@ -202,6 +210,9 @@ namespace Exceptionless.Core.Repositories {
             long monthlyTotal = Cache.Increment(GetMonthlyTotalCacheKey(organizationId), (uint)count, TimeSpan.FromDays(32), (uint)org.GetCurrentMonthlyTotal());
             long monthlyBlocked = Cache.Get<long?>(GetMonthlyBlockedCacheKey(organizationId)) ?? org.GetCurrentMonthlyBlocked();
             bool overLimit = hourlyTotal > org.GetHourlyEventLimit() || (monthlyTotal - monthlyBlocked) > org.GetMaxEventsPerMonthWithBonus();
+
+            long monthlyTooBig = Cache.IncrementIf(GetHourlyTooBigCacheKey(organizationId), 1, TimeSpan.FromMinutes(61), tooBig, (uint)org.GetCurrentHourlyTooBig());
+            long hourlyTooBig = Cache.IncrementIf(GetMonthlyTooBigCacheKey(organizationId), 1, TimeSpan.FromDays(32), tooBig, (uint)org.GetCurrentMonthlyTooBig());
 
             long totalBlocked = count;
 
@@ -241,9 +252,9 @@ namespace Exceptionless.Core.Repositories {
 
             if (shouldSaveUsage) {
                 org = GetById(organizationId, false);
-                org.SetMonthlyUsage(monthlyTotal, monthlyBlocked);
+                org.SetMonthlyUsage(monthlyTotal, monthlyBlocked, monthlyTooBig);
                 if (hourlyTotal > org.GetHourlyEventLimit())
-                    org.SetHourlyOverage(hourlyTotal, hourlyBlocked);
+                    org.SetHourlyOverage(hourlyTotal, hourlyBlocked, hourlyTooBig);
 
                 Save(org);
                 Cache.Set(GetUsageSavedCacheKey(organizationId), DateTime.UtcNow, TimeSpan.FromDays(32));
