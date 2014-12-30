@@ -161,6 +161,8 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
+
             foreach (var original in originalDocuments) {
                 var updated = documents.First(d => d.Id == original.Id);
                 if (original.DateFixed != updated.DateFixed)
@@ -169,8 +171,6 @@ namespace Exceptionless.Core.Repositories {
                 if (original.IsHidden != updated.IsHidden)
                     _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
             }
-
-            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
         }
     }
 }
