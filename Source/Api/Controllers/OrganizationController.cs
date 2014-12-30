@@ -16,6 +16,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using NLog.Fluent;
 using Stripe;
@@ -30,14 +31,16 @@ namespace Exceptionless.Api.Controllers {
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
+        private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
             _projectController = projectController;
             _mailer = mailer;
             _messagePublisher = messagePublisher;
+            _stats = stats;
         }
 
         #region CRUD
@@ -48,8 +51,8 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var organizations = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]
@@ -60,8 +63,8 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            var organizations = _repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore, page);
         }
 
         [HttpGet]
@@ -75,7 +78,12 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetOrganizationById")]
         public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+            var organization = GetModel(id);
+            if (organization == null)
+                return NotFound();
+
+            var viewOrganization = Mapper.Map<Organization, ViewOrganization>(organization);
+            return Ok(PopulateOrganizationStats(viewOrganization));
         }
 
         [HttpPost]
@@ -102,6 +110,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
         public IHttpActionResult GetInvoice(string id) {
+            if (!Settings.Current.EnableBilling)
+                return NotFound();
+
             if (!id.StartsWith("in_"))
                 id = "in_" + id;
 
@@ -159,6 +170,9 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}/invoices")]
         public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
+            if (!Settings.Current.EnableBilling)
+                return NotFound();
+
             var organization = GetModel(id);
             if (organization == null)
                 return NotFound();
@@ -584,6 +598,26 @@ namespace Exceptionless.Api.Controllers {
                 Mapper.CreateMap<StripeInvoice, InvoiceGridModel>().AfterMap((si, igm) => igm.Id = igm.Id.Substring(3));
 
             base.CreateMaps();
+        }
+    
+        private ViewOrganization PopulateOrganizationStats(ViewOrganization organization) {
+            return PopulateOrganizationStats(new List<ViewOrganization> { organization }).FirstOrDefault();
+        }
+
+        private List<ViewOrganization> PopulateOrganizationStats(List<ViewOrganization> organizations) {
+            // TODO: Take into account retention limits.
+            if (organizations.Count > 0) {
+                string organizationFilter = String.Concat("organization:", String.Join(" OR organization:", organizations.Select(p => p.Id)));
+                var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "organization_id", organizationFilter);
+                foreach (var organization in organizations) {
+                    var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
+                    organization.EventCount = organizationStats != null ? organizationStats.Total : 0;
+                    organization.StackCount = organizationStats != null ? organizationStats.Unique : 0;
+                    organization.ProjectCount = _projectRepository.GetByOrganizationId(organization.Id, useCache: true).Count;
+                }
+            }
+
+            return organizations;
         }
     }
 }

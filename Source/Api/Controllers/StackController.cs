@@ -367,7 +367,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
@@ -441,7 +441,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
             var timeInfo = GetTimeInfo(time, offset);
             var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             if (terms.Count == 0)

@@ -18,14 +18,16 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
+        private readonly OrganizationRepository _organizationRepository;      
+        private readonly BillingManager _billingManager; 
         private readonly DataHelper _dataHelper;
-        private readonly OrganizationRepository _organizationRepository;
-        private readonly BillingManager _billingManager;
+        private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, DataHelper dataHelper, BillingManager billingManager) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager, DataHelper dataHelper, EventStats stats) : base(projectRepository) {
             _organizationRepository = organizationRepository;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
+            _stats = stats;
         }
 
         #region CRUD
@@ -36,8 +38,8 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore, page);
         }
 
         [HttpGet]
@@ -55,14 +57,19 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var projects = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
         [HttpGet]
         [Route("{id:objectid}", Name = "GetProjectById")]
         public override IHttpActionResult GetById(string id) {
-            return base.GetById(id);
+            var project = GetModel(id);
+            if (project == null)
+                return NotFound();
+
+            var viewProject = Mapper.Map<Project, ViewProject>(project);
+            return Ok(PopulateProjectStats(viewProject));
         }
 
         [HttpPost]
@@ -320,6 +327,25 @@ namespace Exceptionless.Api.Controllers {
                 return PermissionResult.DenyWithMessage("A project with this name already exists.");
 
             return base.CanUpdate(original, changes);
+        }
+
+        private ViewProject PopulateProjectStats(ViewProject project) {
+            return PopulateProjectStats(new List<ViewProject> { project }).FirstOrDefault();
+        }
+
+        private List<ViewProject> PopulateProjectStats(List<ViewProject> projects) {
+            // TODO: Take into account retention limits.
+            if (projects.Count > 0) {
+                string projectFilter = String.Concat("project:", String.Join(" OR project:", projects.Select(p => p.Id)));
+                var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "project_id", projectFilter);
+                foreach (var project in projects) {
+                    var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
+                    project.EventCount = projectStats != null ? projectStats.Total : 0;
+                    project.StackCount = projectStats != null ? projectStats.Unique : 0;
+                }
+            }
+
+            return projects;
         }
     }
 }

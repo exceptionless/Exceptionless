@@ -129,8 +129,8 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository) {
-            if (Request.IsGlobalAdmin())
+        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool hasOrganizationOrProjectFilter) {
+            if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
             var organizationIds = GetAssociatedOrganizationIds();
@@ -143,6 +143,13 @@ namespace Exceptionless.Api.Controllers {
                 return "organization:none";
 
             return String.Concat("organization:", String.Join(" OR organization:", organizationIds));
+        }
+
+        protected bool HasOrganizationOrProjectFilter(string filter) {
+            if (String.IsNullOrWhiteSpace(filter))
+                return false;
+
+            return filter.Contains("organization:") || filter.Contains("project:");
         }
 
         public string GetDefaultOrganizationId() {

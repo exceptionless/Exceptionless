@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var timeInfo = GetTimeInfo(time, offset);
-            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
+            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(filter));
 
             return OkWithLinks(model,
                 GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
@@ -86,7 +86,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository);
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
