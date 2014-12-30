@@ -37,7 +37,7 @@ using Exceptionless.Json.Utilities;
 namespace Exceptionless.Json
 {
     /// <summary>
-    /// Represents a writer that provides a fast, non-cached, forward-only way of generating Json data.
+    /// Represents a writer that provides a fast, non-cached, forward-only way of generating JSON data.
     /// </summary>
     public class JsonTextWriter : JsonWriter
     {
@@ -49,6 +49,7 @@ namespace Exceptionless.Json
         private bool _quoteName;
         private bool[] _charEscapeFlags;
         private char[] _writeBuffer;
+        private char[] _indentChars;
 
         private Base64Encoder Base64Encoder
         {
@@ -98,7 +99,14 @@ namespace Exceptionless.Json
         public char IndentChar
         {
             get { return _indentChar; }
-            set { _indentChar = value; }
+            set
+            {
+                if (value != _indentChar)
+                {
+                    _indentChar = value;
+                    _indentChars = null;
+                }
+            }
         }
 
         /// <summary>
@@ -253,12 +261,7 @@ namespace Exceptionless.Json
 
         private void UpdateCharEscapeFlags()
         {
-            if (StringEscapeHandling == StringEscapeHandling.EscapeHtml)
-                _charEscapeFlags = JavaScriptUtils.HtmlCharEscapeFlags;
-            else if (_quoteChar == '"')
-                _charEscapeFlags = JavaScriptUtils.DoubleQuoteCharEscapeFlags;
-            else
-                _charEscapeFlags = JavaScriptUtils.SingleQuoteCharEscapeFlags;
+            _charEscapeFlags = JavaScriptUtils.GetCharEscapeFlags(StringEscapeHandling, _quoteChar);
         }
 
         /// <summary>
@@ -271,14 +274,19 @@ namespace Exceptionless.Json
             // levels of indentation multiplied by the indent count
             int currentIndentCount = Top * _indentation;
 
-            while (currentIndentCount > 0)
+            if (currentIndentCount > 0)
             {
-                // write up to a max of 10 characters at once to avoid creating too many new strings
-                int writeCount = Math.Min(currentIndentCount, 10);
+                if (_indentChars == null)
+                    _indentChars = new string(_indentChar, 10).ToCharArray();
 
-                _writer.Write(new string(_indentChar, writeCount));
+                while (currentIndentCount > 0)
+                {
+                    int writeCount = Math.Min(currentIndentCount, 10);
 
-                currentIndentCount -= writeCount;
+                    _writer.Write(_indentChars, 0, writeCount);
+
+                    currentIndentCount -= writeCount;
+                }
             }
         }
 
@@ -570,9 +578,9 @@ namespace Exceptionless.Json
         }
 
         /// <summary>
-        /// Writes a <see cref="T:Byte[]"/> value.
+        /// Writes a <see cref="Byte"/>[] value.
         /// </summary>
-        /// <param name="value">The <see cref="T:Byte[]"/> value to write.</param>
+        /// <param name="value">The <see cref="Byte"/>[] value to write.</param>
         public override void WriteValue(byte[] value)
         {
             if (value == null)
@@ -625,7 +633,18 @@ namespace Exceptionless.Json
         public override void WriteValue(Guid value)
         {
             InternalWriteValue(JsonToken.String);
-            WriteValueInternal(JsonConvert.ToString(value, _quoteChar), JsonToken.String);
+
+            string text = null;
+
+#if !(NETFX_CORE || PORTABLE40 || PORTABLE)
+            text = value.ToString("D", CultureInfo.InvariantCulture);
+#else
+            text = value.ToString("D");
+#endif
+
+            _writer.Write(_quoteChar);
+            _writer.Write(text);
+            _writer.Write(_quoteChar);
         }
 
         /// <summary>
@@ -635,7 +654,17 @@ namespace Exceptionless.Json
         public override void WriteValue(TimeSpan value)
         {
             InternalWriteValue(JsonToken.String);
-            WriteValueInternal(JsonConvert.ToString(value, _quoteChar), JsonToken.String);
+
+            string text;
+#if (NET35 || NET20)
+            text = value.ToString();
+#else
+            text = value.ToString(null, CultureInfo.InvariantCulture);
+#endif
+
+            _writer.Write(_quoteChar);
+            _writer.Write(text);
+            _writer.Write(_quoteChar);
         }
 
         /// <summary>
@@ -651,7 +680,7 @@ namespace Exceptionless.Json
             else
             {
                 InternalWriteValue(JsonToken.String);
-                WriteValueInternal(JsonConvert.ToString(value, _quoteChar), JsonToken.String);
+                WriteEscapedString(value.OriginalString, true);
             }
         }
         #endregion
@@ -683,13 +712,11 @@ namespace Exceptionless.Json
         private void EnsureWriteBuffer()
         {
             if (_writeBuffer == null)
-                _writeBuffer = new char[64];
+                _writeBuffer = new char[35]; // maximum buffer sized used when writing iso date
         }
 
         private void WriteIntegerValue(long value)
         {
-            EnsureWriteBuffer();
-
             if (value >= 0 && value <= 9)
             {
                 _writer.Write((char)('0' + value));
@@ -707,14 +734,14 @@ namespace Exceptionless.Json
 
         private void WriteIntegerValue(ulong uvalue)
         {
-            EnsureWriteBuffer();
-
             if (uvalue <= 9)
             {
                 _writer.Write((char)('0' + uvalue));
             }
             else
             {
+                EnsureWriteBuffer();
+
                 int totalLength = MathUtils.IntLength(uvalue);
                 int length = 0;
 

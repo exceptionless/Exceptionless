@@ -33,7 +33,7 @@ using Exceptionless.Json.Utilities;
 namespace Exceptionless.Json.Linq
 {
     /// <summary>
-    /// Represents a writer that provides a fast, non-cached, forward-only way of generating Json data.
+    /// Represents a writer that provides a fast, non-cached, forward-only way of generating JSON data.
     /// </summary>
     public class JTokenWriter : JsonWriter
     {
@@ -41,6 +41,15 @@ namespace Exceptionless.Json.Linq
         private JContainer _parent;
         // used when writer is writing single value and the value has no containing parent
         private JValue _value;
+        private JToken _current;
+
+        /// <summary>
+        /// Gets the <see cref="JToken"/> at the writer's current position.
+        /// </summary>
+        public JToken CurrentToken
+        {
+            get { return _current; }
+        }
 
         /// <summary>
         /// Gets the token being writen.
@@ -109,10 +118,12 @@ namespace Exceptionless.Json.Linq
                 _parent.AddAndSkipParentCheck(container);
 
             _parent = container;
+            _current = container;
         }
 
         private void RemoveParent()
         {
+            _current = _parent;
             _parent = _parent.Parent;
 
             if (_parent != null && _parent.Type == JTokenType.Property)
@@ -155,9 +166,11 @@ namespace Exceptionless.Json.Linq
         /// <param name="name">The name of the property.</param>
         public override void WritePropertyName(string name)
         {
-            base.WritePropertyName(name);
-
             AddParent(new JProperty(name));
+
+            // don't set state until after in case of an error such as duplicate property names
+            // incorrect state will cause issues if writer is disposed when closing open properties
+            base.WritePropertyName(name);
         }
 
         private void AddValue(object value, JsonToken token)
@@ -170,6 +183,7 @@ namespace Exceptionless.Json.Linq
             if (_parent != null)
             {
                 _parent.Add(value);
+                _current = _parent.Last;
 
                 if (_parent.Type == JTokenType.Property)
                     _parent = _parent.Parent;
@@ -177,6 +191,7 @@ namespace Exceptionless.Json.Linq
             else
             {
                 _value = value ?? JValue.CreateNull();
+                _current = _value;
             }
         }
 
@@ -413,9 +428,9 @@ namespace Exceptionless.Json.Linq
 #endif
 
         /// <summary>
-        /// Writes a <see cref="T:Byte[]"/> value.
+        /// Writes a <see cref="Byte"/>[] value.
         /// </summary>
-        /// <param name="value">The <see cref="T:Byte[]"/> value to write.</param>
+        /// <param name="value">The <see cref="Byte"/>[] value to write.</param>
         public override void WriteValue(byte[] value)
         {
             base.WriteValue(value);

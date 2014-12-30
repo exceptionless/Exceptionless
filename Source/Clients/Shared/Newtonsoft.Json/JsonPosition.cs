@@ -33,14 +33,16 @@ namespace Exceptionless.Json
 {
     internal enum JsonContainerType
     {
-        None,
-        Object,
-        Array,
-        Constructor
+        None = 0,
+        Object = 1,
+        Array = 2,
+        Constructor = 3
     }
 
     internal struct JsonPosition
     {
+        private static readonly char[] SpecialCharacters = {'.', ' ', '[', ']', '(', ')'};
+
         internal JsonContainerType Type;
         internal int Position;
         internal string PropertyName;
@@ -61,7 +63,18 @@ namespace Exceptionless.Json
                 case JsonContainerType.Object:
                     if (sb.Length > 0)
                         sb.Append('.');
-                    sb.Append(PropertyName);
+
+                    string propertyName = PropertyName;
+                    if (propertyName.IndexOfAny(SpecialCharacters) != -1)
+                    {
+                        sb.Append(@"['");
+                        sb.Append(propertyName);
+                        sb.Append(@"']");
+                    }
+                    else
+                    {
+                        sb.Append(propertyName);
+                    }
                     break;
                 case JsonContainerType.Array:
                 case JsonContainerType.Constructor:

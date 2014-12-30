@@ -29,14 +29,22 @@ using Exceptionless.Json.Utilities;
 namespace Exceptionless.Json.Linq
 {
     /// <summary>
-    /// Represents a reader that provides fast, non-cached, forward-only access to serialized Json data.
+    /// Represents a reader that provides fast, non-cached, forward-only access to serialized JSON data.
     /// </summary>
     public class JTokenReader : JsonReader, IJsonLineInfo
     {
         private readonly string _initialPath;
         private readonly JToken _root;
         private JToken _parent;
-        internal JToken _current;
+        private JToken _current;
+
+        /// <summary>
+        /// Gets the <see cref="JToken"/> at the reader's current position.
+        /// </summary>
+        public JToken CurrentToken
+        {
+            get { return _current; }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JTokenReader"/> class.
@@ -47,7 +55,6 @@ namespace Exceptionless.Json.Linq
             ValidationUtils.ArgumentNotNull(token, "token");
 
             _root = token;
-            _current = token;
         }
 
         internal JTokenReader(JToken token, string initialPath)
@@ -57,10 +64,10 @@ namespace Exceptionless.Json.Linq
         }
 
         /// <summary>
-        /// Reads the next JSON token from the stream as a <see cref="T:Byte[]"/>.
+        /// Reads the next JSON token from the stream as a <see cref="Byte"/>[].
         /// </summary>
         /// <returns>
-        /// A <see cref="T:Byte[]"/> or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
+        /// A <see cref="Byte"/>[] or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
         /// </returns>
         public override byte[] ReadAsBytes()
         {
@@ -118,6 +125,9 @@ namespace Exceptionless.Json.Linq
         {
             if (CurrentState != State.Start)
             {
+                if (_current == null)
+                    return false;
+
                 JContainer container = _current as JContainer;
                 if (container != null && _parent != container)
                     return ReadInto(container);
@@ -125,6 +135,7 @@ namespace Exceptionless.Json.Linq
                     return ReadOver(_current);
             }
 
+            _current = _root;
             SetToken(_current);
             return true;
         }
@@ -165,13 +176,9 @@ namespace Exceptionless.Json.Linq
 
         private bool ReadToEnd()
         {
+            _current = null;
             SetToken(JsonToken.None);
             return false;
-        }
-
-        private bool IsEndElement
-        {
-            get { return (_current == _parent); }
         }
 
         private JsonToken? GetEndToken(JContainer c)
@@ -293,7 +300,7 @@ namespace Exceptionless.Json.Linq
             if (CurrentState == State.Start)
                 return false;
 
-            IJsonLineInfo info = IsEndElement ? null : _current;
+            IJsonLineInfo info = _current;
             return (info != null && info.HasLineInfo());
         }
 
@@ -304,7 +311,7 @@ namespace Exceptionless.Json.Linq
                 if (CurrentState == State.Start)
                     return 0;
 
-                IJsonLineInfo info = IsEndElement ? null : _current;
+                IJsonLineInfo info = _current;
                 if (info != null)
                     return info.LineNumber;
 
@@ -319,7 +326,7 @@ namespace Exceptionless.Json.Linq
                 if (CurrentState == State.Start)
                     return 0;
 
-                IJsonLineInfo info = IsEndElement ? null : _current;
+                IJsonLineInfo info = _current;
                 if (info != null)
                     return info.LinePosition;
 

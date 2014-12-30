@@ -83,6 +83,12 @@ namespace Exceptionless.Json.Serialization
         }
     }
 
+    internal class DefaultContractResolverState
+    {
+        public Dictionary<ResolverContractKey, JsonContract> ContractCache;
+        public PropertyNameTable NameTable = new PropertyNameTable();
+    }
+
     /// <summary>
     /// Used by <see cref="JsonSerializer"/> to resolves a <see cref="JsonContract"/> for a given <see cref="Type"/>.
     /// </summary>
@@ -95,7 +101,7 @@ namespace Exceptionless.Json.Serialization
             get { return _instance; }
         }
 
-        private static readonly IList<JsonConverter> BuiltInConverters = new List<JsonConverter>
+        private static readonly JsonConverter[] BuiltInConverters =
         {
 #if !(NET20 || NETFX_CORE || PORTABLE40 || PORTABLE)
             new EntityKeyMemberConverter(),
@@ -122,10 +128,10 @@ namespace Exceptionless.Json.Serialization
             new RegexConverter()
         };
 
-        private static Dictionary<ResolverContractKey, JsonContract> _sharedContractCache;
-        private static readonly object _typeContractCacheLock = new object();
+        private static readonly object TypeContractCacheLock = new object();
 
-        private Dictionary<ResolverContractKey, JsonContract> _instanceContractCache;
+        private static readonly DefaultContractResolverState _sharedState = new DefaultContractResolverState();
+        private readonly DefaultContractResolverState _instanceState = new DefaultContractResolverState();
         private readonly bool _sharedCache;
 
         /// <summary>
@@ -190,9 +196,9 @@ namespace Exceptionless.Json.Serialization
         /// </summary>
         /// <param name="shareCache">
         /// If set to <c>true</c> the <see cref="DefaultContractResolver"/> will use a cached shared with other resolvers of the same type.
-        /// Sharing the cache will significantly performance because expensive reflection will only happen once but could cause unexpected
-        /// behavior if different instances of the resolver are suppose to produce different results. When set to false it is highly
-        /// recommended to reuse <see cref="DefaultContractResolver"/> instances with the <see cref="JsonSerializer"/>.
+        /// Sharing the cache will significantly improve performance with multiple resolver instances because expensive reflection will only
+        /// happen once. This setting can cause unexpected behavior if different instances of the resolver are suppose to produce different
+        /// results. When set to false it is highly recommended to reuse <see cref="DefaultContractResolver"/> instances with the <see cref="JsonSerializer"/>.
         /// </param>
         public DefaultContractResolver(bool shareCache)
         {
@@ -208,20 +214,12 @@ namespace Exceptionless.Json.Serialization
             _sharedCache = shareCache;
         }
 
-        private Dictionary<ResolverContractKey, JsonContract> GetCache()
+        internal DefaultContractResolverState GetState()
         {
             if (_sharedCache)
-                return _sharedContractCache;
+                return _sharedState;
             else
-                return _instanceContractCache;
-        }
-
-        private void UpdateCache(Dictionary<ResolverContractKey, JsonContract> cache)
-        {
-            if (_sharedCache)
-                _sharedContractCache = cache;
-            else
-                _instanceContractCache = cache;
+                return _instanceState;
         }
 
         /// <summary>
@@ -234,24 +232,25 @@ namespace Exceptionless.Json.Serialization
             if (type == null)
                 throw new ArgumentNullException("type");
 
+            DefaultContractResolverState state = GetState();
+
             JsonContract contract;
             ResolverContractKey key = new ResolverContractKey(GetType(), type);
-            Dictionary<ResolverContractKey, JsonContract> cache = GetCache();
+            Dictionary<ResolverContractKey, JsonContract> cache = state.ContractCache;
             if (cache == null || !cache.TryGetValue(key, out contract))
             {
                 contract = CreateContract(type);
 
                 // avoid the possibility of modifying the cache dictionary while another thread is accessing it
-                lock (_typeContractCacheLock)
+                lock (TypeContractCacheLock)
                 {
-                    cache = GetCache();
-                    Dictionary<ResolverContractKey, JsonContract> updatedCache =
-                        (cache != null)
-                            ? new Dictionary<ResolverContractKey, JsonContract>(cache)
-                            : new Dictionary<ResolverContractKey, JsonContract>();
+                    cache = state.ContractCache;
+                    Dictionary<ResolverContractKey, JsonContract> updatedCache = (cache != null)
+                        ? new Dictionary<ResolverContractKey, JsonContract>(cache)
+                        : new Dictionary<ResolverContractKey, JsonContract>();
                     updatedCache[key] = contract;
 
-                    UpdateCache(updatedCache);
+                    state.ContractCache = updatedCache;
                 }
             }
 
@@ -470,14 +469,18 @@ namespace Exceptionless.Json.Serialization
             Type valueType = dictionaryType.GetGenericArguments()[1];
             bool isJTokenValueType = typeof(JToken).IsAssignableFrom(valueType);
 
+            Type createdType;
+
             // change type to a class if it is the base interface so it can be instantiated if needed
             if (ReflectionUtils.IsGenericDefinition(t, typeof(IDictionary<,>)))
-                t = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                createdType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+            else
+                createdType = t;
 
             MethodInfo addMethod = t.GetMethod("Add", new[] { keyType, valueType });
             Func<object, object> getExtensionDataDictionary = JsonTypeReflector.ReflectionDelegateFactory.CreateGet<object>(member);
             Action<object, object> setExtensionDataDictionary = JsonTypeReflector.ReflectionDelegateFactory.CreateSet<object>(member);
-            Func<object> createExtensionDataDictionary = JsonTypeReflector.ReflectionDelegateFactory.CreateDefaultConstructor<object>(t);
+            Func<object> createExtensionDataDictionary = JsonTypeReflector.ReflectionDelegateFactory.CreateDefaultConstructor<object>(createdType);
             MethodCall<object, object> setExtensionDataDictionaryValue = JsonTypeReflector.ReflectionDelegateFactory.CreateMethodCall<object>(addMethod);
 
             ExtensionDataSetter extensionDataSetter = (o, key, value) =>
@@ -1111,7 +1114,17 @@ namespace Exceptionless.Json.Serialization
                 JsonProperty property = CreateProperty(member, memberSerialization);
 
                 if (property != null)
+                {
+                    DefaultContractResolverState state = GetState();
+
+                    // nametable is not thread-safe for multiple writers
+                    lock (state.NameTable)
+                    {
+                        property.PropertyName = state.NameTable.Add(property.PropertyName);
+                    }
+
                     properties.AddProperty(property);
+                }
             }
 
             IList<JsonProperty> orderedProperties = properties.OrderBy(p => p.Order ?? -1).ToList();
@@ -1269,7 +1282,7 @@ namespace Exceptionless.Json.Serialization
             property.ItemIsReference = (propertyAttribute != null) ? propertyAttribute._itemIsReference : null;
             property.ItemConverter =
                 (propertyAttribute != null && propertyAttribute.ItemConverterType != null)
-                    ? JsonTypeReflector.CreateJsonConverterInstance(propertyAttribute.ItemConverterType)
+                    ? JsonTypeReflector.CreateJsonConverterInstance(propertyAttribute.ItemConverterType, propertyAttribute.ItemConverterParameters)
                     : null;
             property.ItemReferenceLoopHandling = (propertyAttribute != null) ? propertyAttribute._itemReferenceLoopHandling : null;
             property.ItemTypeNameHandling = (propertyAttribute != null) ? propertyAttribute._itemTypeNameHandling : null;

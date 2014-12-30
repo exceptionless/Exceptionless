@@ -724,7 +724,8 @@ namespace Exceptionless.Json.Linq
         {
             int valueHashCode = (_value != null) ? _value.GetHashCode() : 0;
 
-            return _valueType.GetHashCode() ^ valueHashCode;
+            // GetHashCode on an enum boxes so cast to int
+            return ((int)_valueType).GetHashCode() ^ valueHashCode;
         }
 
         private static bool ValuesEquals(JValue v1, JValue v2)
@@ -872,7 +873,7 @@ namespace Exceptionless.Json.Linq
                     return ReflectionUtils.IsNullable(binder.Type);
                 }
 
-                result = ConvertUtils.Convert(instance.Value, CultureInfo.InvariantCulture, binder.Type);
+                result = ConvertUtils.Convert(value, CultureInfo.InvariantCulture, binder.Type);
                 return true;
             }
 

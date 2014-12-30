@@ -97,6 +97,9 @@
     <Compile Include="LastReferenceIdManager\ILastReferenceIdManager.cs" />
     <Compile Include="Logging\DebugExceptionlessLog.cs" />
     <Compile Include="Logging\LogLevel.cs" />
+    <Compile Include="Enrichments\EventEnrichmentManager.cs" />
+    <Compile Include="Enrichments\EventEnrichmentContext.cs" />
+    <Compile Include="Enrichments\IEventEnrichment.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryType.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonBinaryWriter.cs" />
     <Compile Include="Newtonsoft.Json\Bson\BsonObjectId.cs" />
@@ -269,10 +272,12 @@
     <Compile Include="Newtonsoft.Json\Utilities\ILGeneratorExtensions.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ImmutableCollectionsUtils.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\JavaScriptUtils.cs" />
+    <Compile Include="Newtonsoft.Json\Utilities\JsonTokenUtils.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\LateBoundReflectionDelegateFactory.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\MathUtils.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\MethodCall.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\MiscellaneousUtils.cs" />
+    <Compile Include="Newtonsoft.Json\Utilities\PropertyNameTable.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ReflectionDelegateFactory.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ReflectionObject.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ReflectionUtils.cs" />
@@ -283,9 +288,6 @@
     <Compile Include="Newtonsoft.Json\Utilities\TypeExtensions.cs" />
     <Compile Include="Newtonsoft.Json\Utilities\ValidationUtils.cs" />
     <Compile Include="Newtonsoft.Json\WriteState.cs" />
-    <Compile Include="Enrichments\EventEnrichmentManager.cs" />
-    <Compile Include="Enrichments\EventEnrichmentContext.cs" />
-    <Compile Include="Enrichments\IEventEnrichment.cs" />
     <Compile Include="Polyfill\ConcurrentQueue.cs" />
     <Compile Include="Polyfill\ObjectPool.cs" />
     <Compile Include="Queue\IEventQueue.cs" />

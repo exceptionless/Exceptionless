@@ -102,9 +102,10 @@ namespace Exceptionless.Json.Utilities
             return false;
         }
 
-        public static ObjectConstructor<object> ResolveEnumableCollectionConstructor(Type collectionType, Type collectionItemType)
+        public static ConstructorInfo ResolveEnumerableCollectionConstructor(Type collectionType, Type collectionItemType)
         {
             Type genericEnumerable = typeof(IEnumerable<>).MakeGenericType(collectionItemType);
+            ConstructorInfo match = null;
 
             foreach (ConstructorInfo constructor in collectionType.GetConstructors(BindingFlags.Public | BindingFlags.Instance))
             {
@@ -112,12 +113,23 @@ namespace Exceptionless.Json.Utilities
 
                 if (parameters.Count == 1)
                 {
-                    if (genericEnumerable.IsAssignableFrom(parameters[0].ParameterType))
-                        return JsonTypeReflector.ReflectionDelegateFactory.CreateParametrizedConstructor(constructor);
+                    if (genericEnumerable == parameters[0].ParameterType)
+                    {
+                        // exact match
+                        match = constructor;
+                        break;
+                    }
+
+                    // incase we can't find an exact match, use first inexact
+                    if (match == null)
+                    {
+                        if (genericEnumerable.IsAssignableFrom(parameters[0].ParameterType))
+                            match = constructor;
+                    }
                 }
             }
 
-            return null;
+            return match;
         }
 
         public static bool AddDistinct<T>(this IList<T> list, T value)
@@ -200,7 +212,7 @@ namespace Exceptionless.Json.Utilities
             return -1;
         }
 
-        private static IList<int> GetDimensions(IList values)
+        private static IList<int> GetDimensions(IList values, int dimensionsCount)
         {
             IList<int> dimensions = new List<int>();
 
@@ -208,6 +220,11 @@ namespace Exceptionless.Json.Utilities
             while (true)
             {
                 dimensions.Add(currentArray.Count);
+
+                // don't keep calculating dimensions for arrays inside the value array
+                if (dimensions.Count == dimensionsCount)
+                    break;
+
                 if (currentArray.Count == 0)
                     break;
 
@@ -265,7 +282,7 @@ namespace Exceptionless.Json.Utilities
 
         public static Array ToMultidimensionalArray(IList values, Type type, int rank)
         {
-            IList<int> dimensions = GetDimensions(values);
+            IList<int> dimensions = GetDimensions(values, rank);
 
             while (dimensions.Count < rank)
             {

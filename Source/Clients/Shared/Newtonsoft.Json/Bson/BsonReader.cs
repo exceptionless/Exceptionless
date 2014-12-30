@@ -35,7 +35,7 @@ using Exceptionless.Json.Linq;
 namespace Exceptionless.Json.Bson
 {
     /// <summary>
-    /// Represents a reader that provides fast, non-cached, forward-only access to serialized Json data.
+    /// Represents a reader that provides fast, non-cached, forward-only access to serialized JSON data.
     /// </summary>
     public class BsonReader : JsonReader
     {
@@ -61,15 +61,15 @@ namespace Exceptionless.Json.Bson
 
         private enum BsonReaderState
         {
-            Normal,
-            ReferenceStart,
-            ReferenceRef,
-            ReferenceId,
-            CodeWScopeStart,
-            CodeWScopeCode,
-            CodeWScopeScope,
-            CodeWScopeScopeObject,
-            CodeWScopeScopeEnd
+            Normal = 0,
+            ReferenceStart = 1,
+            ReferenceRef = 2,
+            ReferenceId = 3,
+            CodeWScopeStart = 4,
+            CodeWScopeCode = 5,
+            CodeWScopeScope = 6,
+            CodeWScopeScopeObject = 7,
+            CodeWScopeScopeEnd = 8
         }
 
         private class ContainerContext
@@ -175,10 +175,10 @@ namespace Exceptionless.Json.Bson
         }
 
         /// <summary>
-        /// Reads the next JSON token from the stream as a <see cref="T:Byte[]"/>.
+        /// Reads the next JSON token from the stream as a <see cref="Byte"/>[].
         /// </summary>
         /// <returns>
-        /// A <see cref="T:Byte[]"/> or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
+        /// A <see cref="Byte"/>[] or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
         /// </returns>
         public override byte[] ReadAsBytes()
         {

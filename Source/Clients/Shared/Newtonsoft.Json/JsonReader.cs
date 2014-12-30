@@ -39,7 +39,7 @@ using System.Linq;
 namespace Exceptionless.Json
 {
     /// <summary>
-    /// Represents a reader that provides fast, non-cached, forward-only access to serialized Json data.
+    /// Represents a reader that provides fast, non-cached, forward-only access to serialized JSON data.
     /// </summary>
     public abstract class JsonReader : IDisposable
     {
@@ -251,7 +251,7 @@ namespace Exceptionless.Json
             get
             {
                 int depth = _stack.Count;
-                if (IsStartToken(TokenType) || _currentPosition.Type == JsonContainerType.None)
+                if (JsonTokenUtils.IsStartToken(TokenType) || _currentPosition.Type == JsonContainerType.None)
                     return depth;
                 else
                     return depth + 1;
@@ -378,9 +378,9 @@ namespace Exceptionless.Json
         public abstract string ReadAsString();
 
         /// <summary>
-        /// Reads the next JSON token from the stream as a <see cref="T:Byte[]"/>.
+        /// Reads the next JSON token from the stream as a <see cref="Byte"/>[].
         /// </summary>
-        /// <returns>A <see cref="T:Byte[]"/> or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
+        /// <returns>A <see cref="Byte"/>[] or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.</returns>
         public abstract byte[] ReadAsBytes();
 
         /// <summary>
@@ -712,7 +712,7 @@ namespace Exceptionless.Json
             if (t == JsonToken.Null)
                 return null;
 
-            if (IsPrimitiveToken(t))
+            if (JsonTokenUtils.IsPrimitiveToken(t))
             {
                 if (Value != null)
                 {
@@ -823,7 +823,7 @@ namespace Exceptionless.Json
             if (TokenType == JsonToken.PropertyName)
                 Read();
 
-            if (IsStartToken(TokenType))
+            if (JsonTokenUtils.IsStartToken(TokenType))
             {
                 int depth = Depth;
 
@@ -961,37 +961,6 @@ namespace Exceptionless.Json
                 _currentState = State.Start;
             else
                 _currentState = State.Finished;
-        }
-
-        internal static bool IsPrimitiveToken(JsonToken token)
-        {
-            switch (token)
-            {
-                case JsonToken.Integer:
-                case JsonToken.Float:
-                case JsonToken.String:
-                case JsonToken.Boolean:
-                case JsonToken.Undefined:
-                case JsonToken.Null:
-                case JsonToken.Date:
-                case JsonToken.Bytes:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        internal static bool IsStartToken(JsonToken token)
-        {
-            switch (token)
-            {
-                case JsonToken.StartObject:
-                case JsonToken.StartArray:
-                case JsonToken.StartConstructor:
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         private JsonContainerType GetTypeForCloseToken(JsonToken token)

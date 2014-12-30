@@ -372,10 +372,10 @@ namespace Exceptionless.Json
         }
 
         /// <summary>
-        /// Reads the next JSON token from the stream as a <see cref="T:Byte[]"/>.
+        /// Reads the next JSON token from the stream as a <see cref="Byte"/>[].
         /// </summary>
         /// <returns>
-        /// A <see cref="T:Byte[]"/> or a null reference if the next JSON token is null.
+        /// A <see cref="Byte"/>[] or a null reference if the next JSON token is null.
         /// </returns>
         public override byte[] ReadAsBytes()
         {
@@ -461,7 +461,7 @@ namespace Exceptionless.Json
                 JsonSchemaModelBuilder builder = new JsonSchemaModelBuilder();
                 _model = builder.Build(_schema);
 
-                if (!JsonWriter.IsStartToken(_reader.TokenType))
+                if (!JsonTokenUtils.IsStartToken(_reader.TokenType))
                     Push(new SchemaScope(JTokenType.None, CurrentMemberSchemas));
             }
 
@@ -578,7 +578,7 @@ namespace Exceptionless.Json
                 {
                     if (schemaScope.CurrentItemWriter == null)
                     {
-                        if (JsonWriter.IsEndToken(_reader.TokenType))
+                        if (JsonTokenUtils.IsEndToken(_reader.TokenType))
                             continue;
 
                         schemaScope.CurrentItemWriter = new JTokenWriter();

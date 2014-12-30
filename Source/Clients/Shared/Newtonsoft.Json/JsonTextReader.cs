@@ -26,12 +26,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !(NET20 || NET35 || PORTABLE40 || PORTABLE)
-using System.Numerics;
-#endif
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.IO;
-using System.Xml;
 using System.Globalization;
 using Exceptionless.Json.Utilities;
 
@@ -67,6 +64,7 @@ namespace Exceptionless.Json
         private bool _isEndOfFile;
         private StringBuffer _buffer;
         private StringReference _stringReference;
+        internal PropertyNameTable NameTable;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonReader"/> class with the specified <see cref="TextReader"/>.
@@ -176,7 +174,7 @@ namespace Exceptionless.Json
 
         private void ShiftBufferIfNeeded()
         {
-            // once in the last 10% of the buffer shift the remainling content to the start to avoid
+            // once in the last 10% of the buffer shift the remaining content to the start to avoid
             // unnessesarly increasing the buffer size when reading numbers/strings
             int length = _chars.Length;
             if (length - _charPos <= length * 0.1)
@@ -312,10 +310,10 @@ namespace Exceptionless.Json
         }
 
         /// <summary>
-        /// Reads the next JSON token from the stream as a <see cref="T:Byte[]"/>.
+        /// Reads the next JSON token from the stream as a <see cref="Byte"/>[].
         /// </summary>
         /// <returns>
-        /// A <see cref="T:Byte[]"/> or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
+        /// A <see cref="Byte"/>[] or a null reference if the next JSON token is null. This method will return <c>null</c> at the end of an array.
         /// </returns>
         public override byte[] ReadAsBytes()
         {
@@ -846,7 +844,20 @@ namespace Exceptionless.Json
                 throw JsonReaderException.Create(this, "Invalid property identifier character: {0}.".FormatWith(CultureInfo.InvariantCulture, _chars[_charPos]));
             }
 
-            string propertyName = _stringReference.ToString();
+            string propertyName;
+
+            if (NameTable != null)
+            {
+                propertyName = NameTable.Get(_stringReference.Chars, _stringReference.StartIndex, _stringReference.Length);
+
+                // no match in name table
+                if (propertyName == null)
+                    propertyName = _stringReference.ToString();
+            }
+            else
+            {
+                propertyName = _stringReference.ToString();
+            }
 
             EatWhitespace(false);
 
@@ -1299,8 +1310,8 @@ namespace Exceptionless.Json
 
                         if (number.Length > MaximumJavascriptIntegerCharacterLength)
                             throw JsonReaderException.Create(this, "JSON integer {0} is too large to parse.".FormatWith(CultureInfo.InvariantCulture, _stringReference.ToString()));
-
-                        numberValue = BigInteger.Parse(number, CultureInfo.InvariantCulture);
+                        
+                        numberValue = BigIntegerParse(number, CultureInfo.InvariantCulture);
                         numberType = JsonToken.Integer;
 #else
                         throw JsonReaderException.Create(this, "JSON integer {0} is too large or small for an Int64.".FormatWith(CultureInfo.InvariantCulture, _stringReference.ToString()));
@@ -1337,6 +1348,18 @@ namespace Exceptionless.Json
             // index has already been updated
             SetToken(numberType, numberValue, false);
         }
+
+#if !(NET20 || NET35 || PORTABLE40 || PORTABLE)
+        // By using the BigInteger type in a separate method,
+        // the runtime can execute the ParseNumber even if 
+        // the System.Numerics.BigInteger.Parse method is
+        // missing, which happens in some versions of Mono
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static object BigIntegerParse(string number, CultureInfo culture)
+        {
+            return System.Numerics.BigInteger.Parse(number, culture);
+        }
+#endif
 
         private void ParseComment()
         {

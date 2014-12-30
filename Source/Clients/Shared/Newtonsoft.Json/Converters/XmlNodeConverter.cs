@@ -36,7 +36,6 @@ using Exceptionless.Json.Utilities;
 using Exceptionless.Json.Utilities.LinqBridge;
 #else
 using System.Linq;
-
 #endif
 
 namespace Exceptionless.Json.Converters
@@ -1579,6 +1578,9 @@ namespace Exceptionless.Json.Converters
 
                             break;
                         case JsonToken.EndObject:
+                            finishedElement = true;
+                            break;
+                        case JsonToken.Comment:
                             finishedElement = true;
                             break;
                         default:
