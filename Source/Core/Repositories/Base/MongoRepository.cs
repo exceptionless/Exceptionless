@@ -156,13 +156,16 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeSave(ICollection<T> documents) { }
+        protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) { }
 
         public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
-            BeforeSave(documents);
+            string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
+            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()) : new List<T>();
+
+            BeforeSave(originalDocuments, documents);
 
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
@@ -170,12 +173,14 @@ namespace Exceptionless.Core.Repositories {
             foreach (var document in documents)
                 _collection.Save(document);
 
-            AfterSave(documents, addToCache, expiresIn);
+            AfterSave(originalDocuments, documents, addToCache, expiresIn);
         }
 
-        protected virtual void AfterSave(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            foreach (var document in documents) {
+        protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            foreach (var document in originalDocuments)
                 InvalidateCache(document);
+
+            foreach (var document in documents) {
                 if (addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 

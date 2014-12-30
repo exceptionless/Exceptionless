@@ -137,17 +137,7 @@ namespace Exceptionless.Core.Repositories {
             if (Cache == null)
                 return;
 
-            var originalStack = GetById(entity.Id, true);
-            if (originalStack != null) {
-                if (originalStack.DateFixed != entity.DateFixed)
-                    _eventRepository.UpdateFixedByStack(entity.OrganizationId, entity.Id, entity.DateFixed.HasValue);
-
-                if (originalStack.IsHidden != entity.IsHidden)
-                    _eventRepository.UpdateHiddenByStack(entity.OrganizationId, entity.Id, entity.IsHidden);
-
-                InvalidateCache(GetStackSignatureCacheKey(entity));
-            }
-
+            InvalidateCache(GetStackSignatureCacheKey(entity));
             base.InvalidateCache(entity);
         }
 
@@ -168,6 +158,19 @@ namespace Exceptionless.Core.Repositories {
                 InvalidateCache(GetStackSignatureCacheKey(document));
 
             base.AfterRemove(documents, sendNotification);
+        }
+
+        protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            foreach (var original in originalDocuments) {
+                var updated = documents.First(d => d.Id == original.Id);
+                if (original.DateFixed != updated.DateFixed)
+                    _eventRepository.UpdateFixedByStack(updated.OrganizationId, updated.Id, updated.DateFixed.HasValue);
+
+                if (original.IsHidden != updated.IsHidden)
+                    _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
+            }
+
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
         }
     }
 }

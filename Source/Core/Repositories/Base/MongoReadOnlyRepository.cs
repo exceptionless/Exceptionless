@@ -90,6 +90,9 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected string GetScopedCacheKey(string cacheKey) {
+            if (String.IsNullOrEmpty(cacheKey))
+                return null;
+
             return String.Concat(GetCollectionName(), "-", cacheKey);
         }
 

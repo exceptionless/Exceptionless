@@ -116,19 +116,18 @@ namespace Exceptionless.Core.Repositories {
             base.BeforeAdd(documents);
         }
 
-        protected override void BeforeSave(ICollection<User> documents) {
+        protected override void BeforeSave(ICollection<User> originalDocuments, ICollection<User> documents) {
             foreach (var user in documents.Where(user => !String.IsNullOrEmpty(user.EmailAddress)))
                 user.EmailAddress = user.EmailAddress.ToLowerInvariant();
 
-            base.BeforeSave(documents);
+            base.BeforeSave(originalDocuments, documents);
         }
 
         public override void InvalidateCache(User user) {
             if (Cache == null)
                 return;
 
-            //TODO: We should look into getting the original entity and reset the cache on the original email address as it might have changed.
-            InvalidateCache(user.EmailAddress);
+            InvalidateCache(user.EmailAddress.ToLowerInvariant());
 
             foreach (var organizationId in user.OrganizationIds)
                 InvalidateCache(String.Concat("org:", organizationId));

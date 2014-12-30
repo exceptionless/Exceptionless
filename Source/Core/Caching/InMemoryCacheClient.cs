@@ -100,6 +100,9 @@ namespace Exceptionless.Core.Caching {
         }
 
         public bool Remove(string key) {
+            if (String.IsNullOrEmpty(key))
+                return true;
+
             CacheEntry item;
             return _memory.TryRemove(key, out item);
         }

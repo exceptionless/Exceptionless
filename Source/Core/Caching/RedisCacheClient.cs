@@ -13,11 +13,16 @@ namespace Exceptionless.Core.Caching {
         }
 
         public bool Remove(string key) {
+            if (String.IsNullOrEmpty(key))
+                return true;
+
             return _db.KeyDelete(key);
         }
 
         public void RemoveAll(IEnumerable<string> keys) {
-            _db.KeyDelete(keys.Select(k => (RedisKey)k).ToArray());
+            var redisKeys = keys.Where(k => !String.IsNullOrEmpty(k)).Select(k => (RedisKey)k).ToArray();
+            if (redisKeys.Length > 0)
+                _db.KeyDelete(redisKeys);
         }
 
         public T Get<T>(string key) {
