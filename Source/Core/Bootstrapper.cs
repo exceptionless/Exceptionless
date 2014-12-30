@@ -195,7 +195,7 @@ namespace Exceptionless.Core {
                 .Settings(s => s.Add("analysis",
                     new {
                         analyzer = new {
-                            comma = new {
+                            comma_whitespace = new {
                                 type = "pattern",
                                 pattern = @"[,\s]+"
                             }
@@ -222,7 +222,7 @@ namespace Exceptionless.Core {
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed))
                             .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
                                 .String(f3 => f3.Name(r => r.Path).IndexName("path").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())))
                             .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
@@ -233,7 +233,7 @@ namespace Exceptionless.Core {
                                 .String(f3 => f3.Name(r => r.Message).IndexName("errormessage").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                 .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())))
                             .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.IpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).Analyzer("comma").IncludeInAll())
+                                .String(f3 => f3.Name(r => r.IpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))))
                             .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.Description).IndexName("userdescription").Index(FieldIndexOption.Analyzed).IncludeInAll())
