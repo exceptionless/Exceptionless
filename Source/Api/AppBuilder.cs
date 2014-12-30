@@ -126,10 +126,15 @@ namespace Exceptionless.Api {
                             return project;
                     }
 
-                    var dataHelper = container.GetInstance<DataHelper>();
-                    // create a default org and project
-                    projectId = dataHelper.CreateDefaultOrganizationAndProject(ctx.Request.GetUser());
+                    if (Settings.Current.WebsiteMode == WebsiteMode.Dev) {
+                        var dataHelper = container.GetInstance<DataHelper>();
+                        // create a default org and project
+                        projectId = dataHelper.CreateDefaultOrganizationAndProject(ctx.Request.GetUser());
+                    }
                 }
+
+                if (String.IsNullOrEmpty(projectId))
+                    return null;
 
                 return projectRepository.GetById(projectId, true);
             }));

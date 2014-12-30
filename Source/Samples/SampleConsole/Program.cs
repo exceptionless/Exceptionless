@@ -190,7 +190,17 @@ namespace SampleConsole {
 
             ev.SetUserIdentity(Identities.Random());
 
-            for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
+            ev.AddRequestInfo(new RequestInfo {
+                ClientIpAddress = IpAddresses.Random(),
+                Path = PageNames.Random()
+            });
+
+            ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo {
+                IpAddress = IpAddresses.Random(),
+                MachineName = MachineNames.Random()
+            });
+
+            for (int i = 0; i < RandomHelper.GetRange(1, 3); i++) {
                 string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 10));
                 while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
                     key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
@@ -206,16 +216,24 @@ namespace SampleConsole {
             }
 
             if (ev.Type == Event.KnownTypes.Error) {
-                // limit error variation so that stacking will occur
-                if (_randomErrors == null)
-                    _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
+                if (RandomHelper.GetBool()) {
+                    // limit error variation so that stacking will occur
+                    if (_randomErrors == null)
+                        _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
 
-                ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+                    ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+                } else {
+                    // limit error variation so that stacking will occur
+                    if (_randomSimpleErrors == null)
+                        _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
+
+                    ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
+                }
             }
 
             // use server settings to see if we should include this data
             if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData", true))
-                ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "Conditional Data");
+                ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "ConditionalData");
 
             //ev.AddRecentTraceLogEntries();
 
@@ -254,6 +272,28 @@ namespace SampleConsole {
 
             if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
                 error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
+
+            return error;
+        }
+
+        private static List<SimpleError> _randomSimpleErrors;
+
+        private static SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
+            var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
+            if (generateData) {
+                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
+                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
+                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+
+                    error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                }
+            }
+
+            error.StackTrace = RandomHelper.GetPronouncableString(250);
+
+            if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
+                error.Inner = GenerateSimpleError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
 
             return error;
         }
@@ -298,6 +338,14 @@ namespace SampleConsole {
             "marylou@exceptionless.com"
         };
 
+        public static readonly List<string> IpAddresses = new List<string> {
+            "127.34.36.89",
+            "45.66.89.98",
+            "10.12.18.193",
+            "16.89.17.197",
+            "43.10.99.234"
+        };
+
         public static readonly List<string> LogSources = new List<string> {
             "Some.Class",
             "MyClass",
@@ -310,6 +358,13 @@ namespace SampleConsole {
             "Feature2",
             "Feature3",
             "Feature4"
+        };
+
+        public static readonly List<string> MachineNames = new List<string> {
+            "machine1",
+            "machine2",
+            "machine3",
+            "machine4"
         };
 
         public static readonly List<string> PageNames = new List<string> {

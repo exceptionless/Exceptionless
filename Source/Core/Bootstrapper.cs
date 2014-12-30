@@ -212,14 +212,25 @@ namespace Exceptionless.Core {
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed))
-                            .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Type).Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.MachineName).Index(FieldIndexOption.Analyzed).IncludeInAll())))
-                            .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
+                            .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.NotAnalyzed).Path(new MultiFieldMappingPath()).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
+                                .String(f3 => f3.Name(r => r.Path).IndexName("path").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())))
+                            .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Code).IndexName("errorcode").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
+                                .String(f3 => f3.Name(r => r.Message).IndexName("errormessage").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())))
+                            .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Message).IndexName("errormessage").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())))
+                            .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.IpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))))
+                            .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Description).IndexName("userdescription").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.EmailAddress).IndexName("useremail").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))
+                            .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
+                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
                     )
                 )
             );
