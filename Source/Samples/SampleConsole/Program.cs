@@ -191,12 +191,12 @@ namespace SampleConsole {
             ev.SetUserIdentity(Identities.Random());
 
             ev.AddRequestInfo(new RequestInfo {
-                ClientIpAddress = IpAddresses.Random(),
+                ClientIpAddress = ClientIpAddresses.Random(),
                 Path = PageNames.Random()
             });
 
             ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo {
-                IpAddress = IpAddresses.Random(),
+                IpAddress = MachineIpAddresses.Random() + ", " + MachineIpAddresses.Random(),
                 MachineName = MachineNames.Random()
             });
 
@@ -338,12 +338,20 @@ namespace SampleConsole {
             "marylou@exceptionless.com"
         };
 
-        public static readonly List<string> IpAddresses = new List<string> {
+        public static readonly List<string> MachineIpAddresses = new List<string> {
             "127.34.36.89",
             "45.66.89.98",
             "10.12.18.193",
             "16.89.17.197",
             "43.10.99.234"
+        };
+
+        public static readonly List<string> ClientIpAddresses = new List<string> {
+            "77.23.23.78",
+            "45.66.89.98",
+            "10.12.18.193",
+            "89.23.45.98",
+            "231.23.34.1"
         };
 
         public static readonly List<string> LogSources = new List<string> {
