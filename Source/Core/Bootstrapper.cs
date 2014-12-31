@@ -169,6 +169,7 @@ namespace Exceptionless.Core {
                     .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
+                        .Transform(t => t.Script(@"ctx._source['fixed'] = !!ctx._source['date_fixed']").Language(ScriptLang.Groovy))
                         .IncludeInAll(false)
                         .Properties(p => p
                             .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -181,7 +182,8 @@ namespace Exceptionless.Core {
                             .String(f => f.Name(s => s.Description).IndexName("description").Index(FieldIndexOption.Analyzed).IncludeInAll())
                             .String(f => f.Name(s => s.Tags).IndexName("tag").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.2))
                             .String(f => f.Name(s => s.References).IndexName("references").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .Date(f => f.Name(s => s.DateFixed).IndexName("fixed"))
+                            .Date(f => f.Name(s => s.DateFixed).IndexName("fixedon"))
+                            .Boolean(f => f.Name("fixed"))
                             .Boolean(f => f.Name(s => s.IsHidden).IndexName("hidden"))
                             .Boolean(f => f.Name(s => s.IsRegressed).IndexName("regressed"))
                             .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName("critical"))
