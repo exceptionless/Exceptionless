@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
-        protected static readonly bool _isOrganization = typeof(T) == typeof(Organization);
+        protected static readonly bool _isUser = typeof(T) == typeof(User);
 
         protected MongoRepository(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, cacheClient) {
             _validator = validator;
@@ -127,6 +127,8 @@ namespace Exceptionless.Core.Repositories {
                 fields.Add(CommonFieldNames.ProjectId);
             if (_isOwnedByStack)
                 fields.Add(CommonFieldNames.StackId);
+            if (_isUser)
+                fields.AddRange(new [] { "OrganizationIds", "EmailAddress" });
 
             long recordsAffected = 0;
 
