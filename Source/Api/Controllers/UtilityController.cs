@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Web.Http;
+using Exceptionless.Core.Authorization;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX)]
     public class UtilityController : ExceptionlessApiController {
         [HttpGet]
         [Route("search/validate")]
+        [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult Validate(string query) {
             if (String.IsNullOrWhiteSpace(query))
                 return Ok();
