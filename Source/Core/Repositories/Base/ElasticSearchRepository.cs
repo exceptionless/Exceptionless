@@ -15,6 +15,7 @@ using System.Linq;
 using CodeSmith.Core.Extensions;
 using Elasticsearch.Net;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
@@ -229,11 +230,18 @@ namespace Exceptionless.Core.Repositories {
                 .Scroll("4s")
                 .Size(RepositoryConstants.BATCH_SIZE);
 
+            _elasticClient.EnableTrace();
             var scanResults = _elasticClient.Search<T>(searchDescriptor);
+            _elasticClient.DisableTrace();
+
+            // Check to see if no scroll id was returned. This will occur when the index doesn't exist.
+            if (scanResults.IsValid && String.IsNullOrEmpty(scanResults.ScrollId))
+                return 0;
+
             var results = _elasticClient.Scroll<T>("4s", scanResults.ScrollId);
             while (results.Hits.Any()) {
                 var bulkResult = _elasticClient.Bulk(b => {
-                    var script = update as string;
+                    string script = update as string;
                     if (script != null)
                         results.Hits.ForEach(h => b.Update<T>(u => u.Id(h.Id).Index(h.Index).Script(script)));
                     else
