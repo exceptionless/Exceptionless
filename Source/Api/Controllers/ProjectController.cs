@@ -87,7 +87,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
+        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 

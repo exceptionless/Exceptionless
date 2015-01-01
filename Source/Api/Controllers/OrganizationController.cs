@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
+        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 
@@ -543,7 +543,7 @@ namespace Exceptionless.Api.Controllers {
             return base.CanDelete(value);
         }
 
-        protected override void DeleteModels(ICollection<Organization> organizations) {
+        protected override async Task DeleteModels(ICollection<Organization> organizations) {
             var currentUser = ExceptionlessUser;
 
             foreach (var organization in organizations) {
@@ -583,7 +583,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                base.DeleteModels(new[] { organization });
+                await base.DeleteModels(new[] { organization });
             }
         }
 

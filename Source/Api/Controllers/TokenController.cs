@@ -11,6 +11,7 @@
 
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
@@ -118,7 +119,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("{ids:objectids}")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/{ids:objectids}")]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens/{ids:objectids}")]
-        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
+        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 

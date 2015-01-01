@@ -11,6 +11,7 @@
 
 using System;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
@@ -76,7 +77,7 @@ namespace Exceptionless.App.Controllers.API {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
+        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 

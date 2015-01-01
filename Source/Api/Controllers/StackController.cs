@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using CodeSmith.Core.Extensions;
 using Exceptionless.Api.Utility;
@@ -344,13 +345,13 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override IHttpActionResult Delete([CommaDelimitedArray]string[] ids) {
+        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
 
-        protected override async void DeleteModels(ICollection<Stack> values) {
+        protected override async Task DeleteModels(ICollection<Stack> values) {
             await _eventRepository.RemoveAllByStackIdsAsync(values.Select(s => s.Id).ToArray());
-            base.DeleteModels(values);
+            await base.DeleteModels(values);
         }
 
         [HttpGet]

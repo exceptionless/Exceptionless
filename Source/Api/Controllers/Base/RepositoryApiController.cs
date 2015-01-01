@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
@@ -180,7 +181,7 @@ namespace Exceptionless.Api.Controllers {
 
         #region Delete
 
-        public virtual IHttpActionResult Delete(string[] ids) {
+        public virtual async Task<IHttpActionResult> Delete(string[] ids) {
             var items = GetModels(ids, false);
             if (!items.Any())
                 return NotFound();
@@ -201,7 +202,7 @@ namespace Exceptionless.Api.Controllers {
                 return results.Failure.Count == 1 ? Permission(results.Failure.First()) : BadRequest(results);
 
             try {
-                DeleteModels(items);
+                await DeleteModels(items);
             } catch (Exception ex){
                 Log.Error().Exception(ex).Report().Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
@@ -222,7 +223,7 @@ namespace Exceptionless.Api.Controllers {
             return PermissionResult.Allow;
         }
 
-        protected virtual void DeleteModels(ICollection<TModel> values) {
+        protected virtual async Task DeleteModels(ICollection<TModel> values) {
             _repository.Remove(values);
         }
 
