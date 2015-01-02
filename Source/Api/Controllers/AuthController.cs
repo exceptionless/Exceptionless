@@ -20,7 +20,6 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/auth")]
     public class AuthController : ExceptionlessApiController {
         private readonly IOrganizationRepository _organizationRepository;
-        private readonly ITokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
         private readonly IMailer _mailer;
         private readonly TokenManager _tokenManager;
@@ -29,9 +28,8 @@ namespace Exceptionless.Api.Controllers {
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, ITokenRepository tokenRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager, DataHelper dataHelper) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager, DataHelper dataHelper) {
             _organizationRepository = organizationRepository;
-            _tokenRepository = tokenRepository;
             _userRepository = userRepository;
             _mailer = mailer;
             _tokenManager = tokenManager;
@@ -65,7 +63,7 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
 
             ExceptionlessClient.Default.CreateFeatureUsage("Login").AddObject(user).Submit();
-            return Ok(new { Token = GetToken(user, model.Remember) });
+            return Ok(new { Token = GetToken(user) });
         }
 
         [HttpPost]
@@ -520,8 +518,7 @@ namespace Exceptionless.Api.Controllers {
             user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
         }
 
-        private string GetToken(User user, bool remember = true) {
-            // TODO: use remember me when creating a token.
+        private string GetToken(User user) {
             var token = _tokenManager.Create(user);
             return token.Id;
         }
