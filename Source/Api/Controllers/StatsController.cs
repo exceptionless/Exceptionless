@@ -39,7 +39,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
-            // TODO: Handle UTC Retention Cutoff.
             var timeInfo = GetTimeInfo(time, offset);
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));

@@ -94,7 +94,6 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             var events = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             
-            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(events.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);

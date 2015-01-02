@@ -443,6 +443,7 @@ namespace Exceptionless.Api.Controllers {
 
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
+            
             var timeInfo = GetTimeInfo(time, offset);
             var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             if (terms.Count == 0)
@@ -452,7 +453,6 @@ namespace Exceptionless.Api.Controllers {
             var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
             var stacks = _stackRepository.GetByIds(stackIds).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
-            // TODO: Add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
                 var summaries = GetStackSummaries(stacks, terms);
                 return OkWithResourceLinks(GetStackSummaries(stacks, terms).Take(limit).ToList(), summaries.Count > limit, page);

@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Web.Http;
 using System.Web.Http.Results;
 using Exceptionless.Api.Extensions;
@@ -133,16 +134,23 @@ namespace Exceptionless.Api.Controllers {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizationIds = GetAssociatedOrganizationIds();
-            if (organizationIds.Count > 0) {
-                var organizations = repository.GetByIds(organizationIds, useCache: true);
-                organizationIds = organizations.Where(o => !o.IsSuspended).Select(o => o.Id).ToList();
-            }
-
-            if (organizationIds.Count == 0)
+            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Where(o => !o.IsSuspended).ToList();
+            if (organizations.Count == 0)
                 return "organization:none";
 
-            return String.Concat("organization:", String.Join(" OR organization:", organizationIds));
+            StringBuilder builder = new StringBuilder();
+            for (int index = 0; index < organizations.Count; index++) {
+                if (index > 0)
+                    builder.Append(" OR ");
+                
+                var organization = organizations[index];
+                if (organization.RetentionDays > 0)
+                    builder.AppendFormat("(organization:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", organization.Id, organization.RetentionDays);
+                else
+                    builder.AppendFormat("organization:{0}", organization.Id);
+            }
+
+            return builder.ToString();
         }
 
         protected bool HasOrganizationOrProjectFilter(string filter) {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -334,15 +335,28 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private List<ViewProject> PopulateProjectStats(List<ViewProject> projects) {
-            // TODO: Take into account retention limits.
-            if (projects.Count > 0) {
-                string projectFilter = String.Concat("project:", String.Join(" OR project:", projects.Select(p => p.Id)));
-                var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "project_id", projectFilter);
-                foreach (var project in projects) {
-                    var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
-                    project.EventCount = projectStats != null ? projectStats.Total : 0;
-                    project.StackCount = projectStats != null ? projectStats.Unique : 0;
-                }
+            if (projects.Count <= 0)
+                return projects;
+
+            var organizations = _organizationRepository.GetByIds(projects.Select(p => p.Id).ToArray(), useCache: true);
+            StringBuilder builder = new StringBuilder();
+            for (int index = 0; index < projects.Count; index++) {
+                if (index > 0)
+                    builder.Append(" OR ");
+
+                var project = projects[index];
+                var organization = organizations.FirstOrDefault(o => o.Id == project.Id);
+                if (organization != null && organization.RetentionDays > 0)
+                    builder.AppendFormat("(project:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", project.Id, organization.RetentionDays);
+                else
+                    builder.AppendFormat("project:{0}", project.Id);
+            }
+
+            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "project_id", builder.ToString());
+            foreach (var project in projects) {
+                var projectStats = result.Terms.FirstOrDefault(t => t.Term == project.Id);
+                project.EventCount = projectStats != null ? projectStats.Total : 0;
+                project.StackCount = projectStats != null ? projectStats.Unique : 0;
             }
 
             return projects;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
@@ -605,16 +606,27 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private List<ViewOrganization> PopulateOrganizationStats(List<ViewOrganization> organizations) {
-            // TODO: Take into account retention limits.
-            if (organizations.Count > 0) {
-                string organizationFilter = String.Concat("organization:", String.Join(" OR organization:", organizations.Select(p => p.Id)));
-                var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "organization_id", organizationFilter);
-                foreach (var organization in organizations) {
-                    var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
-                    organization.EventCount = organizationStats != null ? organizationStats.Total : 0;
-                    organization.StackCount = organizationStats != null ? organizationStats.Unique : 0;
-                    organization.ProjectCount = _projectRepository.GetByOrganizationId(organization.Id, useCache: true).Count;
-                }
+            if (organizations.Count <= 0)
+                return organizations;
+
+            StringBuilder builder = new StringBuilder();
+            for (int index = 0; index < organizations.Count; index++) {
+                if (index > 0)
+                    builder.Append(" OR ");
+
+                var organization = organizations[index];
+                if (organization.RetentionDays > 0)
+                    builder.AppendFormat("(organization:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", organization.Id, organization.RetentionDays);
+                else
+                    builder.AppendFormat("organization:{0}", organization.Id);
+            }
+
+            var result = _stats.GetTermsStats(DateTime.MinValue, DateTime.MaxValue, "organization_id", builder.ToString());
+            foreach (var organization in organizations) {
+                var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
+                organization.EventCount = organizationStats != null ? organizationStats.Total : 0;
+                organization.StackCount = organizationStats != null ? organizationStats.Unique : 0;
+                organization.ProjectCount = _projectRepository.GetByOrganizationId(organization.Id, useCache: true).Count;
             }
 
             return organizations;
