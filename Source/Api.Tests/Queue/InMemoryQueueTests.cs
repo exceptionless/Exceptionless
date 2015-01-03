@@ -126,12 +126,12 @@ namespace Exceptionless.Api.Tests.Queue {
                     Data = "Hello"
                 });
 
-                var success = await TaskHelper2.DelayUntil(() => queue.WorkerErrorCount > 0, TimeSpan.FromSeconds(5));
+                var success = await TaskHelper.DelayUntil(() => queue.WorkerErrorCount > 0, TimeSpan.FromSeconds(5));
                 Assert.True(success);
                 Assert.Equal(0, queue.CompletedCount);
                 Assert.Equal(1, queue.WorkerErrorCount);
 
-                success = await TaskHelper2.DelayUntil(() => queue.GetQueueCount() > 0, TimeSpan.FromSeconds(5));
+                success = await TaskHelper.DelayUntil(() => queue.GetQueueCount() > 0, TimeSpan.FromSeconds(5));
                 Assert.True(success);
                 Assert.Equal(1, queue.GetQueueCount());
             }

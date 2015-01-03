@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Queues {
                 _workItemTimeout = workItemTimeout.Value;
 
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-            TaskHelper2.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+            TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
         }
 
         public long GetQueueCount() { return _queue.Count; }
