@@ -161,6 +161,9 @@
     <Compile Include="Storage\FolderFileStorageTests.cs" />
     <Compile Include="Storage\InMemoryFileStorageTests.cs" />
     <Compile Include="Utility\Approvals.cs" />
+    <Compile Include="Utility\CountDownLatch.cs" />
+    <Compile Include="Utility\PasswordGenerator.cs" />
+    <Compile Include="Utility\RandomHelper.cs" />
     <Compile Include="Utility\StackData.cs" />
     <Compile Include="Utility\EventData.cs" />
     <Compile Include="Utility\IoC.cs" />
@@ -183,10 +186,6 @@
     <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
       <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
       <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
-      <Name>CodeSmith.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>

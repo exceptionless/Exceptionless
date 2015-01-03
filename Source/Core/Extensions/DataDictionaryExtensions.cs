@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Models;
 using Newtonsoft.Json;
 

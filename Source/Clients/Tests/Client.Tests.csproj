@@ -119,8 +119,11 @@
     <Compile Include="Storage\IsolatedStorageFileStorageTests.cs" />
     <Compile Include="Storage\PersistedDictionaryTests.cs" />
     <Compile Include="Submission\DefaultSubmissionClientTests.cs" />
+    <Compile Include="Utility\CountDownLatch.cs" />
     <Compile Include="Utility\DateTimeRangeTests.cs" />
     <Compile Include="Utility\InMemorySubmissionClient.cs" />
+    <Compile Include="Utility\PasswordGenerator.cs" />
+    <Compile Include="Utility\RandomHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
@@ -130,10 +133,6 @@
     <ProjectReference Include="..\..\Api\Exceptionless.Api.csproj">
       <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
       <Name>Exceptionless.Api</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>
-      <Name>CodeSmith.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>

@@ -1,5 +1,5 @@
 ﻿using System;
-using CodeSmith.Core.CommandLine;
+using Exceptionless.EventMigration.CommandLine;
 
 namespace Exceptionless.EventMigration {
     public class ConsoleArguments {

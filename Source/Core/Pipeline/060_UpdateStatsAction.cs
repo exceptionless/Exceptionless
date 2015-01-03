@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Concurrent;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 

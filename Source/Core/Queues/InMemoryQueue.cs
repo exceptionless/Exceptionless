@@ -5,7 +5,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Threading.Tasks;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Queues {
@@ -39,7 +42,7 @@ namespace Exceptionless.Core.Queues {
                 _workItemTimeout = workItemTimeout.Value;
 
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-            TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+            TaskHelper2.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
         }
 
         public long GetQueueCount() { return _queue.Count; }

@@ -11,7 +11,7 @@
 
 using System;
 using System.Linq;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;

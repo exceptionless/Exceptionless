@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Plugins.EventUpgrader {

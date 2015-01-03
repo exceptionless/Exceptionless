@@ -12,8 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 

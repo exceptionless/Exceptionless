@@ -10,9 +10,8 @@
 #endregion
 
 using System;
-using System.Diagnostics;
-using CodeSmith.Core.Helpers;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Helpers;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Lock {

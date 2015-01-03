@@ -75,10 +75,6 @@
       <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
       <Name>Exceptionless.Api</Name>
     </ProjectReference>
-    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
-      <Name>CodeSmith.Core</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {

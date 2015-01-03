@@ -14,8 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Reflection;
+using Exceptionless.Core.Reflection;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Serializer;
@@ -168,6 +167,29 @@ namespace Exceptionless.Core.Extensions {
             target.Remove(name);
             return value;
         }
+        public static bool IsJson(this string value) {
+            return value.GetJsonType() != JsonType.None;
+        }
+
+        public static JsonType GetJsonType(this string value) {
+            if (String.IsNullOrEmpty(value))
+                return JsonType.None;
+
+            for (int i = 0; i < value.Length; i++) {
+                if (Char.IsWhiteSpace(value[i]))
+                    continue;
+
+                if (value[i] == '{')
+                    return JsonType.Object;
+
+                if (value[i] == '[')
+                    return JsonType.Array;
+
+                break;
+            }
+
+            return JsonType.None;
+        }
 
         public static string ToJson<T>(this T data, Formatting formatting = Formatting.None, JsonSerializerSettings settings = null) {
             JsonSerializer serializer = settings == null ? JsonSerializer.CreateDefault() : JsonSerializer.CreateDefault(settings);
@@ -317,5 +339,11 @@ namespace Exceptionless.Core.Extensions {
             settings.Converters.Add(new DataObjectConverter<UserDescription>());
             settings.Converters.Add(new DataObjectConverter<UserInfo>());
         }
+    }
+
+    public enum JsonType : byte {
+        None,
+        Object,
+        Array
     }
 }

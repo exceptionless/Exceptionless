@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models.Data;
 using Newtonsoft.Json.Linq;

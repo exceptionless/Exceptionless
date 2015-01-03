@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Helpers;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Miscelaneous {

@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Newtonsoft.Json.Linq;
 

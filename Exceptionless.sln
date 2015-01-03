@@ -5,8 +5,6 @@ VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Models", "Source\Models\Exceptionless.Models.csproj", "{A14E78DE-A085-4647-BA2D-E6237D7D8057}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSmith.Core", "Source\CodeSmith.Core\CodeSmith.Core.csproj", "{C2E6E845-B50D-45B8-B188-E2F63B3E468F}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Clients", "Clients", "{AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{295DE1D5-5F38-43C5-BAC0-6F48F6A52A0E}"
@@ -80,8 +78,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{9AA4BD09-5
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\EventMigration\EventMigration.csproj", "{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSmith.Core.Tests", "Source\CodeSmith.Core.Tests\CodeSmith.Core.Tests.csproj", "{4C8CB520-27E9-4511-B2C2-0AC560579A4A}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,16 +98,6 @@ Global
 		{A14E78DE-A085-4647-BA2D-E6237D7D8057}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A14E78DE-A085-4647-BA2D-E6237D7D8057}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{A14E78DE-A085-4647-BA2D-E6237D7D8057}.Release|x86.ActiveCfg = Release|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{C2E6E845-B50D-45B8-B188-E2F63B3E468F}.Release|x86.ActiveCfg = Release|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E5B39D5-7ACD-486B-9F90-59116B67952D}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
@@ -372,16 +358,6 @@ Global
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}.Release|x86.ActiveCfg = Release|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -409,6 +385,5 @@ Global
 		{34FE8E6E-247B-46DD-967E-46E45D1CAE6D} = {DAA02D3B-8404-4938-AB04-84AC31C1AD45}
 		{1ADFB25D-B702-4969-8818-F393BB5C2F05} = {9AA4BD09-51C8-4467-A81A-8B1BFCD561F1}
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
-		{4C8CB520-27E9-4511-B2C2-0AC560579A4A} = {295DE1D5-5F38-43C5-BAC0-6F48F6A52A0E}
 	EndGlobalSection
 EndGlobal

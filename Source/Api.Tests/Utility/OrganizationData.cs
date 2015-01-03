@@ -11,11 +11,10 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Models.Billing;
 using Exceptionless.Models;
 using MongoDB.Bson;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Tests.Utility {
     internal static class OrganizationData {

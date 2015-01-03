@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models {
     public class StackFrame : Method {

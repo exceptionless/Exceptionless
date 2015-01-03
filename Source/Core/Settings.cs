@@ -14,8 +14,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core {
     public class Settings {

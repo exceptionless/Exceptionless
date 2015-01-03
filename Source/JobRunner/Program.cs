@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using CodeSmith.Core.CommandLine;
+using CommandLine;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
@@ -10,20 +10,11 @@ using SimpleInjector;
 namespace Exceptionless.JobRunner {
     internal class Program {
         private static int Main(string[] args) {
-            OutputHeader();
-            
             try {
-                var ca = new ConsoleArguments();
-                if (Parser.ParseHelp(args)) {
-                    OutputUsageHelp();
+                var ca = new Options();
+                if (!Parser.Default.ParseArguments(args, ca)) {
                     PauseIfDebug();
                     return 0;
-                }
-
-                if (!Parser.ParseArguments(args, ca, Console.Error.WriteLine)) {
-                    OutputUsageHelp();
-                    PauseIfDebug();
-                    return 1;
                 }
 
                 Console.WriteLine();
@@ -75,21 +66,6 @@ namespace Exceptionless.JobRunner {
         private static void PauseIfDebug() {
             if (Debugger.IsAttached)
                 Console.ReadKey();
-        }
-
-        private static void OutputHeader() {
-            Console.WriteLine("Exceptionless Job Runner v{0}", ThisAssembly.AssemblyInformationalVersion);
-            Console.WriteLine("Copyright (c) 2012-{0} Exceptionless.  All rights reserved.", DateTime.Now.Year);
-            Console.WriteLine();
-        }
-
-        private static void OutputUsageHelp() {
-            Console.WriteLine("     - Exceptionless Job Runner -");
-            Console.WriteLine();
-            Console.WriteLine(Parser.ArgumentsUsage(typeof(ConsoleArguments)));
-            Console.WriteLine("Usage samples:");
-            Console.WriteLine();
-            Console.WriteLine("  job /t:\"Exceptionless.Core.Jobs.ProcessEventsJob, Exceptionless.Core\"");
         }
     }
 }

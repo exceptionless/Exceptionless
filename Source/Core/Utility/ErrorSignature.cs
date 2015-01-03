@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;

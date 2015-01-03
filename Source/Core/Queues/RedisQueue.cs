@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
+using Exceptionless.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog.Fluent;
 using StackExchange.Redis;
@@ -64,7 +66,7 @@ namespace Exceptionless.Core.Queues {
 
             if (runMaintenanceTasks) {
                 _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-                TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+                TaskHelper2.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
             }
 
             Log.Trace().Message("Queue {0} created. Retries: {1} Retry Delay: {2}", QueueId, _retries, _retryDelay.ToString()).Write();

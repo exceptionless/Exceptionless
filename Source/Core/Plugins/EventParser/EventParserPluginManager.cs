@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Models;
 using NLog.Fluent;
 

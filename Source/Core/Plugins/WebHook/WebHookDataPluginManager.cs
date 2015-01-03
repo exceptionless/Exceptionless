@@ -1,5 +1,5 @@
 ﻿using System;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.WebHook {

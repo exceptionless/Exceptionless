@@ -1,5 +1,5 @@
 ﻿using System;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Core.Plugins.WebHook {

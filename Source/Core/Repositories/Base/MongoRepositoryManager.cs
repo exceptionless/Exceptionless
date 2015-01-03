@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Dependency;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Helpers;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {

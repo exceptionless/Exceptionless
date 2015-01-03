@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using CodeSmith.Core.Threading;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Messaging;
 using StackExchange.Redis;

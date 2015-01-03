@@ -11,9 +11,9 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using MongoDB.Bson;
 

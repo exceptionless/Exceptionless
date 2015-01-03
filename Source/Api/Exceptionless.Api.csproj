@@ -162,6 +162,7 @@
     </Compile>
     <Compile Include="Controllers\AuthController.cs" />
     <Compile Include="Controllers\StatusController.cs" />
+    <Compile Include="Extensions\UriExtensions.cs" />
     <Compile Include="Hubs\ConnectionMap.cs" />
     <Compile Include="Hubs\PrincipalUserIdProvider.cs" />
     <Compile Include="Models\Auth\ChangePasswordModel.cs" />
@@ -249,10 +250,6 @@
     <ProjectReference Include="..\Clients\WebApi\Exceptionless.WebApi.csproj">
       <Project>{d6e6ee87-5869-4a62-8f67-7a685205bcad}</Project>
       <Name>Exceptionless.WebApi</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{C2E6E845-B50D-45B8-B188-E2F63B3E468F}</Project>
-      <Name>CodeSmith.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>

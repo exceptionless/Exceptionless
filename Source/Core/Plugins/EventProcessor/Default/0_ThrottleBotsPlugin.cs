@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;

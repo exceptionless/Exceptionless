@@ -12,7 +12,7 @@
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.EventMigration.Models.Collections {
     public class ModuleCollection : Collection<Module> {

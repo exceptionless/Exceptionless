@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Tests.Utility {
     public static class TestConstants {

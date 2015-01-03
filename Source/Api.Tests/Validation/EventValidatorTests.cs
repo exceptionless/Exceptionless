@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using CodeSmith.Core.Extensions;
 using Exceptionless.Core.Validation;
 using Exceptionless.Models;
 using Xunit;

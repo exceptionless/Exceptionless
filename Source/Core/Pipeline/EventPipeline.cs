@@ -12,14 +12,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Dependency;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Exceptionless.Core.Helpers;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {

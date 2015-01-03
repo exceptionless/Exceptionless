@@ -11,7 +11,7 @@
 
 using System;
 using System.Configuration;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;

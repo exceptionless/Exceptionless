@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading;
-using CodeSmith.Core.Threading;
+using Client.Tests.Utility;
 using Exceptionless.Serializer;
 using Exceptionless.Storage;
 using Xunit;

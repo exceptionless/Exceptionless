@@ -3,10 +3,36 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using CodeSmith.Core.Extensions;
+using System.Linq;
 
 namespace Exceptionless.Core.Extensions {
     public static class StringExtensions {
+        public static string ToDelimitedString<T>(this IEnumerable<T> values, string delimiter) {
+            var sb = new StringBuilder();
+            foreach (var i in values) {
+                if (sb.Length > 0)
+                    sb.Append(delimiter);
+                sb.Append(i.ToString());
+            }
+
+            return sb.ToString();
+        }
+
+        public static string ToDelimitedString(this IEnumerable<string> values) {
+            return ToDelimitedString(values, ",");
+        }
+
+        public static string ToDelimitedString(this IEnumerable<string> values, string delimiter) {
+            var sb = new StringBuilder();
+            foreach (var i in values) {
+                if (sb.Length > 0)
+                    sb.Append(delimiter);
+                sb.Append(i);
+            }
+
+            return sb.ToString();
+        }
+
         public static string ToLowerUnderscoredWords(this string value) {
             var builder = new StringBuilder(value.Length + 10);
             for (int index = 0; index < value.Length; index++) {
@@ -24,6 +50,117 @@ namespace Exceptionless.Core.Extensions {
             return builder.ToString();
         }
 
+        public static bool AnyWildcardMatches(this string value, IEnumerable<string> patternsToMatch, bool ignoreCase = false) {
+            if (ignoreCase)
+                value = value.ToLower();
+
+            return patternsToMatch.Any(pattern => CheckForMatch(pattern, value, ignoreCase));
+        }
+
+        private static bool CheckForMatch(string pattern, string value, bool ignoreCase = true) {
+            bool startsWithWildcard = pattern.StartsWith("*");
+            if (startsWithWildcard)
+                pattern = pattern.Substring(1);
+
+            bool endsWithWildcard = pattern.EndsWith("*");
+            if (endsWithWildcard)
+                pattern = pattern.Substring(0, pattern.Length - 1);
+
+            if (ignoreCase)
+                pattern = pattern.ToLower();
+
+            if (startsWithWildcard && endsWithWildcard)
+                return value.Contains(pattern);
+
+            if (startsWithWildcard)
+                return value.EndsWith(pattern);
+
+            if (endsWithWildcard)
+                return value.StartsWith(pattern);
+
+            return value.Equals(pattern);
+        }
+
+        public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> stringSelector) {
+            return values.ToConcatenatedString(stringSelector, String.Empty);
+        }
+
+        public static string ToConcatenatedString<T>(this IEnumerable<T> values, Func<T, string> action, string separator) {
+            var sb = new StringBuilder();
+            foreach (var item in values) {
+                if (sb.Length > 0)
+                    sb.Append(separator);
+
+                sb.Append(action(item));
+            }
+
+            return sb.ToString();
+        }
+
+        private static readonly Regex _whitespace = new Regex(@"\s");
+        public static string RemoveWhiteSpace(this string s) {
+            return _whitespace.Replace(s, String.Empty);
+        }
+
+        public static string ReplaceFirst(this string s, string find, string replace) {
+            var i = s.IndexOf(find);
+            if (i >= 0) {
+                var pre = s.Substring(0, i);
+                var post = s.Substring(i + find.Length);
+                return String.Concat(pre, replace, post);
+            }
+
+            return s;
+        }
+
+        public static IEnumerable<string> SplitLines(this string text) {
+            return text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).Where(l => !String.IsNullOrWhiteSpace(l)).Select(l => l.Trim());
+        }
+
+        public static string StripInvisible(this string s) {
+            return s
+                .Replace("\r\n", " ")
+                .Replace('\n', ' ')
+                .Replace('\t', ' ');
+        }
+
+        public static string NormalizeLineEndings(this string text, string lineEnding = null) {
+            if (String.IsNullOrEmpty(lineEnding))
+                lineEnding = Environment.NewLine;
+
+            text = text.Replace("\r\n", "\n");
+            if (lineEnding != "\n")
+                text = text.Replace("\r\n", lineEnding);
+
+            return text;
+        }
+
+        public static string Truncate(this string text, int keep) {
+            if (String.IsNullOrEmpty(text))
+                return String.Empty;
+
+            string buffer = NormalizeLineEndings(text);
+            if (buffer.Length <= keep)
+                return buffer;
+
+            return String.Concat(buffer.Substring(0, keep - 3), "...");
+        }
+
+        public static string Truncate(this string text, int length, string ellipsis, bool keepFullWordAtEnd) {
+            if (String.IsNullOrEmpty(text))
+                return String.Empty;
+
+            if (text.Length < length)
+                return text;
+
+            text = text.Substring(0, length);
+
+            if (keepFullWordAtEnd && text.LastIndexOf(' ') > 0)
+                text = text.Substring(0, text.LastIndexOf(' '));
+
+            return String.Format("{0}{1}", text, ellipsis);
+        }
+
         public static string ToLowerFiltered(this string value, char[] charsToRemove) {
             var builder = new StringBuilder(value.Length);
 
@@ -39,6 +176,40 @@ namespace Exceptionless.Core.Extensions {
             }
 
             return builder.ToString();
+        }
+
+        public static string[] SplitAndTrim(this string s, params string[] separator) {
+            if (s.IsNullOrEmpty())
+                return new string[0];
+
+            var result = ((separator == null) || (separator.Length == 0))
+                ? s.Split((char[])null, StringSplitOptions.RemoveEmptyEntries)
+                : s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < result.Length; i++)
+                result[i] = result[i].Trim();
+
+            return result;
+        }
+
+        public static string[] SplitAndTrim(this string s, params char[] separator) {
+            if (s.IsNullOrEmpty())
+                return new string[0];
+
+            var result = s.Split(separator, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < result.Length; i++)
+                result[i] = result[i].Trim();
+
+            return result;
+
+        }
+
+        public static bool IsNullOrEmpty(this string item) {
+            return String.IsNullOrEmpty(item);
+        }
+
+        public static bool IsNullOrWhiteSpace(this string item) {
+            return String.IsNullOrEmpty(item) || item.All(Char.IsWhiteSpace);
         }
 
         public static string HexEscape(this string value, params char[] anyCharOf) {

@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using SimpleInjector;
 
 namespace Exceptionless.Core.Utility {

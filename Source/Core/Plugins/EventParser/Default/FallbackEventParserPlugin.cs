@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.EventParser {

@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Models;

@@ -11,7 +11,7 @@
 
 using System;
 using System.Threading.Tasks;
-using CodeSmith.Core.Component;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventProcessor;

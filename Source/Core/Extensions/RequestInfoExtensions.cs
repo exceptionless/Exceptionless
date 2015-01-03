@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Extensions {
             if (dictionary == null || dictionary.Count == 0)
                 return dictionary;
 
-            foreach (var key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || CodeSmith.Core.Extensions.StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
+            foreach (var key in dictionary.Keys.Where(k => String.IsNullOrEmpty(k) || StringExtensions.AnyWildcardMatches(k, exclusions, true)).ToList())
                 dictionary.Remove(key);
 
             foreach (var key in dictionary.Where(kvp => kvp.Value != null && kvp.Value.Length > maxLength).Select(kvp => kvp.Key).ToList())

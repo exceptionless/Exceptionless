@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CodeSmith.Core.Extensions;
 using Elasticsearch.Net;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;

@@ -1,5 +1,5 @@
 using System;
-using CodeSmith.Core.Events;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Repositories {
     public class MultiOptions : OneOptions {

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Linq;
-using CodeSmith.Core.Dependency;
+using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;

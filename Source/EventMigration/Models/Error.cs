@@ -11,7 +11,7 @@
 
 using System;
 using System.Diagnostics;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using ModuleCollection = Exceptionless.EventMigration.Models.Collections.ModuleCollection;
 

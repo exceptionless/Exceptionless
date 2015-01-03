@@ -16,14 +16,13 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
 using Exceptionless;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
+using RandomR.Main;
 
 namespace SampleConsole {
     internal class Program {
@@ -51,7 +50,7 @@ namespace SampleConsole {
             if (false)
                 SampleApiUsages();
 
-            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomHelper.GetPronouncableString(5)] = RandomHelper.GetPronouncableString(10));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomGenR.Instance.Strings.GetRandomString(5)] = RandomGenR.Instance.Strings.GetRandomString(10));
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             WriteOptionsMenu();
@@ -133,7 +132,10 @@ namespace SampleConsole {
         }
 
         private static void ClearNonOptionsLines(int delay = 1000) {
-            Task.Factory.StartNewDelayed(delay, () => ClearConsoleLines(OPTIONS_MENU_LINE_COUNT));
+            Task.Run(() => {
+                Task.Delay(delay);
+                ClearConsoleLines(OPTIONS_MENU_LINE_COUNT);
+            });
         }
 
         private static void ClearConsoleLines(int startLine = 0, int endLine = -1) {
@@ -173,61 +175,62 @@ namespace SampleConsole {
             }, token);
         }
 
+        private readonly Random _rnd = new Random();
         private static void SendEvent(bool writeToConsole = true) {
             var ev = new Event();
             if (_dateSpans[_dateSpanIndex] != TimeSpan.Zero)
-                ev.Date = RandomHelper.GetDateTime(DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]), DateTime.Now);
+                ev.Date = RandomGenR.Instance.Date.GetRandomDateTime(DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]), DateTime.Now);
 
-            ev.Type = EventTypes.Random();
+            ev.Type = RandomGenR.Instance.Collections.GetRandomElement(EventTypes);
             if (ev.Type == Event.KnownTypes.FeatureUsage)
-                ev.Source = FeatureNames.Random();
+                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(FeatureNames);
             else if (ev.Type == Event.KnownTypes.NotFound)
-                ev.Source = PageNames.Random();
+                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(PageNames);
             else if (ev.Type == Event.KnownTypes.Log) {
-                ev.Source = LogSources.Random();
-                ev.Message = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(LogSources);
+                ev.Message = RandomGenR.Instance.Strings.GetRandomString(5, 15);
             }
 
-            ev.SetUserIdentity(Identities.Random());
+            ev.SetUserIdentity(RandomGenR.Instance.Collections.GetRandomElement(Identities));
 
             ev.AddRequestInfo(new RequestInfo {
-                ClientIpAddress = ClientIpAddresses.Random(),
-                Path = PageNames.Random()
+                ClientIpAddress = RandomGenR.Instance.Collections.GetRandomElement(ClientIpAddresses),
+                Path = RandomGenR.Instance.Collections.GetRandomElement(PageNames)
             });
 
             ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo {
-                IpAddress = MachineIpAddresses.Random() + ", " + MachineIpAddresses.Random(),
-                MachineName = MachineNames.Random()
+                IpAddress = RandomGenR.Instance.Collections.GetRandomElement(MachineIpAddresses) + ", " + RandomGenR.Instance.Collections.GetRandomElement(MachineIpAddresses),
+                MachineName = RandomGenR.Instance.Collections.GetRandomElement(MachineNames)
             });
 
-            for (int i = 0; i < RandomHelper.GetRange(1, 3); i++) {
-                string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 10));
+            for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 3); i++) {
+                string key = RandomGenR.Instance.Strings.GetRandomString(5, 10);
                 while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                    key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
 
-                ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                ev.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
             }
 
-            int tagCount = RandomHelper.GetRange(1, 3);
+            int tagCount = RandomGenR.Instance.Number.GetRandomInt(1, 3);
             for (int i = 0; i < tagCount; i++) {
-                string tag = EventTags.Random();
+                string tag = RandomGenR.Instance.Collections.GetRandomElement(EventTags);
                 if (!ev.Tags.Contains(tag))
                     ev.Tags.Add(tag);
             }
 
             if (ev.Type == Event.KnownTypes.Error) {
-                if (RandomHelper.GetBool()) {
+                if (RandomGenR.Instance.Strings.GetChance(50)) {
                     // limit error variation so that stacking will occur
                     if (_randomErrors == null)
                         _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
 
-                    ev.Data[Event.KnownDataKeys.Error] = _randomErrors.Random();
+                    ev.Data[Event.KnownDataKeys.Error] = RandomGenR.Instance.Collections.GetRandomElement(_randomErrors);
                 } else {
                     // limit error variation so that stacking will occur
                     if (_randomSimpleErrors == null)
                         _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
 
-                    ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
+                    ev.Data[Event.KnownDataKeys.SimpleError] = RandomGenR.Instance.Collections.GetRandomElement(_randomSimpleErrors);
                 }
             }
 
@@ -251,26 +254,26 @@ namespace SampleConsole {
         private static List<Error> _randomErrors;
 
         private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new Error { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
-            if (RandomHelper.GetBool())
-                error.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
+            var error = new Error { Message = @"Generated exception message.", Type = RandomGenR.Instance.Collections.GetRandomElement(ExceptionTypes) };
+            if (RandomGenR.Instance.Strings.GetChance(50))
+                error.Code = RandomGenR.Instance.Number.GetRandomInt(-234523453, 98690899).ToString();
 
             if (generateData) {
-                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
-                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 5); i++) {
+                    string key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
                     while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                        key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
 
-                    error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    error.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
                 }
             }
 
             var stack = new StackFrameCollection();
-            for (int i = 0; i < RandomHelper.GetRange(1, 10); i++)
+            for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 10); i++)
                 stack.Add(GenerateStackFrame());
             error.StackTrace = stack;
 
-            if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
+            if (currentNestingLevel < maxErrorNestingLevel && RandomGenR.Instance.Strings.GetChance(50))
                 error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
 
             return error;
@@ -279,20 +282,20 @@ namespace SampleConsole {
         private static List<SimpleError> _randomSimpleErrors;
 
         private static SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
+            var error = new SimpleError { Message = @"Generated exception message.", Type = RandomGenR.Instance.Collections.GetRandomElement(ExceptionTypes) };
             if (generateData) {
-                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
-                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 5); i++) {
+                    string key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
                     while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                        key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
 
-                    error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    error.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
                 }
             }
 
-            error.StackTrace = RandomHelper.GetPronouncableString(250);
+            error.StackTrace = RandomGenR.Instance.Strings.GetRandomString(250);
 
-            if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
+            if (currentNestingLevel < maxErrorNestingLevel && RandomGenR.Instance.Strings.GetChance(50))
                 error.Inner = GenerateSimpleError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
 
             return error;
@@ -300,9 +303,9 @@ namespace SampleConsole {
 
         private static Exceptionless.Models.Data.StackFrame GenerateStackFrame() {
             return new Exceptionless.Models.Data.StackFrame {
-                DeclaringNamespace = Namespaces.Random(),
-                DeclaringType = TypeNames.Random(),
-                Name = MethodNames.Random(),
+                DeclaringNamespace = RandomGenR.Instance.Collections.GetRandomElement(Namespaces),
+                DeclaringType = RandomGenR.Instance.Collections.GetRandomElement(TypeNames),
+                Name = RandomGenR.Instance.Collections.GetRandomElement(MethodNames),
                 Parameters = new ParameterCollection {
                     new Parameter {
                         Type = "String",

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Dynamic;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;

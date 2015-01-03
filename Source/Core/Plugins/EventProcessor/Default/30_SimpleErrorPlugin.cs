@@ -1,6 +1,6 @@
 ﻿using System;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {

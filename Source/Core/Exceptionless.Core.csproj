@@ -188,10 +188,23 @@
     <Compile Include="AppStats\IAppStatsClient.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Caching\RedisCacheClient.cs" />
+    <Compile Include="Dependency\DefaultDependencyResolver.cs" />
+    <Compile Include="Dependency\DependencyResolverExtensions.cs" />
+    <Compile Include="Dependency\IDependencyResolver.cs" />
+    <Compile Include="Extensions\ConcurrentQueueExtensions.cs" />
+    <Compile Include="Extensions\DictionaryExtensions.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />
+    <Compile Include="Extensions\EnumerableExtensions.cs" />
+    <Compile Include="Extensions\EnumHelper.cs" />
+    <Compile Include="Extensions\HashExtensions.cs" />
     <Compile Include="Extensions\HttpClientExtensions.cs" />
+    <Compile Include="Extensions\ILGeneratorExtensions.cs" />
+    <Compile Include="Extensions\NameValueCollectionExtensions.cs" />
     <Compile Include="Extensions\QueueExtensions.cs" />
     <Compile Include="Extensions\StorageExtensions.cs" />
+    <Compile Include="Extensions\TaskCompletionSourceExtensions.cs" />
+    <Compile Include="Extensions\TaskFactoryExtensions.cs" />
+    <Compile Include="Extensions\TypeExtensions.cs" />
     <Compile Include="Jobs\Base\JobResult.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
@@ -203,6 +216,10 @@
     <Compile Include="Messaging\Models\UserMembershipChanged.cs" />
     <Compile Include="Messaging\RedisMessageBus.cs" />
     <Compile Include="Migrations\v1.0.34.cs" />
+    <Compile Include="Pipeline\Base\PipelineActionBase.cs" />
+    <Compile Include="Pipeline\Base\PipelineBase.cs" />
+    <Compile Include="Pipeline\Base\PipelineContextBase.cs" />
+    <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
     <Compile Include="Filter\QueryValidationVisitor.cs" />
@@ -308,8 +325,20 @@
     <Compile Include="Repositories\Base\PagingWitSortByOptions.cs" />
     <Compile Include="Repositories\EventRepository.cs" />
     <Compile Include="Serialization\DataObjectConverter.cs" />
+    <Compile Include="Utility\GenericEventArgs.cs" />
+    <Compile Include="Utility\LambdaComparer.cs" />
     <Compile Include="Utility\PathHelper.cs" />
+    <Compile Include="Utility\Reflection\DelegateFactory.cs" />
+    <Compile Include="Utility\Reflection\FieldAccessor.cs" />
+    <Compile Include="Utility\Reflection\IMemberAccessor.cs" />
+    <Compile Include="Utility\Reflection\LateBinder.cs" />
+    <Compile Include="Utility\Reflection\MemberAccessor.cs" />
+    <Compile Include="Utility\Reflection\PropertyAccessor.cs" />
+    <Compile Include="Utility\Reflection\TypeAccessor.cs" />
+    <Compile Include="Utility\Run.cs" />
     <Compile Include="Utility\SystemHealthChecker.cs" />
+    <Compile Include="Utility\TaskHelper.cs" />
+    <Compile Include="Utility\TypeHelper.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
     <Compile Include="Validation\EventValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />
@@ -353,7 +382,6 @@
     <Compile Include="Queues\InMemoryQueue.cs" />
     <Compile Include="Queues\IQueue.cs" />
     <Compile Include="Queues\Models\WebHookNotification.cs" />
-    <Compile Include="Queues\Models\WorkItem.cs" />
     <Compile Include="Queues\Models\SummaryNotification.cs" />
     <Compile Include="Queues\QueueEntry.cs" />
     <Compile Include="Repositories\ApplicationRepository.cs" />
@@ -435,10 +463,6 @@
     <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
       <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
       <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\CodeSmith.Core\CodeSmith.Core.csproj">
-      <Project>{c2e6e845-b50d-45b8-b188-e2f63b3e468f}</Project>
-      <Name>CodeSmith.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>

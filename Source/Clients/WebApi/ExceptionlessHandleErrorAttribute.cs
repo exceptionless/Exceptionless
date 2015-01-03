@@ -13,11 +13,8 @@ using System.Threading.Tasks;
 using System.Web.Http.Filters;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
-#if !EMBEDDED
-using CodeSmith.Core.Component;
-#else
-using Exceptionless.Utility;
-#endif
+using Exceptionless.Threading.Tasks;
+using TaskExtensions = Exceptionless.Threading.Tasks.TaskExtensions;
 
 namespace Exceptionless.WebApi {
     public class ExceptionlessHandleErrorAttribute : IExceptionFilter {
@@ -44,7 +41,7 @@ namespace Exceptionless.WebApi {
                 throw new ArgumentNullException("actionExecutedContext");
 
             OnHttpException(actionExecutedContext, cancellationToken);
-            return TaskHelper.Completed();
+            return TaskExtensions.Completed();
         }
     }
 }

@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using CodeSmith.Core.Extensions;
+using Exceptionless.Core.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

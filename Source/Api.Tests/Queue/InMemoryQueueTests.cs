@@ -4,9 +4,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using CodeSmith.Core.Component;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Queues;
+using Exceptionless.Threading.Tasks;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
@@ -125,12 +126,12 @@ namespace Exceptionless.Api.Tests.Queue {
                     Data = "Hello"
                 });
 
-                var success = await TaskHelper.DelayUntil(() => queue.WorkerErrorCount > 0, TimeSpan.FromSeconds(5));
+                var success = await TaskHelper2.DelayUntil(() => queue.WorkerErrorCount > 0, TimeSpan.FromSeconds(5));
                 Assert.True(success);
                 Assert.Equal(0, queue.CompletedCount);
                 Assert.Equal(1, queue.WorkerErrorCount);
 
-                success = await TaskHelper.DelayUntil(() => queue.GetQueueCount() > 0, TimeSpan.FromSeconds(5));
+                success = await TaskHelper2.DelayUntil(() => queue.GetQueueCount() > 0, TimeSpan.FromSeconds(5));
                 Assert.True(success);
                 Assert.Equal(1, queue.GetQueueCount());
             }

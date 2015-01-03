@@ -11,10 +11,10 @@
 
 using System;
 using System.Collections.Generic;
-using CodeSmith.Core.Extensions;
-using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Tests.Utility {
     internal static class StackData {
