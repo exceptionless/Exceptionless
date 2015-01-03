@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Filter;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX)]
@@ -9,12 +10,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult Validate(string query) {
-            if (String.IsNullOrWhiteSpace(query))
-                return Ok();
-
-            // TODO: Validate this with a parser.
-            if (query.StartsWith("{") || query.EndsWith(":") || query.EndsWith("}"))
-                return BadRequest("Invalid character in search query.");
+            var result = QueryValidationVisitor.Validate(query);
+            if (!result.IsValid)
+                return BadRequest(result.Message);
 
             return Ok();
         }

@@ -55,6 +55,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.26\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
+    <Reference Include="Exceptionless.LuceneQueryParser">
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.5\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
@@ -108,6 +112,9 @@
     </Reference>
     <Reference Include="NLog.Xml">
       <HintPath>..\..\packages\NLog.Xml.3.1.0.30\lib\net45\NLog.Xml.dll</HintPath>
+    </Reference>
+    <Reference Include="Pegasus.Common">
+      <HintPath>..\..\packages\Pegasus.3.1.0\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.5.0.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -198,6 +205,7 @@
     <Compile Include="Migrations\v1.0.34.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
+    <Compile Include="Filter\QueryValidationVisitor.cs" />
     <Compile Include="Queues\RedisQueue.cs" />
     <Compile Include="Repositories\Base\SortOrder.cs" />
     <Compile Include="Storage\AzureFileStorage.cs" />
@@ -536,5 +544,7 @@
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
     <Error Condition="!Exists('..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Pegasus.3.1.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.0\build\Pegasus.targets'))" />
   </Target>
+  <Import Project="..\..\packages\Pegasus.3.1.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.0\build\Pegasus.targets')" />
 </Project>
