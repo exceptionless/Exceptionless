@@ -74,7 +74,6 @@ namespace Exceptionless.Core.Jobs {
                 queueEntry.Abandon();
                 _storage.SetNotActive(queueEntry.Value.FilePath);
 
-                // TODO: Add the EventPost to the logged exception.
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
             }

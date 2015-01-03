@@ -143,9 +143,6 @@ namespace Exceptionless.Core.Billing {
             }
 
             Log.Info().Message("Stripe payment succeeded. Customer: {0} Org: {1} Org Name: {2}", inv.CustomerId, org.Id, org.Name).Write();
-
-            // TODO: Should we send an email here?
-            //_mailer.SendPaymentSuccessAsync(user, org);
         }
 
         private void InvoicePaymentFailed(StripeInvoice inv) {

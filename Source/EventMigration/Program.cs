@@ -33,9 +33,6 @@ namespace Exceptionless.EventMigration {
         private static int Main(string[] args) {
             OutputHeader();
 
-            // TODO: Hook up nlog to write to the console.
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-
             try {
                 var ca = new ConsoleArguments();
                 if (Parser.ParseHelp(args)) {

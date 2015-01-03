@@ -21,7 +21,6 @@ namespace Exceptionless.Api.Tests.Plugins {
             var json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);
 
-            // TODO: Figure out what is wrong with 800000002e519522d83837a1
             _eventUpgraderPluginManager.Upgrade(ctx);
             ApprovalsUtility.VerifyFile(Path.ChangeExtension(errorFilePath, ".expected.json"), ctx.Documents.First.ToString());
 

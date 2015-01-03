@@ -89,8 +89,6 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 _organizationRepository.Remove(organization);
-
-                // TODO: Send notifications that the organization and projects have been updated.
             } catch (Exception ex) {
                 ex.ToExceptionless().MarkAsCritical().AddTags("Remove Stale Accounts").AddObject(organization).Submit();
             }

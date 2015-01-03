@@ -16,7 +16,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
-using System.Web.Http;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
@@ -110,23 +109,6 @@ namespace Exceptionless.Api.Extensions {
             return message.GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
-        public static string GetAllMessages(this HttpError error, bool includeStackTrace = false) {
-            var builder = new StringBuilder();
-            HttpError current = error;
-            while (current != null) {
-                string message = includeStackTrace ? current.FormatMessageWithStackTrace() : current.Message;
-                builder.Append(message);
-
-                if (current.ContainsKey("InnerException")) {
-                    builder.Append(" --> ");
-                    current = current["InnerException"] as HttpError;
-                } else
-                    current = null;
-            }
-
-            return builder.ToString();
-        }
-
         public static string GetClientIpAddress(this HttpRequestMessage request) {
             var context = request.GetOwinContext();
             if (context != null)
@@ -173,18 +155,6 @@ namespace Exceptionless.Api.Extensions {
                 Username = authParts[0],
                 Password = authParts[1]
             };
-        }
-
-        /// <summary>
-        /// Formats an error with the stack trace included.
-        /// </summary>
-        /// <param name="error"></param>
-        /// <returns></returns>
-        public static string FormatMessageWithStackTrace(this HttpError error) {
-            if (!error.ContainsKey("ExceptionMessage") || !error.ContainsKey("ExceptionType") || !error.ContainsKey("StackTrace"))
-                return error.Message;
-
-            return String.Format("[{0}] {1}\r\nStack Trace:\r\n{2}{3}", error["ExceptionType"], error["ExceptionMessage"], error["StackTrace"], Environment.NewLine);
         }
     }
 

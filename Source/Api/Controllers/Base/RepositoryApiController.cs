@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
 using CodeSmith.Core.Helpers;
+using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -167,8 +168,9 @@ namespace Exceptionless.Api.Controllers {
             if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-            // TODO: The changes might actually change the organization id.
-
+            if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
+                return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            
             return PermissionResult.Allow;
         }
 

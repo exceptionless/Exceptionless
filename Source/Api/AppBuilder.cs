@@ -115,6 +115,7 @@ namespace Exceptionless.Api {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
                     return null;
 
+                // TODO: Use project id from url. E.G., /projects/{projectId:objectid}/events
                 string projectId = ctx.Request.User.GetDefaultProjectId();
                 var projectRepository = container.GetInstance<IProjectRepository>();
 

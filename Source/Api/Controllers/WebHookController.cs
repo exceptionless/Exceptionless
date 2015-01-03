@@ -68,13 +68,6 @@ namespace Exceptionless.App.Controllers.API {
             return base.Post(value);
         }
 
-        [HttpPut]
-        [HttpPatch]
-        [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<NewWebHook> changes) {
-            return base.Patch(id, changes);
-        }
-
         [HttpDelete]
         [Route("{ids:objectids}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
@@ -128,9 +121,7 @@ namespace Exceptionless.App.Controllers.API {
             if (!targetUrl.Contains("zapier"))
                 return NotFound();
 
-            // TODO: Validate that a user owns this webhook.
             _repository.RemoveByUrl(targetUrl);
-
             return Ok();
         }
 
@@ -174,15 +165,6 @@ namespace Exceptionless.App.Controllers.API {
                 value.Version = new Version(2, 0);
 
             return base.AddModel(value);
-        }
-
-        protected override PermissionResult CanUpdate(WebHook original, Delta<NewWebHook> changes) {
-            if (!IsInProject(original.ProjectId))
-                return PermissionResult.Deny;
-            
-            // TODO: The changes might actually change the project id, url and event types.
-
-            return base.CanUpdate(original, changes);
         }
 
         protected override PermissionResult CanDelete(WebHook value) {

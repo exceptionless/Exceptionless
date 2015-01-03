@@ -46,11 +46,5 @@ namespace Exceptionless.Core.Extensions {
 
             return message;
         }
-
-        public static async Task SendAsync(this SmtpClient client, System.Net.Mail.MailMessage message) {
-            // TODO: Verify that this works and see if there is a better method.
-            client.Send(message);
-            await Task.Yield();
-        }
     }
 }

@@ -28,7 +28,6 @@ namespace Exceptionless.Extensions {
                 StackTrace = exception.StackTrace
             };
 
-            // TODO: Test adding non-serializable objects to ExtendedData and see what happens
             try {
                 Dictionary<string, object> extraProperties = type.GetPublicProperties().Where(p => !_exceptionExclusions.Contains(p.Name)).ToDictionary(p => p.Name, p => {
                     try {

@@ -53,7 +53,6 @@ namespace Exceptionless.Core.Jobs {
                 _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
                 queueEntry.Abandon();
 
-                // TODO: Add the EventUserDescription to the logged exception.
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex);
             }

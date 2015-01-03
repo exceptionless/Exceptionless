@@ -132,9 +132,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 if (!user.OrganizationIds.Contains(project.OrganizationId)) {
-                    // TODO: Should this notification setting be deleted?
-                    Log.Error().Message("Unauthorized user: project={0} user={1} organization={2} event={3}", project.Id, kv.Key,
-                        project.OrganizationId, eventNotification.Event.Id).Write();
+                    Log.Error().Message("Unauthorized user: project={0} user={1} organization={2} event={3}", project.Id, kv.Key, project.OrganizationId, eventNotification.Event.Id).Write();
                     continue;
                 }
 

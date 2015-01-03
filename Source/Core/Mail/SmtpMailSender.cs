@@ -17,7 +17,7 @@ namespace Exceptionless.Core.Mail {
             message.Headers.Add("X-Mailer-Machine", Environment.MachineName);
             message.Headers.Add("X-Mailer-Date", DateTime.Now.ToString());
 
-            await client.SendAsync(message);
+            await client.SendMailAsync(message);
 
             Interlocked.Increment(ref _messagesSent);
         }

@@ -77,7 +77,6 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 throw new ArgumentNullException("id");
 
-            // TODO: Decide if it's worth it to retrieve the document first
             var document = GetById(id, true);
             Remove(new[] { document });
         }
