@@ -166,8 +166,9 @@ namespace Exceptionless.Api.Controllers {
             if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
-            // TODO: The changes might actually change the organization id.
-
+            if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
+                return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
+            
             return PermissionResult.Allow;
         }
 

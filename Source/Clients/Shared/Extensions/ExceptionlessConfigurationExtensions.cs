@@ -35,7 +35,6 @@ namespace Exceptionless {
         }
         
         public static string GetQueueName(this ExceptionlessConfiguration config) {
-            // TODO: Ensure the api key has been set before this is called.
             return config.ApiKey.Substring(0, 8);
         }
 

@@ -47,7 +47,6 @@ namespace Exceptionless.Api.Tests.Utility {
 
             RegisterServices(_container);
 
-            // TODO: We need to figure out how to be able to run unit tests separate from our normal data.
             var searchclient = _container.GetInstance<IElasticClient>();
             searchclient.DeleteIndex(i => i.AllIndices());
         }

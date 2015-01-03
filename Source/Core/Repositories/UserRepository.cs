@@ -57,7 +57,6 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
         }
 
-        // TODO: Have this return a limited subset of user data.
         public ICollection<User> GetByOrganizationId(string id) {
             if (String.IsNullOrEmpty(id))
                 return new List<User>();

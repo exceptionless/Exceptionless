@@ -88,11 +88,10 @@ namespace Exceptionless.Api.Controllers {
                 foreach (var stack in stacks) {
                     // TODO: Implement Fixed in version.
                     stack.DateFixed = DateTime.UtcNow;
-                    //stack.FixedInVersion = "TODO";
+                    //stack.FixedInVersion = "GET CURRENT VERSION FROM ELASTIC SEARCH";
                     stack.IsRegressed = false;
                 }
 
-                // TODO: Add a log entry.
                 _stackRepository.Save(stacks);
             }
 
@@ -269,7 +268,6 @@ namespace Exceptionless.Api.Controllers {
                     stack.IsRegressed = false;
                 }
 
-                // TODO: Add a log entry.
                 _stackRepository.Save(stacks);
             }
 
@@ -337,7 +335,6 @@ namespace Exceptionless.Api.Controllers {
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromStack(context)
                 });
-                // TODO: Add stats metrics for webhooks.
             }
 
             return Ok();
@@ -379,7 +376,6 @@ namespace Exceptionless.Api.Controllers {
             var options = new PagingOptions { Page = page, Limit = limit };
             var stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
-            // TODO: Implement a cut off and add header that contains the number of stacks outside of the retention period.
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
                 return OkWithResourceLinks(GetStackSummaries(stacks, timeInfo.Offset, timeInfo.UtcRange.UtcStart, timeInfo.UtcRange.UtcEnd), options.HasMore, page);
 
@@ -458,7 +454,6 @@ namespace Exceptionless.Api.Controllers {
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
-            // TODO: Apply retention cutoff
             var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
             var stacks = _stackRepository.GetByIds(stackIds).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 

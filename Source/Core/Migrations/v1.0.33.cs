@@ -27,8 +27,6 @@ namespace Exceptionless.Core.Migrations {
             base.Update();
         }
 
-        public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
-            // TODO: We should be able to tell the upgrader to skip this step.
-        }
+        public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {}
     }
 }

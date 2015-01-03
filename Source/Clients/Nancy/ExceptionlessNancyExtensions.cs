@@ -43,7 +43,6 @@ namespace Exceptionless {
         }
 
         private static void AfterRequest(NancyContext context) {
-            // TODO: We need to be using the pass in the registered exceptionless client.
             var contextData = new ContextData { { NANCY_CONTEXT, context } };
             if (context.Response.StatusCode == HttpStatusCode.NotFound)
                 ExceptionlessClient.Default.SubmitEvent(new Event { Type = Event.KnownTypes.NotFound }, contextData);

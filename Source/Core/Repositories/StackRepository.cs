@@ -31,7 +31,6 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void BeforeAdd(ICollection<Stack> documents) {
-            // TODO: Remove this dependency on the mongo lib.
             foreach (var ev in documents.Where(ev => ev.Id == null))
                 ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
 
