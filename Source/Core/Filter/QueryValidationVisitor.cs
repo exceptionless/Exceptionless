@@ -20,7 +20,12 @@ namespace Exceptionless.Core.Filter {
         }
 
         public override void Visit(TermNode node) {
+            // using a field not in the free list
             if (node.Field != null && !_freeFields.Contains(node.Field.Field))
+                UsesPremiumFeatures = true;
+
+            // using all fields search
+            if (node.Field == null || String.IsNullOrEmpty(node.Field.Field))
                 UsesPremiumFeatures = true;
 
             base.Visit(node);

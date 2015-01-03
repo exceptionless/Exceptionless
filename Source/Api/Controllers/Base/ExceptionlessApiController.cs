@@ -138,7 +138,7 @@ namespace Exceptionless.Api.Controllers {
             if (organizations.Count == 0)
                 return "organization:none";
 
-            StringBuilder builder = new StringBuilder();
+            var builder = new StringBuilder();
             for (int index = 0; index < organizations.Count; index++) {
                 if (index > 0)
                     builder.Append(" OR ");
