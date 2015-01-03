@@ -130,11 +130,11 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool hasOrganizationOrProjectFilter) {
+        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter) {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Where(o => !o.IsSuspended).ToList();
+            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 

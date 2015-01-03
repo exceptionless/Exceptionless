@@ -14,7 +14,7 @@ namespace Exceptionless.Api.Controllers {
             if (!result.IsValid)
                 return BadRequest(result.Message);
 
-            return Ok();
+            return Ok(new { UsesPremiumFeatures = result.UsesPremiumFeatures });
         }
 
         [Route("notfound")]

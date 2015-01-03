@@ -12,6 +12,7 @@
 using System;
 using System.Web.Http;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
@@ -40,10 +41,15 @@ namespace Exceptionless.Api.Controllers {
 
         public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             var timeInfo = GetTimeInfo(time, offset);
-            if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
-            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
 
+            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult.Message);
+
+            if (String.IsNullOrEmpty(systemFilter))
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+
+            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
             return Ok(result);
         }
 

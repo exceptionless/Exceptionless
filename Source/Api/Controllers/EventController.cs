@@ -15,6 +15,7 @@ using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Storage;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
@@ -65,7 +66,11 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var timeInfo = GetTimeInfo(time, offset);
-            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(filter));
+            var validationResult = QueryValidationVisitor.Validate(filter);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult.Message);
+
+            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             return OkWithLinks(model,
                 GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
