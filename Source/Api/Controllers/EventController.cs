@@ -91,8 +91,12 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
+            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            if (!validationResult.IsValid)
+                return BadRequest(validationResult.Message);
+
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);

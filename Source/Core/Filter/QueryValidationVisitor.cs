@@ -50,6 +50,6 @@ namespace Exceptionless.Core.Filter {
     public class QueryValidationResult {
         public bool IsValid { get; set; }
         public string Message { get; set; }
-        public bool? UsesPremiumFeatures { get; set; }
+        public bool UsesPremiumFeatures { get; set; }
     }
 }
