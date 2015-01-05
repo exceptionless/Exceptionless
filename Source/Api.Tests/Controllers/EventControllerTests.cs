@@ -112,6 +112,28 @@ namespace Exceptionless.Api.Tests.Controllers {
             }
         }
 
+        [Fact]
+        public void CanPostManyEvents() {
+            //_eventQueue.DeleteQueue();
+            //RemoveAllEvents();
+
+            //const int batchSize = 100;
+            //const int batchCount = 100;
+
+            //try {
+            //    Parallel.For(0, batchCount, i => {
+            //        _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+            //        var events = EventData.GenerateEvents(batchSize);
+            //        var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress());
+            //        Assert.IsType<StatusCodeResult>(actionResult);
+            //    });
+
+            //    Assert.Equal(batchCount, _eventQueue.GetQueueCount());
+            //} finally {
+            //    RemoveAllEvents();
+            //}
+        }
+
         #region Helpers
 
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {

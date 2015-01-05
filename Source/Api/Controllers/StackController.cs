@@ -364,7 +364,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            var validationResult = QueryValidator.Validate(userFilter);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Message);
 
@@ -442,7 +442,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            var validationResult = QueryValidator.Validate(userFilter);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Message);
 

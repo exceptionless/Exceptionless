@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             var timeInfo = GetTimeInfo(time, offset);
 
-            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            var validationResult = QueryValidator.Validate(userFilter);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Message);
 

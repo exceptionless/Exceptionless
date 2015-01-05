@@ -48,9 +48,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\Exceptionless.DateTimeExtensions.3.0.26\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
-    <Reference Include="RandomR.Main">
-      <HintPath>..\..\..\packages\RandomR.0.4.1\lib\RandomR.Main.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -60,6 +57,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Api.Tests\Utility\Random.cs">
+      <Link>Random.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Api.Tests\Utility\RandomEventGenerator.cs">
+      <Link>RandomEventGenerator.cs</Link>
+    </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -10,19 +10,17 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
+using Exceptionless.Helpers;
 using Exceptionless.Models;
-using Exceptionless.Models.Data;
-using RandomR.Main;
+using Exceptionless.SampleConsole;
 
 namespace SampleConsole {
     internal class Program {
@@ -50,7 +48,12 @@ namespace SampleConsole {
             if (false)
                 SampleApiUsages();
 
-            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomGenR.Instance.Strings.GetRandomString(5)] = RandomGenR.Instance.Strings.GetRandomString(10));
+            ExceptionlessClient.Default.Configuration.AddEnrichment(ev => ev.Data[RandomData.GetWord()] = RandomData.GetWord());
+            ExceptionlessClient.Default.Configuration.AddEnrichment((ctx, ev) => {
+                // use server settings to see if we should include this data
+                if (ctx.Client.Configuration.Settings.GetBoolean("IncludeConditionalData", true))
+                    ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "ConditionalData");
+            });
             ExceptionlessClient.Default.Configuration.Settings.Changed += (sender, args) => Trace.WriteLine(String.Format("Action: {0} Key: {1} Value: {2}", args.Action, args.Item.Key, args.Item.Value ));
 
             WriteOptionsMenu();
@@ -175,72 +178,12 @@ namespace SampleConsole {
             }, token);
         }
 
-        private readonly Random _rnd = new Random();
+        private static readonly RandomEventGenerator _rnd = new RandomEventGenerator();
         private static void SendEvent(bool writeToConsole = true) {
-            var ev = new Event();
-            if (_dateSpans[_dateSpanIndex] != TimeSpan.Zero)
-                ev.Date = RandomGenR.Instance.Date.GetRandomDateTime(DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]), DateTime.Now);
+            _rnd.MinDate = DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]);
+            _rnd.MaxDate = DateTime.Now;
 
-            ev.Type = RandomGenR.Instance.Collections.GetRandomElement(EventTypes);
-            if (ev.Type == Event.KnownTypes.FeatureUsage)
-                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(FeatureNames);
-            else if (ev.Type == Event.KnownTypes.NotFound)
-                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(PageNames);
-            else if (ev.Type == Event.KnownTypes.Log) {
-                ev.Source = RandomGenR.Instance.Collections.GetRandomElement(LogSources);
-                ev.Message = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-            }
-
-            ev.SetUserIdentity(RandomGenR.Instance.Collections.GetRandomElement(Identities));
-
-            ev.AddRequestInfo(new RequestInfo {
-                ClientIpAddress = RandomGenR.Instance.Collections.GetRandomElement(ClientIpAddresses),
-                Path = RandomGenR.Instance.Collections.GetRandomElement(PageNames)
-            });
-
-            ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, new EnvironmentInfo {
-                IpAddress = RandomGenR.Instance.Collections.GetRandomElement(MachineIpAddresses) + ", " + RandomGenR.Instance.Collections.GetRandomElement(MachineIpAddresses),
-                MachineName = RandomGenR.Instance.Collections.GetRandomElement(MachineNames)
-            });
-
-            for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 3); i++) {
-                string key = RandomGenR.Instance.Strings.GetRandomString(5, 10);
-                while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                    key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-
-                ev.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
-            }
-
-            int tagCount = RandomGenR.Instance.Number.GetRandomInt(1, 3);
-            for (int i = 0; i < tagCount; i++) {
-                string tag = RandomGenR.Instance.Collections.GetRandomElement(EventTags);
-                if (!ev.Tags.Contains(tag))
-                    ev.Tags.Add(tag);
-            }
-
-            if (ev.Type == Event.KnownTypes.Error) {
-                if (RandomGenR.Instance.Strings.GetChance(50)) {
-                    // limit error variation so that stacking will occur
-                    if (_randomErrors == null)
-                        _randomErrors = new List<Error>(Enumerable.Range(1, 25).Select(i => GenerateError()));
-
-                    ev.Data[Event.KnownDataKeys.Error] = RandomGenR.Instance.Collections.GetRandomElement(_randomErrors);
-                } else {
-                    // limit error variation so that stacking will occur
-                    if (_randomSimpleErrors == null)
-                        _randomSimpleErrors = new List<SimpleError>(Enumerable.Range(1, 25).Select(i => GenerateSimpleError()));
-
-                    ev.Data[Event.KnownDataKeys.SimpleError] = RandomGenR.Instance.Collections.GetRandomElement(_randomSimpleErrors);
-                }
-            }
-
-            // use server settings to see if we should include this data
-            if (ExceptionlessClient.Default.Configuration.Settings.GetBoolean("IncludeConditionalData", true))
-                ev.AddObject(new { Total = 32.34, ItemCount = 2, Email = "someone@somewhere.com" }, "ConditionalData");
-
-            //ev.AddRecentTraceLogEntries();
-
-            ExceptionlessClient.Default.SubmitEvent(ev);
+            ExceptionlessClient.Default.SubmitEvent(_rnd.Next());
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
@@ -249,70 +192,6 @@ namespace SampleConsole {
 
                 ClearNonOptionsLines();
             }
-        }
-
-        private static List<Error> _randomErrors;
-
-        private static Error GenerateError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new Error { Message = @"Generated exception message.", Type = RandomGenR.Instance.Collections.GetRandomElement(ExceptionTypes) };
-            if (RandomGenR.Instance.Strings.GetChance(50))
-                error.Code = RandomGenR.Instance.Number.GetRandomInt(-234523453, 98690899).ToString();
-
-            if (generateData) {
-                for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 5); i++) {
-                    string key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-                    while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-
-                    error.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
-                }
-            }
-
-            var stack = new StackFrameCollection();
-            for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 10); i++)
-                stack.Add(GenerateStackFrame());
-            error.StackTrace = stack;
-
-            if (currentNestingLevel < maxErrorNestingLevel && RandomGenR.Instance.Strings.GetChance(50))
-                error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
-
-            return error;
-        }
-
-        private static List<SimpleError> _randomSimpleErrors;
-
-        private static SimpleError GenerateSimpleError(int maxErrorNestingLevel = 3, bool generateData = true, int currentNestingLevel = 0) {
-            var error = new SimpleError { Message = @"Generated exception message.", Type = RandomGenR.Instance.Collections.GetRandomElement(ExceptionTypes) };
-            if (generateData) {
-                for (int i = 0; i < RandomGenR.Instance.Number.GetRandomInt(1, 5); i++) {
-                    string key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-                    while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomGenR.Instance.Strings.GetRandomString(5, 15);
-
-                    error.Data.Add(key, RandomGenR.Instance.Strings.GetRandomString(5, 25));
-                }
-            }
-
-            error.StackTrace = RandomGenR.Instance.Strings.GetRandomString(250);
-
-            if (currentNestingLevel < maxErrorNestingLevel && RandomGenR.Instance.Strings.GetChance(50))
-                error.Inner = GenerateSimpleError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
-
-            return error;
-        }
-
-        private static Exceptionless.Models.Data.StackFrame GenerateStackFrame() {
-            return new Exceptionless.Models.Data.StackFrame {
-                DeclaringNamespace = RandomGenR.Instance.Collections.GetRandomElement(Namespaces),
-                DeclaringType = RandomGenR.Instance.Collections.GetRandomElement(TypeNames),
-                Name = RandomGenR.Instance.Collections.GetRandomElement(MethodNames),
-                Parameters = new ParameterCollection {
-                    new Parameter {
-                        Type = "String",
-                        Name = "path"
-                    }
-                }
-            };
         }
 
         private static void SendAllCapturedEventsFromDisk() {
@@ -334,104 +213,5 @@ namespace SampleConsole {
                 Console.WriteLine("Sent {0} events.", eventCount);
             }
         }
-
-        public static readonly List<string> Identities = new List<string> {
-            "eric@exceptionless.com",
-            "blake@exceptionless.com",
-            "marylou@exceptionless.com"
-        };
-
-        public static readonly List<string> MachineIpAddresses = new List<string> {
-            "127.34.36.89",
-            "45.66.89.98",
-            "10.12.18.193",
-            "16.89.17.197",
-            "43.10.99.234"
-        };
-
-        public static readonly List<string> ClientIpAddresses = new List<string> {
-            "77.23.23.78",
-            "45.66.89.98",
-            "10.12.18.193",
-            "89.23.45.98",
-            "231.23.34.1"
-        };
-
-        public static readonly List<string> LogSources = new List<string> {
-            "Some.Class",
-            "MyClass",
-            "CodeGenerator",
-            "Exceptionless.Core.Parser.SomeClass"
-        };
-
-        public static readonly List<string> FeatureNames = new List<string> {
-            "Feature1",
-            "Feature2",
-            "Feature3",
-            "Feature4"
-        };
-
-        public static readonly List<string> MachineNames = new List<string> {
-            "machine1",
-            "machine2",
-            "machine3",
-            "machine4"
-        };
-
-        public static readonly List<string> PageNames = new List<string> {
-            "/page1",
-            "/page2",
-            "/page3",
-            "/page4"
-        };
-
-        public static readonly List<string> EventTypes = new List<string> {
-            Event.KnownTypes.Error,
-            Event.KnownTypes.FeatureUsage,
-            Event.KnownTypes.Log,
-            Event.KnownTypes.NotFound,
-            Event.KnownTypes.SessionEnd,
-            Event.KnownTypes.SessionEnd
-        };
-
-        public static readonly List<string> ExceptionTypes = new List<string> {
-            "System.NullReferenceException",
-            "System.ApplicationException",
-            "System.AggregateException",
-            "System.InvalidArgumentException",
-            "System.InvalidOperationException"
-        };
-
-        public static readonly List<string> EventTags = new List<string> {
-            "Tag1",
-            "Tag2",
-            "Tag3",
-            "Tag4",
-            "Tag5",
-            "Tag6",
-            "Tag7",
-            "Tag8",
-            "Tag9",
-            "Tag10"
-        };
-
-        public static readonly List<string> Namespaces = new List<string> {
-            "System",
-            "System.IO",
-            "CodeSmith",
-            "CodeSmith.Generator",
-            "SomeOther.Blah"
-        };
-
-        public static readonly List<string> TypeNames = new List<string> {
-            "DateTime",
-            "SomeType",
-            "ProjectGenerator"
-        };
-
-        public static readonly List<string> MethodNames = new List<string> {
-            "SomeMethod",
-            "GenerateCode"
-        };
     }
 }

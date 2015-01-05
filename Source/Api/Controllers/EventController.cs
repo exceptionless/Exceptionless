@@ -66,7 +66,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var timeInfo = GetTimeInfo(time, offset);
-            var validationResult = QueryValidationVisitor.Validate(filter);
+            var validationResult = QueryValidator.Validate(filter);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Message);
 
@@ -91,7 +91,7 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            var validationResult = QueryValidationVisitor.Validate(userFilter);
+            var validationResult = QueryValidator.Validate(userFilter);
             if (!validationResult.IsValid)
                 return BadRequest(validationResult.Message);
 

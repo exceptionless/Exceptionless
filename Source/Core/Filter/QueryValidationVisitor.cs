@@ -5,6 +5,26 @@ using Exceptionless.LuceneQueryParser.Nodes;
 using Exceptionless.LuceneQueryParser.Visitor;
 
 namespace Exceptionless.Core.Filter {
+    public class QueryValidator {
+        public static QueryValidationResult Validate(string query) {
+            if (String.IsNullOrEmpty(query))
+                return new QueryValidationResult { IsValid = true };
+
+            GroupNode result;
+            try {
+                var parser = new QueryParser();
+                result = parser.Parse(query);
+            } catch (Exception ex) {
+                return new QueryValidationResult { Message = ex.Message };
+            }
+
+            var validator = new QueryValidationVisitor(new HashSet<string> { "hidden", "fixed", "type" });
+            result.Accept(validator);
+
+            return new QueryValidationResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures };
+        }
+    }
+
     public class QueryValidationVisitor : QueryNodeVisitorBase {
         private readonly HashSet<string> _freeFields;
 
@@ -32,24 +52,6 @@ namespace Exceptionless.Core.Filter {
         }
 
         public bool UsesPremiumFeatures { get; set; }
-
-        public static QueryValidationResult Validate(string query) {
-            if (String.IsNullOrEmpty(query))
-                return new QueryValidationResult { IsValid = true };
-
-            GroupNode result;
-            try {
-                var parser = new QueryParser();
-                result = parser.Parse(query);
-            } catch (Exception ex) {
-                return new QueryValidationResult { Message = ex.Message };
-            }
-
-            var validator = new QueryValidationVisitor(new HashSet<string> { "hidden", "fixed", "type" });
-            result.Accept(validator);
-
-            return new QueryValidationResult { IsValid = true, UsesPremiumFeatures = validator.UsesPremiumFeatures };
-        }
     }
 
     public class QueryValidationResult {

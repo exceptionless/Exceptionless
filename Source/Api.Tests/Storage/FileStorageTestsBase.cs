@@ -9,6 +9,7 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Storage;
+using Exceptionless.Helpers;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Storage {
@@ -80,11 +81,11 @@ namespace Exceptionless.Api.Tests.Storage {
 
             Parallel.For(0, 50, i => {
                 string path = Path.Combine(queueFolder, queueItems.Random() + ".json");
-                var eventPost = storage.GetEventPostAndSetActive(Path.Combine(queueFolder, RandomHelper.GetRange(0, 25) + ".json"));
+                var eventPost = storage.GetEventPostAndSetActive(Path.Combine(queueFolder, RandomData.GetInt(0, 25) + ".json"));
                 if (eventPost == null)
                     return;
 
-                if (RandomHelper.GetBool()) {
+                if (RandomData.GetBool()) {
                     storage.CompleteEventPost(path, eventPost.ProjectId, DateTime.UtcNow, true);
                 } else
                     storage.SetNotActive(path);

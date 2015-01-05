@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
@@ -52,24 +52,24 @@ namespace Exceptionless.Tests.Utility {
                 OrganizationId = organizationIds.Random(TestConstants.OrganizationId),
                 ProjectId = projectIds.Random(TestConstants.ProjectId),
                 ReferenceId = referenceIds.Random(),
-                Date = occurrenceDate.HasValue ? occurrenceDate.Value : RandomHelper.GetDateTimeOffset(startDate, endDate),
+                Date = occurrenceDate.HasValue ? occurrenceDate.Value : RandomData.GetDateTimeOffset(startDate, endDate),
                 IsFixed = isFixed,
                 IsHidden = isHidden,
                 StackId = stackIds.Random()
             };
 
             if (generateData) {
-                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
-                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 10));
+                for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+                    string key = RandomData.GetWord();
                     while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                        key = RandomData.GetWord();
 
-                    ev.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    ev.Data.Add(key, RandomData.GetWord());
                 }
             }
 
             if (generateTags) {
-                for (int i = 0; i < RandomHelper.GetRange(1, 3); i++) {
+                for (int i = 0; i < RandomData.GetInt(1, 3); i++) {
                     string tag = TestConstants.EventTags.Random();
                     if (!ev.Tags.Contains(tag))
                         ev.Tags.Add(tag);
@@ -93,25 +93,25 @@ namespace Exceptionless.Tests.Utility {
             var error = new Error();
             error.Message = @"Generated exception message.";
             error.Type = TestConstants.ExceptionTypes.Random();
-            if (RandomHelper.GetBool())
-                error.Code = RandomHelper.GetRange(-234523453, 98690899).ToString();
+            if (RandomData.GetBool())
+                error.Code = RandomData.GetInt(-234523453, 98690899).ToString();
 
             if (generateData) {
-                for (int i = 0; i < RandomHelper.GetRange(1, 5); i++) {
-                    string key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
+                    string key = RandomData.GetWord();
                     while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                        key = RandomData.GetWord();
 
-                    error.Data.Add(key, RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 25)));
+                    error.Data.Add(key, RandomData.GetWord());
                 }
             }
 
             var stack = new StackFrameCollection();
-            for (int i = 0; i < RandomHelper.GetRange(1, 10); i++)
+            for (int i = 0; i < RandomData.GetInt(1, 10); i++)
                 stack.Add(GenerateStackFrame());
             error.StackTrace = stack;
 
-            if (currentNestingLevel < maxErrorNestingLevel && RandomHelper.GetBool())
+            if (currentNestingLevel < maxErrorNestingLevel && RandomData.GetBool())
                 error.Inner = GenerateError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);
 
             return error;

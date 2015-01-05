@@ -15,6 +15,7 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Helpers;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ProjectData {
@@ -48,8 +49,8 @@ namespace Exceptionless.Tests.Utility {
                 project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             }
 
-            for (int i = 0; i < RandomHelper.GetRange(0, 5); i++)
-                project.Configuration.Settings.Add(RandomHelper.GetPronouncableString(5), RandomHelper.GetPronouncableString(10));
+            for (int i = 0; i < RandomData.GetInt(0, 5); i++)
+                project.Configuration.Settings.Add(RandomData.GetWord(), RandomData.GetWord());
 
             return project;
         }

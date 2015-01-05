@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Queues;
+using Exceptionless.Helpers;
 using Exceptionless.Threading.Tasks;
 using Xunit;
 
@@ -300,11 +301,11 @@ namespace Exceptionless.Api.Tests.Queue {
 
             try {
                 // randomly complete, abandon or blowup.
-                if (RandomHelper.GetBool()) {
+                if (RandomData.GetBool()) {
                     Debug.WriteLine("Completing: {0}", w.Value.Id);
                     w.Complete();
                     info.IncrementCompletedCount();
-                } else if (RandomHelper.GetBool()) {
+                } else if (RandomData.GetBool()) {
                     Debug.WriteLine("Abandoning: {0}", w.Value.Id);
                     w.Abandon();
                     info.IncrementAbandonCount();

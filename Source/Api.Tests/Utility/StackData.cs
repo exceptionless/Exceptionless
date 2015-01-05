@@ -11,10 +11,10 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Models;
 using MongoDB.Bson;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Helpers;
 
 namespace Exceptionless.Tests.Utility {
     internal static class StackData {
@@ -40,7 +40,7 @@ namespace Exceptionless.Tests.Utility {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : null : id,
                 OrganizationId = organizationId.IsNullOrEmpty() ? TestConstants.OrganizationId : organizationId,
                 ProjectId = projectId.IsNullOrEmpty() ? TestConstants.ProjectIds.Random() : projectId,
-                Title = title ?? RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 50)),
+                Title = title ?? RandomData.GetTitleWords(),
                 Type = type ?? Stack.KnownTypes.Error,
                 DateFixed = dateFixed,
                 FirstOccurrence = utcFirstOccurrence ?? DateTime.MinValue,
@@ -48,14 +48,14 @@ namespace Exceptionless.Tests.Utility {
                 TotalOccurrences = totalOccurrences,
                 IsRegressed = isRegressed,
                 IsHidden = isHidden,
-                SignatureHash = signatureHash ?? RandomHelper.GetPronouncableString(10),
+                SignatureHash = signatureHash ?? RandomData.GetString(10, 10),
                 SignatureInfo = new SettingsDictionary()
             };
 
-            for (int i = 0; i < RandomHelper.GetRange(0, 5); i++) {
-                string tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+            for (int i = 0; i < RandomData.GetInt(0, 5); i++) {
+                string tag = RandomData.GetWord();
                 while (stack.Tags.Contains(tag))
-                    tag = RandomHelper.GetPronouncableString(RandomHelper.GetRange(5, 15));
+                    tag = RandomData.GetWord();
 
                 stack.Tags.Add(tag);
             }

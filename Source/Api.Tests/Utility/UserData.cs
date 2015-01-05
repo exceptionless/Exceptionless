@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Helpers;
 using Exceptionless.Models;
 using MongoDB.Bson;
 
@@ -51,7 +52,7 @@ namespace Exceptionless.Tests.Utility {
         public static User GenerateUser(bool generateId = false, string id = null, string organizationId = null, string emailAddress = null, IEnumerable<string> roles = null) {
             var user = new User {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.UserId : id,
-                EmailAddress = emailAddress.IsNullOrEmpty() ? String.Concat(RandomHelper.GetPronouncableString(6), "@", RandomHelper.GetPronouncableString(6), ".com") : emailAddress,
+                EmailAddress = emailAddress.IsNullOrEmpty() ? String.Concat(RandomData.GetWord(false), "@", RandomData.GetWord(false), ".com") : emailAddress,
                 Password = TestConstants.UserPassword,
                 FullName = "Eric Smith",
                 PasswordResetToken = Guid.NewGuid().ToString()
