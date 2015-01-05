@@ -138,9 +138,9 @@ namespace Exceptionless.Helpers {
         }
 
         public static string GetWords(int minWords = 2, int maxWords = 10, bool titleCaseFirstWord = true, bool titleCaseAllWords = true) {
-            if (minWords < 3)
+            if (minWords < 2)
                 throw new ArgumentException("minWords must 2 or more.", "minWords");
-            if (maxWords < 3)
+            if (maxWords < 2)
                 throw new ArgumentException("maxWords must 2 or more.", "maxWords");
 
             var builder = new StringBuilder();
