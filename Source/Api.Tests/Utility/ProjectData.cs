@@ -49,8 +49,13 @@ namespace Exceptionless.Tests.Utility {
                 project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             }
 
-            for (int i = 0; i < RandomData.GetInt(0, 5); i++)
-                project.Configuration.Settings.Add(RandomData.GetWord(), RandomData.GetWord());
+            for (int i = 0; i < RandomData.GetInt(0, 5); i++) {
+                string key = RandomData.GetWord();
+                while (project.Configuration.Settings.ContainsKey(key))
+                    key = RandomData.GetWord();
+
+                project.Configuration.Settings.Add(key, RandomData.GetWord());
+            }
 
             return project;
         }
