@@ -48,7 +48,7 @@ namespace Exceptionless.Tests.Utility {
                 TotalOccurrences = totalOccurrences,
                 IsRegressed = isRegressed,
                 IsHidden = isHidden,
-                SignatureHash = signatureHash ?? RandomData.GetString(10, 10),
+                SignatureHash = signatureHash ?? RandomData.GetAlphaNumericString(10, 10),
                 SignatureInfo = new SettingsDictionary()
             };
 

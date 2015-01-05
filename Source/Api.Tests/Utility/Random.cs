@@ -109,7 +109,7 @@ namespace Exceptionless.Helpers {
         private const string DEFAULT_RANDOM_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@$?_-";
         public static string GetString(int minLength = 5, int maxLength = 20, string allowedChars = DEFAULT_RANDOM_CHARS) {
             var builder = new StringBuilder();
-            int length = GetInt(minLength, maxLength);
+            int length = minLength != maxLength ? GetInt(minLength, maxLength) : minLength;
             char ch;
             for (int i = 0; i < length; i++) {
                 ch = allowedChars[GetInt(0, allowedChars.Length)];
