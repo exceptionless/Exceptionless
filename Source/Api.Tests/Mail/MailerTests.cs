@@ -202,7 +202,7 @@ namespace Exceptionless.Api.Tests.Mail {
                     }
                 },
                 StartDate = DateTime.Now.Date,
-                EndDate = DateTime.Now.ToEndOfDay(),
+                EndDate = DateTime.Now.EndOfDay(),
                 NewTotal = 1,
                 PerHourAverage = 0.4,
                 ProjectName = "Blah",

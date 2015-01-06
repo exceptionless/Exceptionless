@@ -5,6 +5,7 @@ using CommandLine;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using NLog.Fluent;
 using SimpleInjector;
 
 namespace Exceptionless.JobRunner {
@@ -16,7 +17,6 @@ namespace Exceptionless.JobRunner {
                     PauseIfDebug();
                     return 0;
                 }
-
                 Console.WriteLine();
 
                 var type = Type.GetType(ca.JobType);

@@ -8,6 +8,7 @@
       <xs:element name="variable" type="NLogVariable" />
       <xs:element name="targets" type="NLogTargets" />
       <xs:element name="rules" type="NLogRules" />
+      <xs:element name="time" type="TimeSource" />
     </xs:choice>
     <xs:attribute name="autoReload" type="xs:boolean">
       <xs:annotation>
@@ -214,6 +215,7 @@
   </xs:complexType>
   <xs:complexType name="Layout"></xs:complexType>
   <xs:complexType name="Filter" abstract="true"></xs:complexType>
+  <xs:complexType name="TimeSource" abstract="true"></xs:complexType>
   <xs:simpleType name="SimpleLayoutAttribute">
     <xs:restriction base="xs:string">
       <xs:pattern value=".*" />
@@ -991,21 +993,22 @@
           <xs:element name="archiveAboveSize" minOccurs="0" maxOccurs="1" type="xs:long" />
           <xs:element name="maxArchiveFiles" minOccurs="0" maxOccurs="1" type="xs:integer" />
           <xs:element name="forceManaged" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="replaceFileContentsOnEachWrite" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="enableFileDelete" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="deleteOldFileOnStartup" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="createDirs" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="archiveDateFormat" minOccurs="0" maxOccurs="1" type="xs:string" />
-          <xs:element name="fileName" minOccurs="0" maxOccurs="1" type="Layout" />
           <xs:element name="fileAttributes" minOccurs="0" maxOccurs="1" type="NLog.Targets.Win32FileAttributes" />
-          <xs:element name="bufferSize" minOccurs="0" maxOccurs="1" type="xs:integer" />
-          <xs:element name="concurrentWriteAttemptDelay" minOccurs="0" maxOccurs="1" type="xs:integer" />
-          <xs:element name="concurrentWriteAttempts" minOccurs="0" maxOccurs="1" type="xs:integer" />
-          <xs:element name="concurrentWrites" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="keepFileOpen" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="networkWrites" minOccurs="0" maxOccurs="1" type="xs:boolean" />
-          <xs:element name="openFileCacheSize" minOccurs="0" maxOccurs="1" type="xs:integer" />
+          <xs:element name="replaceFileContentsOnEachWrite" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="deleteOldFileOnStartup" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="fileName" minOccurs="0" maxOccurs="1" type="Layout" />
+          <xs:element name="archiveDateFormat" minOccurs="0" maxOccurs="1" type="xs:string" />
+          <xs:element name="archiveOldFileOnStartup" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="createDirs" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="enableFileDelete" minOccurs="0" maxOccurs="1" type="xs:boolean" />
           <xs:element name="openFileCacheTimeout" minOccurs="0" maxOccurs="1" type="xs:integer" />
+          <xs:element name="networkWrites" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="keepFileOpen" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="concurrentWrites" minOccurs="0" maxOccurs="1" type="xs:boolean" />
+          <xs:element name="concurrentWriteAttempts" minOccurs="0" maxOccurs="1" type="xs:integer" />
+          <xs:element name="concurrentWriteAttemptDelay" minOccurs="0" maxOccurs="1" type="xs:integer" />
+          <xs:element name="bufferSize" minOccurs="0" maxOccurs="1" type="xs:integer" />
+          <xs:element name="openFileCacheSize" minOccurs="0" maxOccurs="1" type="xs:integer" />
           <xs:element name="autoFlush" minOccurs="0" maxOccurs="1" type="xs:boolean" />
         </xs:choice>
         <xs:attribute name="name" type="xs:string">
@@ -1068,14 +1071,14 @@
             <xs:documentation>Gets ors set a value indicating whether a managed file stream is forced, instead of used the native implementation.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="fileAttributes" type="NLog.Targets.Win32FileAttributes">
+          <xs:annotation>
+            <xs:documentation>File attributes (Windows only).</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="replaceFileContentsOnEachWrite" type="xs:boolean">
           <xs:annotation>
             <xs:documentation>Indicates whether to replace file contents on each write instead of appending log message at the end.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="enableFileDelete" type="xs:boolean">
-          <xs:annotation>
-            <xs:documentation>Indicates whether to enable log file(s) to be deleted.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="deleteOldFileOnStartup" type="xs:boolean">
@@ -1083,9 +1086,9 @@
             <xs:documentation>Indicates whether to delete old log file on startup.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="createDirs" type="xs:boolean">
+        <xs:attribute name="fileName" type="SimpleLayoutAttribute">
           <xs:annotation>
-            <xs:documentation>Indicates whether to create directories if they don't exist.</xs:documentation>
+            <xs:documentation>Name of the file to write to.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="archiveDateFormat" type="xs:string">
@@ -1093,39 +1096,24 @@
             <xs:documentation>Value specifying the date format to use when archving files.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="fileName" type="SimpleLayoutAttribute">
+        <xs:attribute name="archiveOldFileOnStartup" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation>Name of the file to write to.</xs:documentation>
+            <xs:documentation>Indicates whether to archive old log file on startup.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="fileAttributes" type="NLog.Targets.Win32FileAttributes">
+        <xs:attribute name="createDirs" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation>File attributes (Windows only).</xs:documentation>
+            <xs:documentation>Indicates whether to create directories if they don't exist.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="bufferSize" type="xs:integer">
+        <xs:attribute name="enableFileDelete" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation>Log file buffer size in bytes.</xs:documentation>
+            <xs:documentation>Indicates whether to enable log file(s) to be deleted.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="concurrentWriteAttemptDelay" type="xs:integer">
+        <xs:attribute name="openFileCacheTimeout" type="xs:integer">
           <xs:annotation>
-            <xs:documentation>Delay in milliseconds to wait before attempting to write to the file again.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="concurrentWriteAttempts" type="xs:integer">
-          <xs:annotation>
-            <xs:documentation>Number of times the write is appended on the file before NLog discards the log message.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="concurrentWrites" type="xs:boolean">
-          <xs:annotation>
-            <xs:documentation>Indicates whether concurrent writes to the log file by multiple processes on the same host.</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="keepFileOpen" type="xs:boolean">
-          <xs:annotation>
-            <xs:documentation>Indicates whether to keep log file open instead of opening and closing it on each logging event.</xs:documentation>
+            <xs:documentation>Maximum number of seconds that files are kept open. If this number is negative the files are not automatically closed after a period of inactivity.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="networkWrites" type="xs:boolean">
@@ -1133,14 +1121,34 @@
             <xs:documentation>Indicates whether concurrent writes to the log file by multiple processes on different network hosts.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="keepFileOpen" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation>Indicates whether to keep log file open instead of opening and closing it on each logging event.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="concurrentWrites" type="xs:boolean">
+          <xs:annotation>
+            <xs:documentation>Indicates whether concurrent writes to the log file by multiple processes on the same host.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="concurrentWriteAttempts" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Number of times the write is appended on the file before NLog discards the log message.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="concurrentWriteAttemptDelay" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Delay in milliseconds to wait before attempting to write to the file again.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="bufferSize" type="xs:integer">
+          <xs:annotation>
+            <xs:documentation>Log file buffer size in bytes.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="openFileCacheSize" type="xs:integer">
           <xs:annotation>
             <xs:documentation>Number of files to be kept open. Setting this to a higher value may improve performance in a situation where a single File target is writing to many files (such as splitting by level or by logger).</xs:documentation>
-          </xs:annotation>
-        </xs:attribute>
-        <xs:attribute name="openFileCacheTimeout" type="xs:integer">
-          <xs:annotation>
-            <xs:documentation>Maximum number of seconds that files are kept open. If this number is negative the files are not automatically closed after a period of inactivity.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="autoFlush" type="xs:boolean">
@@ -1165,6 +1173,7 @@
       <xs:enumeration value="Sequence" />
       <xs:enumeration value="Rolling" />
       <xs:enumeration value="Date" />
+      <xs:enumeration value="DateAndSequence" />
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="NLog.Targets.FileArchivePeriod">
@@ -2651,6 +2660,34 @@
             <xs:documentation>Layout to be used to filter log messages.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="AccurateLocal">
+    <xs:complexContent>
+      <xs:extension base="TimeSource">
+        <xs:choice minOccurs="0" maxOccurs="unbounded" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="AccurateUTC">
+    <xs:complexContent>
+      <xs:extension base="TimeSource">
+        <xs:choice minOccurs="0" maxOccurs="unbounded" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="FastLocal">
+    <xs:complexContent>
+      <xs:extension base="TimeSource">
+        <xs:choice minOccurs="0" maxOccurs="unbounded" />
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+  <xs:complexType name="FastUTC">
+    <xs:complexContent>
+      <xs:extension base="TimeSource">
+        <xs:choice minOccurs="0" maxOccurs="unbounded" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
