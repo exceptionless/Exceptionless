@@ -67,7 +67,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
+            container.Register<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
@@ -142,7 +142,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<FormattingPluginManager>();
         }
 
-        private static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
+        public static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
             var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
             settings.EnableMetrics();
             settings.SetJsonSerializerSettingsModifier(s => {

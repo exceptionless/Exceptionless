@@ -52,7 +52,14 @@ namespace Exceptionless.Core.Utility {
                 if (!res.IsValid)
                     return HealthCheckResult.NotHealthy("ElasticSearch Ping Failed");
             } catch (Exception ex) {
-                return HealthCheckResult.NotHealthy("ElasticSearch Not Working: " + ex.Message);
+                bool isValid = false;
+                try {
+                    var client = Bootstrapper.GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString));
+                    var res = client.Ping();
+                    isValid = res.IsValid;
+                } catch {}
+
+                return HealthCheckResult.NotHealthy("ElasticSearch Not Working: " + ex.Message + " - 2nd: " + isValid);
             }
 
             return HealthCheckResult.Healthy;
