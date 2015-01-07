@@ -38,12 +38,12 @@ namespace Exceptionless.Core.AppStats {
 
             foreach (var key in _gauges.Keys.ToList()) {
                 Debug.WriteLine("Gauge: {0} Value: {1}", key, _gauges[key].Peek());
-                Debug.WriteLine("Gauge: {0} Avg Value: {1}", key, _gauges[key].Average());
-                Debug.WriteLine("Gauge: {0} Max Value: {1}", key, _gauges[key].Max());
+                Debug.WriteLine("Gauge: {0} Avg Value: {1}", key, _gauges[key].ToArray().Average());
+                Debug.WriteLine("Gauge: {0} Max Value: {1}", key, _gauges[key].ToArray().Max());
             }
 
             foreach (var key in _timings.Keys.ToList())
-                Debug.WriteLine("Timing: {0} Avg Value: {1}", key, _timings[key].Average());
+                Debug.WriteLine("Timing: {0} Avg Value: {1}", key, _timings[key].ToArray().Average());
             
             if (_counters.Count > 0 || _gauges.Count > 0 || _timings.Count > 0)
                 Debug.WriteLine("-----");
