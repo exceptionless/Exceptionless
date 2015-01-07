@@ -10,11 +10,10 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Pipeline;
+using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Repositories.Base;
-using NLog.Fluent;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
@@ -27,13 +26,11 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
+        public override void ProcessBatch(ICollection<EventContext> contexts) {
+            _eventRepository.Add(contexts.Select(c => c.Event).ToList());
+        }
+
         public override void Process(EventContext ctx) {
-            try {
-                ctx.Event = _eventRepository.Add(ctx.Event);
-            } catch (DuplicateDocumentException ex) {
-                Log.Info().Project(ctx.Event.ProjectId).Message("Ignoring duplicate error submission: {0}", ctx.Event.Id).Write();
-                ctx.IsCancelled = true;
-            }
         }
     }
 }

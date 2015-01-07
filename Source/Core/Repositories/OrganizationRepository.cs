@@ -69,21 +69,6 @@ namespace Exceptionless.Core.Repositories {
             return Find<Organization>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
-        public void IncrementEventCounter(string organizationId, long eventCount = 1) {
-            if (String.IsNullOrEmpty(organizationId))
-                throw new ArgumentNullException("organizationId");
-
-            var update = new UpdateBuilder();
-            if (eventCount < 0)
-                return;
-            
-            update.Inc(FieldNames.TotalEventCount, eventCount);
-            update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
-
-            UpdateAll(new QueryOptions().WithId(organizationId), update);
-            InvalidateCache(organizationId);
-        }
-
         public ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var options = new MongoOptions().WithPaging(paging);
             if (!String.IsNullOrWhiteSpace(criteria))
@@ -342,9 +327,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.MaxUsers).SetElementName(FieldNames.MaxUsers);
             cm.GetMemberMap(c => c.MaxProjects).SetElementName(FieldNames.MaxProjects);
             cm.GetMemberMap(c => c.MaxEventsPerMonth).SetElementName(FieldNames.MaxEventsPerMonth);
-            cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
-            cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
-
             cm.GetMemberMap(c => c.IsSuspended).SetElementName(FieldNames.IsSuspended);
             cm.GetMemberMap(c => c.SuspensionCode).SetElementName(FieldNames.SuspensionCode).SetIgnoreIfNull(true);
             cm.GetMemberMap(c => c.SuspensionNotes).SetElementName(FieldNames.SuspensionNotes).SetIgnoreIfNull(true);

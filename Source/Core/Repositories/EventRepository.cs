@@ -240,6 +240,10 @@ namespace Exceptionless.Core.Repositories {
             return GetByOrganizationIds(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
+        public long GetCountByOrganizationId(string organizationId) {
+            return Count(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId));
+        }
+
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return base.GetByOrganizationIds(organizationIds, GetPagingWithSortingOptions(paging), useCache, expiresIn);
         }
@@ -265,6 +269,10 @@ namespace Exceptionless.Core.Repositories {
 
         public override ICollection<PersistentEvent> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return base.GetByProjectId(projectId, GetPagingWithSortingOptions(paging), useCache, expiresIn);
+        }
+
+        public long GetCountByProjectId(string projectId) {
+            return Count(new ElasticSearchOptions<PersistentEvent>().WithProjectId(projectId));
         }
 
         private ElasticSearchPagingOptions<PersistentEvent> GetPagingWithSortingOptions(PagingOptions paging) {

@@ -12,10 +12,13 @@
 using System;
 using System.Configuration;
 using System.Net;
+using System.Threading.Tasks;
+using Elasticsearch.Net.Connection;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
 using Exceptionless.Core.Messaging;
@@ -68,7 +71,6 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            ServicePointManager.SetTcpKeepAlive(true, 60 * 1000, 5 * 1000);
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {

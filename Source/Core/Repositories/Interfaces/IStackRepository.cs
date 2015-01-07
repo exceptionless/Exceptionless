@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Repositories {
         ICollection<Stack> GetByFilter(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
 
         void MarkAsRegressed(string stackId);
-        void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc);
+        void IncrementEventCounter(string organizationId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count);
         void InvalidateCache(string projectId, string stackId, string signatureHash);
     }
 }

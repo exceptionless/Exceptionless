@@ -1,4 +1,6 @@
-﻿namespace Exceptionless.Core.Pipeline
+﻿using System;
+
+namespace Exceptionless.Core.Pipeline
 {
     /// <summary>
     /// The interface for pipeline context data
@@ -19,6 +21,14 @@
         /// 	<c>true</c> if this pipeline context is processed; otherwise, <c>false</c>.
         /// </value>
         bool IsProcessed { get; set; }
+
+        /// <summary>
+        /// Gets or sets the exception that occurred during processing of this context.
+        /// </summary>
+        /// <value>
+        /// 	<c>Exception</c> if an error occurred during processing; otherwise, <c>null</c>.
+        /// </value>
+        Exception Exception { get; set; }
     }
 
     /// <summary>
@@ -40,5 +50,13 @@
         /// 	<c>true</c> if this pipeline context is processed; otherwise, <c>false</c>.
         /// </value>
         public bool IsProcessed { get; set; }
+
+        /// <summary>
+        /// Gets or sets the exception that occurred during processing of this context.
+        /// </summary>
+        /// <value>
+        /// 	<c>Exception</c> if an error occurred during processing; otherwise, <c>null</c>.
+        /// </value>
+        public Exception Exception { get; set; }
     }
 }

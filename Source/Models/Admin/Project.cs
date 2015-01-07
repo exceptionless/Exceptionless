@@ -49,16 +49,6 @@ namespace Exceptionless.Models {
         public bool DeleteBotDataEnabled { get; set; }
 
         /// <summary>
-        /// Total events logged by our system.
-        /// </summary>
-        public long TotalEventCount { get; set; }
-
-        /// <summary>
-        /// The date that the latest event occurred.
-        /// </summary>
-        public DateTime LastEventDate { get; set; }
-
-        /// <summary>
         /// The tick count that represents the next time the daily summary job should run. This time is set to midnight of the
         /// projects local time.
         /// </summary>

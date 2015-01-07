@@ -49,15 +49,15 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(DateTime.MinValue, stack.LastOccurrence);
 
             var utcNow = DateTime.UtcNow;
-            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow);
+            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow, utcNow, 1);
             _client.Refresh();
 
             stack = _repository.GetById(TestConstants.StackId);
             Assert.Equal(1, stack.TotalOccurrences);
             Assert.Equal(utcNow, stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
-            
-            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow.SubtractDays(1));
+
+            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow.SubtractDays(1), utcNow.SubtractDays(1), 1);
             _client.Refresh();
 
             stack = _repository.GetById(TestConstants.StackId);
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(utcNow.SubtractDays(1), stack.FirstOccurrence);
             Assert.Equal(utcNow, stack.LastOccurrence);
 
-            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow.AddDays(1));
+            _repository.IncrementEventCounter(TestConstants.OrganizationId, TestConstants.StackId, utcNow.AddDays(1), utcNow.AddDays(1), 1);
             _client.Refresh();
 
             stack = _repository.GetById(TestConstants.StackId);

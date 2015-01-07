@@ -22,67 +22,11 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
         private readonly BillingManager _billingManager = IoC.GetInstance<BillingManager>();
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         public EventPipelineTests() {
             RemoveData(true);
             CreateData();
-        }
-
-        [Fact]
-        public void VerifyOrganizationAndProjectStatistics() {
-            RemoveData(true);
-            CreateData();
-
-            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
-
-            var organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.NotNull(organization);
-            Assert.Equal(0, organization.TotalEventCount);
-
-            Assert.Equal(1, _projectRepository.GetCountByOrganizationId(organization.Id));
-            var project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.NotNull(project);
-            Assert.Equal(0, project.TotalEventCount);
-
-            var pipeline = IoC.GetInstance<EventPipeline>();
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
-
-            organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.Equal(1, organization.TotalEventCount);
-
-            project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.Equal(1, project.TotalEventCount);
-
-            Assert.Throws<ArgumentException>(() => pipeline.Run(ev));
-            organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.Equal(1, organization.TotalEventCount);
-
-            project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.Equal(1, project.TotalEventCount);
-
-            ev.Id = null;
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
-
-            organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.Equal(2, organization.TotalEventCount);
-
-            project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.Equal(2, project.TotalEventCount);
-
-            Assert.DoesNotThrow(() => pipeline.Run(EventData.GenerateSampleEvent()));
-
-            organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.Equal(3, organization.TotalEventCount);
-
-            project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.Equal(3, project.TotalEventCount);
-
-            _eventRepository.RemoveAllByStackIdsAsync(new [] { ev.StackId }).Wait();
-            organization = _organizationRepository.GetById(TestConstants.OrganizationId);
-            Assert.Equal(3, organization.TotalEventCount);
-
-            project = _projectRepository.GetById(TestConstants.ProjectId);
-            Assert.Equal(3, project.TotalEventCount);
         }
 
         [Fact]

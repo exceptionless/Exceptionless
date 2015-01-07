@@ -124,6 +124,37 @@ namespace Exceptionless.Core.Repositories {
             return _elasticClient.Search<T>(searchDescriptor).HitsMetaData.Total > 0;
         }
 
+        protected long Count(ElasticSearchOptions<T> options) {
+            if (options == null)
+                throw new ArgumentNullException("options");
+
+            long? result = null;
+            if (options.UseCache)
+                result = Cache.Get<long?>(GetScopedCacheKey("count-" + options.CacheKey));
+
+            if (result.HasValue)
+                return result.Value;
+
+            var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter())));
+            countDescriptor.Indices(options.Indices);
+            countDescriptor.IgnoreUnavailable();
+
+            countDescriptor.Type(typeof(T));
+
+            _elasticClient.EnableTrace();
+            var results = _elasticClient.Count<T>(countDescriptor);
+            _elasticClient.DisableTrace();
+            if (!results.IsValid)
+                throw new ApplicationException("Error occurred processing request.");
+
+            result = results.Count;
+
+            if (options.UseCache)
+                Cache.Set(GetScopedCacheKey("count-" + options.CacheKey), result, options.GetCacheExpirationDate());
+
+            return result.Value;
+        }
+
         protected ICollection<T> Find(ElasticSearchOptions<T> options) {
             return FindAs<T>(options);
         }
@@ -152,14 +183,13 @@ namespace Exceptionless.Core.Repositories {
             if (options.SortBy.Count > 0)
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
-
+            
             _elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
             _elasticClient.DisableTrace();
             if (!results.IsValid)
                 throw new ApplicationException("Error occurred processing request.");
 
-            Debug.WriteLine("Results: " + results.Total);
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
             var items = results.Documents.ToList();

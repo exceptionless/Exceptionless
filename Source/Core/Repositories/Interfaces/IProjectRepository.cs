@@ -17,7 +17,6 @@ namespace Exceptionless.Core.Repositories {
     public interface IProjectRepository : IRepositoryOwnedByOrganization<Project> {
         ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10);
         long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids);
-        void IncrementEventCounter(string projectId, long eventCount = 1);
         long GetCountByOrganizationId(string organizationId);
     }
 }
