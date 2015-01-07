@@ -32,5 +32,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
 
         public bool IsCancelled { get; set; }
         public bool IsProcessed { get; set; }
+        public Exception Exception { get; set; }
     }
 }

@@ -12,7 +12,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -37,43 +36,53 @@ namespace Exceptionless.Core.Pipeline {
             Run(new EventContext(ev));
         }
 
-        protected override void Run(EventContext context, IEnumerable<Type> actionTypes) {
-            _statsClient.Counter(StatNames.EventsSubmitted);
+        public void Run(ICollection<PersistentEvent> events) {
+            Run(events.Select(ev => new EventContext(ev)).ToList());
+        }
+
+        protected override void Run(ICollection<EventContext> contexts, IEnumerable<Type> actionTypes) {
+            if (contexts == null || contexts.Count == 0)
+                return;
+
+            _statsClient.Counter(StatNames.EventsSubmitted, contexts.Count);
             try {
-                if (!String.IsNullOrEmpty(context.Event.Id))
-                    throw new ArgumentException("Event Id should not be populated.");
+                if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
+                    throw new ArgumentException("All Event Ids should not be populated.");
 
-                if (String.IsNullOrEmpty(context.Event.ProjectId))
-                    throw new ArgumentException("ProjectId must be populated on the Event.");
+                string projectId = contexts.First().Event.ProjectId;
+                if (String.IsNullOrEmpty(projectId))
+                    throw new ArgumentException("All Project Ids must be populated.");
 
-                if (context.Project == null)
-                    context.Project = _projectRepository.GetById(context.Event.ProjectId, true);
+                if (contexts.Any(c => c.Event.ProjectId != projectId))
+                    throw new ArgumentException("All Project Ids must be the same for a batch of events.");
 
-                if (context.Project == null)
-                    throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", context.Event.ProjectId));
+                var project = _projectRepository.GetById(projectId, true);
+                if (project == null)
+                    throw new InvalidOperationException(String.Format("Unable to load project \"{0}\"", projectId));
 
-                if (String.IsNullOrEmpty(context.Event.OrganizationId))
-                    context.Event.OrganizationId = context.Project.OrganizationId;
+                contexts.ForEach(c => c.Project = project);
 
-                if (context.Organization == null)
-                    context.Organization = _organizationRepository.GetById(context.Event.OrganizationId, true);
+                var organization = _organizationRepository.GetById(project.OrganizationId, true);
+                if (organization == null)
+                    throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", project.OrganizationId));
 
-                if (context.Organization == null)
-                    throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", context.Event.OrganizationId));
+                contexts.ForEach(c => c.Organization = organization);
 
                 // load organization settings into the context
-                foreach (var key in context.Organization.Data.Keys)
-                    context.SetProperty(key, context.Organization.Data[key]);
+                foreach (var key in organization.Data.Keys)
+                    contexts.ForEach(c => c.SetProperty(key, organization.Data[key]));
 
                 // load project settings into the context, overriding any organization settings with the same name
-                foreach (var key in context.Project.Data.Keys)
-                    context.SetProperty(key, context.Project.Data[key]);
+                foreach (var key in project.Data.Keys)
+                    contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                _statsClient.Time(() => base.Run(context, actionTypes), StatNames.EventsProcessingTime);
-                if (context.IsCancelled)
-                    _statsClient.Counter(StatNames.EventsProcessCancelled);
+                _statsClient.Time(() => base.Run(contexts, actionTypes), StatNames.EventsProcessingTime);
+
+                var count = contexts.Count(c => c.IsCancelled);
+                if (count > 0)
+                    _statsClient.Counter(StatNames.EventsProcessCancelled, count);
             } catch (Exception) {
-                _statsClient.Counter(StatNames.EventsProcessErrors);
+                _statsClient.Counter(StatNames.EventsProcessErrors, contexts.Count);
                 throw;
             }
         }

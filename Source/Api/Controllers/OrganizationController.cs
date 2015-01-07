@@ -548,7 +548,7 @@ namespace Exceptionless.Api.Controllers {
             var currentUser = ExceptionlessUser;
 
             foreach (var organization in organizations) {
-                Log.Info().Message("User {0} deleting organization {1} with {2} total events.", currentUser.Id, organization.Id, organization.TotalEventCount).Write();
+                Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Write();
 
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();

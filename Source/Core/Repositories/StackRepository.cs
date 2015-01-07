@@ -54,20 +54,23 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(projectId, "-", signatureHash, "-", STACKING_VERSION);
         }
 
-        public void IncrementEventCounter(string organizationId, string stackId, DateTime occurrenceDateUtc) {
+        public void IncrementEventCounter(string organizationId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = _elasticClient.Update<Stack>(s => s
                 .Id(stackId)
                 .Lang("groovy")
-                .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > occurrenceDateUtc) {
-                            ctx._source.first_occurrence = occurrenceDateUtc;
+                .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
+                            ctx._source.first_occurrence = minOccurrenceDateUtc;
                           }
-                          if (ctx._source.last_occurrence < occurrenceDateUtc) {
-                            ctx._source.last_occurrence = occurrenceDateUtc;
+                          if (ctx._source.last_occurrence < maxOccurrenceDateUtc) {
+                            ctx._source.last_occurrence = maxOccurrenceDateUtc;
                           }
-                          ctx._source.total_occurrences += 1;")
-                .Params(p => p.Add("occurrenceDateUtc", occurrenceDateUtc)));
+                          ctx._source.total_occurrences += count;")
+                .Params(p => p
+                    .Add("minOccurrenceDateUtc", minOccurrenceDateUtc)
+                    .Add("maxOccurrenceDateUtc", maxOccurrenceDateUtc)
+                    .Add("count", count)));
             
             if (!result.IsValid) {
                 Log.Error().Message("Error occurred incrementing stack count.");

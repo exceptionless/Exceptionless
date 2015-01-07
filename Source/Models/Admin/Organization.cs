@@ -144,16 +144,6 @@ namespace Exceptionless.Models {
         public int MaxProjects { get; set; }
 
         /// <summary>
-        /// The date that the latest event occurred.
-        /// </summary>
-        public DateTime LastEventDate { get; set; }
-
-        /// <summary>
-        /// Total events logged by our system.
-        /// </summary>
-        public long TotalEventCount { get; set; }
-
-        /// <summary>
         /// Organization invites.
         /// </summary>
         public ICollection<Invite> Invites { get; set; }

@@ -10,31 +10,28 @@
 #endregion
 
 using System;
-using System.Collections.Concurrent;
-using Exceptionless.Core.Pipeline;
+using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(60)]
     public class UpdateStatsAction : EventPipelineActionBase {
-        private readonly IOrganizationRepository _organizationRepository;
-        private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
 
-        public UpdateStatsAction(IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository) {
-            _organizationRepository = organizationRepository;
-            _projectRepository = projectRepository;
+        public UpdateStatsAction(IStackRepository stackRepository) {
             _stackRepository = stackRepository;
         }
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            _organizationRepository.IncrementEventCounter(ctx.Event.OrganizationId);
-            _projectRepository.IncrementEventCounter(ctx.Event.ProjectId);
-            if (!ctx.IsNew)
-                _stackRepository.IncrementEventCounter(ctx.Event.OrganizationId, ctx.Event.StackId, ctx.Event.Date.UtcDateTime);
+        public override void Process(EventContext ctx) {}
+
+        public override void ProcessBatch(ICollection<EventContext> contexts) {
+            var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
+            foreach (var stack in stacks)
+                _stackRepository.IncrementEventCounter(stack.First().Event.OrganizationId, stack.Key, stack.Min(s => s.Event.Date.UtcDateTime), stack.Max(s => s.Event.Date.UtcDateTime), stack.Count());
         }
     }
 }

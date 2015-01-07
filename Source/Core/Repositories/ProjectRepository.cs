@@ -30,21 +30,6 @@ namespace Exceptionless.Core.Repositories {
         public long GetCountByOrganizationId(string organizationId) {
             return _collection.Count(new OneOptions().WithOrganizationId(organizationId).GetMongoQuery(_getIdValue));
         }
-
-        public void IncrementEventCounter(string projectId, long eventCount = 1) {
-            if (String.IsNullOrEmpty(projectId))
-                throw new ArgumentNullException("projectId");
-
-            if (eventCount < 1)
-                return;
-
-            var update = new UpdateBuilder();
-            update.Inc(FieldNames.TotalEventCount, eventCount);
-            update.Set(FieldNames.LastEventDate, new BsonDateTime(DateTime.UtcNow));
-
-            UpdateAll(new QueryOptions().WithId(projectId), update);
-            InvalidateCache(projectId);
-        }
         
         public ICollection<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             IMongoQuery query = Query.LT(FieldNames.NextSummaryEndOfDayTicks, new BsonInt64(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
@@ -86,8 +71,6 @@ namespace Exceptionless.Core.Repositories {
             cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
             cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
             cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.TotalEventCount).SetElementName(FieldNames.TotalEventCount);
-            cm.GetMemberMap(c => c.LastEventDate).SetElementName(FieldNames.LastEventDate).SetIgnoreIfDefault(true);
             cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);
 
             cm.GetMemberMap(c => c.PromotedTabs).SetElementName(FieldNames.PromotedTabs).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).PromotedTabs.Any());
