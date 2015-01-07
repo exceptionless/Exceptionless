@@ -11,6 +11,7 @@
 
 using System;
 using System.Configuration;
+using System.Net;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
@@ -67,6 +68,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
+            ServicePointManager.SetTcpKeepAlive(true, TimeSpan.FromMinutes(1).Seconds, TimeSpan.FromSeconds(5).Seconds);
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {
