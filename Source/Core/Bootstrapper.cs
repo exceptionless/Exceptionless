@@ -68,7 +68,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            ServicePointManager.SetTcpKeepAlive(true, TimeSpan.FromMinutes(1).Seconds, TimeSpan.FromSeconds(5).Seconds);
+            ServicePointManager.SetTcpKeepAlive(true, 60 * 1000, 5 * 1000);
             container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {
