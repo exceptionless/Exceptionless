@@ -67,7 +67,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.Register<IElasticClient>(() => GetElasticClient());
+            container.Register<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
@@ -106,8 +106,8 @@ namespace Exceptionless.Core {
             else
                 container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());
 
-            container.Register<IStackRepository, StackRepository>();
-            container.Register<IEventRepository, EventRepository>();
+            container.RegisterSingle<IStackRepository, StackRepository>();
+            container.RegisterSingle<IEventRepository, EventRepository>();
             container.RegisterSingle<IOrganizationRepository, OrganizationRepository>();
             container.RegisterSingle<IProjectRepository, ProjectRepository>();
             container.RegisterSingle<IUserRepository, UserRepository>();
@@ -136,27 +136,14 @@ namespace Exceptionless.Core {
             container.Register<ILockProvider, CacheLockProvider>();
             container.Register<StripeEventHandler>();
             container.RegisterSingle<BillingManager>();
-            container.Register<DataHelper>();
-            container.Register<EventStats>();
+            container.RegisterSingle<DataHelper>();
+            container.RegisterSingle<EventStats>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
         }
 
-        private static readonly object _lock = new object();
-        public static IElasticClient GetElasticClient(bool deleteExistingIndexes = false) {
-            lock (_lock) {
-                bool isFirst = !_settings.IsValueCreated;
-
-                var client = new ElasticClient(_settings.Value);
-                if (isFirst)
-                    ConfigureMapping(client, deleteExistingIndexes);
-
-                return client;
-            }
-        }
-
-        private static readonly Lazy<ConnectionSettings> _settings = new Lazy<ConnectionSettings>(() => {
-            var settings = new ConnectionSettings(new Uri(Settings.Current.ElasticSearchConnectionString)).SetDefaultIndex("_all");
+        public static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
+            var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
             settings.EnableMetrics();
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
@@ -167,8 +154,11 @@ namespace Exceptionless.Core {
             settings.MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
-            return settings;
-        });
+            var client = new ElasticClient(settings);
+            ConfigureMapping(client, deleteExistingIndexes);
+
+            return client;
+        }
 
         private static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
             if (deleteExistingIndexes)
