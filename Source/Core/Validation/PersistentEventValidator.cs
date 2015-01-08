@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Validation {
             if (ev.Date == DateTimeOffset.MinValue)
                 result.Errors.Add(new ValidationFailure("Date", "Date must be specified."));
 
-            if (ev.Date.UtcDateTime <= DateTime.UtcNow.AddHours(1))
+            if (ev.Date.UtcDateTime > DateTime.UtcNow.AddHours(1))
                 result.Errors.Add(new ValidationFailure("Date", "Date cannot be in the future."));
 
             if (String.IsNullOrEmpty(ev.Type) || ev.Type.Length > 100)
