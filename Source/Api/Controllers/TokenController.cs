@@ -22,7 +22,6 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
-using FluentValidation.Validators;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]

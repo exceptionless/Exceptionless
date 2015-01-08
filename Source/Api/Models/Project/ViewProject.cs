@@ -13,7 +13,5 @@ namespace Exceptionless.Api.Models {
         public HashSet<string> PromotedTabs { get; set; }
         public long StackCount { get; set; }
         public long EventCount { get; set; }
-        public long TotalEventCount { get; set; }
-        public DateTime LastEventDate { get; set; }
     }
 }
