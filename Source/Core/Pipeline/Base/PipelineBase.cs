@@ -21,17 +21,13 @@ namespace Exceptionless.Core.Pipeline {
     public abstract class PipelineBase<TContext, TAction>
         where TAction : class, IPipelineAction<TContext>
         where TContext : IPipelineContext {
-        protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache;
-        protected static readonly ConcurrentDictionary<Type, ConcurrentDictionary<Type, IPipelineAction<TContext>>> _actionCache;
+        protected static readonly ConcurrentDictionary<Type, IList<Type>> _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
         private readonly IDependencyResolver _dependencyResolver;
-
-        static PipelineBase() {
-            _actionTypeCache = new ConcurrentDictionary<Type, IList<Type>>();
-            _actionCache = new ConcurrentDictionary<Type, ConcurrentDictionary<Type, IPipelineAction<TContext>>>();
-        }
+        private readonly IList<IPipelineAction<TContext>> _actions; 
 
         public PipelineBase(IDependencyResolver dependencyResolver = null) {
             _dependencyResolver = dependencyResolver ?? new DefaultDependencyResolver();
+            _actions = GetActionTypes().Select(t => _dependencyResolver.GetService(t) as IPipelineAction<TContext>).ToList();
         }
 
         /// <summary>
@@ -39,32 +35,18 @@ namespace Exceptionless.Core.Pipeline {
         /// </summary>
         /// <param name="context">The context to run the actions with.</param>
         public virtual TContext Run(TContext context) {
-            var actionTypes = GetActionTypes();
-            return Run(new[] { context }, actionTypes).First();
-        }
-
-        /// <summary>
-        /// Runs all the actions of the pipeline with the specified context list.
-        /// </summary>
-        /// <param name="contexts">The context list to run the actions with.</param>
-        public virtual ICollection<TContext> Run(ICollection<TContext> contexts) {
-            var actionTypes = GetActionTypes();
-            return Run(contexts, actionTypes);
+            return Run(new[] { context }).First();
         }
 
         /// <summary>
         /// Runs all the specified actions with the specified context.
         /// </summary>
         /// <param name="contexts">The context to run the actions with.</param>
-        /// <param name="actionTypes">The ordered list of action types to run on the context.</param>
-        protected virtual ICollection<TContext> Run(ICollection<TContext> contexts, IEnumerable<Type> actionTypes) {
+        public virtual ICollection<TContext> Run(ICollection<TContext> contexts) {
             PipelineRunning(contexts);
 
-            var cache = _actionCache.GetOrAdd(typeof(TAction), new ConcurrentDictionary<Type, IPipelineAction<TContext>>());
-            foreach (Type actionType in actionTypes) {
-                var action = cache.GetOrAdd(actionType, _dependencyResolver.GetService(actionType) as TAction);
-                if (action != null)
-                    action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && c.Exception == null).ToList());
+            foreach (var action in _actions) {
+                action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && c.Exception == null).ToList());
 
                 if (contexts.All(c => c.IsCancelled))
                     break;

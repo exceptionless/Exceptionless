@@ -26,6 +26,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
@@ -142,6 +143,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<BillingManager>();
             container.RegisterSingle<DataHelper>();
             container.RegisterSingle<EventStats>();
+            container.RegisterSingle<EventPipeline>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
         }

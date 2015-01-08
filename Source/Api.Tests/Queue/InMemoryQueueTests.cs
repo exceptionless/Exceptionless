@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Queues;
 using Exceptionless.Helpers;
-using Exceptionless.Threading.Tasks;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Queue {
@@ -49,7 +46,7 @@ namespace Exceptionless.Api.Tests.Queue {
             using (var queue = GetQueue()) {
                 queue.DeleteQueue();
 
-                const int workItemCount = 5;
+                const int workItemCount = 25;
                 for (int i = 0; i < workItemCount; i++) {
                     queue.Enqueue(new SimpleWorkItem {
                         Data = "Hello"

@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Pipeline {
             return Run(events.Select(ev => new EventContext(ev)).ToList());
         }
 
-        protected override ICollection<EventContext> Run(ICollection<EventContext> contexts, IEnumerable<Type> actionTypes) {
+        public override ICollection<EventContext> Run(ICollection<EventContext> contexts) {
             if (contexts == null || contexts.Count == 0)
                 return contexts ?? new List<EventContext>();
 
@@ -79,7 +79,7 @@ namespace Exceptionless.Core.Pipeline {
                 foreach (var key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                _statsClient.Time(() => base.Run(contexts, actionTypes), StatNames.EventsProcessingTime);
+                _statsClient.Time(() => base.Run(contexts), StatNames.EventsProcessingTime);
 
                 var count = contexts.Count(c => c.IsCancelled);
                 if (count > 0)
