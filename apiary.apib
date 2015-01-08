@@ -433,6 +433,31 @@ Organizations related resources of the **Organization API**
             "data": {}
         }]
 
+## Get invoice [/organizations/invoice/{id}]
+### Get invoice [GET]
+Returns a collection of invoices.
+
++ Parameters
+    + id (required, string, `5T6jZsbMu6AI3S`) ... The identifier of the organization.
+ 
++ Response 200 (application/json)
+
+        {
+          "id": "5T6jZsbMu6AI3S",
+          "organization_id": "537650f3b77efe23a47914f3",
+          "organization_name": "Acme",
+          "date": "2020-01-01T19:28:36.165Z",
+          "paid": true,
+          "total": 499.0,
+          "items": [
+            {
+              "description": "Exceptionless - My Random Plan ($499.00/month)",
+              "date": "1/1/2020 - 2/1/2020",
+              "amount": 499.0
+            }
+          ]
+        }
+
 ## Get invoices [/organizations/{id}/invoices{?before,after,limit}]
 ### Get invoices [GET]
 Returns a collection of invoices.
@@ -446,8 +471,8 @@ Returns a collection of invoices.
 + Response 200 (application/json)
 
         [{
-            "id": "112650f3b77efe23a4791455",
-            "date": "2020-10-16T18:59:09.579Z",
+            "id": "5T6jZsbMu6AI3S",
+            "date": "2020-01-01T19:28:36.165Z",
             "paid": true
         }]
 
@@ -474,7 +499,11 @@ Upgrades or downgrades the organizations plan.
     + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
 
 ### Create new user [POST]
-+ Response 200
++ Response 200 (application/json)
+
+        {
+            "email_address": "noreply@exceptionless.com"
+        }
 
 ### Remove user [DELETE]
 + Response 200
@@ -704,7 +733,7 @@ Project related resources of the **Projects API**
 ### Demote Tab [DELETE]
 + Response 200
 
-## User notification settings [/projects/{id}/notifications/{user_id}]
+## User notification settings [/users/{user_id}/projects/{id}/notifications]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
     + user_id (required, string, `537b6e77b77efe102444053d`) ... A identifier of the user.
@@ -1180,6 +1209,71 @@ To create a new token, you must specify an organization_id. There are three vali
             "notes": "My client access token for project Acme."
         }
 
+## Create for organization [/organizations/{id}/tokens]
+### Create new token for a specific organization. This is a helper action that makes it easier to create a token for a specific organization [POST]
+You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.
+
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
+    
++ Request (application/json)
+
+        {
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": null,
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+        
+## Create for project [/projects/{id}/tokens]
+### Create new token for a specific project. This is a helper action that makes it easier to create a token for a specific project [POST]
+You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.
+
++ Parameters
+    + id (optional, string, `537650f3b77efe23a47914f4`) ... The identifier of the project.
+    
++ Request (application/json)
+
+        {
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
++ Response 201 (application/json)
+
+        {
+            "id": "e3d51ea621464280bbcb79c11fd6483e",
+            "refresh": null,
+            "created_utc": "2020-10-16T18:59:09.692Z",
+            "modified_utc": "2020-10-16T18:59:09.692Z",
+            "organization_id": null,
+            "project_id": "537650f3b77efe23a47914f4",
+            "application_id": null,
+            "default_project_id": null,
+            "scopes": ["client"],
+            "notes": "My client access token for project Acme."
+        }
+
+## Remove [/tokens/{ids}]
++ Parameters
+    + ids (required, string, `e3d51ea621464280bbcb79c11fd6483e,54d51ea621464280bbcb79c11fd64866`) ...  A comma delimited list of token identifiers.
+    
+### Remove tokens [DELETE]
++ Response 204
+
 ## Get [/tokens/{id}]
 + Parameters
     + id (required, string, `e3d51ea621464280bbcb79c11fd6483e`) ... The identifier of the token.
@@ -1199,13 +1293,6 @@ To create a new token, you must specify an organization_id. There are three vali
             "scopes": [],
             "notes": null
         }
-
-## Remove [/tokens/{ids}]
-+ Parameters
-    + ids (required, string, `e3d51ea621464280bbcb79c11fd6483e,54d51ea621464280bbcb79c11fd64866`) ...  A comma delimited list of token identifiers.
-    
-### Remove tokens [DELETE]
-+ Response 204
 
 ## Get by organization [/organizations/{id}/tokens{?page,limit}]
 ### List all tokens for a given organization [GET]
@@ -1302,7 +1389,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             ]
         }
 
-## Get, Update [/webhooks/{id}]
+## Get [/webhooks/{id}]
 + Parameters
     + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the web hook.
 
@@ -1314,26 +1401,6 @@ To create a new web hook, you must specify project_id, url and event_types.
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "url": "http://exceptionless.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }
-
-### Update web hook [PATCH]
-+ Request (application/json)
-
-        { "url": "https://mycompanywebsite.com" }
-
-+ Response 200 (application/json)
-
-        {
-            "id": "537b84cfb77efe2474072488",
-            "organization_id": "537650f3b77efe23a47914f3",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "https://mycompanywebsite.com",
             "event_types": [
                 "NewError",
                 "ErrorRegression",
@@ -2710,3 +2777,37 @@ Returns a `404` status code if an account with the specified email address does 
             "is_invite": false,
             "has_admin_role": false
         }]
+        
+# Group Status
+Status related resources of the **Status API**
+
+## Get [/status]
+### Get the status of the API [GET]
+Returns a `503` status code and a message if the service is down.
+
++ Response 200 (application/json)
+
+        { "message": "All Systems Check" }
+        
++ Response 503 (application/json)
+
+        { "message": "A reason why the api is currently offline" }
+        
+                
+# Group Search
+Search related resources of the **Search API**
+
+## Validate search query [/search/validate{?query}]
+### Validate a search query to ensure that it can successfully be searched by the api [GET]
+Returns a `400` status code and a message if the search query is not valid.
+
++ Parameters
+    + query (required, string, `hidden:true`) ...The query you wish to validate
+    
++ Response 200 (application/json)
+
+        { "uses_premium_features": false }
+        
++ Response 400 (application/json)
+
+        { "message": "Unable to parse query." }

@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Pipeline {
             return Run(new EventContext(ev));
         }
 
-        public ICollection<EventContext> Run(ICollection<PersistentEvent> events) {
+        public ICollection<EventContext> Run(IEnumerable<PersistentEvent> events) {
             return Run(events.Select(ev => new EventContext(ev)).ToList());
         }
 
