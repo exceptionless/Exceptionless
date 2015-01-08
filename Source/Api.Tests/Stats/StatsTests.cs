@@ -158,16 +158,15 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         protected void CreateData(int eventCount = 100, bool multipleProjects = true) {
-            var org = OrganizationData.GenerateSampleOrganization();
-            _organizationRepository.Add(org);
+            var orgs = OrganizationData.GenerateSampleOrganizations();
+            _organizationRepository.Add(orgs);
 
             var projects = ProjectData.GenerateSampleProjects();
             _projectRepository.Add(projects);
 
             var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.Now.SubtractDays(60), endDate: DateTimeOffset.Now);
-            
-            foreach (var ev in events)
-                _eventPipeline.Run(ev);
+            foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
+                _eventPipeline.Run(eventGroup);
         }
 
         protected void RemoveData() {
