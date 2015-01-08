@@ -1389,7 +1389,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             ]
         }
 
-## Get, Update [/webhooks/{id}]
+## Get [/webhooks/{id}]
 + Parameters
     + id (required, string, `537b84cfb77efe2474072488`) ... The identifier of the web hook.
 
@@ -1401,26 +1401,6 @@ To create a new web hook, you must specify project_id, url and event_types.
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "url": "http://exceptionless.com",
-            "event_types": [
-                "NewError",
-                "ErrorRegression",
-                "CriticalError",
-                "StackPromoted"
-            ]
-        }
-
-### Update web hook [PATCH]
-+ Request (application/json)
-
-        { "url": "https://mycompanywebsite.com" }
-
-+ Response 200 (application/json)
-
-        {
-            "id": "537b84cfb77efe2474072488",
-            "organization_id": "537650f3b77efe23a47914f3",
-            "project_id": "537650f3b77efe23a47914f4",
-            "url": "https://mycompanywebsite.com",
             "event_types": [
                 "NewError",
                 "ErrorRegression",
