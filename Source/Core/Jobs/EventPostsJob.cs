@@ -38,6 +38,11 @@ namespace Exceptionless.Core.Jobs {
             _storage = storage;
         }
 
+        public void RunUntilEmpty() {
+            while (_queue.GetQueueCount() > 0)
+                Run();
+        }
+
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
             Log.Trace().Message("Process events job starting").Write();
 

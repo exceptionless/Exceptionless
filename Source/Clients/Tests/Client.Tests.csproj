@@ -102,6 +102,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\Api.Tests\Utility\Random.cs">
+      <Link>Utility\Random.cs</Link>
+    </Compile>
     <Compile Include="..\..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
@@ -123,7 +126,6 @@
     <Compile Include="Utility\DateTimeRangeTests.cs" />
     <Compile Include="Utility\InMemorySubmissionClient.cs" />
     <Compile Include="Utility\PasswordGenerator.cs" />
-    <Compile Include="Utility\RandomHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

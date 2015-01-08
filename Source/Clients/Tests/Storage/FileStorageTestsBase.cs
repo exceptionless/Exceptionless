@@ -3,12 +3,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless;
-using Exceptionless.Core.Helpers;
 using Exceptionless.Extensions;
+using Exceptionless.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Storage;
@@ -149,7 +148,7 @@ namespace Client.Tests.Storage {
                     working.TryAdd(f.Item1.Path, null);
                 }
 
-                if (RandomHelper.GetBool()) {
+                if (RandomData.GetBool()) {
                     object o;
                     foreach (var f in fileBatch)
                         working.TryRemove(f.Item1.Path, out o);

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
-using Exceptionless.Core.Helpers;
+using Exceptionless.Helpers;
 
 namespace Exceptionless.Core.Security
 {
@@ -78,11 +78,11 @@ namespace Exceptionless.Core.Security
                     int charIndex;
                     do
                     {
-                        charIndex = RandomHelper.Instance.Next(0, Length);
+                        charIndex = RandomData.Instance.Next(0, Length);
                     }
                     while (!Char.IsLetterOrDigit(password[charIndex]));
 
-                    int num = RandomHelper.Instance.Next(0, AllowedSpecialCharacters.Length);
+                    int num = RandomData.Instance.Next(0, AllowedSpecialCharacters.Length);
                     password[charIndex] = AllowedSpecialCharacters[num];
                 }
             }
@@ -115,22 +115,22 @@ namespace Exceptionless.Core.Security
 
             for (counter = 0; counter <= passwordLength; counter++)
             {
-                if (password.Length > 0 & (wroteConsonant == false) & (RandomHelper.Instance.Next(100) < 10))
+                if (password.Length > 0 & (wroteConsonant == false) & (RandomData.Instance.Next(100) < 10))
                 {
-                    password.Append(_doubleConsonants[RandomHelper.Instance.Next(_doubleConsonants.Length)], 2);
+                    password.Append(_doubleConsonants[RandomData.Instance.Next(_doubleConsonants.Length)], 2);
                     counter += 1;
                     wroteConsonant = true;
                 }
                 else
                 {
-                    if ((wroteConsonant == false) & (RandomHelper.Instance.Next(100) < 90))
+                    if ((wroteConsonant == false) & (RandomData.Instance.Next(100) < 90))
                     {
-                        password.Append(_consonants[RandomHelper.Instance.Next(_consonants.Length)]);
+                        password.Append(_consonants[RandomData.Instance.Next(_consonants.Length)]);
                         wroteConsonant = true;
                     }
                     else
                     {
-                        password.Append(_vowels[RandomHelper.Instance.Next(_vowels.Length)]);
+                        password.Append(_vowels[RandomData.Instance.Next(_vowels.Length)]);
                         wroteConsonant = false;
                     }
                 }

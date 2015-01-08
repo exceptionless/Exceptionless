@@ -2,43 +2,41 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 
 namespace Exceptionless.Helpers {
     internal static class RandomData {
-        private static int _seed;
-
-        private static readonly ThreadLocal<Random> _threadLocal = new ThreadLocal<Random>
-            (() => new Random(Interlocked.Increment(ref _seed)));
+        private static readonly Random _random;
 
         static RandomData() {
-            _seed = Environment.TickCount;
+            _random = new Random(Environment.TickCount);
         }
 
-        public static Random Instance { get { return _threadLocal.Value; } }
+        public static Random Instance { get { return _random; } }
 
-        public static int GetInt(int? min = null, int? max = null) {
-            if (min.HasValue && max.HasValue && min.Value >= max.Value)
+        public static int GetInt(int min, int max) {
+            if (min >= max)
                 throw new Exception("Min value must be less than max value.");
 
-            min = min ?? Int32.MinValue;
-            max = max ?? Int32.MaxValue;
-
-            return Instance.Next(min.Value, max.Value);
+            return Instance.Next(min, max);
         }
 
-        public static long GetLong(long? min = null, long? max = null) {
-            if (min.HasValue && max.HasValue && min.Value >= max.Value)
+        public static int GetInt() {
+            return GetInt(Int32.MinValue, Int32.MaxValue);
+        }
+
+        public static long GetLong(long min, long max) {
+            if (min >= max)
                 throw new Exception("Min value must be less than max value.");
 
             var buf = new byte[8];
             Instance.NextBytes(buf);
             long longRand = BitConverter.ToInt64(buf, 0);
 
-            min = min ?? Int32.MinValue;
-            max = max ?? Int32.MaxValue;
+            return (Math.Abs(longRand % (max - min)) + min);
+        }
 
-            return (Math.Abs(longRand % (max.Value - min.Value)) + min.Value);
+        public static long GetLong() {
+            return GetLong(Int64.MinValue, Int64.MaxValue);
         }
 
         public static DateTime GetDateTime(DateTime? start = null, DateTime? end = null) {

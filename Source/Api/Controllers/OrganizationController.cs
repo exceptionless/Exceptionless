@@ -315,7 +315,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 }
 
-                _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
+                BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
                 _repository.Save(organization);
 
                 _messagePublisher.Publish(new PlanChanged {
@@ -510,7 +510,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override Organization AddModel(Organization value) {
-            _billingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
+            BillingManager.ApplyBillingPlan(value, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, ExceptionlessUser);
 
             var organization = base.AddModel(value);
 

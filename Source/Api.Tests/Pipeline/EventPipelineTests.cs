@@ -21,8 +21,6 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly UserRepository _userRepository = IoC.GetInstance<UserRepository>();
-        private readonly BillingManager _billingManager = IoC.GetInstance<BillingManager>();
-        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         public EventPipelineTests() {
             RemoveData(true);
@@ -143,9 +141,9 @@ namespace Exceptionless.Api.Tests.Pipeline {
         private void CreateData() {
             foreach (Organization organization in OrganizationData.GenerateSampleOrganizations()) {
                 if (organization.Id == TestConstants.OrganizationId3)
-                    _billingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
+                    BillingManager.ApplyBillingPlan(organization, BillingManager.FreePlan, UserData.GenerateSampleUser());
                 else
-                    _billingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
+                    BillingManager.ApplyBillingPlan(organization, BillingManager.SmallPlan, UserData.GenerateSampleUser());
 
                 organization.StripeCustomerId = Guid.NewGuid().ToString("N");
                 organization.CardLast4 = "1234";

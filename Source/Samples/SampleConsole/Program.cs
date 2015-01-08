@@ -20,7 +20,6 @@ using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Helpers;
 using Exceptionless.Models;
-using Exceptionless.SampleConsole;
 
 namespace SampleConsole {
     internal class Program {
@@ -183,7 +182,7 @@ namespace SampleConsole {
             _rnd.MinDate = DateTime.Now.Subtract(_dateSpans[_dateSpanIndex]);
             _rnd.MaxDate = DateTime.Now;
 
-            ExceptionlessClient.Default.SubmitEvent(_rnd.Next());
+            ExceptionlessClient.Default.SubmitEvent(_rnd.Generate());
 
             if (writeToConsole) {
                 Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);

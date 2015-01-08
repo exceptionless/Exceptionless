@@ -28,6 +28,8 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
+using Exceptionless.Helpers;
+using Exceptionless.Serializer;
 using Exceptionless.Tests.Utility;
 using Microsoft.Owin;
 using Xunit;
@@ -114,24 +116,31 @@ namespace Exceptionless.Api.Tests.Controllers {
 
         [Fact]
         public void CanPostManyEvents() {
-            //_eventQueue.DeleteQueue();
-            //RemoveAllEvents();
+            _eventQueue.DeleteQueue();
+            RemoveAllEvents();
 
-            //const int batchSize = 100;
-            //const int batchCount = 100;
+            const int batchSize = 100;
+            const int batchCount = 10;
 
-            //try {
-            //    Parallel.For(0, batchCount, i => {
-            //        _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
-            //        var events = EventData.GenerateEvents(batchSize);
-            //        var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string").Compress());
-            //        Assert.IsType<StatusCodeResult>(actionResult);
-            //    });
+            try {
+                Parallel.For(0, batchCount, i => {
+                    _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
+                    var events = new RandomEventGenerator().Generate(batchSize);
+                    var compressedEvents = Encoding.UTF8.GetBytes(new DefaultJsonSerializer().Serialize(events)).Compress();
+                    var actionResult = _eventController.Post(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
+                    Assert.IsType<StatusCodeResult>(actionResult);
+                });
 
-            //    Assert.Equal(batchCount, _eventQueue.GetQueueCount());
-            //} finally {
-            //    RemoveAllEvents();
-            //}
+                Assert.Equal(batchCount, _eventQueue.GetQueueCount());
+
+                var processEventsJob = IoC.GetInstance<EventPostsJob>();
+                processEventsJob.RunUntilEmpty();
+
+                Assert.Equal(0, _eventQueue.GetQueueCount());
+                Assert.Equal(batchSize * batchCount, EventCount());
+            } finally {
+                _eventQueue.DeleteQueue();
+            }
         }
 
         #region Helpers

@@ -1,16 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 
-namespace Exceptionless.SampleConsole {
+namespace Exceptionless.Helpers {
     public class RandomEventGenerator {
         public DateTime? MinDate { get; set; }
         public DateTime? MaxDate { get; set; }
 
-        public Event Next() {
+        public List<Event> Generate(int count) {
+            var events = new List<Event>();
+            for (int i = 0; i < count; i++)
+                events.Add(Generate());
+
+            return events;
+        }
+
+        public Event Generate() {
             var ev = new Event();
             if (MinDate.HasValue || MaxDate.HasValue)
                 ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
@@ -67,8 +74,6 @@ namespace Exceptionless.SampleConsole {
                     ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
                 }
             }
-
-            //ev.AddRecentTraceLogEntries();
 
             return ev;
         }

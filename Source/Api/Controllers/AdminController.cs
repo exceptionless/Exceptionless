@@ -38,7 +38,7 @@ namespace Exceptionless.Api.Controllers {
 
             organization.BillingStatus = !String.Equals(plan.Id, BillingManager.FreePlan.Id) ? BillingStatus.Active : BillingStatus.Trialing;
             organization.RemoveSuspension();
-            _billingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
+            BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
             _repository.Save(organization);
             _messagePublisher.Publish(new PlanChanged {

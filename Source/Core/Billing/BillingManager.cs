@@ -105,7 +105,7 @@ namespace Exceptionless.Core.Billing {
             return Plans.FirstOrDefault(p => String.Equals(p.Id, planId, StringComparison.OrdinalIgnoreCase));
         }
 
-        public void ApplyBillingPlan(Organization organization, BillingPlan plan, User user, bool updateBillingPrice = true) {
+        public static void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true) {
             organization.PlanId = plan.Id;
             organization.PlanName = plan.Name;
             organization.PlanDescription = plan.Description;
@@ -114,7 +114,7 @@ namespace Exceptionless.Core.Billing {
             if (updateBillingPrice)
                 organization.BillingPrice = plan.Price;
 
-            organization.BillingChangedByUserId = user.Id;
+            organization.BillingChangedByUserId = user != null ? user.Id : null;
             organization.MaxUsers = plan.MaxUsers;
             organization.MaxProjects = plan.MaxProjects;
             organization.RetentionDays = plan.RetentionDays;

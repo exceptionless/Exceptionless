@@ -41,9 +41,10 @@ namespace Exceptionless.Tests.Utility {
             var organization = new Organization {
                 Id = id.IsNullOrEmpty() ? generateId ? ObjectId.GenerateNewId().ToString() : TestConstants.OrganizationId : id,
                 Name = name ?? String.Format("Organization{0}", id),
-                IsSuspended = isSuspended,
-                PlanId = BillingManager.UnlimitedPlan.Id
+                IsSuspended = isSuspended
             };
+
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan);
 
             if (!String.IsNullOrEmpty(inviteEmail)) {
                 organization.Invites.Add(new Invite {

@@ -98,7 +98,7 @@ namespace Exceptionless.Core.Utility {
                 var organization = new Organization {
                     Name = "Default Organization"
                 };
-                _billingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
+                BillingManager.ApplyBillingPlan(organization, Settings.Current.EnableBilling ? BillingManager.FreePlan : BillingManager.UnlimitedPlan, user);
                 _organizationRepository.Add(organization);
                 organizationId = organization.Id;
             }
@@ -131,7 +131,7 @@ namespace Exceptionless.Core.Utility {
 
             User user = _userRepository.GetById(userId, true);
             var organization = new Organization { Id = "537650f3b77efe23a47914f3", Name = "Acme" };
-            _billingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
             var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", OrganizationId = organization.Id };

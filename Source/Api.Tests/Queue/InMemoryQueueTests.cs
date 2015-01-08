@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -39,6 +40,37 @@ namespace Exceptionless.Api.Tests.Queue {
 
                 workItem.Complete();
                 Assert.Equal(1, queue.CompletedCount);
+                Assert.Equal(0, queue.GetQueueCount());
+            }
+        }
+
+        [Fact]
+        public void CanQueueAndDequeueMultipleWorkItems() {
+            using (var queue = GetQueue()) {
+                queue.DeleteQueue();
+
+                const int workItemCount = 5;
+                for (int i = 0; i < workItemCount; i++) {
+                    queue.Enqueue(new SimpleWorkItem {
+                        Data = "Hello"
+                    });
+                }
+                Assert.Equal(workItemCount, queue.GetQueueCount());
+
+                var sw = new Stopwatch();
+                sw.Start();
+                for (int i = 0; i < workItemCount; i++) {
+                    var workItem = queue.Dequeue(TimeSpan.FromSeconds(5));
+                    Assert.NotNull(workItem);
+                    Assert.Equal("Hello", workItem.Value.Data);
+                    workItem.Complete();
+                }
+                sw.Stop();
+                Trace.WriteLine(sw.Elapsed);
+                Assert.True(sw.Elapsed < TimeSpan.FromSeconds(2));
+
+                Assert.Equal(workItemCount, queue.DequeuedCount);
+                Assert.Equal(workItemCount, queue.CompletedCount);
                 Assert.Equal(0, queue.GetQueueCount());
             }
         }

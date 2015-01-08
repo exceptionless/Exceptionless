@@ -7,12 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Pipeline;
-using Exceptionless.Threading.Tasks;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Queues {
-    public class InMemoryQueue<T> : IQueue<T>, IDisposable where T : class {
+    public class InMemoryQueue<T> : IQueue<T> where T : class {
         private readonly ConcurrentQueue<QueueInfo<T>> _queue = new ConcurrentQueue<QueueInfo<T>>();
         private readonly ConcurrentDictionary<string, QueueInfo<T>> _dequeued = new ConcurrentDictionary<string, QueueInfo<T>>();
         private readonly ConcurrentQueue<QueueInfo<T>> _deadletterQueue = new ConcurrentQueue<QueueInfo<T>>();
@@ -42,7 +40,7 @@ namespace Exceptionless.Core.Queues {
                 _workItemTimeout = workItemTimeout.Value;
 
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-            TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+            Task.Factory.StartNew(() => TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)));
         }
 
         public long GetQueueCount() { return _queue.Count; }
@@ -101,10 +99,12 @@ namespace Exceptionless.Core.Queues {
                 timeout = TimeSpan.FromSeconds(30);
 
             Log.Trace().Message("Queue count: {0}", _queue.Count).Write();
-            _autoEvent.WaitOne(timeout.Value);
+            if (_queue.Count == 0)
+                _autoEvent.WaitOne(timeout.Value);
             if (_queue.Count == 0)
                 return null;
 
+            _autoEvent.Reset();
             Log.Trace().Message("Dequeue: Attempt").Write();
             QueueInfo<T> info;
             if (!_queue.TryDequeue(out info) || info == null)
