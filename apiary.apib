@@ -433,6 +433,31 @@ Organizations related resources of the **Organization API**
             "data": {}
         }]
 
+## Get invoice [/organizations/invoice/{id}]
+### Get invoice [GET]
+Returns a collection of invoices.
+
++ Parameters
+    + id (required, string, `5T6jZsbMu6AI3S`) ... The identifier of the organization.
+ 
++ Response 200 (application/json)
+
+        {
+          "id": "5T6jZsbMu6AI3S",
+          "organization_id": "537650f3b77efe23a47914f3",
+          "organization_name": "Acme",
+          "date": "2020-01-01T19:28:36.165Z",
+          "paid": true,
+          "total": 499.0,
+          "items": [
+            {
+              "description": "Exceptionless - My Random Plan ($499.00/month)",
+              "date": "1/1/2020 - 2/1/2020",
+              "amount": 499.0
+            }
+          ]
+        }
+
 ## Get invoices [/organizations/{id}/invoices{?before,after,limit}]
 ### Get invoices [GET]
 Returns a collection of invoices.
@@ -446,8 +471,8 @@ Returns a collection of invoices.
 + Response 200 (application/json)
 
         [{
-            "id": "112650f3b77efe23a4791455",
-            "date": "2020-10-16T18:59:09.579Z",
+            "id": "5T6jZsbMu6AI3S",
+            "date": "2020-01-01T19:28:36.165Z",
             "paid": true
         }]
 
@@ -474,7 +499,11 @@ Upgrades or downgrades the organizations plan.
     + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
 
 ### Create new user [POST]
-+ Response 200
++ Response 200 (application/json)
+
+        {
+            "email_address": "noreply@exceptionless.com"
+        }
 
 ### Remove user [DELETE]
 + Response 200
