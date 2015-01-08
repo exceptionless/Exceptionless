@@ -1,26 +1,58 @@
 using System;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using FluentValidation;
+using FluentValidation.Results;
 
 namespace Exceptionless.Core.Validation {
     public class PersistentEventValidator : AbstractValidator<PersistentEvent> {
-        public PersistentEventValidator() {
-            RuleFor(e => e.Id).IsObjectId().WithMessage("Please specify a valid id.");
-            RuleFor(e => e.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
-            RuleFor(e => e.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
-            RuleFor(e => e.StackId).IsObjectId().WithMessage("Please specify a valid stack id.");
+        public override ValidationResult Validate(PersistentEvent ev) {
+            var result = new ValidationResult();
 
-            RuleFor(e => e.Date).NotEmpty().Must(date => date.UtcDateTime <= DateTime.UtcNow.AddHours(1)).WithMessage("Date cannot be in the future. ");
-            RuleFor(s => s.Type).Length(1, 100).WithMessage("Type cannot be longer than 100 characters.");
-            RuleFor(s => s.Message).Length(1, 2000).When(s => s.Message != null).WithMessage("Message cannot be longer than 2000 characters.");
-            RuleFor(s => s.Source).Length(1, 2000).When(s => s.Source != null).WithMessage("Source cannot be longer than 2000 characters.");
+            if (!IsObjectId(ev.Id))
+                result.Errors.Add(new ValidationFailure("Id", "Please specify a valid id."));
 
-            RuleFor(e => e.ReferenceId)
-                .NotEmpty()
-                .Length(8, 32)
-                .Unless(u => String.IsNullOrEmpty(u.ReferenceId))
-                .WithMessage("ReferenceId must contain between 8 and 32 characters");
+            if (!IsObjectId(ev.OrganizationId))
+                result.Errors.Add(new ValidationFailure("OrganizationId", "Please specify a valid organization id."));
+
+            if (!IsObjectId(ev.ProjectId))
+                result.Errors.Add(new ValidationFailure("ProjectId", "Please specify a valid project id."));
+
+            if (!IsObjectId(ev.StackId))
+                result.Errors.Add(new ValidationFailure("StackId", "Please specify a valid stack id."));
+
+            if (ev.Date == DateTimeOffset.MinValue)
+                result.Errors.Add(new ValidationFailure("Date", "Date must be specified."));
+
+            if (ev.Date.UtcDateTime <= DateTime.UtcNow.AddHours(1))
+                result.Errors.Add(new ValidationFailure("Date", "Date cannot be in the future."));
+
+            if (String.IsNullOrEmpty(ev.Type) || ev.Type.Length > 100)
+                result.Errors.Add(new ValidationFailure("Type", "Type cannot be longer than 100 characters."));
+
+            if (ev.Message != null && (ev.Message.Length < 1 || ev.Message.Length > 2000))
+                result.Errors.Add(new ValidationFailure("Message", "Message cannot be longer than 2000 characters."));
+
+            if (ev.Source != null && (ev.Source.Length < 1 || ev.Source.Length > 2000))
+                result.Errors.Add(new ValidationFailure("Source", "Source cannot be longer than 2000 characters."));
+
+            if (ev.ReferenceId != null && (ev.ReferenceId.Length < 8 || ev.ReferenceId.Length > 32))
+                result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 32 characters"));
+
+            foreach (var tag in ev.Tags) {
+                if (String.IsNullOrEmpty(tag))
+                    result.Errors.Add(new ValidationFailure("Tags", "Tags can't be empty."));
+                else if (tag.Length > 255)
+                    result.Errors.Add(new ValidationFailure("Tags", "A tag cannot be longer than 255 characters."));
+            }
+
+            return result;
+        }
+
+        private bool IsObjectId(string value) {
+            if (String.IsNullOrEmpty(value))
+                return false;
+
+            return value.Length == 24;
         }
     }
 }

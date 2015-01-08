@@ -120,7 +120,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
 
             container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
-            container.RegisterSingle<IValidator<Event>, EventValidator>();
             container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();
             container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
             container.RegisterSingle<IValidator<Project>, ProjectValidator>();
@@ -129,6 +128,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
             container.RegisterSingle<IValidator<User>, UserValidator>();
             container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
+
 
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();

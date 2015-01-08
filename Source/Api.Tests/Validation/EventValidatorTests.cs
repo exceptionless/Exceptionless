@@ -7,10 +7,10 @@ using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Validation {
     public class EventValidatorTests {
-        private readonly EventValidator _validator;
+        private readonly PersistentEventValidator _validator;
 
         public EventValidatorTests() {
-            _validator = new EventValidator();
+            _validator = new PersistentEventValidator();
         }
         
         [Theory]
@@ -19,7 +19,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1", true)]
         [InlineData("1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456", false)]
          public void ValidateTag(string tag, bool isValid) {
-            var ev = new Event { Type = Event.KnownTypes.Error, Date = DateTimeOffset.Now };
+             var ev = new PersistentEvent { Type = Event.KnownTypes.Error, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" };
             ev.Tags.Add(tag);
 
             var result = _validator.Validate(ev);
@@ -33,7 +33,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData("1234567890123456", true)]
         [InlineData("123456789012345678901234567890123", false)]
         public void ValidateReferenceId(string referenceId, bool isValid) {
-            var result = _validator.Validate(new Event { Type = Event.KnownTypes.Error, ReferenceId = referenceId, Date = DateTimeOffset.Now });
+            var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, ReferenceId = referenceId, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
             Assert.Equal(isValid, result.IsValid);
         }
 
@@ -45,8 +45,8 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(61d, false)]
         public void ValidateDate(double? minutes, bool isValid) {
             var date = minutes.HasValue ? DateTimeOffset.Now.AddMinutes(minutes.Value) : DateTimeOffset.MinValue;
-            var result = _validator.Validate(new Event { Type = Event.KnownTypes.Error, Date = date });
-            Console.WriteLine(date + " " + result.IsValid);
+            var result = _validator.Validate(new PersistentEvent { Type = Event.KnownTypes.Error, Date = date, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
+            Console.WriteLine(date + " " + result.IsValid + " " + String.Join(" ", result.Errors.Select(e => e.ErrorMessage)));
             Assert.Equal(isValid, result.IsValid);
         }
 
@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Tests.Validation {
         [InlineData(Event.KnownTypes.SessionStart, true)]
         [InlineData("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901", false)]
         public void ValidateType(string type, bool isValid) {
-            var result = _validator.Validate(new Event { Type = type, Date = DateTimeOffset.Now });
+            var result = _validator.Validate(new PersistentEvent { Type = type, Date = DateTimeOffset.Now, Id = "123456789012345678901234", OrganizationId = "123456789012345678901234", ProjectId = "123456789012345678901234", StackId = "123456789012345678901234" });
             Assert.Equal(isValid, result.IsValid);
         }
     }

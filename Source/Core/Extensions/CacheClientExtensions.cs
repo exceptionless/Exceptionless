@@ -11,7 +11,6 @@
 
 using System;
 using Exceptionless.Core.Caching;
-using Nest;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {

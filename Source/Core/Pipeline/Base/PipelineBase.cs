@@ -35,21 +35,21 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         /// <summary>
-        /// Runs all the actions of the pipeline with the specified context list.
-        /// </summary>
-        /// <param name="contexts">The context list to run the actions with.</param>
-        public virtual void Run(ICollection<TContext> contexts) {
-            var actionTypes = GetActionTypes();
-            Run(contexts, actionTypes);
-        }
-
-        /// <summary>
         /// Runs all the actions of the pipeline with the specified context.
         /// </summary>
         /// <param name="context">The context to run the actions with.</param>
-        public virtual void Run(TContext context) {
+        public virtual TContext Run(TContext context) {
             var actionTypes = GetActionTypes();
-            Run(new[] { context }, actionTypes);
+            return Run(new[] { context }, actionTypes).First();
+        }
+
+        /// <summary>
+        /// Runs all the actions of the pipeline with the specified context list.
+        /// </summary>
+        /// <param name="contexts">The context list to run the actions with.</param>
+        public virtual ICollection<TContext> Run(ICollection<TContext> contexts) {
+            var actionTypes = GetActionTypes();
+            return Run(contexts, actionTypes);
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Pipeline {
         /// </summary>
         /// <param name="contexts">The context to run the actions with.</param>
         /// <param name="actionTypes">The ordered list of action types to run on the context.</param>
-        protected virtual void Run(ICollection<TContext> contexts, IEnumerable<Type> actionTypes) {
+        protected virtual ICollection<TContext> Run(ICollection<TContext> contexts, IEnumerable<Type> actionTypes) {
             PipelineRunning(contexts);
 
             var cache = _actionCache.GetOrAdd(typeof(TAction), new ConcurrentDictionary<Type, IPipelineAction<TContext>>());
@@ -73,6 +73,8 @@ namespace Exceptionless.Core.Pipeline {
             contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && c.Exception == null);
 
             PipelineCompleted(contexts);
+
+            return contexts;
         }
 
         /// <summary>

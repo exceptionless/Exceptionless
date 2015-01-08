@@ -341,7 +341,6 @@
     <Compile Include="Utility\TaskHelper.cs" />
     <Compile Include="Utility\TypeHelper.cs" />
     <Compile Include="Validation\ApplicationValidator.cs" />
-    <Compile Include="Validation\EventValidator.cs" />
     <Compile Include="Validation\IsObjectIdValidator.cs" />
     <Compile Include="Validation\OrganizationValidator.cs" />
     <Compile Include="Validation\PersistentEventValidator.cs" />

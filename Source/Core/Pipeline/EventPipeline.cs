@@ -32,17 +32,17 @@ namespace Exceptionless.Core.Pipeline {
             _statsClient = statsClient;
         }
 
-        public void Run(PersistentEvent ev) {
-            Run(new EventContext(ev));
+        public EventContext Run(PersistentEvent ev) {
+            return Run(new EventContext(ev));
         }
 
-        public void Run(ICollection<PersistentEvent> events) {
-            Run(events.Select(ev => new EventContext(ev)).ToList());
+        public ICollection<EventContext> Run(ICollection<PersistentEvent> events) {
+            return Run(events.Select(ev => new EventContext(ev)).ToList());
         }
 
-        protected override void Run(ICollection<EventContext> contexts, IEnumerable<Type> actionTypes) {
+        protected override ICollection<EventContext> Run(ICollection<EventContext> contexts, IEnumerable<Type> actionTypes) {
             if (contexts == null || contexts.Count == 0)
-                return;
+                return contexts ?? new List<EventContext>();
 
             _statsClient.Counter(StatNames.EventsSubmitted, contexts.Count);
             try {
@@ -66,7 +66,10 @@ namespace Exceptionless.Core.Pipeline {
                 if (organization == null)
                     throw new InvalidOperationException(String.Format("Unable to load organization \"{0}\"", project.OrganizationId));
 
-                contexts.ForEach(c => c.Organization = organization);
+                contexts.ForEach(c => {
+                    c.Organization = organization;
+                    c.Event.OrganizationId = organization.Id;
+                });
 
                 // load organization settings into the context
                 foreach (var key in organization.Data.Keys)
@@ -85,6 +88,8 @@ namespace Exceptionless.Core.Pipeline {
                 _statsClient.Counter(StatNames.EventsProcessErrors, contexts.Count);
                 throw;
             }
+
+            return contexts;
         }
 
         protected override IList<Type> GetActionTypes() {

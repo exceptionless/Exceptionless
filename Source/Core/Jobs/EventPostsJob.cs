@@ -9,6 +9,7 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Storage;
@@ -98,16 +99,24 @@ namespace Exceptionless.Core.Jobs {
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
                 _organizationRepository.IncrementUsage(project.OrganizationId, false, events.Count - 1);
             }
-            int errorCount = 0;
-            DateTime created = DateTime.UtcNow;
-            foreach (PersistentEvent ev in events.Take(eventsToProcess)) {
-                try {
-                    ev.CreatedUtc = created;
-                    _eventPipeline.Run(ev);
-                } catch (ValidationException ex) {
-                    Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Event validation error occurred: {0}", ex.Message).Write();
-                } catch (Exception ex) {
-                    Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event: {0}", ex.Message).Write();
+
+            var errorCount = 0;
+            var created = DateTime.UtcNow;
+            try {
+                events.ForEach(e => e.CreatedUtc = created);
+                var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
+                foreach (var eventContext in results) {
+                    if (eventContext.IsCancelled)
+                        continue;
+
+                    if (eventContext.Exception == null)
+                        continue;
+
+                    Log.Error().Exception(eventContext.Exception).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.Exception.Message).Write();
+                    if (eventContext.Exception is ValidationException)
+                        continue;
+
+                    errorCount++;
 
                     if (!isSingleEvent) {
                         // Put this single event back into the queue so we can retry it separately.
@@ -115,16 +124,20 @@ namespace Exceptionless.Core.Jobs {
                             ApiVersion = eventPost.ApiVersion,
                             CharSet = eventPost.CharSet,
                             ContentEncoding = "application/json",
-                            Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(ev)),
+                            Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventContext.Event)),
                             IpAddress = eventPost.IpAddress,
                             MediaType = eventPost.MediaType,
                             ProjectId = eventPost.ProjectId,
                             UserAgent = eventPost.UserAgent
                         }, _storage, false);
                     }
-
-                    errorCount++;
                 }
+            } catch (ArgumentException ex) {
+                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
+                queueEntry.Complete();
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {0}", queueEntry.Value.FilePath, ex.Message).Write();
+                errorCount++;
             }
 
             if (isSingleEvent && errorCount > 0) {
