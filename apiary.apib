@@ -49,23 +49,21 @@ You can also post a multiline string. We automatically split strings by the `\n`
 + Response 200 (application/json)
 
         {
-          "id": "537b7255b77efe2474bfdd80",
-          "organization_id": "537650f3b77efe23a47914f3",
-          "project_id": "537650f3b77efe23a47914f4",
-          "stack_id": "537b7255b77efe2474bfdd7f",
-          "summary_html": null,
-          "is_fixed": false,
-          "is_hidden": false,
-          "type": "log",
-          "source": null,
-          "tags": [],
-          "message": "Exceptionless is amazing!",
-          "data": {},
-          "reference_id": null,
-          "session_id": null,
-          "is_critical": false,
-          "is_not_found": false,
-          "is_error": false
+            "id": "537b7255b77efe2474bfdd80",
+            "organization_id": "537650f3b77efe23a47914f3",
+            "project_id": "537650f3b77efe23a47914f4",
+            "stack_id": "537b7255b77efe2474bfdd7f",
+            "is_first_occurrence": false,
+            "is_fixed": false,
+            "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
+            "type": "log",
+            "source": null,
+            "tags": [],
+            "message": "Exceptionless is amazing!",
+            "data": {},
+            "reference_id": null,
+            "session_id": null
         }
 
 ## Get all [/events{?filter,sort,time,offset,mode,page,limit}]
@@ -86,19 +84,17 @@ You can also post a multiline string. We automatically split strings by the `\n`
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "stack_id": "537b7255b77efe2474bfdd7f",
-            "summary_html": null,
+            "is_first_occurrence": false,
             "is_fixed": false,
             "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
             "type": "log",
             "source": null,
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
             "reference_id": null,
-            "session_id": null,
-            "is_critical": false,
-            "is_not_found": false,
-            "is_error": false
+            "session_id": null
           }]
 
 ## Get by reference id [/projects/{id}/events/by-ref/{reference_id}]
@@ -109,27 +105,23 @@ You can also post a multiline string. We automatically split strings by the `\n`
     
 + Response 200 (application/json)
 
-        [
-          {
+        [{
             "id": "537b7255b77efe2474bfdd80",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "stack_id": "537b7255b77efe2474bfdd7f",
-            "summary_html": null,
+            "is_first_occurrence": false,
             "is_fixed": false,
             "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
             "type": "log",
             "source": null,
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
             "reference_id": "1234567890",
-            "session_id": null,
-            "is_critical": false,
-            "is_not_found": false,
-            "is_error": false
-          }
-        ]
+            "session_id": null
+          }]
 
 ## Get by organization [/organizations/{id}/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events for a given organization [GET]
@@ -145,27 +137,23 @@ You can also post a multiline string. We automatically split strings by the `\n`
 
 + Response 200 (application/json)
 
-        [
-          {
+        [{
             "id": "537b7255b77efe2474bfdd80",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "stack_id": "537b7255b77efe2474bfdd7f",
-            "summary_html": null,
+            "is_first_occurrence": false,
             "is_fixed": false,
             "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
             "type": "log",
             "source": null,
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
             "reference_id": null,
-            "session_id": null,
-            "is_critical": false,
-            "is_not_found": false,
-            "is_error": false
-          }
-        ]
+            "session_id": null
+          }]
 
 ## Get by project [/projects/{id}/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events for a given project [GET]
@@ -181,27 +169,23 @@ You can also post a multiline string. We automatically split strings by the `\n`
 
 + Response 200 (application/json)
 
-        [
-          {
+        [{
             "id": "537b7255b77efe2474bfdd80",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "stack_id": "537b7255b77efe2474bfdd7f",
-            "summary_html": null,
+            "is_first_occurrence": false,
             "is_fixed": false,
             "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
             "type": "log",
             "source": null,
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
             "reference_id": null,
-            "session_id": null,
-            "is_critical": false,
-            "is_not_found": false,
-            "is_error": false
-          }
-        ]
+            "session_id": null
+          }]
         
 ## Get by stack [/stacks/{id}/events{?filter,sort,time,offset,mode,page,limit}]
 ### List all events for a given stack [GET]
@@ -217,27 +201,23 @@ You can also post a multiline string. We automatically split strings by the `\n`
 
 + Response 200 (application/json)
 
-        [
-          {
+        [{
             "id": "537b7255b77efe2474bfdd80",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
             "stack_id": "537b7255b77efe2474bfdd7f",
-            "summary_html": null,
+            "is_first_occurrence": false,
             "is_fixed": false,
             "is_hidden": false,
+            "created_utc": "2020-10-16T18:59:09.579Z",
             "type": "log",
             "source": null,
             "tags": [],
             "message": "Exceptionless is amazing!",
             "data": {},
             "reference_id": null,
-            "session_id": null,
-            "is_critical": false,
-            "is_not_found": false,
-            "is_error": false
-          }
-        ]
+            "session_id": null
+          }]
 
 ## Set user description [/projects/{id}/events/by-ref/{reference_id}/user-description]
 You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.
@@ -288,13 +268,17 @@ Organizations related resources of the **Organization API**
             "id": "537650f3b77efe23a47914f3",
             "name": "Acme",
             "plan_id": "EX_UNLIMITED",
+            "plan_name": "Unlimited",
+            "plan_description": "Unlimited",
             "card_last4": null,
             "subscribe_date": null,
             "billing_change_date": "2020-10-16T18:59:09.579Z",
             "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
             "billing_status": 0,
             "billing_price": 0.0,
-            "max_errors_per_day": 0,
+            "max_events_per_month": -1,
+            "bonus_events_per_month": 0,
+            "bonus_expiration": null,
             "retention_days": -1,
             "is_suspended": false,
             "suspension_code": null,
@@ -303,15 +287,16 @@ Organizations related resources of the **Organization API**
             "has_premium_features": true,
             "max_users": -1,
             "max_projects": -1,
-            "project_count": 2,
+            "project_count": 1,
             "stack_count": 2,
             "event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.165Z",
-            "total_event_count": 62,
             "invites": [],
             "overage_hours": [],
             "usage": [],
-            "data": {}
+            "data": {},
+            "is_over_hourly_limit": false,
+            "is_over_monthly_limit": false
         }
 
 ## Get, Update [/organizations/{id}]
@@ -325,13 +310,17 @@ Organizations related resources of the **Organization API**
             "id": "537650f3b77efe23a47914f3",
             "name": "Acme",
             "plan_id": "EX_UNLIMITED",
+            "plan_name": "Unlimited",
+            "plan_description": "Unlimited",
             "card_last4": null,
             "subscribe_date": null,
             "billing_change_date": "2020-10-16T18:59:09.579Z",
             "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
             "billing_status": 0,
             "billing_price": 0.0,
-            "max_errors_per_day": 0,
+            "max_events_per_month": -1,
+            "bonus_events_per_month": 0,
+            "bonus_expiration": null,
             "retention_days": -1,
             "is_suspended": false,
             "suspension_code": null,
@@ -340,15 +329,16 @@ Organizations related resources of the **Organization API**
             "has_premium_features": true,
             "max_users": -1,
             "max_projects": -1,
-            "project_count": 2,
+            "project_count": 1,
             "stack_count": 2,
             "event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.165Z",
-            "total_event_count": 62,
             "invites": [],
             "overage_hours": [],
             "usage": [],
-            "data": {}
+            "data": {},
+            "is_over_hourly_limit": false,
+            "is_over_monthly_limit": false
         }
 
 ### Update organization [PATCH]
@@ -362,13 +352,17 @@ Organizations related resources of the **Organization API**
             "id": "537650f3b77efe23a47914f3",
             "name": "Updated Acme",
             "plan_id": "EX_UNLIMITED",
+            "plan_name": "Unlimited",
+            "plan_description": "Unlimited",
             "card_last4": null,
             "subscribe_date": null,
             "billing_change_date": "2020-10-16T18:59:09.579Z",
             "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
             "billing_status": 0,
             "billing_price": 0.0,
-            "max_errors_per_day": 0,
+            "max_events_per_month": -1,
+            "bonus_events_per_month": 0,
+            "bonus_expiration": null,
             "retention_days": -1,
             "is_suspended": false,
             "suspension_code": null,
@@ -377,15 +371,16 @@ Organizations related resources of the **Organization API**
             "has_premium_features": true,
             "max_users": -1,
             "max_projects": -1,
-            "project_count": 2,
+            "project_count": 1,
             "stack_count": 2,
             "event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.165Z",
-            "total_event_count": 62,
             "invites": [],
             "overage_hours": [],
             "usage": [],
-            "data": {}
+            "data": {},
+            "is_over_hourly_limit": false,
+            "is_over_monthly_limit": false
         }
 
 ## Remove [/organizations/{ids}]
@@ -407,13 +402,17 @@ Organizations related resources of the **Organization API**
             "id": "537650f3b77efe23a47914f3",
             "name": "Acme",
             "plan_id": "EX_UNLIMITED",
+            "plan_name": "Unlimited",
+            "plan_description": "Unlimited",
             "card_last4": null,
             "subscribe_date": null,
             "billing_change_date": "2020-10-16T18:59:09.579Z",
             "billing_changed_by_user_id": "53baedfdd424fa1338fc57b4",
             "billing_status": 0,
             "billing_price": 0.0,
-            "max_errors_per_day": 0,
+            "max_events_per_month": -1,
+            "bonus_events_per_month": 0,
+            "bonus_expiration": null,
             "retention_days": -1,
             "is_suspended": false,
             "suspension_code": null,
@@ -422,15 +421,16 @@ Organizations related resources of the **Organization API**
             "has_premium_features": true,
             "max_users": -1,
             "max_projects": -1,
-            "project_count": 2,
+            "project_count": 1,
             "stack_count": 2,
             "event_count": 62,
             "last_event_date": "2020-10-16T19:28:36.165Z",
-            "total_event_count": 62,
             "invites": [],
             "overage_hours": [],
             "usage": [],
-            "data": {}
+            "data": {},
+            "is_over_hourly_limit": false,
+            "is_over_monthly_limit": false
         }]
 
 ## Get invoice [/organizations/invoice/{id}]
@@ -563,9 +563,7 @@ Project related resources of the **Projects API**
             "data": {},
             "promoted_tabs": [],
             "stack_count": 2,
-            "event_count": 62,
-            "total_event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.166Z"
+            "event_count": 62
         }
 
 ## Get all [/projects{?page,limit}]
@@ -585,9 +583,7 @@ Project related resources of the **Projects API**
             "data": {},
             "promoted_tabs": [],
             "stack_count": 2,
-            "event_count": 62,
-            "total_event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.166Z"
+            "event_count": 62
         }]
 
 ## Get by organization [/organizations/{id}/projects{?page,limit}]
@@ -608,9 +604,7 @@ Project related resources of the **Projects API**
             "data": {},
             "promoted_tabs": [],
             "stack_count": 2,
-            "event_count": 62,
-            "total_event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.166Z"
+            "event_count": 62
         }]
 
 ## Get, Update [/projects/{id}]
@@ -629,9 +623,7 @@ Project related resources of the **Projects API**
             "data": {},
             "promoted_tabs": [],
             "stack_count": 2,
-            "event_count": 62,
-            "total_event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.166Z"
+            "event_count": 62
         }
 
 ### Update project [PATCH]
@@ -653,9 +645,7 @@ Project related resources of the **Projects API**
             "data": {},
             "promoted_tabs": [],
             "stack_count": 2,
-            "event_count": 62,
-            "total_event_count": 62,
-            "last_event_date": "2020-10-16T19:28:36.166Z"
+            "event_count": 62
         }
 
 ## Remove [/projects/{ids}]
@@ -802,15 +792,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -838,15 +830,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -872,15 +866,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -907,15 +903,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -941,15 +939,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -976,15 +976,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -1010,15 +1012,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -1045,15 +1049,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
@@ -1075,15 +1081,17 @@ Stack related resources of the **Stacks API**
             "id": "537b7255b77efe2474bfdd7f",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
+            "type": "log",
             "signature_hash": "1c9c88d585f9f2ac9ed2371e5e69982cd7d342e3",
             "signature_info": {
               "type": "log"
             },
             "fixed_in_version": null,
             "date_fixed": null,
-            "title": null,
-            "summary_html": null,
-            "total_occurrences": 1,
+            "title": "(Global)",
+            "total_occurrences": 56,
+            "first_occurrence": "2020-10-16T19:28:36.165Z",
+            "last_occurrence": "2020-10-16T19:28:36.165Z",
             "description": null,
             "disable_notifications": false,
             "is_hidden": false,
