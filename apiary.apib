@@ -2792,3 +2792,22 @@ Returns a `503` status code and a message if the service is down.
 + Response 503 (application/json)
 
         { "message": "A reason why the api is currently offline" }
+        
+                
+# Group Search
+Search related resources of the **Search API**
+
+## Validate search query [/search/validate{?query}]
+### Validate a search query to ensure that it can successfully be searched by the api [GET]
+Returns a `400` status code and a message if the search query is not valid.
+
++ Parameters
+    + query (required, string, `hidden:true`) ...The query you wish to validate
+    
++ Response 200 (application/json)
+
+        { "uses_premium_features": false }
+        
++ Response 400 (application/json)
+
+        { "message": "Unable to parse query." }
