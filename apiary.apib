@@ -2777,3 +2777,18 @@ Returns a `404` status code if an account with the specified email address does 
             "is_invite": false,
             "has_admin_role": false
         }]
+        
+# Group Status
+Status related resources of the **Status API**
+
+## Get [/status]
+### Get the status of the API [GET]
+Returns a `503` status code and a message if the service is down.
+
++ Response 200 (application/json)
+
+        { "message": "All Systems Check" }
+        
++ Response 503 (application/json)
+
+        { "message": "A reason why the api is currently offline" }
