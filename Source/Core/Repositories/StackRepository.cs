@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
@@ -164,7 +165,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
+            var enableNotifications = EnableNotifications;
+
+            EnableNotifications = false;
+            try {
+                base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
+            } finally {
+                EnableNotifications = enableNotifications;
+            }
 
             foreach (var original in originalDocuments) {
                 var updated = documents.First(d => d.Id == original.Id);
@@ -174,6 +182,9 @@ namespace Exceptionless.Core.Repositories {
                 if (original.IsHidden != updated.IsHidden)
                     _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
             }
+
+            if (EnableNotifications)
+                documents.ForEach(d => PublishMessage(ChangeType.Saved, d));
         }
     }
 }
