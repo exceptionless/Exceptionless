@@ -1,7 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
@@ -18,19 +19,17 @@ namespace Exceptionless.Core.Jobs {
     public class EventNotificationsJob : JobBase {
         private readonly IQueue<EventNotification> _queue;
         private readonly IMailer _mailer;
-        private readonly IAppStatsClient _statsClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
         private readonly IUserRepository _userRepository;
         private readonly ICacheClient _cacheClient;
 
-        public EventNotificationsJob(IQueue<EventNotification> queue, IMailer mailer, IAppStatsClient statsClient,
+        public EventNotificationsJob(IQueue<EventNotification> queue, IMailer mailer,
             IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IStackRepository stackRepository,
             IUserRepository userRepository, ICacheClient cacheClient) {
             _queue = queue;
             _mailer = mailer;
-            _statsClient = statsClient;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _stackRepository = stackRepository;
@@ -138,33 +137,22 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).Write();
 
-                bool shouldReportOccurrence = settings.Mode != NotificationMode.None;
-                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical;
-                bool shouldReportRegression = settings.ReportRegressions && eventNotification.IsRegression;
+                bool shouldReportNew = settings.ReportNewErrors && eventNotification.IsNew;
+                bool shouldReportCritical = settings.ReportCriticalErrors && eventNotification.IsCritical;
+                bool shouldReportRegression = settings.ReportErrorRegressions && eventNotification.IsRegression;
+                bool shouldReportNotFound = settings.ReportNewNotFounds && eventNotification.IsNew && eventNotification.Event.IsNotFound();
+                bool shouldReport = shouldReportNew || shouldReportCritical || shouldReportRegression || shouldReportNotFound;
 
-                Log.Trace().Message("Settings: mode={0} critical={1} regression={2} 404={3} bots={4}",
-                    settings.Mode, settings.ReportCriticalErrors,
-                    settings.ReportRegressions, settings.Report404Errors,
-                    settings.ReportKnownBotErrors).Write();
-                Log.Trace().Message("Should process: occurrence={0} critical={1} regression={2}",
-                    shouldReportOccurrence, shouldReportCriticalError,
-                    shouldReportRegression).Write();
-
-                if (settings.Mode == NotificationMode.New && !eventNotification.IsNew) {
-                    shouldReportOccurrence = false;
-                    Log.Trace().Message("Skipping because message is not new.").Write();
-                }
-
-                // check for 404s if the user has elected to not report them
-                if (shouldReportOccurrence && settings.Report404Errors == false && eventNotification.Event.IsNotFound()) {
-                    shouldReportOccurrence = false;
-                    Log.Trace().Message("Skipping because message is 404.").Write();
-                }
+                Log.Trace().Message("Settings: new={0} critical={1} regression={2} notfound={3}",
+                    settings.ReportNewErrors, settings.ReportCriticalErrors,
+                    settings.ReportErrorRegressions, settings.ReportNewNotFounds).Write();
+                Log.Trace().Message("Should process: new={0} critical={1} regression={2} notfound={3}",
+                    shouldReportNew, shouldReportCritical,
+                    shouldReportRegression, shouldReportNotFound).Write();
 
                 var requestInfo = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
-                if (shouldReportOccurrence && settings.ReportKnownBotErrors == false &&
-                    requestInfo != null && !String.IsNullOrEmpty(requestInfo.UserAgent)) {
+                if (shouldReport && requestInfo != null && !String.IsNullOrEmpty(requestInfo.UserAgent)) {
                     ClientInfo info = null;
                     try {
                         info = Parser.GetDefault().Parse(requestInfo.UserAgent);
@@ -173,14 +161,17 @@ namespace Exceptionless.Core.Jobs {
                             requestInfo.UserAgent, ex.Message).Write();
                     }
 
-                    if (info != null && info.Device.IsSpider) {
-                        shouldReportOccurrence = false;
-                        Log.Trace().Message("Skipping because message is bot.").Write();
+                    var botPatterns = project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)
+                        ? project.Configuration.Settings.GetStringCollection(SettingsDictionary.KnownKeys.DataExclusions).ToList()
+                        : new List<string>();
+
+                    if (info != null && info.Device.IsSpider || requestInfo.UserAgent.AnyWildcardMatches(botPatterns)) {
+                        shouldReport = false;
+                        Log.Trace().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).Write();
                     }
                 }
 
-                // stack being set to send all will override all other settings
-                if (!shouldReportOccurrence && !shouldReportCriticalError && !shouldReportRegression)
+                if (!shouldReport)
                     continue;
 
                 var model = new EventNotificationModel(eventNotification) {

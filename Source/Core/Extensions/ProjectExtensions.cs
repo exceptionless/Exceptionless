@@ -19,10 +19,10 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             project.NotificationSettings.Add(userId, settings ?? new NotificationSettings {
-                Mode = NotificationMode.New,
+                ReportNewErrors = true,
                 SendDailySummary = true,
                 ReportCriticalErrors = true,
-                ReportRegressions = true
+                ReportErrorRegressions = true
             });
         }
     }

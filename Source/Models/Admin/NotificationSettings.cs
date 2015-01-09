@@ -13,11 +13,10 @@ using System;
 
 namespace Exceptionless.Models {
     public class NotificationSettings {
-        public NotificationMode Mode { get; set; }
         public bool SendDailySummary { get; set; }
+        public bool ReportNewErrors { get; set; }
         public bool ReportCriticalErrors { get; set; }
-        public bool ReportRegressions { get; set; }
-        public bool Report404Errors { get; set; }
-        public bool ReportKnownBotErrors { get; set; }
+        public bool ReportErrorRegressions { get; set; }
+        public bool ReportNewNotFounds { get; set; }
     }
 }

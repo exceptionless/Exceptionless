@@ -169,6 +169,7 @@ namespace Exceptionless.Models {
 
         public static class KnownKeys {
             public const string DataExclusions = "@@DataExclusions";
+            public const string UserAgentBotPatterns = "@@UserAgentBotPatterns";
         }
     }
 }

@@ -11,7 +11,6 @@
 
 using System;
 using System.Linq;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues;
@@ -45,7 +44,7 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            if (ctx.Project.NotificationSettings.Count > 0 && (ctx.IsNew || ctx.IsRegression || ctx.Event.IsCritical()))
+            if (ShouldQueueNotification(ctx))
                 _notificationQueue.Enqueue(new EventNotification {
                     Event = ctx.Event,
                     IsNew = ctx.IsNew,
@@ -73,6 +72,19 @@ namespace Exceptionless.Core.Pipeline {
                     Data = _webHookDataPluginManager.CreateFromEvent(context)
                 });
             }
+        }
+
+        private bool ShouldQueueNotification(EventContext ctx) {
+            if (ctx.Project.NotificationSettings.Count == 0)
+                return false;
+
+            if (ctx.Event.IsError() && !(ctx.IsNew || ctx.IsRegression || ctx.Event.IsCritical()))
+                return false;
+
+            if (ctx.Event.IsNotFound() && !ctx.IsNew)
+                return false;
+
+            return true;
         }
     }
 }
