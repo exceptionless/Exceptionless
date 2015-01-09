@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
 using Nest;
@@ -23,6 +24,7 @@ namespace Exceptionless.Core.Repositories {
         public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, null, messagePublisher) {
             EnableCache = false;
+            EnableNotifications = false;
         }
 
         protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
@@ -283,11 +285,10 @@ namespace Exceptionless.Core.Repositories {
             return pagingOptions;
         }
 
-        protected override void AfterAdd(ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            bool enableNotifications = EnableNotifications;
-            EnableNotifications = false;
-            base.AfterAdd(documents, addToCache, expiresIn);
-            EnableNotifications = enableNotifications;
+        protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
+            base.AfterRemove(documents, sendNotification);
+            if (sendNotification)
+                PublishMessage(ChangeType.Removed, documents);
         }
     }
 }

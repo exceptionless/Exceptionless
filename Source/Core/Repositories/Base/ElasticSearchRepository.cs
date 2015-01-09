@@ -291,16 +291,21 @@ namespace Exceptionless.Core.Repositories {
             return recordsAffected;
         }
 
-        protected virtual void PublishMessage(ChangeType changeType, T document) {
-            var orgEntity = document as IOwnedByOrganization;
-            var message = new EntityChanged {
-                ChangeType = changeType,
-                Id = document.Id,
-                OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
-                Type = _entityType
-            };
+        protected void PublishMessage(ChangeType changeType, T document) {
+            PublishMessage(changeType, new[] { document });
+        }
 
-            PublishMessage(message);
+        protected virtual void PublishMessage(ChangeType changeType, IEnumerable<T> documents) {
+            foreach (var orgDocs in documents.Cast<IOwnedByOrganization>().GroupBy(d => d.OrganizationId)) {
+                var message = new EntityChanged {
+                    ChangeType = changeType,
+                    OrganizationId = orgDocs.Key,
+                    Ids = new List<string>(orgDocs.Cast<IIdentity>().Select(d => d.Id)),
+                    Type = _entityType
+                };
+
+                PublishMessage(message);
+            }
         }
 
         protected void PublishMessage<TMessageType>(TMessageType message) where TMessageType : class {

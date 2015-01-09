@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchRepositoryTests {
-        public readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
+        public readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
 
         [Fact]
@@ -17,20 +17,20 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
-            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now);
-            Assert.Null(ev.Id);
+            var stack = StackData.GenerateStack(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId);
+            Assert.Null(stack.Id);
 
-            _repository.Add(ev);
-            Assert.NotNull(ev.Id);
+            _repository.Add(stack);
+            Assert.NotNull(stack.Id);
             _client.Refresh();
 
-            ev = _repository.GetById(ev.Id);
-            Assert.NotNull(ev);
+            stack = _repository.GetById(stack.Id);
+            Assert.NotNull(stack);
 
-            ev.Message = "New Message";
-            _repository.Save(ev);
+            stack.Description = "New Description";
+            _repository.Save(stack);
 
-            _repository.Remove(ev.Id);
+            _repository.Remove(stack.Id);
         }
 
         [Fact]
@@ -38,30 +38,26 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
-            _repository.Add(new[] {
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now),
-                EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId2, occurrenceDate: DateTime.Now)
-            });
+            _repository.Add(StackData.GenerateSampleStacks());
 
             _client.Refresh();
 
-            var events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithPage(1).WithLimit(1));
-            Assert.NotNull(events);
-            Assert.Equal(1, events.Count);
+            var stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
+            Assert.NotNull(stacks);
+            Assert.Equal(1, stacks.Count);
 
-            var events2 = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithPage(2).WithLimit(1));
-            Assert.NotNull(events);
-            Assert.Equal(1, events.Count);
+            var stacks2 = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
+            Assert.NotNull(stacks);
+            Assert.Equal(1, stacks.Count);
 
-            Assert.NotEqual(events.First().Id, events2.First().Id);
+            Assert.NotEqual(stacks.First().Id, stacks2.First().Id);
 
-            events = _repository.GetByStackId(TestConstants.StackId2);
-            Assert.NotNull(events);
-            Assert.Equal(2, events.Count);
+            stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId);
+            Assert.NotNull(stacks);
+            Assert.Equal(3, stacks.Count);
 
-            _repository.Remove(events);
-            Assert.Equal(1, _repository.Count());
+            _repository.Remove(stacks);
+            Assert.Equal(0, _repository.Count());
             _repository.RemoveAll();
         }
 
@@ -71,18 +67,17 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(cache);
             cache.FlushAll();
 
-            var ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, stackId: TestConstants.StackId, occurrenceDate: DateTime.Now);
-            Assert.Null(ev.Id);
+            var stack = StackData.GenerateSampleStack();
 
             Assert.Equal(0, cache.Count);
-            _repository.Add(ev, true);
-            Assert.NotNull(ev.Id);
-            Assert.Equal(1, cache.Count);
+            _repository.Add(stack, true);
+            Assert.NotNull(stack.Id);
+            Assert.Equal(2, cache.Count);
             _client.Refresh();
 
             cache.FlushAll();
             Assert.Equal(0, cache.Count);
-            Assert.NotNull(_repository.GetById(ev.Id, true));
+            Assert.NotNull(_repository.GetById(stack.Id, true));
             Assert.Equal(1, cache.Count);
 
             _repository.RemoveAll();

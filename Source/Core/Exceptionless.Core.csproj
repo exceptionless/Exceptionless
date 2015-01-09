@@ -364,7 +364,7 @@
     <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
-    <Compile Include="Pipeline\080_NotifySignalRAction.cs" />
+    <Compile Include="Pipeline\080_PublishMessageAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\0_ThrottleBotsPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventContext.cs" />

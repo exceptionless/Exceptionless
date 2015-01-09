@@ -50,8 +50,10 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
-            if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
-                Clients.User(entityChanged.Id).entityChanged(entityChanged);
+            if (entityChanged.Type == typeof(User).Name) {
+                foreach (string id in entityChanged.Ids.Where(id => Clients.User(id) != null))
+                    Clients.User(id).entityChanged(entityChanged);
+
                 return;
             }
 

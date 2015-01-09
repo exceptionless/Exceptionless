@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Repositories {
             if (EnableNotifications) {
                 PublishMessage(new EntityChanged {
                     ChangeType = ChangeType.Saved,
-                    Id = stackId,
+                    Ids = new List<string>(new[] { stackId }),
                     OrganizationId = organizationId,
                     Type = _entityType
                 });

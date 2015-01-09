@@ -225,7 +225,7 @@ namespace Exceptionless.Core.Repositories {
             var orgEntity = document as IOwnedByOrganization;
             var message = new EntityChanged {
                 ChangeType = changeType,
-                Id = document.Id,
+                Ids = new List<string>(new[] { document.Id }),
                 OrganizationId = orgEntity != null ? orgEntity.OrganizationId : null,
                 Type = _entityType
             };

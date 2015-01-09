@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Pipeline {
                 IsNew = ctx.IsNew,
                 IsCritical = ctx.Event.IsCritical(),
                 IsRegression = ctx.IsRegression,
-                //TotalOccurrences = ctx.Stack.TotalOccurrences,
+                //TotalOccurrences = ctx.Stack.TotalOccurrences,  // TODO: Figure out if we need to populate this
                 ProjectName = ctx.Project.Name
             });
 
