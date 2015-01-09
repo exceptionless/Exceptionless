@@ -174,42 +174,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkCritical([CommaDelimitedArray]string[] ids) {
-            var events = GetModels(ids, false);
-            if (!events.Any())
-                return NotFound();
-
-            events = events.Where(e => !e.IsCritical()).ToList();
-            if (events.Count > 0) {
-                foreach (var ev in events)
-                    ev.MarkAsCritical();
-
-                _repository.Save(events);
-            }
-
-            return Ok();
-        }
-
-        [HttpDelete]
-        [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkNotCritical([CommaDelimitedArray]string[] ids) {
-            var events = GetModels(ids, false);
-            if (!events.Any())
-                return NotFound();
-
-            events = events.Where(e => e.IsCritical()).ToList();
-            if (events.Count > 0) {
-                foreach (var ev in events)
-                    ev.Tags.Remove(Event.KnownTags.Critical);
-
-                _repository.Save(events);
-            }
-
-            return StatusCode(HttpStatusCode.NoContent);
-        }
-
-        [HttpPost]
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
