@@ -11,6 +11,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -119,7 +121,7 @@ namespace Exceptionless.Api.Tests.Controllers {
             _eventQueue.DeleteQueue();
             RemoveAllEvents();
 
-            const int batchSize = 100;
+            const int batchSize = 250;
             const int batchCount = 10;
 
             try {
@@ -133,8 +135,12 @@ namespace Exceptionless.Api.Tests.Controllers {
 
                 Assert.Equal(batchCount, _eventQueue.GetQueueCount());
 
+                var sw = new Stopwatch();
                 var processEventsJob = IoC.GetInstance<EventPostsJob>();
+                sw.Start();
                 processEventsJob.RunUntilEmpty();
+                sw.Stop();
+                Trace.WriteLine(sw.Elapsed);
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
                 Assert.Equal(batchSize * batchCount, EventCount());

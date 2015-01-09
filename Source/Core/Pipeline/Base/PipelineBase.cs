@@ -46,13 +46,13 @@ namespace Exceptionless.Core.Pipeline {
             PipelineRunning(contexts);
 
             foreach (var action in _actions) {
-                action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && c.Exception == null).ToList());
+                action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList());
 
                 if (contexts.All(c => c.IsCancelled))
                     break;
             }
 
-            contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && c.Exception == null);
+            contexts.ForEach(c => c.IsProcessed = c.IsCancelled == false && !c.HasError);
 
             PipelineCompleted(contexts);
 

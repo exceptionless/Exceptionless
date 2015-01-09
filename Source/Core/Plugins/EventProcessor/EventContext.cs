@@ -28,10 +28,22 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         public Organization Organization { get; set; }
         public bool IsNew { get; set; }
         public bool IsRegression { get; set; }
+        public string SignatureHash { get; set; }
         public IDictionary<string, string> StackSignatureData { get; private set; }
 
         public bool IsCancelled { get; set; }
         public bool IsProcessed { get; set; }
-        public Exception Exception { get; set; }
+
+        public bool HasError {
+            get { return ErrorMessage != null || Exception != null; }
+        }
+
+        public void SetError(string message, Exception ex = null) {
+            ErrorMessage = message;
+            Exception = ex;
+        }
+
+        public string ErrorMessage { get; private set; }
+        public Exception Exception { get; private set; }
     }
 }

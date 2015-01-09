@@ -52,7 +52,7 @@ namespace Exceptionless.Core.Pipeline {
                     } catch { }
 
                     if (!cont)
-                        ctx.Exception = ex;
+                        ctx.SetError(ex.Message, ex);
                 }
             }
         }

@@ -114,10 +114,10 @@ namespace Exceptionless.Core.Jobs {
                     if (eventContext.IsCancelled)
                         continue;
 
-                    if (eventContext.Exception == null)
+                    if (!eventContext.HasError)
                         continue;
 
-                    Log.Error().Exception(eventContext.Exception).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.Exception.Message).Write();
+                    Log.Error().Exception(eventContext.Exception).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
                     if (eventContext.Exception is ValidationException)
                         continue;
 
