@@ -29,8 +29,6 @@ namespace Exceptionless.Api.Models {
         public int ProjectCount { get; set; }
         public long StackCount { get; set; }
         public long EventCount { get; set; }
-        public DateTime LastEventDate { get; set; }
-        public long TotalEventCount { get; set; }
         public ICollection<Invite> Invites { get; set; }
         public ICollection<UsageInfo> OverageHours { get; set; }
         public ICollection<UsageInfo> Usage { get; set; }
