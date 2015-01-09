@@ -40,8 +40,8 @@ namespace Exceptionless.Core.Migrations {
             if (document.Contains("LastErrorDate"))
                 document.ChangeName("LastErrorDate", "LastEventDate");
 
-            BsonValue keys;
-            if (document.TryGetValue("ApiKeys", out keys) && keys.IsBsonArray) {
+            BsonValue value;
+            if (document.TryGetValue("ApiKeys", out value) && value.IsBsonArray) {
                 if (!collection.Database.CollectionExists("token"))
                     collection.Database.CreateCollection("token");
 
@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Migrations {
 
                 var tokenCollection = Database.GetCollection("token");
                 var tokens = new List<BsonDocument>();
-                foreach (var key in keys.AsBsonArray) {
+                foreach (var key in value.AsBsonArray) {
                     var token = new BsonDocument();
                     token.Set("_id", key);
                     token.Set("oid", new BsonObjectId(document.GetValue("oid").AsObjectId));
@@ -69,6 +69,37 @@ namespace Exceptionless.Core.Migrations {
             }
 
             document.Remove("ApiKeys");
+
+            if (document.TryGetValue("NotificationSettings", out value) && value.IsBsonDocument) {
+                var settings = new BsonDocument();
+                foreach (BsonElement element in value.AsBsonDocument) {
+                    if (String.IsNullOrEmpty(element.Name) || !element.Value.IsBsonDocument)
+                        continue;
+
+                    var userSettings = element.Value.AsBsonDocument;
+
+                    bool isNew = false;
+                    if (userSettings.Contains("Mode")) {
+                        isNew = userSettings.GetValue("Mode").AsInt32 == 1;
+                        userSettings.Remove("Mode");
+                    }
+
+                    userSettings.Set("ReportNewErrors", new BsonBoolean(isNew));
+
+                    if (userSettings.Contains("ReportRegressions"))
+                        userSettings.ChangeName("ReportRegressions", "ReportErrorRegressions");
+
+                    if (userSettings.Contains("Report404Errors"))
+                        userSettings.ChangeName("Report404Errors", "ReportNewNotFounds");
+
+                    if (userSettings.Contains("ReportKnownBotErrors"))
+                        userSettings.Remove("ReportKnownBotErrors");
+
+                    settings.Set(element.Name, userSettings);
+                }
+
+                document.Set("NotificationSettings", settings);
+            }
 
             collection.Save(document);
         }
