@@ -45,14 +45,15 @@ namespace Exceptionless.Core.Pipeline {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 
-            _notificationQueue.Enqueue(new EventNotification {
-                Event = ctx.Event,
-                IsNew = ctx.IsNew,
-                IsCritical = ctx.Event.IsCritical(),
-                IsRegression = ctx.IsRegression,
-                //TotalOccurrences = ctx.Stack.TotalOccurrences,  // TODO: Figure out if we need to populate this
-                ProjectName = ctx.Project.Name
-            });
+            if (ctx.Project.NotificationSettings.Count > 0 && (ctx.IsNew || ctx.IsRegression || ctx.Event.IsCritical()))
+                _notificationQueue.Enqueue(new EventNotification {
+                    Event = ctx.Event,
+                    IsNew = ctx.IsNew,
+                    IsCritical = ctx.Event.IsCritical(),
+                    IsRegression = ctx.IsRegression,
+                    TotalOccurrences = ctx.Stack.TotalOccurrences,
+                    ProjectName = ctx.Project.Name
+                });
 
             foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
                 bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
