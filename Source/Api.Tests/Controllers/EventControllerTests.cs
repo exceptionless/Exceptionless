@@ -28,9 +28,12 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues;
 using Exceptionless.Helpers;
+using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Tests.Utility;
 using Microsoft.Owin;
@@ -125,6 +128,18 @@ namespace Exceptionless.Api.Tests.Controllers {
             const int batchCount = 10;
 
             try {
+                var countdown = new CountDownLatch(10);
+                var messageSubscriber = IoC.GetInstance<IMessageSubscriber>();
+                messageSubscriber.Subscribe<EntityChanged>(ch => {
+                    if (ch.ChangeType != ChangeType.Added || ch.Type != typeof(PersistentEvent).Name)
+                        return;
+
+                    if (countdown.Remaining <= 0)
+                        throw new ApplicationException("Too many change notifications.");
+
+                    countdown.Signal();
+                });
+
                 Parallel.For(0, batchCount, i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
@@ -144,6 +159,9 @@ namespace Exceptionless.Api.Tests.Controllers {
 
                 Assert.Equal(0, _eventQueue.GetQueueCount());
                 Assert.Equal(batchSize * batchCount, EventCount());
+
+                bool success = countdown.Wait(5000);
+                Assert.True(success);
             } finally {
                 _eventQueue.DeleteQueue();
             }

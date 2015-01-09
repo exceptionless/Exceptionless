@@ -14,9 +14,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Messaging;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
+using MongoDB.Bson;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
             foreach (var ev in documents.Where(ev => ev.Id == null))
-                ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+                ev.Id = ObjectId.GenerateNewId().ToString();
 
             foreach (var ev in documents.Where(ev => ev.CreatedUtc == default(DateTime)))
                 ev.CreatedUtc = DateTime.UtcNow;
@@ -283,21 +283,6 @@ namespace Exceptionless.Core.Repositories {
             pagingOptions.SortBy.Add(s => s.OnField("_uid").Descending());
 
             return pagingOptions;
-        }
-
-        protected override void AfterRemove(ICollection<PersistentEvent> documents, bool sendNotification = true) {
-            base.AfterRemove(documents, sendNotification);
-            if (sendNotification)
-                PublishMessage(ChangeType.Removed, documents);
-        }
-
-        protected override void AfterAdd(ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            base.AfterAdd(documents, addToCache, expiresIn);
-            PublishMessage(ChangeType.Added, documents);
-        }
-
-        protected override void AfterSave(ICollection<PersistentEvent> originalDocuments, ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
         }
     }
 }
