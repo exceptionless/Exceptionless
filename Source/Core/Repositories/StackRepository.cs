@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
@@ -180,11 +181,10 @@ namespace Exceptionless.Core.Repositories {
 
                 if (original.IsHidden != updated.IsHidden)
                     _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
-
-                if (EnableNotifications)
-                    PublishMessage(ChangeType.Saved, updated);
             }
 
+            if (EnableNotifications)
+                documents.ForEach(d => PublishMessage(ChangeType.Saved, d));
         }
     }
 }
