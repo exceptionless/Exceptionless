@@ -722,24 +722,22 @@ Project related resources of the **Projects API**
 + Response 200 (application/json)
 
         {
-            "mode": 1,
             "send_daily_summary": true,
+            "report_new_errors": true,
             "report_critical_errors": true,
-            "report_regressions": true,
-            "report404_errors": false,
-            "report_known_bot_errors": false
+            "report_errors_regressions": true,
+            "report_new_not_founds": false
         }
 
 ### Set user notification settings [POST]
 + Request (application/json)
 
         {
-            "mode": 2,
-            "send_daily_summary": false,
+            "send_daily_summary": true,
+            "report_new_errors": true,
             "report_critical_errors": true,
-            "report_regressions": true,
-            "report404_errors": false,
-            "report_known_bot_errors": false
+            "report_errors_regressions": true,
+            "report_new_not_founds": false
         }
 
 + Response 200
