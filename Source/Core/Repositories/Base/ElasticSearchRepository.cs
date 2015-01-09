@@ -75,10 +75,15 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+            if (!EnableCache && !EnableNotifications)
+                return;
+            
             foreach (var document in documents) {
-                InvalidateCache(document);
-                if (addToCache && Cache != null)
-                    Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                if (EnableCache) {
+                    InvalidateCache(document);
+                    if (addToCache && Cache != null)
+                        Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+                }
 
                 if (EnableNotifications)
                     PublishMessage(ChangeType.Added, document);
@@ -101,8 +106,8 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void BeforeRemove(ICollection<T> documents) {
-            foreach (var document in documents)
-                InvalidateCache(document);
+            if (EnableCache)
+                documents.ForEach(InvalidateCache);
         }
 
         public void Remove(ICollection<T> documents, bool sendNotification = true) {
@@ -115,8 +120,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void AfterRemove(ICollection<T> documents, bool sendNotification = true) {
+            if (!EnableCache && !sendNotification && !EnableNotifications)
+                return;
+
             foreach (var document in documents) {
-                InvalidateCache(document);
+                if (EnableCache)
+                    InvalidateCache(document);
 
                 if (sendNotification && EnableNotifications)
                     PublishMessage(ChangeType.Removed, document);
@@ -124,7 +133,9 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void RemoveAll() {
-            Cache.FlushAll();
+            if (EnableCache)
+                Cache.FlushAll();
+
             if (_isEvent)
                 _elasticClient.DeleteIndex(d => d.Index(String.Concat(EventsIndexName, "-*")));
             else if (_isStack)
@@ -202,11 +213,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            foreach (var document in originalDocuments)
-                InvalidateCache(document);
+            if (!EnableCache && !EnableNotifications)
+                return;
+
+            if (EnableCache) 
+                originalDocuments.ForEach(InvalidateCache);
 
             foreach (var document in documents) {
-                if (addToCache && Cache != null)
+                if (EnableCache && addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
                 if (EnableNotifications)
@@ -253,7 +267,8 @@ namespace Exceptionless.Core.Repositories {
                     return 0;
                 }
 
-                results.Hits.ForEach(d => InvalidateCache(d.Id));
+                if (EnableCache)
+                    results.Hits.ForEach(d => InvalidateCache(d.Id));
 
                 recordsAffected += results.Documents.Count();
                 results = _elasticClient.Scroll<T>("4s", results.ScrollId);

@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using AutoMapper;
 using Exceptionless.Core.Caching;
@@ -33,7 +32,10 @@ namespace Exceptionless.Core.Repositories {
         protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, ICacheClient cacheClient = null) {
             _elasticClient = elasticClient;
             Cache = cacheClient;
+            EnableCache = cacheClient != null;
         }
+
+        public bool EnableCache { get; protected set; }
 
         protected ICacheClient Cache { get; private set; }
 
@@ -42,14 +44,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void InvalidateCache(string cacheKey) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             Cache.Remove(GetScopedCacheKey(cacheKey));
         }
 
         public virtual void InvalidateCache(T document) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
             
             Cache.Remove(GetScopedCacheKey(document.Id));
@@ -68,16 +70,19 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("options");
 
             TModel result = null;
-            if (options.UseCache)
-                result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
 
-            if (options.UseCache && result != null)
-                Log.Info().Message("Cache hit: type={1}", typeof(T).Name);
-            else if (options.UseCache)
-                Log.Info().Message("Cache miss: type={1}", typeof(T).Name);
+            if (EnableCache) {
+                if (options.UseCache)
+                    result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
 
-            if (result != null)
-                return result;
+                if (options.UseCache && result != null)
+                    Log.Info().Message("Cache hit: type={1}", typeof(T).Name);
+                else if (options.UseCache)
+                    Log.Info().Message("Cache miss: type={1}", typeof(T).Name);
+
+                if (result != null)
+                    return result;
+            }
 
             var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
             if (options.Fields.Count > 0)
@@ -101,7 +106,7 @@ namespace Exceptionless.Core.Repositories {
                 result = item as TModel;
             }
 
-            if (result != null && options.UseCache)
+            if (EnableCache && result != null && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
@@ -128,12 +133,12 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            long? result = null;
-            if (options.UseCache)
+            long? result;
+            if (EnableCache && options.UseCache) {
                 result = Cache.Get<long?>(GetScopedCacheKey("count-" + options.CacheKey));
-
-            if (result.HasValue)
-                return result.Value;
+                if (result.HasValue)
+                    return result.Value;
+            }
 
             var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter())));
             countDescriptor.Indices(options.Indices);
@@ -149,7 +154,7 @@ namespace Exceptionless.Core.Repositories {
 
             result = results.Count;
 
-            if (options.UseCache)
+            if (EnableCache && options.UseCache)
                 Cache.Set(GetScopedCacheKey("count-" + options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result.Value;
@@ -163,12 +168,12 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            ICollection<TModel> result = null;
-            if (options.UseCache)
+            ICollection<TModel> result;
+            if (EnableCache && options.UseCache) {
                 result = Cache.Get<ICollection<TModel>>(GetScopedCacheKey(options.CacheKey));
-
-            if (result != null)
-                return result;
+                if (result != null)
+                    return result;
+            }
 
             var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter());
             searchDescriptor.Indices(options.Indices);
@@ -203,7 +208,7 @@ namespace Exceptionless.Core.Repositories {
                 result = items as List<TModel>;
             }
 
-            if (options.UseCache)
+            if (EnableCache && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
@@ -217,18 +222,24 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(id))
                 return null;
 
+            T result = null;
+            if (EnableCache && useCache) {
+                result = Cache.Get<T>(GetScopedCacheKey(id));
+                if (result != null)
+                    return result;
+            }
+
             // try using the object id to figure out what index the entity is located in
             string index = GetIndexName(id);
-            T result = null;
-            if (index != null) {
+            if (index != null)
                 result = _elasticClient.Get<T>(id, index).Source;
-                if (result != null && useCache)
-                    Cache.Set(GetScopedCacheKey(id), result, expiresIn != null ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
-            }
 
             // fallback to doing a find
             if (result == null)
                 result = FindOne(new OneOptions().WithId(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
+
+            if (EnableCache && result != null && useCache)
+                Cache.Set(GetScopedCacheKey(id), result, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
             return result;
         }
@@ -238,12 +249,13 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             var results = new List<T>();
-            if (useCache)
+            if (EnableCache && useCache) {
                 results.AddRange(ids.Select(id => Cache.Get<T>(GetScopedCacheKey(id))).Where(cacheHit => cacheHit != null));
 
-            var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
-            if (notCachedIds.Length == 0)
-                return results;
+                var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
+                if (notCachedIds.Length == 0)
+                    return results;
+            }
 
             // try using the object id to figure out what index the entity is located in
             var foundItems = new List<T>();
@@ -267,13 +279,13 @@ namespace Exceptionless.Core.Repositories {
             // fallback to doing a find
             if (itemsToFind.Count > 0)
                 foundItems.AddRange(Find(new ElasticSearchOptions<T>().WithIds(itemsToFind)));
-            
-            if (useCache && foundItems.Count > 0)
+
+            if (EnableCache && useCache && foundItems.Count > 0) {
                 foreach (var item in foundItems)
                     Cache.Set(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+            }
 
             results.AddRange(foundItems);
-
             return results;
         }
 

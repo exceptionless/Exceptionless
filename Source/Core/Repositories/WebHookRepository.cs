@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Repositories {
         #endregion
 
         public override void InvalidateCache(WebHook hook) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             Cache.Remove(GetScopedCacheKey(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)));

@@ -13,7 +13,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
@@ -21,8 +20,9 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, validator, cacheClient, messagePublisher) {
+        public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
+            : base(elasticClient, validator, null, messagePublisher) {
+            EnableCache = false;
         }
 
         protected override void BeforeAdd(ICollection<PersistentEvent> documents) {

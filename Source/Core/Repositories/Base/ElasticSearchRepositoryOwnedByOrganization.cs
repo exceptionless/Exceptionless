@@ -32,7 +32,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override void InvalidateCache(T document) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             Cache.Remove(GetScopedCacheKey(String.Concat("org:", document.OrganizationId)));

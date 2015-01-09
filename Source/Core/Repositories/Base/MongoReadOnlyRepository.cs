@@ -28,8 +28,11 @@ namespace Exceptionless.Core.Repositories {
 
         protected MongoReadOnlyRepository(MongoDatabase database, ICacheClient cacheClient = null) {
             Cache = cacheClient;
+            EnableCache = cacheClient != null;
             InitializeCollection(database);
         }
+
+        public bool EnableCache { get; protected set; }
 
         protected virtual void CreateCollection(MongoDatabase database) {
             database.CreateCollection(GetCollectionName());
@@ -76,14 +79,14 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public void InvalidateCache(string cacheKey) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             Cache.Remove(GetScopedCacheKey(cacheKey));
         }
 
         public virtual void InvalidateCache(T document) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
             
             Cache.Remove(GetScopedCacheKey(document.Id));
@@ -100,12 +103,12 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            TModel result = null;
-            if (options.UseCache)
+            TModel result;
+            if (EnableCache && options.UseCache) {
                 result = Cache.TryGet<TModel>(GetScopedCacheKey(options.CacheKey));
-
-            if (result != null)
-                return result;
+                if (result != null)
+                    return result;
+            }
 
             var findArgs = new FindOneArgs { Query = options.GetMongoQuery(_getIdValue), Fields = Fields.Include(options.Fields.ToArray()) };
             
@@ -117,7 +120,7 @@ namespace Exceptionless.Core.Repositories {
                 findArgs.ReadPreference = mongoOptions.ReadPreference;
 
             result = _collection.FindOneAs<TModel>(findArgs);
-            if (result != null && options.UseCache)
+            if (EnableCache && result != null && options.UseCache)
                 Cache.TrySet(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
@@ -140,12 +143,12 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            ICollection<TModel> result = null;
-            if (options.UseCache)
+            ICollection<TModel> result;
+            if (EnableCache && options.UseCache) {
                 result = Cache.Get<ICollection<TModel>>(GetScopedCacheKey(options.CacheKey));
-
-            if (result != null)
-                return result;
+                if (result != null)
+                    return result;
+            }
 
             var cursor = _collection.FindAs<TModel>(options.GetMongoQuery(_getIdValue));
             var mongoOptions = options as MongoOptions;
@@ -167,7 +170,7 @@ namespace Exceptionless.Core.Repositories {
                 result = result.Take(options.GetLimit()).ToList();
             }
 
-            if (options.UseCache)
+            if (EnableCache && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
@@ -198,9 +201,10 @@ namespace Exceptionless.Core.Repositories {
 
             var foundItems = Find<T>(new MultiOptions().WithIds(ids.Except(results.Select(i => i.Id))));
 
-            if (useCache && foundItems.Count > 0)
+            if (EnableCache && useCache && foundItems.Count > 0) {
                 foreach (var item in foundItems)
                     Cache.Set(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+            }
 
             results.AddRange(foundItems);
 

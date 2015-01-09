@@ -130,7 +130,7 @@ namespace Exceptionless.Core.Repositories {
         #endregion
 
         public override void InvalidateCache(Token token) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-org:", token.OrganizationId)));

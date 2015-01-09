@@ -123,7 +123,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override void InvalidateCache(User user) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             InvalidateCache(user.EmailAddress.ToLowerInvariant());
