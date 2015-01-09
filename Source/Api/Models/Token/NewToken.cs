@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Models {
-    public class NewToken : IOwnedByOrganization, IOwnedByProject {
+    public class NewToken : IOwnedByOrganizationAndProject {
         public NewToken() {
             Scopes = new HashSet<string>();
         }

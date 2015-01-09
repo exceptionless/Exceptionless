@@ -2,7 +2,7 @@
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Models {
-    public class NewWebHook : IOwnedByProject, IOwnedByOrganization {
+    public class NewWebHook : IOwnedByOrganizationAndProject {
         public string OrganizationId { get; set; }
         public string ProjectId { get; set; }
         public string Url { get; set; }

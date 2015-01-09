@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("{Id}, {Date}")]
-    public class PersistentEvent : Event, IOwnedByOrganization, IOwnedByProject, IOwnedByStack, IIdentity {
+    public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity {
         /// <summary>
         /// Unique id that identifies an event.
         /// </summary>

@@ -5,15 +5,17 @@ using System.Threading.Tasks;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Messaging {
-    public class InMemoryMessageBus : IMessagePublisher, IMessageSubscriber {
+    public class InMemoryMessageBus : MessageBusBase, IMessageSubscriber {
         private readonly BlockingCollection<Subscriber> _subscribers = new BlockingCollection<Subscriber>();
 
-        public void Publish<T>(T message) where T: class {
-            if (message == null)
-                throw new ArgumentNullException("message");
+        public override void Publish(Type messageType, object message, TimeSpan? delay = null) {
+            base.Publish(messageType, message, delay);
+
+            if (delay.HasValue && delay.Value > TimeSpan.Zero)
+                return;
 
             Task.Factory.StartNew(() => {
-                foreach (var subscriber in _subscribers.Where(s => s.Type.IsAssignableFrom(typeof(T))).ToList()) {
+                foreach (var subscriber in _subscribers.Where(s => s.Type.IsAssignableFrom(messageType)).ToList()) {
                     try {
                         subscriber.Action(message);
                     } catch (Exception ex) {

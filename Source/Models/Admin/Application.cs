@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Models.Admin {
-    public class Application : IIdentity, IOwnedByOrganization {
+    public class Application : IOwnedByOrganizationWithIdentity {
         public string Id { get; set; }
         public string OrganizationId { get; set; }
         public string Secret { get; set; }

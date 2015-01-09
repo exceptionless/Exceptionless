@@ -212,6 +212,7 @@
     <Compile Include="Lock\DisposableLock.cs" />
     <Compile Include="Lock\ILockProvider.cs" />
     <Compile Include="Jobs\Base\JobBase.cs" />
+    <Compile Include="Messaging\MessageBusBase.cs" />
     <Compile Include="Messaging\MessageBusData.cs" />
     <Compile Include="Messaging\Models\ChangeType.cs" />
     <Compile Include="Messaging\Models\UserMembershipChanged.cs" />
@@ -246,11 +247,9 @@
     <Compile Include="Messaging\IMessagePublisher.cs" />
     <Compile Include="Messaging\IMessageSubscriber.cs" />
     <Compile Include="Messaging\InMemoryMessageBus.cs" />
-    <Compile Include="Messaging\Models\EventOccurrence.cs" />
     <Compile Include="Messaging\Models\EntityChanged.cs" />
     <Compile Include="Messaging\Models\PlanChanged.cs" />
     <Compile Include="Messaging\Models\PlanOverage.cs" />
-    <Compile Include="Messaging\Models\StackUpdated.cs" />
     <Compile Include="Migrations\v1.0.29.cs" />
     <Compile Include="Migrations\v1.0.30.cs" />
     <Compile Include="Migrations\v1.0.33.cs" />
@@ -364,7 +363,6 @@
     <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
-    <Compile Include="Pipeline\080_PublishMessageAction.cs" />
     <Compile Include="Pipeline\090_IncrementCountersAction.cs" />
     <Compile Include="Plugins\EventProcessor\Default\0_ThrottleBotsPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventContext.cs" />
@@ -556,9 +554,7 @@
     <Compile Include="Migrations\v1.0.28.cs" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Models\Organization\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\AutoMapper.3.3.0\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.0\tools\AutoMapper.targets')" />
   <Import Project="..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

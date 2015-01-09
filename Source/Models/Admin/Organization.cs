@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Models {
-    public class Organization : IIdentity, IData, IOwnedByOrganization {
+    public class Organization : IData, IOwnedByOrganizationWithIdentity {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;

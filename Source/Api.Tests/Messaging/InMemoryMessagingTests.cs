@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Threading;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Messaging;
@@ -20,6 +22,28 @@ namespace Exceptionless.Api.Tests.Messaging {
 
             bool success = resetEvent.WaitOne(100);
             Assert.True(success, "Failed to receive message.");
+        }
+
+        [Fact]
+        public void CanSendDelayedMessage() {
+            var resetEvent = new AutoResetEvent(false);
+            var messageBus = new InMemoryMessageBus();
+            messageBus.Subscribe<SimpleMessageA>(msg => {
+                Assert.Equal("Hello", msg.Data);
+                resetEvent.Set();
+            });
+
+            var sw = new Stopwatch();
+            messageBus.Publish(new SimpleMessageA {
+                Data = "Hello"
+            }, TimeSpan.FromMilliseconds(100));
+
+            sw.Start();
+            bool success = resetEvent.WaitOne(1200);
+            sw.Stop();
+
+            Assert.True(success, "Failed to receive message.");
+            Assert.True(sw.Elapsed > TimeSpan.FromMilliseconds(100));
         }
 
         [Fact]

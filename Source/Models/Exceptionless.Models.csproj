@@ -91,6 +91,11 @@
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />
     <Compile Include="Interfaces\IData.cs" />
+    <Compile Include="Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Interfaces\IOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Interfaces\IOwnedByOrganizationAndProjectAndStackWithIdentity.cs" />
+    <Compile Include="Interfaces\IOwnedByOrganizationAndProjectWithIdentity.cs" />
+    <Compile Include="Interfaces\IOwnedByOrganizationWithIdentity.cs" />
     <Compile Include="Interfaces\IOwnedByProject.cs" />
     <Compile Include="Interfaces\IOwnedByStack.cs" />
     <Compile Include="Interfaces\IOwnedByOrganization.cs" />

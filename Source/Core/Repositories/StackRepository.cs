@@ -13,11 +13,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
+using MongoDB.Bson;
 using Nest;
 using NLog.Fluent;
 
@@ -33,12 +33,12 @@ namespace Exceptionless.Core.Repositories {
 
         protected override void BeforeAdd(ICollection<Stack> documents) {
             foreach (var ev in documents.Where(ev => ev.Id == null))
-                ev.Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString();
+                ev.Id = ObjectId.GenerateNewId().ToString();
 
             base.BeforeAdd(documents);
         }
 
-        protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             base.AfterAdd(documents, addToCache, expiresIn);
             if (!EnableCache || !addToCache)
                 return;
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(projectId, "-", signatureHash, "-", STACKING_VERSION);
         }
 
-        public void IncrementEventCounter(string organizationId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count) {
+        public void IncrementEventCounter(string organizationId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = _elasticClient.Update<Stack>(s => s
@@ -81,10 +81,10 @@ namespace Exceptionless.Core.Repositories {
             //Trace.WriteLine(String.Format("Incr: {0}", stackId));
             InvalidateCache(stackId);
 
-            if (EnableNotifications) {
+            if (sendNotifications) {
                 PublishMessage(new EntityChanged {
                     ChangeType = ChangeType.Saved,
-                    Ids = new List<string>(new[] { stackId }),
+                    Id = stackId,
                     OrganizationId = organizationId,
                     Type = _entityType
                 });
@@ -164,15 +164,8 @@ namespace Exceptionless.Core.Repositories {
             base.AfterRemove(documents, sendNotification);
         }
 
-        protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            var enableNotifications = EnableNotifications;
-
-            EnableNotifications = false;
-            try {
-                base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
-            } finally {
-                EnableNotifications = enableNotifications;
-            }
+        protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotification);
 
             foreach (var original in originalDocuments) {
                 var updated = documents.First(d => d.Id == original.Id);
@@ -182,9 +175,6 @@ namespace Exceptionless.Core.Repositories {
                 if (original.IsHidden != updated.IsHidden)
                     _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
             }
-
-            if (EnableNotifications)
-                documents.ForEach(d => PublishMessage(ChangeType.Saved, d));
         }
     }
 }

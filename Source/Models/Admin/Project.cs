@@ -15,7 +15,7 @@ using System.Diagnostics;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganization, IIdentity, IData {
+    public class Project : IOwnedByOrganizationWithIdentity, IData {
         public Project() {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();

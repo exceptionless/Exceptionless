@@ -6,7 +6,7 @@ using NLog.Fluent;
 using StackExchange.Redis;
 
 namespace Exceptionless.Core.Messaging {
-    public class RedisMessageBus : IMessagePublisher, IMessageSubscriber {
+    public class RedisMessageBus : MessageBusBase, IMessageSubscriber {
         private readonly ISubscriber _subscriber;
         private readonly BlockingCollection<Subscriber> _subscribers = new BlockingCollection<Subscriber>();
         private readonly string _topic;
@@ -37,11 +37,13 @@ namespace Exceptionless.Core.Messaging {
             }
         }
 
-        public void Publish<T>(T message) where T: class {
-            if (message == null)
-                throw new ArgumentNullException("message");
+        public override void Publish(Type messageType, object message, TimeSpan? delay = null) {
+            base.Publish(messageType, message, delay);
 
-            _subscriber.Publish(_topic, new MessageBusData { Type = typeof(T).AssemblyQualifiedName, Data = message.ToJson() }.ToJson());
+            if (delay.HasValue && delay.Value > TimeSpan.Zero)
+                return;
+
+            _subscriber.Publish(_topic, new MessageBusData { Type = messageType.AssemblyQualifiedName, Data = message.ToJson() }.ToJson());
         }
 
         public void Subscribe<T>(Action<T> handler) where T: class {

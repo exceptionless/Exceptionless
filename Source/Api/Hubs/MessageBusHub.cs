@@ -11,7 +11,6 @@
 
 using System;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging;
@@ -27,10 +26,8 @@ namespace Exceptionless.Api.Hubs {
 
         public MessageBusHub(IMessageSubscriber subscriber) {
             subscriber.Subscribe<EntityChanged>(OnEntityChanged);
-            subscriber.Subscribe<EventOccurrence>(OnEventOccurrence);
             subscriber.Subscribe<PlanChanged>(OnPlanChanged);
             subscriber.Subscribe<PlanOverage>(OnPlanOverage);
-            subscriber.Subscribe<StackUpdated>(OnStackUpdated);
             subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChanged);
         }
 
@@ -50,10 +47,8 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
-            if (entityChanged.Type == typeof(User).Name) {
-                foreach (string id in entityChanged.Ids.Where(id => Clients.User(id) != null))
-                    Clients.User(id).entityChanged(entityChanged);
-
+            if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
+                Clients.User(entityChanged.Id).entityChanged(entityChanged);
                 return;
             }
 
@@ -61,14 +56,6 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
-        }
-
-        private void OnEventOccurrence(EventOccurrence eventOccurrence) {
-            Clients.Group(eventOccurrence.OrganizationId).eventOccurrence(eventOccurrence);
-        }
-
-        private void OnStackUpdated(StackUpdated stackUpdated) {
-            Clients.Group(stackUpdated.OrganizationId).stackUpdated(stackUpdated);
         }
 
         private void OnPlanOverage(PlanOverage planOverage) {

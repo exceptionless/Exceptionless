@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Repositories {
         public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, null, messagePublisher) {
             EnableCache = false;
-            EnableNotifications = false;
+            BatchNotifications = true;
         }
 
         protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
@@ -289,6 +289,15 @@ namespace Exceptionless.Core.Repositories {
             base.AfterRemove(documents, sendNotification);
             if (sendNotification)
                 PublishMessage(ChangeType.Removed, documents);
+        }
+
+        protected override void AfterAdd(ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+            base.AfterAdd(documents, addToCache, expiresIn);
+            PublishMessage(ChangeType.Added, documents);
+        }
+
+        protected override void AfterSave(ICollection<PersistentEvent> originalDocuments, ICollection<PersistentEvent> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn);
         }
     }
 }

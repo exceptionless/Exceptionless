@@ -35,22 +35,21 @@ namespace Exceptionless.Core.Repositories {
         protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
             _validator = validator;
             _messagePublisher = messagePublisher;
-            EnableNotifications = true;
         }
 
-        public bool EnableNotifications { get; set; }
+        public bool BatchNotifications { get; set; }
 
-        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Add(new[] { document }, addToCache, expiresIn);
+            Add(new[] { document }, addToCache, expiresIn, sendNotification);
             return document;
         }
 
         protected virtual void BeforeAdd(ICollection<T> documents) { }
 
-        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to add.", "documents");
 
@@ -71,11 +70,11 @@ namespace Exceptionless.Core.Repositories {
                     throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
             }
 
-            AfterAdd(documents, addToCache, expiresIn);
+            AfterAdd(documents, addToCache, expiresIn, sendNotification);
         }
 
-        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            if (!EnableCache && !EnableNotifications)
+        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+            if (!EnableCache && !sendNotification)
                 return;
             
             foreach (var document in documents) {
@@ -85,24 +84,27 @@ namespace Exceptionless.Core.Repositories {
                         Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
                 }
 
-                if (EnableNotifications)
+                if (sendNotification && !BatchNotifications)
                     PublishMessage(ChangeType.Added, document);
             }
+
+            if (sendNotification && BatchNotifications)
+                PublishMessage(ChangeType.Added, documents);
         }
 
-        public void Remove(string id) {
+        public void Remove(string id, bool sendNotification = true) {
             if (String.IsNullOrEmpty(id))
                 throw new ArgumentNullException("id");
 
             var document = GetById(id, true);
-            Remove(new[] { document });
+            Remove(new[] { document }, sendNotification);
         }
 
-        public void Remove(T document) {
+        public void Remove(T document, bool sendNotification = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Remove(new[] { document });
+            Remove(new[] { document }, sendNotification);
         }
 
         protected virtual void BeforeRemove(ICollection<T> documents) {
@@ -120,16 +122,19 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void AfterRemove(ICollection<T> documents, bool sendNotification = true) {
-            if (!EnableCache && !sendNotification && !EnableNotifications)
+            if (!EnableCache && !sendNotification)
                 return;
 
             foreach (var document in documents) {
                 if (EnableCache)
                     InvalidateCache(document);
 
-                if (sendNotification && EnableNotifications)
+                if (sendNotification && !BatchNotifications)
                     PublishMessage(ChangeType.Removed, document);
             }
+
+            if (sendNotification && BatchNotifications)
+                PublishMessage(ChangeType.Removed, documents);
         }
 
         public void RemoveAll() {
@@ -176,17 +181,17 @@ namespace Exceptionless.Core.Repositories {
             return recordsAffected;
         }
 
-        public T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public T Save(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (document == null)
                 throw new ArgumentNullException("document");
 
-            Save(new[] { document }, addToCache, expiresIn);
+            Save(new[] { document }, addToCache, expiresIn, sendNotifications);
             return document;
         }
 
         protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) { }
 
-        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
+        public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
@@ -209,11 +214,11 @@ namespace Exceptionless.Core.Repositories {
                     throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
             }
 
-            AfterSave(originalDocuments, documents, addToCache, expiresIn);
+            AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
         }
 
-        protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null) {
-            if (!EnableCache && !EnableNotifications)
+        protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+            if (!EnableCache && !sendNotifications)
                 return;
 
             if (EnableCache) 
@@ -223,9 +228,12 @@ namespace Exceptionless.Core.Repositories {
                 if (EnableCache && addToCache && Cache != null)
                     Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
 
-                if (EnableNotifications)
+                if (sendNotifications && !BatchNotifications)
                     PublishMessage(ChangeType.Saved, document);
             }
+
+            if (sendNotifications && BatchNotifications)
+                PublishMessage(ChangeType.Saved, documents);
         }
 
         protected long UpdateAll(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
@@ -277,15 +285,15 @@ namespace Exceptionless.Core.Repositories {
             if (recordsAffected <= 0)
                 return 0;
 
-            if (!EnableNotifications || !sendNotifications)
+            if (!sendNotifications)
                 return recordsAffected;
 
             foreach (var organizationId in organizationIds) {
                 PublishMessage(new EntityChanged {
-                    ChangeType = ChangeType.UpdatedAll,
+                    ChangeType = ChangeType.Saved,
                     OrganizationId = organizationId,
                     Type = _entityType
-                });
+                }, TimeSpan.FromSeconds(1.5));
             }
 
             return recordsAffected;
@@ -296,21 +304,55 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected virtual void PublishMessage(ChangeType changeType, IEnumerable<T> documents) {
-            foreach (var orgDocs in documents.Cast<IOwnedByOrganization>().GroupBy(d => d.OrganizationId)) {
-                var message = new EntityChanged {
-                    ChangeType = changeType,
-                    OrganizationId = orgDocs.Key,
-                    Ids = new List<string>(orgDocs.Cast<IIdentity>().Select(d => d.Id)),
-                    Type = _entityType
-                };
+            if (_isOwnedByOrganization && _isOwnedByProject) {
+                foreach (var projectDocs in documents.Cast<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
+                    var firstDoc = projectDocs.FirstOrDefault();
+                    if (firstDoc == null)
+                        continue;
 
-                PublishMessage(message);
+                    int count = projectDocs.Count();
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        OrganizationId = firstDoc.OrganizationId,
+                        ProjectId = projectDocs.Key,
+                        Id = count == 1 ? firstDoc.Id : null,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message, count > 1 ? TimeSpan.FromSeconds(1.5) : TimeSpan.Zero);
+                }
+            } else if (_isOwnedByOrganization) {
+                foreach (var orgDocs in documents.Cast<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
+                    var firstDoc = orgDocs.FirstOrDefault();
+                    if (firstDoc == null)
+                        continue;
+
+                    int count = orgDocs.Count();
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        OrganizationId = orgDocs.Key,
+                        Id = count == 1 ? firstDoc.Id : null,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message, count > 1 ? TimeSpan.FromSeconds(1.5) : TimeSpan.Zero);
+                }
+            } else {
+                foreach (var doc in documents) {
+                    var message = new EntityChanged {
+                        ChangeType = changeType,
+                        Id = doc.Id,
+                        Type = _entityType
+                    };
+
+                    PublishMessage(message);
+                }
             }
         }
 
-        protected void PublishMessage<TMessageType>(TMessageType message) where TMessageType : class {
+        protected void PublishMessage<TMessageType>(TMessageType message, TimeSpan? delay = null) where TMessageType : class {
             if (_messagePublisher != null)
-                _messagePublisher.Publish(message);
+                _messagePublisher.Publish(message, delay);
         }
     }
 }
