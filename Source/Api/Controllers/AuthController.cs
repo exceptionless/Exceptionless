@@ -156,7 +156,10 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
-                return BadRequest("An error occurred while processing user info.");
+
+                return BadRequest(String.IsNullOrEmpty(userInfo.Email) 
+                    ? "Please make ensure your github email address is configured." 
+                    : "An error occurred while processing user info.");
             }
 
             if (user == null)
