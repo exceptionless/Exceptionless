@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            base.AfterAdd(documents, addToCache, expiresIn);
+            base.AfterAdd(documents, addToCache, expiresIn, sendNotification);
             if (!EnableCache || !addToCache)
                 return;
 

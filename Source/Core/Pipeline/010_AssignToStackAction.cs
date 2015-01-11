@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Messaging;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Repositories;
@@ -24,8 +26,9 @@ namespace Exceptionless.Core.Pipeline {
     public class AssignToStackAction : EventPipelineActionBase {
         private readonly IStackRepository _stackRepository;
         private readonly FormattingPluginManager _formattingPluginManager;
+        private readonly IMessagePublisher _publisher;
 
-        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager) {
+        public AssignToStackAction(IStackRepository stackRepository, FormattingPluginManager formattingPluginManager, IMessagePublisher publisher) {
             if (stackRepository == null)
                 throw new ArgumentNullException("stackRepository");
             if (formattingPluginManager == null)
@@ -33,6 +36,7 @@ namespace Exceptionless.Core.Pipeline {
 
             _stackRepository = stackRepository;
             _formattingPluginManager = formattingPluginManager;
+            _publisher = publisher;
         }
 
         protected override bool IsCritical { get { return true; } }
@@ -112,9 +116,16 @@ namespace Exceptionless.Core.Pipeline {
                 ctx.Event.IsHidden = ctx.Stack.IsHidden;
             });
 
-            var stacksToSave = stacks.Where(kvp => kvp.Value.Item1).Select(kvp => kvp.Value.Item2).ToList();
+            var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
+            if (stacksToAdd.Count > 0) {
+                _stackRepository.Add(stacksToAdd, true, sendNotification: stacksToAdd.Count == 1);
+                if (stacksToAdd.Count > 1)
+                    _publisher.Publish(new EntityChanged { ChangeType = ChangeType.Added, Type = typeof(Stack).Name, OrganizationId = contexts.First().Organization.Id, ProjectId = contexts.First().Project.Id });
+            }
+
+            var stacksToSave = stacks.Where(kvp => kvp.Value.Item1 && !String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToSave.Count > 0)
-                _stackRepository.Add(stacksToSave, true);
+                _stackRepository.Save(stacksToSave, true, sendNotification: false); // notification will get sent later in the update stats step
 
             // set stack ids after they have been saved and created
             contexts.ForEach(ctx => {

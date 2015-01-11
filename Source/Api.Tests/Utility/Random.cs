@@ -14,6 +14,9 @@ namespace Exceptionless.Helpers {
         public static Random Instance { get { return _random; } }
 
         public static int GetInt(int min, int max) {
+            if (min == max)
+                return min;
+
             if (min >= max)
                 throw new Exception("Min value must be less than max value.");
 
@@ -25,6 +28,9 @@ namespace Exceptionless.Helpers {
         }
 
         public static long GetLong(long min, long max) {
+            if (min == max)
+                return min;
+
             if (min >= max)
                 throw new Exception("Min value must be less than max value.");
 
@@ -40,6 +46,9 @@ namespace Exceptionless.Helpers {
         }
 
         public static DateTime GetDateTime(DateTime? start = null, DateTime? end = null) {
+            if (start.HasValue && end.HasValue && start.Value == end.Value)
+                return start.Value;
+            
             if (start.HasValue && end.HasValue && start.Value >= end.Value)
                 throw new Exception("Start date must be less than end date.");
 
@@ -66,6 +75,9 @@ namespace Exceptionless.Helpers {
         }
 
         public static TimeSpan GetTimeSpan(TimeSpan? min = null, TimeSpan? max = null) {
+            if (min.HasValue && max.HasValue && min.Value == max.Value)
+                return min.Value;
+
             if (min.HasValue && max.HasValue && min.Value >= max.Value)
                 throw new Exception("Min span must be less than max span.");
 
@@ -83,6 +95,9 @@ namespace Exceptionless.Helpers {
         }
 
         public static double GetDouble(double? min = null, double? max = null) {
+            if (min.HasValue && max.HasValue && min.Value == max.Value)
+                return min.Value;
+
             if (min.HasValue && max.HasValue && min.Value >= max.Value)
                 throw new Exception("Min value must be less than max value.");
 

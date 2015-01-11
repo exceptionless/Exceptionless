@@ -319,7 +319,7 @@ namespace Exceptionless.Core.Repositories {
                         Type = _entityType
                     };
 
-                    PublishMessage(message, count > 1 ? TimeSpan.FromSeconds(1.5) : TimeSpan.Zero);
+                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
                 }
             } else if (_isOwnedByOrganization) {
                 foreach (var orgDocs in documents.Cast<IOwnedByOrganizationWithIdentity>().GroupBy(d => d.OrganizationId)) {
@@ -335,7 +335,7 @@ namespace Exceptionless.Core.Repositories {
                         Type = _entityType
                     };
 
-                    PublishMessage(message, count > 1 ? TimeSpan.FromSeconds(1.5) : TimeSpan.Zero);
+                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
                 }
             } else {
                 foreach (var doc in documents) {
@@ -345,7 +345,7 @@ namespace Exceptionless.Core.Repositories {
                         Type = _entityType
                     };
 
-                    PublishMessage(message);
+                    PublishMessage(message, TimeSpan.FromSeconds(1.5));
                 }
             }
         }
