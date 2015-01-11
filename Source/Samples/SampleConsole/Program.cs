@@ -19,12 +19,15 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Helpers;
+using Exceptionless.Logging;
 using Exceptionless.Models;
 
 namespace SampleConsole {
     internal class Program {
         private static readonly int[] _delays = { 0, 50, 100, 1000 };
         private static int _delayIndex = 2;
+        private static readonly InMemoryExceptionlessLog _log = new InMemoryExceptionlessLog();
+        private static readonly object _writeLock = new object();
 
         private static readonly TimeSpan[] _dateSpans = {
             TimeSpan.Zero,
@@ -38,8 +41,11 @@ namespace SampleConsole {
         private static int _dateSpanIndex = 3;
 
         private static void Main() {
+            Console.CursorVisible = false;
+            StartDisplayingLogMessages();
+
             ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
-            ExceptionlessClient.Default.Configuration.UseFileLogger("store\\exceptionless.log");
+            ExceptionlessClient.Default.Configuration.UseLogger(_log);
             ExceptionlessClient.Default.Startup();
 
             var tokenSource = new CancellationTokenSource();
@@ -73,10 +79,10 @@ namespace SampleConsole {
 
                     ExceptionlessClient.Default.ProcessQueue();
 
-                    ClearNonOptionsLines();
+                    ClearOutputLines();
                 } else if (keyInfo.Key == ConsoleKey.D5) {
                     SendAllCapturedEventsFromDisk();
-                    ClearNonOptionsLines();
+                    ClearOutputLines();
                 } else if (keyInfo.Key == ConsoleKey.D) {
                     _dateSpanIndex++;
                     if (_dateSpanIndex == _dateSpans.Length)
@@ -93,7 +99,7 @@ namespace SampleConsole {
                     tokenSource.Cancel();
                     tokenSource = new CancellationTokenSource();
                     token = tokenSource.Token;
-                    ClearNonOptionsLines();
+                    ClearOutputLines();
                 }
             }
         }
@@ -120,23 +126,41 @@ namespace SampleConsole {
 
         private const int OPTIONS_MENU_LINE_COUNT = 9;
         private static void WriteOptionsMenu() {
-            Console.SetCursorPosition(0, 0);
-            ClearConsoleLines(0, OPTIONS_MENU_LINE_COUNT - 1);
-            Console.WriteLine("1: Send 1");
-            Console.WriteLine("2: Send 100");
-            Console.WriteLine("3: Send continous");
-            Console.WriteLine("4: Process queue");
-            Console.WriteLine("5: Process directory");
-            Console.WriteLine("D: Change date range (" + _dateSpans[_dateSpanIndex].ToWords() + ")");
-            Console.WriteLine("T: Change continuous delay (" + _delays[_delayIndex].ToString("N0") + ")");
-            Console.WriteLine();
-            Console.WriteLine("Q: Quit");
+            lock (_writeLock) {
+                Console.SetCursorPosition(0, 0);
+                ClearConsoleLines(0, OPTIONS_MENU_LINE_COUNT - 1);
+                Console.WriteLine("1: Send 1");
+                Console.WriteLine("2: Send 100");
+                Console.WriteLine("3: Send continous");
+                Console.WriteLine("4: Process queue");
+                Console.WriteLine("5: Process directory");
+                Console.WriteLine("D: Change date range (" + _dateSpans[_dateSpanIndex].ToWords() + ")");
+                Console.WriteLine("T: Change continuous delay (" + _delays[_delayIndex].ToString("N0") + ")");
+                Console.WriteLine();
+                Console.WriteLine("Q: Quit");
+            }
         }
 
-        private static void ClearNonOptionsLines(int delay = 1000) {
+        private static void ClearOutputLines(int delay = 1000) {
             Task.Run(() => {
-                Task.Delay(delay);
-                ClearConsoleLines(OPTIONS_MENU_LINE_COUNT);
+                Thread.Sleep(delay);
+                ClearConsoleLines(OPTIONS_MENU_LINE_COUNT, OPTIONS_MENU_LINE_COUNT + 4);
+            });
+        }
+
+        private const int LOG_LINE_COUNT = 20;
+        private static void StartDisplayingLogMessages() {
+            Task.Factory.StartNew(() => {
+                while (true) {
+                    var logEntries = _log.GetLogEntries(LOG_LINE_COUNT);
+                    lock (_writeLock) {
+                        ClearConsoleLines(OPTIONS_MENU_LINE_COUNT + 5, OPTIONS_MENU_LINE_COUNT + 6 + LOG_LINE_COUNT);
+                        Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 6);
+                        foreach (var logEntry in logEntries)
+                            Console.WriteLine(logEntry);
+                    }
+                    Thread.Sleep(250);
+                }
             });
         }
 
@@ -144,14 +168,16 @@ namespace SampleConsole {
             if (endLine < 0)
                 endLine = Console.WindowHeight - 2;
 
-            int currentLine = Console.CursorTop;
-            int currentPosition = Console.CursorLeft;
+            lock (_writeLock) {
+                int currentLine = Console.CursorTop;
+                int currentPosition = Console.CursorLeft;
 
-            for (int i = startLine; i <= endLine; i++) {
-                Console.SetCursorPosition(0, i);
-                Console.Write(new string(' ', Console.WindowWidth));
+                for (int i = startLine; i <= endLine; i++) {
+                    Console.SetCursorPosition(0, i);
+                    Console.Write(new string(' ', Console.WindowWidth));
+                }
+                Console.SetCursorPosition(currentPosition, currentLine);
             }
-            Console.SetCursorPosition(currentPosition, currentLine);
         }
 
         private static void SendContinuousEvents(int delay, CancellationToken token, int maxEvents = Int32.MaxValue, int maxDaysOld = 90) {
@@ -166,14 +192,15 @@ namespace SampleConsole {
 
                     SendEvent(false);
                     eventCount++;
-                    Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 4);
-                    Console.WriteLine("Sent {0} events.", eventCount);
-                    Trace.WriteLine(String.Format("Sent {0} events.", eventCount));
+                    lock (_writeLock) {
+                        Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 4);
+                        Console.WriteLine("Submitted {0} events.", eventCount);
+                    }
 
                     Thread.Sleep(delay);
                 }
 
-                ClearNonOptionsLines();
+                ClearOutputLines();
             }, token);
         }
 
@@ -185,17 +212,21 @@ namespace SampleConsole {
             ExceptionlessClient.Default.SubmitEvent(_rnd.Generate());
 
             if (writeToConsole) {
-                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
-                Console.WriteLine("Sent 1 event.");
-                Trace.WriteLine("Sent 1 event.");
+                lock (_writeLock) {
+                    Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
+                    Console.WriteLine("Submitted 1 event.");
+                    Trace.WriteLine("Submitted 1 event.");
+                }
 
-                ClearNonOptionsLines();
+                ClearOutputLines();
             }
         }
 
         private static void SendAllCapturedEventsFromDisk() {
-            Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
-            Console.WriteLine("Sending captured events...");
+            lock (_writeLock) {
+                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 2);
+                Console.WriteLine("Sending captured events...");
+            }
 
             string path = Path.GetFullPath(@"..\..\Errors\");
             if (!Directory.Exists(path))
@@ -208,8 +239,10 @@ namespace SampleConsole {
                 ExceptionlessClient.Default.SubmitEvent(e);
 
                 eventCount++;
-                Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 3);
-                Console.WriteLine("Sent {0} events.", eventCount);
+                lock (_writeLock) {
+                    Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 3);
+                    Console.WriteLine("Sent {0} events.", eventCount);
+                }
             }
         }
     }

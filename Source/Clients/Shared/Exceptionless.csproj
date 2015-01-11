@@ -96,6 +96,7 @@
     <Compile Include="LastReferenceIdManager\DefaultLastReferenceIdManager.cs" />
     <Compile Include="LastReferenceIdManager\ILastReferenceIdManager.cs" />
     <Compile Include="Logging\DebugExceptionlessLog.cs" />
+    <Compile Include="Logging\InMemoryExceptionlessLog.cs" />
     <Compile Include="Logging\LogLevel.cs" />
     <Compile Include="Enrichments\EventEnrichmentManager.cs" />
     <Compile Include="Enrichments\EventEnrichmentContext.cs" />

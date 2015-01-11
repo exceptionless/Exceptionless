@@ -29,7 +29,7 @@ namespace Exceptionless.Logging {
         }
 
         public void Warn(string message, string source = null) {
-            if (LogLevel.Warning >= MinimumLogLevel)
+            if (LogLevel.Warn >= MinimumLogLevel)
                 System.Diagnostics.Trace.WriteLine(message);
         }
 

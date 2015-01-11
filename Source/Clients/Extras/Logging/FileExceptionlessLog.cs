@@ -93,9 +93,9 @@ namespace Exceptionless.Logging {
 
         public void Warn(string message, string source = null) {
             if (source != null)
-                WriteEntry(LogLevel.Warning, String.Concat(source, ": ", message));
+                WriteEntry(LogLevel.Warn, String.Concat(source, ": ", message));
             else
-                WriteEntry(LogLevel.Warning, message);
+                WriteEntry(LogLevel.Warn, message);
         }
 
         public void Trace(string message, string source = null) {
