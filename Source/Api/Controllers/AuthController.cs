@@ -135,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(Settings.Current.GitHubAppId) || String.IsNullOrEmpty(Settings.Current.GitHubAppSecret))
                 return NotFound();
 
-            var client = new GitHubClient(new RequestFactory(), new RuntimeClientConfiguration {
+            var client = new GitHubWithPrivateEmailsClient(new RequestFactory(), new RuntimeClientConfiguration {
                 ClientId = Settings.Current.GitHubAppId,
                 ClientSecret = Settings.Current.GitHubAppSecret,
                 RedirectUri = authInfo.RedirectUri
@@ -156,10 +156,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
-
-                return BadRequest(String.IsNullOrEmpty(userInfo.Email) 
-                    ? "Please make ensure your github email address is configured." 
-                    : "An error occurred while processing user info.");
+                return BadRequest("An error occurred while processing user info.");
             }
 
             if (user == null)

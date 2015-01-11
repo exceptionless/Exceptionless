@@ -114,12 +114,19 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NLog.Xml.3.2.0.31\lib\net45\NLog.Xml.dll</HintPath>
     </Reference>
+    <Reference Include="OAuth2">
+      <HintPath>..\..\packages\OAuth2.0.8.34\lib\OAuth2.dll</HintPath>
+    </Reference>
     <Reference Include="Pegasus.Common">
       <HintPath>..\..\packages\Pegasus.3.1.0\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.5.0.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\RazorEngine.3.4.2\lib\net45\RazorEngine.dll</HintPath>
+    </Reference>
+    <Reference Include="RestSharp, Version=104.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\RestSharp.104.0\lib\net4\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="SimpleInjector">
       <HintPath>..\..\packages\SimpleInjector.2.6.1\lib\net45\SimpleInjector.dll</HintPath>
@@ -180,6 +187,7 @@
     </Compile>
     <Compile Include="AppStats\AppStatsTimer.cs" />
     <Compile Include="Authorization\AuthorizationRoles.cs" />
+    <Compile Include="Authorization\GitHubWithPrivateEmailsClient.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Caching\ICacheClient.cs" />
