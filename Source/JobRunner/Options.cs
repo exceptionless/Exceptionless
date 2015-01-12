@@ -10,6 +10,9 @@ namespace Exceptionless.JobRunner {
         [Option('c', "continuous", Required = false, DefaultValue = false, HelpText = "Run the job in a continuous loop.")]
         public bool RunContinuously { get; set; }
 
+        [Option('q', "quiet", Required = false, DefaultValue = false, HelpText = "Don't output header text.")]
+        public bool Quiet { get; set; }
+
         [Option('d', "delay", Required = false, DefaultValue = 0, HelpText = "Amount of time in milliseconds to delay between continuous job runs.")]
         public int Delay { get; set; }
 

@@ -66,12 +66,13 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _statsClient.Counter(StatNames.PostsDequeued);
-            Log.Info().Message("Processing EventPost '{0}'.", queueEntry.Id).Write();
+            Log.Info().Message("Processing post: id={0} path={1}", queueEntry.Id, queueEntry.Value.FilePath).Write();
             
             List<PersistentEvent> events = null;
             try {
                 _statsClient.Time(() => {
                     events = ParseEventPost(eventPost);
+                    Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).Write();
                 }, StatNames.PostsParsingTime);
                 _statsClient.Counter(StatNames.PostsParsed);
                 _statsClient.Gauge(StatNames.PostsEventCount, events.Count);
@@ -110,6 +111,7 @@ namespace Exceptionless.Core.Jobs {
             try {
                 events.ForEach(e => e.CreatedUtc = created);
                 var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
+                Log.Info().Message("Ran {0} events through the pipeline: id={1} success={2} error={3}", results.Count, queueEntry.Id, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).Write();
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;

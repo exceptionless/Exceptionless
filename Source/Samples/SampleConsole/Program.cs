@@ -156,12 +156,33 @@ namespace SampleConsole {
                     lock (_writeLock) {
                         ClearConsoleLines(OPTIONS_MENU_LINE_COUNT + 5, OPTIONS_MENU_LINE_COUNT + 6 + LOG_LINE_COUNT);
                         Console.SetCursorPosition(0, OPTIONS_MENU_LINE_COUNT + 6);
-                        foreach (var logEntry in logEntries)
+                        foreach (var logEntry in logEntries) {
+                            var originalColor = Console.ForegroundColor;
+                            Console.ForegroundColor = GetColor(logEntry);
                             Console.WriteLine(logEntry);
+                            Console.ForegroundColor = originalColor;
+                        }
                     }
                     Thread.Sleep(250);
                 }
             });
+        }
+
+        private static ConsoleColor GetColor(InMemoryExceptionlessLog.LogEntry logEntry) {
+            switch (logEntry.Level) {
+                case LogLevel.Debug:
+                    return ConsoleColor.Gray;
+                case LogLevel.Error:
+                    return ConsoleColor.Yellow;
+                case LogLevel.Info:
+                    return ConsoleColor.White;
+                case LogLevel.Trace:
+                    return ConsoleColor.DarkGray;
+                case LogLevel.Warn:
+                    return ConsoleColor.Magenta;
+            }
+
+            return ConsoleColor.White;
         }
 
         private static void ClearConsoleLines(int startLine = 0, int endLine = -1) {

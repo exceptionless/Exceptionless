@@ -2,10 +2,10 @@
 using System.Diagnostics;
 using System.IO;
 using CommandLine;
+using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
-using NLog.Fluent;
 using SimpleInjector;
 
 namespace Exceptionless.JobRunner {
@@ -13,6 +13,7 @@ namespace Exceptionless.JobRunner {
         private static int Main(string[] args) {
             try {
                 var ca = new Options();
+                
                 if (!Parser.Default.ParseArguments(args, ca)) {
                     PauseIfDebug();
                     return 0;
@@ -34,6 +35,11 @@ namespace Exceptionless.JobRunner {
                     return 1;
                 }
 
+                if (!ca.Quiet) {
+                    OutputHeader();
+                    Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);
+                }
+
                 if (ca.RunContinuously)
                     job.RunContinuous(TimeSpan.FromMilliseconds(ca.Delay));
                 else
@@ -53,12 +59,18 @@ namespace Exceptionless.JobRunner {
             return 0;
         }
 
+        private static void OutputHeader() {
+            Console.WriteLine("Exceptionless Job Runner v{0}", ThisAssembly.AssemblyInformationalVersion);
+            Console.WriteLine("Copyright (c) 2012-{0} Exceptionless.  All rights reserved.", DateTime.Now.Year);
+            Console.WriteLine();
+        }
+
         public static Container CreateContainer() {
             var container = new Container();
             container.Options.AllowOverridingRegistrations = true;
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
-            container.RegisterPackage<Core.Bootstrapper>();
+            container.RegisterPackage<Bootstrapper>();
 
             return container;
         }
