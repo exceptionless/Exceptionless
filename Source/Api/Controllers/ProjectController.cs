@@ -330,6 +330,12 @@ namespace Exceptionless.Api.Controllers {
             return base.CanUpdate(original, changes);
         }
 
+        protected override async Task DeleteModels(ICollection<Project> values) {
+            await base.DeleteModels(values);
+            foreach (var value in values)
+                await _dataHelper.ResetProjectDataAsync(value.Id);
+        }
+
         private ViewProject PopulateProjectStats(ViewProject project) {
             return PopulateProjectStats(new List<ViewProject> { project }).FirstOrDefault();
         }

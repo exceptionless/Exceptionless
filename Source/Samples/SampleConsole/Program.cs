@@ -26,7 +26,7 @@ namespace SampleConsole {
     internal class Program {
         private static readonly int[] _delays = { 0, 50, 100, 1000 };
         private static int _delayIndex = 2;
-        private static readonly InMemoryExceptionlessLog _log = new InMemoryExceptionlessLog();
+        private static readonly InMemoryExceptionlessLog _log = new InMemoryExceptionlessLog { MinimumLogLevel = LogLevel.Info };
         private static readonly object _writeLock = new object();
 
         private static readonly TimeSpan[] _dateSpans = {

@@ -86,6 +86,11 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
             }
 
+            if (token.IsCancellationRequested) {
+                queueEntry.Abandon();
+                return JobResult.Cancelled;
+            }
+
             Log.Trace().Message("Loaded stack: title={0}", stack.Title).Write();
             int totalOccurrences = stack.TotalOccurrences;
 
@@ -108,6 +113,11 @@ namespace Exceptionless.Core.Jobs {
                 queueEntry.Complete();
                 Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).Write();
                 return JobResult.Success;
+            }
+
+            if (token.IsCancellationRequested) {
+                queueEntry.Abandon();
+                return JobResult.Cancelled;
             }
 
             foreach (var kv in project.NotificationSettings) {

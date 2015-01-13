@@ -58,6 +58,11 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
 
+            if (token.IsCancellationRequested) {
+                queueEntry.Abandon();
+                return JobResult.Cancelled;
+            }
+
             EventPost eventPost = _storage.GetEventPostAndSetActive(queueEntry.Value.FilePath);
             if (eventPost == null) {
                 queueEntry.Abandon();
@@ -84,6 +89,11 @@ namespace Exceptionless.Core.Jobs {
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
             }
+
+            if (token.IsCancellationRequested) {
+                queueEntry.Abandon();
+                return JobResult.Cancelled;
+            }
        
             if (events == null) {
                 queueEntry.Abandon();
@@ -104,6 +114,12 @@ namespace Exceptionless.Core.Jobs {
 
                 // Increment by count - 1 since we already incremented it by 1 in the OverageHandler.
                 _organizationRepository.IncrementUsage(project.OrganizationId, false, events.Count - 1);
+            }
+
+            if (events == null) {
+                queueEntry.Abandon();
+                _storage.SetNotActive(queueEntry.Value.FilePath);
+                return JobResult.Success;
             }
 
             var errorCount = 0;
@@ -143,7 +159,7 @@ namespace Exceptionless.Core.Jobs {
                 Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
                 queueEntry.Complete();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {0}", queueEntry.Value.FilePath, ex.Message).Write();
+                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
                 errorCount++;
             }
 

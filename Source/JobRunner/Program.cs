@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using CommandLine;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -40,8 +41,9 @@ namespace Exceptionless.JobRunner {
                     Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);
                 }
 
+                WatchForShutdown();
                 if (ca.RunContinuously)
-                    job.RunContinuous(TimeSpan.FromMilliseconds(ca.Delay));
+                    job.RunContinuous(TimeSpan.FromMilliseconds(ca.Delay), token: _cancellationTokenSource.Token);
                 else
                     job.Run();
 
@@ -78,6 +80,34 @@ namespace Exceptionless.JobRunner {
         private static void PauseIfDebug() {
             if (Debugger.IsAttached)
                 Console.ReadKey();
+        }
+
+        private static string _webJobsShutdownFile;
+        private static readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
+        private static void WatchForShutdown() {
+            ShutdownEventCatcher.Shutdown += args => {
+                _cancellationTokenSource.Cancel();
+                Console.WriteLine("Job shutdown event signaled: {0}", args.Reason);
+            };
+
+            _webJobsShutdownFile = Environment.GetEnvironmentVariable("WEBJOBS_SHUTDOWN_FILE");
+            if (String.IsNullOrEmpty(_webJobsShutdownFile))
+                return;
+
+            var watcher = new FileSystemWatcher(Path.GetDirectoryName(_webJobsShutdownFile));
+            watcher.Created += OnFileChanged;
+            watcher.Changed += OnFileChanged;
+            watcher.NotifyFilter = NotifyFilters.CreationTime | NotifyFilters.FileName | NotifyFilters.LastWrite;
+            watcher.IncludeSubdirectories = false;
+            watcher.EnableRaisingEvents = true;
+        }
+
+        private static void OnFileChanged(object sender, FileSystemEventArgs e) {
+            if (e.FullPath.IndexOf(Path.GetFileName(_webJobsShutdownFile), StringComparison.OrdinalIgnoreCase) >= 0) {
+                _cancellationTokenSource.Cancel();
+                Console.WriteLine("Job shutdown signaled.");
+            }
         }
     }
 }

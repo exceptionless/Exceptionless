@@ -130,7 +130,7 @@ namespace Exceptionless.Api.Controllers {
             return Request.GetAssociatedOrganizationIds();
         }
 
-        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter) {
+        public string GetAssociatedOrganizationsFilter(IOrganizationRepository repository, bool filterUsesPremiumFeatures, bool hasOrganizationOrProjectFilter, string retentionDateFieldName = "date") {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
@@ -145,7 +145,7 @@ namespace Exceptionless.Api.Controllers {
                 
                 var organization = organizations[index];
                 if (organization.RetentionDays > 0)
-                    builder.AppendFormat("(organization:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", organization.Id, organization.RetentionDays);
+                    builder.AppendFormat("(organization:{0} AND {1}:[now/d-{2}d TO now/d+1d}})", organization.Id, retentionDateFieldName, organization.RetentionDays);
                 else
                     builder.AppendFormat("organization:{0}", organization.Id);
             }

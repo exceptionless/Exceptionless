@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Jobs {
 
             var page = 1;
             var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100));
-            while (organizations.Count > 0) {
+            while (organizations.Count > 0 && !token.IsCancellationRequested) {
                 foreach (var organization in organizations)
                     EnforceEventCountLimits(organization);
 

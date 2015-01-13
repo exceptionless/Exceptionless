@@ -42,18 +42,22 @@ namespace Exceptionless.Core.Jobs {
             LockProvider = lockProvider;
         }
 
-        protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
             Log.Info().Message("Remove stale accounts job starting").Write();
 
             var organizations = _organizationRepository.GetAbandoned();
-            while (organizations.Count > 0) {
-                foreach (var organization in organizations)
+            while (organizations.Count > 0 && !token.IsCancellationRequested) {
+                foreach (var organization in organizations) {
+                    if (token.IsCancellationRequested)
+                        return JobResult.Cancelled;
+
                     TryDeleteOrganization(organization);
+                }
 
                 organizations = _organizationRepository.GetAbandoned();
             }
 
-            return Task.FromResult(new JobResult { Message = "Successfully removed all stale accounts." });
+            return JobResult.SuccessWithMessage("Successfully removed all stale accounts.");
         }
 
         private void TryDeleteOrganization(Organization organization) {

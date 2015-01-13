@@ -53,9 +53,8 @@ namespace Exceptionless.Core.Jobs {
 
             const int BATCH_SIZE = 25;
 
-            // Get all project id's that should be sent at 9:00am in the projects local time.
             var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
-            while (projects.Count > 0) {
+            while (projects.Count > 0 && !token.IsCancellationRequested) {
                 var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
                 Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, documentsUpdated);
                 Debug.Assert(projects.Count == documentsUpdated);
@@ -93,7 +92,7 @@ namespace Exceptionless.Core.Jobs {
             if (userIds.Count == 0)
                 return;
 
-            var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified).ToList();
+            var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0)
                 return;
 
@@ -111,7 +110,7 @@ namespace Exceptionless.Core.Jobs {
                     mostFrequent.RemoveAll(r => r.Term == frequent.Term);
                     continue;
                 }
-
+                
                 // Stat's Id and Total properties are already calculated in the Results.
                 //frequent.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
                 //frequent.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
@@ -131,7 +130,7 @@ namespace Exceptionless.Core.Jobs {
                 //Total = result.Total,
                 //PerHourAverage = result.PerHourAverage,
                 //NewTotal = result.NewTotal,
-                //New = newest,
+                New = newest,
                 //UniqueTotal = result.UniqueTotal,
                 //MostFrequent = mostFrequent,
                 //HasSubmittedErrors = project.TotalErrorCount > 0,

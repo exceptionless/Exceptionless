@@ -24,8 +24,6 @@ namespace Exceptionless.Core.Jobs {
                     return TryRunAsync(token.Value);
             } catch (TimeoutException) {
                 return Task.FromResult(JobResult.FailedWithMessage("Timeout attempting to acquire lock."));
-            } catch (Exception ex) {
-                return Task.FromResult(JobResult.FromException(ex));
             }
         }
 

@@ -95,6 +95,10 @@ namespace Exceptionless.Queue {
                             SuspendProcessing();
                             deleteBatch = false;
                         }
+                    } catch (AggregateException ex) {
+                        _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while submitting events: ", ex.Flatten().Message));
+                        SuspendProcessing();
+                        deleteBatch = false;
                     } catch (Exception ex) {
                         _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while submitting events: ", ex.Message));
                         SuspendProcessing();

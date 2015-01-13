@@ -57,6 +57,9 @@ namespace Exceptionless.Logging {
             if (MaxEntriesToStore <= 0 || entry == null)
                 return;
 
+            if (entry.Level < MinimumLogLevel)
+                return;
+
             entry.Date = DateTime.Now;
             InnerList.Enqueue(entry);
 
