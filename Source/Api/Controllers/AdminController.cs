@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpPost]
         [Route("set-bonus")]
-        public IHttpActionResult ChangePlan(string organizationId, int bonusEvents, DateTime? expires = null) {
+        public IHttpActionResult SetBonus(string organizationId, int bonusEvents, DateTime? expires = null) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
