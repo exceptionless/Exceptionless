@@ -331,9 +331,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected override async Task DeleteModels(ICollection<Project> values) {
-            await base.DeleteModels(values);
             foreach (var value in values)
                 await _dataHelper.ResetProjectDataAsync(value.Id);
+            await base.DeleteModels(values);
         }
 
         private ViewProject PopulateProjectStats(ViewProject project) {
