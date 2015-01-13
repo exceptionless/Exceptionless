@@ -72,7 +72,7 @@ namespace Exceptionless.Queue {
                     try {
                         var response = _client.PostEvents(batch.Select(b => b.Item2), _config, _serializer);
                         if (response.Success) {
-                            _log.FormattedInfo(typeof(DefaultEventQueue), "Sent {0} events to the server.", batch.Count);
+                            _log.FormattedInfo(typeof(DefaultEventQueue), "Sent {0} events to \"{1}\".", batch.Count, _config.ServerUrl);
                         } else if (response.ServiceUnavailable) {
                             // You are currently over your rate limit or the servers are under stress.
                             _log.Error(typeof(DefaultEventQueue), "Server returned service unavailable.");
