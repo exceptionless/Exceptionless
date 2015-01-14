@@ -19,12 +19,13 @@ namespace Exceptionless.JobRunner {
         [HelpOption]
         public string GetUsage() {
             var help = new HelpText {
-                Heading = new HeadingInfo("Exceptionless Job Runner", ThisAssembly.AssemblyInformationalVersion),
-                Copyright = new CopyrightInfo("Exceptionless", DateTime.Today.Year),
-                AdditionalNewLineAfterOption = true,
+                Heading = String.Format("Exceptionless Job Runner v{0}", ThisAssembly.AssemblyInformationalVersion),
+                Copyright = String.Format("Copyright (c) 2012-{0} Exceptionless.  All rights reserved.", DateTime.Now.Year),
+                AdditionalNewLineAfterOption = false,
                 AddDashesToOption = true
             };
-
+            
+            help.AddPreOptionsLine(" ");
             help.AddPreOptionsLine("Usage: job -t \"Exceptionless.Core.Jobs.ProcessEventsJob, Exceptionless.Core\"");
             help.AddOptions(this);
 

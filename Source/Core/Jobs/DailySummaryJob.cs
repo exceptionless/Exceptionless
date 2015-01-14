@@ -27,7 +27,7 @@ using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
-    public class DailyNotificationJob : JobBase {
+    public class DailySummaryJob : JobBase {
         private readonly IProjectRepository _projectRepository;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly EventStats _stats;
         private readonly IMailer _mailer;
 
-        public DailyNotificationJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
+        public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;

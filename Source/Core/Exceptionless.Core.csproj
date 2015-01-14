@@ -312,7 +312,7 @@
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
     <Compile Include="Extensions\StackFrameExtensions.cs" />
     <Compile Include="Extensions\StringExtensions.cs" />
-    <Compile Include="Jobs\DailyNotificationJob.cs" />
+    <Compile Include="Jobs\DailySummaryJob.cs" />
     <Compile Include="Jobs\EventPostsJob.cs" />
     <Compile Include="Jobs\StaleAccountsJob.cs" />
     <Compile Include="Jobs\RetentionLimitsJob.cs" />

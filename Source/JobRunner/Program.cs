@@ -19,7 +19,6 @@ namespace Exceptionless.JobRunner {
                     PauseIfDebug();
                     return 0;
                 }
-                Console.WriteLine();
 
                 var type = Type.GetType(ca.JobType);
                 if (type == null) {

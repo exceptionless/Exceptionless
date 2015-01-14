@@ -85,7 +85,7 @@
     <None Include="jobs\continuous\EventNotifications\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\triggered\DailyNotification\run.bat">
+    <None Include="jobs\triggered\DailySummary\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="jobs\triggered\RetentionLimits\run.bat">
@@ -110,6 +110,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="packages.config" />
+    <None Include="Job.bat" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
