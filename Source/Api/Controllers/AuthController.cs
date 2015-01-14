@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net;
 using System.Web.Http;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -341,15 +342,15 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-email-address/{email:minlength(1)}")]
         public IHttpActionResult IsEmailAddressAvailable(string email) {
             if (String.IsNullOrWhiteSpace(email))
-                return NotFound();
+                return StatusCode(HttpStatusCode.NoContent);
 
             if (ExceptionlessUser != null && String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-                return Ok();
+                return StatusCode(HttpStatusCode.Created);
 
             if (_userRepository.GetByEmailAddress(email) == null)
-                return NotFound();
+                return StatusCode(HttpStatusCode.NoContent);
 
-            return Ok();
+            return StatusCode(HttpStatusCode.Created);
         }
 
         [HttpGet]

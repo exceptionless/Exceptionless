@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
@@ -487,9 +488,9 @@ namespace Exceptionless.Api.Controllers {
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (IsOrganizationNameAvailableInternal(name))
-                return NotFound();
+                return StatusCode(HttpStatusCode.NoContent);
 
-            return Ok();
+            return StatusCode(HttpStatusCode.Created);
         }
 
         private bool IsOrganizationNameAvailableInternal(string name) {

@@ -78,6 +78,16 @@ namespace Exceptionless.Core.Utility {
                                     .Max("last_occurrence", o => o.Field(ev => ev.Date))
                                 )
                             )
+                            .Cardinality("unique", u => u
+                                .Field(ev => ev.StackId)
+                                .PrecisionThreshold(1000)
+                            )
+                            .Terms("new", u => u
+                                .Field(ev => ev.IsFirstOccurrence)
+                                .Exclude("F")
+                            )
+                            .Min("first_occurrence", o => o.Field(ev => ev.Date))
+                            .Max("last_occurrence", o => o.Field(ev => ev.Date))
                         )
                     )
                 )
@@ -96,8 +106,22 @@ namespace Exceptionless.Core.Utility {
                 return new EventTermStatsResult();
 
             var stats = new EventTermStatsResult {
-                Total = filtered.DocCount
+                Total = filtered.DocCount,
+                New = filtered.Terms("new").Items.Count > 0 ? filtered.Terms("new").Items[0].DocCount : 0
             };
+
+            var unique = filtered.Cardinality("unique").Value;
+            if (unique.HasValue)
+                stats.Unique = (long)unique.Value;
+
+            var firstOccurrence = filtered.Min("first_occurrence").Value;
+            var lastOccurrence = filtered.Max("last_occurrence").Value;
+
+            if (firstOccurrence.HasValue)
+                stats.FirstOccurrence = firstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+            if (lastOccurrence.HasValue)
+                stats.LastOccurrence = lastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             stats.Terms.AddRange(filtered.Terms("terms").Items.Select(i => {
                 long count = 0;
@@ -112,14 +136,14 @@ namespace Exceptionless.Core.Utility {
                     New = i.Terms("new").Items.Count > 0 ? i.Terms("new").Items[0].DocCount : 0
                 };
 
-                var firstOccurrence = i.Min("first_occurrence").Value;
-                var lastOccurrence = i.Max("last_occurrence").Value;
+                var termFirstOccurrence = i.Min("first_occurrence").Value;
+                var termLastOccurrence = i.Max("last_occurrence").Value;
 
-                if (firstOccurrence.HasValue)
-                    item.FirstOccurrence = firstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+                if (termFirstOccurrence.HasValue)
+                    item.FirstOccurrence = termFirstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-                if (lastOccurrence.HasValue)
-                    item.LastOccurrence = lastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+                if (termLastOccurrence.HasValue)
+                    item.LastOccurrence = termLastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
                 item.Timeline.AddRange(i.DateHistogram("timelime").Items.Select(ti => new TermTimelineItem {
                     Date = ti.Date,

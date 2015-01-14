@@ -32,14 +32,16 @@ namespace Exceptionless.Core.Jobs {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IUserRepository _userRepository;
         private readonly IStackRepository _stackRepository;
+        private readonly IEventRepository _eventRepository;
         private readonly EventStats _stats;
         private readonly IMailer _mailer;
 
-        public DailyNotificationJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
+        public DailyNotificationJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
             _projectRepository = projectRepository;
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _stackRepository = stackRepository;
+            _eventRepository = eventRepository;
             _stats = stats;
             _mailer = mailer;
             LockProvider = lockProvider;
@@ -92,34 +94,35 @@ namespace Exceptionless.Core.Jobs {
             if (userIds.Count == 0)
                 return;
 
-            var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified && u.OrganizationIds.Contains(organization.Id)).ToList();
+            var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0)
                 return;
 
-            long count;
+            long count = _eventRepository.GetCountByProjectId(project.Id);
             var paging = new PagingOptions { Limit = 5 };
             List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).ToList();
 
             var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "project:" + data.Id, max: 5);
-            var mostFrequent = result.Terms.Take(5).ToList();
-            var stacks = _stackRepository.GetByIds(mostFrequent.Select(s => s.Term).ToList());
+            var termStatsList = result.Terms.Take(5).ToList();
+            var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
 
-            foreach (var frequent in mostFrequent) {
-                var stack = stacks.SingleOrDefault(s => s.Id == frequent.Term);
-                if (stack == null) {
-                    mostFrequent.RemoveAll(r => r.Term == frequent.Term);
+            var mostFrequent = new List<EventStackResult>();
+            foreach (var termStats in termStatsList) {
+                var stack = stacks.SingleOrDefault(s => s.Id == termStats.Term);
+                if (stack == null)
                     continue;
-                }
                 
-                // Stat's Id and Total properties are already calculated in the Results.
-                //frequent.Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null;
-                //frequent.Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null;
-                //frequent.Path = stack.SignatureInfo.ContainsKey("Path") ? stack.SignatureInfo["Path"] : null;
-                //frequent.Is404 = stack.SignatureInfo.ContainsKey("Path");
-
-                //frequent.Title = stack.Title;
-                //frequent.First = stack.FirstOccurrence;
-                //frequent.Last = stack.LastOccurrence;
+                mostFrequent.Add(new EventStackResult {
+                    First =  termStats.FirstOccurrence,
+                    Last = termStats.LastOccurrence,
+                    Id = stack.Id,
+                    Title = stack.Title,
+                    Total = termStats.Total,
+                    Type = stack.SignatureInfo.ContainsKey("ExceptionType") ? stack.SignatureInfo["ExceptionType"] : null,
+                    Method = stack.SignatureInfo.ContainsKey("Method") ? stack.SignatureInfo["Method"] : null,
+                    Path = stack.SignatureInfo.ContainsKey("Source") ? stack.SignatureInfo["Source"] : null,
+                    Is404 = stack.SignatureInfo.ContainsKey("Type") && stack.SignatureInfo["Type"] == "404"
+                });
             }
 
             var notification = new SummaryNotificationModel {
@@ -127,13 +130,13 @@ namespace Exceptionless.Core.Jobs {
                 ProjectName = project.Name,
                 StartDate = data.UtcStartTime,
                 EndDate = data.UtcEndTime,
-                //Total = result.Total,
-                //PerHourAverage = result.PerHourAverage,
-                //NewTotal = result.NewTotal,
+                Total = result.Total,
+                PerHourAverage = result.Total / data.UtcEndTime.Subtract(data.UtcStartTime).TotalHours,
+                NewTotal = result.New,
                 New = newest,
-                //UniqueTotal = result.UniqueTotal,
-                //MostFrequent = mostFrequent,
-                //HasSubmittedErrors = project.TotalErrorCount > 0,
+                UniqueTotal = result.Unique,
+                MostFrequent = mostFrequent,
+                HasSubmittedErrors = count > 0,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };
 

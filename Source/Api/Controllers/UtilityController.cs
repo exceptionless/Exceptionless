@@ -10,11 +10,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("search/validate")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult Validate(string query) {
-            var result = QueryValidator.Validate(query);
-            if (!result.IsValid)
-                return BadRequest(result.Message);
-
-            return Ok(new { UsesPremiumFeatures = result.UsesPremiumFeatures });
+            return Ok(QueryValidator.Validate(query));
         }
 
         [Route("notfound")]
