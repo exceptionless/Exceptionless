@@ -175,7 +175,7 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendSummaryNotification() {
             var mailer = IoC.GetInstance<Mailer>();
-            mailer.SendSummaryNotification(Settings.Current.TestEmailAddress, new SummaryNotificationModel {
+            mailer.SendDailySummary(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
                 BaseUrl = "http://app.exceptionless.com",
                 MostFrequent = new List<EventStackResult> {
@@ -209,7 +209,7 @@ namespace Exceptionless.Api.Tests.Mail {
                 Subject = "A daily summary",
                 Total = 12,
                 UniqueTotal = 1,
-                HasSubmittedErrors = true,
+                HasSubmittedEvents = true,
                 IsFreePlan = false
             });
         }

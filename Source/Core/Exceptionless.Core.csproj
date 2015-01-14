@@ -367,7 +367,7 @@
     <Compile Include="Models\EventPost.cs" />
     <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
-    <Compile Include="Mail\Models\SummaryNotificationModel.cs" />
+    <Compile Include="Mail\Models\DailySummaryModel.cs" />
     <Compile Include="Models\WebHookEvent.cs" />
     <Compile Include="Pipeline\100_RunEventProcessedPluginsAction.cs" />
     <Compile Include="Pipeline\005_RunEventProcessingPluginsAction.cs" />
@@ -511,10 +511,10 @@
     <Content Include="Mail\Templates\VerifyEmail\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\SummaryNotification\PlainText.cshtml">
+    <Content Include="Mail\Templates\DailySummary\PlainText.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Mail\Templates\SummaryNotification\Html.cshtml">
+    <Content Include="Mail\Templates\DailySummary\Html.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Mail\Templates\PaymentFailed\Html.cshtml">
@@ -550,7 +550,7 @@
     <None Include="Mail\Templates\PaymentFailed\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Mail\Templates\SummaryNotification\Subject.cshtml">
+    <None Include="Mail\Templates\DailySummary\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="Mail\Templates\VerifyEmail\Subject.cshtml">

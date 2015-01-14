@@ -14,13 +14,13 @@ using System.Collections.Generic;
 using Exceptionless.Models;
 
 namespace Exceptionless.Core.Mail.Models {
-    public class SummaryNotificationModel : IMailModel {
+    public class DailySummaryModel : IMailModel {
         public string Subject { get; set; }
         public string BaseUrl { get; set; }
 
         public string ProjectId { get; set; }
         public string ProjectName { get; set; }
-        public bool HasSubmittedErrors { get; set; }
+        public bool HasSubmittedEvents { get; set; }
         public bool IsFreePlan { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }

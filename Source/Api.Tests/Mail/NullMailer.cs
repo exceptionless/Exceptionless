@@ -23,6 +23,6 @@ namespace Exceptionless.Api.Tests.Mail {
         public void SendPaymentFailed(User owner, Organization organization) {}
         public void SendAddedToOrganization(User sender, Organization organization, User user) {}
         public void SendNotice(string emailAddress, EventNotification model) {}
-        public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {}
+        public void SendDailySummary(string emailAddress, DailySummaryModel notification) {}
     }
 }

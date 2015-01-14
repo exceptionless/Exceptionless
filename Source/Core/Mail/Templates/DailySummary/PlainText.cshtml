@@ -1,8 +1,8 @@
-﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.SummaryNotificationModel>
+﻿@inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.DailySummaryModel>
 
 Summary for @Model.StartDate.ToShortDateString()
 
-@if (Model.HasSubmittedErrors) {
+@if (Model.HasSubmittedEvents) {
     if (Model.Total > 0) {
 <text>The "@Model.ProjectName" project had @Model.Total total, @Model.UniqueTotal unique, and @Model.NewTotal new errors.</text>
         } else {

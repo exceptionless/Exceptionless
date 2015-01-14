@@ -11,27 +11,25 @@
 
 using System;
 using System.Collections.Generic;
-using System.Net;
 using System.Net.Mail;
-using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Mail.Models;
+using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
 using RazorSharpEmail;
-using MailMessage = System.Net.Mail.MailMessage;
+using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Mail {
     public class Mailer : IMailer {
         private readonly IEmailGenerator _emailGenerator;
-        private readonly IQueue<Queues.Models.MailMessage> _queue;
+        private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
         private readonly IAppStatsClient _statsClient;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<Queues.Models.MailMessage> queue, FormattingPluginManager pluginManager, IAppStatsClient statsClient) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IAppStatsClient statsClient) {
             _emailGenerator = emailGenerator;
             _queue = queue;
             _pluginManager = pluginManager;
@@ -42,7 +40,7 @@ namespace Exceptionless.Core.Mail {
             if (user == null || String.IsNullOrEmpty(user.PasswordResetToken))
                 return;
 
-            MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
             }, "PasswordReset");
@@ -51,7 +49,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendVerifyEmail(User user) {
-            MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new UserModel {
                 User = user,
                 BaseUrl = Settings.Current.BaseURL
             }, "VerifyEmail");
@@ -60,7 +58,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendInvite(User sender, Organization organization, Invite invite) {
-            MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new InviteModel {
                 Sender = sender,
                 Organization = organization,
                 Invite = invite,
@@ -71,7 +69,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendPaymentFailed(User owner, Organization organization) {
-            MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new PaymentModel {
                 Owner = owner,
                 Organization = organization,
                 BaseUrl = Settings.Current.BaseURL
@@ -81,7 +79,7 @@ namespace Exceptionless.Core.Mail {
         }
 
         public void SendAddedToOrganization(User sender, Organization organization, User user) {
-            MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(new AddedToOrganizationModel {
                 Sender = sender,
                 Organization = organization,
                 User = user,
@@ -101,21 +99,21 @@ namespace Exceptionless.Core.Mail {
             QueueMessage(message.ToMailMessage());
         }
 
-        public void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification) {
+        public void SendDailySummary(string emailAddress, DailySummaryModel notification) {
             notification.BaseUrl = Settings.Current.BaseURL;
-            MailMessage msg = _emailGenerator.GenerateMessage(notification, "SummaryNotification");
+            System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(notification, "DailySummary");
             msg.To.Add(emailAddress);
             QueueMessage(msg);
         }
 
-        private void QueueMessage(MailMessage message) {
+        private void QueueMessage(System.Net.Mail.MailMessage message) {
             CleanAddresses(message);
 
             _queue.Enqueue(message.ToMailMessage());
             _statsClient.Counter(StatNames.EmailsQueued);
         }
 
-        private static void CleanAddresses(MailMessage msg) {
+        private static void CleanAddresses(System.Net.Mail.MailMessage msg) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Production)
                 return;
 

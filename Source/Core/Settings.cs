@@ -54,7 +54,7 @@ namespace Exceptionless.Core {
 
         public long MaximumEventPostSize { get; private set; }
 
-        public bool EnableSummaryNotifications { get; private set; }
+        public bool EnableDailySummary { get; private set; }
 
         public bool ShouldAutoUpgradeDatabase { get; private set; }
 
@@ -146,7 +146,7 @@ namespace Exceptionless.Core {
             settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
             settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
             settings.MaximumEventPostSize = ConfigurationManager.AppSettings.GetInt("MaximumEventPostSize", Int32.MaxValue);
-            settings.EnableSummaryNotifications = ConfigurationManager.AppSettings.GetBool("EnableSummaryNotifications", false);
+            settings.EnableDailySummary = ConfigurationManager.AppSettings.GetBool("EnableDailySummary", false);
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
             settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
             settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);

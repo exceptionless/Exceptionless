@@ -48,23 +48,21 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Info().Message("Daily Notification job starting").Write();
-
-            if (!Settings.Current.EnableSummaryNotifications)
-                return Task.FromResult(new JobResult { Message = "Summary Notifications are disabled.", IsCancelled = true });
+            if (!Settings.Current.EnableDailySummary)
+                return Task.FromResult(new JobResult { Message = "Summary notifications are disabled.", IsCancelled = true });
 
             const int BATCH_SIZE = 25;
 
             var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             while (projects.Count > 0 && !token.IsCancellationRequested) {
                 var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
-                Log.Info().Message("Daily Notification job processing {0} projects. Successfully updated {1} projects. ", projects.Count, documentsUpdated);
+                Log.Info().Message("Got {0} projects to process. ", projects.Count).Write();
                 Debug.Assert(projects.Count == documentsUpdated);
 
                 foreach (var project in projects) {
                     var utcStartTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerDay);
                     if (utcStartTime < DateTime.UtcNow.Date.SubtractDays(2)) {
-                        Log.Info().Message("Skipping Summary Notification older than two days for Project: {0} with a start time of {1}.", project.Id, utcStartTime);
+                        Log.Info().Message("Skipping daily summary older than two days for project \"{0}\" with a start time of \"{1}\".", project.Id, utcStartTime).Write();
                         continue;
                     }
 
@@ -75,7 +73,6 @@ namespace Exceptionless.Core.Jobs {
                             UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
                         };
 
-                        Log.Info().Message("Publishing Summary Notification for Project: {0}, with a start time of {1} and an end time of {2}", notification.Id, notification.UtcStartTime, notification.UtcEndTime);
                         ProcessSummaryNotification(notification);
                     } else
                         Log.Error().Message("Mailer is null").Write();
@@ -91,20 +88,27 @@ namespace Exceptionless.Core.Jobs {
             var project = _projectRepository.GetById(data.Id, true);
             var organization = _organizationRepository.GetById(project.OrganizationId, true);
             var userIds = project.NotificationSettings.Where(n => n.Value.SendDailySummary).Select(n => n.Key).ToList();
-            if (userIds.Count == 0)
+            if (userIds.Count == 0) {
+                Log.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
+            }
 
             var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
-            if (users.Count == 0)
+            if (users.Count == 0) {
+                Log.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
+            }
 
-            long count = _eventRepository.GetCountByProjectId(project.Id);
+            Log.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
             var paging = new PagingOptions { Limit = 5 };
             List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).ToList();
 
             var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "project:" + data.Id, max: 5);
             var termStatsList = result.Terms.Take(5).ToList();
             var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
+            bool hasSubmittedErrors = result.Total > 0;
+            if (!hasSubmittedErrors)
+                hasSubmittedErrors = _eventRepository.GetCountByProjectId(project.Id) > 0;
 
             var mostFrequent = new List<EventStackResult>();
             foreach (var termStats in termStatsList) {
@@ -125,7 +129,7 @@ namespace Exceptionless.Core.Jobs {
                 });
             }
 
-            var notification = new SummaryNotificationModel {
+            var notification = new DailySummaryModel {
                 ProjectId = project.Id,
                 ProjectName = project.Name,
                 StartDate = data.UtcStartTime,
@@ -136,12 +140,14 @@ namespace Exceptionless.Core.Jobs {
                 New = newest,
                 UniqueTotal = result.Unique,
                 MostFrequent = mostFrequent,
-                HasSubmittedErrors = count > 0,
+                HasSubmittedEvents = hasSubmittedErrors,
                 IsFreePlan = organization.PlanId == BillingManager.FreePlan.Id
             };
 
-            foreach (var user in users.Where(u => u.EmailNotificationsEnabled))
-                _mailer.SendSummaryNotification(user.EmailAddress, notification);
+            foreach (var user in users)
+                _mailer.SendDailySummary(user.EmailAddress, notification);
+            
+            Log.Info().Message("Done sending daily summary: users={0} project={1} events={2}", users.Count, project.Id, notification.Total).Write();
         }
     }
 }

@@ -22,6 +22,6 @@ namespace Exceptionless.Core.Mail {
         void SendPaymentFailed(User owner, Organization organization);
         void SendAddedToOrganization(User sender, Organization organization, User user);
         void SendNotice(string emailAddress, EventNotification model);
-        void SendSummaryNotification(string emailAddress, SummaryNotificationModel notification);
+        void SendDailySummary(string emailAddress, DailySummaryModel notification);
     }
 }
