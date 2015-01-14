@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Web.Cors;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
@@ -97,7 +98,19 @@ namespace Exceptionless.Api {
             // Reject event posts in orgs over their max event limits.
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
-            app.UseCors(CorsOptions.AllowAll);
+            app.UseCors(new CorsOptions {
+                    PolicyProvider = new CorsPolicyProvider
+                    {
+                        PolicyResolver = ctx => Task.FromResult(new CorsPolicy
+                        {
+                            AllowAnyHeader = true,
+                            AllowAnyMethod = true,
+                            AllowAnyOrigin = true,
+                            SupportsCredentials = true,
+                            PreflightMaxAge = 60 * 5
+                        })
+                    }
+                });
 
             app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
