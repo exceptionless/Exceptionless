@@ -1,5 +1,5 @@
 ﻿@using System
-@using CodeSmith.Core.Extensions
+@using Exceptionless.Core.Extensions
 @inherits RazorSharpEmail.EmailTemplate<Exceptionless.Core.Mail.Models.EventNotificationModel>
 @if (Model.IsNew) {
 <text>
@@ -37,4 +37,4 @@ Source:
 }
 
 View the error:
-@Model.BaseUrl/event/@Model.Event.StackId/@Model.Event.StackId
+@Model.BaseUrl/#/event/@Model.Event.Id
