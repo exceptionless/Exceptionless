@@ -233,6 +233,8 @@
     <Compile Include="Utility\Results\NotImplementedActionResult.cs" />
     <Compile Include="Utility\Results\PlanLimitReachedActionResult.cs" />
     <Compile Include="Utility\ThrottlingHandler.cs" />
+    <Compile Include="Utility\TokenRouteConstraint.cs" />
+    <Compile Include="Utility\TokensRouteConstraint.cs" />
     <Compile Include="Utility\UserAgentParameterBinding.cs" />
     <Compile Include="Utility\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>

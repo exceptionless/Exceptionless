@@ -8,6 +8,7 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Security;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
@@ -34,8 +35,9 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
+        private readonly SecurityEncoder _encoder;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats, SecurityEncoder encoder) : base(organizationRepository) {
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
@@ -43,6 +45,7 @@ namespace Exceptionless.Api.Controllers {
             _mailer = mailer;
             _messagePublisher = messagePublisher;
             _stats = stats;
+            _encoder = encoder;
         }
 
         #region CRUD
@@ -361,7 +364,7 @@ namespace Exceptionless.Api.Controllers {
                 Invite invite = organization.Invites.FirstOrDefault(i => String.Equals(i.EmailAddress, email, StringComparison.OrdinalIgnoreCase));
                 if (invite == null) {
                     invite = new Invite {
-                        Token = Guid.NewGuid().ToString("N").ToLower(),
+                        Token = _encoder.GetNewToken(),
                         EmailAddress = email.ToLowerInvariant(),
                         DateAdded = DateTime.UtcNow
                     };

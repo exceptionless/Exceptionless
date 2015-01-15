@@ -97,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
                 FullName = model.Name, 
                 EmailAddress = model.Email,
                 IsEmailAddressVerified = false,
-                VerifyEmailAddressToken = Guid.NewGuid().ToString("N"),
+                VerifyEmailAddressToken = _encoder.GetNewToken(),
                 VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440)
             };
             user.Roles.Add(AuthorizationRoles.Client);
@@ -363,7 +363,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return BadRequest("No user was found with this Email Address.");
 
-            user.PasswordResetToken = Guid.NewGuid().ToString("N");
+            user.PasswordResetToken = _encoder.GetNewToken();
             user.PasswordResetTokenExpiration = DateTime.Now.AddMinutes(1440);
             _userRepository.Save(user);
 

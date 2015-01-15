@@ -79,34 +79,6 @@ namespace Exceptionless.Api.Security {
             IPrincipal principal = _tokenManager.Validate(token);
             if (principal != null)
                 request.GetRequestContext().Principal = principal;
-            
-            //} catch (SecurityTokenExpiredException e) {
-            //    _logger.ErrorFormat("Security token expired: {0}", e);
-
-            //    var response = new HttpResponseMessage((HttpStatusCode)440) {
-            //        Content = new StringContent("Security token expired exception")
-            //    };
-
-            //    var tsc = new TaskCompletionSource<HttpResponseMessage>();
-            //    tsc.SetResult(response);
-            //    return tsc.Task;
-            //} catch (SecurityTokenSignatureKeyNotFoundException e) {
-            //    _logger.ErrorFormat("Error during JWT validation: {0}", e);
-
-            //    var response = new HttpResponseMessage(HttpStatusCode.Unauthorized) {
-            //        Content = new StringContent("Untrusted signing cert")
-            //    };
-
-            //    var tsc = new TaskCompletionSource<HttpResponseMessage>();
-            //    tsc.SetResult(response);
-            //    return tsc.Task;
-            //} catch (SecurityTokenValidationException e) {
-            //    _logger.ErrorFormat("Error during JWT validation: {0}", e);
-            //    throw;
-            //} catch (Exception e) {
-            //    _logger.ErrorFormat("Error during JWT validation: {0}", e);
-            //    throw;
-            //}
 
             return BaseSendAsync(request, cancellationToken);
         }

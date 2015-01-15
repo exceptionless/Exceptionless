@@ -17,6 +17,7 @@ using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
@@ -29,10 +30,12 @@ namespace Exceptionless.App.Controllers.API {
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly SecurityEncoder _encoder;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository) : base(repository) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, SecurityEncoder encoder) : base(repository) {
             _applicationRepository = applicationRepository;
             _projectRepository = projectRepository;
+            _encoder = encoder;
         }
 
         #region CRUD
@@ -85,7 +88,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpGet]
-        [Route("{id:objectid}", Name = "GetTokenById")]
+        [Route("{id:token}", Name = "GetTokenById")]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
@@ -115,9 +118,9 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         [HttpDelete]
-        [Route("{ids:objectids}")]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/{ids:objectids}")]
-        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens/{ids:objectids}")]
+        [Route("{ids:tokens}")]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/{ids:tokens}")]
+        [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens/{ids:tokens}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
             return base.Delete(ids);
         }
@@ -154,6 +157,16 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
                 return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
+            foreach (string scope in value.Scopes.ToList()) {
+                if (scope != scope.ToLower()) {
+                    value.Scopes.Remove(scope);
+                    value.Scopes.Add(scope.ToLower());
+                }
+
+                if (!AuthorizationRoles.AllScopes.Contains(scope.ToLower()))
+                    return PermissionResult.DenyWithMessage("Invalid token scope requested.");
+            }
+
             if (value.Scopes.Count == 0)
                 value.Scopes.Add(AuthorizationRoles.Client);
 
@@ -184,7 +197,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override Token AddModel(Token value) {
-            value.Id = Guid.NewGuid().ToString("N");
+            value.Id = _encoder.GetNewToken();
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;

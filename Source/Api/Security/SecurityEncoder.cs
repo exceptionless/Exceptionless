@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -15,6 +16,40 @@ namespace Exceptionless.Api.Security {
 
         public string GetSaltedHash(string plainText, string salt) {
             return EncodePassword(plainText, salt);
+        }
+
+        public string GetNewToken() {
+            return GetRandomString(40);
+        }
+
+        public string GetRandomString(int length, string allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException("length", "length cannot be less than zero.");
+
+            if (string.IsNullOrEmpty(allowedChars))
+                throw new ArgumentException("allowedChars may not be empty.");
+
+            const int byteSize = 0x100;
+            var allowedCharSet = new HashSet<char>(allowedChars).ToArray();
+            if (byteSize < allowedCharSet.Length)
+                throw new ArgumentException(String.Format("allowedChars may contain no more than {0} characters.", byteSize));
+
+            using (var rng = new RNGCryptoServiceProvider()) {
+                var result = new StringBuilder();
+                var buf = new byte[128];
+
+                while (result.Length < length) {
+                    rng.GetBytes(buf);
+                    for (var i = 0; i < buf.Length && result.Length < length; ++i) {
+                        var outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
+                        if (outOfRangeStart <= buf[i])
+                            continue;
+                        result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
+                    }
+                }
+
+                return result.ToString();
+            }
         }
 
         public string Protect(string data) {
@@ -95,9 +130,8 @@ namespace Exceptionless.Api.Security {
             return Convert.ToBase64String(result);
         }
 
-        private static readonly byte[] _padding = new byte[] { 0x85, 0xC5, 0x65, 0x72 };
+        private static readonly byte[] _padding = { 0x85, 0xC5, 0x65, 0x72 };
 
-        // .NET 4.5 specific implementation. http://brockallen.com/2012/06/21/use-the-machinekey-api-to-protect-values-in-asp-net/
         private string Protect(byte[] data) {
             if (data == null || data.Length == 0)
                 return null;

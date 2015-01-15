@@ -9,15 +9,17 @@ namespace Exceptionless.Api.Security {
     public class TokenManager {
         private readonly IUserRepository _userRepository;
         private readonly ITokenRepository _tokenRepository;
-
-        public TokenManager(IUserRepository userRepository, ITokenRepository tokenRepository) {
+        private readonly SecurityEncoder _encoder;
+            
+        public TokenManager(IUserRepository userRepository, ITokenRepository tokenRepository, SecurityEncoder encoder) {
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
+            _encoder = encoder;
         }
 
         public Token Create(User user) {
             var token = new Token {
-                Id = Guid.NewGuid().ToString("N"),
+                Id = _encoder.GetNewToken(),
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,

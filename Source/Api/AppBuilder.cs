@@ -62,8 +62,10 @@ namespace Exceptionless.Api {
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
             constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
+            constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
+            constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             Config.MapHttpAttributeRoutes(constraintResolver);
-            //config.EnableSystemDiagnosticsTracing();
+            //Config.EnableSystemDiagnosticsTracing();
 
             container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() }));
             container.RegisterWebApiFilterProvider(Config);

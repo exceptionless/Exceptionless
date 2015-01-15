@@ -16,5 +16,6 @@ namespace Exceptionless.Core.Authorization {
         public const string Client = "client";
         public const string User = "user";
         public const string GlobalAdmin = "global";
+        public static readonly string[] AllScopes = { "client", "user", "global" };
     }
 }
