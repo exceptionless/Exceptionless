@@ -1,2 +1,2 @@
 @echo off
-%WEBROOT_PATH%\App_Data\JobRunner\Job -t "Exceptionless.Core.Jobs.StaleAccountsJob, Exceptionless.Core"
+%WEBROOT_PATH%\App_Data\JobRunner\Job.bat -t "Exceptionless.Core.Jobs.StaleAccountsJob, Exceptionless.Core"
