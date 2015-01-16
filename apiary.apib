@@ -517,17 +517,17 @@ Upgrades or downgrades the organizations plan.
 
 ## Check for unique name [/organizations/check-name/{name}]
 ### Check for unique organization name [GET]
-Returns a `404` status code if an existing orgnaization with the specified name does not exist.
+Returns a `204` status code if an existing orgnaization with the specified name does not exist.
 
 + Parameters
     + name (required, string, `Acme`) ... The organization name to check.
 
-+ Response 404
-    `404` status code is returned if the name is available.
++ Response 204
+    `204` status code is returned if the name is available.
     + Body
     
-+ Response 200
-    `200` status code is returned if the name is not available.
++ Response 201
+    `201` status code is returned if the name is not available.
     + Body
 
 # Group Projects
@@ -747,17 +747,17 @@ Project related resources of the **Projects API**
     
 ## Check for unique name [/projects/check-name/{name}]
 ### Check for unique project name [GET]
-Returns a `404` status code if an existing project with the specified name does not exist.
+Returns a `204` status code if an existing project with the specified name does not exist.
 
 + Parameters
     + name (required, string, `Acme`) ... The project name to check.
 
-+ Response 404
-    `404` status code is returned if the name is available.
++ Response 204
+    `204` status code is returned if the name is available.
     + Body
     
-+ Response 200
-    `200` status code is returned if the name is not available.
++ Response 201
+    `201` status code is returned if the name is not available.
     + Body
 
 # Group Stacks
@@ -2795,7 +2795,7 @@ Search related resources of the **Search API**
 
 ## Validate search query [/search/validate{?query}]
 ### Validate a search query to ensure that it can successfully be searched by the api [GET]
-Returns a `400` status code and a message if the search query is not valid.
+Returns a `200` status code with a message if the search query is not valid.
 
 + Parameters
     + query (required, string, `hidden:true`) ...The query you wish to validate
@@ -2804,6 +2804,6 @@ Returns a `400` status code and a message if the search query is not valid.
 
         { "uses_premium_features": false }
         
-+ Response 400 (application/json)
++ Response 200 (application/json)
 
         { "message": "Unable to parse query." }
