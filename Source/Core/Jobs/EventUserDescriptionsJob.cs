@@ -24,7 +24,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Info().Message("Process user description job starting").Write();
+            Log.Trace().Message("Process user description job starting").Write();
 
             QueueEntry<EventUserDescription> queueEntry = null;
             try {
@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
                 
             _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
-            Log.Info().Message("Processing EventUserDescription '{0}'.", queueEntry.Id).Write();
+            Log.Info().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
                 ProcessUserDescription(queueEntry.Value);
