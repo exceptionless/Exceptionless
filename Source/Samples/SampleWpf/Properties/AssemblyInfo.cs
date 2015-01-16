@@ -22,4 +22,4 @@ using Exceptionless.Configuration;
 
 [assembly: AssemblyVersion("2.0.*")]
 
-[assembly: Exceptionless("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", ServerUrl = "http://localhost:50000")]
+[assembly: Exceptionless("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", EnableSSL = false, ServerUrl = "http://localhost:50000")]

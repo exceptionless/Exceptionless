@@ -63,6 +63,8 @@ namespace Exceptionless.Dialogs {
             Cursor = Cursors.Default;
             SendReportButton.Enabled = true;
             ExitButton.Enabled = true;
+
+            DialogResult = DialogResult.OK;
             Close();
         }
     }

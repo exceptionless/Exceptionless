@@ -398,21 +398,21 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpGet]
-        [Route("verify-email-address/{token:objectId}")]
-        public IHttpActionResult Verify(string token) {
-            var user = _userRepository.GetByVerifyEmailAddressToken(token);
+        [HttpPost]
+        [Route("cancel-reset-password/{token:minlength(1)}")]
+        public IHttpActionResult CancelResetPassword(string token) {
+            if (String.IsNullOrEmpty(token))
+                return BadRequest("Invalid Password Reset Token.");
+
+            var user = _userRepository.GetByPasswordResetToken(token);
             if (user == null)
-                return NotFound();
-
-            if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
-                return BadRequest("Verify Email Address Token has expired.");
-
-            MarkEmailAddressVerified(user);
+                return Ok();
+            
+            ResetPasswordResetToken(user);
             _userRepository.Save(user);
 
-            ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
-            return Ok( new { Token = GetToken(user) });
+            ExceptionlessClient.Default.CreateFeatureUsage("Cancel Reset Password").AddObject(user).Submit();
+            return Ok();
         }
 
         private bool AddGlobalAdminRoleIfFirstUser(User user) {
@@ -510,9 +510,13 @@ namespace Exceptionless.Api.Controllers {
                 user.Salt = _encoder.GenerateSalt();
 
             user.Password = _encoder.GetSaltedHash(password, user.Salt);
+            ResetPasswordResetToken(user);
+            _userRepository.Save(user);
+        }
+
+        private static void ResetPasswordResetToken(User user) {
             user.PasswordResetToken = null;
             user.PasswordResetTokenExpiration = DateTime.MinValue;
-            _userRepository.Save(user);
         }
 
         private static void MarkEmailAddressVerified(User user) {
