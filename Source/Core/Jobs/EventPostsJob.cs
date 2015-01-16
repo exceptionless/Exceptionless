@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             _statsClient.Counter(StatNames.PostsDequeued);
-            Log.Info().Message("Processing post: id={0} path={1}", queueEntry.Id, queueEntry.Value.FilePath).Write();
+            Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPost.ProjectId, eventPost.IpAddress, eventPost.ApiVersion, eventPost.UserAgent).Write();
             
             List<PersistentEvent> events = null;
             try {
@@ -127,7 +127,7 @@ namespace Exceptionless.Core.Jobs {
             try {
                 events.ForEach(e => e.CreatedUtc = created);
                 var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
-                Log.Info().Message("Ran {0} events through the pipeline: id={1} success={2} error={3}", results.Count, queueEntry.Id, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).Write();
+                Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPost.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).Write();
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;
