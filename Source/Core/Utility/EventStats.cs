@@ -261,7 +261,10 @@ namespace Exceptionless.Core.Utility {
 
             stats.Start = stats.Timeline.Count > 0 ? stats.Timeline.Min(tl => tl.Date).SafeAdd(displayTimeOffset.Value) : utcStart.SafeAdd(displayTimeOffset.Value);
             stats.End = utcEnd.SafeAdd(displayTimeOffset.Value);
-            stats.AvgPerHour = stats.Total / stats.End.Subtract(stats.Start).TotalHours;
+
+            var totalHours = stats.End.Subtract(stats.Start).TotalHours;
+            if (totalHours > 0.0)
+                stats.AvgPerHour = stats.Total / totalHours;
 
             if (stats.Timeline.Count <= 0)
                 return stats;
