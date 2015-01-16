@@ -14,7 +14,6 @@ namespace Exceptionless.JobRunner {
         private static int Main(string[] args) {
             try {
                 var ca = new Options();
-                
                 if (!Parser.Default.ParseArguments(args, ca)) {
                     PauseIfDebug();
                     return 0;
@@ -35,6 +34,7 @@ namespace Exceptionless.JobRunner {
                     return 1;
                 }
 
+                NLog.GlobalDiagnosticsContext.Set("job", type.Name);
                 if (!ca.Quiet) {
                     OutputHeader();
                     Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);
