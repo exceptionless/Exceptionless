@@ -72,29 +72,30 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Newtonsoft.Json.6.0.7\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector">
-      <HintPath>..\..\packages\SimpleInjector.2.6.1\lib\net45\SimpleInjector.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="SimpleInjector.Diagnostics">
-      <HintPath>..\..\packages\SimpleInjector.2.6.1\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
-    </Reference>
-    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping">
-      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.2.6.1\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
-    </Reference>
-    <Reference Include="SimpleInjector.Integration.WebApi, Version=2.6.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+    <Reference Include="SimpleInjector, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.2.6.2\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+      <HintPath>..\..\packages\SimpleInjector.2.7.0\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Packaging, Version=2.6.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+    <Reference Include="SimpleInjector.Diagnostics, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\SimpleInjector.Packaging.2.6.1\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
-      <Private>True</Private>
+      <HintPath>..\..\packages\SimpleInjector.2.7.0\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Extensions.ExecutionContextScoping, Version=2.4.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Extensions.ExecutionContextScoping.2.7.0\lib\net45\SimpleInjector.Extensions.ExecutionContextScoping.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Integration.WebApi, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Integration.WebApi.2.7.0\lib\net45\SimpleInjector.Integration.WebApi.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Packaging, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.0\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis">
       <HintPath>..\..\packages\StackExchange.Redis.1.0.371\lib\net45\StackExchange.Redis.dll</HintPath>

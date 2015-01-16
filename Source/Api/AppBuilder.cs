@@ -32,6 +32,7 @@ using Newtonsoft.Json;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
+using StackExchange.Redis;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
@@ -161,7 +162,10 @@ namespace Exceptionless.Api {
             }
 
             app.UseWebApi(Config);
-            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = new SimpleInjectorSignalRDependencyResolver(container) });
+            var resolver = new SimpleInjectorSignalRDependencyResolver(container);
+            if (Settings.Current.EnableRedis)
+                resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
+            app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
 
             PhysicalFileSystem fileSystem = null;
             var root = AppDomain.CurrentDomain.BaseDirectory;

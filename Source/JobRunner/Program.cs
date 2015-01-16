@@ -7,7 +7,9 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using NLog;
 using SimpleInjector;
+using NLog.Fluent;
 
 namespace Exceptionless.JobRunner {
     internal class Program {
@@ -20,6 +22,14 @@ namespace Exceptionless.JobRunner {
                     return 0;
                 }
 
+                Log.Info().Message("Testing...").Project("fdsfsd").Property("hi", "hello").Write();
+                Log.Error().Message("Testing...").Property("hi", "hello").Write();
+
+                try {
+                    throw new ApplicationException("Yep");
+                } catch (Exception ex) {
+                    Log.Error().Message("Oh nos...").Exception(ex).Write();
+                }
                 var type = Type.GetType(ca.JobType);
                 if (type == null) {
                     Console.Error.WriteLine("Unable to resolve type: \"{0}\".", ca.JobType);
@@ -39,7 +49,7 @@ namespace Exceptionless.JobRunner {
                     OutputHeader();
                     Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);
                 }
-
+                
                 WatchForShutdown();
                 if (ca.RunContinuously)
                     job.RunContinuous(TimeSpan.FromMilliseconds(ca.Delay), token: _cancellationTokenSource.Token);
