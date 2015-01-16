@@ -84,7 +84,7 @@ namespace Exceptionless.Api.Utility {
                     try {
                         value = JsonConvert.DeserializeObject(value.ToString(), cacheHit.MemberType);
                     } catch (Exception ex) {
-                        Log.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Report().Write();
+                        Log.Error().Exception(ex).Message("Error deserializing value: {0}", value.ToString()).Write();
                         return false;
                     }
                 } else {

@@ -6,6 +6,7 @@ using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Newtonsoft.Json;
+using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(10)]
@@ -31,7 +32,7 @@ namespace Exceptionless.Core.Plugins.EventParser {
 
                 return ctx.Documents.FromJson<PersistentEvent>(settings);
             } catch (Exception ex) {
-                ex.ToExceptionless().AddObject(input, "Error").AddObject(apiVersion, "Api Version").Submit();
+                Log.Error().Message("Error parsing event: {0}", ex.Message).Exception(ex).Write();
                 return null;
             }
         }

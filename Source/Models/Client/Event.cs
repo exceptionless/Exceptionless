@@ -67,6 +67,7 @@ namespace Exceptionless.Models {
 
         public static class KnownTags {
             public const string Critical = "Critical";
+            public const string Internal = "Internal";
         }
 
         public static class KnownDataKeys {

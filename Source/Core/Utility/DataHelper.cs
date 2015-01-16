@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Utility {
 
                 _projectRepository.Save(project);
             } catch (Exception e) {
-                Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Report().Write();
+                Log.Error().Project(projectId).Exception(e).Message("Error resetting project data.").Write();
                 throw;
             }
         }
@@ -83,7 +83,7 @@ namespace Exceptionless.Core.Utility {
 
                 await _eventRepository.RemoveAllByStackIdsAsync(new[] { stackId });
             } catch (Exception e) {
-                Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Report().Write();
+                Log.Error().Project(stack.ProjectId).Exception(e).Message("Error resetting stack data.").Write();
                 throw;
             }
         }

@@ -11,27 +11,38 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless;
+using System.Linq;
+using Exceptionless.Models;
 
 namespace NLog.Fluent {
     public static class LogBuilderExtensions {
-        public static LogBuilder Report(this LogBuilder builder, Action<EventBuilder> errorBuilderAction = null) {
-            if (builder.LogEventInfo.Exception != null) {
-                EventBuilder exBuilder = builder.LogEventInfo.Exception.ToExceptionless();
+        public static LogBuilder Critical(this LogBuilder builder, bool isCritical = true) {
+            return isCritical ? builder.Tag(Event.KnownTags.Critical) : builder;
+        }
 
-                if (errorBuilderAction != null)
-                    errorBuilderAction(exBuilder);
+        public static LogBuilder Tag(this LogBuilder builder, string tag) {
+            return builder.Tag(new[] { tag });
+        }
 
-                exBuilder.AddObject(builder.LogEventInfo, name: "Log Info", excludedPropertyNames: new List<string> { "Exception", "Message", "LoggerShortName", "SequenceID", "TimeStamp" });
+        public static LogBuilder Tag(this LogBuilder builder, IEnumerable<string> tags) {
+            var tagList = new List<string>();
+            if (builder.LogEventInfo.Properties.ContainsKey("tags") && builder.LogEventInfo.Properties["tags"] is List<string>)
+                tagList = builder.LogEventInfo.Properties["tags"] as List<string>;
 
-                exBuilder.Submit();
+            foreach (string tag in tags) {
+                if (!tagList.Any(s => s.Equals(tag, StringComparison.OrdinalIgnoreCase)))
+                    tagList.Add(tag);
             }
 
-            return builder;
+            return builder.Property("tags", tagList);
         }
 
         public static LogBuilder Project(this LogBuilder builder, string projectId) {
             return builder.Property("project", projectId);
+        }
+
+        public static LogBuilder Organization(this LogBuilder builder, string organizationId) {
+            return builder.Property("organization", organizationId);
         }
     }
 }

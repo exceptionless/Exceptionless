@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Migrations {
                 runner.MigrationLocator.LookForMigrationsInAssemblyOfType<EventRepository>();
                 runner.UpdateToLatest();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error ensuring latest db version: {0}", ex.Message).Report().Write();
+                Log.Error().Exception(ex).Message("Error ensuring latest db version: {0}", ex.Message).Write();
             } finally {
                 _isUpdating = false;
             }
@@ -46,7 +46,7 @@ namespace Exceptionless.Core.Migrations {
                 runner.MigrationLocator.LookForMigrationsInAssemblyOfType<EventRepository>();
                 return !runner.DatabaseStatus.IsNotLatestVersion();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Error checking db version: {0}", ex.Message).Report().Write();
+                Log.Error().Exception(ex).Message("Error checking db version: {0}", ex.Message).Write();
             }
 
             return false;

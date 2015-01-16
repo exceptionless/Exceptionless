@@ -33,7 +33,6 @@ using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
-using StackExchange.Redis;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
@@ -41,7 +40,7 @@ namespace Exceptionless.Api {
             BuildWithContainer(app, CreateContainer());
         }
 
-        public static void BuildWithContainer(IAppBuilder app, Container container, bool registerExceptionlessClient = true) {
+        public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException("container");
 
@@ -158,10 +157,8 @@ namespace Exceptionless.Api {
                 return projectRepository.GetById(projectId, true);
             }));
 
-            if (registerExceptionlessClient) {
-                ExceptionlessClient.Default.RegisterWebApi(Config);
-                Config.Services.Add(typeof(IExceptionLogger), new ExceptionlessExceptionLogger());
-            }
+            ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog());
+            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
 
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);
