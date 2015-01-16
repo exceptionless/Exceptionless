@@ -396,6 +396,23 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        [HttpPost]
+        [Route("cancel-reset-password")]
+        public IHttpActionResult CancelResetPassword(string token) {
+            if (String.IsNullOrEmpty(token))
+                return BadRequest("Invalid Password Reset Token.");
+
+            var user = _userRepository.GetByPasswordResetToken(token);
+            if (user == null)
+                return Ok();
+            
+            ResetPasswordResetToken(user);
+            _userRepository.Save(user);
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Cancel Reset Password").AddObject(user).Submit();
+            return Ok();
+        }
+
         private bool AddGlobalAdminRoleIfFirstUser(User user) {
             if (_isFirstUserChecked)
                 return false;
@@ -491,9 +508,13 @@ namespace Exceptionless.Api.Controllers {
                 user.Salt = _encoder.GenerateSalt();
 
             user.Password = _encoder.GetSaltedHash(password, user.Salt);
+            ResetPasswordResetToken(user);
+            _userRepository.Save(user);
+        }
+
+        private static void ResetPasswordResetToken(User user) {
             user.PasswordResetToken = null;
             user.PasswordResetTokenExpiration = DateTime.MinValue;
-            _userRepository.Save(user);
         }
 
         private static void MarkEmailAddressVerified(User user) {
