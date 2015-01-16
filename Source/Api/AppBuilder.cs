@@ -29,6 +29,7 @@ using Microsoft.Owin.FileSystems;
 using Microsoft.Owin.StaticFiles;
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
@@ -44,6 +45,7 @@ namespace Exceptionless.Api {
             if (container == null)
                 throw new ArgumentNullException("container");
 
+            Log.Info().Message("Starting api...").Write();
             // if enabled, auto upgrade the database
             if (Settings.Current.ShouldAutoUpgradeDatabase) {
                 var url = new MongoUrl(Settings.Current.MongoConnectionString);
