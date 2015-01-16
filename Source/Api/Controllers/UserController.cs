@@ -91,6 +91,23 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
+        [Route("verify-email-address/{token:objectId}")]
+        public IHttpActionResult Verify(string token) {
+            var user = _repository.GetByVerifyEmailAddressToken(token);
+            if (user == null)
+                return NotFound();
+
+            if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
+                return BadRequest("Verify Email Address Token has expired.");
+
+            MarkEmailAddressVerified(user);
+            _repository.Save(user);
+
+            ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
+            return Ok();
+        }
+
+        [HttpGet]
         [Route("{id:objectid}/resend-verification-email")]
         public IHttpActionResult ResendVerificationEmail(string id) {
             var user = GetModel(id, false);
@@ -162,6 +179,12 @@ namespace Exceptionless.Api.Controllers {
                 return base.GetModels(ids, useCache);
 
             return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
+        }
+
+        private static void MarkEmailAddressVerified(User user) {
+            user.IsEmailAddressVerified = true;
+            user.VerifyEmailAddressToken = null;
+            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
         }
     }
 }

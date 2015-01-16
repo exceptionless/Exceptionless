@@ -396,23 +396,6 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        [HttpGet]
-        [Route("verify-email-address/{token:objectId}")]
-        public IHttpActionResult Verify(string token) {
-            var user = _userRepository.GetByVerifyEmailAddressToken(token);
-            if (user == null)
-                return NotFound();
-
-            if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
-                return BadRequest("Verify Email Address Token has expired.");
-
-            MarkEmailAddressVerified(user);
-            _userRepository.Save(user);
-
-            ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
-            return Ok( new { Token = GetToken(user) });
-        }
-
         private bool AddGlobalAdminRoleIfFirstUser(User user) {
             if (_isFirstUserChecked)
                 return false;
