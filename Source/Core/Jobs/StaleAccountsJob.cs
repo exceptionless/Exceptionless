@@ -43,8 +43,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Info().Message("Remove stale accounts job starting").Write();
-
             var organizations = _organizationRepository.GetAbandoned();
             while (organizations.Count > 0 && !token.IsCancellationRequested) {
                 foreach (var organization in organizations) {
@@ -62,20 +60,20 @@ namespace Exceptionless.Core.Jobs {
 
         private void TryDeleteOrganization(Organization organization) {
             try {
-                Log.Info().Message("Removing existing empty projects for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                Log.Info().Message("Removing empty projects: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                 List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
                 if (projects.Any(project => _eventRepository.GetCountByProjectId(project.Id) > 0)) {
-                    Log.Info().Message("Organization '{0}' with Id: '{1}' has a project with existing data. This organization will not be deleted.", organization.Name, organization.Id).Write();
+                    Log.Info().Message("Organization has data: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                     return;
                 }
 
-                Log.Info().Message("Deleting all events for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                Log.Info().Message("Deleting events: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                 _eventRepository.RemoveAllByProjectIdsAsync(projects.Select(p => p.Id).ToArray()).Wait();
 
-                Log.Info().Message("Deleting all stacks for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                Log.Info().Message("Deleting stacks: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                 _stackRepository.RemoveAllByProjectIdsAsync(projects.Select(p => p.Id).ToArray()).Wait();
 
-                Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                Log.Info().Message("Deleting projects: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                 _projectRepository.Remove(projects);
 
                 Log.Info().Message("Removing users from organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
@@ -85,7 +83,7 @@ namespace Exceptionless.Core.Jobs {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();
                         _userRepository.Remove(user.Id);
                     } else {
-                        Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
+                        Log.Info().Message("Removing user '{0}' from organization '{1}' with id: '{2}'", user.Id, organization.Name, organization.Id).Write();
                         user.OrganizationIds.Remove(organization.Id);
                         _userRepository.Save(user);
                     }

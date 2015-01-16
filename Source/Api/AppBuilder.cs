@@ -21,7 +21,12 @@ using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Exceptionless.Enrichments;
+using Exceptionless.Extras.Submission;
 using Exceptionless.Models;
+using Exceptionless.NLog;
+using Exceptionless.Services;
+using Exceptionless.Submission;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -33,6 +38,7 @@ using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
+using Exceptionless.Dependency;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
@@ -43,6 +49,12 @@ namespace Exceptionless.Api {
         public static void BuildWithContainer(IAppBuilder app, Container container) {
             if (container == null)
                 throw new ArgumentNullException("container");
+
+            ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog());
+            ExceptionlessClient.Default.Configuration.ReadAllConfig();
+            ExceptionlessClient.Default.Configuration.AddEnrichment<VersionEnrichment>();
+            ExceptionlessClient.Default.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
+            ExceptionlessClient.Default.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
 
             Log.Info().Message("Starting api...").Write();
             // if enabled, auto upgrade the database
@@ -56,6 +68,7 @@ namespace Exceptionless.Api {
             }
 
             Config = new HttpConfiguration();
+            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
@@ -156,9 +169,6 @@ namespace Exceptionless.Api {
 
                 return projectRepository.GetById(projectId, true);
             }));
-
-            ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog());
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
 
             app.UseWebApi(Config);
             var resolver = new SimpleInjectorSignalRDependencyResolver(container);

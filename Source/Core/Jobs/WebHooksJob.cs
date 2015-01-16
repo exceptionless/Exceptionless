@@ -24,8 +24,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Trace().Message("Web hook job starting").Write();
-
             QueueEntry<WebHookNotification> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue();
@@ -38,10 +36,9 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
 
-            Log.Trace().Message("Processing WebHookNotification '{0}'.", queueEntry.Id).Write();
-
             WebHookNotification body = queueEntry.Value;
-            Log.Trace().Project(body.ProjectId).Message("Process web hook call: project={0} url={1}", body.ProjectId, body.Url).Write();
+            bool shouldLog = body.ProjectId != Settings.Current.InternalProjectId;
+            Log.Trace().Project(body.ProjectId).Message("Process web hook call: id={0} project={1} url={2}", queueEntry.Id, body.ProjectId, body.Url).WriteIf(shouldLog);
 
             var client = new HttpClient();
             try {
@@ -54,7 +51,7 @@ namespace Exceptionless.Core.Jobs {
 
                 queueEntry.Complete();
 
-                Log.Info().Project(body.ProjectId).Message("Web hook POST complete: status={0} org={1} project={2} url={3}", result.StatusCode, body.OrganizationId, body.ProjectId, body.Url).Write();
+                Log.Info().Project(body.ProjectId).Message("Web hook POST complete: status={0} org={1} project={2} url={3}", result.StatusCode, body.OrganizationId, body.ProjectId, body.Url).WriteIf(shouldLog);
             } catch (Exception ex) {
                 queueEntry.Abandon();
                 return JobResult.FromException(ex);

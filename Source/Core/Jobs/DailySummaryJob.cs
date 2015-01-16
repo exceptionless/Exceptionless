@@ -49,7 +49,7 @@ namespace Exceptionless.Core.Jobs {
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
             if (!Settings.Current.EnableDailySummary)
-                return Task.FromResult(new JobResult { Message = "Summary notifications are disabled.", IsCancelled = true });
+                return Task.FromResult(JobResult.SuccessWithMessage("Summary notifications are disabled."));
 
             const int BATCH_SIZE = 25;
 

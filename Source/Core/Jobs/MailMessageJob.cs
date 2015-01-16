@@ -20,8 +20,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Trace().Message("Process mail message job starting").Write();
-
             QueueEntry<MailMessage> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue();

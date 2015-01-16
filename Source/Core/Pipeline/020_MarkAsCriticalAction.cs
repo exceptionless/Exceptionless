@@ -10,7 +10,6 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using NLog.Fluent;
 

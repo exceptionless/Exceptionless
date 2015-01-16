@@ -59,6 +59,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public ICollection<Organization> GetAbandoned(int? limit = 20) {
+            // TODO: This is not going to work right now because LastEventDate doesn't exist any more. Maybe create a daily job to update first event, last event and odometer.
             var query = Query.And(
                 Query.EQ(FieldNames.PlanId, BillingManager.FreePlan.Id),
                 Query.LTE(FieldNames.TotalEventCount, new BsonInt64(0)),

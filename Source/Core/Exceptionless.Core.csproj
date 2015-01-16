@@ -450,7 +450,6 @@
     <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
     <Compile Include="Repositories\Interfaces\IEventRepository.cs" />
     <Compile Include="Utility\ExtensibleObject.cs" />
-    <Compile Include="Utility\NLogExceptionlessLog.cs" />
     <Compile Include="Repositories\Interfaces\IStackRepository.cs" />
     <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
     <Compile Include="Repositories\Base\IMongoRepositoryManagement.cs" />

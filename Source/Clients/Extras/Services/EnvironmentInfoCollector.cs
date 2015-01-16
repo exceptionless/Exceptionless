@@ -21,7 +21,7 @@ using Exceptionless.Models.Data;
 using Microsoft.VisualBasic.Devices;
 
 namespace Exceptionless.Services {
-    internal class EnvironmentInfoCollector : IEnvironmentInfoCollector {
+    public class EnvironmentInfoCollector : IEnvironmentInfoCollector {
         private static EnvironmentInfo _environmentInfo;
         private readonly IExceptionlessLog _log;
 

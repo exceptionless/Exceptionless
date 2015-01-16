@@ -109,8 +109,10 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 user = _userRepository.Save(user);
-                if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev)
+                if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev) {
                     _dataHelper.CreateSampleOrganizationAndProject(user.Id);
+                    _dataHelper.CreateInternalOrganizationAndProject(user.Id);
+                }
             } catch (Exception ex) {
                 Log.Error().Message("Signup error: {0}", ex.Message).Exception(ex).Write();
                 return BadRequest("An error occurred.");

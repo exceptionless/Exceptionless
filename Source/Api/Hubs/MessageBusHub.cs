@@ -32,6 +32,9 @@ namespace Exceptionless.Api.Hubs {
         }
 
         private void OnUserMembershipChanged(UserMembershipChanged userMembershipChanged) {
+            if (userMembershipChanged == null)
+                return;
+
             if (String.IsNullOrEmpty(userMembershipChanged.OrganizationId))
                 return;
 
@@ -43,10 +46,15 @@ namespace Exceptionless.Api.Hubs {
                     Groups.Remove(connectionId, userMembershipChanged.OrganizationId).Wait();
             }
 
-            Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
+            var group = Clients.Group(userMembershipChanged.OrganizationId);
+            if (group != null)
+                group.userMembershipChanged(userMembershipChanged);
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
+            if (entityChanged == null)
+                return;
+
             if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
                 Clients.User(entityChanged.Id).entityChanged(entityChanged);
                 return;
@@ -55,15 +63,27 @@ namespace Exceptionless.Api.Hubs {
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return;
 
-            Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
+            var group = Clients.Group(entityChanged.OrganizationId);
+            if (group != null)
+                group.entityChanged(entityChanged);
         }
 
         private void OnPlanOverage(PlanOverage planOverage) {
-            Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
+            if (planOverage == null)
+                return;
+
+            var group = Clients.Group(planOverage.OrganizationId);
+            if (group != null)
+                group.planOverage(planOverage);
         }
 
         private void OnPlanChanged(PlanChanged planChanged) {
-            Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
+            if (planChanged == null)
+                return;
+
+            var group = Clients.Group(planChanged.OrganizationId);
+            if (group != null)
+                group.planChanged(planChanged);
         }
 
         public override Task OnConnected() {

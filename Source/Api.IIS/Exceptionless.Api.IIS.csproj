@@ -78,6 +78,10 @@
       <Project>{6819b8d7-2364-426b-a944-1b4cbaf4bc32}</Project>
       <Name>Exceptionless.Api</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Clients\NLog\Exceptionless.NLog.csproj">
+      <Project>{5eb81eef-ed35-4ad2-9b20-0b3e5c94bba4}</Project>
+      <Name>Exceptionless.NLog</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>

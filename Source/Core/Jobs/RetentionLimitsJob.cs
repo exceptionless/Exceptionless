@@ -32,8 +32,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Info().Message("Enforce retention limits job starting").Write();
-
             var page = 1;
             var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100));
             while (organizations.Count > 0 && !token.IsCancellationRequested) {
@@ -51,7 +49,7 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 // use the next higher plans retention days to enable us to upsell them
-                BillingPlan nextPlan = BillingManager.Plans
+                var nextPlan = BillingManager.Plans
                     .Where(p => p.RetentionDays > organization.RetentionDays)
                     .OrderByDescending(p => p.RetentionDays)
                     .FirstOrDefault();

@@ -9,7 +9,6 @@ using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Storage;
@@ -44,8 +43,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Trace().Message("Process events job starting").Write();
-
             QueueEntry<EventPostFileInfo> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue(TimeSpan.FromSeconds(1));
@@ -70,14 +67,15 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
             }
 
+            bool isInternalProject = eventPost.ProjectId == Settings.Current.InternalProjectId;
             _statsClient.Counter(StatNames.PostsDequeued);
-            Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPost.ProjectId, eventPost.IpAddress, eventPost.ApiVersion, eventPost.UserAgent).Write();
+            Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPost.ProjectId, eventPost.IpAddress, eventPost.ApiVersion, eventPost.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
             try {
                 _statsClient.Time(() => {
                     events = ParseEventPost(eventPost);
-                    Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).Write();
+                    Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
                 }, StatNames.PostsParsingTime);
                 _statsClient.Counter(StatNames.PostsParsed);
                 _statsClient.Gauge(StatNames.PostsEventCount, events.Count);
@@ -127,7 +125,7 @@ namespace Exceptionless.Core.Jobs {
             try {
                 events.ForEach(e => e.CreatedUtc = created);
                 var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
-                Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPost.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).Write();
+                Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPost.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;

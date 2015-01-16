@@ -22,6 +22,8 @@ namespace Exceptionless.Core {
 
         public string BaseURL { get; private set; }
 
+        public string InternalProjectId { get; private set; }
+
         public WebsiteMode WebsiteMode { get; private set; }
 
         public string TestEmailAddress { get; private set; }
@@ -130,6 +132,7 @@ namespace Exceptionless.Core {
                 settings.BaseURL = value;
             }
 
+            settings.InternalProjectId = ConfigurationManager.AppSettings["InternalProjectId"];
             settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
             settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.com").Select(v => v.ToLowerInvariant()).ToList();

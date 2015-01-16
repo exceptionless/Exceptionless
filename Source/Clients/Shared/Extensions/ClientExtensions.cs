@@ -28,8 +28,8 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="client">The client instance.</param>
         /// <param name="exception">The exception.</param>
-        public static void CreateException(this ExceptionlessClient client, Exception exception) {
-            exception.ToExceptionless(client: client).Submit();
+        public static EventBuilder CreateException(this ExceptionlessClient client, Exception exception) {
+            return exception.ToExceptionless(client: client);
         }
 
         /// <summary>

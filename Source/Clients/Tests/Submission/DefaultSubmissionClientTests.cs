@@ -36,7 +36,7 @@ namespace Client.Tests.Submission {
     public class DefaultSubmissionClientTests {
         private ExceptionlessClient GetClient() {
             return new ExceptionlessClient(c => {
-                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+                c.ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
                 c.UseDebugLogger();

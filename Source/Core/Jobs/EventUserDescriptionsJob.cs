@@ -24,8 +24,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Trace().Message("Process user description job starting").Write();
-
             QueueEntry<EventUserDescription> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue();

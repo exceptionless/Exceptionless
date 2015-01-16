@@ -38,8 +38,6 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            Log.Trace().Message("Process event notification job starting").Write();
-
             QueueEntry<EventNotification> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue();
@@ -51,22 +49,23 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
 
             var eventNotification = queueEntry.Value;
+            bool shouldLog = eventNotification.Event.ProjectId != Settings.Current.InternalProjectId;
             int emailsSent = 0;
-            Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).Write();
+            Log.Trace().Message("Process notification: project={0} event={1} stack={2}", eventNotification.Event.ProjectId, eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
 
             var project = _projectRepository.GetById(eventNotification.Event.ProjectId, true);
             if (project == null) {
                 queueEntry.Abandon();
                 return JobResult.FailedWithMessage("Could not load project {0}.", eventNotification.Event.ProjectId);
             }
-            Log.Trace().Message("Loaded project: name={0}", project.Name).Write();
+            Log.Trace().Message("Loaded project: name={0}", project.Name).WriteIf(shouldLog);
 
             var organization = _organizationRepository.GetById(project.OrganizationId, true);
             if (organization == null) {
                 queueEntry.Abandon();
                 return JobResult.FailedWithMessage("Could not load organization {0}.", project.OrganizationId);
             }
-            Log.Trace().Message("Loaded organization: name={0}", organization.Name).Write();
+            Log.Trace().Message("Loaded organization: name={0}", organization.Name).WriteIf(shouldLog);
 
             var stack = _stackRepository.GetById(eventNotification.Event.StackId);
             if (stack == null) {
@@ -76,13 +75,13 @@ namespace Exceptionless.Core.Jobs {
 
             if (!organization.HasPremiumFeatures) {
                 queueEntry.Complete();
-                Log.Trace().Message("Skipping because organization does not have premium features.").Write();
+                Log.Trace().Message("Skipping because organization does not have premium features.").WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
             if (stack.DisableNotifications || stack.IsHidden) {
                 queueEntry.Complete();
-                Log.Trace().Message("Skipping because stack notifications are disabled or stack is hidden.").Write();
+                Log.Trace().Message("Skipping because stack notifications are disabled or stack is hidden.").WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
@@ -91,7 +90,7 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Cancelled;
             }
 
-            Log.Trace().Message("Loaded stack: title={0}", stack.Title).Write();
+            Log.Trace().Message("Loaded stack: title={0}", stack.Title).WriteIf(shouldLog);
             int totalOccurrences = stack.TotalOccurrences;
 
             // after the first 2 occurrences, don't send a notification for the same stack more then once every 30 minutes
@@ -101,7 +100,7 @@ namespace Exceptionless.Core.Jobs {
                 && lastTimeSent != DateTime.MinValue
                 && lastTimeSent > DateTime.Now.AddMinutes(-30)) {
                 queueEntry.Complete();
-                Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).Write();
+                Log.Info().Message("Skipping message because of stack throttling: last sent={0} occurrences={1}", lastTimeSent, totalOccurrences).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
@@ -111,7 +110,7 @@ namespace Exceptionless.Core.Jobs {
             long notificationCount = _cacheClient.Increment(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !eventNotification.IsRegression) {
                 queueEntry.Complete();
-                Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).Write();
+                Log.Info().Project(eventNotification.Event.ProjectId).Message("Skipping message because of project throttling: count={0}", notificationCount).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
@@ -122,7 +121,7 @@ namespace Exceptionless.Core.Jobs {
 
             foreach (var kv in project.NotificationSettings) {
                 var settings = kv.Value;
-                Log.Trace().Message("Processing notification: user={0}", kv.Key).Write();
+                Log.Trace().Message("Processing notification: user={0}", kv.Key).WriteIf(shouldLog);
 
                 var user = _userRepository.GetById(kv.Key);
                 if (user == null || String.IsNullOrEmpty(user.EmailAddress)) {
@@ -131,12 +130,12 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 if (!user.IsEmailAddressVerified) {
-                    Log.Info().Message("User {0} with email address {1} has not been verified.", kv.Key, user != null ? user.EmailAddress : "").Write();
+                    Log.Info().Message("User {0} with email address {1} has not been verified.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
                     continue;
                 }
 
                 if (!user.EmailNotificationsEnabled) {
-                    Log.Trace().Message("User {0} with email address {1} has email notifications disabled.", kv.Key, user != null ? user.EmailAddress : "").Write();
+                    Log.Trace().Message("User {0} with email address {1} has email notifications disabled.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
                     continue;
                 }
 
@@ -145,7 +144,7 @@ namespace Exceptionless.Core.Jobs {
                     continue;
                 }
 
-                Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).Write();
+                Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).WriteIf(shouldLog);
 
                 bool shouldReportNew = settings.ReportNewErrors && eventNotification.IsNew;
                 bool shouldReportCritical = settings.ReportCriticalErrors && eventNotification.IsCritical;
@@ -155,10 +154,10 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Trace().Message("Settings: new={0} critical={1} regression={2} notfound={3}",
                     settings.ReportNewErrors, settings.ReportCriticalErrors,
-                    settings.ReportErrorRegressions, settings.ReportNewNotFounds).Write();
+                    settings.ReportErrorRegressions, settings.ReportNewNotFounds).WriteIf(shouldLog);
                 Log.Trace().Message("Should process: new={0} critical={1} regression={2} notfound={3}",
                     shouldReportNew, shouldReportCritical,
-                    shouldReportRegression, shouldReportNotFound).Write();
+                    shouldReportRegression, shouldReportNotFound).WriteIf(shouldLog);
 
                 var requestInfo = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them
@@ -177,7 +176,7 @@ namespace Exceptionless.Core.Jobs {
 
                     if (info != null && info.Device.IsSpider || requestInfo.UserAgent.AnyWildcardMatches(botPatterns)) {
                         shouldReport = false;
-                        Log.Trace().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).Write();
+                        Log.Trace().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).WriteIf(shouldLog);
                     }
                 }
 
@@ -192,20 +191,20 @@ namespace Exceptionless.Core.Jobs {
                 // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
                 if (Settings.Current.WebsiteMode != WebsiteMode.Production
                     && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
-                    Log.Trace().Message("Skipping because email is not on the outbound list and not in production mode.").Write();
+                        Log.Trace().Message("Skipping because email is not on the outbound list and not in production mode.").WriteIf(shouldLog);
                     continue;
                 }
                 
                 Log.Trace().Message("Sending email to {0}...", user.EmailAddress).Write();
                 _mailer.SendNotice(user.EmailAddress, model);
                 emailsSent++;
-                Log.Trace().Message("Done sending email.").Write();
+                Log.Trace().Message("Done sending email.").WriteIf(shouldLog);
             }
 
             // if we sent any emails, mark the last time a notification for this stack was sent.
             if (emailsSent > 0) {
                 _cacheClient.Set(String.Concat("notify:stack-throttle:", eventNotification.Event.StackId), DateTime.Now, DateTime.Now.AddMinutes(15));
-                Log.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).Write();
+                Log.Info().Message("Notifications sent: event={0} stack={1} count={2}", eventNotification.Event.Id, eventNotification.Event.StackId, emailsSent).WriteIf(shouldLog);
             }
 
             queueEntry.Complete();

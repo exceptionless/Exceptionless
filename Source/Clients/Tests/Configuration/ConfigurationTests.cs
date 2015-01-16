@@ -11,15 +11,15 @@ using Exceptionless.Submission;
 using Moq;
 using Xunit;
 
-[assembly: Exceptionless("e3d51ea621464280bbcb79c11fd6483e", ServerUrl = "http://localhost:45000", EnableSSL = false)]
+[assembly: Exceptionless("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", ServerUrl = "http://localhost:45000", EnableSSL = false)]
 [assembly: ExceptionlessSetting("testing", "configuration")]
 namespace Client.Tests.Configuration {
     public class ConfigurationTests {
         [Fact]
         public void CanConfigureApiKeyFromClientConstructor() {
-            var client = new ExceptionlessClient("e3d51ea621464280bbcb79c11fd6483e");
+            var client = new ExceptionlessClient("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw");
             Assert.NotNull(client);
-            Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", client.Configuration.ApiKey);
+            Assert.Equal("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", client.Configuration.ApiKey);
         }
 
         [Fact]
@@ -27,13 +27,13 @@ namespace Client.Tests.Configuration {
             const string version = "1.2.3";
             
             var client = new ExceptionlessClient(c => {
-                c.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+                c.ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
                 c.SetVersion(version);
             });
 
-            Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", client.Configuration.ApiKey);
+            Assert.Equal("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", client.Configuration.ApiKey);
             Assert.Equal("http://localhost:45000", client.Configuration.ServerUrl);
             Assert.False(client.Configuration.EnableSSL);
             Assert.Equal(version, client.Configuration.DefaultData[Event.KnownDataKeys.Version].ToString());
@@ -49,7 +49,7 @@ namespace Client.Tests.Configuration {
             Assert.Equal(0, config.Settings.Count);
 
             config.ReadFromAttributes(typeof(ConfigurationTests).Assembly);
-            Assert.Equal("e3d51ea621464280bbcb79c11fd6483e", config.ApiKey);
+            Assert.Equal("LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw", config.ApiKey);
             Assert.Equal("http://localhost:45000", config.ServerUrl);
             Assert.False(config.EnableSSL);
             Assert.Equal(1, config.Settings.Count);
@@ -60,7 +60,7 @@ namespace Client.Tests.Configuration {
         public void WillLockConfig() {
             var client = new ExceptionlessClient();
             client.Configuration.Resolver.Register<ISubmissionClient, InMemorySubmissionClient>();
-            client.Configuration.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+            client.Configuration.ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
             client.SubmitEvent(new Event());
             Assert.Throws<ArgumentException>(() => client.Configuration.ApiKey = "blah");
             Assert.Throws<ArgumentException>(() => client.Configuration.ServerUrl = "blah");
@@ -69,7 +69,7 @@ namespace Client.Tests.Configuration {
         [Fact]
         public void CanUpdateSettingsFromServer() {
             var config = new ExceptionlessConfiguration(DependencyResolver.Default);
-            config.ApiKey = "e3d51ea621464280bbcb79c11fd6483e";
+            config.ApiKey = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
             config.Settings["LocalSetting"] = "1";
             config.Settings["LocalSettingToOverride"] = "1";
 

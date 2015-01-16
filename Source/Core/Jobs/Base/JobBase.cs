@@ -47,14 +47,17 @@ namespace Exceptionless.Core.Jobs {
 
             int iterations = 0;
             while (!IsCancelPending(token) && (iterationLimit < 0 || iterations < iterationLimit)) {
+                Log.Trace().Message("Job \"{0}\" starting...", GetType().Name).Write();
                 var result = await RunAsync(token);
                 if (result != null) {
                     if (!result.IsSuccess)
-                        Log.Error().Message("Job failed: {0}", result.Message).Exception(result.Error).Write();
+                        Log.Error().Message("Job \"{0}\" failed: {1}", GetType().Name, result.Message).Exception(result.Error).Write();
                     else if (!String.IsNullOrEmpty(result.Message))
-                        Log.Info().Message("Job succeeded: {0}", result.Message).Write();
+                        Log.Info().Message("Job \"{0}\" succeeded: {1}", GetType().Name, result.Message).Write();
+                    else
+                        Log.Trace().Message("Job \"{0}\" succeeded", GetType().Name).Write();
                 } else {
-                    Log.Error().Message("Null job result").Write();
+                    Log.Error().Message("Null job result for \"{0}\".", GetType().Name).Write();
                 }
                 iterations++;
                 if (delay.HasValue && delay.Value > TimeSpan.Zero)

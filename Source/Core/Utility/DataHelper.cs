@@ -27,25 +27,26 @@ namespace Exceptionless.Core.Utility {
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly BillingManager _billingManager;
-        
-        public const string SAMPLE_API_KEY = "e3d51ea621464280bbcb79c11fd6483e";
-        public const string SAMPLE_USER_API_KEY = "d795c4406f6b4bc6ae8d787c65d0274d";
+
+        public const string SAMPLE_ORG_ID = "537650f3b77efe23a47914f3";
+        public const string SAMPLE_PROJECT_ID = "537650f3b77efe23a47914f4";
+        public const string SAMPLE_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
+        public const string SAMPLE_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTWqGp";
+        public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
+        public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
         public DataHelper(IOrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
             IUserRepository userRepository,
             IEventRepository eventRepository,
             IStackRepository stackRepository,
-            ITokenRepository tokenRepository,
-            BillingManager billingManager) {
+            ITokenRepository tokenRepository) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _tokenRepository = tokenRepository;
-            _billingManager = billingManager;
         }
 
         public async Task ResetProjectDataAsync(string projectId) {
@@ -109,7 +110,7 @@ namespace Exceptionless.Core.Utility {
             project = _projectRepository.Add(project);
             
             _tokenRepository.Add(new Token {
-                Id = Guid.NewGuid().ToString("N"),
+                Id = StringExtensions.GetNewToken(),
                 OrganizationId = organizationId,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
@@ -130,11 +131,11 @@ namespace Exceptionless.Core.Utility {
                 return;
 
             User user = _userRepository.GetById(userId, true);
-            var organization = new Organization { Id = "537650f3b77efe23a47914f3", Name = "Acme" };
+            var organization = new Organization { Id = SAMPLE_ORG_ID, Name = "Acme" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
-            var project = new Project { Id = "537650f3b77efe23a47914f4", Name = "Disintegrating Pistol", OrganizationId = organization.Id };
+            var project = new Project { Id = SAMPLE_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
@@ -152,6 +153,34 @@ namespace Exceptionless.Core.Utility {
             _tokenRepository.Add(new Token {
                 Id = SAMPLE_USER_API_KEY,
                 UserId = user.Id,
+                CreatedUtc = DateTime.UtcNow,
+                ModifiedUtc = DateTime.UtcNow,
+                Type = TokenType.Access
+            });
+
+            user.OrganizationIds.Add(organization.Id);
+            _userRepository.Save(user, true);
+        }
+
+        public void CreateInternalOrganizationAndProject(string userId) {
+            if (_tokenRepository.GetById(SAMPLE_API_KEY) != null)
+                return;
+
+            User user = _userRepository.GetById(userId, true);
+            var organization = new Organization { Name = "Exceptionless" };
+            BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
+            organization = _organizationRepository.Add(organization);
+
+            var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
+            project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
+            project.Configuration.Settings.Add("IncludeConditionalData", "true");
+            project.AddDefaultOwnerNotificationSettings(userId);
+            project = _projectRepository.Add(project, true);
+
+            _tokenRepository.Add(new Token {
+                Id = INTERNAL_API_KEY,
+                OrganizationId = organization.Id,
+                ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
                 Type = TokenType.Access
