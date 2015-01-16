@@ -397,7 +397,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpPost]
-        [Route("cancel-reset-password")]
+        [Route("cancel-reset-password/{token:minlength(1)}")]
         public IHttpActionResult CancelResetPassword(string token) {
             if (String.IsNullOrEmpty(token))
                 return BadRequest("Invalid Password Reset Token.");
