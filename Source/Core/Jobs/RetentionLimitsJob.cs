@@ -63,7 +63,7 @@ namespace Exceptionless.Core.Jobs {
                 DateTime cutoff = DateTime.UtcNow.Date.AddDays(-retentionDays);
                 _eventRepository.RemoveAllByDate(organization.Id, cutoff);
             } catch (Exception ex) {
-                ex.ToExceptionless().MarkAsCritical().AddTags("Enforce Limits").AddObject(organization).Submit();
+                Log.Error().Message("Error enforcing limits: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message).Exception(ex).Write();
             }
         }
     }

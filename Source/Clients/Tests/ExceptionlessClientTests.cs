@@ -31,7 +31,7 @@ namespace Client.Tests {
         [Fact]
         public async Task CanSubmitSimpleEvent() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
                 var queue = container.GetInstance<IQueue<EventPostFileInfo>>();
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());
@@ -62,7 +62,7 @@ namespace Client.Tests {
         [Fact]
         public async Task CanSubmitSimpleException() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
                 var queue = container.GetInstance<IQueue<EventPostFileInfo>>();
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());

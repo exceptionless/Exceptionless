@@ -22,21 +22,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override bool HandleError(Exception ex, EventContext ctx) {
             string message = ErrorMessage ?? String.Format("Error processing action: {0}", GetType().Name);
-            Log.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Write();
-
-            if (!ctx.Event.Tags.Contains("Internal")) {
-                EventBuilder b = ex.ToExceptionless()
-                    .AddObject(ctx.Event)
-                    .AddTags("Internal")
-                    .SetUserDescription("some@email.com", message);
-
-                b.AddTags(ErrorTags);
-
-                if (IsCritical)
-                    b.MarkAsCritical();
-
-                b.Submit();
-            }
+            Log.Error().Project(ctx.Event.ProjectId).Message(message).Exception(ex).Property("data", ctx.Event).Tag(ErrorTags).Critical(IsCritical).Write();
 
             return ContinueOnError;
         }

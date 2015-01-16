@@ -112,7 +112,7 @@ namespace Exceptionless.Api.Controllers {
                 if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev)
                     _dataHelper.CreateSampleOrganizationAndProject(user.Id);
             } catch (Exception ex) {
-                ex.ToExceptionless().AddObject(user).MarkAsCritical().AddTags("signup").Submit();
+                Log.Error().Message("Signup error: {0}", ex.Message).Exception(ex).Write();
                 return BadRequest("An error occurred.");
             }
 

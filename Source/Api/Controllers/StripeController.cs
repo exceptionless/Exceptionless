@@ -22,7 +22,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stripeEvent = StripeEventUtility.ParseEvent(json);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to parse incoming event.").Report(b => b.AddObject(json, "Event")).Write();
+                Log.Error().Exception(ex).Message("Unable to parse incoming event.").Property("event", json).Write();
                 return BadRequest("Unable to parse incoming event");
             }
 

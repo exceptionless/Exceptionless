@@ -67,21 +67,11 @@ namespace Exceptionless.Core.Repositories {
             if (options.UseDateRange)
                 queries &= Filter<T>.Range(r => r.OnField(options.DateField).GreaterOrEquals(options.GetStartDate()).LowerOrEquals(options.GetEndDate()));
 
-            if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null) {
-                try {
-                    options.BeforeQuery = Filter<T>.Range(r => r.OnField("_uid").Lower(options.BeforeValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(options.BeforeQuery, "BeforeQuery").Submit();
-                }
-            }
+            if (!String.IsNullOrEmpty(options.BeforeValue) && options.BeforeQuery == null)
+                options.BeforeQuery = Filter<T>.Range(r => r.OnField("_uid").Lower(options.BeforeValue));
 
-            if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null) {
-                try {
+            if (!String.IsNullOrEmpty(options.AfterValue) && options.AfterQuery == null)
                     options.AfterQuery = Filter<T>.Range(r => r.OnField("_uid").Greater(options.AfterValue));
-                } catch (Exception ex) {
-                    ex.ToExceptionless().AddObject(options.AfterQuery, "AfterQuery").Submit();
-                }
-            }
 
             if (options.BeforeQuery != null)
                 queries &= options.BeforeQuery;

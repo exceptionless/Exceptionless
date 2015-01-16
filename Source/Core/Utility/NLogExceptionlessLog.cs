@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Utility {
         public LogLevel MinimumLogLevel { get; set; }
 
         public void Error(string message, string source = null, Exception exception = null) {
-            Log.Error().Message(message).LoggerName(source).Exception(exception).Report().Write();
+            Log.Error().Message(message).LoggerName(source).Exception(exception).Write();
         }
 
         public void Info(string message, string source = null) {

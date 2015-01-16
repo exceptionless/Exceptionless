@@ -204,7 +204,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 await DeleteModels(items);
             } catch (Exception ex){
-                Log.Error().Exception(ex).Report().Write();
+                Log.Error().Exception(ex).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 

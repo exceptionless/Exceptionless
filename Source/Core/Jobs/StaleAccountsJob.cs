@@ -94,7 +94,7 @@ namespace Exceptionless.Core.Jobs {
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
                 _organizationRepository.Remove(organization);
             } catch (Exception ex) {
-                ex.ToExceptionless().MarkAsCritical().AddTags("Remove Stale Accounts").AddObject(organization).Submit();
+                Log.Error().Message("Error removing stale org: org={0} id={1} message=\"{2}\"", organization.Name, organization.Id, ex.Message).Exception(ex).Write();
             }
         }
     }

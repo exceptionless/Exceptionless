@@ -46,7 +46,7 @@ namespace Client.Tests.Submission {
         [Fact]
         public void PostEvents() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
                 EnsureSampleData(container);
 
                 var events = new List<Event> { new Event { Message = "Testing" } };
@@ -63,7 +63,7 @@ namespace Client.Tests.Submission {
         [Fact(Skip="Flakey, need a better way to test this")]
         public async Task PostUserDescription() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
                 var repository = container.GetInstance<IEventRepository>();
                 repository.RemoveAll();
 
@@ -126,7 +126,7 @@ namespace Client.Tests.Submission {
         [Fact]
         public void GetSettings() {
             var container = AppBuilder.CreateContainer();
-            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container, false))) {
+            using (WebApp.Start(Settings.Current.BaseURL, app => AppBuilder.BuildWithContainer(app, container))) {
                 EnsureSampleData(container);
 
                 var configuration = GetClient().Configuration;

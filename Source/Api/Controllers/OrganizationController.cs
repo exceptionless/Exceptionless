@@ -326,7 +326,7 @@ namespace Exceptionless.Api.Controllers {
                     OrganizationId = organization.Id
                 });
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Report(r => r.MarkAsCritical()).Write();
+                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Write();
                 return Ok(new { Success = false, Message = e.Message });
             }
 
