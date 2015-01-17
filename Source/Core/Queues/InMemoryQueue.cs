@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using NLog.Fluent;
@@ -28,9 +29,12 @@ namespace Exceptionless.Core.Queues {
         private int _workerErrorCount;
         private CancellationTokenSource _workerCancellationTokenSource;
         private readonly CancellationTokenSource _queueDisposedCancellationTokenSource;
+        private readonly IAppStatsClient _stats;
 
-        public InMemoryQueue(int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null) {
+        public InMemoryQueue(int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null, IAppStatsClient stats = null, string statName = null) {
             QueueId = Guid.NewGuid().ToString("N");
+            _stats = stats;
+            QueueSizeStatName = statName;
             _retries = retries;
             if (retryDelay.HasValue)
                 _retryDelay = retryDelay.Value;
@@ -40,7 +44,7 @@ namespace Exceptionless.Core.Queues {
                 _workItemTimeout = workItemTimeout.Value;
 
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-            Task.Factory.StartNew(() => TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)));
+            TaskHelper.RunPeriodic(DoMaintenance, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout.Min(TimeSpan.FromMinutes(1)) : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
         }
 
         public long GetQueueCount() { return _queue.Count; }
@@ -53,6 +57,7 @@ namespace Exceptionless.Core.Queues {
         public long AbandonedCount { get { return _abandonedCount; } }
         public long WorkerErrorCount { get { return _workerErrorCount; } }
         public string QueueId { get; private set; }
+        protected string QueueSizeStatName { get; set; }
 
         public string Enqueue(T data) {
             string id = Guid.NewGuid().ToString("N");
@@ -65,6 +70,7 @@ namespace Exceptionless.Core.Queues {
             Log.Trace().Message("Enqueue: Set Event").Write();
             _autoEvent.Set();
             Interlocked.Increment(ref _enqueuedCount);
+            UpdateStats();
             Log.Trace().Message("Enqueue done").Write();
 
             return id;
@@ -119,6 +125,7 @@ namespace Exceptionless.Core.Queues {
             if (!_dequeued.TryAdd(info.Id, info))
                 throw new ApplicationException("Unable to add item to the dequeued list.");
 
+            UpdateStats();
             return new QueueEntry<T>(info.Id, info.Data, this);
         }
 
@@ -129,6 +136,7 @@ namespace Exceptionless.Core.Queues {
                 throw new ApplicationException("Unable to remove item from the dequeued list.");
 
             Interlocked.Increment(ref _completedCount);
+            UpdateStats();
             Log.Trace().Message("Complete done: {0}", id).Write();
         }
 
@@ -151,6 +159,7 @@ namespace Exceptionless.Core.Queues {
                 Log.Trace().Message("Exceeded retry limit moving to deadletter: {0}", id).Write();
                 _deadletterQueue.Enqueue(info);
             }
+            UpdateStats();
             Log.Trace().Message("Abondon complete: {0}", id).Write();
         }
 
@@ -181,6 +190,7 @@ namespace Exceptionless.Core.Queues {
             _completedCount = 0;
             _abandonedCount = 0;
             _workerErrorCount = 0;
+            UpdateStats();
         }
 
         private async Task WorkerLoop(CancellationToken token) {
@@ -210,8 +220,14 @@ namespace Exceptionless.Core.Queues {
             }
         }
 
+        private void UpdateStats() {
+            if (_stats != null && !String.IsNullOrEmpty(QueueSizeStatName))
+                _stats.Gauge(QueueSizeStatName, GetQueueCount());
+        }
+
         private async Task DoMaintenance() {
             Log.Trace().Message("DoMaintenance {0}", typeof(T).Name).Write();
+
             foreach (var item in _dequeued.Where(kvp => DateTime.Now.Subtract(kvp.Value.TimeDequeued).Milliseconds > _workItemTimeout.TotalMilliseconds)) {
                 Log.Trace().Message("DoMaintenance Abandon: {0}", item.Key).Write();
                 Abandon(item.Key);

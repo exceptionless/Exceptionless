@@ -81,11 +81,11 @@ namespace Exceptionless.Core {
 
                 container.Register<ICacheClient, RedisCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new RedisQueue<EventPostFileInfo>(muxer));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer));
+                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new RedisQueue<EventPostFileInfo>(muxer, statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: StatNames.EmailsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
 
                 container.RegisterSingle<RedisMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
                 container.Register<IMessagePublisher>(container.GetInstance<RedisMessageBus>);
@@ -93,11 +93,11 @@ namespace Exceptionless.Core {
             } else {
                 container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new InMemoryQueue<EventPostFileInfo>());
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>());
-                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>());
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>());
-                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>());
+                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new InMemoryQueue<EventPostFileInfo>(statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: StatNames.EmailsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
 
                 container.RegisterSingle<InMemoryMessageBus>();
                 container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);

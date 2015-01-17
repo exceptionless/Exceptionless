@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using Exceptionless.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog.Fluent;
 using StackExchange.Redis;
+using Exceptionless.Core.AppStats;
 
 namespace Exceptionless.Core.Queues {
     public class RedisQueue<T> : IQueue<T> where T: class {
@@ -36,14 +38,18 @@ namespace Exceptionless.Core.Queues {
         private CancellationTokenSource _workerCancellationTokenSource;
         private readonly CancellationTokenSource _queueDisposedCancellationTokenSource;
         private readonly AsyncAutoResetEvent _autoEvent = new AsyncAutoResetEvent(false);
+        private readonly IAppStatsClient _stats;
 
-        public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null, TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true) {
+        public RedisQueue(ConnectionMultiplexer connection, string queueName = null, int retries = 2, TimeSpan? retryDelay = null, int[] retryMultipliers = null,
+            TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true, IAppStatsClient stats = null, string statName = null) {
             QueueId = Guid.NewGuid().ToString("N");
             _db = connection.GetDatabase();
             _cache = new RedisCacheClient(_db);
             _lockProvider = new CacheLockProvider(_cache);
             _queueName = queueName ?? typeof(T).Name;
             _queueName = _queueName.RemoveWhiteSpace().Replace(':', '-');
+            _stats = stats;
+            QueueSizeStatName = statName;
             QueueListName = "q:" + _queueName + ":in";
             WorkListName = "q:" + _queueName + ":work";
             WaitListName = "q:" + _queueName + ":wait";
@@ -66,7 +72,7 @@ namespace Exceptionless.Core.Queues {
 
             if (runMaintenanceTasks) {
                 _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-                Task.Factory.StartNew(() => TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)));
+                TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout.Min(TimeSpan.FromMinutes(1)) : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
             }
 
             Log.Trace().Message("Queue {0} created. Retries: {1} Retry Delay: {2}", QueueId, _retries, _retryDelay.ToString()).Write();
@@ -95,6 +101,7 @@ namespace Exceptionless.Core.Queues {
         private string WorkListName { get; set; }
         private string WaitListName { get; set; }
         private string DeadListName { get; set; }
+        protected string QueueSizeStatName { get; set; }
 
         private string GetPayloadKey(string id) {
             return String.Concat("q:", _queueName, ":", id);
@@ -145,6 +152,7 @@ namespace Exceptionless.Core.Queues {
                 throw new InvalidOperationException("Attempt to set payload failed.");
             _db.ListLeftPush(QueueListName, id);
             _subscriber.Publish(GetTopicName(), id);
+            UpdateStats();
             Interlocked.Increment(ref _enqueuedCount);
             Log.Trace().Message("Enqueue done").Write();
 
@@ -221,6 +229,7 @@ namespace Exceptionless.Core.Queues {
                 }
 
                 Interlocked.Increment(ref _dequeuedCount);
+                UpdateStats();
                 return new QueueEntry<T>(value, payload, this);
             } catch (Exception ex) {
                 Log.Error().Message("Error getting queue payload: {0}", value).Exception(ex).Write();
@@ -237,6 +246,7 @@ namespace Exceptionless.Core.Queues {
             _db.KeyDelete(GetWaitTimeKey(id));
             _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _completedCount);
+            UpdateStats();
             Log.Trace().Message("Complete done: {0}", id).Write();
         }
 
@@ -283,6 +293,7 @@ namespace Exceptionless.Core.Queues {
 
             _lockProvider.ReleaseLock(id);
             Interlocked.Increment(ref _abandonedCount);
+            UpdateStats();
             Log.Trace().Message("Abondon complete: {0}", id).Write();
         }
 
@@ -310,6 +321,7 @@ namespace Exceptionless.Core.Queues {
             _completedCount = 0;
             _abandonedCount = 0;
             _workerErrorCount = 0;
+            UpdateStats();
         }
 
         private void DeleteList(string name) {
@@ -355,8 +367,17 @@ namespace Exceptionless.Core.Queues {
             Log.Trace().Message("Worker exiting: {0} Cancel Requested: {1}", _queueName, token.IsCancellationRequested).Write();
         }
 
+        private void UpdateStats() {
+            if (_stats == null || String.IsNullOrEmpty(QueueSizeStatName))
+                return;
+
+            long count = GetQueueCount();
+            _stats.Gauge(QueueSizeStatName, count);
+        }
+
         private async Task DoMaintenanceWork() {
             Log.Trace().Message("DoMaintenance {0}", _queueName).Write();
+
             var workIds = _db.ListRange(WorkListName);
             foreach (var workId in workIds) {
                 var dequeuedTime = _cache.Get<DateTime?>(GetDequeuedTimeKey(workId));

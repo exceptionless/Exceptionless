@@ -31,6 +31,14 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
+        public static TimeSpan Min(this TimeSpan source, TimeSpan other) {
+            return source.Ticks > other.Ticks ? other : source;
+        }
+
+        public static TimeSpan Max(this TimeSpan source, TimeSpan other) {
+            return source.Ticks < other.Ticks ? other : source;
+        }
+
         public static string ToOrdinal(this int num) {
             switch (num % 100) {
             case 11:
