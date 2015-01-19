@@ -8,6 +8,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
 using SimpleInjector;
+using Log = NLog;
 
 namespace Exceptionless.JobRunner {
     internal class Program {
@@ -34,7 +35,7 @@ namespace Exceptionless.JobRunner {
                     return 1;
                 }
 
-                NLog.GlobalDiagnosticsContext.Set("job", type.Name);
+                Log.GlobalDiagnosticsContext.Set("job", type.Name);
                 if (!ca.Quiet) {
                     OutputHeader();
                     Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);

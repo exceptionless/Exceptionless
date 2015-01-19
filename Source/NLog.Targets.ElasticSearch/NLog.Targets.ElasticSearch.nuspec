@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <authors>$author$</authors>
+    <description>$description$</description>
+    <language>en-US</language>
+    <tags>NLog ElasticSearch</tags>
+    <projectUrl>https://github.com/ReactiveMarkets/NLog.Targets.ElasticSearch</projectUrl>
+    <licenseUrl>https://raw.githubusercontent.com/ReactiveMarkets/NLog.Targets.ElasticSearch/master/LICENSE</licenseUrl>
+  </metadata>
+</package>

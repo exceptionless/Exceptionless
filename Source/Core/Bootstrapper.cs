@@ -11,9 +11,7 @@
 
 using System;
 using System.Configuration;
-using System.Net;
 using System.Threading.Tasks;
-using Elasticsearch.Net.Connection;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
@@ -160,7 +158,7 @@ namespace Exceptionless.Core {
             settings.MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"));
             settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
-            var client = new ElasticClient(settings);
+            var client = new ElasticClient(settings, new KeepAliveHttpConnection(settings));
             ConfigureMapping(client, deleteExistingIndexes);
 
             return client;

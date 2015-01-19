@@ -15,7 +15,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Lock;
-using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using NLog.Fluent;
@@ -41,7 +40,7 @@ namespace Exceptionless.Core.Jobs {
                 organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(++page).WithLimit(100));
             }
 
-            return Task.FromResult(new JobResult { Message = "Successfully enforced all retention limits." });
+            return Task.FromResult(JobResult.Success);
         }
 
         private void EnforceEventCountLimits(Organization organization) {

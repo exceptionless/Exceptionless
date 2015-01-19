@@ -74,7 +74,7 @@ namespace Exceptionless.Core.Repositories {
                     .Add("count", count)));
             
             if (!result.IsValid) {
-                Log.Error().Message("Error occurred incrementing stack count.");
+                Log.Error().Message("Error occurred incrementing stack count.").Write();
                 return;
             }
 

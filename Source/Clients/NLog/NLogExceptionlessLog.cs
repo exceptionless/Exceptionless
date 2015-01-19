@@ -12,19 +12,19 @@ namespace Exceptionless.NLog {
         }
 
         public void Info(string message, string source = null) {
-            Log.Info().Message(message).LoggerName(source);
+            Log.Info().Message(message).LoggerName(source).Write();
         }
 
         public void Debug(string message, string source = null) {
-            Log.Debug().Message(message).LoggerName(source);
+            Log.Debug().Message(message).LoggerName(source).Write();
         }
 
         public void Warn(string message, string source = null) {
-            Log.Warn().Message(message).LoggerName(source);
+            Log.Warn().Message(message).LoggerName(source).Write();
         }
 
         public void Trace(string message, string source = null) {
-            Log.Trace().Message(message).LoggerName(source);
+            Log.Trace().Message(message).LoggerName(source).Write();
         }
 
         public void Flush() { }

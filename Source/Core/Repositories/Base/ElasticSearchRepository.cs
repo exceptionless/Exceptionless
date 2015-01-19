@@ -62,12 +62,12 @@ namespace Exceptionless.Core.Repositories {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
                     var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
-                        throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+                        throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
             else {
                 var result = _elasticClient.IndexMany(documents);
                 if (!result.IsValid)
-                    throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+                    throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
 
             AfterAdd(documents, addToCache, expiresIn, sendNotification);
@@ -207,11 +207,11 @@ namespace Exceptionless.Core.Repositories {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
                     var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
-                        throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+                        throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             } else {
                 var result = _elasticClient.IndexMany(documents);
                 if (!result.IsValid)
-                    throw new ArgumentException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)));
+                    throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
 
             AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
@@ -271,7 +271,7 @@ namespace Exceptionless.Core.Repositories {
                 });
 
                 if (!bulkResult.IsValid) {
-                    Log.Error().Message("Error occurred while bulk updating");
+                    Log.Error().Message("Error occurred while bulk updating").Exception(bulkResult.ConnectionStatus.OriginalException).Write();
                     return 0;
                 }
 

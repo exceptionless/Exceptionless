@@ -33,7 +33,7 @@ namespace MongoMigrations {
         public DatabaseMigrationStatus DatabaseStatus { get; set; }
 
         public virtual void UpdateToLatest() {
-            Trace.TraceInformation("Updating {0} to latest...", Database.Name);
+            Trace.TraceInformation("Updating {0} database to latest...", Database.Name);
             UpdateTo(MigrationLocator.LatestVersion());
         }
 

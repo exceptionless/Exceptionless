@@ -1,1 +1,0 @@
-We are using a custom version of ElasticSearch until they make it so that we can change it to use tcp keep alive.

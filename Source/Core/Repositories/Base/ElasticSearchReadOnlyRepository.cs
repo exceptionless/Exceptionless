@@ -76,9 +76,9 @@ namespace Exceptionless.Core.Repositories {
                     result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
 
                 if (options.UseCache && result != null)
-                    Log.Info().Message("Cache hit: type={1}", typeof(T).Name);
+                    Log.Info().Message("Cache hit: type={1}", typeof(T).Name).Write();
                 else if (options.UseCache)
-                    Log.Info().Message("Cache miss: type={1}", typeof(T).Name);
+                    Log.Info().Message("Cache miss: type={1}", typeof(T).Name).Write();
 
                 if (result != null)
                     return result;
@@ -150,7 +150,7 @@ namespace Exceptionless.Core.Repositories {
             var results = _elasticClient.Count<T>(countDescriptor);
             _elasticClient.DisableTrace();
             if (!results.IsValid)
-                throw new ApplicationException("Error occurred processing request.");
+                throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
 
             result = results.Count;
 
@@ -193,7 +193,7 @@ namespace Exceptionless.Core.Repositories {
             var results = _elasticClient.Search<T>(searchDescriptor);
             _elasticClient.DisableTrace();
             if (!results.IsValid)
-                throw new ApplicationException("Error occurred processing request.");
+                throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
 
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
