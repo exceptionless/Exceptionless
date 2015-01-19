@@ -48,6 +48,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NLog.3.2.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
+    <Reference Include="NLog.Targets.ElasticSearch, Version=0.9.4.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NLog.Targets.ElasticSearch.0.9.4.0\lib\net40\NLog.Targets.ElasticSearch.dll</HintPath>
+    </Reference>
     <Reference Include="SimpleInjector, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.2.7.0\lib\net45\SimpleInjector.dll</HintPath>
@@ -130,10 +134,6 @@
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
       <Name>Exceptionless.Models</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\NLog.Targets.ElasticSearch\NLog.Targets.ElasticSearch.csproj">
-      <Project>{7337a887-1e37-402f-9424-24495afb3b59}</Project>
-      <Name>NLog.Targets.ElasticSearch</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />
