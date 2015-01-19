@@ -56,13 +56,6 @@ namespace Exceptionless.Core.Billing {
             return organization.MaxProjects == -1 || projectCount < organization.MaxProjects;
         }
 
-        public bool CanAddIntegration(Project project) {
-            if (project == null || String.IsNullOrWhiteSpace(project.OrganizationId))
-                return false;
-
-            return HasPremiumFeatures(project.OrganizationId);
-        }
-
         public bool HasPremiumFeatures(string organizationId) {
             var organization = _organizationRepository.GetById(organizationId);
             if (organization == null)

@@ -70,6 +70,7 @@ namespace Exceptionless.Core.Repositories {
         protected override void InitializeCollection(MongoDatabase database) {
             base.InitializeCollection(database);
 
+            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
             _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
         }

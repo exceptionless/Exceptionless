@@ -93,6 +93,7 @@ namespace Exceptionless.App.Controllers.API {
             if (User.GetProjectId() != null) {
                 _repository.Add(new WebHook {
                     EventTypes = new[] { eventType },
+                    OrganizationId = Request.GetDefaultOrganizationId(),
                     ProjectId = User.GetProjectId(),
                     Url = targetUrl
                 });
@@ -147,14 +148,25 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override PermissionResult CanAdd(WebHook value) {
-            if (String.IsNullOrEmpty(value.ProjectId) || String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
+            if (String.IsNullOrEmpty(value.Url) || value.EventTypes.Length == 0)
                 return PermissionResult.Deny;
 
-            Project project = _projectRepository.GetById(value.ProjectId, true);
-            if (!IsInProject(project))
+            if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            if (!_billingManager.CanAddIntegration(project))
+            Project project = null;
+            if (!String.IsNullOrEmpty(value.ProjectId)) {
+                project = _projectRepository.GetById(value.ProjectId, true);
+                if (!IsInProject(project))
+                    return PermissionResult.Deny;
+
+                if (!String.IsNullOrEmpty(value.OrganizationId))
+                    value.OrganizationId = project.OrganizationId;
+            } else if (!IsInOrganization(value.OrganizationId)) {
+                return PermissionResult.Deny;
+            }
+
+            if (!_billingManager.HasPremiumFeatures(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
             return base.CanAdd(value);

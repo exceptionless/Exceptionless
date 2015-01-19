@@ -102,7 +102,8 @@ namespace Exceptionless.Api.Controllers {
         /// This controller action is called by zapier to mark the stack as fixed.
         /// </summary>
         [HttpPost]
-        [Route("~/api/v{version:int=1}/stack/mark-fixed")]
+        [Route("~/api/v1/stack/markfixed")]
+        [Route("~/api/v{version:int=2}/stack/mark-fixed")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult MarkFixed(JObject data, int version = 1) {
@@ -144,7 +145,8 @@ namespace Exceptionless.Api.Controllers {
         /// This controller action is called by zapier to add a reference link to a stack.
         /// </summary>
         [HttpPost]
-        [Route("~/api/v{version:int=1}/stack/add-link")]
+        [Route("~/api/v1/stack/addlink")]
+        [Route("~/api/v{version:int=2}/stack/add-link")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         public IHttpActionResult AddLink(JObject data, int version = 1) {
