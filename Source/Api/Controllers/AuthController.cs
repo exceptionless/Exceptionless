@@ -63,6 +63,9 @@ namespace Exceptionless.Api.Controllers {
             if (!String.Equals(encodedPassword, user.Password))
                 return Unauthorized();
 
+			if (!String.IsNullOrEmpty(model.InviteToken))
+				AddInvitedUserToOrganization(model.InviteToken, user);
+
             ExceptionlessClient.Default.CreateFeatureUsage("Login").AddObject(user).Submit();
             return Ok(new { Token = GetToken(user) });
         }
