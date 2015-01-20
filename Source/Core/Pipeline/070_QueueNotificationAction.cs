@@ -81,13 +81,16 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Event.IsError() && ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
                 return true;
 
-            if (ctx.Event.IsError() && ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportErrorRegressions))
-                return true;
-
             if (ctx.Event.IsError() && ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
                 return true;
 
-            if (ctx.Event.IsNotFound() && ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewNotFounds))
+            if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
+                return true;
+
+            if (ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
+                return true;
+
+            if (ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalEvents))
                 return true;
 
             return false;

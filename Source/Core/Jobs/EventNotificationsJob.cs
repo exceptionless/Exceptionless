@@ -146,18 +146,19 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).WriteIf(shouldLog);
 
-                bool shouldReportNew = settings.ReportNewErrors && eventNotification.IsNew;
-                bool shouldReportCritical = settings.ReportCriticalErrors && eventNotification.IsCritical;
-                bool shouldReportRegression = settings.ReportErrorRegressions && eventNotification.IsRegression;
-                bool shouldReportNotFound = settings.ReportNewNotFounds && eventNotification.IsNew && eventNotification.Event.IsNotFound();
-                bool shouldReport = shouldReportNew || shouldReportCritical || shouldReportRegression || shouldReportNotFound;
+                bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError(); ;
+                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError(); ;
+                bool shouldReportRegression = settings.ReportEventRegressions && eventNotification.IsRegression;
+                bool shouldReportNewEvent = settings.ReportNewEvents && eventNotification.IsNew;
+                bool shouldReportCriticalEvent = settings.ReportCriticalEvents && eventNotification.IsCritical;
+                bool shouldReport = shouldReportNewError || shouldReportCriticalError || shouldReportRegression || shouldReportNewEvent || shouldReportCriticalEvent;
 
-                Log.Trace().Message("Settings: new={0} critical={1} regression={2} notfound={3}",
+                Log.Trace().Message("Settings: newerror={0} criticalerror={1} regression={2} new={3} critical={4}",
                     settings.ReportNewErrors, settings.ReportCriticalErrors,
-                    settings.ReportErrorRegressions, settings.ReportNewNotFounds).WriteIf(shouldLog);
-                Log.Trace().Message("Should process: new={0} critical={1} regression={2} notfound={3}",
-                    shouldReportNew, shouldReportCritical,
-                    shouldReportRegression, shouldReportNotFound).WriteIf(shouldLog);
+                    settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents).WriteIf(shouldLog);
+                Log.Trace().Message("Should process: newerror={0} criticalerror={1} regression={2} new={3} critical={4}",
+                    shouldReportNewError, shouldReportCriticalError,
+                    shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent).WriteIf(shouldLog);
 
                 var requestInfo = eventNotification.Event.GetRequestInfo();
                 // check for known bots if the user has elected to not report them

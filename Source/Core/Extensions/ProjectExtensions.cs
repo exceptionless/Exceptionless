@@ -22,7 +22,7 @@ namespace Exceptionless.Core.Extensions {
                 ReportNewErrors = true,
                 SendDailySummary = true,
                 ReportCriticalErrors = true,
-                ReportErrorRegressions = true
+                ReportEventRegressions = true
             });
         }
     }

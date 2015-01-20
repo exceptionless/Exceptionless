@@ -20,6 +20,7 @@ namespace Exceptionless.Models {
             OAuthAccounts = new Collection<OAuthAccount>();
             Roles = new Collection<string>();
             OrganizationIds = new Collection<string>();
+            EmailNotificationsEnabled = true;
         }
 
         /// <summary>
