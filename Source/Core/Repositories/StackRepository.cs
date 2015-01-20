@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Repositories {
                     Id = stackId,
                     OrganizationId = organizationId,
                     Type = _entityType
-                });
+                }, TimeSpan.FromSeconds(1.5));
             }
         }
 

@@ -87,10 +87,10 @@ namespace Exceptionless.Core.Migrations {
                     userSettings.Set("ReportNewErrors", new BsonBoolean(isNew));
 
                     if (userSettings.Contains("ReportRegressions"))
-                        userSettings.ChangeName("ReportRegressions", "ReportErrorRegressions");
+                        userSettings.ChangeName("ReportRegressions", "ReportEventRegressions");
 
                     if (userSettings.Contains("Report404Errors"))
-                        userSettings.ChangeName("Report404Errors", "ReportNewNotFounds");
+                        userSettings.Remove("Report404Errors");
 
                     if (userSettings.Contains("ReportKnownBotErrors"))
                         userSettings.Remove("ReportKnownBotErrors");
