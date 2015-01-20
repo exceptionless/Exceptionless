@@ -75,13 +75,13 @@ namespace Exceptionless.Core.Jobs {
 
             if (!organization.HasPremiumFeatures) {
                 queueEntry.Complete();
-                Log.Trace().Message("Skipping because organization does not have premium features.").WriteIf(shouldLog);
+                Log.Info().Message("Skipping \"{0}\" because organization \"{1}\" does not have premium features.", eventNotification.Event.Id, eventNotification.Event.OrganizationId).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
             if (stack.DisableNotifications || stack.IsHidden) {
                 queueEntry.Complete();
-                Log.Trace().Message("Skipping because stack notifications are disabled or stack is hidden.").WriteIf(shouldLog);
+                Log.Info().Message("Skipping \"{0}\" because stack \"{1}\" notifications are disabled or stack is hidden.", eventNotification.Event.Id, eventNotification.Event.StackId).WriteIf(shouldLog);
                 return JobResult.Success;
             }
 
@@ -135,7 +135,7 @@ namespace Exceptionless.Core.Jobs {
                 }
 
                 if (!user.EmailNotificationsEnabled) {
-                    Log.Trace().Message("User {0} with email address {1} has email notifications disabled.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
+                    Log.Info().Message("User {0} with email address {1} has email notifications disabled.", kv.Key, user != null ? user.EmailAddress : "").WriteIf(shouldLog);
                     continue;
                 }
 
@@ -176,7 +176,7 @@ namespace Exceptionless.Core.Jobs {
 
                     if (info != null && info.Device.IsSpider || requestInfo.UserAgent.AnyWildcardMatches(botPatterns)) {
                         shouldReport = false;
-                        Log.Trace().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).WriteIf(shouldLog);
+                        Log.Info().Message("Skipping because event is from a bot \"{0}\".", requestInfo.UserAgent).WriteIf(shouldLog);
                     }
                 }
 
@@ -191,7 +191,7 @@ namespace Exceptionless.Core.Jobs {
                 // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
                 if (Settings.Current.WebsiteMode != WebsiteMode.Production
                     && !Settings.Current.AllowedOutboundAddresses.Contains(v => user.EmailAddress.ToLowerInvariant().Contains(v))) {
-                        Log.Trace().Message("Skipping because email is not on the outbound list and not in production mode.").WriteIf(shouldLog);
+                        Log.Info().Message("Skipping because email is not on the outbound list and not in production mode.").WriteIf(shouldLog);
                     continue;
                 }
                 
