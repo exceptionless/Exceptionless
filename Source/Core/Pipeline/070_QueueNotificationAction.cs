@@ -77,10 +77,10 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError))
                 return true;
 
-            if (ctx.IsNew && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewEvent))
+            if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
                 return true;
 
-            if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
+            if (ctx.IsNew && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewEvent))
                 return true;
 
             if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalEvent))
@@ -93,10 +93,10 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Project.NotificationSettings.Count == 0)
                 return false;
 
-            if (ctx.Event.IsError() && ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
+            if (ctx.IsNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
                 return true;
 
-            if (ctx.Event.IsError() && ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
+            if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
                 return true;
 
             if (ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
