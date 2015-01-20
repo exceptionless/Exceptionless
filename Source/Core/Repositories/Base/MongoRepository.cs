@@ -142,7 +142,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
 
             var documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
+                .SetLimit(Settings.Current.BulkBatchSize)
                 .SetFields(fields.ToArray())
                 .ToList();
 
@@ -151,7 +151,7 @@ namespace Exceptionless.Core.Repositories {
                 Remove(documents, sendNotifications);
 
                 documents = Collection.FindAs<T>(options.GetMongoQuery(_getIdValue))
-                .SetLimit(RepositoryConstants.BATCH_SIZE)
+                .SetLimit(Settings.Current.BulkBatchSize)
                 .SetFields(fields.ToArray())
                 .ToList();
             }

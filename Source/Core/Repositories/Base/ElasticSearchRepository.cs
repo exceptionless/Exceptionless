@@ -168,7 +168,7 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>()
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
-                .Size(RepositoryConstants.BATCH_SIZE);
+                .Size(Settings.Current.BulkBatchSize);
 
             var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             while (documents.Count > 0) {
@@ -248,7 +248,7 @@ namespace Exceptionless.Core.Repositories {
                 .Source(s => s.Include(f => f.Id))
                 .SearchType(SearchType.Scan)
                 .Scroll("4s")
-                .Size(RepositoryConstants.BATCH_SIZE);
+                .Size(Settings.Current.BulkBatchSize);
 
             _elasticClient.EnableTrace();
             var scanResults = _elasticClient.Search<T>(searchDescriptor);
