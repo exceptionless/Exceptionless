@@ -124,7 +124,7 @@ namespace Exceptionless.Core.AppStats {
         }
 
         public double GetGaugeValue(string statName) {
-            return _gauges.ContainsKey(statName) ? _counters[statName] : 0d;
+            return _gauges.ContainsKey(statName) ? _gauges[statName].Peek() : 0d;
         }
     }
 }

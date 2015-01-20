@@ -18,7 +18,10 @@ namespace Exceptionless.Api.Controllers {
             if (!result.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message);
 
-            return Ok(new { Message = "All Systems Check" });
+            return Ok(new {
+                Message = "All Systems Check",
+                Version = ThisAssembly.AssemblyInformationalVersion
+            });
         }
     }
 }
