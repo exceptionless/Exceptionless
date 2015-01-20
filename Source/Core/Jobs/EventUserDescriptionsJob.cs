@@ -37,10 +37,11 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
                 
             _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
-            Log.Info().Message("Processing user description: id={0}", queueEntry.Id).Write();
+            Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
                 ProcessUserDescription(queueEntry.Value);
+                Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
                 _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
             } catch (DocumentNotFoundException ex){
                 _statsClient.Counter(StatNames.EventsUserDescriptionErrors);

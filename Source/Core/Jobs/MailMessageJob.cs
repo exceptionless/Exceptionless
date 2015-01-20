@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Jobs {
             
             _statsClient.Counter(StatNames.EmailsDequeued);
             
-            Log.Info().Message("Processing message '{0}'.", queueEntry.Id).Write();
+            Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
                 
             try {
                 await _mailSender.SendAsync(queueEntry.Value);
