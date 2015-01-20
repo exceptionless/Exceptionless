@@ -103,15 +103,17 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         [HttpPost]
         [Route("~/api/v1/stack/markfixed")]
-        [Route("~/api/v{version:int=2}/stacks/mark-fixed")]
+        [Route("mark-fixed")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public IHttpActionResult MarkFixed(JObject data, int version = 1) {
+        public IHttpActionResult MarkFixed(JObject data) {
             string id = null;
-            if (version == 1)
-                id = data.GetValue("ErrorStack").Value<string>();
-            else if (version > 1)
-                id = data.GetValue("Stack").Value<string>();
+            JToken value;
+            if (data.TryGetValue("ErrorStack", out value))
+                id = value.Value<string>();
+
+            if (data.TryGetValue("Stack", out value))
+                id = value.Value<string>();
 
             if (String.IsNullOrEmpty(id))
                 return NotFound();
@@ -146,15 +148,17 @@ namespace Exceptionless.Api.Controllers {
         /// </summary>
         [HttpPost]
         [Route("~/api/v1/stack/addlink")]
-        [Route("~/api/v{version:int=2}/stacks/add-link")]
+        [Route("add-link")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public IHttpActionResult AddLink(JObject data, int version = 1) {
+        public IHttpActionResult AddLink(JObject data) {
             string id = null;
-            if (version == 1)
-                id = data.GetValue("ErrorStack").Value<string>();
-            else if (version > 1)
-                id = data.GetValue("Stack").Value<string>();
+            JToken value;
+            if (data.TryGetValue("ErrorStack", out value))
+                id = value.Value<string>();
+            
+            if (data.TryGetValue("Stack", out value))
+                id = value.Value<string>();
 
             if (String.IsNullOrEmpty(id))
                 return NotFound();
