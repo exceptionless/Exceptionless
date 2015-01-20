@@ -215,6 +215,7 @@
     <Compile Include="Jobs\Base\JobResult.cs" />
     <Compile Include="Jobs\EventNotificationsJob.cs" />
     <Compile Include="Jobs\WebHooksJob.cs" />
+    <Compile Include="Migrations\v1.0.35.cs" />
     <Compile Include="Utility\KeepAliveHttpConnection.cs" />
     <Compile Include="Lock\DisposableLock.cs" />
     <Compile Include="Lock\ILockProvider.cs" />

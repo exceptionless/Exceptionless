@@ -22,8 +22,11 @@ namespace Exceptionless.Core.Migrations {
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
             string emailAddress = document.GetValue("EmailAddress").AsString;
-            if (!String.IsNullOrEmpty(emailAddress))
-                document.Set("EmailAddress", emailAddress.ToLowerInvariant());
+            if (String.IsNullOrEmpty(emailAddress))
+                return;
+
+            document.Set("EmailAddress", emailAddress.ToLowerInvariant());
+            collection.Save(document);
         }
     }
 }

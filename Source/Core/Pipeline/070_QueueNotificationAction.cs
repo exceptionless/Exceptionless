@@ -55,14 +55,8 @@ namespace Exceptionless.Core.Pipeline {
                 });
 
             foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
-                bool shouldCall = hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError) && ctx.IsNew
-                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.ErrorRegression) && ctx.IsRegression
-                                  || hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError) && ctx.Event.Tags != null && ctx.Event.Tags.Contains("Critical");
-
-                if (!shouldCall)
+                if (!ShouldCallWebHook(hook, ctx))
                     continue;
-
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
 
                 var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
                 _webHookNotificationQueue.Enqueue(new WebHookNotification {
@@ -71,7 +65,28 @@ namespace Exceptionless.Core.Pipeline {
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromEvent(context)
                 });
+
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
             }
+        }
+
+        private bool ShouldCallWebHook(WebHook hook, EventContext ctx) {
+            if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError))
+                return true;
+
+            if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalError))
+                return true;
+
+            if (ctx.IsNew && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewEvent))
+                return true;
+
+            if (ctx.IsRegression && hook.EventTypes.Contains(WebHookRepository.EventTypes.StackRegression))
+                return true;
+
+            if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHookRepository.EventTypes.CriticalEvent))
+                return true;
+
+            return false;
         }
 
         private bool ShouldQueueNotification(EventContext ctx) {
