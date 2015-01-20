@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Jobs {
                 organizations = _organizationRepository.GetAbandoned();
             }
 
-            return JobResult.SuccessWithMessage("Successfully removed all stale accounts.");
+            return JobResult.Success;
         }
 
         private void TryDeleteOrganization(Organization organization) {

@@ -157,6 +157,19 @@ namespace Exceptionless.Api.Tests.Stats {
             }
         }
 
+        [Fact]
+        public void CanSetGauges() {
+            _statsClient.Gauge("mygauge", 12d);
+            Assert.Equal(12d, _statsClient.GetGaugeValue("mygauge"));
+            _statsClient.Gauge("mygauge", 10d);
+            _statsClient.Gauge("mygauge", 5d);
+            _statsClient.Gauge("mygauge", 4d);
+            _statsClient.Gauge("mygauge", 12d);
+            _statsClient.Gauge("mygauge", 20d);
+            Assert.Equal(20d, _statsClient.GetGaugeValue("mygauge"));
+            _statsClient.DisplayStats();
+        }
+
         protected void CreateData(int eventCount = 100, bool multipleProjects = true) {
             var orgs = OrganizationData.GenerateSampleOrganizations();
             _organizationRepository.Add(orgs);

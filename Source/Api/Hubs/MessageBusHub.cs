@@ -18,6 +18,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Hubs {
     [HubName("messages")]
@@ -46,9 +47,7 @@ namespace Exceptionless.Api.Hubs {
                     Groups.Remove(connectionId, userMembershipChanged.OrganizationId).Wait();
             }
 
-            var group = Clients.Group(userMembershipChanged.OrganizationId);
-            if (group != null)
-                group.userMembershipChanged(userMembershipChanged);
+            Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
@@ -63,27 +62,25 @@ namespace Exceptionless.Api.Hubs {
             if (String.IsNullOrEmpty(entityChanged.OrganizationId))
                 return;
 
-            var group = Clients.Group(entityChanged.OrganizationId);
-            if (group != null)
-                group.entityChanged(entityChanged);
+            try {
+                Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("Boom").Write();
+            }
         }
 
         private void OnPlanOverage(PlanOverage planOverage) {
             if (planOverage == null)
                 return;
 
-            var group = Clients.Group(planOverage.OrganizationId);
-            if (group != null)
-                group.planOverage(planOverage);
+            Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
         }
 
         private void OnPlanChanged(PlanChanged planChanged) {
             if (planChanged == null)
                 return;
 
-            var group = Clients.Group(planChanged.OrganizationId);
-            if (group != null)
-                group.planChanged(planChanged);
+            Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
         }
 
         public override Task OnConnected() {

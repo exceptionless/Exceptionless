@@ -76,9 +76,9 @@ namespace Exceptionless.Core.Repositories {
                     result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
 
                 if (options.UseCache && result != null)
-                    Log.Info().Message("Cache hit: type={1}", typeof(T).Name).Write();
+                    Log.Trace().Message("Cache hit: type={0}", typeof(T).Name).Write();
                 else if (options.UseCache)
-                    Log.Info().Message("Cache miss: type={1}", typeof(T).Name).Write();
+                    Log.Trace().Message("Cache miss: type={0}", typeof(T).Name).Write();
 
                 if (result != null)
                     return result;

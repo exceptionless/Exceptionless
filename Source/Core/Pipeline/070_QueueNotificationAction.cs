@@ -78,13 +78,19 @@ namespace Exceptionless.Core.Pipeline {
             if (ctx.Project.NotificationSettings.Count == 0)
                 return false;
 
-            if (ctx.Event.IsError() && !(ctx.IsNew || ctx.IsRegression || ctx.Event.IsCritical()))
-                return false;
+            if (ctx.Event.IsError() && ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
+                return true;
 
-            if (ctx.Event.IsNotFound() && !ctx.IsNew)
-                return false;
+            if (ctx.Event.IsError() && ctx.IsRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportErrorRegressions))
+                return true;
 
-            return true;
+            if (ctx.Event.IsError() && ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
+                return true;
+
+            if (ctx.Event.IsNotFound() && ctx.IsNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewNotFounds))
+                return true;
+
+            return false;
         }
     }
 }
