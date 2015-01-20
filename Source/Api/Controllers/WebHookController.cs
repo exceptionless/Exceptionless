@@ -83,29 +83,23 @@ namespace Exceptionless.App.Controllers.API {
         /// <returns></returns>
         [HttpPost]
         [Route("subscribe")]
+        [Route("~/api/v{version:int=2}/webhooks/subscribe")]
         [Route("~/api/v1/projecthook/subscribe")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
-        public IHttpActionResult Subscribe(JObject data) {
-            var targetUrl = data.GetValue("target_url").Value<string>();
-            var eventType = data.GetValue("event").Value<string>();
+        public IHttpActionResult Subscribe(JObject data, int version = 1) {
+            var webHook = new NewWebHook {
+                EventTypes = new[] { data.GetValue("event").Value<string>() },
+                Url = data.GetValue("target_url").Value<string>(),
+                Version = new Version(version >= 0 ? version : 0, 0)
+            };
 
-            if (User.GetProjectId() != null) {
-                _repository.Add(new WebHook {
-                    EventTypes = new[] { eventType },
-                    OrganizationId = Request.GetDefaultOrganizationId(),
-                    ProjectId = User.GetProjectId(),
-                    Url = targetUrl
-                });
-            } else {
-                _repository.Add(new WebHook {
-                    EventTypes = new[] { eventType },
-                    OrganizationId = Request.GetDefaultOrganizationId(),
-                    Url = targetUrl
-                });
-            }
+            if (User.GetProjectId() != null)
+                webHook.ProjectId = User.GetProjectId();
+            else
+                webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return StatusCode(HttpStatusCode.Created);
+            return Post(webHook);
         }
 
         /// <summary>
@@ -203,6 +197,5 @@ namespace Exceptionless.App.Controllers.API {
         private bool IsValidWebHookVersion(Version version) {
             return version != null && version.Major >= 1 && version.Major <= 2;
         }
-
     }
 }
