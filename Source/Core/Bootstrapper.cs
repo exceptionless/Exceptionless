@@ -79,7 +79,7 @@ namespace Exceptionless.Core {
 
                 container.Register<ICacheClient, RedisCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new RedisQueue<EventPostFileInfo>(muxer, statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));
@@ -91,7 +91,7 @@ namespace Exceptionless.Core {
             } else {
                 container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPostFileInfo>>(() => new InMemoryQueue<EventPostFileInfo>(statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));

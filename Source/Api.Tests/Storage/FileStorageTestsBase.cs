@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Tests.Storage {
             var queueItems = new BlockingCollection<int>();
 
             Parallel.For(0, 25, i => {
-                var ev = new EventPost {
+                var ev = new EventPostInfo {
                     ApiVersion = 2,
                     CharSet = "utf8",
                     ContentEncoding = "application/json",

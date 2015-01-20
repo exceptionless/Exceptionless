@@ -19,11 +19,11 @@ namespace Exceptionless.Core.Extensions {
             return JsonConvert.DeserializeObject<T>(json);
         }
 
-        public static EventPost GetEventPostAndSetActive(this IFileStorage storage, string path) {
-            EventPost eventPost = null;
+        public static EventPostInfo GetEventPostAndSetActive(this IFileStorage storage, string path) {
+            EventPostInfo eventPostInfo = null;
             try {
-                eventPost = storage.GetObject<EventPost>(path);
-                if (eventPost == null)
+                eventPostInfo = storage.GetObject<EventPostInfo>(path);
+                if (eventPostInfo == null)
                     return null;
 
                 if (!storage.Exists(path + ".x") && !storage.SaveFile(path + ".x", String.Empty))
@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Extensions {
                 return null;
             }
 
-            return eventPost;
+            return eventPostInfo;
         }
 
         public static bool SetNotActive(this IFileStorage storage, string path) {

@@ -363,7 +363,7 @@
     <Compile Include="Migrations\v1.0.31.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
-    <Compile Include="Models\EventPost.cs" />
+    <Compile Include="Models\EventPostInfo.cs" />
     <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
     <Compile Include="Mail\Models\DailySummaryModel.cs" />

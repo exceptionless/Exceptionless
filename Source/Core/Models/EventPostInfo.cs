@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Core.Models {
-    public class EventPost {
+    public class EventPostInfo {
         public string ProjectId { get; set; }
         public byte[] Data { get; set; }
         public string CharSet { get; set; }
@@ -12,8 +12,8 @@ namespace Exceptionless.Core.Models {
         public string IpAddress { get; set; }
     }
 
-    public class EventPostFileInfo {
-        public EventPostFileInfo() {
+    public class EventPost {
+        public EventPost() {
             ShouldArchive = true;
         }
 

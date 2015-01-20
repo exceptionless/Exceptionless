@@ -19,7 +19,7 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class EventPostsJob : JobBase {
-        private readonly IQueue<EventPostFileInfo> _queue;
+        private readonly IQueue<EventPost> _queue;
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
         private readonly IAppStatsClient _statsClient;
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPostFileInfo> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
             _queue = queue;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
-            QueueEntry<EventPostFileInfo> queueEntry = null;
+            QueueEntry<EventPost> queueEntry = null;
             try {
                 queueEntry = _queue.Dequeue(TimeSpan.FromSeconds(1));
             } catch (Exception ex) {
@@ -60,21 +60,21 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Cancelled;
             }
 
-            EventPost eventPost = _storage.GetEventPostAndSetActive(queueEntry.Value.FilePath);
-            if (eventPost == null) {
+            EventPostInfo eventPostInfo = _storage.GetEventPostAndSetActive(queueEntry.Value.FilePath);
+            if (eventPostInfo == null) {
                 queueEntry.Abandon();
                 _storage.SetNotActive(queueEntry.Value.FilePath);
                 return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
             }
 
-            bool isInternalProject = eventPost.ProjectId == Settings.Current.InternalProjectId;
+            bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
             _statsClient.Counter(StatNames.PostsDequeued);
-            Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPost.ProjectId, eventPost.IpAddress, eventPost.ApiVersion, eventPost.UserAgent).WriteIf(!isInternalProject);
+            Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
             try {
                 _statsClient.Time(() => {
-                    events = ParseEventPost(eventPost);
+                    events = ParseEventPost(eventPostInfo);
                     Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
                 }, StatNames.PostsParsingTime);
                 _statsClient.Counter(StatNames.PostsParsed);
@@ -102,7 +102,7 @@ namespace Exceptionless.Core.Jobs {
             int eventsToProcess = events.Count;
             bool isSingleEvent = events.Count == 1;
             if (!isSingleEvent) {
-                var project = _projectRepository.GetById(eventPost.ProjectId, true);
+                var project = _projectRepository.GetById(eventPostInfo.ProjectId, true);
                 // Don't process all the events if it will put the account over its limits.
                 eventsToProcess = _organizationRepository.GetRemainingEventLimit(project.OrganizationId);
 
@@ -125,7 +125,7 @@ namespace Exceptionless.Core.Jobs {
             try {
                 events.ForEach(e => e.CreatedUtc = created);
                 var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
-                Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPost.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
+                Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)
                         continue;
@@ -133,7 +133,7 @@ namespace Exceptionless.Core.Jobs {
                     if (!eventContext.HasError)
                         continue;
 
-                    Log.Error().Exception(eventContext.Exception).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
+                    Log.Error().Exception(eventContext.Exception).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, eventContext.ErrorMessage).Write();
                     if (eventContext.Exception is ValidationException)
                         continue;
 
@@ -141,23 +141,23 @@ namespace Exceptionless.Core.Jobs {
 
                     if (!isSingleEvent) {
                         // Put this single event back into the queue so we can retry it separately.
-                        _queue.Enqueue(new EventPost {
-                            ApiVersion = eventPost.ApiVersion,
-                            CharSet = eventPost.CharSet,
+                        _queue.Enqueue(new EventPostInfo {
+                            ApiVersion = eventPostInfo.ApiVersion,
+                            CharSet = eventPostInfo.CharSet,
                             ContentEncoding = "application/json",
                             Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventContext.Event)),
-                            IpAddress = eventPost.IpAddress,
-                            MediaType = eventPost.MediaType,
-                            ProjectId = eventPost.ProjectId,
-                            UserAgent = eventPost.UserAgent
+                            IpAddress = eventPostInfo.IpAddress,
+                            MediaType = eventPostInfo.MediaType,
+                            ProjectId = eventPostInfo.ProjectId,
+                            UserAgent = eventPostInfo.UserAgent
                         }, _storage, false);
                     }
                 }
             } catch (ArgumentException ex) {
-                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
+                Log.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
                 queueEntry.Complete();
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Project(eventPost.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
+                Log.Error().Exception(ex).Project(eventPostInfo.ProjectId).Message("Error while processing event post \"{0}\": {1}", queueEntry.Value.FilePath, ex.Message).Write();
                 errorCount++;
             }
 
@@ -167,7 +167,7 @@ namespace Exceptionless.Core.Jobs {
             } else {
                 queueEntry.Complete();
                 if (queueEntry.Value.ShouldArchive)
-                    _storage.CompleteEventPost(queueEntry.Value.FilePath, eventPost.ProjectId, created, queueEntry.Value.ShouldArchive);
+                    _storage.CompleteEventPost(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive);
                 else {
                     _storage.DeleteFile(queueEntry.Value.FilePath);
                     _storage.SetNotActive(queueEntry.Value.FilePath);
@@ -177,7 +177,7 @@ namespace Exceptionless.Core.Jobs {
             return JobResult.Success;
         }
 
-        private List<PersistentEvent> ParseEventPost(EventPost ep) {
+        private List<PersistentEvent> ParseEventPost(EventPostInfo ep) {
             byte[] data = ep.Data;
             if (!String.IsNullOrEmpty(ep.ContentEncoding))
                 data = data.Decompress(ep.ContentEncoding);

@@ -28,7 +28,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IStackRepository _stackRepository;
-        private readonly IQueue<EventPostFileInfo> _eventPostQueue;
+        private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
         private readonly IAppStatsClient _statsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Controllers {
             IOrganizationRepository organizationRepository, 
             IProjectRepository projectRepository, 
             IStackRepository stackRepository,
-            IQueue<EventPostFileInfo> eventPostQueue, 
+            IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
             IAppStatsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator,
@@ -261,7 +261,7 @@ namespace Exceptionless.Api.Controllers {
                 contentEncoding = "gzip";
             }
 
-            _eventPostQueue.Enqueue(new EventPost {
+            _eventPostQueue.Enqueue(new EventPostInfo {
                 MediaType = Request.Content.Headers.ContentType.MediaType,
                 CharSet = Request.Content.Headers.ContentType.CharSet,
                 ProjectId = projectId,
