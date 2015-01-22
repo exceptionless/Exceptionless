@@ -1,35 +1,18 @@
 ﻿{
   "Date": "2013-04-03T11:56:46.5505961-05:00",
-  "environment": {
-    "ProcessorCount": 1,
-    "TotalPhysicalMemory": 6441984000,
-    "AvailablePhysicalMemory": 516214784,
-    "CommandLine": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe -ap \"PublicSite\" -v \"v4.0\" -l \"webengine4.dll\" -a \\\\.\\pipe\\Example -h \"C:\\inetpub\\temp\\apppools\\PublicSite\\PublicSite.config\" -w \"\" -m 0 -t 20",
-    "ProcessName": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
-    "ProcessId": "19836",
-    "ProcessMemorySize": 156565504,
-    "ThreadId": "25312",
-    "Architecture": "x64",
-    "OSName": "Microsoft Windows Web Server 2008 R2 ",
-    "OSVersion": "6.1.7601.65536",
-    "MachineName": "Example",
-    "RuntimeVersion": "4.0.30319.544",
-    "IpAddress": "127.0.0.1",
-    "Data": {
-      "AppDomainName": "/LM/W3SVC/2/ROOT-1-130094782166854444"
-    }
-  },
-  "Data": {
-    "WebEventCode": 0,
-    "ErrorCode": -2147467259,
-    "Data": {
-      "ASPIMPERSONATING": ""
-    }
-  },
   "Type": "404",
-  "error": {
+  "@error": {
     "Code": "404",
     "Type": "System.Web.HttpUnhandledException",
-    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown."
+    "Message": "Exception of type 'System.Web.HttpUnhandledException' was thrown.",
+    "Data": {
+      "@ext": {
+        "WebEventCode": 0,
+        "ErrorCode": -2147467259,
+        "Data": {
+          "ASPIMPERSONATING": ""
+        }
+      }
+    }
   }
 }

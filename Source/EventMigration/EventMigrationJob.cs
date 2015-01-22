@@ -1,15 +1,19 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.EventMigration.CommandLine;
+using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using FluentValidation;
@@ -20,202 +24,198 @@ using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using Nest;
-using Nest.Resolvers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using SimpleInjector;
+using NLog.Fluent;
 using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
-    internal class Program {
-        private static int Main(string[] args) {
-            OutputHeader();
+    public class EventMigrationJob : JobBase {
+        private readonly IElasticClient _elasticClient;
+        private readonly EventUpgraderPluginManager _eventUpgraderPluginManager;
+        private readonly MongoDatabase _mongoDatabase;
+        private readonly StackMigrationRepository _stackRepository;
+        private readonly EventMigrationRepository _eventRepository;
 
-            try {
-                var ca = new ConsoleArguments();
-                if (Parser.ParseHelp(args)) {
-                    OutputUsageHelp();
-                    PauseIfDebug();
-                    return 0;
-                }
+        private readonly int _batchSize;
+        private readonly bool _deleteExistingIndexes;
+        private readonly bool _resume;
+        private readonly bool _skipStacks;
+        private readonly bool _skipErrors;
 
-                if (!Parser.ParseArguments(args, ca, Console.Error.WriteLine)) {
-                    OutputUsageHelp();
-                    PauseIfDebug();
-                    return 1;
-                }
+        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, MongoDatabase mongoDatabase, IValidator<Stack> stackValidator,  IValidator<PersistentEvent> eventValidator) {
+            _elasticClient = elasticClient;
+            _eventUpgraderPluginManager = eventUpgraderPluginManager;
+            _mongoDatabase = mongoDatabase;
+            _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
+            _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
 
-                Console.Clear();
-                OutputHeader();
-                const int BatchSize = 25;
+            _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
+            _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("EventMigration:DeleteExistingIndexes", false);
+            _resume = ConfigurationManager.AppSettings.GetBool("EventMigration:Resume", true);
+            _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", true);
+            _skipErrors = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipErrors", false);
+        }
 
-                var container = CreateContainer();
-                var searchclient = container.GetInstance<IElasticClient>();
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+            if (_deleteExistingIndexes)
+                _elasticClient.DeleteIndex(i => i.AllIndices());
 
-                if (ca.DeleteExistingIndexes)
-                    searchclient.DeleteIndex(i => i.AllIndices());
+            var serializerSettings = new JsonSerializerSettings {
+                MissingMemberHandling = MissingMemberHandling.Ignore
+            };
+            serializerSettings.AddModelConverters();
 
-                var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
-                serializerSettings.AddModelConverters();
+            Stack mostRecentStack = null;
+            if (_resume)
+                mostRecentStack = _stackRepository.GetMostRecent();
 
-                ISearchResponse<Stack> mostRecentStack = null;
-                if (ca.Resume)
-                    mostRecentStack = searchclient.Search<Stack>(d => d.AllIndices().Type(typeof(Stack)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Size(1));
-                ISearchResponse<PersistentEvent> mostRecentEvent = null;
-                if (ca.Resume)
-                    mostRecentEvent = searchclient.Search<PersistentEvent>(d => d.AllIndices().Type(typeof(PersistentEvent)).SortDescending("_uid").Source(s => s.Include(e => e.Id)).Size(1));
+            PersistentEvent mostRecentEvent = null;
+            if (_resume)
+                mostRecentEvent = _eventRepository.GetMostRecent();
 
-                int total = 0;
-                var stopwatch = new Stopwatch();
-                if (!ca.SkipStacks) {
-                    stopwatch.Start();
-                    var errorStackCollection = GetErrorStackCollection(container);
-                    var query = mostRecentStack != null && mostRecentStack.Total > 0 ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Hits.First().Id)) : Query.Null;
-                    var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
-                    while (stacks.Count > 0) {
-                        stacks.ForEach(s => {
-                            s.Type = s.SignatureInfo != null && s.SignatureInfo.ContainsKey("HttpMethod") && s.SignatureInfo.ContainsKey("Path") ? "404" : "error";
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            if (!_skipStacks) {
+                stopwatch.Start();
+                var errorStackCollection = GetErrorStackCollection();
+                var query = mostRecentStack != null ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Id)) : Query.Null;
+                var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(_batchSize).ToList();
+                while (stacks.Count > 0) {
+                    stacks.ForEach(s => {
+                        s.Type = s.SignatureInfo != null && s.SignatureInfo.ContainsKey("HttpMethod") && s.SignatureInfo.ContainsKey("Path") ? "404" : "error";
 
-                            if (s.Tags != null)
-                                s.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
+                        if (s.Tags != null)
+                            s.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
 
-                            if (s.Title != null && s.Title.Length > 1000)
-                                s.Title = s.Title.Truncate(1000);
-                        });
+                        if (s.Title != null && s.Title.Length > 1000)
+                            s.Title = s.Title.Truncate(1000);
+                    });
 
-                        Console.SetCursorPosition(0, 4);
-                        Console.WriteLine("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
-                        var response = searchclient.IndexMany(stacks, type: "stacks", index: ElasticSearchRepository<Stack>.StacksIndexName);
-                        if (!response.IsValid)
-                            Debugger.Break();
-
-                        var lastId = stacks.Last().Id;
-                        stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(BatchSize).ToList();
-                        total += stacks.Count;
+                    Log.Info().Message("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                    try {
+                        // TODO: Comment out sendNotifications:false. When I was importing the stacks. I was getting an error where RunPerioid was erroring out due to a null message.
+                        _stackRepository.Add(stacks, sendNotification: false);
+                    } catch (Exception ex) {
+                        Debugger.Break();
+                        Log.Error().Exception(ex).Message("An error occurred while migrating stacks").Write();
+                        return JobResult.FromException(ex, String.Format("An error occurred while migrating stacks: {0}", ex.Message));
                     }
+
+                    var lastId = stacks.Last().Id;
+                    stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(_batchSize).ToList();
+                    total += stacks.Count;
                 }
-
-                total = 0;
-                stopwatch.Reset();
-                if (!ca.SkipErrors) {
-                    stopwatch.Start();
-                    var eventUpgraderPluginManager = container.GetInstance<EventUpgraderPluginManager>();
-                    var eventRepository = container.GetInstance<IEventRepository>();
-                    var errorCollection = GetErrorCollection(container);
-                    //var json1 = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("80000000e2cc694bd029a952")), Formatting.Indented);
-                    //var json2 = JsonExtensions.ToJson(errorCollection.FindOneById(ObjectId.Parse("80000000e2cc694bd029a953")), Formatting.Indented);
-                    //var ctx2 = new EventUpgraderContext("[" + json1 + "," + json2 + "]", new Version(1, 5), true);
-                    //eventUpgraderPluginManager.Upgrade(ctx2);
-                    //var ev2 = ctx2.Documents.ToObject<List<PersistentEvent>>();
-                    //eventRepository.Add(ev2.First());
-                    //eventRepository.Add(ev2.Last());
-                    var query = mostRecentEvent != null && mostRecentEvent.Total > 0 ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Hits.First().Id)) : Query.Null;
-                    var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
-                    // TODO: When resuming, we need to get a list of existing stack ids from the events.
-                    var knownStackIds = new List<string>();
-
-                    while (errors.Count > 0) {
-                        Console.SetCursorPosition(0, 5);
-                        Console.WriteLine("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0);
-
-                        var events = JArray.FromObject(errors);
-                        var ctx = new EventUpgraderContext(events, new Version(1, 5), true);
-                        eventUpgraderPluginManager.Upgrade(ctx);
-
-                        var ev = events.FromJson<PersistentEvent>(serializerSettings);
-                        ev.ForEach(e => {
-                            if (e.Date.UtcDateTime > DateTimeOffset.UtcNow.AddHours(1))
-                                e.Date = DateTimeOffset.Now;
-
-                            if (e.Type != Event.KnownTypes.Error)
-                                return;
-
-                            if (!knownStackIds.Contains(e.StackId)) {
-                                e.IsFirstOccurrence = true;
-                                knownStackIds.Add(e.StackId);
-                            }
-
-                            var request = e.GetRequestInfo();
-                            if (request != null)
-                                e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
-
-                            var stacking = e.GetStackingTarget();
-                            if (stacking != null && stacking.Method != null && !String.IsNullOrEmpty(stacking.Method.GetDeclaringTypeFullName()))
-                                e.Source = stacking.Method.GetDeclaringTypeFullName().Truncate(2000);
-                        });
-
-                        try {
-                            eventRepository.Add(ev);
-                        } catch (Exception ex) {
-                            Debugger.Break();
-                        }
-
-                        var lastId = ev.Last().Id;
-                        errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(BatchSize).ToList();
-                        total += events.Count;
-                    }
-                }
-
-                PauseIfDebug();
-            } catch (FileNotFoundException e) {
-                Console.Error.WriteLine("{0} ({1})", e.Message, e.FileName);
-                PauseIfDebug();
-                return 1;
-            } catch (Exception e) {
-                Console.Error.WriteLine(e.ToString());
-                PauseIfDebug();
-                return 1;
             }
 
-            return 0;
-        }
+            total = 0;
+            stopwatch.Reset();
+            if (!_skipErrors) {
+                stopwatch.Start();
+                var errorCollection = GetErrorCollection();
+                var knownStackIds = new List<string>();
 
-        public static Container CreateContainer() {
-            var container = new Container();
-            container.Options.AllowOverridingRegistrations = true;
-            container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
+                var query = mostRecentEvent != null ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Id)) : Query.Null;
+                //var query = Query.EQ(ErrorFieldNames.Id, ObjectId.Parse("800000000114fb0c24002a43"));
+                var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
+                while (errors.Count > 0) {
+                    Log.Info().Message("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
 
-            container.RegisterPackage<Core.Bootstrapper>();
+                    var upgradedErrors = JArray.FromObject(errors);
+                    var ctx = new EventUpgraderContext(upgradedErrors, new Version(1, 5), true);
+                    _eventUpgraderPluginManager.Upgrade(ctx);
 
-            return container;
-        }
+                    var upgradedEvents = upgradedErrors.FromJson<PersistentEvent>(serializerSettings);
 
-        private static void PauseIfDebug() {
-            if (Debugger.IsAttached)
-                Console.Read();
-        }
+                    var stackIdsToCheck = upgradedEvents.Where(e => !knownStackIds.Contains(e.StackId)).Select(e => e.StackId).Distinct().ToArray();
+                    if (stackIdsToCheck.Length > 0)
+                        knownStackIds.AddRange(_eventRepository.ExistsByStackIds(stackIdsToCheck));
+                        
+                    upgradedEvents.ForEach(e => {
+                        if (e.Date.UtcDateTime > DateTimeOffset.UtcNow.AddHours(1))
+                            e.Date = DateTimeOffset.Now;
 
-        private static void OutputHeader() {
-            Console.WriteLine("Exceptionless Event Migration v{0}", ThisAssembly.AssemblyInformationalVersion);
-            Console.WriteLine("Copyright (c) 2012-{0} Exceptionless.  All rights reserved.", DateTime.Now.Year);
-            Console.WriteLine();
-        }
+                        ObjectId id;
+                        if (ObjectId.TryParse(e.Id, out id))
+                            e.CreatedUtc = id.CreationTime.ToUniversalTime();
 
-        private static void OutputUsageHelp() {
-            Console.WriteLine("     - Exceptionless Event Migration -");
-            Console.WriteLine();
-            Console.WriteLine(Parser.ArgumentsUsage(typeof(ConsoleArguments)));
+                        if (!knownStackIds.Contains(e.StackId)) {
+                            // We haven't processed this stack id yet in this run. Check to see if this stack has already been imported..
+                            e.IsFirstOccurrence = true;
+                            knownStackIds.Add(e.StackId);
+                        }
+
+                        var request = e.GetRequestInfo();   
+                        if (request != null)
+                            e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
+
+                        if (e.Type == Event.KnownTypes.NotFound && request != null) {
+                            if (String.IsNullOrWhiteSpace(e.Source)) {
+                                e.Message = null;
+                                e.Source = request.GetFullPath(includeHttpMethod: true, includeHost: false, includeQueryString: false);
+                            }
+
+                            return;
+                        }
+                         
+                        var error = e.GetError();
+                        if (error == null) {
+                            Debugger.Break();
+                            Log.Error().Project(e.ProjectId).Message("Unable to get parse error model: {0}", e.Id).Write();
+                            return;
+                        }
+
+                        var stackingTarget = error.GetStackingTarget();
+                        if (stackingTarget != null && stackingTarget.Method != null && !String.IsNullOrEmpty(stackingTarget.Method.GetDeclaringTypeFullName()))
+                            e.Source = stackingTarget.Method.GetDeclaringTypeFullName().Truncate(2000);
+
+                        var signature = new ErrorSignature(error);
+                        if (signature.SignatureInfo.Count <= 0)
+                            return;
+
+                        var targetInfo = new SettingsDictionary(signature.SignatureInfo);
+                        if (stackingTarget != null && stackingTarget.Error != null && !targetInfo.ContainsKey("Message"))
+                            targetInfo["Message"] = error.GetStackingTarget().Error.Message;
+
+                        error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
+                    });
+
+                    try {
+                        _eventRepository.Add(upgradedEvents, sendNotification: false);
+                    } catch (Exception) {
+                        foreach (var persistentEvent in upgradedEvents) {
+                            try {
+                                _eventRepository.Add(persistentEvent, sendNotification: false);
+                            } catch (Exception ex) {
+                                //Debugger.Break();
+                                Log.Error().Exception(ex).Message("An error occurred while migrating event '{0}': {1}", persistentEvent.Id, ex.Message).Write();
+                            }
+                        }
+                    }
+
+                    total += upgradedEvents.Count;
+                    var lastId = upgradedEvents.Last().Id;
+                    errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
+                }
+            }
+
+            return JobResult.Success;
         }
 
         #region Legacy mongo collections
 
-        private static MongoCollection<OldModels.Error> GetErrorCollection(Container container) {
-            var database = container.GetInstance<MongoDatabase>();
-
+        private MongoCollection<OldModels.Error> GetErrorCollection() {
             if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.Error)))
                 BsonClassMap.RegisterClassMap<OldModels.Error>(ConfigureErrorClassMap);
 
-            return database.GetCollection<OldModels.Error>("error");
+            return _mongoDatabase.GetCollection<OldModels.Error>("error");
         }
 
-        private static MongoCollection<OldModels.ErrorStack> GetErrorStackCollection(Container container) {
-            var database = container.GetInstance<MongoDatabase>();
+        private MongoCollection<Stack> GetErrorStackCollection() {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(Stack)))
+                BsonClassMap.RegisterClassMap<Stack>(ConfigureErrorStackClassMap);
 
-            if (!BsonClassMap.IsClassMapRegistered(typeof(OldModels.ErrorStack)))
-                BsonClassMap.RegisterClassMap<OldModels.ErrorStack>(ConfigureErrorStackClassMap);
-
-            return database.GetCollection<OldModels.ErrorStack>("errorstack");
+            return _mongoDatabase.GetCollection<Stack>("errorstack");
         }
 
         private static class ErrorFieldNames {
@@ -457,7 +457,7 @@ namespace Exceptionless.EventMigration {
             public const string Tags = "tag";
         }
 
-        private static void ConfigureErrorStackClassMap(BsonClassMap<OldModels.ErrorStack> cm) {
+        private static void ConfigureErrorStackClassMap(BsonClassMap<Stack> cm) {
             cm.AutoMap();
             cm.SetIgnoreExtraElements(true);
             cm.SetIdMember(cm.GetMemberMap(c => c.Id).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()));
@@ -493,40 +493,30 @@ namespace Exceptionless.EventMigration {
         #endregion
     }
 
-    internal class ErrorStackValidator : AbstractValidator<OldModels.ErrorStack> {
-        public ErrorStackValidator() {
-            RuleFor(s => s.OrganizationId).IsObjectId().WithMessage("Please specify a valid organization id.");
-            RuleFor(s => s.ProjectId).IsObjectId().WithMessage("Please specify a valid project id.");
-            RuleFor(s => s.Title).Length(1, 1000).When(s => s.Title != null).WithMessage("Title cannot be longer than 1000 characters.");
-            RuleFor(s => s.SignatureHash).NotEmpty().WithMessage("Please specify a valid signature hash.");
-            RuleFor(s => s.SignatureInfo).NotNull().WithMessage("Please specify a valid signature info.");
-            RuleForEach(s => s.Tags).Length(1, 255).WithMessage("A tag cannot be longer than 255 characters.");
+    internal class StackMigrationRepository : StackRepository {
+        public StackMigrationRepository(IElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null) : base(elasticClient, eventRepository, validator, null, null) {
+            EnableCache = false;
+        }
+        
+        public Stack GetMostRecent() {
+            return FindOne(new ElasticSearchOptions<Stack>().WithSort(s => s.OnField("_uid").Descending()));
         }
     }
 
-    public class EmptyCollectionContractResolver : ElasticContractResolver {
-        public EmptyCollectionContractResolver(IConnectionSettingsValues connectionSettings) : base(connectionSettings) {}
-
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
-
-            Predicate<object> shouldSerialize = property.ShouldSerialize;
-            property.ShouldSerialize = obj => (shouldSerialize == null || shouldSerialize(obj)) && !property.IsValueEmptyCollection(obj);
-            return property;
+    internal class EventMigrationRepository : EventRepository {
+        public EventMigrationRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null) : base(elasticClient, validator, null) {
+            EnableCache = false;
+        }
+        
+        public PersistentEvent GetMostRecent() {
+            return FindOne(new ElasticSearchOptions<PersistentEvent>().WithSort(s => s.OnField("_uid").Descending()));
         }
 
-        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
-                return base.CreateDictionaryContract(objectType);
-
-            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
-            contract.PropertyNameResolver = propertyName => propertyName;
-            return contract;
-        }
-
-        protected override string ResolvePropertyName(string propertyName) {
-            return propertyName.ToLowerUnderscoredWords();
+        public List<string> ExistsByStackIds(string[] stackIds) {
+            var options = new ElasticSearchOptions<PersistentEvent>().WithStackIds(stackIds);
+            var descriptor = new SearchDescriptor<PersistentEvent>().Filter(options.GetElasticSearchFilter()).Source(s => s.Include("stack_id")).Size(stackIds.Length);
+            var results = _elasticClient.Search<PersistentEvent>(descriptor);
+            return results.Documents.Select(e => e.StackId).ToList();
         }
     }
-
 }

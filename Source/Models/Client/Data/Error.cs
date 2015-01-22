@@ -12,8 +12,8 @@ namespace Exceptionless.Models.Data {
         public ModuleCollection Modules { get; set; }
 
         public static class KnownDataKeys {
-            public const string ExtraProperties = "ext";
-            public const string TargetInfo = "ti";
+            public const string ExtraProperties = "@ext";
+            public const string TargetInfo = "@ti";
         }
     }
 }

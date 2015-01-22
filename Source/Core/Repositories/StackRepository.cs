@@ -138,7 +138,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public override void InvalidateCache(Stack entity) {
-            if (Cache == null)
+            if (!EnableCache || Cache == null)
                 return;
 
             InvalidateCache(GetStackSignatureCacheKey(entity));

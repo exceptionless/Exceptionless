@@ -1,6 +1,6 @@
 ﻿{
   "Date": "2013-05-16T10:26:07.485-05:00",
-  "request": {
+  "@request": {
     "UserAgent": "Example_Security_scanner",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -22,7 +22,7 @@
       "__EVENTVALIDATION": "/Test=="
     }
   },
-  "environment": {
+  "@environment": {
     "ProcessorCount": 8,
     "TotalPhysicalMemory": 12874641408,
     "AvailablePhysicalMemory": 7047577600,
@@ -41,12 +41,8 @@
       "AppDomainName": "/LM/W3SVC/819060847/ROOT-1-13013139602206444"
     }
   },
-  "Data": {
-    "WebEventCode": 0,
-    "ErrorCode": -2147467259
-  },
   "Type": "error",
-  "error": {
+  "@error": {
     "Code": "500",
     "Type": "System.Web.HttpRequestValidationException",
     "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
@@ -247,6 +243,12 @@
           "TypeFullName": "System.Web.Util.RequestValidationSource"
         }
       ]
+    },
+    "Data": {
+      "@ext": {
+        "WebEventCode": 0,
+        "ErrorCode": -2147467259
+      }
     }
   }
 }

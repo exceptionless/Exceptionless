@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Exceptionless.EventMigration</RootNamespace>
     <AssemblyName>Exceptionless.EventMigration</AssemblyName>
@@ -57,6 +57,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="NLog, Version=3.2.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\NLog.3.2.0.0\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="SimpleInjector, Version=2.7.0.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.2.7.0\lib\net45\SimpleInjector.dll</HintPath>
@@ -86,12 +90,7 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="CommandLine\ArgumentAttribute.cs" />
-    <Compile Include="CommandLine\ArgumentType.cs" />
-    <Compile Include="CommandLine\DefaultArgumentAttribute.cs" />
-    <Compile Include="CommandLine\ErrorReporter.cs" />
-    <Compile Include="CommandLine\Parser.cs" />
-    <Compile Include="ConsoleArguments.cs" />
+    <Compile Include="EventMigrationJob.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\ConfigurationDictionary.cs" />
     <Compile Include="Models\Collections\ExtendedDataDictionary.cs" />
@@ -110,17 +109,9 @@
     <Compile Include="Models\Parameter.cs" />
     <Compile Include="Models\RequestInfo.cs" />
     <Compile Include="Models\StackFrame.cs" />
-    <Compile Include="Program.cs">
-      <SubType>
-      </SubType>
-    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <Content Include="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

@@ -47,7 +47,7 @@ namespace Exceptionless.Serializer {
 
                 var accessor = _propertyAccessors.ContainsKey(propertyName) ? _propertyAccessors[propertyName] : null;
                 if (accessor != null) {
-                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType, serializer));
+                    accessor.SetValue(target, p.Value.Type != JTokenType.Null ? p.Value.ToObject(accessor.MemberType, serializer) : null);
                     continue;
                 }
 
@@ -73,7 +73,7 @@ namespace Exceptionless.Serializer {
                         target.Data[dataKey] = p.Value.ToObject(_dataTypeRegistry[p.Name], serializer);
                     return;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
                 }
             }
 

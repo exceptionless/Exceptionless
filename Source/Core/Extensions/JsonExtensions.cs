@@ -58,6 +58,11 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
+        public static void RemoveAll(this JObject target, params string[] names) {
+            foreach (var name in names)
+                target.Remove(name);
+        }
+
         public static bool RemoveAllIfNullOrEmpty(this IEnumerable<JProperty> elements, params string[] names) {
             if (elements == null)
                 return false;
@@ -80,12 +85,14 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static bool Rename(this JObject target, string currentName, string newName) {
+            if (String.Equals(currentName, newName))
+                return true;
+
             if (target[currentName] == null)
                 return false;
 
             JProperty p = target.Property(currentName);
-            target.Remove(p.Name);
-            target.Add(newName, p.Value);
+            p.Replace(new JProperty(newName, p.Value));
 
             return true;
         }
@@ -96,12 +103,12 @@ namespace Exceptionless.Core.Extensions {
 
             bool isNullOrEmpty = target.IsPropertyNullOrEmpty(currentName);
             JProperty p = target.Property(currentName);
-            target.Remove(p.Name);
-
-            if (isNullOrEmpty)
+            if (isNullOrEmpty) {
+                target.Remove(p.Name);
                 return false;
+            }
 
-            target.Add(newName, p.Value);
+            p.Replace(new JProperty(newName, p.Value));
             return true;
         }
 
@@ -142,18 +149,6 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
         
-        public static bool CopyOrRemoveIfNullOrEmpty(this JObject target, JObject source, string name) {
-            if (source[name] == null)
-                return false;
-
-            bool isNullOrEmpty = source.IsPropertyNullOrEmpty(name);
-            if (isNullOrEmpty)
-                return false;
-
-            target.Add(name, source.Property(name).Value);
-            return true;
-        }
-
         public static string GetPropertyStringValue(this JObject target, string name) {
             if (target.IsPropertyNullOrEmpty(name)) 
                 return null;

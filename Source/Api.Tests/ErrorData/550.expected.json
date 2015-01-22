@@ -1,7 +1,7 @@
 ﻿{
   "ReferenceId": "80000000b77efe155c7856a4",
   "Date": "2013-03-27T09:49:43.5634168-05:00",
-  "environment": {
+  "@environment": {
     "ProcessorCount": 12,
     "TotalPhysicalMemory": 17120079872,
     "AvailablePhysicalMemory": 10097897472,
@@ -21,7 +21,7 @@
     }
   },
   "Type": "error",
-  "error": {
+  "@error": {
     "Type": "System.Exception",
     "Message": "Exception of type 'System.Exception' was thrown."
   }
