@@ -113,6 +113,8 @@ namespace Exceptionless.Core {
         public string AzureStorageConnectionString { get; set; }
 
         public bool EnableAzureStorage { get; private set; }
+
+        public int BulkBatchSize { get; private set; }
         
         private static Settings Init() {
             var settings = new Settings();
@@ -168,6 +170,7 @@ namespace Exceptionless.Core {
             settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
             settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
             settings.StorageFolder = ConfigurationManager.AppSettings["StorageFolder"];
+            settings.BulkBatchSize = ConfigurationManager.AppSettings.GetInt("BulkBatchSize", 1000);
 
             var redisConnectionString = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
             if (redisConnectionString != null)
