@@ -1,7 +1,7 @@
 ﻿{
   "ReferenceId": "800000003d538d628040bea0",
   "Date": "2014-01-17T14:37:02.739-06:00",
-  "request": {
+  "@request": {
     "UserAgent": "Mozilla/4.0 (compatible; Example)",
     "HttpMethod": "GET",
     "IsSecure": false,
@@ -18,7 +18,7 @@
       "": "quot;,"
     }
   },
-  "environment": {
+  "@environment": {
     "ProcessorCount": 24,
     "TotalPhysicalMemory": 34359738368,
     "AvailablePhysicalMemory": 27725467648,
@@ -37,12 +37,8 @@
       "AppDomainName": "/LM/W3SVC/16/ROOT/stores-1-130343866428644447"
     }
   },
-  "Data": {
-    "WebEventCode": 0,
-    "ErrorCode": -2147467259
-  },
   "Type": "error",
-  "error": {
+  "@error": {
     "Code": "400",
     "Type": "System.Web.HttpException",
     "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
@@ -525,6 +521,12 @@
         "CreatedDate": "2013-11-25T16:36:38.494",
         "ModifiedDate": "2013-10-04T02:59:16"
       }
-    ]
+    ],
+    "Data": {
+      "@ext": {
+        "WebEventCode": 0,
+        "ErrorCode": -2147467259
+      }
+    }
   }
 }

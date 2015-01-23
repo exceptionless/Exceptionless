@@ -11,13 +11,11 @@
 
 using System;
 using System.Configuration;
-using System.Threading.Tasks;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
-using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
 using Exceptionless.Core.Messaging;

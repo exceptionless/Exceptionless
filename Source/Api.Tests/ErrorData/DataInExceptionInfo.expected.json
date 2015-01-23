@@ -3,11 +3,13 @@
     "User": "\"You\""
   },
   "Type": "error",
-  "error": {
+  "@error": {
     "Inner": {
       "Data": {
-        "Data": {
-          "Blah": "Blah"
+        "@ext": {
+          "Data": {
+            "Blah": "Blah"
+          }
         }
       }
     }

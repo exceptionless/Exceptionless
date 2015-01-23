@@ -1,17 +1,13 @@
 ﻿{
   "Date": "2014-05-15T17:51:24.871-05:00",
-  "environment": {
+  "@environment": {
     "ProcessorCount": 24,
     "Data": {
       "AppDomainName": "/LM/W3SVC/4/ROOT/blah"
     }
   },
-  "Data": {
-    "WebEventCode": 3002,
-    "ErrorCode": -2147467259
-  },
   "Type": "error",
-  "error": {
+  "@error": {
     "Code": "500",
     "Type": "System.Web.HttpException",
     "Message": "The client disconnected.",
@@ -19,16 +15,18 @@
       "Message": "Invalid viewstate. Client IP: 127.0.0.1 Port: 58663 Referer: http://www.sample.com/",
       "Type": "System.Web.UI.ViewStateException",
       "Code": "-2146233088",
+      "Data": {
+        "@ext": {
+          "RemoteAddress": "172.21.0.1",
+          "RemotePort": "58663",
+          "UserAgent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+          "Referer": "http://www.sample.com/",
+          "IsConnected": false
+        }
+      },
       "Inner": null,
       "StackTrace": [],
-      "TargetMethod": null,
-      "Data": {
-        "RemoteAddress": "172.21.0.1",
-        "RemotePort": "58663",
-        "UserAgent": "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-        "Referer": "http://www.sample.com/",
-        "IsConnected": false
-      }
+      "TargetMethod": null
     },
     "StackTrace": [
       {
@@ -75,6 +73,12 @@
           "FileVersion": "213.42.0.6"
         }
       }
-    ]
+    ],
+    "Data": {
+      "@ext": {
+        "WebEventCode": 3002,
+        "ErrorCode": -2147467259
+      }
+    }
   }
 }

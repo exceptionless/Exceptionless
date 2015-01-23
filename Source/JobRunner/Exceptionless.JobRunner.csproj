@@ -87,6 +87,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="jobs\triggered\EventMigrationJob\run.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="jobs\continuous\WebHooks\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -130,6 +133,10 @@
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\EventMigration\EventMigration.csproj">
+      <Project>{d5f5fef6-a603-40fa-b5ec-dc7be2089509}</Project>
+      <Name>EventMigration</Name>
     </ProjectReference>
     <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
       <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>

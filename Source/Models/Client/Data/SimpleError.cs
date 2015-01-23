@@ -43,7 +43,7 @@ namespace Exceptionless.Models.Data {
         public SimpleError Inner { get; set; }
 
         public static class KnownDataKeys {
-            public const string ExtraProperties = "ext";
+            public const string ExtraProperties = "@ext";
         }
     }
 }
