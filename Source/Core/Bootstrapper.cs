@@ -146,16 +146,23 @@ namespace Exceptionless.Core {
         }
 
         public static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(new SniffingConnectionPool(new[] { serverUri })).SetDefaultIndex("_all");
-            settings.EnableMetrics();
-            settings.SetJsonSerializerSettingsModifier(s => {
-                s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
-                s.AddModelConverters();
-            });
-            settings.MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"));
-            settings.MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName));
-            settings.MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"));
-            settings.SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
+            var pool = new Elasticsearch.Net.ConnectionPool.SniffingConnectionPool(esNodes.Select(c => new Uri(c)));
+
+            var settings = new ConnectionSettings(new SniffingConnectionPool(new[] { serverUri }))
+                .SetDefaultIndex("_all")
+                .SniffOnStartup(true)
+                .SniffLifeSpan(TimeSpan.FromMinutes(1))
+                .SetTimeout(1000)
+                .MaximumRetries(5)
+                    .EnableMetrics()
+                    .SetJsonSerializerSettingsModifier(s => {
+                    s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
+                    s.AddModelConverters();
+                })
+                .MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"))
+                .MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName))
+                .MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"))
+                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
 
             var client = new ElasticClient(settings, new KeepAliveHttpConnection(settings));
             ConfigureMapping(client, deleteExistingIndexes);
