@@ -12,6 +12,7 @@
 using System;
 using System.Configuration;
 using System.Threading.Tasks;
+using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
@@ -147,7 +148,7 @@ namespace Exceptionless.Core {
         }
 
         public static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(serverUri).SetDefaultIndex("_all");
+            var settings = new ConnectionSettings(new SniffingConnectionPool(new[] { serverUri })).SetDefaultIndex("_all");
             settings.EnableMetrics();
             settings.SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
