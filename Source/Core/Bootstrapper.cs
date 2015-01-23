@@ -10,7 +10,9 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Configuration;
+using System.Linq;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
@@ -69,7 +71,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(databaseName);
             });
 
-            container.RegisterSingle<IElasticClient>(() => GetElasticClient(new Uri(Settings.Current.ElasticSearchConnectionString)));
+            container.RegisterSingle<IElasticClient>(() => GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
@@ -145,12 +147,14 @@ namespace Exceptionless.Core {
             container.RegisterSingle<FormattingPluginManager>();
         }
 
-        public static IElasticClient GetElasticClient(Uri serverUri, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(new SniffingConnectionPool(new[] { serverUri }))
+        public static IElasticClient GetElasticClient(IEnumerable<Uri> serverUris, bool deleteExistingIndexes = false) {
+            var settings = new ConnectionSettings(new SniffingConnectionPool(serverUris))
                 .SetDefaultIndex("_all")
-                .SniffOnStartup(true)
+                .SniffOnStartup()
+                .SniffOnConnectionFault()
                 .SniffLifeSpan(TimeSpan.FromMinutes(1))
                 .SetTimeout(1000)
+                .MaximumRetries(3)
                 .MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"))
                 .MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName))
                 .MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"))
