@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Lock;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
@@ -43,17 +44,19 @@ namespace Exceptionless.EventMigration {
         private readonly bool _skipStacks;
         private readonly bool _skipErrors;
 
-        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, MongoDatabase mongoDatabase, IValidator<Stack> stackValidator,  IValidator<PersistentEvent> eventValidator) {
+        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, MongoDatabase mongoDatabase, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, ILockProvider lockProvider) {
             _elasticClient = elasticClient;
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
             _mongoDatabase = mongoDatabase;
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
+            LockProvider = lockProvider;
+            LockTimeout = TimeSpan.Zero;
 
             _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
             _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("EventMigration:DeleteExistingIndexes", false);
             _resume = ConfigurationManager.AppSettings.GetBool("EventMigration:Resume", true);
-            _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", true);
+            _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", false);
             _skipErrors = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipErrors", false);
         }
 
@@ -61,24 +64,13 @@ namespace Exceptionless.EventMigration {
             if (_deleteExistingIndexes)
                 _elasticClient.DeleteIndex(i => i.AllIndices());
 
-            var serializerSettings = new JsonSerializerSettings {
-                MissingMemberHandling = MissingMemberHandling.Ignore
-            };
-            serializerSettings.AddModelConverters();
-
-            Stack mostRecentStack = null;
-            if (_resume)
-                mostRecentStack = _stackRepository.GetMostRecent();
-
-            PersistentEvent mostRecentEvent = null;
-            if (_resume)
-                mostRecentEvent = _eventRepository.GetMostRecent();
-
             int total = 0;
             var stopwatch = new Stopwatch();
             if (!_skipStacks) {
                 stopwatch.Start();
                 var errorStackCollection = GetErrorStackCollection();
+
+                var mostRecentStack = _resume ? _stackRepository.GetMostRecent() : null;
                 var query = mostRecentStack != null ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Id)) : Query.Null;
                 var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(_batchSize).ToList();
                 while (stacks.Count > 0) {
@@ -115,8 +107,11 @@ namespace Exceptionless.EventMigration {
                 var errorCollection = GetErrorCollection();
                 var knownStackIds = new List<string>();
 
+                var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
+                serializerSettings.AddModelConverters();
+
+                var mostRecentEvent = _resume ? _eventRepository.GetMostRecent() : null;
                 var query = mostRecentEvent != null ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Id)) : Query.Null;
-                //var query = Query.EQ(ErrorFieldNames.Id, ObjectId.Parse("800000000114fb0c24002a43"));
                 var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
                 while (errors.Count > 0) {
                     Log.Info().Message("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
@@ -135,9 +130,7 @@ namespace Exceptionless.EventMigration {
                         if (e.Date.UtcDateTime > DateTimeOffset.UtcNow.AddHours(1))
                             e.Date = DateTimeOffset.Now;
 
-                        ObjectId id;
-                        if (ObjectId.TryParse(e.Id, out id))
-                            e.CreatedUtc = id.CreationTime.ToUniversalTime();
+                       e.CreatedUtc = e.Date.ToUniversalTime().DateTime;
 
                         if (!knownStackIds.Contains(e.StackId)) {
                             // We haven't processed this stack id yet in this run. Check to see if this stack has already been imported..
