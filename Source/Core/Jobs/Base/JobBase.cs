@@ -7,6 +7,7 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Jobs {
     public abstract class JobBase {
         protected ILockProvider LockProvider { get; set; }
+        protected TimeSpan? LockTimeout { get; set; }
 
         protected bool IsCancelPending(CancellationToken? token) {
             return token != null && token.Value.IsCancellationRequested;
@@ -20,7 +21,7 @@ namespace Exceptionless.Core.Jobs {
                 return TryRunAsync(token.Value);
 
             try {
-                using (LockProvider.AcquireLock(GetType().FullName, acquireTimeout: TimeSpan.FromMinutes(1)))
+                using (LockProvider.AcquireLock(GetType().FullName, acquireTimeout: TimeSpan.FromMinutes(1), lockTimeout: LockTimeout))
                     return TryRunAsync(token.Value);
             } catch (TimeoutException) {
                 return Task.FromResult(JobResult.FailedWithMessage("Timeout attempting to acquire lock."));

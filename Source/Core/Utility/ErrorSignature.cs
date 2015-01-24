@@ -19,8 +19,8 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignature {
-        private readonly HashSet<string> _userNamespaces = new HashSet<string>();
-        private readonly HashSet<string> _userCommonMethods = new HashSet<string>();
+        private readonly HashSet<string> _userNamespaces;
+        private readonly HashSet<string> _userCommonMethods;
         private static readonly string[] _defaultNonUserNamespaces = { "System", "Microsoft" };
         // TODO: Add support for user public key token on signed assemblies
 
@@ -182,11 +182,12 @@ namespace Exceptionless.Core.Utility {
             if (extraProperties == null)
                 return;
 
-            if (extraProperties.ContainsKey("Number"))
-                SignatureInfo.Add("Number", extraProperties["Number"].ToString());
+            object value;
+            if (extraProperties.TryGetValue("Number", out value))
+                SignatureInfo.Add("Number", value.ToString());
 
-            if (extraProperties.ContainsKey("ErrorCode"))
-                SignatureInfo.Add("ErrorCode", extraProperties["ErrorCode"].ToString());
+            if (extraProperties.TryGetValue("ErrorCode", out value))
+                SignatureInfo.Add("ErrorCode", value.ToString());
         }
     }
 }

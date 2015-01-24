@@ -36,6 +36,10 @@ namespace Exceptionless.Core.Lock {
                     return false;
 
                 Log.Trace().Message("Lock doesn't exist: {0}", name).Write();
+
+                if (lockTimeout.HasValue && lockTimeout.Value == TimeSpan.Zero)
+                    return _cacheClient.Add(cacheKey, DateTime.Now);
+
                 return _cacheClient.Add(cacheKey, DateTime.Now, lockTimeout ?? TimeSpan.FromMinutes(20));
             }, acquireTimeout);
 
