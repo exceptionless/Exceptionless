@@ -17,7 +17,11 @@ using Exceptionless.Models.Data;
 
 namespace Exceptionless.Extensions {
     internal static class ToSimpleErrorModelExtensions {
-        private static readonly string[] _exceptionExclusions = { "HelpLink", "InnerException", "Message", "Source", "StackTrace", "TargetSite", "HResult" };
+        private static readonly string[] _exceptionExclusions = {
+            "HelpLink", "ExceptionContext", "InnerExceptions", "InnerException", "Errors", "Types",
+            "Message", "Source", "StackTrace", "TargetSite", "HResult", 
+            "Entries", "StateEntries",  "PersistedState", "Results"
+        };
 
         public static SimpleError ToSimpleErrorModel(this Exception exception) {
             Type type = exception.GetType();

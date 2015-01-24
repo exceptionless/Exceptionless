@@ -28,7 +28,11 @@ using StackFrame = System.Diagnostics.StackFrame;
 namespace Exceptionless.Extras {
     internal static class ToErrorModelExtensions {
         private static readonly ConcurrentDictionary<string, Module> _moduleCache = new ConcurrentDictionary<string, Module>();
-        private static readonly string[] _exceptionExclusions = { "HelpLink", "InnerException", "Message", "Source", "StackTrace", "TargetSite", "HResult" };
+        private static readonly string[] _exceptionExclusions = {
+            "HelpLink", "ExceptionContext", "InnerExceptions", "InnerException", "Errors", "Types",
+            "Message", "Source", "StackTrace", "TargetSite", "HResult", 
+            "Entries", "StateEntries",  "PersistedState", "Results"
+        };
 
         /// <summary>
         /// Sets the properties from an exception.
