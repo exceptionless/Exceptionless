@@ -15,7 +15,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             "*ASPX*",
             "__RequestVerificationToken",
             "ASP.NET_SessionId",
-            "__LastErrorId"
+            "__LastErrorId",
+            "WAWebSiteID",
+            "ARRAffinity"
         };
 
         public override void EventProcessing(EventContext context) {
