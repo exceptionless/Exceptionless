@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("StaleAccounts");
+            return _lockProvider.AcquireLock("StaleAccountsJob");
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {

@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("RetentionLimits");
+            return _lockProvider.AcquireLock("RetentionLimitsJob");
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {

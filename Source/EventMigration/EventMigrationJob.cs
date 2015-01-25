@@ -52,8 +52,8 @@ namespace Exceptionless.EventMigration {
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
 
-            RequiresLock = true;
             _lockProvider = lockProvider;
+            RequiresLock = true;
 
             _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
             _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("EventMigration:DeleteExistingIndexes", false);

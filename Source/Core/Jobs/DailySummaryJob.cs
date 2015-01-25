@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override IDisposable GetJobLock() {
-            return _lockProvider.AcquireLock("DailySummary");
+            return _lockProvider.AcquireLock("DailySummaryJob");
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
