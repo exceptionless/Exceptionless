@@ -77,5 +77,19 @@ namespace Exceptionless.Models.Data {
         /// Extended data entries for this request.
         /// </summary>
         public DataDictionary Data { get; set; }
+
+        public static class KnownDataKeys {
+            public const string Browser = "@browser";
+            public const string BrowserVersion = "@browser_version";
+            public const string BrowserMajorVersion = "@browser_major_version";
+
+            public const string Device = "@device";
+
+            public const string OS = "@os";
+            public const string OSVersion = "@os_version";
+            public const string OSMajorVersion = "@os_major_version";
+
+            public const string IsBot = "@is_bot";
+        }
     }
 }
