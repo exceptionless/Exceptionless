@@ -35,6 +35,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IEventRepository _eventRepository;
         private readonly EventStats _stats;
         private readonly IMailer _mailer;
+        private readonly ILockProvider _lockProvider;
 
         public DailySummaryJob(IProjectRepository projectRepository, IOrganizationRepository organizationRepository, IUserRepository userRepository, IStackRepository stackRepository, IEventRepository eventRepository, EventStats stats, IMailer mailer, ILockProvider lockProvider) {
             _projectRepository = projectRepository;
@@ -44,7 +45,12 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _stats = stats;
             _mailer = mailer;
-            LockProvider = lockProvider;
+            _lockProvider = lockProvider;
+            RequiresLock = true;
+        }
+
+        protected override IDisposable GetJobLock() {
+            return _lockProvider.AcquireLock("DailySummary");
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {

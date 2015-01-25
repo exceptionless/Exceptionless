@@ -23,11 +23,17 @@ namespace Exceptionless.Core.Jobs {
     public class RetentionLimitsJob : JobBase {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IEventRepository _eventRepository;
+        private readonly ILockProvider _lockProvider;
 
         public RetentionLimitsJob(IOrganizationRepository organizationRepository, IEventRepository eventRepository, ILockProvider lockProvider) {
             _organizationRepository = organizationRepository;
             _eventRepository = eventRepository;
-            LockProvider = lockProvider;
+            _lockProvider = lockProvider;
+            RequiresLock = true;
+        }
+
+        protected override IDisposable GetJobLock() {
+            return _lockProvider.AcquireLock("RetentionLimits");
         }
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {

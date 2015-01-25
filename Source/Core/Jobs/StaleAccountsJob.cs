@@ -26,6 +26,7 @@ namespace Exceptionless.Core.Jobs {
         private readonly IUserRepository _userRepository;
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
+        private readonly ILockProvider _lockProvider;
 
         public StaleAccountsJob(OrganizationRepository organizationRepository,
             IProjectRepository projectRepository,
@@ -39,7 +40,12 @@ namespace Exceptionless.Core.Jobs {
             _userRepository = userRepository;
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
-            LockProvider = lockProvider;
+            _lockProvider = lockProvider;
+            RequiresLock = true;
+        }
+
+        protected override IDisposable GetJobLock() {
+            return _lockProvider.AcquireLock("StaleAccounts");
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {

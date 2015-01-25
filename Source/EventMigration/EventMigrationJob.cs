@@ -37,6 +37,7 @@ namespace Exceptionless.EventMigration {
         private readonly MongoDatabase _mongoDatabase;
         private readonly StackMigrationRepository _stackRepository;
         private readonly EventMigrationRepository _eventRepository;
+        private readonly ILockProvider _lockProvider;
 
         private readonly int _batchSize;
         private readonly bool _deleteExistingIndexes;
@@ -50,14 +51,19 @@ namespace Exceptionless.EventMigration {
             _mongoDatabase = mongoDatabase;
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
-            LockProvider = lockProvider;
-            LockTimeout = TimeSpan.Zero;
+
+            RequiresLock = true;
+            _lockProvider = lockProvider;
 
             _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
             _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("EventMigration:DeleteExistingIndexes", false);
             _resume = ConfigurationManager.AppSettings.GetBool("EventMigration:Resume", true);
             _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", false);
             _skipErrors = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipErrors", false);
+        }
+
+        protected override IDisposable GetJobLock() {
+            return _lockProvider.AcquireLock("MigrationJob", TimeSpan.Zero);
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
