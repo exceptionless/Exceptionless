@@ -129,7 +129,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IValidator<User>, UserValidator>();
             container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
 
-
             container.RegisterSingle<IEmailGenerator>(() => new RazorEmailGenerator(@"Mail\Templates"));
             container.RegisterSingle<IMailer, Mailer>();
             if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
@@ -148,13 +147,11 @@ namespace Exceptionless.Core {
         }
 
         public static IElasticClient GetElasticClient(IEnumerable<Uri> serverUris, bool deleteExistingIndexes = false) {
-            var settings = new ConnectionSettings(new SniffingConnectionPool(serverUris))
+            //var connectionPool = serverUris.Count() > 1 ? (IConnectionPool)new StaticConnectionPool(serverUris) : new SingleNodeConnectionPool(serverUris.FirstOrDefault());
+            var connectionPool = new StaticConnectionPool(serverUris);
+            var settings = new ConnectionSettings(connectionPool)
                 .SetDefaultIndex("_all")
-                .SniffOnStartup()
-                .SniffOnConnectionFault()
-                .SniffLifeSpan(TimeSpan.FromMinutes(1))
                 .SetTimeout(1000)
-                .MaximumRetries(3)
                 .MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"))
                 .MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName))
                 .MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"))
