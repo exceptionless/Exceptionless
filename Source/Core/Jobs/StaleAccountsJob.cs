@@ -41,7 +41,6 @@ namespace Exceptionless.Core.Jobs {
             _eventRepository = eventRepository;
             _stackRepository = stackRepository;
             _lockProvider = lockProvider;
-            RequiresLock = true;
         }
 
         protected override IDisposable GetJobLock() {

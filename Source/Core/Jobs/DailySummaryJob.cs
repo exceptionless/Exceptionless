@@ -46,7 +46,6 @@ namespace Exceptionless.Core.Jobs {
             _stats = stats;
             _mailer = mailer;
             _lockProvider = lockProvider;
-            RequiresLock = true;
         }
 
         protected override IDisposable GetJobLock() {

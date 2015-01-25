@@ -5,8 +5,6 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public abstract class JobBase {
-        protected bool RequiresLock { get; set; }
-
         protected virtual IDisposable GetJobLock() {
             return null;
         }
@@ -18,9 +16,6 @@ namespace Exceptionless.Core.Jobs {
         public Task<JobResult> RunAsync(CancellationToken? token = null) {
             if (!token.HasValue)
                 token = CancellationToken.None;
-
-            if (!RequiresLock)
-                return TryRunAsync(token.Value);
 
             try {
                 using (GetJobLock())
