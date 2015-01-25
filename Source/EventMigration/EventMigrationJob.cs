@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
@@ -9,7 +8,6 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Lock;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Repositories;
@@ -45,10 +43,10 @@ namespace Exceptionless.EventMigration {
         private readonly bool _skipStacks;
         private readonly bool _skipErrors;
 
-        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, MongoDatabase mongoDatabase, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, ILockProvider lockProvider) {
+        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, ILockProvider lockProvider) {
             _elasticClient = elasticClient;
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
-            _mongoDatabase = mongoDatabase;
+            _mongoDatabase = GetMongoDatabase();
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
 
@@ -60,6 +58,21 @@ namespace Exceptionless.EventMigration {
             _resume = ConfigurationManager.AppSettings.GetBool("EventMigration:Resume", true);
             _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", false);
             _skipErrors = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipErrors", false);
+        }
+
+        private MongoDatabase GetMongoDatabase() {
+            var connectionString = ConfigurationManager.ConnectionStrings["EventMigration:MongoConnectionString"];
+            if (connectionString == null)
+                throw new ConfigurationErrorsException("EventMigration:MongoConnectionString was not found in the app.config.");
+
+            if (String.IsNullOrEmpty(connectionString.ConnectionString))
+                throw new ConfigurationErrorsException("EventMigration:MongoConnectionString was not found in the app.config.");
+
+            MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
+            var url = new MongoUrl(connectionString.ConnectionString);
+
+            MongoServer server = new MongoClient(url).GetServer();
+            return server.GetDatabase(url.DatabaseName);
         }
 
         protected override IDisposable GetJobLock() {

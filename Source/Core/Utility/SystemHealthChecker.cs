@@ -91,15 +91,8 @@ namespace Exceptionless.Core.Utility {
                     databaseName += String.Concat("-", Environment.MachineName.ToLower());
 
                 _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, databaseName);
-                if (_dbIsUpToDate.Value)
-                    return true;
 
-                // if enabled, auto upgrade the database
-                if (Settings.Current.ShouldAutoUpgradeDatabase)
-                    Task.Factory.StartNew(() => MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName))
-                        .ContinueWith(_ => { _dbIsUpToDate = false; });
-
-                return false;
+                return _dbIsUpToDate.Value;
             }
         }
     }
