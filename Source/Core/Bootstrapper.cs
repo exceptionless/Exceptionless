@@ -151,12 +151,11 @@ namespace Exceptionless.Core {
             var connectionPool = new StaticConnectionPool(serverUris);
             var settings = new ConnectionSettings(connectionPool)
                 .SetDefaultIndex("_all")
-                .SetTimeout(1000)
                 .MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"))
                 .MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName))
                 .MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"))
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
-            
+
             settings.MaximumRetries(5).EnableMetrics().SetJsonSerializerSettingsModifier(s => {
                 s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
                 s.AddModelConverters();
@@ -226,6 +225,26 @@ namespace Exceptionless.Core {
                                     @"^(\d+\.\d+\.\d+)"
                                 }
                             },
+                            version_pad1 = new {
+                                type = "pattern_replace",
+                                pattern = @"(\.|^)(\d{1})(?=\.|$)",
+                                replacement = @"$10000$2"
+                            },
+                            version_pad2 = new {
+                                type = "pattern_replace",
+                                pattern = @"(\.|^)(\d{2})(?=\.|$)",
+                                replacement = @"$1000$2"
+                            },
+                            version_pad3 = new {
+                                type = "pattern_replace",
+                                pattern = @"(\.|^)(\d{3})(?=\.|$)",
+                                replacement = @"$100$2"
+                            },
+                            version_pad4 = new {
+                                type = "pattern_replace",
+                                pattern = @"(\.|^)(\d{4})(?=\.|$)",
+                                replacement = @"$10$2"
+                            },
                             typename = new {
                                 type = "pattern_capture",
                                 preserve_original = 1,
@@ -247,12 +266,26 @@ namespace Exceptionless.Core {
                                     "unique"
                                 }
                             },
-                            version = new {
+                            version_index = new {
                                 tokenizer = "whitespace",
                                 filter = new[] {
+                                    "version_pad1",
+                                    "version_pad2",
+                                    "version_pad3",
+                                    "version_pad4",
                                     "version",
                                     "lowercase",
                                     "unique"
+                                }
+                            },
+                            version_search = new {
+                                tokenizer = "whitespace",
+                                filter = new[] {
+                                    "version_pad1",
+                                    "version_pad2",
+                                    "version_pad3",
+                                    "version_pad4",
+                                    "lowercase"
                                 }
                             },
                             typename = new {
@@ -269,7 +302,7 @@ namespace Exceptionless.Core {
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)
                     .DisableSizeField(false)
-                    .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Script(SORTABLE_VERSION_SCRIPT).Language(ScriptLang.Groovy))
+                    .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -287,8 +320,7 @@ namespace Exceptionless.Core {
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
-                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version").SearchAnalyzer("whitespace"))
-                            .String(f2 => f2.Name(Event.KnownDataKeys.Version + ".sortable").IndexName("version.sortable").Index(FieldIndexOption.NotAnalyzed))
+                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version_index").SearchAnalyzer("version_search"))
                             .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
@@ -354,10 +386,13 @@ err['all_codes'] = codes.join(' ')";
 if (!ctx._source.containsKey('data') || !ctx._source.data.containsKey('@version'))
     return
 
-def res = '';
+def parts = []
 for (el in ctx._source.data['@version'].tokenize('.'))
-  res = res + el.padLeft(8);
+  parts.add(el.padLeft(5, '0'))
 
-ctx._source.data['@version.sortable'] = res;";
+while (parts.size() < 4)
+  parts.add('00000')
+
+ctx._source.data['@version_sort'] = parts.join('.')";
     }
 }
