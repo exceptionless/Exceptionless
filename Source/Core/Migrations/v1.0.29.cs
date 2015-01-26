@@ -16,7 +16,8 @@ using MongoMigrations;
 
 namespace Exceptionless.Core.Migrations {
     public class UpdateOveragesImplementationMigration : CollectionMigration {
-        public UpdateOveragesImplementationMigration() : base("1.0.29", "organization") {
+        public UpdateOveragesImplementationMigration()
+            : base("1.0.29", "organization") {
             Description = "Update property names and new plan limit implementation for orgs docs.";
         }
 
@@ -24,10 +25,14 @@ namespace Exceptionless.Core.Migrations {
             if (document.Contains("OverageDays"))
                 document.Remove("OverageDays");
 
-            document.ChangeName("MaxErrorsPerDay", "MaxErrorsPerMonth");
-            var maxErrorsPerMonth = document.GetValue("MaxErrorsPerMonth").AsInt32;
-            if (maxErrorsPerMonth > 0)
-                document.Set("MaxErrorsPerMonth", maxErrorsPerMonth * 30);
+            if (document.Contains("MaxErrorsPerDay"))
+                document.ChangeName("MaxErrorsPerDay", "MaxEventsPerMonth");
+
+            if (document.Contains("MaxEventsPerMonth")) {
+                var maxErrorsPerMonth = document.GetValue("MaxEventsPerMonth").AsInt32;
+                if (maxErrorsPerMonth > 0)
+                    document.Set("MaxErrorsPerMonth", maxErrorsPerMonth * 30);
+            }
 
             collection.Save(document);
         }

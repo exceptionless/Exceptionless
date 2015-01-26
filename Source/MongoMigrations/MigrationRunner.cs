@@ -80,6 +80,14 @@ namespace MongoMigrations {
             if (migrations.Count == 0)
                 return;
 
+            // if the migration collection didn't exist, assume it's a new db that is already up to date.
+            if (currentVersion == null) {
+                foreach (var migration in migrations)
+                    DatabaseStatus.MarkVersion(migration.Version);
+                
+                return;
+            }
+
             Trace.TraceInformation("Updating migration \"{0}\" for version {1} to database \"{2}\".", currentVersion, updateToVersion, Database.Name);
             ApplyMigrations(migrations);
         }
