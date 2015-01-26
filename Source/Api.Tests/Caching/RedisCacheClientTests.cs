@@ -33,10 +33,10 @@ namespace Exceptionless.Api.Tests.Caching {
             if (_cache == null)
                 return;
 
-            _cache.Set("test", 1, TimeSpan.FromMilliseconds(100));
+            _cache.Set("test", 1, TimeSpan.FromMilliseconds(250));
             var value = _cache.Get<int>("test");
             Assert.Equal(1, value);
-            Task.Delay(TimeSpan.FromMilliseconds(150)).Wait();
+            Task.Delay(TimeSpan.FromMilliseconds(300)).Wait();
             var newvalue = _cache.Get<int>("test");
             Assert.Equal(0, newvalue);
         }

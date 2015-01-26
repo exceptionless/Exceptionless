@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         [HttpGet]
-        [Route("verify-email-address/{token:objectId}")]
+        [Route("verify-email-address/{token:token}")]
         public IHttpActionResult Verify(string token) {
             var user = _repository.GetByVerifyEmailAddressToken(token);
             if (user == null)
