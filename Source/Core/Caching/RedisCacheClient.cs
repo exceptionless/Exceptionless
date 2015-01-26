@@ -6,9 +6,11 @@ using StackExchange.Redis;
 
 namespace Exceptionless.Core.Caching {
     public class RedisCacheClient : ICacheClient {
+        private readonly ConnectionMultiplexer _connectionMultiplexer;
         private readonly IDatabase _db;
 
-        public RedisCacheClient(IDatabase db) {
+        public RedisCacheClient(ConnectionMultiplexer connectionMultiplexer, IDatabase db) {
+            _connectionMultiplexer = connectionMultiplexer;
             _db = db;
         }
 
@@ -111,7 +113,19 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void FlushAll() {
-            throw new NotImplementedException();
+            var endpoints = _connectionMultiplexer.GetEndPoints(true);
+            if (endpoints.Length == 0)
+                return;
+
+            try {
+                foreach (var endpoint in endpoints) {
+                    var server = _connectionMultiplexer.GetServer(endpoint);
+                    server.FlushAllDatabases();
+                }
+            } catch (Exception) {
+                var server = _connectionMultiplexer.GetServer(endpoints.First());
+                _db.KeyDelete(server.Keys().ToArray());
+            };
         }
 
         public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys) {

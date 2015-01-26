@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Queues {
             TimeSpan? workItemTimeout = null, TimeSpan? deadLetterTimeToLive = null, bool runMaintenanceTasks = true, IAppStatsClient stats = null, string statName = null) {
             QueueId = Guid.NewGuid().ToString("N");
             _db = connection.GetDatabase();
-            _cache = new RedisCacheClient(_db);
+            _cache = new RedisCacheClient(connection, _db);
             _lockProvider = new CacheLockProvider(_cache);
             _queueName = queueName ?? typeof(T).Name;
             _queueName = _queueName.RemoveWhiteSpace().Replace(':', '-');

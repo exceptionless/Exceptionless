@@ -31,8 +31,10 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
-            if (deleteExistingIndexes)
+            if (deleteExistingIndexes) {
                 searchclient.DeleteIndex(i => i.AllIndices());
+                searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
+            }
 
             if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = ElasticSearchRepository<Stack>.StacksIndexName })).Exists)
                 searchclient.CreateIndex(ElasticSearchRepository<Stack>.StacksIndexName, d => d
