@@ -2,15 +2,14 @@ using System;
 using System.Collections.Generic;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Nest;
 
-namespace Exceptionless.Core {
-    public class ElasticSearchSettings {
+namespace Exceptionless.Core.Repositories {
+    public class ElasticSearchConfiguration {
         public static IElasticClient GetElasticClient(IEnumerable<Uri> serverUris, bool deleteExistingIndexes = false) {
             var connectionPool = new StaticConnectionPool(serverUris);
             var settings = new ConnectionSettings(connectionPool)
