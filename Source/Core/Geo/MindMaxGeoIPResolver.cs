@@ -31,13 +31,13 @@ namespace Exceptionless.Core.Geo {
         }
 
         private static DatabaseReader GetDatabase() {
-            if (String.IsNullOrEmpty(Settings.Current.GeoIpConnectionString) || !File.Exists(Settings.Current.GeoIpConnectionString)) {
+            if (String.IsNullOrEmpty(Settings.Current.GeoIPDatabase) || !File.Exists(Settings.Current.GeoIPDatabase)) {
                 Log.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
             try {
-                return new DatabaseReader(Settings.Current.GeoIpConnectionString, FileAccessMode.Memory);
+                return new DatabaseReader(Settings.Current.GeoIPDatabase, FileAccessMode.Memory);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }

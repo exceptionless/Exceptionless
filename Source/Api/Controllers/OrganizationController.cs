@@ -138,29 +138,29 @@ namespace Exceptionless.Api.Controllers {
                 OrganizationId = organization.Id,
                 OrganizationName = organization.Name,
                 Date = stripeInvoice.Date.GetValueOrDefault(),
-                Paid = stripeInvoice.Paid.GetValueOrDefault(),
-                Total = stripeInvoice.Total.GetValueOrDefault() / 100.0
+                Paid = stripeInvoice.Paid,
+                Total = stripeInvoice.Total / 100.0
             };
 
             foreach (var line in stripeInvoice.StripeInvoiceLines.StripeInvoiceItems) {
-                var item = new InvoiceLineItem { Amount = line.Amount.GetValueOrDefault() / 100.0 };
+                var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
 
                 if (line.Plan != null)
                     item.Description = String.Format("Exceptionless - {0} Plan ({1}/{2})", line.Plan.Name, (line.Plan.Amount / 100.0).ToString("c"), line.Plan.Interval);
                 else
                     item.Description = line.Description;
 
-                if (line.Period.Start.GetValueOrDefault() == line.Period.End.GetValueOrDefault())
-                    item.Date = line.Period.Start.GetValueOrDefault().ToShortDateString();
+                if (stripeInvoice.PeriodStart == stripeInvoice.PeriodEnd)
+                    item.Date = stripeInvoice.PeriodStart.ToShortDateString();
                 else
-                    item.Date = String.Format("{0} - {1}", line.Period.Start.GetValueOrDefault().ToShortDateString(), line.Period.End.GetValueOrDefault().ToShortDateString());
+                    item.Date = String.Format("{0} - {1}", stripeInvoice.PeriodStart.ToShortDateString(), stripeInvoice.PeriodEnd.ToShortDateString());
 
                 invoice.Items.Add(item);
             }
 
             var coupon = stripeInvoice.StripeDiscount != null ? stripeInvoice.StripeDiscount.StripeCoupon : null;
             if (coupon != null) {
-                double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal.GetValueOrDefault() * (coupon.PercentOff.GetValueOrDefault() / 100.0);
+                double discountAmount = coupon.AmountOff ?? stripeInvoice.Subtotal * (coupon.PercentOff.GetValueOrDefault() / 100.0);
                 string description = String.Format("{0} {1}", coupon.Id, coupon.PercentOff.HasValue ? String.Format("({0}% off)", coupon.PercentOff.Value) : String.Format("({0} off)", (coupon.AmountOff.GetValueOrDefault() / 100.0).ToString("C")));
                
                 invoice.Items.Add(new InvoiceLineItem { Description = description, Amount = discountAmount });
