@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Enrichments;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
@@ -81,9 +82,16 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="coordinates">The event coordinates.</param>
         public EventBuilder SetGeo(string coordinates) {
-            if (!coordinates.Contains(",") && !coordinates.Contains("."))
+            if (String.IsNullOrWhiteSpace(coordinates)) {
+                Target.Geo = null;
+                return this;
+            }
+
+            if (coordinates.Contains(",") || coordinates.Contains(".") || coordinates.Contains(":"))
+                Target.Geo = coordinates;
+            else
                 throw new ArgumentException("Must be either lat,lon or an IP address.", "coordinates");
-            Target.Geo = coordinates;
+
             return this;
         }
 
@@ -119,7 +127,7 @@ namespace Exceptionless {
             if (tags == null)
                 return this;
 
-            Target.Tags.AddRange(tags);
+            Target.Tags.AddRange(tags.Where(t => !String.IsNullOrWhiteSpace(t)).Select(t => t.Trim()));
             return this;
         }
 
@@ -133,7 +141,9 @@ namespace Exceptionless {
         /// <param name="excludedPropertyNames">Any property names that should be excluded.</param>
         /// <param name="ignoreSerializationErrors">Specifies if properties that throw serialization errors should be ignored.</param>
         public EventBuilder AddObject(object data, string name = null, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false) {
-            Target.AddObject(data, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
+            if (data != null)
+                Target.AddObject(data, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
+            
             return this;
         }
 

@@ -74,6 +74,8 @@ namespace Exceptionless.Core {
 
         public string ElasticSearchConnectionString { get; set; }
 
+        public string GeoIpConnectionString { get; set; }
+
         public string Version { get; private set; }
 
         public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId) && !String.IsNullOrEmpty(IntercomAppSecret); ; } }
@@ -189,6 +191,8 @@ namespace Exceptionless.Core {
             var elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
             if (elasticSearchConnectionString != null)
                 settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
+
+            settings.GeoIpConnectionString = ConfigurationManager.AppSettings["GeoIpConnectionString"];
 
             settings.Version = ThisAssembly.AssemblyInformationalVersion;
 

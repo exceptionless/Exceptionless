@@ -19,6 +19,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Geo;
 using Exceptionless.Core.Lock;
 using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -37,6 +38,7 @@ using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Data;
 using FluentValidation;
+using MaxMind.GeoIP2;
 using MongoDB.Driver;
 using Nest;
 using RazorSharpEmail;
@@ -118,6 +120,8 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IWebHookRepository, WebHookRepository>();
             container.RegisterSingle<ITokenRepository, TokenRepository>();
             container.RegisterSingle<IApplicationRepository, ApplicationRepository>();
+
+            container.RegisterSingle<IGeoIPResolver, MindMaxGeoIPResolver>();
 
             container.RegisterSingle<IValidator<Application>, ApplicationValidator>();
             container.RegisterSingle<IValidator<Organization>, OrganizationValidator>();

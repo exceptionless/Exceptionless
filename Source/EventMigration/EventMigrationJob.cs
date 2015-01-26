@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Lock;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -35,6 +36,7 @@ namespace Exceptionless.EventMigration {
         private readonly MongoDatabase _mongoDatabase;
         private readonly StackMigrationRepository _stackRepository;
         private readonly EventMigrationRepository _eventRepository;
+        private readonly IGeoIPResolver _geoIpResolver;
         private readonly ILockProvider _lockProvider;
 
         private readonly int _batchSize;
@@ -43,13 +45,13 @@ namespace Exceptionless.EventMigration {
         private readonly bool _skipStacks;
         private readonly bool _skipErrors;
 
-        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, ILockProvider lockProvider) {
+        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider) {
             _elasticClient = elasticClient;
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
             _mongoDatabase = GetMongoDatabase();
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
-
+            _geoIpResolver = geoIpResolver;
             _lockProvider = lockProvider;
 
             _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
@@ -160,6 +162,15 @@ namespace Exceptionless.EventMigration {
                         if (request != null)
                             e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
 
+                        foreach (var ip in GetIpAddresses(e, request)) {
+                            var location = _geoIpResolver.ResolveIp(ip);
+                            if (location == null || !location.IsValid())
+                                continue;
+
+                            e.Geo = location.ToString();
+                            break;
+                        }
+
                         if (e.Type == Event.KnownTypes.NotFound && request != null) {
                             if (String.IsNullOrWhiteSpace(e.Source)) {
                                 e.Message = null;
@@ -211,6 +222,18 @@ namespace Exceptionless.EventMigration {
             }
 
             return JobResult.Success;
+        }
+
+        private IEnumerable<string> GetIpAddresses(PersistentEvent ev, RequestInfo request)  {
+            if (request != null && !String.IsNullOrWhiteSpace(request.ClientIpAddress))
+                yield return request.ClientIpAddress;
+
+            var environmentInfo = ev.GetEnvironmentInfo();
+            if (environmentInfo == null || String.IsNullOrWhiteSpace(environmentInfo.IpAddress))
+                yield break;
+
+            foreach (var ip in environmentInfo.IpAddress.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                yield return ip;
         }
 
         #region Legacy mongo collections
