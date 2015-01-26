@@ -55,7 +55,9 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             if (entityChanged.Type == typeof(User).Name && Clients.User(entityChanged.Id) != null) {
-                Clients.User(entityChanged.Id).entityChanged(entityChanged);
+                try {
+                    Clients.User(entityChanged.Id).entityChanged(entityChanged);
+                } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
                 return;
             }
 
