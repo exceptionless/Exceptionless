@@ -74,7 +74,7 @@ namespace Exceptionless.Core {
 
         public string ElasticSearchConnectionString { get; set; }
 
-        public string GeoIPDatabase { get; set; }
+        public string GeoIPDatabasePath { get; set; }
 
         public string Version { get; private set; }
 
@@ -140,7 +140,7 @@ namespace Exceptionless.Core {
             settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
             settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.com").Select(v => v.ToLowerInvariant()).ToList();
-            settings.GeoIPDatabase = ConfigurationManager.AppSettings["GeoIPDatabase"]; 
+            settings.GeoIPDatabasePath = ConfigurationManager.AppSettings["GeoIPDatabasePath"]; 
             settings.RunJobsInProcess = ConfigurationManager.AppSettings.GetBool("RunJobsInProcess", true);
             settings.LogJobLocks = ConfigurationManager.AppSettings.GetBool("LogJobLocks", false);
             settings.LogJobEvents = ConfigurationManager.AppSettings.GetBool("LogJobEvents", false);
