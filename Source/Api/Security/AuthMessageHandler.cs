@@ -18,12 +18,10 @@ namespace Exceptionless.Api.Security {
 
         private readonly TokenManager _tokenManager;
         private readonly IUserRepository _userRepository;
-        private readonly SecurityEncoder _encoder;
 
-        public AuthMessageHandler(TokenManager tokenManager, IUserRepository userRepository, SecurityEncoder encoder) {
+        public AuthMessageHandler(TokenManager tokenManager, IUserRepository userRepository) {
             _tokenManager = tokenManager;
             _userRepository = userRepository;
-            _encoder = encoder;
         }
 
         protected virtual Task<HttpResponseMessage> BaseSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
@@ -57,7 +55,7 @@ namespace Exceptionless.Api.Security {
                         if (String.IsNullOrEmpty(user.Salt))
                             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
 
-                        string encodedPassword = _encoder.GetSaltedHash(authInfo.Password, user.Salt);
+                        string encodedPassword = authInfo.Password.ToSaltedHash(user.Salt);
                         if (!String.Equals(encodedPassword, user.Password))
                             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
 

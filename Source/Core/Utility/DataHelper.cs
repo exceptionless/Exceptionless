@@ -12,6 +12,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
@@ -28,10 +29,12 @@ namespace Exceptionless.Core.Utility {
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
 
-        public const string SAMPLE_ORG_ID = "537650f3b77efe23a47914f3";
-        public const string SAMPLE_PROJECT_ID = "537650f3b77efe23a47914f4";
-        public const string SAMPLE_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
-        public const string SAMPLE_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTWqGp";
+        public const string TEST_USER_EMAIL = "test@exceptionless.com";
+        public const string TEST_USER_PASSWORD = "tester";
+        public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
+        public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";
+        public const string TEST_API_KEY = "LhhP1C9gijpSKCslHHCvwdSIz298twx271n1l6xw";
+        public const string TEST_USER_API_KEY = "5f8aT5j0M1SdWCMOiJKCrlDNHMI38LjCH4LTWqGp";
         public const string INTERNAL_API_KEY = "Bx7JgglstPG544R34Tw9T7RlCed3OIwtYXVeyhT2";
         public const string INTERNAL_PROJECT_ID = "54b56e480ef9605a88a13153";
 
@@ -126,23 +129,44 @@ namespace Exceptionless.Core.Utility {
             return project.Id;
         }
 
-        public void CreateSampleOrganizationAndProject(string userId) {
-            if (_tokenRepository.GetById(SAMPLE_API_KEY) != null)
+        public void CreateTestData() {
+            if (_userRepository.GetByEmailAddress(TEST_USER_EMAIL) != null)
+                return;
+
+            var user = new User {
+                FullName = "Test User", 
+                EmailAddress = TEST_USER_EMAIL,
+                IsEmailAddressVerified = true
+            };
+            user.Roles.Add(AuthorizationRoles.Client);
+            user.Roles.Add(AuthorizationRoles.User);
+            user.Roles.Add(AuthorizationRoles.GlobalAdmin);
+
+            user.Salt = StringExtensions.GetRandomString(16);
+            user.Password = TEST_USER_PASSWORD.ToSaltedHash(user.Salt);
+
+            user = _userRepository.Add(user);
+            CreateTestOrganizationAndProject(user.Id);
+            CreateTestInternalOrganizationAndProject(user.Id);
+        }
+
+        public void CreateTestOrganizationAndProject(string userId) {
+            if (_tokenRepository.GetById(TEST_API_KEY) != null)
                 return;
 
             User user = _userRepository.GetById(userId, true);
-            var organization = new Organization { Id = SAMPLE_ORG_ID, Name = "Acme" };
+            var organization = new Organization { Id = TEST_ORG_ID, Name = "Acme" };
             BillingManager.ApplyBillingPlan(organization, BillingManager.UnlimitedPlan, user);
             organization = _organizationRepository.Add(organization);
 
-            var project = new Project { Id = SAMPLE_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
+            var project = new Project { Id = TEST_PROJECT_ID, Name = "Disintegrating Pistol", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
             project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = _projectRepository.Add(project, true);
 
             _tokenRepository.Add(new Token {
-                Id = SAMPLE_API_KEY,
+                Id = TEST_API_KEY,
                 OrganizationId = organization.Id,
                 ProjectId = project.Id,
                 CreatedUtc = DateTime.UtcNow,
@@ -151,7 +175,7 @@ namespace Exceptionless.Core.Utility {
             });
 
             _tokenRepository.Add(new Token {
-                Id = SAMPLE_USER_API_KEY,
+                Id = TEST_USER_API_KEY,
                 UserId = user.Id,
                 CreatedUtc = DateTime.UtcNow,
                 ModifiedUtc = DateTime.UtcNow,
@@ -162,8 +186,8 @@ namespace Exceptionless.Core.Utility {
             _userRepository.Save(user, true);
         }
 
-        public void CreateInternalOrganizationAndProject(string userId) {
-            if (_tokenRepository.GetById(SAMPLE_API_KEY) != null)
+        public void CreateTestInternalOrganizationAndProject(string userId) {
+            if (_tokenRepository.GetById(INTERNAL_API_KEY) != null)
                 return;
 
             User user = _userRepository.GetById(userId, true);
@@ -173,7 +197,6 @@ namespace Exceptionless.Core.Utility {
 
             var project = new Project { Id = INTERNAL_PROJECT_ID, Name = "API", OrganizationId = organization.Id };
             project.NextSummaryEndOfDayTicks = DateTime.UtcNow.Date.AddDays(1).AddHours(1).Ticks;
-            project.Configuration.Settings.Add("IncludeConditionalData", "true");
             project.AddDefaultOwnerNotificationSettings(userId);
             project = _projectRepository.Add(project, true);
 

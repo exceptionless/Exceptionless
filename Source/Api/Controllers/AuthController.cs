@@ -6,6 +6,7 @@ using Exceptionless.Api.Models;
 using Exceptionless.Api.Security;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -24,7 +25,6 @@ namespace Exceptionless.Api.Controllers {
         private readonly IUserRepository _userRepository;
         private readonly IMailer _mailer;
         private readonly TokenManager _tokenManager;
-        private readonly SecurityEncoder _encoder = new SecurityEncoder();
         private readonly DataHelper _dataHelper;
 
         private static bool _isFirstUserChecked;
@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(user.Salt))
                 return Unauthorized();
 
-            string encodedPassword = _encoder.GetSaltedHash(model.Password, user.Salt);
+            string encodedPassword = model.Password.ToSaltedHash(user.Salt);
             if (!String.Equals(encodedPassword, user.Password))
                 return Unauthorized();
 
@@ -100,22 +100,18 @@ namespace Exceptionless.Api.Controllers {
                 FullName = model.Name, 
                 EmailAddress = model.Email,
                 IsEmailAddressVerified = false,
-                VerifyEmailAddressToken = _encoder.GetNewToken(),
+                VerifyEmailAddressToken = Core.Extensions.StringExtensions.GetNewToken(),
                 VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440)
             };
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
-            bool isFirstUser = AddGlobalAdminRoleIfFirstUser(user);
+            AddGlobalAdminRoleIfFirstUser(user);
 
-            user.Salt = _encoder.GenerateSalt();
-            user.Password = _encoder.GetSaltedHash(model.Password, user.Salt);
+            user.Salt = Core.Extensions.StringExtensions.GetRandomString(16);
+            user.Password = model.Password.ToSaltedHash(user.Salt);
 
             try {
                 user = _userRepository.Save(user);
-                if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev) {
-                    _dataHelper.CreateSampleOrganizationAndProject(user.Id);
-                    _dataHelper.CreateInternalOrganizationAndProject(user.Id);
-                }
             } catch (Exception ex) {
                 Log.Error().Message("Signup error: {0}", ex.Message).Exception(ex).Write();
                 return BadRequest("An error occurred.");
@@ -332,7 +328,7 @@ namespace Exceptionless.Api.Controllers {
                 if (String.IsNullOrWhiteSpace(model.CurrentPassword))
                     return BadRequest("The current password is incorrect.");
 
-                string encodedPassword = _encoder.GetSaltedHash(model.CurrentPassword, ExceptionlessUser.Salt);
+                string encodedPassword = model.CurrentPassword.ToSaltedHash(ExceptionlessUser.Salt);
                 if (!String.Equals(encodedPassword, ExceptionlessUser.Password))
                     return BadRequest("The current password is incorrect.");
             }
@@ -368,7 +364,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return BadRequest("No user was found with this Email Address.");
 
-            user.PasswordResetToken = _encoder.GetNewToken();
+            user.PasswordResetToken = Core.Extensions.StringExtensions.GetNewToken();
             user.PasswordResetTokenExpiration = DateTime.Now.AddMinutes(1440);
             _userRepository.Save(user);
 
@@ -418,16 +414,15 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        private bool AddGlobalAdminRoleIfFirstUser(User user) {
+        private void AddGlobalAdminRoleIfFirstUser(User user) {
             if (_isFirstUserChecked)
-                return false;
+                return;
 
             bool isFirstUser = _userRepository.Count() == 0;
             if (isFirstUser)
                 user.Roles.Add(AuthorizationRoles.GlobalAdmin);
 
             _isFirstUserChecked = true;
-            return isFirstUser;
         }
 
         private User AddExternalLogin(UserInfo userInfo) {
@@ -466,7 +461,6 @@ namespace Exceptionless.Api.Controllers {
             }
 
             // Check to see if a user already exists with this email address.
-            bool isFirstUser = false;
             User user = !String.IsNullOrEmpty(userInfo.Email) ? _userRepository.GetByEmailAddress(userInfo.Email) : null;
             if (user == null) {
                 if (!Settings.Current.EnableAccountCreation)
@@ -475,14 +469,12 @@ namespace Exceptionless.Api.Controllers {
                 user = new User { FullName = userInfo.GetFullName(), EmailAddress = userInfo.Email };
                 user.Roles.Add(AuthorizationRoles.Client);
                 user.Roles.Add(AuthorizationRoles.User);
-                isFirstUser = AddGlobalAdminRoleIfFirstUser(user);
+                AddGlobalAdminRoleIfFirstUser(user);
             }
 
             MarkEmailAddressVerified(user);
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
             _userRepository.Save(user);
-            if (isFirstUser && Settings.Current.WebsiteMode == WebsiteMode.Dev)
-                _dataHelper.CreateSampleOrganizationAndProject(user.Id);
 
             return user;
         }
@@ -510,9 +502,9 @@ namespace Exceptionless.Api.Controllers {
 
         private void ChangePassword(User user, string password) {
             if (String.IsNullOrEmpty(user.Salt))
-                user.Salt = _encoder.GenerateSalt();
+                user.Salt = Core.Extensions.StringExtensions.GetNewToken();
 
-            user.Password = _encoder.GetSaltedHash(password, user.Salt);
+            user.Password = password.ToSaltedHash(user.Salt);
             ResetPasswordResetToken(user);
             _userRepository.Save(user);
         }

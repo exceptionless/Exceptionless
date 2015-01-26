@@ -9,6 +9,7 @@ using Exceptionless.Api.Models;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
@@ -19,12 +20,10 @@ namespace Exceptionless.Api.Controllers {
     public class UserController : RepositoryApiController<IUserRepository, User, ViewUser, User, UpdateUser> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IMailer _mailer;
-        private readonly SecurityEncoder _encoder;
 
-        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, IMailer mailer, SecurityEncoder encoder) : base(userRepository) {
+        public UserController(IUserRepository userRepository, IOrganizationRepository organizationRepository, IMailer mailer) : base(userRepository) {
             _organizationRepository = organizationRepository;
             _mailer = mailer;
-            _encoder = encoder;
         }
 
         [HttpGet]
@@ -115,7 +114,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
             
             if (!user.IsEmailAddressVerified) {
-                user.VerifyEmailAddressToken = _encoder.GetNewToken();
+                user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
                 user.VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440);
                 _mailer.SendVerifyEmail(user);
             }

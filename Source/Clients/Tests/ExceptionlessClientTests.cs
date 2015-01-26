@@ -20,7 +20,7 @@ namespace Client.Tests {
     public class ExceptionlessClientTests {
         private ExceptionlessClient CreateClient() {
             return new ExceptionlessClient(c => {
-                c.ApiKey = DataHelper.SAMPLE_API_KEY;
+                c.ApiKey = DataHelper.TEST_API_KEY;
                 c.ServerUrl = Settings.Current.BaseURL;
                 c.EnableSSL = false;
                 c.UseDebugLogger();
@@ -100,10 +100,10 @@ namespace Client.Tests {
         private void EnsureSampleData(Container container) {
             var dataHelper = container.GetInstance<DataHelper>();
             var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.GetByEmailAddress("test@test.com");
+            var user = userRepository.GetByEmailAddress("test@exceptionless.com");
             if (user == null)
-                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@test.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue});
-            dataHelper.CreateSampleOrganizationAndProject(user.Id);
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
+            dataHelper.CreateTestOrganizationAndProject(user.Id);
         }
     }
 }

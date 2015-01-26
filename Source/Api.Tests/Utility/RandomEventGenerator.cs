@@ -29,10 +29,17 @@ namespace Exceptionless.Helpers {
                 ev.Source = PageNames.Random();
             else if (ev.Type == Event.KnownTypes.Log) {
                 ev.Source = LogSources.Random();
-                ev.Message = RandomData.GetSentence();
+                ev.Message = RandomData.GetString();
             }
 
+            if (RandomData.GetBool(80))
+                ev.Geo = RandomData.GetCoordinate();
+
+            if (RandomData.GetBool(20))
+                ev.Value = RandomData.GetDecimal();
+
             ev.SetUserIdentity(Identities.Random());
+            ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
             ev.AddRequestInfo(new RequestInfo {
                 ClientIpAddress = ClientIpAddresses.Random(),
@@ -45,11 +52,11 @@ namespace Exceptionless.Helpers {
             });
 
             for (int i = 0; i < RandomData.GetInt(1, 3); i++) {
-                string key = RandomData.GetAlphaString(5, 10);
+                string key = RandomData.GetWord();
                 while (ev.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                    key = RandomData.GetAlphaString(5, 15);
+                    key = RandomData.GetWord();
 
-                ev.Data.Add(key, RandomData.GetSentence());
+                ev.Data.Add(key, RandomData.GetString());
             }
 
             int tagCount = RandomData.GetInt(1, 3);
@@ -87,11 +94,11 @@ namespace Exceptionless.Helpers {
 
             if (generateData) {
                 for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
-                    string key = RandomData.GetAlphaString(5, 15);
+                    string key = RandomData.GetWord();
                     while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomData.GetAlphaString(5, 15);
+                        key = RandomData.GetWord();
 
-                    error.Data.Add(key, RandomData.GetSentence());
+                    error.Data.Add(key, RandomData.GetString());
                 }
             }
 
@@ -112,15 +119,15 @@ namespace Exceptionless.Helpers {
             var error = new SimpleError { Message = @"Generated exception message.", Type = ExceptionTypes.Random() };
             if (generateData) {
                 for (int i = 0; i < RandomData.GetInt(1, 5); i++) {
-                    string key = RandomData.GetAlphaString(5, 15);
+                    string key = RandomData.GetWord();
                     while (error.Data.ContainsKey(key) || key == Event.KnownDataKeys.Error)
-                        key = RandomData.GetAlphaString(5, 15);
+                        key = RandomData.GetWord();
 
-                    error.Data.Add(key, RandomData.GetSentence());
+                    error.Data.Add(key, RandomData.GetString());
                 }
             }
 
-            error.StackTrace = RandomData.GetParagraphs();
+            error.StackTrace = RandomData.GetString();
 
             if (currentNestingLevel < maxErrorNestingLevel && RandomData.GetBool())
                 error.Inner = GenerateSimpleError(maxErrorNestingLevel, generateData, currentNestingLevel + 1);

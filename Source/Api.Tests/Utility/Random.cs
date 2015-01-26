@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Exceptionless.Helpers {
@@ -20,7 +21,39 @@ namespace Exceptionless.Helpers {
             if (min >= max)
                 throw new Exception("Min value must be less than max value.");
 
-            return Instance.Next(min, max);
+            return Instance.Next(min, max + 1);
+        }
+
+        public static string GetVersion(string min, string max) {
+            if (String.IsNullOrEmpty(min))
+                min = "0.0.0.0";
+            if (String.IsNullOrEmpty(max))
+                min = "25.100.9999.9999";
+
+            Version minVersion, maxVersion;
+            if (!Version.TryParse(min, out minVersion))
+                minVersion = new Version(0, 0, 0, 0);
+            if (!Version.TryParse(max, out maxVersion))
+                maxVersion = new Version(25, 100, 9999, 9999);
+
+            minVersion = new Version(
+                minVersion.Major != -1 ? minVersion.Major : 0,
+                minVersion.Minor != -1 ? minVersion.Minor : 0,
+                minVersion.Build != -1 ? minVersion.Build : 0,
+                minVersion.Revision != -1 ? minVersion.Revision : 0);
+
+            maxVersion = new Version(
+                maxVersion.Major != -1 ? maxVersion.Major : 0,
+                maxVersion.Minor != -1 ? maxVersion.Minor : 0,
+                maxVersion.Build != -1 ? maxVersion.Build : 0,
+                maxVersion.Revision != -1 ? maxVersion.Revision : 0);
+
+            var major = GetInt(minVersion.Major, maxVersion.Major);
+            var minor = GetInt(minVersion.Minor, major == maxVersion.Major ? maxVersion.Minor : 100);
+            var build = GetInt(minVersion.Build, minor == maxVersion.Minor ? maxVersion.Build : 9999);
+            var revision = GetInt(minVersion.Revision, build == maxVersion.Build ? maxVersion.Revision : 9999);
+
+            return new Version(major, minor, build, revision).ToString();
         }
 
         public static int GetInt() {
@@ -43,6 +76,10 @@ namespace Exceptionless.Helpers {
 
         public static long GetLong() {
             return GetLong(Int64.MinValue, Int64.MaxValue);
+        }
+
+        public static string GetCoordinate() {
+            return GetDouble(-90.0, 90.0) + "," + GetDouble(-180.0, 180.0);
         }
 
         public static DateTime GetDateTime(DateTime? start = null, DateTime? end = null) {
@@ -107,6 +144,16 @@ namespace Exceptionless.Helpers {
             return Instance.NextDouble() * (max.Value - min.Value) + min.Value;
         }
 
+        public static decimal GetDecimal() {
+            byte scale = (byte)Instance.Next(29);
+            bool sign = Instance.Next(2) == 1;
+            return new decimal(GetInt(),
+                               GetInt(),
+                               GetInt(),
+                               sign,
+                               scale);
+        }
+
         public static T GetEnum<T>() {
             if (!typeof(T).IsEnum)
                 throw new ArgumentException("T must be an enum type.");
@@ -119,17 +166,31 @@ namespace Exceptionless.Helpers {
             return String.Concat(GetInt(0, 255), ".", GetInt(0, 255), ".", GetInt(0, 255), ".", GetInt(0, 255));
         }
 
-        private const string DEFAULT_RANDOM_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@$?_-";
+        private const string DEFAULT_RANDOM_CHARS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         public static string GetString(int minLength = 5, int maxLength = 20, string allowedChars = DEFAULT_RANDOM_CHARS) {
-            var builder = new StringBuilder();
             int length = minLength != maxLength ? GetInt(minLength, maxLength) : minLength;
-            char ch;
-            for (int i = 0; i < length; i++) {
-                ch = allowedChars[GetInt(0, allowedChars.Length)];
-                builder.Append(ch);
-            }
+            
+            const int byteSize = 0x100;
+            var allowedCharSet = new HashSet<char>(allowedChars).ToArray();
+            if (byteSize < allowedCharSet.Length)
+                throw new ArgumentException(String.Format("allowedChars may contain no more than {0} characters.", byteSize));
 
-            return builder.ToString();
+            using (var rng = new RNGCryptoServiceProvider()) {
+                var result = new StringBuilder();
+                var buf = new byte[128];
+
+                while (result.Length < length) {
+                    rng.GetBytes(buf);
+                    for (var i = 0; i < buf.Length && result.Length < length; ++i) {
+                        var outOfRangeStart = byteSize - (byteSize % allowedCharSet.Length);
+                        if (outOfRangeStart <= buf[i])
+                            continue;
+                        result.Append(allowedCharSet[buf[i] % allowedCharSet.Length]);
+                    }
+                }
+
+                return result.ToString();
+            }
         }
 
         private const string DEFAULT_ALPHA_CHARS = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -147,7 +208,7 @@ namespace Exceptionless.Helpers {
         }
 
         public static string GetWord(bool titleCase = true) {
-            return titleCase ? UpperCaseFirstCharacter(_words[GetInt(0, _words.Length)]) : _words[GetInt(0, _words.Length)];
+            return titleCase ? UpperCaseFirstCharacter(_words[GetInt(0, _words.Length - 1)]) : _words[GetInt(0, _words.Length - 1)];
         }
 
         public static string GetWords(int minWords = 2, int maxWords = 10, bool titleCaseFirstWord = true, bool titleCaseAllWords = true) {

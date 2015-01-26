@@ -22,5 +22,15 @@ namespace Exceptionless {
             builder.Target.SetUserDescription(emailAddress, description);
             return builder;
         }
+
+        /// <summary>
+        /// Sets the version that the event happened on.
+        /// </summary>
+        /// <param name="builder">The event builder object.</param>
+        /// <param name="version">The version.</param>
+        public static EventBuilder SetVersion(this EventBuilder builder, string version) {
+            builder.Target.SetVersion(version);
+            return builder;
+        }
     }
 }

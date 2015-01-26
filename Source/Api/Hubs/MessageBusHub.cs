@@ -64,9 +64,7 @@ namespace Exceptionless.Api.Hubs {
 
             try {
                 Clients.Group(entityChanged.OrganizationId).entityChanged(entityChanged);
-            } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Boom").Write();
-            }
+            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
         }
 
         private void OnPlanOverage(PlanOverage planOverage) {

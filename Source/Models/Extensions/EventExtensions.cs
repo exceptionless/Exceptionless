@@ -93,6 +93,18 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Sets the version that the event happened on.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="version">The version.</param>
+        public static void SetVersion(this Event ev, string version) {
+            if (String.IsNullOrWhiteSpace(version))
+                return;
+
+            ev.Data[Event.KnownDataKeys.Version] = version;
+        }
+
+        /// <summary>
         /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>
         /// <param name="ev">The event</param>

@@ -17,9 +17,9 @@ using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -30,12 +30,10 @@ namespace Exceptionless.App.Controllers.API {
     public class TokenController : RepositoryApiController<ITokenRepository, Token, ViewToken, NewToken, Token> {
         private readonly IApplicationRepository _applicationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly SecurityEncoder _encoder;
 
-        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository, SecurityEncoder encoder) : base(repository) {
+        public TokenController(ITokenRepository repository, IApplicationRepository applicationRepository, IProjectRepository projectRepository) : base(repository) {
             _applicationRepository = applicationRepository;
             _projectRepository = projectRepository;
-            _encoder = encoder;
         }
 
         #region CRUD
@@ -197,7 +195,7 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override Token AddModel(Token value) {
-            value.Id = _encoder.GetNewToken();
+            value.Id = StringExtensions.GetNewToken();
             value.CreatedUtc = value.ModifiedUtc = DateTime.UtcNow;
             value.Type = TokenType.Access;
             value.CreatedBy = Request.GetUser().Id;

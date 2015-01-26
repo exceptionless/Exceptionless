@@ -144,10 +144,10 @@ namespace Client.Tests.Submission {
         private void EnsureSampleData(Container container) {
             var dataHelper = container.GetInstance<DataHelper>();
             var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.GetByEmailAddress("test@test.com");
+            var user = userRepository.GetByEmailAddress("test@exceptionless.com");
             if (user == null)
-                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@test.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
-            dataHelper.CreateSampleOrganizationAndProject(user.Id);
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
+            dataHelper.CreateTestOrganizationAndProject(user.Id);
         }
     }
 }

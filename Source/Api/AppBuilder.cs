@@ -10,7 +10,9 @@ using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
+using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
+using Exceptionless.Api.Models;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
@@ -191,6 +193,8 @@ namespace Exceptionless.Api {
             var context = new OwinContext(app.Properties);
             var token = context.Get<CancellationToken>("host.OnAppDisposing");
 
+            CreateSampleData(container);
+
             if (Settings.Current.RunJobsInProcess) {
                 Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
@@ -201,6 +205,18 @@ namespace Exceptionless.Api {
                 Task.Factory.StartNew(() => container.GetInstance<RetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
                 Task.Factory.StartNew(() => container.GetInstance<StaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
+        }
+
+        private static void CreateSampleData(Container container) {
+            if (Settings.Current.WebsiteMode != WebsiteMode.Dev)
+                return;
+
+            var userRepository = container.GetInstance<IUserRepository>();
+            if (userRepository.Count() != 0)
+                return;
+
+            var dataHelper = container.GetInstance<DataHelper>();
+            dataHelper.CreateTestData();
         }
 
         public static Container CreateContainer() {

@@ -42,6 +42,16 @@ namespace Exceptionless.Models {
         public string Message { get; set; }
 
         /// <summary>
+        /// The geo coordinates where the event happened.
+        /// </summary>
+        public string Geo { get; set; }
+
+        /// <summary>
+        /// The value of the event if any.
+        /// </summary>
+        public decimal? Value { get; set; }
+
+        /// <summary>
         /// Optional data entries that contain additional information about this event.
         /// </summary>
         public DataDictionary Data { get; set; }

@@ -177,18 +177,19 @@ namespace Exceptionless.Core {
                     .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
-                        .Transform(t => t.Script(@"ctx._source['fixed'] = !!ctx._source['date_fixed']").Language(ScriptLang.Groovy))
                         .IncludeInAll(false)
                         .Properties(p => p
                             .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                             .String(f => f.Name(s => s.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                             .String(f => f.Name(s => s.SignatureHash).IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
-                            .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.Analyzed))
+                            .String(f => f.Name(e => e.Type).IndexName("type").Index(FieldIndexOption.Analyzed)
+                                .Fields(fields => fields.String(ss => ss.Name("raw").Index(FieldIndexOption.NotAnalyzed))))
                             .Date(f => f.Name(s => s.FirstOccurrence).IndexName("first"))
                             .Date(f => f.Name(s => s.LastOccurrence).IndexName("last"))
                             .String(f => f.Name(s => s.Title).IndexName("title").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
                             .String(f => f.Name(s => s.Description).IndexName("description").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                            .String(f => f.Name(s => s.Tags).IndexName("tag").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2))
+                            .String(f => f.Name(s => s.Tags).IndexName("tag").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.2)
+                                .Fields(fields => fields.String(ss => ss.Name("raw").Index(FieldIndexOption.NotAnalyzed))))
                             .String(f => f.Name(s => s.References).IndexName("links").Index(FieldIndexOption.Analyzed).IncludeInAll())
                             .Date(f => f.Name(s => s.DateFixed).IndexName("fixedon"))
                             .Boolean(f => f.Name("fixed"))
@@ -204,10 +205,63 @@ namespace Exceptionless.Core {
                 .Template(ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*")
                 .Settings(s => s.Add("analysis",
                     new {
+                        filter = new {
+                            email = new {
+                                type = "pattern_capture",
+                                preserve_original = 1,
+                                patterns = new[] {
+                                    @"(\w+)",
+                                    @"(\p{L}+)",
+                                    @"(\d+)",
+                                    @"(.+)@",
+                                    @"@(.+)"
+                                }
+                            },
+                            version = new {
+                                type = "pattern_capture",
+                                preserve_original = 1,
+                                patterns = new[] {
+                                    @"^(\d+)\.",
+                                    @"^(\d+\.\d+)",
+                                    @"^(\d+\.\d+\.\d+)"
+                                }
+                            },
+                            typename = new {
+                                type = "pattern_capture",
+                                preserve_original = 1,
+                                patterns = new[] {
+                                    @"\.(\w+)"
+                                }
+                            }
+                        },
                         analyzer = new {
                             comma_whitespace = new {
                                 type = "pattern",
                                 pattern = @"[,\s]+"
+                            },
+                            email = new {
+                                tokenizer = "uax_url_email",
+                                filter = new[] {
+                                    "email",
+                                    "lowercase",
+                                    "unique"
+                                }
+                            },
+                            version = new {
+                                tokenizer = "whitespace",
+                                filter = new[] {
+                                    "version",
+                                    "lowercase",
+                                    "unique"
+                                }
+                            },
+                            typename = new {
+                                tokenizer = "whitespace",
+                                filter = new[] {
+                                    "typename",
+                                    "lowercase",
+                                    "unique"
+                                }
                             }
                         }
                     }))
@@ -215,6 +269,7 @@ namespace Exceptionless.Core {
                     .Dynamic(DynamicMappingOption.Ignore)
                     .IncludeInAll(false)
                     .DisableSizeField(false)
+                    .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Script(SORTABLE_VERSION_SCRIPT).Language(ScriptLang.Groovy))
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -226,44 +281,83 @@ namespace Exceptionless.Core {
                         .Date(f => f.Name(e => e.Date).IndexName("date"))
                         .String(f => f.Name(e => e.Message).IndexName("message").Index(FieldIndexOption.Analyzed).IncludeInAll())
                         .String(f => f.Name(e => e.Tags).IndexName("tag").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
+                        .GeoPoint(f => f.Name(e => e.Geo).IndexLatLon())
+                        .Number(f => f.Name(e => e.Value).IndexName("value"))
                         .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
-                        .Object<DataDictionary>(f => f.Name(e => e.Data).Properties(p2 => p2
-                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).Index(FieldIndexOption.NotAnalyzed)) // TODO: Multifield to anaylize this with multiple tokenizers.
+                        .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
+                            .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version").SearchAnalyzer("whitespace"))
+                            .String(f2 => f2.Name(Event.KnownDataKeys.Version + ".sortable").IndexName("version.sortable").Index(FieldIndexOption.NotAnalyzed))
                             .Object<RequestInfo>(f2 => f2.Name(Event.KnownDataKeys.RequestInfo).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.ClientIpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.UserAgent).IndexName("useragent").Index(FieldIndexOption.Analyzed))
                                 .String(f3 => f3.Name(r => r.Path).IndexName("path").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                 .Object<DataDictionary>(f3 => f3.Name(e => e.Data).Path("just_name").Properties(p4 => p4
-                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).IndexName("browser").Index(FieldIndexOption.Analyzed)) // TODO: Multifield raw
-                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).IndexName("browser.version").Index(FieldIndexOption.Analyzed)) // TODO: Multifield raw
-                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).IndexName("browser.major").Index(FieldIndexOption.NotAnalyzed)) // TODO: Multifield raw
+                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.Browser).IndexName("browser").Index(FieldIndexOption.Analyzed)
+                                        .Fields(fields => fields.String(ss => ss.Name("raw").Index(FieldIndexOption.NotAnalyzed))))
+                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserVersion).IndexName("browser.version").Index(FieldIndexOption.Analyzed)
+                                        .Fields(fields => fields.String(ss => ss.Name("raw").Index(FieldIndexOption.NotAnalyzed))))
+                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.BrowserMajorVersion).IndexName("browser.major").Index(FieldIndexOption.NotAnalyzed))
                                     .String(f4 => f4.Name(RequestInfo.KnownDataKeys.Device).IndexName("device").Index(FieldIndexOption.Analyzed))
                                     .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OS).IndexName("os").Index(FieldIndexOption.Analyzed))
-                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).IndexName("os.version").Index(FieldIndexOption.Analyzed)) // TODO: Multifield raw
-                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).IndexName("os.major").Index(FieldIndexOption.NotAnalyzed)) // TODO: Multifield raw
+                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSVersion).IndexName("os.version").Index(FieldIndexOption.Analyzed)
+                                        .Fields(fields => fields.String(ss => ss.Name("raw").Index(FieldIndexOption.NotAnalyzed))))
+                                    .String(f4 => f4.Name(RequestInfo.KnownDataKeys.OSMajorVersion).IndexName("os.major").Index(FieldIndexOption.NotAnalyzed))
                                     .Boolean(f4 => f4.Name(RequestInfo.KnownDataKeys.IsBot).IndexName("bot"))))))
                             .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Code).IndexName("errorcode").Index(FieldIndexOption.NotAnalyzed).IncludeInAll().Boost(1.1))
-                                .String(f3 => f3.Name(r => r.Message).IndexName("errormessage").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                                .String(f3 => f3.Name("all_codes").IndexName("error.code").Index(FieldIndexOption.NotAnalyzed).Analyzer("whitespace").IncludeInAll().Boost(1.1))
+                                .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace").IncludeInAll())))
                             .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Message).IndexName("errormessage").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name(r => r.Type).IndexName("errortype").Index(FieldIndexOption.Analyzed).IncludeInAll())))
+                                .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll())))
                             .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.IpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
                                 .String(f3 => f3.Name(r => r.OSName).IndexName("os").Index(FieldIndexOption.Analyzed))
                                 .String(f3 => f3.Name(r => r.Architecture).IndexName("architecture").Index(FieldIndexOption.NotAnalyzed))))
                             .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Description).IndexName("userdescription").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name(r => r.EmailAddress).IndexName("useremail").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))
+                                .String(f3 => f3.Name(r => r.Description).IndexName("user.description").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .String(f3 => f3.Name(r => r.EmailAddress).IndexName("user.email").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))))
                             .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))))))
+                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))))))
                     )
                 )
             );
         }
+
+        private static string FLATTEN_ERRORS_SCRIPT = @"
+if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
+    return
+
+def types = []
+def messages = []
+def codes = []
+def err = ctx._source.data.containsKey('@error') ? ctx._source.data['@error'] : ctx._source.data['@simple_error']
+def curr = err
+while (curr != null) {
+    if (curr.containsKey('type'))
+        types.add(curr.type)
+    if (curr.containsKey('message'))
+        messages.add(curr.message)
+    if (curr.containsKey('code'))
+        codes.add(curr.code)
+    curr = curr.inner
+}
+
+err['all_types'] = types.join(' ')
+err['all_messages'] = messages.join(' ')
+err['all_codes'] = codes.join(' ')";
+
+        private static string SORTABLE_VERSION_SCRIPT = @"
+if (!ctx._source.containsKey('data') || !ctx._source.data.containsKey('@version'))
+    return
+
+def res = '';
+for (el in ctx._source.data['@version'].tokenize('.'))
+  res = res + el.padLeft(8);
+
+ctx._source.data['@version.sortable'] = res;";
     }
 }

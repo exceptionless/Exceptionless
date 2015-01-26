@@ -77,6 +77,41 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Sets the event geo coordinates. Can be either "lat,lon" or an IP address that will be used to auto detect the geo coordinates.
+        /// </summary>
+        /// <param name="coordinates">The event coordinates.</param>
+        public EventBuilder SetGeo(string coordinates) {
+            if (!coordinates.Contains(",") && !coordinates.Contains("."))
+                throw new ArgumentException("Must be either lat,lon or an IP address.", "coordinates");
+            Target.Geo = coordinates;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the event geo coordinates.
+        /// </summary>
+        /// <param name="latitude">The event latitude.</param>
+        /// <param name="longitude">The event longitude.</param>
+        public EventBuilder SetGeo(double latitude, double longitude) {
+            if (latitude < -90.0 || latitude > 90.0)
+                throw new ArgumentOutOfRangeException("latitude", "Must be a valid latitude value between -90.0 and 90.0.");
+            if (longitude < -180.0 || longitude > 180.0)
+                throw new ArgumentOutOfRangeException("longitude", "Must be a valid longitude value between -180.0 and 180.0.");
+            
+            Target.Geo = latitude + "," + longitude;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the event value.
+        /// </summary>
+        /// <param name="value">The value of the event.</param>
+        public EventBuilder SetValue(decimal value) {
+            Target.Value = value;
+            return this;
+        }
+
+        /// <summary>
         ///     Adds one or more tags to the event.
         /// </summary>
         /// <param name="tags">The tags to be added to the event.</param>

@@ -13,7 +13,7 @@ namespace Exceptionless.Models.Data {
 
         public static class KnownDataKeys {
             public const string ExtraProperties = "@ext";
-            public const string TargetInfo = "@ti";
+            public const string TargetInfo = "@target";
         }
     }
 }

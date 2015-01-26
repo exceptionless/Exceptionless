@@ -5,7 +5,6 @@ using System.Reflection;
 using Exceptionless.Configuration;
 using Exceptionless.Dependency;
 using Exceptionless.Enrichments.Default;
-using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Storage;
