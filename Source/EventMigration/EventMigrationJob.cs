@@ -54,20 +54,20 @@ namespace Exceptionless.EventMigration {
             _geoIpResolver = geoIpResolver;
             _lockProvider = lockProvider;
 
-            _batchSize = ConfigurationManager.AppSettings.GetInt("EventMigration:BatchSize", 50);
-            _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("EventMigration:DeleteExistingIndexes", false);
-            _resume = ConfigurationManager.AppSettings.GetBool("EventMigration:Resume", true);
-            _skipStacks = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipStacks", false);
-            _skipErrors = ConfigurationManager.AppSettings.GetBool("EventMigration:SkipErrors", false);
+            _batchSize = ConfigurationManager.AppSettings.GetInt("Migration:BatchSize", 50);
+            _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("Migration:DeleteExistingIndexes", false);
+            _resume = ConfigurationManager.AppSettings.GetBool("Migration:Resume", true);
+            _skipStacks = ConfigurationManager.AppSettings.GetBool("Migration:SkipStacks", false);
+            _skipErrors = ConfigurationManager.AppSettings.GetBool("Migration:SkipErrors", false);
         }
 
         private MongoDatabase GetMongoDatabase() {
-            var connectionString = ConfigurationManager.ConnectionStrings["EventMigration:MongoConnectionString"];
+            var connectionString = ConfigurationManager.ConnectionStrings["Migration:MongoConnectionString"];
             if (connectionString == null)
-                throw new ConfigurationErrorsException("EventMigration:MongoConnectionString was not found in the app.config.");
+                throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
 
             if (String.IsNullOrEmpty(connectionString.ConnectionString))
-                throw new ConfigurationErrorsException("EventMigration:MongoConnectionString was not found in the app.config.");
+                throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
 
             MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
             var url = new MongoUrl(connectionString.ConnectionString);
