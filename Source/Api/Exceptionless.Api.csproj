@@ -274,9 +274,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Content\index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
     <Content Include="Utility\Delta\LICENSE.txt" />
   </ItemGroup>
   <ItemGroup />

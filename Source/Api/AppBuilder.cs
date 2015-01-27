@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -10,9 +9,7 @@ using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Routing;
 using AutoMapper;
-using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
-using Exceptionless.Api.Models;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
@@ -23,6 +20,7 @@ using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Exceptionless.Dependency;
 using Exceptionless.Enrichments;
 using Exceptionless.Extras.Submission;
 using Exceptionless.Models;
@@ -32,15 +30,12 @@ using Exceptionless.Submission;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
-using Microsoft.Owin.FileSystems;
-using Microsoft.Owin.StaticFiles;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
-using Exceptionless.Dependency;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
@@ -177,16 +172,6 @@ namespace Exceptionless.Api {
             if (Settings.Current.EnableRedis)
                 resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
-
-            PhysicalFileSystem fileSystem = null;
-            var root = AppDomain.CurrentDomain.BaseDirectory;
-            if (Directory.Exists(Path.Combine(root, "./Content")))
-                fileSystem = new PhysicalFileSystem(Path.Combine(root, "./Content"));
-            if (Directory.Exists(Path.Combine(root, "./bin/Content")))
-                fileSystem = new PhysicalFileSystem(Path.Combine(root, "./bin/Content"));
-
-            if (fileSystem != null)
-                app.UseFileServer(new FileServerOptions { FileSystem = fileSystem });
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 
