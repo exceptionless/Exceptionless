@@ -8,7 +8,7 @@ namespace Exceptionless.Api.Tests {
     public class RedisLockTests : LockTests {
         public RedisLockTests() {
             var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
-            _cacheClient = new RedisCacheClient(muxer.GetDatabase());
+            _cacheClient = new RedisCacheClient(muxer);
             _locker = new CacheLockProvider(_cacheClient);
         }
     }

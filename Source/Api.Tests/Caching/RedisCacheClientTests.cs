@@ -15,7 +15,7 @@ namespace Exceptionless.Api.Tests.Caching {
                 return;
 
             var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
-            _cache = new RedisCacheClient(muxer.GetDatabase());
+            _cache = new RedisCacheClient(muxer);
         }
 
         [Fact]
