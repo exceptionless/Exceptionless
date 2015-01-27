@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Component;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Lock;
-using Exceptionless.Threading.Tasks;
 using Nito.AsyncEx;
 using NLog.Fluent;
 using StackExchange.Redis;
-using Exceptionless.Core.AppStats;
 
 namespace Exceptionless.Core.Queues {
     public class RedisQueue<T> : IQueue<T> where T: class {
