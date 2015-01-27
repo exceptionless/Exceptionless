@@ -34,8 +34,6 @@ namespace Exceptionless.Core.Migrations {
                 string emailAddress = document.GetValue("EmailAddress").AsString;
                 if (!String.IsNullOrWhiteSpace(emailAddress))
                     document.Set("EmailAddress", emailAddress.ToLowerInvariant().Trim());
-                else
-                    document.Remove("EmailAddress");
             }
 
             collection.Save(document);
