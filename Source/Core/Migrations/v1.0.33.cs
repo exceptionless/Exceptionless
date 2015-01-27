@@ -16,8 +16,9 @@ using MongoMigrations;
 
 namespace Exceptionless.Core.Migrations {
     public class CollectionNameConversionMigration : CollectionMigration {
-        public CollectionNameConversionMigration() : base("1.0.33", "token") {
-            Description = "Rename various errorstack collection to stack and project.hook collection to webhook.";
+        public CollectionNameConversionMigration() : base("1.0.33", "project.hook") {
+            Description = "Rename project.hook collection to webhook.";
+            IsSafeToRunMultipleTimes = true;
         }
 
         public override void Update() {
