@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
@@ -28,28 +29,18 @@ namespace Exceptionless.EventMigration {
 
             _cacheClient.FlushAll();
             
-            _elasticClient.DeleteIndex(i => i.AllIndices());
-            _elasticClient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
+            ElasticSearchConfiguration.ConfigureMapping(_elasticClient, true);
 
-            // Old collections
-            _mongoDatabase.DropCollection("_schemaversion");
-            _mongoDatabase.DropCollection("error");
-            _mongoDatabase.DropCollection("errorstack");
-            _mongoDatabase.DropCollection("errorstack.stats.day");
-            _mongoDatabase.DropCollection("errorstack.stats.month");
-            _mongoDatabase.DropCollection("jobhistory");
-            _mongoDatabase.DropCollection("joblock");
-            _mongoDatabase.DropCollection("organization");
-            _mongoDatabase.DropCollection("project");
-            _mongoDatabase.DropCollection("project.stats.day");
-            _mongoDatabase.DropCollection("project.stats.month");
-            _mongoDatabase.DropCollection("project.hook");
-            _mongoDatabase.DropCollection("user");
+            foreach (var collection in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system")))
+                _mongoDatabase.DropCollection(collection);
 
-            // New Collections
-            _mongoDatabase.DropCollection("application");
-            _mongoDatabase.DropCollection("token");
-            _mongoDatabase.DropCollection("webhook");
+            // Create indexes
+            new ApplicationRepository(_mongoDatabase);
+            new OrganizationRepository(_mongoDatabase);
+            new ProjectRepository(_mongoDatabase);
+            new TokenRepository(_mongoDatabase);
+            new WebHookRepository(_mongoDatabase);
+            new UserRepository(_mongoDatabase);
 
             return JobResult.Success;
         }

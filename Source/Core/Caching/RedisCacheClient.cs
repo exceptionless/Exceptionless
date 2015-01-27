@@ -9,9 +9,9 @@ namespace Exceptionless.Core.Caching {
         private readonly ConnectionMultiplexer _connectionMultiplexer;
         private readonly IDatabase _db;
 
-        public RedisCacheClient(ConnectionMultiplexer connectionMultiplexer, IDatabase db) {
+        public RedisCacheClient(ConnectionMultiplexer connectionMultiplexer) {
             _connectionMultiplexer = connectionMultiplexer;
-            _db = db;
+            _db = connectionMultiplexer.GetDatabase();
         }
 
         public bool Remove(string key) {

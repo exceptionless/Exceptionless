@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Repositories {
             return client;
         }
 
-        private static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
+        public static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
             if (deleteExistingIndexes) {
                 searchclient.DeleteIndex(i => i.AllIndices());
                 searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);

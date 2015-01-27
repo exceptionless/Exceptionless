@@ -73,7 +73,6 @@ namespace Exceptionless.Core {
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                 container.RegisterSingle(muxer);
-                container.Register<IDatabase>(() => container.GetInstance<ConnectionMultiplexer>().GetDatabase());
 
                 container.Register<ICacheClient, RedisCacheClient>();
 
