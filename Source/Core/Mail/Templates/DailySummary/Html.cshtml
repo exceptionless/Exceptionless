@@ -30,7 +30,7 @@
                                 if (Model.IsFreePlan)
                                 {
                                 <p class="lead" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 10px; font-weight: normal; font-size: 17px; line-height: 1.6;">
-                                    You are currently on a free plan. If you would like to receive notifications for errors as they happen, <a href="@Model.BaseUrl/#/project/@Model.ProjectId/error/dashboard" rel="notrack">upgrade to a paid plan</a>.
+                                    You are currently on a free plan. If you would like to receive notifications for errors as they happen, <a href="@Model.BaseUrl/project/@Model.ProjectId/error/dashboard" rel="notrack">upgrade to a paid plan</a>.
                                 </p>
                                 }
                                 <!-- Button -->
@@ -48,7 +48,7 @@
                             <div class="other" style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif;">
                                 <h5 style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; line-height: 1.1; margin-bottom: 5px; color: #939393; font-weight: 900; font-size: 17px;">Other Actions</h5>
                                 <ul style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-bottom: 20px; font-weight: normal; font-size: 14px; line-height: 1.6;">
-                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/#/account/manage?projectId=@Model.ProjectId&tab=notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Change your notification settings for this project</a></li>
+                                    <li style="margin: 0; padding: 0; font-family: 'Open Sans', arial, sans-serif; margin-left: 5px; list-style-position: inside;"><a href="@Model.BaseUrl/account/manage?projectId=@Model.ProjectId&tab=notifications" rel="notrack" target="_blank" style="margin: 0;padding: 0;font-family: 'Open Sans', arial, sans-serif;color: #578F01;">Change your notification settings for this project</a></li>
                                 </ul>
                             </div>
                         </td>
