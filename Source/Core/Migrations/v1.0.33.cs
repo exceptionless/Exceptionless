@@ -22,6 +22,9 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void Update() {
+            if (Database.CollectionExists("webhook"))
+                Database.DropCollection("webhook");
+
             if (Database.CollectionExists("project.hook"))
                 Database.RenameCollection("project.hook", "webhook");
             

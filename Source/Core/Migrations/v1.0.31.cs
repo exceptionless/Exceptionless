@@ -28,6 +28,9 @@ namespace Exceptionless.Core.Migrations {
             if (projectCollection.IndexExists("ApiKeys"))
                 projectCollection.DropIndex("ApiKeys");
 
+            if (Database.CollectionExists("token"))
+                Database.DropCollection("token");
+
             base.Update();
         }
 
