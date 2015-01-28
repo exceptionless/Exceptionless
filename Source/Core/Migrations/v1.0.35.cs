@@ -18,6 +18,7 @@ namespace Exceptionless.Core.Migrations {
     public class UpdateWebhookEventTypesAndVersionMigration : CollectionMigration {
         public UpdateWebhookEventTypesAndVersionMigration() : base("1.0.35", "webhook") {
             Description = "Change EventType names and add a webhook version";
+            IsSafeToRunMultipleTimes = true;
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {

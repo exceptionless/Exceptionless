@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Geo {
             if (ip.StartsWith("10."))
                 return true;
 
-            // 172.16.00 – 172.31.255.255 (Class B)
+            // 172.16.0.0 – 172.31.255.255 (Class B)
             if (ip.StartsWith("172.")) {
                 for (var range = 16; range < 32; range++) {
                     if (ip.StartsWith("172." + range + "."))

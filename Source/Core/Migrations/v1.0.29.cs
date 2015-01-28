@@ -25,11 +25,9 @@ namespace Exceptionless.Core.Migrations {
             if (document.Contains("OverageDays"))
                 document.Remove("OverageDays");
 
-            if (document.Contains("MaxErrorsPerDay"))
-                document.ChangeName("MaxErrorsPerDay", "MaxEventsPerMonth");
-
-            if (document.Contains("MaxEventsPerMonth")) {
-                var maxErrorsPerMonth = document.GetValue("MaxEventsPerMonth").AsInt32;
+            if (document.Contains("MaxErrorsPerDay")) {
+                document.ChangeName("MaxErrorsPerDay", "MaxErrorsPerMonth");
+                var maxErrorsPerMonth = document.GetValue("MaxErrorsPerMonth").AsInt32;
                 if (maxErrorsPerMonth > 0)
                     document.Set("MaxErrorsPerMonth", maxErrorsPerMonth * 30);
             }

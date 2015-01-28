@@ -7,9 +7,9 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
 using MongoDB.Driver;
 using Nest;
+using NLog.Fluent;
 
 namespace Exceptionless.EventMigration {
     public class ResetDataStoresJob : JobBase {
@@ -27,20 +27,25 @@ namespace Exceptionless.EventMigration {
             if (!ConfigurationManager.AppSettings.GetBool("Migration:CanResetData").GetValueOrDefault())
                 return JobResult.FailedWithMessage("Migration:CanResetData was not set in the app.config.");
 
+            Log.Info().Message("Flushing redis cache").Write();
             _cacheClient.FlushAll();
-            
+
+            Log.Info().Message("Resetting elastic search").Write();
             ElasticSearchConfiguration.ConfigureMapping(_elasticClient, true);
 
-            foreach (var collection in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system")))
-                _mongoDatabase.DropCollection(collection);
+            foreach (var collectionName in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system"))) {
+                Log.Info().Message("Dropping collection: {0}", collectionName).Write();
+                _mongoDatabase.DropCollection(collectionName);
+            }
 
-            // Create indexes
+            Log.Info().Message("Creating indexes...").Write();
             new ApplicationRepository(_mongoDatabase);
             new OrganizationRepository(_mongoDatabase);
             new ProjectRepository(_mongoDatabase);
             new TokenRepository(_mongoDatabase);
             new WebHookRepository(_mongoDatabase);
             new UserRepository(_mongoDatabase);
+            Log.Info().Message("Finished creating indexes...").Write();
 
             return JobResult.Success;
         }

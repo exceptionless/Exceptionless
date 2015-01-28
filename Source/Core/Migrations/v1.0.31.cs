@@ -20,6 +20,7 @@ namespace Exceptionless.Core.Migrations {
     public class ProjectConversionMigration : CollectionMigration {
         public ProjectConversionMigration() : base("1.0.31", "project") {
             Description = "Migrate ApiKeys to the token repository and rename various project fields.";
+            IsSafeToRunMultipleTimes = true;
         }
 
         public override void Update() {

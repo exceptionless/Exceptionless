@@ -20,6 +20,7 @@ namespace Exceptionless.Core.Migrations {
     public class OrganizationConversionMigration : CollectionMigration {
         public OrganizationConversionMigration(): base("1.0.32", "organization") {
             Description = "Rename various organization fields";
+            IsSafeToRunMultipleTimes = true;
         }
 
         public override void UpdateDocument(MongoCollection<BsonDocument> collection, BsonDocument document) {
@@ -31,6 +32,18 @@ namespace Exceptionless.Core.Migrations {
 
             if (document.Contains("LastErrorDate"))
                 document.ChangeName("LastErrorDate", "LastEventDate");
+
+            if (document.Contains("MaxErrorsPerDay")) {
+                int maxErrorsPerDay = -1;
+                var maxErrorsPerDayElement = document.GetValue("MaxErrorsPerDay");
+                if (maxErrorsPerDayElement.IsInt32)
+                    maxErrorsPerDay = maxErrorsPerDayElement.AsInt32;
+                else if (maxErrorsPerDayElement.IsInt64)
+                    maxErrorsPerDay = (int)maxErrorsPerDayElement.AsInt64;
+
+                document.Set("MaxEventsPerMonth", maxErrorsPerDay > 0 ? maxErrorsPerDay * 30 : -1);
+                document.Remove("MaxErrorsPerDay");
+            }
 
             if (document.Contains("MaxErrorsPerMonth"))
                 document.ChangeName("MaxErrorsPerMonth", "MaxEventsPerMonth");
