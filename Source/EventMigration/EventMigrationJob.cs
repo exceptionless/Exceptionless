@@ -81,6 +81,10 @@ namespace Exceptionless.EventMigration {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+            var publicIp = Util.GetExternalIP();
+            if (publicIp != null)
+                Log.Info().Message("Public IP: " + publicIp).Write();
+
             if (_deleteExistingIndexes)
                 _elasticClient.DeleteIndex(i => i.AllIndices());
 

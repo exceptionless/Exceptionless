@@ -90,6 +90,7 @@
     <Compile Include="..\GlobalAssemblyInfo.cs">
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Util.cs" />
     <Compile Include="MongoCopyJob.cs" />
     <Compile Include="ResetDataStoresJob.cs" />
     <Compile Include="EventMigrationJob.cs" />
