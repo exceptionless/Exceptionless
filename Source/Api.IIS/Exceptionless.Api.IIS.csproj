@@ -69,6 +69,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="exceptionless.png" />
+    <Content Include="favicon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="index.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
