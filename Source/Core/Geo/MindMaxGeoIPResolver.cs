@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using Exceptionless.Core.Utility;
 using MaxMind.Db;
 using MaxMind.GeoIP2;
 using NLog.Fluent;
@@ -56,13 +57,18 @@ namespace Exceptionless.Core.Geo {
         }
 
         private static DatabaseReader GetDatabase() {
-            if (String.IsNullOrEmpty(Settings.Current.GeoIPDatabasePath) || !File.Exists(Settings.Current.GeoIPDatabasePath)) {
+            string databasePath = PathHelper.ExpandPath(Settings.Current.GeoIPDatabasePath);
+
+            if (!Path.IsPathRooted(databasePath))
+                databasePath = Path.GetFullPath(databasePath);
+
+            if (!File.Exists(databasePath)) {
                 Log.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
             try {
-                return new DatabaseReader(Settings.Current.GeoIPDatabasePath, FileAccessMode.Memory);
+                return new DatabaseReader(databasePath, FileAccessMode.Memory);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }
