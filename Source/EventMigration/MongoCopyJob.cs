@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Configuration;
+using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
@@ -21,6 +23,20 @@ namespace Exceptionless.EventMigration {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+            try {
+                var request = WebRequest.Create("http://checkip.dyndns.org/");
+                using (WebResponse response = request.GetResponse())
+                    using (StreamReader stream = new StreamReader(response.GetResponseStream())) {
+                        Log.Info().Message("Public IP:" + stream.ReadToEnd()).Write();
+                    }
+            } catch (Exception) {}
+
+            try {
+                foreach (var ipAddress in Dns.GetHostEntry(Dns.GetHostName()).AddressList) {
+                    Log.Info().Message("IP: " + ipAddress.ToString()).Write();
+                }
+            } catch (Exception) {}
+
             CopyCollections("error", "errorstack", "errorstack.stats.day", "errorstack.stats.month", "jobhistory", "joblock", "log", "project.stats.day", "project.stats.month");
             
             Log.Info().Message("Running migrations...").Write();
