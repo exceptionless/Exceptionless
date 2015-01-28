@@ -7,7 +7,6 @@ using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
 using MongoDB.Driver;
 using Nest;
 using NLog.Fluent;
