@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Security.Principal;
+using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
@@ -22,7 +23,7 @@ namespace Exceptionless.Core.Extensions {
                 return WindowsIdentity.GetAnonymous();
 
             if (!String.IsNullOrEmpty(token.UserId))
-                return CreateUserIdentity(token.UserId, token.Scopes.ToArray(), userRepository, token.ProjectId ?? token.DefaultProjectId);
+                return CreateUserIdentity(token.UserId, userRepository, token.ProjectId ?? token.DefaultProjectId);
 
             var claims = new List<Claim> {
                 new Claim(ClaimTypes.NameIdentifier, token.Id),
@@ -43,7 +44,7 @@ namespace Exceptionless.Core.Extensions {
             return new ClaimsIdentity(claims, TokenAuthenticationType);
         }
 
-        public static ClaimsIdentity CreateUserIdentity(string userId, string[] scopes, IUserRepository userRepository, string defaultProjectId = null) {
+        public static ClaimsIdentity CreateUserIdentity(string userId, IUserRepository userRepository, string defaultProjectId = null) {
             if (String.IsNullOrEmpty(userId))
                 throw new ArgumentNullException("userId");
             if (userRepository == null)
@@ -53,11 +54,7 @@ namespace Exceptionless.Core.Extensions {
             if (user == null)
                 return WindowsIdentity.GetAnonymous();
             
-            var roles = scopes.ToList();
-            if (roles.Count == 0)
-                roles.AddRange(user.Roles);
-
-            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), roles.ToArray(), defaultProjectId);
+            return CreateUserIdentity(user.EmailAddress, user.Id, user.OrganizationIds.ToArray(), user.Roles.ToArray(), defaultProjectId);
         }
 
         public static ClaimsIdentity ToIdentity(this User user, string defaultProjectId = null) {
@@ -77,11 +74,21 @@ namespace Exceptionless.Core.Extensions {
             if (!String.IsNullOrEmpty(defaultProjectId))
                 claims.Add(new Claim(DefaultProjectIdClaim, defaultProjectId));
 
-            if (roles.Any())
-                claims.AddRange(roles.Select(scope => new Claim(ClaimTypes.Role, scope)));
-            else
-                claims.Add(new Claim(ClaimTypes.Role, Authorization.AuthorizationRoles.User));
-            
+            var userRoles = new HashSet<string>(roles);
+            if (userRoles.Any()) {
+                // add implied scopes
+                if (userRoles.Contains(AuthorizationRoles.GlobalAdmin))
+                    userRoles.Add(AuthorizationRoles.User);
+
+                if (userRoles.Contains(AuthorizationRoles.User))
+                    userRoles.Add(AuthorizationRoles.Client);
+
+                claims.AddRange(userRoles.Select(scope => new Claim(ClaimTypes.Role, scope)));
+            } else {
+                claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.Client));
+                claims.Add(new Claim(ClaimTypes.Role, AuthorizationRoles.User));
+            }
+
             return new ClaimsIdentity(claims, UserAuthenticationType);
         }
 
