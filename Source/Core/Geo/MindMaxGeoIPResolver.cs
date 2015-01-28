@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Geo {
             }
 
             try {
-                return new DatabaseReader(Settings.Current.GeoIPDatabasePath);
+                return new DatabaseReader(Settings.Current.GeoIPDatabasePath, FileAccessMode.Memory);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }
