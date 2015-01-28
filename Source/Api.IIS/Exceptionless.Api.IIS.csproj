@@ -70,6 +70,8 @@
   <ItemGroup>
     <Content Include="exceptionless.png" />
     <Content Include="favicon.ico">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="exceptionless.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
