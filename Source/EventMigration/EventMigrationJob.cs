@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Jobs;
@@ -38,6 +39,7 @@ namespace Exceptionless.EventMigration {
         private readonly EventMigrationRepository _eventRepository;
         private readonly IGeoIPResolver _geoIpResolver;
         private readonly ILockProvider _lockProvider;
+        private readonly ICacheClient _cache;
 
         private readonly int _batchSize;
         private readonly bool _deleteExistingIndexes;
@@ -45,7 +47,7 @@ namespace Exceptionless.EventMigration {
         private readonly bool _skipStacks;
         private readonly bool _skipErrors;
 
-        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider) {
+        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) {
             _elasticClient = elasticClient;
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
             _mongoDatabase = GetMongoDatabase();
@@ -53,6 +55,7 @@ namespace Exceptionless.EventMigration {
             _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
             _geoIpResolver = geoIpResolver;
             _lockProvider = lockProvider;
+            _cache = cache;
 
             _batchSize = ConfigurationManager.AppSettings.GetInt("Migration:BatchSize", 50);
             _deleteExistingIndexes = ConfigurationManager.AppSettings.GetBool("Migration:DeleteExistingIndexes", false);
@@ -94,8 +97,8 @@ namespace Exceptionless.EventMigration {
                 stopwatch.Start();
                 var errorStackCollection = GetErrorStackCollection();
 
-                var mostRecentStack = _resume ? _stackRepository.GetMostRecent() : null;
-                var query = mostRecentStack != null ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack.Id)) : Query.Null;
+                var mostRecentStack = _resume ? _cache.Get<string>("migration-stackid") : null;
+                var query = mostRecentStack != null ? Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(mostRecentStack)) : Query.Null;
                 var stacks = errorStackCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(_batchSize).ToList();
                 while (stacks.Count > 0) {
                     stacks.ForEach(s => {
@@ -119,6 +122,7 @@ namespace Exceptionless.EventMigration {
                     }
 
                     var lastId = stacks.Last().Id;
+                    _cache.Set("migration-stackid", lastId);
                     stacks = errorStackCollection.Find(Query.GT(ErrorStackFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorStackFieldNames.Id)).SetLimit(_batchSize).ToList();
                     total += stacks.Count;
                 }
@@ -134,8 +138,8 @@ namespace Exceptionless.EventMigration {
                 var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
                 serializerSettings.AddModelConverters();
 
-                var mostRecentEvent = _resume ? _eventRepository.GetMostRecent() : null;
-                var query = mostRecentEvent != null ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent.Id)) : Query.Null;
+                var mostRecentEvent = _resume ? _cache.Get<string>("migration-errorid") : null;
+                var query = mostRecentEvent != null ? Query.GT(ErrorFieldNames.Id, ObjectId.Parse(mostRecentEvent)) : Query.Null;
                 var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
                 while (errors.Count > 0) {
                     Log.Info().Message("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
@@ -221,6 +225,7 @@ namespace Exceptionless.EventMigration {
 
                     total += upgradedEvents.Count;
                     var lastId = upgradedEvents.Last().Id;
+                    _cache.Set("migration-errorid", lastId);
                     errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
                 }
             }

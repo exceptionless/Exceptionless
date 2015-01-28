@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using Exceptionless.Core;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 
 namespace Exceptionless.Api.Models {
