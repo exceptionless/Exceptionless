@@ -59,7 +59,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     else
                         extendedData.Remove("TraceLog");
                 }
-                
+
                 if (isNotFound && hasRequestInfo) {
                     doc.RemoveAll("Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
                     if (extendedData != null && extendedData["__ExceptionInfo"] != null)
@@ -68,7 +68,11 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     doc.Add("Type", new JValue("404"));
                 } else {
                     var error = new JObject();
-                    error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Message", "Inner", "StackTrace", "TargetMethod", "Modules");
+
+                    if (!doc.RemoveIfNullOrEmpty("Message"))
+                        error.Add("Message", doc["Message"].Value<string>());
+
+                    error.MoveOrRemoveIfNullOrEmpty(doc, "Code", "Type", "Inner", "StackTrace", "TargetMethod", "Modules");
 
                     // Copy the exception info from root extended data to the current errors extended data.
                     if (extendedData != null && extendedData["__ExceptionInfo"] != null) {
