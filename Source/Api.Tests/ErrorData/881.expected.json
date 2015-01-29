@@ -41,11 +41,12 @@
       "AppDomainName": "/LM/W3SVC/819060847/ROOT-1-13013139602206444"
     }
   },
+  "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
   "Type": "error",
   "@error": {
+    "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
     "Code": "500",
     "Type": "System.Web.HttpRequestValidationException",
-    "Message": "A potentially dangerous Request.RawUrl value was detected from the client (=\"...aspx?%00\"><script>alert(309)</...\").",
     "StackTrace": [
       {
         "LineNumber": 0,
