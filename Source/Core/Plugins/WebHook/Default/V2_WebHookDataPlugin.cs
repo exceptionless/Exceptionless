@@ -1,6 +1,7 @@
 ﻿using System;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
+using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(20)]
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 Id = ctx.Event.Id,
                 OccurrenceDate = ctx.Event.Date,
                 Tags = ctx.Event.Tags,
-                Message = ctx.Event.Message,
+                Message = GetMessage(ctx.Event),
                 Type = ctx.Event.Type,
                 Source = ctx.Event.Source,
                 ProjectId = ctx.Event.ProjectId,
@@ -57,6 +58,21 @@ namespace Exceptionless.Core.Plugins.WebHook {
                 IsCritical = ctx.Stack.OccurrencesAreCritical || ctx.Stack.Tags != null && ctx.Stack.Tags.Contains("Critical"),
                 FixedInVersion = ctx.Stack.FixedInVersion
             };
+        }
+
+        private string GetMessage(PersistentEvent ev) {
+            if (!String.IsNullOrWhiteSpace(ev.Message) || !ev.IsError())
+                return ev.Message;
+
+            var error = ev.GetError();
+            if (error != null)
+                return error.Message;
+
+            var simpleError = ev.GetSimpleError();
+            if (simpleError != null)
+                return simpleError.Message;
+
+            return null;
         }
     }
 }

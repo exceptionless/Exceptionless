@@ -16,9 +16,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (error == null)
                 return;
 
-            if (String.IsNullOrWhiteSpace(context.Event.Message))
-                context.Event.Message = error.Message;
-
             string[] commonUserMethods = { "DataContext.SubmitChanges", "Entities.SaveChanges" };
             if (context.HasProperty("CommonMethods"))
                 commonUserMethods = context.GetProperty<string>("CommonMethods").SplitAndTrim(',');
