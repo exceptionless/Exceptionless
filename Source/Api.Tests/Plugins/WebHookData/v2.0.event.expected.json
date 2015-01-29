@@ -5,7 +5,7 @@
   "Tags": [],
   "Type": "error",
   "Source": null,
-  "Message": null,
+  "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
   "ProjectId": "1ecd0826e447ad1e78877ab2",
   "ProjectName": "Disintegrating Pistol",
   "OrganizationId": "1ecd0826e447ad1e78877555",
