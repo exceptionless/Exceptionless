@@ -62,7 +62,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             dynamic data = new ExpandoObject();
-            data.Message = !String.IsNullOrWhiteSpace(ev.Message) ? ev.Message : error.Message;
+            data.Message = ev.Message;
             data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
             data.TypeFullName = error.Type;
 
