@@ -122,6 +122,18 @@ namespace Exceptionless.Core.Repositories {
             base.BeforeSave(originalDocuments, documents);
         }
 
+        protected override void AfterSave(ICollection<User> originalDocuments, ICollection<User> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
+            if (EnableCache) {
+                foreach (var document in documents) {
+                    foreach (var organizationId in document.OrganizationIds) {
+                        InvalidateCache(String.Concat("org:", organizationId));
+                    }
+                }
+            }
+
+            base.AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
+        }
+
         public override void InvalidateCache(User user) {
             if (!EnableCache || Cache == null)
                 return;
