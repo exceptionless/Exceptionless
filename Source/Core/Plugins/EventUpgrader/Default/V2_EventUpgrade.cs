@@ -19,11 +19,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 if (ctx.IsMigration) {
                     doc.Rename("ErrorStackId", "StackId");
                 } else {
-                    if (isNotFound)
-                        doc.Remove("Id");
-                    else
-                        doc.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
-
+                    doc.RenameOrRemoveIfNullOrEmpty("Id", "ReferenceId");
                     doc.Remove("OrganizationId");
                     doc.Remove("ProjectId");
                     doc.Remove("ErrorStackId");
