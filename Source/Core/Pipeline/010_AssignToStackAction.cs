@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Pipeline {
 
         public override void ProcessBatch(ICollection<EventContext> contexts) {
             var stacks = new Dictionary<string, Tuple<bool, Stack>>();
-            contexts.ForEach(ctx => {
+            foreach (var ctx in contexts) {
                 if (String.IsNullOrEmpty(ctx.Event.StackId)) {
                     // only add default signature info if no other signature info has been added
                     if (ctx.StackSignatureData.Count == 0) {
@@ -55,18 +55,18 @@ namespace Exceptionless.Core.Pipeline {
                     string signatureHash = ctx.StackSignatureData.Values.ToSHA1();
                     ctx.SignatureHash = signatureHash;
 
-                    if (stacks.ContainsKey(signatureHash))
-                        ctx.Stack = stacks[signatureHash].Item2;
-                    else {
+                    Tuple<bool, Stack> value;
+                    if (stacks.TryGetValue(signatureHash, out value)) {
+                        ctx.Stack = value.Item2;
+                    } else {
                         ctx.Stack = _stackRepository.GetStackBySignatureHash(ctx.Event.ProjectId, signatureHash);
                         if (ctx.Stack != null)
                             stacks.Add(signatureHash, Tuple.Create(false, ctx.Stack));
                     }
 
                     if (ctx.Stack == null) {
-                        Log.Trace().Message("Creating new error stack.").Write();
+                        Log.Trace().Message("Creating new event stack.").Write();
                         ctx.IsNew = true;
-                        ctx.Event.IsFirstOccurrence = true;
 
                         string title = _formattingPluginManager.GetStackTitle(ctx.Event);
                         var stack = new Stack {
@@ -87,13 +87,13 @@ namespace Exceptionless.Core.Pipeline {
                     }
                 } else {
                     ctx.Stack = _stackRepository.GetById(ctx.Event.StackId, true);
-
-                    if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId)
+                    if (ctx.Stack == null || ctx.Stack.ProjectId != ctx.Event.ProjectId) {
                         ctx.SetError("Invalid StackId.");
-                    else {
-                        ctx.SignatureHash = ctx.Stack.SignatureHash;
-                        stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
+                        continue;
                     }
+
+                    ctx.SignatureHash = ctx.Stack.SignatureHash;
+                    stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
                 }
 
                 if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
@@ -111,10 +111,12 @@ namespace Exceptionless.Core.Pipeline {
                     }
                 }
 
+                ctx.Event.IsFirstOccurrence = ctx.IsNew;
+
                 // sync the fixed and hidden flags to the error occurrence
                 ctx.Event.IsFixed = ctx.Stack.DateFixed.HasValue;
                 ctx.Event.IsHidden = ctx.Stack.IsHidden;
-            });
+            }
 
             var stacksToAdd = stacks.Where(kvp => kvp.Value.Item1 && String.IsNullOrEmpty(kvp.Value.Item2.Id)).Select(kvp => kvp.Value.Item2).ToList();
             if (stacksToAdd.Count > 0) {
@@ -127,9 +129,9 @@ namespace Exceptionless.Core.Pipeline {
             if (stacksToSave.Count > 0)
                 _stackRepository.Save(stacksToSave, true, sendNotification: false); // notification will get sent later in the update stats step
 
-            // set stack ids after they have been saved and created
+            // Set stack ids after they have been saved and created
             contexts.ForEach(ctx => {
-                ctx.Event.StackId = ctx.Stack.Id;
+                ctx.Event.StackId = ctx.Stack != null ? ctx.Stack.Id : null;
             });
         }
 

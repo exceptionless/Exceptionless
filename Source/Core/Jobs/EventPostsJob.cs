@@ -191,6 +191,13 @@ namespace Exceptionless.Core.Jobs {
             events.ForEach(e => {
                 // set the project id on all events
                 e.ProjectId = ep.ProjectId;
+
+                // set the reference id to the event id if one was defined.
+                if (!String.IsNullOrEmpty(e.Id) && String.IsNullOrEmpty(e.ReferenceId))
+                    e.ReferenceId = e.Id;
+
+                // the event id, stack id and organization id should never be set for posted events
+                e.Id = e.StackId = e.OrganizationId = null;
             });
 
             return events;
