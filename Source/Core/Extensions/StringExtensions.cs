@@ -228,10 +228,16 @@ namespace Exceptionless.Core.Extensions {
                 if (Char.IsUpper(c))
                     c = Char.ToLower(c);
 
-                if (charsToRemove.Contains(v => v == c))
-                    continue;
+                bool includeChar = true;
+                for (int i = 0; i < charsToRemove.Length; i++) {
+                    if (charsToRemove[i] == c) {
+                        includeChar = false;
+                        break;
+                    }
+                }
 
-                builder.Append(c);
+                if (includeChar)
+                    builder.Append(c);
             }
 
             return builder.ToString();

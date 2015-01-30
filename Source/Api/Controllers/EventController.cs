@@ -61,7 +61,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
         public IHttpActionResult GetById(string id, string filter = null, string time = null, string offset = null) {
-            PersistentEvent model = GetModel(id);
+            var model = GetModel(id);
             if (model == null)
                 return NotFound();
 
@@ -73,8 +73,8 @@ namespace Exceptionless.Api.Controllers {
             var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             return OkWithLinks(model,
-                GetEntityResourceLink(_repository.GetPreviousEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
-                GetEntityResourceLink(_repository.GetNextEventId(id, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
+                GetEntityResourceLink(_repository.GetPreviousEventId(model, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
+                GetEntityResourceLink(_repository.GetNextEventId(model, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
                 GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
