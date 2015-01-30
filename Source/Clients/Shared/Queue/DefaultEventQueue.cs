@@ -65,7 +65,7 @@ namespace Exceptionless.Queue {
                 _storage.ReleaseStaleLocks(_config.GetQueueName());
 
                 DateTime maxCreatedDate = DateTime.Now;
-                var batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, maxCreatedDate: maxCreatedDate);
+                var batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, _config.SubmissionBatchSize, maxCreatedDate);
                 while (batch.Any()) {
                     bool deleteBatch = true;
 
@@ -113,7 +113,7 @@ namespace Exceptionless.Queue {
                     if (!deleteBatch || IsQueueProcessingSuspended)
                         break;
 
-                    batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, maxCreatedDate: maxCreatedDate);
+                    batch = _storage.GetEventBatch(_config.GetQueueName(), _serializer, _config.SubmissionBatchSize, maxCreatedDate);
                 }
             } catch (Exception ex) {
                 _log.Error(typeof(DefaultEventQueue), ex, String.Concat("An error occurred while processing the queue: ", ex.Message));

@@ -25,6 +25,7 @@ namespace Exceptionless {
             DefaultTags = new TagSet();
             DefaultData = new DataDictionary();
             Settings = new SettingsDictionary();
+            SubmissionBatchSize = 50;
             if (resolver == null)
                 throw new ArgumentNullException("resolver");
             _resolver = resolver;
@@ -103,6 +104,11 @@ namespace Exceptionless {
         /// <c>true</c> to include private information about the local machine; otherwise, <c>false</c>.
         /// </value>
         public bool IncludePrivateInformation { get; set; }
+
+        /// <summary>
+        /// Maximum number of events that should be sent to the server together in a batch. (Defaults to 50)
+        /// </summary>
+        public int SubmissionBatchSize { get; set; }
 
         /// <summary>
         /// A list of exclusion patterns that will automatically remove any data that matches them from any data submitted to the server.
