@@ -64,6 +64,7 @@
     <Compile Include="Dependency\TinyIoC.cs" />
     <Compile Include="Duplicates\DefaultDuplicateChecker.cs" />
     <Compile Include="Duplicates\IDuplicateChecker.cs" />
+    <Compile Include="Duplicates\NoDuplicateChecker.cs" />
     <Compile Include="Enrichments\ContextData.cs" />
     <Compile Include="Enrichments\Default\ActionEnrichment.cs" />
     <Compile Include="Enrichments\Default\ConfigurationDefaultsEnrichment.cs" />

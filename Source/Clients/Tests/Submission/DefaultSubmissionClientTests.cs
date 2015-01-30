@@ -144,9 +144,9 @@ namespace Client.Tests.Submission {
         private void EnsureSampleData(Container container) {
             var dataHelper = container.GetInstance<DataHelper>();
             var userRepository = container.GetInstance<IUserRepository>();
-            var user = userRepository.GetByEmailAddress("test@exceptionless.com");
+            var user = userRepository.GetByEmailAddress("test@exceptionless.io");
             if (user == null)
-                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.com", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
+                user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.io", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
             dataHelper.CreateTestOrganizationAndProject(user.Id);
         }
     }

@@ -139,7 +139,7 @@ namespace Exceptionless.Core {
             settings.InternalProjectId = ConfigurationManager.AppSettings["InternalProjectId"];
             settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
-            settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.com").Select(v => v.ToLowerInvariant()).ToList();
+            settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
             settings.GeoIPDatabasePath = ConfigurationManager.AppSettings["GeoIPDatabasePath"]; 
             settings.RunJobsInProcess = ConfigurationManager.AppSettings.GetBool("RunJobsInProcess", true);
             settings.LogJobLocks = ConfigurationManager.AppSettings.GetBool("LogJobLocks", false);

@@ -177,7 +177,7 @@ namespace Exceptionless.Api.Tests.Mail {
             var mailer = IoC.GetInstance<Mailer>();
             mailer.SendDailySummary(Settings.Current.TestEmailAddress, new DailySummaryModel {
                 ProjectId = "1",
-                BaseUrl = "http://app.exceptionless.com",
+                BaseUrl = "http://be.exceptionless.io",
                 MostFrequent = new List<EventStackResult> {
                     new EventStackResult {
                         First = DateTime.Now,

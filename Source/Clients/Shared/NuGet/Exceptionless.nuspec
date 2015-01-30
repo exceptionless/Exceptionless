@@ -5,12 +5,12 @@
     <version>$version$</version>
     <authors>Exceptionless</authors>
     <owners>Exceptionless</owners>
-    <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.com and provides aggregated views and analytics.</description>
-    <projectUrl>http://exceptionless.com</projectUrl>
-    <iconUrl>http://app.exceptionless.com/images/exceptionless-32.png</iconUrl>
+    <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.io and provides aggregated views and analytics.</description>
+    <projectUrl>http://exceptionless.io</projectUrl>
+    <iconUrl>http://be.exceptionless.io/images/exceptionless-32.png</iconUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <releaseNotes>http://exceptionless.com/category/versions/</releaseNotes>
+    <releaseNotes>http://exceptionless.io/category/versions/</releaseNotes>
     <tags>Error Report Reporting Exception Logging Log ELMAH</tags>
     <references>
       <reference file="Exceptionless.dll" />

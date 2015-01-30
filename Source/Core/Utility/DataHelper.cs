@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Utility {
         private readonly IEventRepository _eventRepository;
         private readonly IStackRepository _stackRepository;
 
-        public const string TEST_USER_EMAIL = "test@exceptionless.com";
+        public const string TEST_USER_EMAIL = "test@exceptionless.io";
         public const string TEST_USER_PASSWORD = "tester";
         public const string TEST_ORG_ID = "537650f3b77efe23a47914f3";
         public const string TEST_PROJECT_ID = "537650f3b77efe23a47914f4";

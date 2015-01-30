@@ -44,7 +44,7 @@ namespace Client.Tests.Configuration {
         public void CanReadFromAttributes() {
             var config = new ExceptionlessConfiguration(DependencyResolver.CreateDefault());
             Assert.Null(config.ApiKey);
-            Assert.Equal("https://collector.exceptionless.com", config.ServerUrl);
+            Assert.Equal("https://collector.exceptionless.io", config.ServerUrl);
             Assert.True(config.EnableSSL);
             Assert.Equal(0, config.Settings.Count);
 

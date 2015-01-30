@@ -34,11 +34,10 @@ namespace Exceptionless.Core.Utility {
 
         public HealthCheckResult CheckMongo() {
             try {
+                _db.Server.Ping();
+
                 if (!IsDbUpToDate())
                     return HealthCheckResult.NotHealthy("Mongo DB Schema Outdated");
-
-                if (!_db.CollectionExists(UserRepository.CollectionName))
-                    return HealthCheckResult.NotHealthy("Mongo DB Missing User Collection");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Mongo Not Working: " + ex.Message);
             }
@@ -89,7 +88,7 @@ namespace Exceptionless.Core.Utility {
                 string databaseName = url.DatabaseName;
                 if (Settings.Current.AppendMachineNameToDatabase)
                     databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
+                
                 _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, databaseName);
 
                 return _dbIsUpToDate.Value;

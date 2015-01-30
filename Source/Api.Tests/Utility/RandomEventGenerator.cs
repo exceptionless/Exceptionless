@@ -42,7 +42,7 @@ namespace Exceptionless.Helpers {
             ev.SetVersion(RandomData.GetVersion("2.0", "4.0"));
 
             ev.AddRequestInfo(new RequestInfo {
-                ClientIpAddress = ClientIpAddresses.Random(),
+                //ClientIpAddress = ClientIpAddresses.Random(),
                 Path = PageNames.Random()
             });
 
@@ -152,9 +152,9 @@ namespace Exceptionless.Helpers {
         #region Sample Data
 
         public readonly List<string> Identities = new List<string> {
-            "eric@exceptionless.com",
-            "blake@exceptionless.com",
-            "marylou@exceptionless.com"
+            "eric@exceptionless.io",
+            "blake@exceptionless.io",
+            "marylou@exceptionless.io"
         };
 
         public readonly List<string> MachineIpAddresses = new List<string> {

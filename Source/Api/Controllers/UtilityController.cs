@@ -18,7 +18,7 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult Http404(string link) {
             return Ok(new {
                 Message = "Not found",
-                Url = "http://docs.exceptionless.com"
+                Url = "http://docs.exceptionless.io"
             });
         }
 

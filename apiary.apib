@@ -1,5 +1,5 @@
 FORMAT: 1A
-HOST: http://api.exceptionless.com/api/v2
+HOST: http://api.exceptionless.io/api/v2
 
 # Exceptionless
 Discover errors in your .NET app you never knew were happening and use detailed error reports to squash them with ease. Make your app Exceptionless!
@@ -230,7 +230,7 @@ You can also save an end users contact information and a description of the even
 + Request UserDescription from JSON (application/json)
 
         { 
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "description": "This product is amazing!"
         }
     
@@ -486,13 +486,13 @@ Upgrades or downgrades the organizations plan.
 ## Manage users [/organizations/{id}/user/{email}]
 + Parameters
     + id (required, string, `537650f3b77efe23a47914f3`) ... The identifier of the organization.
-    + email (required, string, `noreply@exceptionless.com`) ... The email address of the user you wish to remove from your organization.
+    + email (required, string, `noreply@exceptionless.io`) ... The email address of the user you wish to remove from your organization.
 
 ### Create new user [POST]
 + Response 200 (application/json)
 
         {
-            "email_address": "noreply@exceptionless.com"
+            "email_address": "noreply@exceptionless.io"
         }
 
 ### Remove user [DELETE]
@@ -1159,7 +1159,7 @@ Stack related resources of the **Stacks API**
 ### Add reference link [POST]
 + Request (text/plain)
 
-        https://exceptionless.com
+        https://exceptionless.io
 
 + Response 200
 
@@ -1170,7 +1170,7 @@ Stack related resources of the **Stacks API**
 ### Remove reference link [POST]
 + Request (text/plain)
 
-        https://exceptionless.com
+        https://exceptionless.io
         
 + Response 204
 
@@ -1368,7 +1368,7 @@ To create a new web hook, you must specify project_id, url and event_types.
         { 
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4", 
-            "url": "http://exceptionless.com", 
+            "url": "http://exceptionless.io", 
             "event_types": ["NewError", "ErrorRegression", "CriticalError", "StackPromoted"] 
         }
 
@@ -1378,7 +1378,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             "id": "537b84cfb77efe2474072488",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
+            "url": "http://exceptionless.io",
             "event_types": [
                 "NewError",
                 "ErrorRegression",
@@ -1398,7 +1398,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             "id": "537b84cfb77efe2474072488",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
+            "url": "http://exceptionless.io",
             "event_types": [
                 "NewError",
                 "ErrorRegression",
@@ -1427,7 +1427,7 @@ To create a new web hook, you must specify project_id, url and event_types.
             "id": "537b84cfb77efe2474072488",
             "organization_id": "537650f3b77efe23a47914f3",
             "project_id": "537650f3b77efe23a47914f4",
-            "url": "http://exceptionless.com",
+            "url": "http://exceptionless.io",
             "event_types": [
                 "NewError",
                 "ErrorRegression",
@@ -2660,7 +2660,7 @@ User related resources of the **Users API**
         {
             "id": "537b6e77b77efe102444053d",
             "full_name": "Test User",
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "email_notifications_enabled": true,
             "is_email_address_verified": false,
             "is_invite": false,
@@ -2677,7 +2677,7 @@ User related resources of the **Users API**
         {
             "id": "537b6e77b77efe102444053d",
             "full_name": "Test User",
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "email_notifications_enabled": true,
             "is_email_address_verified": false,
             "is_invite": false,
@@ -2697,7 +2697,7 @@ User related resources of the **Users API**
         {
             "id": "537b6e77b77efe102444053d",
             "full_name": "Test User2",
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "email_notifications_enabled": false,
             "is_email_address_verified": false,
             "is_invite": false,
@@ -2707,7 +2707,7 @@ User related resources of the **Users API**
 ## Update email address [/users/{id}/email-address/{email}]
 + Parameters
     + id (required, string, `537b6e77b77efe102444053d`) ... The identifier of the user.
-    + email (required, string, `noreply@exceptionless.com`) ... The new email adress.
+    + email (required, string, `noreply@exceptionless.io`) ... The new email adress.
 
 
 ### Update user [POST]
@@ -2717,7 +2717,7 @@ User related resources of the **Users API**
         {
             "id": "537b6e77b77efe102444053d",
             "full_name": "Test User2",
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "email_notifications_enabled": false,
             "is_email_address_verified": false,
             "is_invite": false,
@@ -2747,7 +2747,7 @@ Sends a verification email with a unique validation token.
 Returns a `404` status code if an account with the specified email address does not exist.
 
 + Parameters
-    + email (required, string, `noreply@exceptionless.com`) ... The email adress to check.
+    + email (required, string, `noreply@exceptionless.io`) ... The email adress to check.
 
 + Response 404
     `404` status code is returned if the email adress is available.
@@ -2769,7 +2769,7 @@ Returns a `404` status code if an account with the specified email address does 
         [{
             "id": "537b6e77b77efe102444053d",
             "full_name": "Test User",
-            "email_address": "noreply@exceptionless.com",
+            "email_address": "noreply@exceptionless.io",
             "email_notifications_enabled": true,
             "is_email_address_verified": false,
             "is_invite": false,

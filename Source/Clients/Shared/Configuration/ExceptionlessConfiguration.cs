@@ -8,7 +8,7 @@ using Exceptionless.Models;
 
 namespace Exceptionless {
     public class ExceptionlessConfiguration {
-        private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.com";
+        private const string DEFAULT_SERVER_URL = "https://collector.exceptionless.io";
         private const string DEFAULT_USER_AGENT = "exceptionless/" + ThisAssembly.AssemblyFileVersion;
         private readonly IDependencyResolver _resolver;
         private bool _configLocked;

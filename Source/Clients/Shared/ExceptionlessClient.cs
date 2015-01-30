@@ -115,7 +115,7 @@ namespace Exceptionless {
             var context = new EventEnrichmentContext(this, enrichmentContextData);
             EventEnrichmentManager.Enrich(context, ev);
 
-            if (_duplicateChecker.Value.IsDuplicate(ev))
+            if (_duplicateChecker.Value != null && _duplicateChecker.Value.IsDuplicate(ev))
                 return;
 
             // ensure all required data

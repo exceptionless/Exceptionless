@@ -53,4 +53,4 @@ Anyone wishing to contribute to the **[Exceptionless/Exceptionless](https://gith
 
 ## Appreciation
 
-Anyone who submits a non-trivial pull request will be given a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.com with the name of your organization and we will upgrade you to a paid plan.
+Anyone who submits a non-trivial pull request will be given a free [Exceptionless](http://exceptionless.io) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan.

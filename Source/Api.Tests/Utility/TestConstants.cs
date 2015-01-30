@@ -26,20 +26,20 @@ namespace Exceptionless.Tests.Utility {
         public const string OrganizationId4 = "1ecd0826e447ad1e78877888";
         public const string SuspendedOrganizationId = "1ecd0826e447ad1e78877999";
         public const string InvalidOrganizationId = "0ecd0446e447ad1e78877ab0";
-        public const string InvitedOrganizationUserEmail = "invited@exceptionless.com";
-        public const string InvitedOrganizationUserEmail2 = "invited2@exceptionless.com";
-        public const string InvalidInvitedOrganizationUserEmail = "invalid-invite@exceptionless.com";
+        public const string InvitedOrganizationUserEmail = "invited@exceptionless.io";
+        public const string InvitedOrganizationUserEmail2 = "invited2@exceptionless.io";
+        public const string InvalidInvitedOrganizationUserEmail = "invalid-invite@exceptionless.io";
 
         public const string UserId = "1ecd0826e447ad1e78822555";
         public const string UserId2 = "1ecd0826e447ad1e78822666";
-        public const string UserEmail = "user1@exceptionless.com";
-        public const string UserEmail2 = "user2@exceptionless.com";
+        public const string UserEmail = "user1@exceptionless.io";
+        public const string UserEmail2 = "user2@exceptionless.io";
         public const string UserPassword = "2B5A3E6DFD3440CDA57E598F8B5D73B4";
         public static readonly string UserPasswordHash = UserPassword.ToSHA256();
         public const string UserIdWithNoRoles = "1ecd0826e447ad1e78822556";
-        public const string UserEmailWithNoRoles = "user.noroles@exceptionless.com";
+        public const string UserEmailWithNoRoles = "user.noroles@exceptionless.io";
         public const string InvalidUserId = "0ec44826e447ad1e78444ab0";
-        public const string InvalidUserEmail = "invalid@exceptionless.com";
+        public const string InvalidUserEmail = "invalid@exceptionless.io";
 
         public const string StackId = "1ecd0826e447a44e78877ab1";
         public const string StackId2 = "2ecd0826e447a44e78877ab2";
