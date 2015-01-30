@@ -81,9 +81,14 @@ namespace Exceptionless.Core.Pipeline {
 
                 _statsClient.Time(() => base.Run(contexts), StatNames.EventsProcessingTime);
 
-                var count = contexts.Count(c => c.IsCancelled);
-                if (count > 0)
-                    _statsClient.Counter(StatNames.EventsProcessCancelled, count);
+                var cancelled = contexts.Count(c => c.IsCancelled);
+                if (cancelled > 0)
+                    _statsClient.Counter(StatNames.EventsProcessCancelled, cancelled);
+
+                // TODO: Log the errors out to the events proejct id.
+                var errors = contexts.Count(c => c.HasError);
+                if (errors > 0)
+                    _statsClient.Counter(StatNames.EventsProcessErrors, errors);
             } catch (Exception) {
                 _statsClient.Counter(StatNames.EventsProcessErrors, contexts.Count);
                 throw;
