@@ -42,10 +42,11 @@
       "AppDomainName": "dea050bf-8-130120585010002944"
     }
   },
+  "Message": "1 broken rule. All rules must pass. Type: Employees - LastName is a required field. State: { EmployeeId = 0 FirstName = Example LastName = <null> Email = <null> ManagerId = <null> CreatedBy = 1 UpdatedBy = 0 }",
   "Type": "error",
   "@error": {
-    "Type": "CodeSmith.Data.Rules.BrokenRuleException",
     "Message": "1 broken rule. All rules must pass. Type: Employees - LastName is a required field. State: { EmployeeId = 0 FirstName = Example LastName = <null> Email = <null> ManagerId = <null> CreatedBy = 1 UpdatedBy = 0 }",
+    "Type": "CodeSmith.Data.Rules.BrokenRuleException",
     "StackTrace": [
       {
         "FileName": "d:\\Documents\\Example\\Templates\\PLINQO\\Ugly\\Ugly.Data\\UglyDataContext.Generated.cs",

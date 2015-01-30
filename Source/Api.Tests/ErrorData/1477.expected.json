@@ -37,11 +37,12 @@
       "AppDomainName": "/LM/W3SVC/16/ROOT/stores-1-130343866428644447"
     }
   },
+  "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
   "Type": "error",
   "@error": {
+    "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
     "Code": "400",
     "Type": "System.Web.HttpException",
-    "Message": "A potentially dangerous Request.Path value was detected from the client (&).",
     "StackTrace": [
       {
         "LineNumber": 0,

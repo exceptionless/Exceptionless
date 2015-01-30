@@ -20,9 +20,10 @@
       "AppDomainName": "ConsoleApplication1.vshost.exe"
     }
   },
+  "Message": "Exception of type 'System.Exception' was thrown.",
   "Type": "error",
   "@error": {
-    "Type": "System.Exception",
-    "Message": "Exception of type 'System.Exception' was thrown."
+    "Message": "Exception of type 'System.Exception' was thrown.",
+    "Type": "System.Exception"
   }
 }

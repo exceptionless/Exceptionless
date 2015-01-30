@@ -6,11 +6,12 @@
       "AppDomainName": "/LM/W3SVC/4/ROOT/blah"
     }
   },
+  "Message": "The client disconnected.",
   "Type": "error",
   "@error": {
+    "Message": "The client disconnected.",
     "Code": "500",
     "Type": "System.Web.HttpException",
-    "Message": "The client disconnected.",
     "Inner": {
       "Message": "Invalid viewstate. Client IP: 127.0.0.1 Port: 58663 Referer: http://www.sample.com/",
       "Type": "System.Web.UI.ViewStateException",
