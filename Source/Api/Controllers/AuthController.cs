@@ -4,6 +4,7 @@ using System.Web.Http;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Security;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -299,10 +300,10 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new { Token = GetToken(user) });
         }
 
-        [HttpGet]
-        [Route("unlink/{providerName:minlength(1)}/{providerUserId:minlength(1)}")]
+        [HttpPost]
+        [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
-        public IHttpActionResult RemoveExternalLogin(string providerName, string providerUserId) {
+        public IHttpActionResult RemoveExternalLogin(string providerName, [NakedBody] string providerUserId) {
             if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId))
                 return BadRequest("Invalid Provider Name or Provider User Id.");
 

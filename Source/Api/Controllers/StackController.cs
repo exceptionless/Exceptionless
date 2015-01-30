@@ -124,7 +124,6 @@ namespace Exceptionless.Api.Controllers {
             return MarkFixed(new [] { id });
         }
 
-        // TODO: Add attribute validation for the url.
         [HttpPost]
         [Route("{id:objectid}/add-link")]
         public IHttpActionResult AddLink(string id, [NakedBody] string url) {
