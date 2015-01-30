@@ -41,10 +41,15 @@ namespace Exceptionless.Core.Lock {
                     return _cacheClient.Add(cacheKey, DateTime.Now);
 
                 return _cacheClient.Add(cacheKey, DateTime.Now, lockTimeout ?? TimeSpan.FromMinutes(20));
-            }, acquireTimeout);
+            }, acquireTimeout, TimeSpan.FromMilliseconds(50));
 
             Log.Trace().Message("Returning lock: {0}", name).Write();
             return new DisposableLock(name, this);
+        }
+
+        public bool IsLocked(string name) {
+            string cacheKey = GetCacheKey(name);
+            return _cacheClient.Get<object>(cacheKey) != null;
         }
 
         public void ReleaseLock(string name) {

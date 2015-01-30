@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Helpers
             throw new ApplicationException("Should not get here.");
         }
 
-        public static void UntilTrue(Func<bool> action, TimeSpan? timeOut) {
+        public static void UntilTrue(Func<bool> action, TimeSpan? timeOut, TimeSpan? intervalDelay = null) {
             var i = 0;
             var firstAttempt = DateTime.UtcNow;
 
@@ -66,7 +66,10 @@ namespace Exceptionless.Core.Helpers
                 if (action())
                     return;
                 
-                SleepBackOffMultiplier(i);
+                if (intervalDelay.HasValue)
+                    Thread.Sleep(intervalDelay.Value);
+                else
+                    SleepBackOffMultiplier(i);
             }
 
             throw new TimeoutException(string.Format("Exceeded timeout of {0}", timeOut.Value));
