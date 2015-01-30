@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Pipeline {
             foreach (var action in _actions) {
                 action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList());
 
-                if (contexts.All(c => c.IsCancelled))
+                if (contexts.All(c => c.IsCancelled || c.HasError))
                     break;
             }
 
