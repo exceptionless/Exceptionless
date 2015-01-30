@@ -72,6 +72,7 @@ namespace Exceptionless.Core.Repositories {
                     .IncludeInAll(false)
                     .DisableSizeField(false)
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
+                    .AllField(i => i.IndexAnalyzer("standardplus"))
                     .Properties(p => p
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
@@ -109,10 +110,10 @@ namespace Exceptionless.Core.Repositories {
                             .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name("all_codes").IndexName("error.code").Index(FieldIndexOption.NotAnalyzed).Analyzer("whitespace").IncludeInAll().Boost(1.1))
                                 .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace").IncludeInAll())))
+                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))
                             .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll())))
+                                .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))
                             .Object<EnvironmentInfo>(f2 => f2.Name(Event.KnownDataKeys.EnvironmentInfo).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.IpAddress).IndexName("ip").Index(FieldIndexOption.Analyzed).IncludeInAll().Analyzer("comma_whitespace"))
                                 .String(f3 => f3.Name(r => r.MachineName).IndexName("machine").Index(FieldIndexOption.Analyzed).IncludeInAll().Boost(1.1))
@@ -214,11 +215,25 @@ namespace Exceptionless.Core.Repositories {
                             "lowercase"
                         }
                     },
+                    whitespace_lower = new {
+                        tokenizer = "whitespace",
+                        filter = new[] { "lowercase" }
+                    },
                     typename = new {
                         tokenizer = "whitespace",
                         filter = new[] {
                             "typename",
                             "lowercase",
+                            "unique"
+                        }
+                    },
+                    standardplus = new {
+                        tokenizer = "standard",
+                        filter = new[] {
+                            "standard",
+                            "typename",
+                            "lowercase",
+                            "stop",
                             "unique"
                         }
                     }

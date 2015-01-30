@@ -46,6 +46,7 @@ namespace SampleConsole {
 
             ExceptionlessClient.Default.Configuration.UseFolderStorage("store");
             ExceptionlessClient.Default.Configuration.UseLogger(_log);
+            //ExceptionlessClient.Default.Configuration.SubmissionBatchSize = 1;
             ExceptionlessClient.Default.Startup();
 
             var tokenSource = new CancellationTokenSource();
