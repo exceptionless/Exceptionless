@@ -6,6 +6,7 @@ namespace Exceptionless.Core.Caching {
         bool Remove(string key);
         void RemoveAll(IEnumerable<string> keys);
         T Get<T>(string key);
+        bool TryGet<T>(string key, out T value);
         long Increment(string key, uint amount);
         long Increment(string key, uint amount, DateTime expiresAt);
         long Increment(string key, uint amount, TimeSpan expiresIn);

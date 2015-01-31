@@ -131,6 +131,19 @@ namespace Exceptionless.Core.Caching {
             return default(T);
         }
 
+        public bool TryGet<T>(string key, out T value) {
+            value = default(T);
+            if (!_memory.ContainsKey(key))
+                return false;
+
+            try {
+                value = Get<T>(key);
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
         private static readonly object _lockObject = new object();
         private long UpdateCounter(string key, long value, TimeSpan? expiresIn = null) {
             lock (_lockObject) {

@@ -35,6 +35,20 @@ namespace Exceptionless.Core.Caching {
             return JsonConvert.DeserializeObject<T>(value.ToString());
         }
 
+        public bool TryGet<T>(string key, out T value) {
+            value = default(T);
+            try {
+                var stringValue = _db.StringGet(key);
+                if (stringValue.IsNullOrEmpty)
+                    return false;
+
+                value = JsonConvert.DeserializeObject<T>(value.ToString());
+                return true;
+            } catch {
+                return false;
+            }
+        }
+
         public long Increment(string key, uint amount) {
             return _db.StringIncrement(key, amount);
         }

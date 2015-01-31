@@ -15,15 +15,15 @@ using Exceptionless.Core.Caching;
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {
         public static T TryGet<T>(this ICacheClient client, string key) {
-            return TryGet<T>(client, key, default(T));
+            return TryGet(client, key, default(T));
         }
 
         public static T TryGet<T>(this ICacheClient client, string key, T defaultValue) {
-            try {
-                return client.Get<T>(key);
-            } catch (Exception) {
-                return defaultValue;
-            }
+            T value;
+            if (client.TryGet(key, out value))
+                return value;
+
+            return defaultValue;
         }
 
         public static bool TrySet<T>(this ICacheClient client, string key, T value) {

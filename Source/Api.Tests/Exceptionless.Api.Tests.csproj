@@ -145,6 +145,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Caching\HybridCachingClientTests.cs" />
     <Compile Include="Caching\RedisCacheClientTests.cs" />
     <Compile Include="Caching\InMemoryCachingClientTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
