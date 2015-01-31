@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NLog.Fluent;
 
@@ -8,33 +9,13 @@ namespace Exceptionless.Core.Caching {
     public class InMemoryCacheClient : ICacheClient {
         private ConcurrentDictionary<string, CacheEntry> _memory;
 
-        public bool FlushOnDispose { get; set; }
-
-        private class CacheEntry {
-            private object _cacheValue;
-
-            public CacheEntry(object value, DateTime expiresAt) {
-                Value = value;
-                ExpiresAt = expiresAt;
-                LastModifiedTicks = DateTime.UtcNow.Ticks;
-            }
-
-            internal DateTime ExpiresAt { get; set; }
-
-            internal object Value {
-                get { return _cacheValue; }
-                set {
-                    _cacheValue = value;
-                    LastModifiedTicks = DateTime.UtcNow.Ticks;
-                }
-            }
-
-            internal long LastModifiedTicks { get; private set; }
-        }
-
         public InMemoryCacheClient() {
             _memory = new ConcurrentDictionary<string, CacheEntry>();
         }
+
+        public bool FlushOnDispose { get; set; }
+        public int Count { get { return _memory.Count; } }
+        public int? MaxItems { get; set; }
 
         private bool CacheAdd(string key, object value) {
             return CacheAdd(key, value, DateTime.MaxValue);
@@ -46,6 +27,12 @@ namespace Exceptionless.Core.Caching {
 
         private void Set(string key, CacheEntry entry) {
             _memory[key] = entry;
+
+            if (MaxItems.HasValue && _memory.Count > MaxItems.Value) {
+                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccess).First().Key;
+                CacheEntry cacheEntry = null;
+                _memory.TryRemove(oldest, out cacheEntry);
+            }
         }
 
         private bool CacheAdd(string key, object value, DateTime expiresAt) {
@@ -282,6 +269,31 @@ namespace Exceptionless.Core.Caching {
             }
         }
 
-        public int Count { get { return _memory.Count; } }
+        private class CacheEntry {
+            private object _cacheValue;
+
+            public CacheEntry(object value, DateTime expiresAt) {
+                Value = value;
+                ExpiresAt = expiresAt;
+                LastModifiedTicks = DateTime.UtcNow.Ticks;
+            }
+
+            internal DateTime ExpiresAt { get; set; }
+            internal DateTime LastAccess { get; set; }
+
+            internal object Value {
+                get {
+                    LastAccess = DateTime.Now;
+                    return _cacheValue;
+                }
+                set {
+                    _cacheValue = value;
+                    LastAccess = DateTime.Now;
+                    LastModifiedTicks = DateTime.UtcNow.Ticks;
+                }
+            }
+
+            internal long LastModifiedTicks { get; private set; }
+        }
     }
 }

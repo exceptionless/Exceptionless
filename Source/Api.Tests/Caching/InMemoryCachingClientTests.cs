@@ -11,5 +11,22 @@ namespace Exceptionless.Api.Tests.Caching {
             var value = cache.Get<int>("test");
             Assert.Equal(1, value);
         }
+
+        [Fact]
+        public void CanSetMaxItems() {
+            var cache = new InMemoryCacheClient();
+            cache.MaxItems = 10;
+            for (int i = 0; i < cache.MaxItems; i++)
+                cache.Set("test" + i, i);
+
+            Assert.Equal(10, cache.Count);
+            cache.Set("next", 1);
+            Assert.Equal(10, cache.Count);
+            Assert.Null(cache.Get<int?>("test0"));
+            Assert.NotNull(cache.Get<int?>("test1"));
+            cache.Set("next2", 2);
+            Assert.Null(cache.Get<int?>("test2"));
+            Assert.NotNull(cache.Get<int?>("test1"));
+        }
     }
 }
