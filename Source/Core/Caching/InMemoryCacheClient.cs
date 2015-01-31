@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Caching {
@@ -17,6 +18,10 @@ namespace Exceptionless.Core.Caching {
         public int Count { get { return _memory.Count; } }
         public int? MaxItems { get; set; }
 
+        internal ICollection<string> Keys {
+            get { return _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceCount).Select(kvp => kvp.Key).ToList(); }
+        } 
+
         private bool CacheAdd(string key, object value) {
             return CacheAdd(key, value, DateTime.MaxValue);
         }
@@ -29,8 +34,8 @@ namespace Exceptionless.Core.Caching {
             _memory[key] = entry;
 
             if (MaxItems.HasValue && _memory.Count > MaxItems.Value) {
-                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).First().Key;
-                CacheEntry cacheEntry = null;
+                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceCount).First().Key;
+                CacheEntry cacheEntry;
                 _memory.TryRemove(oldest, out cacheEntry);
             }
         }
@@ -284,15 +289,19 @@ namespace Exceptionless.Core.Caching {
 
         private class CacheEntry {
             private object _cacheValue;
+            private static long _instanceCount = 0;
 
             public CacheEntry(object value, DateTime expiresAt) {
                 Value = value;
                 ExpiresAt = expiresAt;
                 LastModifiedTicks = DateTime.UtcNow.Ticks;
+                Interlocked.Increment(ref _instanceCount);
+                InstanceCount = _instanceCount;
             }
 
+            internal long InstanceCount { get; private set; }
             internal DateTime ExpiresAt { get; set; }
-            internal long LastAccessTicks { get; set; }
+            internal long LastAccessTicks { get; private set; }
             internal long LastModifiedTicks { get; private set; }
 
             internal object Value {
