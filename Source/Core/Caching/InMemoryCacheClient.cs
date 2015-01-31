@@ -29,7 +29,7 @@ namespace Exceptionless.Core.Caching {
             _memory[key] = entry;
 
             if (MaxItems.HasValue && _memory.Count > MaxItems.Value) {
-                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccess).First().Key;
+                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).First().Key;
                 CacheEntry cacheEntry = null;
                 _memory.TryRemove(oldest, out cacheEntry);
             }
@@ -144,7 +144,7 @@ namespace Exceptionless.Core.Caching {
             }
         }
 
-        private static readonly object _lockObject = new object();
+        private readonly object _lockObject = new object();
         private long UpdateCounter(string key, long value, TimeSpan? expiresIn = null) {
             lock (_lockObject) {
                 if (!_memory.ContainsKey(key)) {
@@ -234,7 +234,7 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void FlushAll() {
-            _memory = new ConcurrentDictionary<string, CacheEntry>();
+            _memory.Clear();
         }
 
         public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys) {
@@ -292,21 +292,20 @@ namespace Exceptionless.Core.Caching {
             }
 
             internal DateTime ExpiresAt { get; set; }
-            internal DateTime LastAccess { get; set; }
+            internal long LastAccessTicks { get; set; }
+            internal long LastModifiedTicks { get; private set; }
 
             internal object Value {
                 get {
-                    LastAccess = DateTime.Now;
+                    LastAccessTicks = DateTime.UtcNow.Ticks;
                     return _cacheValue;
                 }
                 set {
                     _cacheValue = value;
-                    LastAccess = DateTime.Now;
+                    LastAccessTicks = DateTime.UtcNow.Ticks;
                     LastModifiedTicks = DateTime.UtcNow.Ticks;
                 }
             }
-
-            internal long LastModifiedTicks { get; private set; }
         }
     }
 }
