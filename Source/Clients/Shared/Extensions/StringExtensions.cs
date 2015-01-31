@@ -137,23 +137,6 @@ namespace Exceptionless.Extensions {
             return value.ToPascalCase(_splitNameRegex);
         }
 
-        public static string ToLowerFiltered(this string value, char[] charsToRemove) {
-            var builder = new StringBuilder(value.Length);
-
-            for (int index = 0; index < value.Length; index++) {
-                char c = value[index];
-                if (Char.IsUpper(c))
-                    c = Char.ToLower(c);
-                
-                if (charsToRemove.Contains(c))
-                    continue;
-
-                builder.Append(c);
-            }
-
-            return builder.ToString();
-        }
-
         /// <summary>
         /// Takes a NameIdentifier and spaces it out into words "Name Identifier".
         /// </summary>

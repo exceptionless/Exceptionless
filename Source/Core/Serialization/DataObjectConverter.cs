@@ -15,6 +15,7 @@ namespace Exceptionless.Serializer {
     public class DataObjectConverter<T> : CustomCreationConverter<T> where T : IData, new() {
         private readonly IDictionary<string, Type> _dataTypeRegistry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
         private static IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
+        private readonly char[] _filteredChars = { '.', '-', '_' };
 
         public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
             if (knownDataTypes != null)
@@ -37,15 +38,17 @@ namespace Exceptionless.Serializer {
 
             foreach (var p in json.Properties()) {
                 // first set the native properties
-                string propertyName = p.Name.ToLowerFiltered(new[] { '.', '-', '_' });
+                string propertyName = p.Name.ToLowerFiltered(_filteredChars);
 
                 if (propertyName == "data" && p.Value is JObject) {
                     foreach (var dataProp in ((JObject)p.Value).Properties())
                         AddDataEntry(serializer, dataProp, target);
+
                     continue;
                 }
 
-                var accessor = _propertyAccessors.ContainsKey(propertyName) ? _propertyAccessors[propertyName] : null;
+                IMemberAccessor value;
+                var accessor = _propertyAccessors.TryGetValue(propertyName, out value) ? value : null;
                 if (accessor != null) {
                     accessor.SetValue(target, p.Value.Type != JTokenType.Null ? p.Value.ToObject(accessor.MemberType, serializer) : null);
                     continue;
@@ -62,15 +65,16 @@ namespace Exceptionless.Serializer {
                 target.Data = new DataDictionary();
 
             // when adding items to data, see if they are a known type and deserialize to the registered type
-            if (_dataTypeRegistry.ContainsKey(p.Name)) {
+            Type dataType;
+            if (_dataTypeRegistry.TryGetValue(p.Name, out dataType)) {
                 try {
                     string dataKey = p.Name;
                     if (target.Data.ContainsKey(dataKey))
                         dataKey = "_" + dataKey;
                     if (p.Value is JValue && p.Value.Type == JTokenType.String)
-                        target.Data[dataKey] = serializer.Deserialize(new StringReader(p.Value.ToString()), _dataTypeRegistry[p.Name]);
+                        target.Data[dataKey] = serializer.Deserialize(new StringReader(p.Value.ToString()), dataType);
                     else
-                        target.Data[dataKey] = p.Value.ToObject(_dataTypeRegistry[p.Name], serializer);
+                        target.Data[dataKey] = p.Value.ToObject(dataType, serializer);
                     return;
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();

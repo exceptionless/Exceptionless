@@ -192,7 +192,7 @@ namespace Exceptionless.Core.Repositories {
                 return new List<T>();
 
             var results = new List<T>();
-            if (useCache)
+            if (EnableCache && useCache)
                 results.AddRange(ids.Select(id => Cache.Get<T>(GetScopedCacheKey(id))).Where(cacheHit => cacheHit != null));
 
             var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();

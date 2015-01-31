@@ -147,10 +147,13 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public string GetPreviousEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
-            PersistentEvent data = GetById(id, true);
-            if (data == null)
-                return null;
+            return GetPreviousEventId(GetById(id, true), systemFilter, userFilter, utcStart, utcEnd);
+        }
 
+        public string GetPreviousEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+            if (ev == null)
+                return null;
+            
             if (!utcStart.HasValue)
                 utcStart = DateTime.MinValue;
 
@@ -158,10 +161,10 @@ namespace Exceptionless.Core.Repositories {
                 utcEnd = DateTime.MaxValue;
 
             if (String.IsNullOrEmpty(userFilter))
-                userFilter = "stack:" + data.StackId;
+                userFilter = "stack:" + ev.StackId;
 
-            var filter = !Filter<PersistentEvent>.Ids(new[] { id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(data.Date.ToUniversalTime().DateTime))
+            var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
+                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).LowerOrEquals(ev.Date.ToUniversalTime().DateTime))
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
             var documents = Find(new ElasticSearchOptions<PersistentEvent>()
@@ -177,22 +180,25 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             // make sure we don't have records with the exact same occurrence date
-            if (documents.All(t => t.Date != data.Date))
+            if (documents.All(t => t.Date != ev.Date))
                 return documents.OrderByDescending(t => t.Date).ThenByDescending(t => t.Id).First().Id;
 
             // we have records with the exact same occurrence date, we need to figure out the order of those
             // put our target error into the mix, sort it and return the result before the target
-            var unionResults = documents.Union(new[] { data })
+            var unionResults = documents.Union(new[] { ev })
                 .OrderBy(t => t.Date.UtcTicks).ThenBy(t => t.Id)
                 .ToList();
 
-            var index = unionResults.FindIndex(t => t.Id == data.Id);
+            var index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == 0 ? null : unionResults[index - 1].Id;
         }
 
         public string GetNextEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
-            PersistentEvent data = GetById(id, true);
-            if (data == null)
+            return GetNextEventId(GetById(id, true), systemFilter, userFilter, utcStart, utcEnd);
+        }
+
+        public string GetNextEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null) {
+            if (ev == null)
                 return null;
 
             if (!utcStart.HasValue)
@@ -202,10 +208,10 @@ namespace Exceptionless.Core.Repositories {
                 utcEnd = DateTime.MaxValue;
 
             if (String.IsNullOrEmpty(userFilter))
-                userFilter = "stack:" + data.StackId;
+                userFilter = "stack:" + ev.StackId;
 
-            var filter = !Filter<PersistentEvent>.Ids(new[] { id })
-                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(data.Date.ToUniversalTime().DateTime))
+            var filter = !Filter<PersistentEvent>.Ids(new[] { ev.Id })
+                && Filter<PersistentEvent>.Range(r => r.OnField(e => e.Date).GreaterOrEquals(ev.Date.ToUniversalTime().DateTime))
                 && Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter)));
 
             var documents = Find(new ElasticSearchOptions<PersistentEvent>()
@@ -221,16 +227,16 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             // make sure we don't have records with the exact same occurrence date
-            if (documents.All(t => t.Date != data.Date))
+            if (documents.All(t => t.Date != ev.Date))
                 return documents.OrderBy(t => t.Date).ThenBy(t => t.Id).First().Id;
 
             // we have records with the exact same occurrence date, we need to figure out the order of those
             // put our target error into the mix, sort it and return the result after the target
-            var unionResults = documents.Union(new[] { data })
+            var unionResults = documents.Union(new[] { ev })
                 .OrderBy(t => t.Date.Ticks).ThenBy(t => t.Id)
                 .ToList();
 
-            var index = unionResults.FindIndex(t => t.Id == data.Id);
+            var index = unionResults.FindIndex(t => t.Id == ev.Id);
             return index == unionResults.Count - 1 ? null : unionResults[index + 1].Id;
         }
 

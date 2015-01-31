@@ -22,7 +22,9 @@ namespace Exceptionless.Core.Repositories {
         ICollection<PersistentEvent> GetByFilter(string systemFilter, string userFilter, string sort, SortOrder sortOrder, string field, DateTime utcStart, DateTime utcEnd, PagingOptions paging);
 
         string GetPreviousEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        string GetPreviousEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
         string GetNextEventId(string id, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
+        string GetNextEventId(PersistentEvent ev, string systemFilter = null, string userFilter = null, DateTime? utcStart = null, DateTime? utcEnd = null);
         void MarkAsRegressedByStack(string organizationId, string stackId);
         void UpdateFixedByStack(string organizationId, string stackId, bool value);
         void UpdateHiddenByStack(string organizationId, string stackId, bool value);
