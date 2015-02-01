@@ -56,10 +56,18 @@ namespace Exceptionless.Core.Caching {
         }
 
         private bool CacheSet(string key, object value, DateTime expiresAt) {
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+
             return CacheSet(key, value, expiresAt, null);
         }
 
         private bool CacheSet(string key, object value, DateTime expiresAt, long? checkLastModified) {
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+
             CacheEntry entry;
             if (!TryGetValue(key, out entry)) {
                 entry = new CacheEntry(value, expiresAt);
@@ -82,6 +90,10 @@ namespace Exceptionless.Core.Caching {
         }
 
         private bool CacheReplace(string key, object value, DateTime expiresAt) {
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+
             return !CacheSet(key, value, expiresAt);
         }
 
@@ -174,7 +186,11 @@ namespace Exceptionless.Core.Caching {
         }
 
         public long Increment(string key, uint amount, DateTime expiresAt) {
-            return UpdateCounter(key, amount, expiresAt.Subtract(DateTime.Now));
+            var expires = expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow);
+            if (expires.Ticks < 0)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+
+            return UpdateCounter(key, amount, expires);
         }
 
         public long Increment(string key, uint amount, TimeSpan expiresIn) {
@@ -186,7 +202,11 @@ namespace Exceptionless.Core.Caching {
         }
 
         public long Decrement(string key, uint amount, DateTime expiresAt) {
-            return UpdateCounter(key, amount * -1, expiresAt.Subtract(DateTime.Now));
+            var expires = expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow);
+            if (expires.Ticks < 0)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+
+            return UpdateCounter(key, amount * -1, expires);
         }
 
         public long Decrement(string key, uint amount, TimeSpan expiresIn) {
@@ -206,22 +226,25 @@ namespace Exceptionless.Core.Caching {
         }
 
         public bool Add<T>(string key, T value, DateTime expiresAt) {
-            if (expiresAt.Kind != DateTimeKind.Utc)
-                expiresAt = expiresAt.ToUniversalTime();
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
 
             return CacheAdd(key, value, expiresAt);
         }
 
         public bool Set<T>(string key, T value, DateTime expiresAt) {
-            if (expiresAt.Kind != DateTimeKind.Utc)
-                expiresAt = expiresAt.ToUniversalTime();
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
 
             return CacheSet(key, value, expiresAt);
         }
 
         public bool Replace<T>(string key, T value, DateTime expiresAt) {
-            if (expiresAt.Kind != DateTimeKind.Utc)
-                expiresAt = expiresAt.ToUniversalTime();
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
 
             return CacheReplace(key, value, expiresAt);
         }
@@ -256,17 +279,32 @@ namespace Exceptionless.Core.Caching {
                 Set(entry.Key, entry.Value);
         }
 
+        public DateTime? GetExpiration(string cacheKey) {
+            CacheEntry value;
+            if (!_memory.TryGetValue(cacheKey, out value))
+                return null;
+
+            if (value.ExpiresAt >= DateTime.UtcNow)
+                return value.ExpiresAt;
+
+            _memory.TryRemove(cacheKey, out value);
+            return null;
+        }
+
         public void SetExpiration(string cacheKey, TimeSpan expiresIn) {
-            if (_memory.ContainsKey(cacheKey))
-                _memory[cacheKey].ExpiresAt = DateTime.UtcNow.Add(expiresIn);
+            CacheEntry value;
+            if (_memory.TryGetValue(cacheKey, out value))
+                value.ExpiresAt = DateTime.UtcNow.Add(expiresIn);
         }
 
         public void SetExpiration(string cacheKey, DateTime expiresAt) {
-            if (expiresAt.Kind != DateTimeKind.Utc)
-                expiresAt = expiresAt.ToUniversalTime();
+            expiresAt = expiresAt.ToUniversalTime();
+            if (expiresAt < DateTime.UtcNow)
+                throw new ArgumentException("Date cannot be in the past", "expiresAt");
 
-            if (_memory.ContainsKey(cacheKey))
-                _memory[cacheKey].ExpiresAt = expiresAt;
+            CacheEntry value;
+            if (_memory.TryGetValue(cacheKey, out value))
+                value.ExpiresAt = expiresAt;
         }
 
         public void RemoveByPattern(string pattern) {

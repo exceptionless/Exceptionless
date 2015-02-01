@@ -25,6 +25,7 @@ namespace Exceptionless.Core.Caching {
         void FlushAll();
         IDictionary<string, T> GetAll<T>(IEnumerable<string> keys);
         void SetAll<T>(IDictionary<string, T> values);
+        DateTime? GetExpiration(string cacheKey);
         void SetExpiration(string cacheKey, TimeSpan expiresIn);
         void SetExpiration(string cacheKey, DateTime expiresAt);
     }

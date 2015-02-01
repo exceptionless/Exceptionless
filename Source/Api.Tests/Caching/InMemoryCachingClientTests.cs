@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Xunit;
 
@@ -11,6 +12,18 @@ namespace Exceptionless.Api.Tests.Caching {
             cache.Set("test", 1);
             var value = cache.Get<int>("test");
             Assert.Equal(1, value);
+        }
+
+        [Fact]
+        public void CanSetAndGetEpiration() {
+            var cache = new InMemoryCacheClient();
+
+            var expiresAt = DateTime.UtcNow.AddMilliseconds(25);
+            cache.Set("test", 1, expiresAt);
+            Assert.Equal(expiresAt, cache.GetExpiration("test"));
+     
+            Task.Delay(TimeSpan.FromMilliseconds(25)).Wait();
+            Assert.Null(cache.GetExpiration("test"));
         }
 
         [Fact]

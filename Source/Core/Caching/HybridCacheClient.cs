@@ -46,11 +46,22 @@ namespace Exceptionless.Core.Caching {
                 return value;
 
             if (_redisCache.TryGet(key, out value)) {
-                // TODO: Get the expiration value and set it here.
-                _localCache.Set(key, value);
+                var expiration = _redisCache.GetExpiration(key);
+                if (expiration.HasValue)
+                    _localCache.Set(key, value, expiration.Value);
+                else
+                    _localCache.Set(key, value);
             }
 
             return value;
+        }
+
+        public DateTime? GetExpiration(string key) {
+            var expiration = _redisCache.GetExpiration(key);
+            if (expiration.HasValue)
+                return expiration.Value;
+
+            return _redisCache.GetExpiration(key);
         }
 
         public bool TryGet<T>(string key, out T value) {
