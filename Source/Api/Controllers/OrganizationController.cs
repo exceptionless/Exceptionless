@@ -142,7 +142,7 @@ namespace Exceptionless.Api.Controllers {
                 Total = stripeInvoice.Total / 100.0
             };
 
-            foreach (var line in stripeInvoice.StripeInvoiceLines.StripeInvoiceItems) {
+            foreach (var line in stripeInvoice.StripeInvoiceLineItems.Data) {
                 var item = new InvoiceLineItem { Amount = line.Amount / 100.0 };
 
                 if (line.Plan != null)

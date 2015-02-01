@@ -37,6 +37,7 @@ namespace Exceptionless.Serializer {
             var json = JObject.Load(reader);
 
             foreach (var p in json.Properties()) {
+                // TODO: Store the propertyName in a local cache so the ToLowerFiltered isn't running a ton.
                 // first set the native properties
                 string propertyName = p.Name.ToLowerFiltered(_filteredChars);
 

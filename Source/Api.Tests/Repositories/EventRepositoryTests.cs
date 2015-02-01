@@ -5,6 +5,7 @@ using System.Linq;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
+using Exceptionless.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using Exceptionless.Tests.Utility;
@@ -18,6 +19,26 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         
+        [Fact(Skip="Performance Testing")]
+        public void Get() {
+            RemoveData();
+            
+            var ev = _repository.Add(new RandomEventGenerator().GeneratePersistent());
+            _client.Refresh(r => r.Force(false));
+            Assert.Equal(1, _repository.Count());
+
+            var sw = new Stopwatch();
+            sw.Start();
+
+            const int MAX_ITERATIONS = 100;
+            for (int i = 0; i < MAX_ITERATIONS; i++) {
+                Assert.NotNull(_repository.GetById(ev.Id));
+            }
+
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds);
+        }
+
         [Fact]
         public void GetPaged() {
             RemoveData();

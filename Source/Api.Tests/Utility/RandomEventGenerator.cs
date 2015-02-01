@@ -17,8 +17,25 @@ namespace Exceptionless.Helpers {
             return events;
         }
 
+        public PersistentEvent GeneratePersistent() {
+            var ev = new PersistentEvent {
+                OrganizationId = "1ecd0826e447ad1e78877555",
+                ProjectId = "1ecd0826e447ad1e78877ab2",
+                StackId = "1ecd0826e447a44e78877ab1",
+                Date = DateTime.UtcNow
+            };
+
+            PopulateEvent(ev);
+            return ev;
+        }
+
         public Event Generate() {
             var ev = new Event();
+            PopulateEvent(ev);
+            return ev;
+        }
+
+        public void PopulateEvent(Event ev) {
             if (MinDate.HasValue || MaxDate.HasValue)
                 ev.Date = RandomData.GetDateTime(MinDate ?? DateTime.MinValue, MaxDate ?? DateTime.MaxValue);
 
@@ -81,8 +98,6 @@ namespace Exceptionless.Helpers {
                     ev.Data[Event.KnownDataKeys.SimpleError] = _randomSimpleErrors.Random();
                 }
             }
-
-            return ev;
         }
 
         private List<Error> _randomErrors;
