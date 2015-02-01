@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Exceptionless.Core;
 using Exceptionless.Core.Caching;
@@ -50,6 +51,7 @@ namespace Exceptionless.Api.Tests.Caching {
 
             var dt = DateTimeOffset.Now;
             _cache.Set("test", new Event { Type = "test", Date = dt, Message = "Hello World" });
+            Debug.WriteLine(String.Join(",", _cache.LocalCache.Keys));
             var value = _cache.Get<Event>("test");
 
             Assert.Equal(dt, value.Date);

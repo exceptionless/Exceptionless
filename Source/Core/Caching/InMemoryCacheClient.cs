@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Caching {
         public int? MaxItems { get; set; }
 
         internal ICollection<string> Keys {
-            get { return _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceCount).Select(kvp => kvp.Key).ToList(); }
+            get { return _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceNumber).Select(kvp => kvp.Key).ToList(); }
         } 
 
         private bool CacheAdd(string key, object value) {
@@ -34,7 +34,7 @@ namespace Exceptionless.Core.Caching {
             _memory[key] = entry;
 
             if (MaxItems.HasValue && _memory.Count > MaxItems.Value) {
-                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceCount).First().Key;
+                string oldest = _memory.OrderBy(kvp => kvp.Value.LastAccessTicks).ThenBy(kvp => kvp.Value.InstanceNumber).First().Key;
                 CacheEntry cacheEntry;
                 _memory.TryRemove(oldest, out cacheEntry);
             }
@@ -290,23 +290,31 @@ namespace Exceptionless.Core.Caching {
         private class CacheEntry {
             private object _cacheValue;
             private static long _instanceCount = 0;
+#if DEBUG
+            private long _usageCount = 0;
+#endif
 
             public CacheEntry(object value, DateTime expiresAt) {
                 Value = value;
                 ExpiresAt = expiresAt;
                 LastModifiedTicks = DateTime.UtcNow.Ticks;
-                Interlocked.Increment(ref _instanceCount);
-                InstanceCount = _instanceCount;
+                InstanceNumber = Interlocked.Increment(ref _instanceCount);
             }
 
-            internal long InstanceCount { get; private set; }
+            internal long InstanceNumber { get; private set; }
             internal DateTime ExpiresAt { get; set; }
             internal long LastAccessTicks { get; private set; }
             internal long LastModifiedTicks { get; private set; }
+#if DEBUG
+            internal long UsageCount { get { return _usageCount; } }
+#endif
 
             internal object Value {
                 get {
                     LastAccessTicks = DateTime.UtcNow.Ticks;
+#if DEBUG
+                    Interlocked.Increment(ref _usageCount);
+#endif
                     return _cacheValue;
                 }
                 set {
