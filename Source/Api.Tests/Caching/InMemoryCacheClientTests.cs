@@ -1,34 +1,22 @@
-﻿using System;
+using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Exceptionless.Core.Caching;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Caching {
-    public class InMemoryCacheClientTests {
-        [Fact]
-        public void CanSetAndGetValue() {
-            var cache = new InMemoryCacheClient();
-            cache.Set("test", 1);
-            var value = cache.Get<int>("test");
-            Assert.Equal(1, value);
-        }
-
-        [Fact]
-        public void CanSetAndGetEpiration() {
-            var cache = new InMemoryCacheClient();
-
-            var expiresAt = DateTime.UtcNow.AddMilliseconds(25);
-            cache.Set("test", 1, expiresAt);
-            Assert.Equal(expiresAt, cache.GetExpiration("test"));
-     
-            Task.Delay(TimeSpan.FromMilliseconds(25)).Wait();
-            Assert.Null(cache.GetExpiration("test"));
+    public class InMemoryCacheClientTests : CacheClientTestsBase {
+        protected override ICacheClient GetCache() {
+            return new InMemoryCacheClient();
         }
 
         [Fact]
         public void CanSetMaxItems() {
-            var cache = new InMemoryCacheClient();
+            var cache = GetCache() as InMemoryCacheClient;
+            if (cache == null)
+                return;
+
+            cache.FlushAll();
+
             cache.MaxItems = 10;
             for (int i = 0; i < cache.MaxItems; i++)
                 cache.Set("test" + i, i);

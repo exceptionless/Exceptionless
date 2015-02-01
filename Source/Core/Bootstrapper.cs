@@ -74,7 +74,7 @@ namespace Exceptionless.Core {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                 container.RegisterSingle(muxer);
 
-                container.Register<ICacheClient, RedisCacheClient>();
+                container.Register<ICacheClient, HybridCacheClient>();
 
                 container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
                 container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));

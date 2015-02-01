@@ -146,8 +146,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Caching\HybridCachingClientTests.cs" />
+    <Compile Include="Caching\InMemoryCacheClientTests.cs" />
     <Compile Include="Caching\RedisCacheClientTests.cs" />
-    <Compile Include="Caching\InMemoryCachingClientTests.cs" />
+    <Compile Include="Caching\CacheClientTestsBase.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Controllers\MongoTestHelper.cs" />
     <Compile Include="Lock\RedisLockTests.cs" />

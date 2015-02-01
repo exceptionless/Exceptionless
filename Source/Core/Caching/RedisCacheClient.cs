@@ -54,16 +54,15 @@ namespace Exceptionless.Core.Caching {
         }
 
         public long Increment(string key, uint amount, DateTime expiresAt) {
-            expiresAt = expiresAt.ToUniversalTime();
-            if (expiresAt < DateTime.UtcNow)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
-
-            var result = _db.StringIncrement(key, amount);
-            _db.KeyExpire(key, expiresAt);
-            return result;
+            return Increment(key, amount, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
         }
 
         public long Increment(string key, uint amount, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return -1;
+            }
+
             var result = _db.StringIncrement(key, amount);
             _db.KeyExpire(key, expiresIn);
             return result;
@@ -74,16 +73,15 @@ namespace Exceptionless.Core.Caching {
         }
 
         public long Decrement(string key, uint amount, DateTime expiresAt) {
-            expiresAt = expiresAt.ToUniversalTime();
-            if (expiresAt < DateTime.UtcNow)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
-
-            var result = _db.StringDecrement(key, amount);
-            _db.KeyExpire(key, expiresAt);
-            return result;
+            return Decrement(key, amount, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
         }
 
         public long Decrement(string key, uint amount, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return -1;
+            }
+
             var result = _db.StringDecrement(key, amount);
             _db.KeyExpire(key, expiresIn);
             return result;
@@ -104,44 +102,44 @@ namespace Exceptionless.Core.Caching {
             return _db.StringSet(key, json, null, When.Exists);
         }
 
-        public bool Add<T>(string key, T value, DateTime expiresAt) {
-            var expires = expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow);
-            if (expires.Ticks < 0)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
-
-            var json = JsonConvert.SerializeObject(value);
-            return _db.StringSet(key, json, expires, When.NotExists);
-        }
-
         public bool Set<T>(string key, T value, DateTime expiresAt) {
-            var expires = expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow);
-            if (expires.Ticks < 0)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
-            
-            var json = JsonConvert.SerializeObject(value);
-            return _db.StringSet(key, json, expires);
+            return Set(key, value, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
         }
 
         public bool Replace<T>(string key, T value, DateTime expiresAt) {
-            var expires = expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow);
-            if (expires.Ticks < 0)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+            return Replace(key, value, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
+        }
 
-            var json = JsonConvert.SerializeObject(value);
-            return _db.StringSet(key, json, expires, When.Exists);
+        public bool Add<T>(string key, T value, DateTime expiresAt) {
+            return Add(key, value, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
         }
 
         public bool Add<T>(string key, T value, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return false;
+            }
+
             var json = JsonConvert.SerializeObject(value);
             return _db.StringSet(key, json, expiresIn, When.NotExists);
         }
 
         public bool Set<T>(string key, T value, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return false;
+            }
+
             var json = JsonConvert.SerializeObject(value);
             return _db.StringSet(key, json, expiresIn);
         }
 
         public bool Replace<T>(string key, T value, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return false;
+            }
+
             var json = JsonConvert.SerializeObject(value);
             return _db.StringSet(key, json, expiresIn, When.Exists);
         }
@@ -151,15 +149,18 @@ namespace Exceptionless.Core.Caching {
             if (endpoints.Length == 0)
                 return;
 
-            try {
-                foreach (var endpoint in endpoints) {
-                    var server = _connectionMultiplexer.GetServer(endpoint);
-                    server.FlushAllDatabases();
-                }
-            } catch (Exception) {
-                var server = _connectionMultiplexer.GetServer(endpoints.First());
-                _db.KeyDelete(server.Keys().ToArray());
-            };
+            foreach (var endpoint in endpoints) {
+                var server = _connectionMultiplexer.GetServer(endpoint);
+                
+                try {
+                    server.FlushDatabase();
+                    continue;
+                } catch (Exception) {}
+
+                try {
+                    _db.KeyDelete(server.Keys().ToArray());
+                } catch (Exception) {}   
+            }
         }
 
         public IDictionary<string, T> GetAll<T>(IEnumerable<string> keys) {
@@ -187,16 +188,17 @@ namespace Exceptionless.Core.Caching {
             return DateTime.UtcNow.Add(expiration.Value);
         }
 
-        public void SetExpiration(string cacheKey, TimeSpan expiresIn) {
-            _db.KeyExpire(cacheKey, expiresIn);
+        public void SetExpiration(string key, DateTime expiresAt) {
+            SetExpiration(key, expiresAt.ToUniversalTime().Subtract(DateTime.UtcNow));
         }
 
-        public void SetExpiration(string cacheKey, DateTime expiresAt) {
-            expiresAt = expiresAt.ToUniversalTime();
-            if (expiresAt < DateTime.UtcNow)
-                throw new ArgumentException("Date cannot be in the past", "expiresAt");
+        public void SetExpiration(string key, TimeSpan expiresIn) {
+            if (expiresIn.Ticks < 0) {
+                Remove(key);
+                return;
+            }
 
-            _db.KeyExpire(cacheKey, expiresAt);
+            _db.KeyExpire(key, expiresIn);
         }
 
         public void Dispose() { }
