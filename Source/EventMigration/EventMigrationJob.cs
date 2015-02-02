@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -35,8 +34,6 @@ namespace Exceptionless.EventMigration {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
-            // TODO: Queue up all days greater than the last day that we have completed which should be stored in redis.
-
             OutputPublicIp();
             QueueEntry<EventMigrationBatch> queueEntry = null;
             try {
@@ -147,9 +144,12 @@ namespace Exceptionless.EventMigration {
                 total += upgradedEvents.Count;
                 var lastId = upgradedEvents.Last().Id;
                 _cache.Set("migration-errorid", lastId);
-                errors = errorCollection.Find(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId))).SetSortOrder(SortBy.Ascending(ErrorFieldNames.Id)).SetLimit(_batchSize).ToList();
+                errors = errorCollection.Find(Query.And(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId)), Query.LT(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.EndTicks)))
+                                        .SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC))
+                                        .SetLimit(_batchSize).ToList();
             }
 
+            _cache.Set("migration-completedday", queueEntry.Value.EndTicks);
             queueEntry.Complete();
 
             return JobResult.Success;

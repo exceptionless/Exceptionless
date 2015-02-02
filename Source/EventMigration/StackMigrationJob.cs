@@ -51,7 +51,7 @@ namespace Exceptionless.EventMigration {
 
                 Log.Info().Message("Migrating stacks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
                 try {
-                    // TODO: Comment out sendNotifications:false. When I was importing the stacks. I was getting an error where RunPerioid was erroring out due to a null message.
+                    // TODO: Comment out sendNotifications:false. When I was importing the stacks. I was getting an error where RunPeriod was erroring out due to a null message.
                     _stackRepository.Add(stacks, sendNotification: false);
                 } catch (Exception ex) {
                     Debugger.Break();

@@ -37,6 +37,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.0\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.29.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
     <Reference Include="FluentValidation, Version=5.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
@@ -91,6 +95,7 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="MigrationJobBase.cs" />
+    <Compile Include="QueueEventMigrationsJob.cs" />
     <Compile Include="StackMigrationJob.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="MongoCopyJob.cs" />
