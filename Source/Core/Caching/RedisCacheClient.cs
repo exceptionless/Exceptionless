@@ -42,7 +42,7 @@ namespace Exceptionless.Core.Caching {
                 if (stringValue.IsNullOrEmpty)
                     return false;
 
-                value = JsonConvert.DeserializeObject<T>(value.ToString());
+                value = JsonConvert.DeserializeObject<T>(stringValue.ToString());
                 return true;
             } catch {
                 return false;

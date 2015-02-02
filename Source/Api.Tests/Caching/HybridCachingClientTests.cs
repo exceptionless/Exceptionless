@@ -31,24 +31,32 @@ namespace Exceptionless.Api.Tests.Caching {
 
         [Fact]
         public void CanInvalidateLocalCache() {
-            var cache = GetCache() as HybridCacheClient;
-            Assert.NotNull(cache);
+            var firstCache = GetCache() as HybridCacheClient;
+            Assert.NotNull(firstCache);
              
             var secondCache = GetCache() as HybridCacheClient;
             Assert.NotNull(secondCache);
             
-            cache.FlushAll();
+            firstCache.FlushAll();
 
-            cache.Set("test", 1);
-            secondCache.Set("test2", 1, TimeSpan.FromMilliseconds(50));
-            var value = cache.Get<int>("test");
-            Assert.Equal(1, value);
-            Assert.Equal(1, cache.LocalCache.Count);
+            firstCache.Set("willCacheLocallyOnFirst", 1);
+            Assert.Equal(1, firstCache.LocalCache.Count);
+            Assert.Equal(0, secondCache.LocalCache.Count);
+
+            secondCache.Set("keyWillExpire", 50, TimeSpan.FromMilliseconds(50));
+            Assert.Equal(1, firstCache.LocalCache.Count);
             Assert.Equal(1, secondCache.LocalCache.Count);
 
-            secondCache.Remove("test");
+            Assert.Equal(1, firstCache.Get<int>("willCacheLocallyOnFirst"));
+            Assert.Equal(50, firstCache.Get<int>("keyWillExpire"));
+            Assert.Equal(2, firstCache.LocalCache.Count);
+            Assert.Equal(1, secondCache.LocalCache.Count);
+
+            // Remove key from second machine and ensure first cache is cleared.
+            secondCache.Remove("willCacheLocallyOnFirst");
+            
             Task.Delay(TimeSpan.FromMilliseconds(600)).Wait();
-            Assert.Equal(0, cache.LocalCache.Count);
+            Assert.Equal(0, firstCache.LocalCache.Count);
             Assert.Equal(0, secondCache.LocalCache.Count);
         }
     }
