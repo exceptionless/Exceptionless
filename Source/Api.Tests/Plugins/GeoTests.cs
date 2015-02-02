@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using Exceptionless.Core;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Utility;
 using Xunit;
 using Xunit.Extensions;
 
@@ -11,7 +13,8 @@ namespace Exceptionless.Api.Tests.Plugins {
         protected readonly IGeoIPResolver _resolver;
 
         public GeoTests() {
-            if (String.IsNullOrWhiteSpace(Settings.Current.GeoIPDatabasePath)) {
+            var databasePath = PathHelper.ExpandPath(Settings.Current.GeoIPDatabasePath);
+            if (String.IsNullOrWhiteSpace(databasePath) || !File.Exists(databasePath)) {
                 Console.WriteLine("Unable to resolve GeoIP Database Path");
                 return;
             }
