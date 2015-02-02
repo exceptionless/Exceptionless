@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Exceptionless.Core;
 using Exceptionless.Core.Geo;
 using Xunit;
@@ -10,8 +11,10 @@ namespace Exceptionless.Api.Tests.Plugins {
         protected readonly IGeoIPResolver _resolver;
 
         public GeoTests() {
-            if (String.IsNullOrWhiteSpace(Settings.Current.GeoIPDatabasePath))
+            if (String.IsNullOrWhiteSpace(Settings.Current.GeoIPDatabasePath)) {
+                Console.WriteLine("Unable to resolve GeoIP Database Path");
                 return;
+            }
 
             _resolver = new MindMaxGeoIPResolver();
         }
@@ -27,6 +30,21 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.NotNull(result);
             else
                 Assert.Null(result);
+        }
+
+        [Fact]
+        public void CanResolveIpFromCache() {
+            if (_resolver == null)
+                return;
+
+            var sw = new Stopwatch();
+            sw.Start();
+            
+            for (int i = 0; i < 1000; i++)
+                Assert.NotNull(_resolver.ResolveIp("8.8.4.4"));
+
+            sw.Stop();
+            Assert.InRange(sw.ElapsedMilliseconds, 0, 510);
         }
 
         public static IEnumerable<object[]> IPData {

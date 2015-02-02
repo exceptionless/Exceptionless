@@ -1,19 +1,26 @@
 ﻿using System;
 using System.IO;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Utility;
 using MaxMind.Db;
 using MaxMind.GeoIP2;
+using MaxMind.GeoIP2.Exceptions;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Geo {
     public class MindMaxGeoIPResolver : IGeoIPResolver {
         private readonly Lazy<DatabaseReader> _reader = new Lazy<DatabaseReader>(GetDatabase);
+        private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 50 };
 
         public Location ResolveIp(string ip) {
             if (String.IsNullOrWhiteSpace(ip) || (!ip.Contains(".") && !ip.Contains(":")))
                 return null;
 
             ip = ip.Trim();
+
+            Location location;
+            if (_cache.TryGet(ip, out location))
+                return location;
 
             if (IsPrivateNetwork(ip))
                 return null;
@@ -23,15 +30,19 @@ namespace Exceptionless.Core.Geo {
 
             try {
                 var city = _reader.Value.City(ip);
-                if (city == null || city.Location == null)
-                    return null;
+                if (city != null && city.Location != null)
+                    location = new Location { Latitude = city.Location.Latitude, Longitude = city.Location.Longitude };
 
-                return new Location {
-                    Latitude = city.Location.Latitude,
-                    Longitude = city.Location.Longitude
-                };
+                _cache.Set(ip, location);
+                return location;
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
+                if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
+                    Log.Info().Message(ex.Message).Write();
+                    _cache.Set<Location>(ip, null);
+                } else {
+                    Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
+                }
+
                 return null;
             }
         }
