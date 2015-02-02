@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Messaging;
 using StackExchange.Redis;
 
 namespace Exceptionless.Core.Caching {
     public class HybridCacheClient : ICacheClient {
+        private readonly string _cacheId = Guid.NewGuid().ToString("N");
         private readonly ICacheClient _redisCache;
         private readonly InMemoryCacheClient _localCache = new InMemoryCacheClient();
         private readonly RedisMessageBus _messageBus;
@@ -25,19 +27,37 @@ namespace Exceptionless.Core.Caching {
         }
 
         private void OnMessage(InvalidateCache message) {
-            _localCache.RemoveAll(message.Keys);
+            if (!String.IsNullOrEmpty(message.CacheId) && String.Equals(_cacheId, message.CacheId))
+                return;
+
+            if (message.FlushAll)
+                _localCache.FlushAll();
+            else if (message.Keys != null && message.Keys.Length > 0)
+                _localCache.RemoveAll(message.Keys);
+            else 
+                Debug.Assert(false, "Unknown invalidate cache message");
         }
 
         public bool Remove(string key) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            if (String.IsNullOrEmpty(key))
+                return true;
+
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Remove(key);
             return _redisCache.Remove(key);
         }
 
         public void RemoveAll(IEnumerable<string> keys) {
-            _messageBus.Publish(new InvalidateCache { Keys = keys.ToArray() });
-            _localCache.RemoveAll(keys);
-            _redisCache.RemoveAll(keys);
+            if (keys == null)
+                return;
+
+            var keysToRemove = keys.ToArray();
+            if (keysToRemove.Length == 0)
+                return;
+
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = keysToRemove });
+            _localCache.RemoveAll(keysToRemove);
+            _redisCache.RemoveAll(keysToRemove);
         }
 
         public T Get<T>(string key) {
@@ -116,43 +136,43 @@ namespace Exceptionless.Core.Caching {
         }
 
         public bool Set<T>(string key, T value) {
-            _messageBus.Publish(new InvalidateCache { Keys = new [] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new [] { key } });
             _localCache.Set(key, value);
             return _redisCache.Set(key, value);
         }
 
         public bool Set<T>(string key, T value, DateTime expiresAt) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Set(key, value, expiresAt);
             return _redisCache.Set(key, value, expiresAt);
         }
 
         public bool Set<T>(string key, T value, TimeSpan expiresIn) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Set(key, value, expiresIn);
             return _redisCache.Set(key, value, expiresIn);
         }
 
         public bool Replace<T>(string key, T value) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Replace(key, value);
             return _redisCache.Replace(key, value);
         }
 
         public bool Replace<T>(string key, T value, DateTime expiresAt) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Set(key, value, expiresAt);
             return _redisCache.Set(key, value, expiresAt);
         }
 
         public bool Replace<T>(string key, T value, TimeSpan expiresIn) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { key } });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
             _localCache.Set(key, value, expiresIn);
             return _redisCache.Set(key, value, expiresIn);
         }
 
         public void FlushAll() {
-            _messageBus.Publish(new InvalidateCache { FlushAll = true });
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, FlushAll = true });
             _localCache.FlushAll();
             _redisCache.FlushAll();
         }
@@ -163,25 +183,26 @@ namespace Exceptionless.Core.Caching {
 
         public void SetAll<T>(IDictionary<string, T> values) {
             if (values != null)
-                _messageBus.Publish(new InvalidateCache { Keys = values.Keys.ToArray() });
+                _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = values.Keys.ToArray() });
             _redisCache.SetAll(values);
         }
 
-        public void SetExpiration(string cacheKey, TimeSpan expiresIn) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { cacheKey } });
-            _localCache.Remove(cacheKey);
-            _redisCache.SetExpiration(cacheKey, expiresIn);
+        public void SetExpiration(string key, TimeSpan expiresIn) {
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
+            _localCache.Remove(key);
+            _redisCache.SetExpiration(key, expiresIn);
         }
 
-        public void SetExpiration(string cacheKey, DateTime expiresAt) {
-            _messageBus.Publish(new InvalidateCache { Keys = new[] { cacheKey } });
-            _localCache.Remove(cacheKey);
-            _redisCache.SetExpiration(cacheKey, expiresAt);
+        public void SetExpiration(string key, DateTime expiresAt) {
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = new[] { key } });
+            _localCache.Remove(key);
+            _redisCache.SetExpiration(key, expiresAt);
         }
 
         public void Dispose() {}
 
         public class InvalidateCache {
+            public string CacheId { get; set; }
             public string[] Keys { get; set; }
             public bool FlushAll { get; set; }
         }

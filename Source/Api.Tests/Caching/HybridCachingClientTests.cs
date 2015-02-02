@@ -36,28 +36,31 @@ namespace Exceptionless.Api.Tests.Caching {
              
             var secondCache = GetCache() as HybridCacheClient;
             Assert.NotNull(secondCache);
-            
-            firstCache.FlushAll();
 
             firstCache.Set("willCacheLocallyOnFirst", 1);
             Assert.Equal(1, firstCache.LocalCache.Count);
             Assert.Equal(0, secondCache.LocalCache.Count);
 
             secondCache.Set("keyWillExpire", 50, TimeSpan.FromMilliseconds(50));
+            secondCache.Set("keyWillNotExpire", 60 * 5, TimeSpan.FromMinutes(5));
             Assert.Equal(1, firstCache.LocalCache.Count);
-            Assert.Equal(1, secondCache.LocalCache.Count);
+            Assert.Equal(2, secondCache.LocalCache.Count);
 
             Assert.Equal(1, firstCache.Get<int>("willCacheLocallyOnFirst"));
+            Assert.Equal(1, firstCache.LocalCache.Count);
+            Assert.Equal(2, secondCache.LocalCache.Count);
+
             Assert.Equal(50, firstCache.Get<int>("keyWillExpire"));
             Assert.Equal(2, firstCache.LocalCache.Count);
-            Assert.Equal(1, secondCache.LocalCache.Count);
+            Assert.Equal(2, secondCache.LocalCache.Count);
 
             // Remove key from second machine and ensure first cache is cleared.
             secondCache.Remove("willCacheLocallyOnFirst");
-            
-            Task.Delay(TimeSpan.FromMilliseconds(600)).Wait();
+
+            Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
+
             Assert.Equal(0, firstCache.LocalCache.Count);
-            Assert.Equal(0, secondCache.LocalCache.Count);
+            Assert.InRange(secondCache.LocalCache.Count, 1, 2);
         }
     }
 }

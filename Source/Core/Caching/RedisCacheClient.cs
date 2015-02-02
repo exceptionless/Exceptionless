@@ -158,7 +158,9 @@ namespace Exceptionless.Core.Caching {
                 } catch (Exception) {}
 
                 try {
-                    _db.KeyDelete(server.Keys().ToArray());
+                    var keys = server.Keys().ToArray();
+                    if (keys.Length > 0)
+                        _db.KeyDelete(keys);
                 } catch (Exception) {}   
             }
         }
