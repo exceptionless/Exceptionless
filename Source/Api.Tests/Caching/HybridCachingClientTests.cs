@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Tests.Caching {
             // Remove key from second machine and ensure first cache is cleared.
             secondCache.Remove("willCacheLocallyOnFirst");
 
-            Task.Delay(TimeSpan.FromMilliseconds(100)).Wait();
+            Task.Delay(TimeSpan.FromMilliseconds(200)).Wait();
 
             Assert.Equal(0, firstCache.LocalCache.Count);
             Assert.InRange(secondCache.LocalCache.Count, 1, 2);
