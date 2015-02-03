@@ -103,7 +103,7 @@
     <None Include="jobs\triggered\ResetDataStoresJob\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="jobs\triggered\EventMigrationJob\run.bat">
+    <None Include="jobs\continuous\EventMigrationJob\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="jobs\continuous\WebHooks\run.bat">
