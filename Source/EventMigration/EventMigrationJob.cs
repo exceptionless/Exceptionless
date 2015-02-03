@@ -49,7 +49,7 @@ namespace Exceptionless.EventMigration {
             if (queueEntry == null)
                 return JobResult.Success;
 
-            Log.Info().Message("Processing event migration jobs for date range: {0}-{1}", new DateTime(queueEntry.Value.StartTicks).ToString("O"), new DateTime(queueEntry.Value.EndTicks).ToString("O")).Write();
+            Log.Info().Message("Processing event migration jobs for date range: {0}-{1}", new DateTimeOffset(queueEntry.Value.StartTicks, TimeSpan.Zero).ToString("O"), new DateTimeOffset(queueEntry.Value.EndTicks, TimeSpan.Zero).ToString("O")).Write();
        
             int total = 0;
             var stopwatch = new Stopwatch();
