@@ -61,11 +61,11 @@ namespace Exceptionless.EventMigration {
 
             var errorCollection = GetErrorCollection();
             var firstError = errorCollection.Find(Query.Null).SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC)).SetLimit(1).FirstOrDefault();
-            if (firstError != null)
+            if (firstError != null && firstError.OccurrenceDate.Date > DateTime.Now.Date.SubtractYears(1))
                 return firstError.OccurrenceDate.Date;
 
             // Can't find the first error so lets default to exactly one year ago.
-            return new DateTime().SubtractDays(365).Date;
+            return DateTime.Now.Date.SubtractYears(1);
         }
 
         protected override IDisposable GetJobLock() {
