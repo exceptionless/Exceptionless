@@ -29,8 +29,9 @@ namespace Exceptionless.EventMigration {
     public class EventMigrationJob : MigrationJobBase {
         private readonly IQueue<EventMigrationBatch> _queue;
 
-        public EventMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
+        public EventMigrationJob(IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
             : base(elasticClient, eventUpgraderPluginManager, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
+            _queue = queue;
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {

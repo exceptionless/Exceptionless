@@ -6,8 +6,11 @@ using CommandLine;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
+using Exceptionless.Core.Queues;
 using Exceptionless.Core.Utility;
+using Exceptionless.EventMigration;
 using SimpleInjector;
+using StackExchange.Redis;
 using Log = NLog;
 
 namespace Exceptionless.JobRunner {
@@ -73,6 +76,11 @@ namespace Exceptionless.JobRunner {
             container.Options.PropertySelectionBehavior = new InjectAttributePropertySelectionBehavior();
 
             container.RegisterPackage<Bootstrapper>();
+
+            if (Settings.Current.EnableRedis)
+                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new RedisQueue<EventMigrationBatch>(container.GetInstance<ConnectionMultiplexer>()));
+            else
+                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new InMemoryQueue<EventMigrationBatch>());
 
             return container;
         }

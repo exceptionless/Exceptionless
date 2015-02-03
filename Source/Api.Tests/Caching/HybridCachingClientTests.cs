@@ -41,7 +41,7 @@ namespace Exceptionless.Api.Tests.Caching {
             Assert.Equal(1, firstCache.LocalCache.Count);
             Assert.Equal(0, secondCache.LocalCache.Count);
 
-            secondCache.Set("keyWillExpire", 50, TimeSpan.FromMilliseconds(50));
+            secondCache.Set("keyWillExpire", 50, TimeSpan.FromMilliseconds(100));
             secondCache.Set("keyWillNotExpire", 60 * 5, TimeSpan.FromMinutes(5));
             Assert.Equal(1, firstCache.LocalCache.Count);
             Assert.Equal(2, secondCache.LocalCache.Count);
