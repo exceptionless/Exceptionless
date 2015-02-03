@@ -4,14 +4,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
+using Exceptionless.Core.Component;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Caching {
     public class InMemoryCacheClient : ICacheClient {
         private ConcurrentDictionary<string, CacheEntry> _memory;
+        private readonly CancellationTokenSource _cacheDisposedCancellationTokenSource;
 
         public InMemoryCacheClient() {
             _memory = new ConcurrentDictionary<string, CacheEntry>();
+
+            _cacheDisposedCancellationTokenSource = new CancellationTokenSource();
+            TaskHelper.RunPeriodic(DoMaintenanceWork, TimeSpan.FromSeconds(1), _cacheDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
         }
 
         public bool FlushOnDispose { get; set; }
@@ -103,7 +109,11 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void Dispose() {
-            if (!FlushOnDispose) return;
+            if (_cacheDisposedCancellationTokenSource != null)
+                _cacheDisposedCancellationTokenSource.Cancel();
+
+            if (!FlushOnDispose) 
+                return;
 
             _memory = new ConcurrentDictionary<string, CacheEntry>();
         }
@@ -265,6 +275,9 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void SetAll<T>(IDictionary<string, T> values) {
+            if (values == null)
+                return;
+
             foreach (var entry in values)
                 Set(entry.Key, entry.Value);
         }
@@ -312,6 +325,19 @@ namespace Exceptionless.Core.Caching {
                 }
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error trying to remove items from cache with this {0} pattern", pattern).Write();
+            }
+        }
+
+        private async Task DoMaintenanceWork() {
+            var enumerator = _memory.GetEnumerator();
+            try {
+                while (enumerator.MoveNext()) {
+                    var current = enumerator.Current;
+                    if (current.Value.ExpiresAt < DateTime.UtcNow)
+                        Remove(current.Key);
+                }
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Message("Error trying to remove expired items from cache.").Write();
             }
         }
 

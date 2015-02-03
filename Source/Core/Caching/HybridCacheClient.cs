@@ -182,8 +182,11 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void SetAll<T>(IDictionary<string, T> values) {
-            if (values != null)
-                _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = values.Keys.ToArray() });
+            if (values == null)
+                return;
+            
+            _messageBus.Publish(new InvalidateCache { CacheId = _cacheId, Keys = values.Keys.ToArray() });
+            _localCache.SetAll(values);
             _redisCache.SetAll(values);
         }
 

@@ -57,10 +57,15 @@ namespace Exceptionless.Api.Tests.Caching {
             // Remove key from second machine and ensure first cache is cleared.
             secondCache.Remove("willCacheLocallyOnFirst");
 
-            Task.Delay(TimeSpan.FromMilliseconds(200)).Wait();
+            // Try and wait until the published message has been process.
+            var count = 0;
+            while ((firstCache.LocalCache.Count != 0 || secondCache.LocalCache.Count != 1) && count < 10) {
+                Task.Delay(TimeSpan.FromMilliseconds(250)).Wait();
+                count++;
+            }
 
             Assert.Equal(0, firstCache.LocalCache.Count);
-            Assert.InRange(secondCache.LocalCache.Count, 1, 2);
+            Assert.Equal(1, secondCache.LocalCache.Count);
         }
     }
 }

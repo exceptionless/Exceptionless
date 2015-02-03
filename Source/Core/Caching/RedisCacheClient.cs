@@ -179,6 +179,9 @@ namespace Exceptionless.Core.Caching {
         }
 
         public void SetAll<T>(IDictionary<string, T> values) {
+            if (values == null)
+                return;
+
             _db.StringSet(values.ToDictionary(v => (RedisKey)v.Key, v => (RedisValue)JsonConvert.SerializeObject(v.Value)).ToArray());
         }
 
