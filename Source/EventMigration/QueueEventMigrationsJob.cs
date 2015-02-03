@@ -32,7 +32,6 @@ namespace Exceptionless.EventMigration {
                 _queue.Enqueue(new EventMigrationBatch { StartTicks = start.Ticks, EndTicks = start.AddDays(1).Ticks });
                 _cache.Set("migration-lastqueuedday", start.Ticks);
                 start = start.AddDays(1);
-                return JobResult.Success;
             }
 
             Log.Info().Message("Finished queueing event migration jobs").Write();
