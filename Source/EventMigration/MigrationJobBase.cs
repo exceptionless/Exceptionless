@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Net;
 using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
@@ -23,7 +24,6 @@ using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
     public abstract class MigrationJobBase : JobBase {
-        protected readonly IElasticClient _elasticClient;
         protected readonly EventUpgraderPluginManager _eventUpgraderPluginManager;
         protected readonly MongoDatabase _mongoDatabase;
         protected readonly StackMigrationRepository _stackRepository;
@@ -33,9 +33,9 @@ namespace Exceptionless.EventMigration {
         protected readonly ICacheClient _cache;
 
         protected readonly int _batchSize;
+        private static IPAddress _ipAddress;
 
         public MigrationJobBase(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) {
-            _elasticClient = elasticClient;
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
             _mongoDatabase = GetMongoDatabase();
             _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
@@ -63,9 +63,11 @@ namespace Exceptionless.EventMigration {
         }
 
         protected static void OutputPublicIp() {
-            var publicIp = Util.GetExternalIP();
-            if (publicIp != null)
-                Log.Info().Message("Public IP: " + publicIp).Write();
+            if (_ipAddress == null)
+                _ipAddress = Util.GetExternalIP();
+
+            if (_ipAddress != null)
+                Log.Info().Message("Public IP: " + _ipAddress).Write();
         }
 
         protected IEnumerable<string> GetIpAddresses(PersistentEvent ev, RequestInfo request) {
