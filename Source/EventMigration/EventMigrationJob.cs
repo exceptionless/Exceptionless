@@ -38,7 +38,7 @@ namespace Exceptionless.EventMigration {
             OutputPublicIp();
             QueueEntry<EventMigrationBatch> queueEntry = null;
             try {
-                queueEntry = _queue.Dequeue();
+                queueEntry = _queue.Dequeue(TimeSpan.FromSeconds(1));
             } catch (Exception ex) {
                 if (!(ex is TimeoutException)) {
                     Log.Error().Exception(ex).Message("Error trying to dequeue message: {0}", ex.Message).Write();
