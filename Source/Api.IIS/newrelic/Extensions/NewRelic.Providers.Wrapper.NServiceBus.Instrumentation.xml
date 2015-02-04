@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<extension xmlns="urn:newrelic-extension">
+	<instrumentation>
+		<!--<tracerFactory name="NewRelic.Agent.Extensions.Providers.Wrapper.NServiceBusReceiveMessageWrapperFactory">
+			<match assemblyName="NServiceBus.Core" className="NServiceBus.InvokeHandlersBehavior">
+				<exactMethodMatcher methodName="Invoke" parameters="NServiceBus.Pipeline.Contexts.IncomingContext,System.Action" />
+			</match>
+		</tracerFactory>
+		<tracerFactory name="NewRelic.Agent.Extensions.Providers.Wrapper.NServiceBusSendMessageWrapperFactory">
+			<match assemblyName="NServiceBus.Core" className="NServiceBus.Unicast.UnicastBus">
+				<exactMethodMatcher methodName="SendMessage" parameters="NServiceBus.Unicast.SendOptions,NServiceBus.Unicast.Messages.LogicalMessage" />
+			</match>
+		</tracerFactory>-->
+	</instrumentation>
+</extension>

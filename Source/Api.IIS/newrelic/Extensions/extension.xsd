@@ -1,0 +1,127 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:newrelic-extension">
+	<xs:element name="extension">
+		<xs:complexType>			
+			<xs:sequence>				
+
+				<xs:element name="instrumentation" minOccurs="0" maxOccurs="1">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="tracerFactory" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="match" minOccurs="0" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:sequence>
+													<xs:element name="exactMethodMatcher" minOccurs="1" maxOccurs="unbounded">
+														<xs:complexType>
+															<xs:attribute name="methodName" type="xs:string" use="required">
+																<xs:annotation>
+																	<xs:documentation>
+																		The name of the method to match.  This is case sensitive - use the correct mixed case.
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:attribute>
+															<xs:attribute name="parameters" type="xs:string" use="optional">
+																<xs:annotation>
+																	<xs:documentation>
+																		The method parameters to match.  This is optional, and should only be used when a 
+																		method is overloaded and you want to instrument a specific version of the method.
+																	</xs:documentation>
+																</xs:annotation>
+															</xs:attribute>
+														</xs:complexType>
+													</xs:element>
+												</xs:sequence>
+												<xs:attribute name="assemblyName" type="xs:string" use="required">
+													<xs:annotation>
+														<xs:documentation>
+															The full assembly name to match.  This is case sensitive - use the correct mixed case.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+												<xs:attribute name="className" type="xs:string" use="required">
+													<xs:annotation>
+														<xs:documentation>
+															The full class name to match.  This is case sensitive - use the correct mixed case.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="name" type="xs:string" default="NewRelic.Agent.Core.Tracer.Factories.DefaultTracerFactory">
+										<xs:annotation>
+											<xs:documentation>
+												The full class name of the tracer factory.  If unspecified, the default tracer factory is used.
+												Unless otherwise instructed, this attribute should remain blank when creating custom instrumentation
+												for an application.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="metricName" type="xs:string" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												The metric name for this tracer.  Defaults to the instrumented class/method name.  If set to "instance",
+												the metric name will be the class / method name using the class name of the invocation target instance at runtime.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="enabled" default="true" type="xs:boolean" />
+									<xs:attribute name="level" default="0">
+										<xs:simpleType>
+											<xs:restriction base="xs:integer">
+												<xs:minInclusive value="0"/>
+												<xs:maxInclusive value="7"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="suppressRecursiveCalls" default="true" type="xs:boolean" >
+										<xs:annotation>
+											<xs:documentation>
+												Internal Only.  Subject to future change.
+												By default, the agent will not create a new tracer if the parent tracer instruments the same class / method signature.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="metric" default="scoped">
+										<xs:simpleType>
+											<xs:restriction base="xs:string">
+												<xs:enumeration value="none"/>
+												<xs:enumeration value="scoped"/>
+												<xs:enumeration value="unscoped"/>
+												<xs:enumeration value="both"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+									<xs:attribute name="transactionTraceSegment" default="true" type="xs:boolean">
+										<xs:annotation>
+											<xs:documentation>
+												If true, a transaction tracer segment is generated for this tracer.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="transactionNamingPriority" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												If set, try to name the current transaction using this tracer.  Multiple tracers may try to name
+												the transaction.  The highest priority wins.
+											</xs:documentation>
+										</xs:annotation>
+										<xs:simpleType>
+											<xs:restriction base="xs:unsignedShort">
+												<xs:minInclusive value="1"/>
+												<xs:maxInclusive value="7"/>
+											</xs:restriction>
+										</xs:simpleType>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+			<xs:attribute name="enabled" type="xs:boolean" default="true" />
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

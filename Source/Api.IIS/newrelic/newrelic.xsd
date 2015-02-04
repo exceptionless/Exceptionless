@@ -1,0 +1,1203 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The documentation in here must be kept up to date with that embedded in comments in newrelic.config -->
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" targetNamespace="urn:newrelic-config" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:nr="Configuration.xsd">
+	<xs:element name="configuration">
+		<xs:complexType>
+			<xs:all>
+				<xs:element name="service" minOccurs="1" maxOccurs="1">
+					<xs:complexType>
+						<xs:annotation>
+							<xs:documentation>
+								This section configures the agent to connect to the New Relic service.
+							</xs:documentation>
+						</xs:annotation>
+						<xs:sequence>
+
+							<xs:element name="proxy" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										Proxy settings for connecting to the New Relic service.
+										If a proxy is used, then the host attribute is required.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+
+									<xs:attribute name="host" type="xs:string" use="required">
+										<xs:annotation>
+											<xs:documentation>
+												The proxy server host name.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+
+									<xs:attribute name="port" type="xs:int" default="8080">
+										<xs:annotation>
+											<xs:documentation>
+												The proxy server port (optional - defaults to 8080).
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+
+									<xs:attribute name="user" type="xs:string" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												The username used to authenticate with the proxy server (optional).
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+
+									<xs:attribute name="password" type="xs:string" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												The password used to authenticate with the proxy server (optional).
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+
+									<xs:attribute name="domain" type="xs:string" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												The domain used to authenticate with the proxy server (optional).
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+
+						<xs:attribute name="sendEnvironmentInfo" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									Send execution environment information back to the RPM.
+									This includes information about the O/S; which version of the agent is used; information about all of the assemblies available at the time the environment information is captured.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="licenseKey" type="xs:string" use="required">
+							<xs:annotation>
+								<xs:documentation>
+									You must specify the license key associated with your New Relic account.
+									This key binds your agent's data to your account in the New Relic service.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="host" type="xs:string" default="collector.newrelic.com">
+							<xs:annotation>
+								<xs:documentation>
+									The name of the collector host within newrelic.com where the agent is to send its data.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="port" type="xs:int" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									The port number on the collector host to talk to.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="ssl" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									The agent communicates with the New Relic service via http by default.
+									If you want to communicate via https to increase security, then turn on SSL by setting this value to true.
+									Note, this will result in increased CPU overhead to perform the encryption involved in SSL communication, but this work is done asynchronously to the threads that process your application code, so it should not impact response times.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="syncStartup" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									If true, the agent startup will block until a connection to the New Relic service is made.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="sendDataOnExit" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									If true, the agent will block process shutdown until it has gone through a harvest cycle and sent its data to the New Relic service.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="sendDataOnExitThreshold" type="xs:float" default="60000">
+							<xs:annotation>
+								<xs:documentation>
+									The amount of time (in milliseconds) an agent must run before sending data on process shutdown.
+									The default is 60 seconds.	This only applies when sendDataOnExit is set to true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="requestTimeout" type="xs:int">
+							<xs:annotation>
+								<xs:documentation>
+									The request timeout (in milliseconds) when communicating with the New Relic service.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="application" minOccurs="1" maxOccurs="1">
+					<xs:complexType>
+						<xs:annotation>
+							<xs:documentation>
+								This element gives information about the application(s) being profiled.
+							</xs:documentation>
+						</xs:annotation>
+
+						<xs:sequence minOccurs="0" maxOccurs="3">
+							<xs:element name="name" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>
+										If IIS is hosting multiple applications and you wish to have them report into New Relic as separate applications, create an application setting in the Web.Config of each application named NewRelic.AppName
+
+										Set this to be the name of your application as you'd like it to show up in New Relic.  New Relic will then auto-map instances of your application into an "application" on your home dashboard page.
+
+										If youw ant to map this instance onto multiple applications, like "AJAX Requests" and "All UI", then specify up to three distinct names.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+
+						<xs:attribute name="disableSamplers" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									Samplers collect information about memory and CPU consumption.
+									Set this to true to disable sampling.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="log" minOccurs="0" maxOccurs="1">
+					<xs:complexType>
+						<xs:annotation>
+							<xs:documentation>
+								The agent generates its own log file to keep its logging information separate from that of your application.
+							</xs:documentation>
+						</xs:annotation>
+
+						<!--It is tempting to make level be a restriction enumeration, but that induces case sensitivity which may break
+						the newrelic.xml files out in the field that might use DEBUG or Debug as the value of the level string.-->
+						<xs:attribute name="level" type="xs:string" default="info">
+							<xs:annotation>
+								<xs:documentation>
+									Specify the agent's log level here.
+									It may be one of (in any case): off, emergency, fatal, alert, critical, severe, error, warn, notice, info, debug, fine, trace, finer, verbose, finest, all.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="directory" type="xs:string" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									The directory to hold log files generated by the agent.
+									If this is omitted, then a directory named 'logs' in the New Relic Agent installation area will be used by default.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="fileName" type="xs:string" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									The name of the log file to write.
+									If this is omitted, then the name is derived from the name of the monitored process.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="console" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									If this is true, then log messages are also appended to the console, in addition to going to the log file.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="auditLog" type="xs:boolean" default="false" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									If this is true, then any data that is sent to New Relic will be recorded in a separate log file, in addition to going to the log file.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="fileLockingModel">
+							<xs:annotation>
+								<xs:documentation>
+									Controls how agent-produced log files are to be locked.	Experimental.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="exclusive"/>
+									<xs:enumeration value="minimal"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="instrumentation" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							By default, the .NET agent instruments IIS asp worker processes and Azure web and worker roles.
+							To instrument other processes, do step (1) and either (2a) or (2b).
+
+							(1) Create a system environment variable named COR_ENABLE_PROFILING with a value of 1.
+							(2) Either (2a) or (2b)
+							(2a): Add an application setting to your application's configuration that enables the agent. For example, if the application name is MyServer.exe, edit MyServer.exe.config and add a new appSetting with a key named "NewRelic.AgentEnabled" and a value of "true":
+							OR
+							(2b) Add an instrumentation element, with an applications element, containing one or more application name, each set to the name of your custom server application. Multiple application elements can be specified.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="applications" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										A list of application names to instrument.
+									</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="application" minOccurs="0" maxOccurs="unbounded">
+											<xs:complexType>
+												<xs:attribute name="name" type="xs:string" use="required">
+													<xs:annotation>
+														<xs:documentation>
+															The name of your custom server application; remove everything up to and including the last folder separator.
+															For example, "MyCustomServer.exe".
+														</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+											</xs:complexType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+
+						<xs:attribute name="log" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									If log is set to true, then each method that is instrumented will be logged in the application event log.	This is helpful when debugging custom instrumentation.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="attributes" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							The attributes element tells the transaction tracer, error collector, browser monitoring and transaction events whether or not to capture any attributes.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence minOccurs="0" maxOccurs="unbounded">
+							<xs:sequence minOccurs="0" maxOccurs="unbounded">
+								<xs:element name="include" type="xs:string">
+									<xs:annotation>
+										<xs:documentation>
+											The name of a specific custom attribute to include.
+										</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+							<xs:sequence minOccurs="0" maxOccurs="unbounded">
+								<xs:element name="exclude" type="xs:string">
+									<xs:annotation>
+										<xs:documentation>
+											The name of a specific custom attribute to exclude.
+										</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+						</xs:sequence>
+						<xs:attribute name="enabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									Turns on attribute capturing.	Enabled by default.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+
+				<!-- DEPRECATED: A parameter group is a container for a set of data values captured by the agent. -->
+				<xs:element name="parameterGroups" minOccurs="0" maxOccurs="1">
+					<xs:complexType>
+						<xs:all>
+							<xs:element name="identityParameters" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										Deprecated: The identityParameters element tells the transaction tracer and the error collector whether or not to capture data from the Principal associated with the application.
+										See http://msdn.microsoft.com/en-us/library/axt6w9h8.aspx for information on the concept of Principal Microsoft Windows.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="ignore" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>
+													Deprecated: The name of a specific identity parameter to not capture.
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Deprecated: Turns on identity parameter capturing for the Transaction Tracer and Error Collector features. Default is true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="responseHeaderParameters" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										Deprecated: The responseHeaderParameters element tells the transaction tracer and the error collector whether or not to capture data from the HTTP response.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="ignore" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>
+													Deprecated: The name of a specific response header parameter to not capture.
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Deprecated: Turns on response header parameter capturing for the Transaction Tracer and Error Collector features.	Default is true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="customParameters" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										Deprecated: The customParameters element tells the transaction tracer and the error collector whether or not to capture custom parameters set using the .NET Agent Api.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="ignore" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>
+												 Deprecated: The name of a specific custom parameter to not capture.
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Deprecated: Turns on custom parameter capturing for the Transaction Tracer and Error Collector features.	Default is true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="requestHeaderParameters" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+											Deprecated: The requestHeaderParameters element tells the transaction tracer and the error collector whether or not to capture request headers set.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="ignore" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>
+													Deprecated: The name of a specific request header to not capture.
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Deprecated: Turns on request header capturing for the Transaction Tracer and Error Collector features. Default is true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+								
+								<xs:element name="serviceRequestParameters" minOccurs="0" maxOccurs="1">
+										<xs:annotation>
+												<xs:documentation>
+														Deprecated: The serviceRequestParameters element tells the transaction tracer and the error collector whether or not to capture service request parameters sent.
+												</xs:documentation>
+										</xs:annotation>
+
+										<xs:complexType>
+												<xs:sequence minOccurs="0" maxOccurs="unbounded">
+														<xs:element name="ignore" type="xs:string">
+																<xs:annotation>
+																		<xs:documentation>
+																				Deprecated: The name of a specific service request parameter to not capture.
+																		</xs:documentation>
+																</xs:annotation>
+														</xs:element>
+												</xs:sequence>
+												<xs:attribute name="enabled" type="xs:boolean" use="optional">
+														<xs:annotation>
+																<xs:documentation>
+																		Deprecated: Turns on service request parameter capturing for the Transaction Tracer and Error Collector features.
+																		Default is false.
+																</xs:documentation>
+														</xs:annotation>
+												</xs:attribute>
+										</xs:complexType>
+								</xs:element>
+								
+						</xs:all>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="requestParameters" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							The requestParameters element tells the transaction tracer and the error collector whether or not to capture HTTP parameters.
+							To ignore specific parameters so that they are never captured, specify ignore elements.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:sequence minOccurs="0" maxOccurs="unbounded">
+							<xs:element name="ignore" type="xs:string">
+								<xs:annotation>
+									<xs:documentation>
+										The name of a specific request parameter to not capture.
+									</xs:documentation>
+								</xs:annotation>
+							</xs:element>
+						</xs:sequence>
+
+						<xs:attribute name="enabled" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Turns on request parameter capturing for the Transaction Tracer and Error Collector features.	Default is false.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+				
+				<xs:element name="analyticsEvents" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							Deprecated: Collects semi-detailed information about various events that occur in an application.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:all>
+							<xs:element name="transactions" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Deprecated: Turns event recording of transaction events on or off. Defaults to true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:all>
+						<xs:attribute name="enabled" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: Turns the event recorder on or off. Defaults to true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="maximumSamplesPerMinute" type="xs:unsignedInt" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: The maximum number of samples to send per minute.	It is possible that fewer events will be sent, but never more.	Default is 10000.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="maximumSamplesStored" type="xs:unsignedInt" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: The maximum number of samples to store in memory at a time.	Default is 10000.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="captureAttributes" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: Include custom parameters in transaction analytics events.	Defaults to true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="transactionEvents" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							Collects semi-detailed information about various events that occur in an application.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:all>
+							<xs:element name="transactions" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Turns event recording of transaction events on or off.	Default is true.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="attributes" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="include" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to include in the transaction events.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="exclude" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to exclude in the transaction events.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Turns on custom attribute capturing for Transaction Events
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:all>
+						<xs:attribute name="enabled" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Turns the event recorder on or off.	Default is true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="maximumSamplesPerMinute" type="xs:unsignedInt" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									The maximum number of samples to send per minute.	It is possible that fewer events will be sent, but never more.	Default is 10000.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						<xs:attribute name="maximumSamplesStored" type="xs:unsignedInt" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									The maximum number of samples to store in memory at a time.	Default is 10000.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+				
+				<xs:element name="transactionTracer" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							The transaction tracer captures deep information about slow transactions and sends this to the New Relic service once a minute. Included in the transaction is the exact call sequence of the transactions including any SQL statements issued.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							
+							<xs:element name="attributes" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="include" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to include in the transaction traces.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="exclude" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to exclude in the transaction traces.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Turns on custom attribute capturing for Transaction Traces
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+							
+						</xs:sequence>
+						
+						<xs:attribute name="transactionThreshold" type="xs:string" default="apdex_f">
+							<xs:annotation>
+								<xs:documentation>
+									The threshold (in milliseconds) for when to collect a transaction trace.
+									When the response time of a controller action exceeds this threshold, a transaction trace will be recorded and sent to New Relic.
+									Valid values are any float value, or (default) "apdex_f", which will use the threshold for an dissatisfying Apdex controller action - four times the Apdex T value.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="recordSql" default="obfuscated">
+							<xs:annotation>
+								<xs:documentation>
+									This describes how to record the SQL captured for the slow SQL monitor.
+								</xs:documentation>
+							</xs:annotation>
+							<xs:simpleType>
+								<xs:restriction base="xs:string">
+									<xs:enumeration value="obfuscated"/>
+									<xs:enumeration value="raw"/>
+									<xs:enumeration value="off"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:attribute>
+
+						<xs:attribute name="stackTraceThreshold" type="xs:int" default="500">
+							<xs:annotation>
+								<xs:documentation>
+									The threshold (in milliseconds) for when to collect a stack trace for a SQL call.
+									In other words, when SQL statements exceed this threshold, then capture and send to New Relic the current stack trace. This is helpful for pinpointing where long SQL calls originate from.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="explainEnabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									This determines whether the agent will capture query plans for slow SQL queries.
+									Only supported in SQL Server, MySql, and postgres.
+									Should be set to false when using other adapters.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="explainThreshold" type="xs:float" default="500">
+							<xs:annotation>
+								<xs:documentation>
+									The threshold for query execution time (in milliseconds) below which query plans will not be captured.
+									Relevant only when 'explainEnabled' is true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="enabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: The transaction tracer is available only in the Professional product version.
+									It is enabled by default.
+									Set this to false to turn it off.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<!--
+							These clamping upper bounds (maxSegments, maxStackTrace, maxExplainPlans) are exposed to the customer.
+							This exposure is not really a problem, as customers can change those values if they please.
+							We make them configurable so that in the rare case someone needs to change them they can.
+							We don't expose all of the values in the XML because we don't want to overwhelm users with options.
+							If someone wants to dig through our schema and set uncommonly used settings they'd welcome to do that.
+							Most of the switches you mentioned are only harmful to the customer's application.
+							Increasing the stack trace size, for example, will bloat memory.
+							If they send Transaction Traces to our service that are too large because of it we'll simply reject them.
+						-->
+						
+						<xs:attribute name="maxSegments" type="xs:int" default="3000">
+							<xs:annotation>
+								<xs:documentation>
+									The maximum number of segments to collect in a transaction trace.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="maxStackTrace" type="xs:int" default="30">
+							<xs:annotation>
+								<xs:documentation>
+									The maximum number of stack traces to collect during a harvest cycle.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="maxExplainPlans" type="xs:int" default="20">
+							<xs:annotation>
+								<xs:documentation>
+									The maximum number of explain plans to collect during a harvest cycle.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+						
+						<xs:attribute name="captureAttributes" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: Include user custom parameters in transaction traces.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="crossApplicationTracer" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							Turns on/off Cross application Tracing.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:attribute name="enabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									It is enabled by default. Set this to false to turn it off.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="highSecurity" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							Turns on/off High Security Mode.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:attribute name="enabled" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									It is disabled by default.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="slowSql" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							The slowSql service captures information about slow SQL executions, and captures and obfuscates explain plans for these queries.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:attribute name="enabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									The slowSQL service is enabled by default.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+
+				</xs:element>
+
+				<xs:element name="errorCollector" minOccurs="0" maxOccurs="1">
+					<xs:complexType>
+						<xs:annotation>
+							<xs:documentation>
+								The error collector captures information about uncaught exceptions and sends them to the New Relic service for viewing.
+							</xs:documentation>
+						</xs:annotation>
+
+						<xs:sequence>
+
+							<xs:element name="ignoreErrors">
+								<xs:complexType>
+									<xs:annotation>
+										<xs:documentation>
+											To stop specific exceptions from reporting to New Relic, list them here.
+											Use the full name of the exception, such as "System.IO.FileNotFoundException".
+										</xs:documentation>
+									</xs:annotation>
+
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="exception" type="xs:string">
+											<xs:annotation>
+												<xs:documentation>
+													The full name of an exception to ignore, such as "System.IO.FileNotFoundException".
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="ignoreStatusCodes">
+								<xs:complexType>
+									<xs:annotation>
+										<xs:documentation>
+											To stop specific error codes from reporting to New Relic, list them here.
+										</xs:documentation>
+									</xs:annotation>
+
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:element name="code" type="xs:float">
+											<xs:annotation>
+												<xs:documentation>
+													You may use standard integral HTTP errorcodes, such as just 401, or may use Microsoft FullStatusCodes, with decimal points, such as 401.4 or 403.18
+												</xs:documentation>
+											</xs:annotation>
+										</xs:element>
+									</xs:sequence>
+
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="attributes" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="include" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to include in the error trace.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="exclude" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to exclude in the error trace.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Turns on custom attribute capturing for the Error Collector.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+
+						</xs:sequence>
+
+						<xs:attribute name="enabled" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									The error collector is enabled by default.
+									Set this to false to turn it off.
+									This feature is only available in the Professional product edition.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="captureAttributes" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: Include user custom parameters in traced errors. Defaults to true.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="browserMonitoring" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							The New Relic Real User Monitoring (RUM) gives you insight into the performance real users are experiencing with your website. This is accomplished by measuring the time it takes for your users' browsers to download and render your web pages by injecting a small amount of JavaScript code into the header and footer of each page.
+						</xs:documentation>
+					</xs:annotation>
+
+					<xs:complexType>
+						<xs:sequence>
+							
+							<xs:element name="requestPathsExcluded" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										When Browser Monitoring is enabled for auto-instrumentation, this list of request paths will be used to exclude pages from being instrumented for browser monitoring.
+									</xs:documentation>
+								</xs:annotation>
+
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="path" minOccurs="0" maxOccurs="unbounded">
+											<xs:annotation>
+												<xs:documentation>
+													Each path entry is a regular expression to be evaluated by the .NET Framework's regular expression engine. These regular expressions should be easy and quick to evaluate, otherwise they can adversely affect application performance.
+												</xs:documentation>
+											</xs:annotation>
+											<xs:complexType>
+												<xs:attribute name="regex" type="xs:string" use="required">
+													<xs:annotation>
+														<xs:documentation>
+															The regular expression to be evaluated.
+														</xs:documentation>
+													</xs:annotation>
+												</xs:attribute>
+											</xs:complexType>
+
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+
+							<xs:element name="attributes" minOccurs="0" maxOccurs="1">
+								<xs:complexType>
+									<xs:sequence minOccurs="0" maxOccurs="unbounded">
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="include" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to include in browser monitoring.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+										<xs:sequence minOccurs="0" maxOccurs="unbounded">
+											<xs:element name="exclude" type="xs:string">
+												<xs:annotation>
+													<xs:documentation>
+														The name of a specific custom attribute to exclude in browser monitoring.
+													</xs:documentation>
+												</xs:annotation>
+											</xs:element>
+										</xs:sequence>
+									</xs:sequence>
+									<xs:attribute name="enabled" type="xs:boolean" use="optional">
+										<xs:annotation>
+											<xs:documentation>
+												Turns on custom attribute capturing for Browser Monitoring
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+ 
+						</xs:sequence>
+
+						<xs:attribute name="autoInstrument" type="xs:boolean" default="true">
+							<xs:annotation>
+								<xs:documentation>
+									By default the agent automatically injects the JavaScript for RUM into ASP pages.
+									Set this attribute to false to turn off this behavior.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="loader" type="xs:string" default="rum">
+							<xs:annotation>
+								<xs:documentation>
+									This attribute defines the type of Javascript functionality to be injected.
+									By default just RUM instrumentation is injected.
+									Other valid values are "full" for Javascript Errors and possibly future features, and "none" which means no javascript injection.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="sslForHttp" type="xs:boolean" default="false">
+							<xs:annotation>
+								<xs:documentation>
+									This attribute specifies whether the code injected into pages will communicate with New Relic servers using SSL even when the page original request does not.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+						<xs:attribute name="captureAttributes" type="xs:boolean" use="optional">
+							<xs:annotation>
+								<xs:documentation>
+									Deprecated: Include user custom parameters in the RUM client configuration. Defaults to false.
+								</xs:documentation>
+							</xs:annotation>
+						</xs:attribute>
+
+					</xs:complexType>
+
+				</xs:element>
+
+				<xs:element name="applicationPools" minOccurs="0" maxOccurs="1">
+					<xs:annotation>
+						<xs:documentation>
+							By default, the .NET agent instruments all IIS worker processes (w3wp.exe). The applicationPools element allows you to only instrument worker pcoresses that are serving certain application pools via either a white list or a black list.
+						</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="defaultBehavior" minOccurs="0" maxOccurs="1">
+								<xs:annotation>
+									<xs:documentation>
+										This element defines the default behavior for application pools that are not found in the list of application pools.	This essentially controls whether the applicationPools element is a white list or a black list.
+
+										Defaults to white list (instrument missing application pools) if this element is not included.
+									</xs:documentation>
+								</xs:annotation>
+								<xs:complexType>
+									<xs:attribute name="instrument" type="xs:boolean" use="required">
+										<xs:annotation>
+											<xs:documentation>
+												True indicates that application pools not found in the applicationPools list will be instrumented (black list).	False indicates that missing pools will not be instrumented (white list).
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="applicationPool" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="name" type="xs:string" use="required">
+										<xs:annotation>
+											<xs:documentation>
+												The name of the application pool you wish to enable/disable.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+									<xs:attribute name="instrument" type="xs:boolean" use="required">
+										<xs:annotation>
+											<xs:documentation>
+												True indicates that this application pool will be instrumented.	False indicates that this pool will not be instrumented.
+											</xs:documentation>
+										</xs:annotation>
+									</xs:attribute>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="threadProfiling" minOccurs="0" maxOccurs="1">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="ignoreMethod" minOccurs="0" maxOccurs="unbounded" type="xs:string"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+
+				<xs:element name="labels" minOccurs="0" maxOccurs="1" type="xs:string">
+					<xs:annotation>
+						<xs:documentation>Labels allow you to tag your applications so you can filter them in APM.</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+			</xs:all>
+
+			<xs:attribute name="agentEnabled" type="xs:boolean" default="true">
+				<xs:annotation>
+					<xs:documentation>
+						Set this to true to enable the agent.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="rootAgentEnabled" type="xs:boolean" default="false">
+				<xs:annotation>
+					<xs:documentation>
+						Turns on profiling for the root w3wp process. (Experimental.)
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="maxStackTraceLines" type="xs:int" default="80">
+				<xs:annotation>
+					<xs:documentation>
+						The maximum number of stack frames to trace in any stack dump.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="debugAgent" type="xs:boolean" default="false">
+				<xs:annotation>
+					<xs:documentation>
+						Turns on additional agent debugging.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="threadProfilingEnabled" type="xs:boolean" default="true">
+				<xs:annotation>
+					<xs:documentation>
+						Turns on/off Thread Profiling.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="crossApplicationTracingEnabled" type="xs:boolean" default="true">
+				<xs:annotation>
+					<xs:documentation>
+						Turns on/off Cross application agent metric gathering.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:attribute>
+
+			<xs:attribute name="timingPrecision" default="low">
+				<xs:annotation>
+					<xs:documentation>
+						Controls the precision of the timers, with a trade-off in execution speed.
+					</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="xs:string">
+						<xs:enumeration value="high"/>
+						<xs:enumeration value="low"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:attribute>
+
+		</xs:complexType>
+	</xs:element>
+</xs:schema>
