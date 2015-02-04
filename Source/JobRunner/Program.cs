@@ -41,7 +41,7 @@ namespace Exceptionless.JobRunner {
                 Log.GlobalDiagnosticsContext.Set("job", type.Name);
                 if (!ca.Quiet) {
                     OutputHeader();
-                    Console.WriteLine("Starting {0}job type \"{1}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name);
+                    Console.WriteLine("Starting {0}job type \"{1}\" on machine \"{2}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name, Environment.MachineName);
                 }
                 
                 WatchForShutdown();
