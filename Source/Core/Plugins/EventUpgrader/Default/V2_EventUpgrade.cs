@@ -77,11 +77,12 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                     }
 
                     string id = doc["Id"] != null ? doc["Id"].Value<string>(): null;
-                    RenameAndValidateExtraExceptionProperties(id, error);
+                    string projectId = doc["ProjectId"] != null ? doc["ProjectId"].Value<string>() : null;
+                    RenameAndValidateExtraExceptionProperties(projectId, id, error);
 
                     var inner = error["Inner"] as JObject;
                     while (inner != null) {
-                        RenameAndValidateExtraExceptionProperties(id, inner);
+                        RenameAndValidateExtraExceptionProperties(projectId, id, inner);
                         inner = inner["Inner"] as JObject;
                     }
 
@@ -102,7 +103,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             }
         }
 
-        private void RenameAndValidateExtraExceptionProperties(string id, JObject error) {
+        private void RenameAndValidateExtraExceptionProperties(string projectId, string id, JObject error) {
             if (error == null)
                 return;
 
@@ -117,7 +118,7 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 return;
 
             if (json.Length > 200000) {
-                Log.Error().Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
+                Log.Error().Project(projectId).Message("Event: {0} __ExceptionInfo is Too Big: {1}", id, json.Length).Write();
                 return;
             }
 

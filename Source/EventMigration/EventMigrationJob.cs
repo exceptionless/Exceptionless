@@ -81,6 +81,17 @@ namespace Exceptionless.EventMigration {
 
                     e.CreatedUtc = e.Date.ToUniversalTime().DateTime;
 
+                    // Truncate really large fields
+                    if (e.Message != null && e.Message.Length > 2000) {
+                        Log.Error().Project(e.ProjectId).Message("Truncating event '{0}' message: {1}", e.Id, e.Message).Write();
+                        e.Message = e.Message.Truncate(2000);
+                    }
+
+                    if (e.Source != null && e.Source.Length > 2000) {
+                        Log.Error().Project(e.ProjectId).Message("Truncating event '{0}' source: {1}", e.Id, e.Source).Write();
+                        e.Source = e.Source.Truncate(2000);
+                    }
+
                     if (!knownStackIds.Contains(e.StackId)) {
                         // We haven't processed this stack id yet in this run. Check to see if this stack has already been imported..
                         e.IsFirstOccurrence = true;
@@ -139,7 +150,7 @@ namespace Exceptionless.EventMigration {
                             _eventRepository.Add(persistentEvent, sendNotification: false);
                         } catch (Exception ex) {
                             //Debugger.Break();
-                            Log.Error().Exception(ex).Message("An error occurred while migrating event '{0}': {1}", persistentEvent.Id, ex.Message).Write();
+                            Log.Error().Exception(ex).Project(persistentEvent.ProjectId).Message("An error occurred while migrating event '{0}': {1}", persistentEvent.Id, ex.Message).Write();
                         }
                     }
                 }

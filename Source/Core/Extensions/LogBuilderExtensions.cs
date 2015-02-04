@@ -38,10 +38,16 @@ namespace NLog.Fluent {
         }
 
         public static LogBuilder Project(this LogBuilder builder, string projectId) {
+            if (String.IsNullOrEmpty(projectId))
+                return builder;
+
             return builder.Property("project", projectId);
         }
 
         public static LogBuilder Organization(this LogBuilder builder, string organizationId) {
+            if (String.IsNullOrEmpty(organizationId))
+                return builder;
+
             return builder.Property("organization", organizationId);
         }
     }
