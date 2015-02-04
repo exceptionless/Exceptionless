@@ -83,12 +83,12 @@ namespace Exceptionless.EventMigration {
 
                     // Truncate really large fields
                     if (e.Message != null && e.Message.Length > 2000) {
-                        Log.Error().Project(e.ProjectId).Message("Truncating event '{0}' message: {1}", e.Id, e.Message).Write();
+                        Log.Error().Project(e.ProjectId).Message("Event: {0} Message is Too Big: {1}", e.Id, e.Message.Length).Write();
                         e.Message = e.Message.Truncate(2000);
                     }
 
                     if (e.Source != null && e.Source.Length > 2000) {
-                        Log.Error().Project(e.ProjectId).Message("Truncating event '{0}' source: {1}", e.Id, e.Source).Write();
+                        Log.Error().Project(e.ProjectId).Message("Event: {0} Source is Too Big: {1}", e.Id, e.Source.Length).Write();
                         e.Source = e.Source.Truncate(2000);
                     }
 
