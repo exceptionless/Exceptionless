@@ -236,7 +236,7 @@ namespace Exceptionless.Core.Repositories {
 
             // fallback to doing a find
             if (result == null)
-                result = FindOne(new OneOptions().WithId(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
+                result = FindOne(new OneOptions().WithId(id).WithCacheKey(EnableCache && useCache ? id : null).WithExpiresIn(expiresIn));
 
             if (EnableCache && result != null && useCache)
                 Cache.Set(GetScopedCacheKey(id), result, expiresIn ?? TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
