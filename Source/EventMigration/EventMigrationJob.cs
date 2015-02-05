@@ -62,6 +62,7 @@ namespace Exceptionless.EventMigration {
 
             var query = Query.And(Query.GTE(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.StartTicks), Query.LT(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.EndTicks));
             var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC)).SetLimit(_batchSize).ToList();
+            int batch = 0;
             while (errors.Count > 0) {
                 Log.Info().Message("Migrating events {0}-{1} {2:N0} total {3:N0}/s...", errors.First().Id, errors.Last().Id, total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
 
@@ -156,15 +157,13 @@ namespace Exceptionless.EventMigration {
                     }
                 }
 
+                batch++;
                 total += upgradedEvents.Count;
-                var lastId = upgradedEvents.Last().Id;
 
                 Log.Info().Message("Getting next batch of events").Write();
                 var sw = new Stopwatch();
                 sw.Start();
-                errors = errorCollection.Find(Query.And(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId)), Query.LT(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.EndTicks)))
-                                        .SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC))
-                                        .SetLimit(_batchSize).ToList();
+                errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC)).SetLimit(_batchSize).SetSkip(_batchSize * batch).ToList();
                 sw.Stop();
                 Log.Info().Message("Finished getting next batch of events in {0}ms", sw.ElapsedMilliseconds).Write();
             }
