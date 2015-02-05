@@ -100,61 +100,66 @@ namespace Exceptionless.Core.Utility {
 
             _client.DisableTrace();
 
-
             var filtered = res.Aggs.Filter("filtered");
             if (filtered == null)
                 return new EventTermStatsResult();
 
+            var newTerms = filtered.Terms("new");
             var stats = new EventTermStatsResult {
                 Total = filtered.DocCount,
-                New = filtered.Terms("new").Items.Count > 0 ? filtered.Terms("new").Items[0].DocCount : 0
+                New = newTerms != null && newTerms.Items.Count > 0 ? newTerms.Items[0].DocCount : 0,
+                Start = utcStart.SafeAdd(displayTimeOffset.Value),
+                End = utcEnd.SafeAdd(displayTimeOffset.Value)
             };
 
-            var unique = filtered.Cardinality("unique").Value;
-            if (unique.HasValue)
+            var unique = filtered.Cardinality("unique");
+            if (unique != null && unique.Value.HasValue)
                 stats.Unique = (long)unique.Value;
 
-            var firstOccurrence = filtered.Min("first_occurrence").Value;
-            var lastOccurrence = filtered.Max("last_occurrence").Value;
+            var firstOccurrence = filtered.Min("first_occurrence");
+            if (firstOccurrence != null && firstOccurrence.Value.HasValue)
+                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-            if (firstOccurrence.HasValue)
-                stats.FirstOccurrence = firstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+            var lastOccurrence = filtered.Max("last_occurrence");
+            if (lastOccurrence != null && lastOccurrence.Value.HasValue)
+                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-            if (lastOccurrence.HasValue)
-                stats.LastOccurrence = lastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+            var terms = filtered.Terms("terms");
+            if (terms == null)
+                return stats;
 
-            stats.Terms.AddRange(filtered.Terms("terms").Items.Select(i => {
+            stats.Terms.AddRange(terms.Items.Select(i => {
                 long count = 0;
-                var timelineUnique = i.Cardinality("unique").Value;
-                if (timelineUnique.HasValue)
+                var timelineUnique = i.Cardinality("unique");
+                if (timelineUnique != null && timelineUnique.Value.HasValue)
                     count = (long)timelineUnique.Value;
 
+                var termNew = i.Terms("new");
                 var item = new TermStatsItem {
                     Total = i.DocCount,
                     Unique = count,
                     Term = i.Key,
-                    New = i.Terms("new").Items.Count > 0 ? i.Terms("new").Items[0].DocCount : 0
+                    New = termNew != null && termNew.Items.Count > 0 ? termNew.Items[0].DocCount : 0
                 };
 
-                var termFirstOccurrence = i.Min("first_occurrence").Value;
-                var termLastOccurrence = i.Max("last_occurrence").Value;
+                var termFirstOccurrence = i.Min("first_occurrence");
+                if (termFirstOccurrence != null && termFirstOccurrence.Value.HasValue)
+                    item.FirstOccurrence = termFirstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-                if (termFirstOccurrence.HasValue)
-                    item.FirstOccurrence = termFirstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+                var termLastOccurrence = i.Max("last_occurrence");
+                if (termLastOccurrence != null && termLastOccurrence.Value.HasValue)
+                    item.LastOccurrence = termLastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
-                if (termLastOccurrence.HasValue)
-                    item.LastOccurrence = termLastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-
-                item.Timeline.AddRange(i.DateHistogram("timelime").Items.Select(ti => new TermTimelineItem {
-                    Date = ti.Date,
-                    Total = ti.DocCount
-                }));
+                var timeLine = i.DateHistogram("timelime");
+                if (timeLine != null) {
+                    item.Timeline.AddRange(timeLine.Items.Select(ti => new TermTimelineItem {
+                        Date = ti.Date,
+                        Total = ti.DocCount
+                    }));
+                }
 
                 return item;
             }));
-
-            stats.Start = utcStart.SafeAdd(displayTimeOffset.Value);
-            stats.End = utcEnd.SafeAdd(displayTimeOffset.Value);
 
             return stats;
         }
@@ -236,28 +241,33 @@ namespace Exceptionless.Core.Utility {
             if (filtered == null)
                 return new EventStatsResult();
 
+            var newTerms = filtered.Terms("new");
             var stats = new EventStatsResult {
                 Total = filtered.DocCount,
-                New = filtered.Terms("new").Items.Count > 0 ? filtered.Terms("new").Items[0].DocCount : 0
+                New = newTerms != null && newTerms.Items.Count > 0 ? newTerms.Items[0].DocCount : 0
             };
 
-            var unique = filtered.Cardinality("unique").Value;
-            if (unique.HasValue)
+            var unique = filtered.Cardinality("unique");
+            if (unique != null && unique.Value.HasValue)
                 stats.Unique = (long)unique.Value;
 
-            stats.Timeline.AddRange(filtered.DateHistogram("timelime").Items.Select(i => {
-                long count = 0;
-                var timelineUnique = i.Cardinality("tl_unique").Value;
-                if (timelineUnique.HasValue)
-                    count = (long)timelineUnique.Value;
+            var timeline = filtered.DateHistogram("timelime");
+            if (timeline != null) {
+                stats.Timeline.AddRange(timeline.Items.Select(i => {
+                    long count = 0;
+                    var timelineUnique = i.Cardinality("tl_unique");
+                    if (timelineUnique != null && timelineUnique.Value.HasValue)
+                        count = (long)timelineUnique.Value;
 
-                return new TimelineItem {
-                    Date = i.Date,
-                    Total = i.DocCount,
-                    Unique = count,
-                    New = i.Terms("tl_new").Items.Count > 0 ? i.Terms("tl_new").Items[0].DocCount : 0
-                };
-            }));
+                    var timelineNew = i.Terms("tl_new");
+                    return new TimelineItem {
+                        Date = i.Date,
+                        Total = i.DocCount,
+                        Unique = count,
+                        New = timelineNew != null && timelineNew.Items.Count > 0 ? timelineNew.Items[0].DocCount : 0
+                    };
+                }));
+            }
 
             stats.Start = stats.Timeline.Count > 0 ? stats.Timeline.Min(tl => tl.Date).SafeAdd(displayTimeOffset.Value) : utcStart.SafeAdd(displayTimeOffset.Value);
             stats.End = utcEnd.SafeAdd(displayTimeOffset.Value);
@@ -269,14 +279,13 @@ namespace Exceptionless.Core.Utility {
             if (stats.Timeline.Count <= 0)
                 return stats;
 
-            var firstOccurrence = filtered.Min("first_occurrence").Value;
-            var lastOccurrence = filtered.Max("last_occurrence").Value;
-                
-            if (firstOccurrence.HasValue)
-                stats.FirstOccurrence = firstOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
-                
-            if (lastOccurrence.HasValue)
-                stats.LastOccurrence = lastOccurrence.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+            var firstOccurrence = filtered.Min("first_occurrence");
+            if (firstOccurrence != null && firstOccurrence.Value.HasValue)
+                stats.FirstOccurrence = firstOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
+
+            var lastOccurrence = filtered.Max("last_occurrence");
+            if (lastOccurrence != null && lastOccurrence.Value.HasValue)
+                stats.LastOccurrence = lastOccurrence.Value.Value.ToDateTime().SafeAdd(displayTimeOffset.Value);
 
             return stats;
         }
