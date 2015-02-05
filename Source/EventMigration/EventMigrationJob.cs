@@ -156,14 +156,18 @@ namespace Exceptionless.EventMigration {
                     }
                 }
 
-                Log.Info().Message("Getting next batch of events").Write();
                 total += upgradedEvents.Count;
                 var lastId = upgradedEvents.Last().Id;
+
+                Log.Info().Message("Getting next batch of events").Write();
+                var sw = new Stopwatch();
+                sw.Start();
                 errors = errorCollection.Find(Query.And(Query.GT(ErrorFieldNames.Id, ObjectId.Parse(lastId)), Query.LT(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.EndTicks)))
                                         .SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC))
                                         .SetLimit(_batchSize).ToList();
+                sw.Stop();
+                Log.Info().Message("Finished getting next batch of events in {0}ms", sw.ElapsedMilliseconds).Write();
             }
-
 
             Log.Info().Message("Finished processing event migration jobs for date range: {0}-{1}", new DateTimeOffset(queueEntry.Value.StartTicks, TimeSpan.Zero).ToString("O"), new DateTimeOffset(queueEntry.Value.EndTicks, TimeSpan.Zero).ToString("O")).Write();
             _cache.Set("migration-completedperiod", queueEntry.Value.EndTicks);
