@@ -28,10 +28,10 @@ namespace Exceptionless.EventMigration {
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
             var start = GetStartDate();
             while (start < DateTime.UtcNow) {
-                Log.Info().Message("Queueing event migration jobs for date range: {0}-{1}", start.ToString("O"), start.EndOfDay().ToString("O")).Write();
-                _queue.Enqueue(new EventMigrationBatch { StartTicks = start.Ticks, EndTicks = start.AddDays(1).Ticks });
-                _cache.Set("migration-lastqueuedday", start.Ticks);
-                start = start.AddDays(1);
+                Log.Info().Message("Queueing event migration jobs for date range: {0}-{1}", start.ToString("O"), start.AddHours(12).ToString("O")).Write();
+                _queue.Enqueue(new EventMigrationBatch { StartTicks = start.Ticks, EndTicks = start.AddHours(12).Ticks });
+                _cache.Set("migration-lastqueuedperiod", start.Ticks);
+                start = start.AddHours(12);
             }
 
             Log.Info().Message("Finished queueing event migration jobs").Write();
@@ -43,20 +43,12 @@ namespace Exceptionless.EventMigration {
             if (resume) {
                 // Return the last queued day so we can reprocess the last day.
                 long ticks;
-                if (_cache.TryGet("migration-lastqueuedday", out ticks))
+                if (_cache.TryGet("migration-lastqueuedperiod", out ticks))
                     return new DateTimeOffset(ticks, TimeSpan.Zero).UtcDateTime.Date;
 
                 // Return the day after the last completed day.
-                if (_cache.TryGet("migration-completedday", out ticks))
+                if (_cache.TryGet("migration-completedperiod", out ticks))
                     return new DateTimeOffset(ticks, TimeSpan.Zero).UtcDateTime.Date;
-                
-                // Return the date of the last event. 
-                string id;
-                if (_cache.TryGet("migration-errorid", out id) && !String.IsNullOrEmpty(id) && id.Length == 24) {
-                    var ev = _eventRepository.GetById(id);
-                    if (ev != null)
-                        return ev.Date.UtcDateTime.Date;
-                }
             }
 
             var errorCollection = GetErrorCollection();

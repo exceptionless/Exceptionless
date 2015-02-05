@@ -78,9 +78,9 @@ namespace Exceptionless.JobRunner {
             container.RegisterPackage<Bootstrapper>();
 
             if (Settings.Current.EnableRedis)
-                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new RedisQueue<EventMigrationBatch>(container.GetInstance<ConnectionMultiplexer>()));
+                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new RedisQueue<EventMigrationBatch>(container.GetInstance<ConnectionMultiplexer>(), retries: 5, workItemTimeout: TimeSpan.FromHours(2)));
             else
-                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new InMemoryQueue<EventMigrationBatch>());
+                container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new InMemoryQueue<EventMigrationBatch>(retries: 5, workItemTimeout: TimeSpan.FromHours(2)));
 
             return container;
         }
