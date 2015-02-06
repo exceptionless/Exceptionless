@@ -25,7 +25,7 @@ namespace Exceptionless.JobRunner {
                 }
 
                 ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
-                ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
+                //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
                 ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
                 ExceptionlessClient.Default.Startup();
 

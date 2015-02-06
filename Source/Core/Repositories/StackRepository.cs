@@ -74,11 +74,10 @@ namespace Exceptionless.Core.Repositories {
                     .Add("count", count)));
             
             if (!result.IsValid) {
-                Log.Error().Message("Error occurred incrementing stack count.").Write();
+                Log.Error().Message("Error occurred incrementing total event occurrences on stack \"{0}\". Error: {1}", stackId, result.ServerError.Error).Write();
                 return;
             }
 
-            //Trace.WriteLine(String.Format("Incr: {0}", stackId));
             InvalidateCache(stackId);
 
             if (sendNotifications) {

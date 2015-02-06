@@ -21,7 +21,6 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
-using Exceptionless.NLog;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -44,7 +43,7 @@ namespace Exceptionless.Api {
 
             Config = new HttpConfiguration();
             ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
-            ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog());
+            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
             ExceptionlessClient.Default.RegisterWebApi(Config);
 
             Log.Info().Message("Starting api...").Write();

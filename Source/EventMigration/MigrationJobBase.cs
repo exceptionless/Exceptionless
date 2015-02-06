@@ -67,7 +67,7 @@ namespace Exceptionless.EventMigration {
                 _ipAddress = Util.GetExternalIP();
 
             if (_ipAddress != null)
-                Log.Info().Message("Public IP: " + _ipAddress).Write();
+                Log.Debug().Message("Public IP: " + _ipAddress).Write();
         }
 
         protected IEnumerable<string> GetIpAddresses(PersistentEvent ev, RequestInfo request) {
