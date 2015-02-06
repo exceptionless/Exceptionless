@@ -47,11 +47,10 @@ namespace Exceptionless.Api {
             if (container == null)
                 throw new ArgumentNullException("container");
 
+            Config = new HttpConfiguration();
+            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
             ExceptionlessClient.Default.Configuration.UseLogger(new NLogExceptionlessLog());
-            ExceptionlessClient.Default.Configuration.ReadAllConfig();
-            ExceptionlessClient.Default.Configuration.AddEnrichment<VersionEnrichment>();
-            ExceptionlessClient.Default.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
-            ExceptionlessClient.Default.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
+            ExceptionlessClient.Default.RegisterWebApi(Config);
 
             Log.Info().Message("Starting api...").Write();
             // if enabled, auto upgrade the database
@@ -64,7 +63,6 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
-            Config = new HttpConfiguration();
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
