@@ -5,7 +5,7 @@
 <script runat="server">
 
     protected void SendButton_Click(object sender, EventArgs e) {
-        string errorId = ExceptionlessClient.Default.GetLastErrorId();
+        string errorId = ExceptionlessClient.Default.GetLastReferenceId();
         string emailAddress = EmailAddressTextBox.Text;
         string description = DetailTextBox.Text;
 
@@ -24,7 +24,7 @@
 
     protected void Page_Load(object sender, EventArgs e) {
         if (!IsPostBack) {
-            if (String.IsNullOrEmpty(ExceptionlessClient.Default.GetLastErrorId())) {
+            if (String.IsNullOrEmpty(ExceptionlessClient.Default.GetLastReferenceId())) {
                 GenericPanel.Visible = true;
                 AddDetailPanel.Visible = false;
                 DetailSubmitedPanel.Visible = false;

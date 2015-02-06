@@ -9,7 +9,7 @@
     protected void Page_Load(object sender, EventArgs e) {}
 
     protected void forceButton_Click(object sender, EventArgs e) {
-        ExceptionlessClient.Default.UpdateConfiguration(true);
+        ExceptionlessClient.Default.SubmitLog("New server side changes will be applied to the client after this message is submitted.");
     }
 
 </script>
@@ -21,9 +21,7 @@
     <body>
         <form id="form1" runat="server">
             <div>
-
                 <asp:Button ID="forceButton" runat="server" onclick="forceButton_Click" Text="Force Download" />
-
             </div>
         </form>
     </body>

@@ -34,6 +34,7 @@ namespace Exceptionless.SampleMvc {
             RouteConfig.RegisterRoutes(RouteTable.Routes);
 
             ExceptionlessClient.Default.Configuration.UseTraceLogger();
+            ExceptionlessClient.Default.Configuration.UseReferenceIds();
             ExceptionlessClient.Default.RegisterWebApi(GlobalConfiguration.Configuration);
         }
     }

@@ -16,6 +16,7 @@ namespace Exceptionless.SampleWeb {
     public partial class Global : HttpApplication {
         protected void Application_Start(object sender, EventArgs e) {
             ExceptionlessClient.Default.Configuration.UseTraceLogger();
+            ExceptionlessClient.Default.Configuration.UseReferenceIds();
             ExceptionlessClient.Default.SubmittingEvent += OnSubmittingEvent;
         }
 
