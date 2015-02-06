@@ -11,7 +11,8 @@ using Exceptionless.Core.Utility;
 using Exceptionless.EventMigration;
 using SimpleInjector;
 using StackExchange.Redis;
-using Log = NLog;
+using NLog.Fluent;
+using _NLog = NLog;
 
 namespace Exceptionless.JobRunner {
     internal class Program {
@@ -23,9 +24,14 @@ namespace Exceptionless.JobRunner {
                     return 0;
                 }
 
+                ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
+                ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
+                ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
+                ExceptionlessClient.Default.Startup();
+
                 var type = Type.GetType(ca.JobType);
                 if (type == null) {
-                    Console.Error.WriteLine("Unable to resolve type: \"{0}\".", ca.JobType);
+                    Log.Error().Message("Unable to resolve type: \"{0}\".", ca.JobType).Write();
                     PauseIfDebug();
                     return 1;
                 }
@@ -33,15 +39,15 @@ namespace Exceptionless.JobRunner {
                 var container = CreateContainer();
                 var job = container.GetInstance(Type.GetType(ca.JobType)) as JobBase;
                 if (job == null) {
-                    Console.Error.WriteLine("Job Type must derive from Job.");
+                    Log.Error().Message("Job Type must derive from Job.").Write();
                     PauseIfDebug();
                     return 1;
                 }
 
-                Log.GlobalDiagnosticsContext.Set("job", type.Name);
+                _NLog.GlobalDiagnosticsContext.Set("job", type.Name);
                 if (!ca.Quiet) {
                     OutputHeader();
-                    Console.WriteLine("Starting {0}job type \"{1}\" on machine \"{2}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name, Environment.MachineName);
+                    Log.Info().Message("Starting {0}job type \"{1}\" on machine \"{2}\"...", ca.RunContinuously ? "continuous " : String.Empty, type.Name, Environment.MachineName).Write();
                 }
                 
                 WatchForShutdown();
@@ -96,7 +102,7 @@ namespace Exceptionless.JobRunner {
         private static void WatchForShutdown() {
             ShutdownEventCatcher.Shutdown += args => {
                 _cancellationTokenSource.Cancel();
-                Console.WriteLine("Job shutdown event signaled: {0}", args.Reason);
+                Log.Info().Message("Job shutdown event signaled: {0}", args.Reason).Write();
             };
 
             _webJobsShutdownFile = Environment.GetEnvironmentVariable("WEBJOBS_SHUTDOWN_FILE");
@@ -114,7 +120,7 @@ namespace Exceptionless.JobRunner {
         private static void OnFileChanged(object sender, FileSystemEventArgs e) {
             if (e.FullPath.IndexOf(Path.GetFileName(_webJobsShutdownFile), StringComparison.OrdinalIgnoreCase) >= 0) {
                 _cancellationTokenSource.Cancel();
-                Console.WriteLine("Job shutdown signaled.");
+                Log.Info().Message("Job shutdown signaled.").Write();
             }
         }
     }
