@@ -9,7 +9,7 @@ namespace Exceptionless.NLog {
             builder.Target.Date = ev.TimeStamp;
             builder.SetSource(ev.LoggerName);
             if (ev.Exception == null)
-                builder.AddObject(ev.Level.Name, "Level");
+                builder.SetLevel(ev.Level.Name);
 
             foreach (var p in ev.Properties)
                 builder.AddObject(p.Value, p.Key.ToString());

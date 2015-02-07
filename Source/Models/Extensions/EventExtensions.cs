@@ -105,6 +105,18 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Sets the log level;
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="level">The log level.</param>
+        public static void SetLevel(this Event ev, string level) {
+            if (String.IsNullOrWhiteSpace(level))
+                return;
+
+            ev.Data[Event.KnownDataKeys.Level] = level;
+        }
+
+        /// <summary>
         /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
         /// </summary>
         /// <param name="ev">The event</param>
