@@ -101,7 +101,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(version))
                 return;
 
-            ev.Data[Event.KnownDataKeys.Version] = version;
+            ev.Data[Event.KnownDataKeys.Version] = version.Trim();
         }
 
         /// <summary>
@@ -113,7 +113,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(level))
                 return;
 
-            ev.Data[Event.KnownDataKeys.Level] = level;
+            ev.Data[Event.KnownDataKeys.Level] = level.Trim();
         }
 
         /// <summary>
@@ -162,11 +162,11 @@ namespace Exceptionless {
                 return;
 
             var userDescription = ev.GetUserDescription() ?? new UserDescription(emailAddress, description);
-            if (String.IsNullOrWhiteSpace(emailAddress))
-                userDescription.EmailAddress = emailAddress;
+            if (!String.IsNullOrWhiteSpace(emailAddress))
+                userDescription.EmailAddress = emailAddress.Trim();
 
-            if (String.IsNullOrWhiteSpace(description))
-                userDescription.Description = description;
+            if (!String.IsNullOrWhiteSpace(description))
+                userDescription.Description = description.Trim();
 
             ev.Data[Event.KnownDataKeys.UserDescription] = userDescription;
         }

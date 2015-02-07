@@ -47,8 +47,8 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             object temp;
             string level = ev.Data.TryGetValue(Event.KnownDataKeys.Level, out temp) ? temp as string : null;
-            if (!String.IsNullOrEmpty(level))
-                data.Level = level;
+            if (!String.IsNullOrWhiteSpace(level))
+                data.Level = level.Trim();
 
             return new SummaryData { TemplateKey = "event-summary", Data = data };
         }

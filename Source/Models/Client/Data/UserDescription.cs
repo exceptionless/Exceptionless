@@ -16,8 +16,11 @@ namespace Exceptionless.Models.Data {
         }
 
         public UserDescription(string emailAddress, string description) : this() {
-            EmailAddress = emailAddress;
-            Description = description;
+            if (!String.IsNullOrWhiteSpace(emailAddress))
+                EmailAddress = emailAddress.Trim();
+
+            if (!String.IsNullOrWhiteSpace(description))
+                Description = description.Trim();
         }
 
         public string EmailAddress { get; set; }
