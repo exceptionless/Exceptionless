@@ -7,7 +7,7 @@
     <owners>Exceptionless</owners>
     <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.io and provides aggregated views and analytics.</description>
     <projectUrl>http://exceptionless.io</projectUrl>
-    <iconUrl>http://be.exceptionless.io/images/exceptionless-32.png</iconUrl>
+    <iconUrl>http://exceptionless.io/images/exceptionless-32.png</iconUrl>
     <licenseUrl>http://www.gnu.org/licenses/agpl-3.0.html</licenseUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <releaseNotes>http://exceptionless.io/category/versions/</releaseNotes>
