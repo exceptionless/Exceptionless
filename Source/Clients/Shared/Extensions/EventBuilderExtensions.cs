@@ -24,16 +24,6 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        /// Sets the log level.
-        /// </summary>
-        /// <param name="builder">The event builder object.</param>
-        /// <param name="level">The log level.</param>
-        public static EventBuilder SetLevel(this EventBuilder builder, string level) {
-            builder.Target.SetLevel(level);
-            return builder;
-        }
-
-        /// <summary>
         /// Sets the version that the event happened on.
         /// </summary>
         /// <param name="builder">The event builder object.</param>
