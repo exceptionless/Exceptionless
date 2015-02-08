@@ -5,7 +5,7 @@
     <version>$version$</version>
     <authors>Exceptionless</authors>
     <owners>Exceptionless</owners>
-    <description>Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.io and provides aggregated views and analytics.</description>
+    <description>NLog target that sends log entries to Exceptionless. Exceptionless is a cloud based error reporting service that sends your exceptions to http://exceptionless.io and provides aggregated views and analytics.</description>
     <projectUrl>http://exceptionless.io</projectUrl>
     <iconUrl>https://be.exceptionless.io/img/exceptionless-32.png</iconUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
@@ -14,6 +14,7 @@
     <tags>NLog Target Exceptionless Error Report Reporting Exception Logging Log ELMAH</tags>
     <dependencies>
       <dependency id="Exceptionless" version="[$version$]" />
+      <dependency id="NLog" version="3.2" />
     </dependencies>
   </metadata>
 </package>
