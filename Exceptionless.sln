@@ -81,6 +81,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\Ev
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.NLog", "Source\Clients\NLog\Exceptionless.NLog.csproj", "{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Console", "Source\Clients\Console\Exceptionless.Console.csproj", "{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -371,6 +373,16 @@ Global
 		{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4}.Release|x86.ActiveCfg = Release|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -399,5 +411,6 @@ Global
 		{1ADFB25D-B702-4969-8818-F393BB5C2F05} = {9AA4BD09-51C8-4467-A81A-8B1BFCD561F1}
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
 		{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
+		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
 	EndGlobalSection
 EndGlobal
