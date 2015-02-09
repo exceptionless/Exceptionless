@@ -90,6 +90,7 @@ namespace Exceptionless.Models {
             public const string UserDescription = "@user_description";
             public const string Version = "@version";
             public const string Level = "@level";
+            public const string SubmissionMethod = "@submission_method";
         }
     }
 }

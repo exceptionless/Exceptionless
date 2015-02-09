@@ -26,6 +26,7 @@ namespace Exceptionless.Enrichments {
             config.AddEnrichment<ConfigurationDefaultsEnrichment>();
             config.AddEnrichment<EnvironmentInfoEnrichment>();
             config.AddEnrichment<SimpleErrorEnrichment>();
+            config.AddEnrichment<SubmissionMethodEnrichment>();
         }
     }
 }

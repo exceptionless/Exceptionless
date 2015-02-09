@@ -68,6 +68,7 @@
     <Compile Include="Enrichments\ContextData.cs" />
     <Compile Include="Enrichments\Default\ActionEnrichment.cs" />
     <Compile Include="Enrichments\Default\ConfigurationDefaultsEnrichment.cs" />
+    <Compile Include="Enrichments\Default\SubmissionMethodEnrichment.cs" />
     <Compile Include="Enrichments\Default\ReferenceIdEnrichment.cs" />
     <Compile Include="Enrichments\Default\SimpleErrorEnrichment.cs" />
     <Compile Include="Enrichments\Default\EnvironmentInfoEnrichment.cs" />
