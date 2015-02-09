@@ -48,6 +48,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
+    <Reference Include="NLog">
+      <HintPath>..\..\..\packages\NLog.3.2.0.0\lib\net45\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -70,6 +73,12 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
+    <Content Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <None Include="NLog.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
@@ -80,6 +89,10 @@
     <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
       <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
       <Name>Exceptionless.Extras</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Clients\NLog\Exceptionless.NLog.csproj">
+      <Project>{5eb81eef-ed35-4ad2-9b20-0b3e5c94bba4}</Project>
+      <Name>Exceptionless.NLog</Name>
     </ProjectReference>
     <ProjectReference Include="..\..\Clients\Shared\Exceptionless.csproj">
       <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>

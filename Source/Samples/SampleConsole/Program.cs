@@ -21,6 +21,7 @@ using Exceptionless.Extensions;
 using Exceptionless.Helpers;
 using Exceptionless.Logging;
 using Exceptionless.Models;
+using NLog.Fluent;
 
 namespace SampleConsole {
     internal class Program {
@@ -48,6 +49,8 @@ namespace SampleConsole {
             ExceptionlessClient.Default.Configuration.UseLogger(_log);
             //ExceptionlessClient.Default.Configuration.SubmissionBatchSize = 1;
             ExceptionlessClient.Default.Register();
+
+            Log.Info().Message("Hi").Write();
 
             var tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
