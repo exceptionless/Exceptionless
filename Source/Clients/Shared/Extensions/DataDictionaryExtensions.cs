@@ -12,9 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
-using Exceptionless.Json.Linq;
 using Exceptionless.Models;
-using TinyIoC;
 
 namespace Exceptionless {
     public static class DataDictionaryExtensions {
@@ -96,20 +94,23 @@ namespace Exceptionless {
             else
                 name = info.Data.GetType().Name;
 
-            string json = String.Empty;
-
-            string[] excludedPropertyNames = info.ExcludedPropertyNames != null ? client.Configuration.DataExclusions.Union(info.ExcludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray();
+            string json;
 
             try {
                 if (IsPrimitiveType(info.Data.GetType())) {
                     json = info.Data.ToString();
                 } else {
+                    string[] excludedPropertyNames = info.ExcludedPropertyNames != null ? client.Configuration.DataExclusions.Union(info.ExcludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray();
+
                     var serializer = DependencyResolver.Default.GetJsonSerializer();
                     json = serializer.Serialize(info.Data, excludedPropertyNames, info.MaxDepthToSerialize.HasValue ? info.MaxDepthToSerialize.Value : 5, info.IgnoreSerializationErrors);
                 }
             } catch (Exception ex) {
                 json = ex.ToString();
             }
+
+            if (String.IsNullOrEmpty(json))
+                return;
 
             if (data.Data.ContainsKey(name))
                 data.Data[name] = json;
