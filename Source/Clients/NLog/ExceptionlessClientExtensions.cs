@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using NLog;
 
 namespace Exceptionless.NLog {
@@ -10,7 +12,7 @@ namespace Exceptionless.NLog {
             if (ev.Exception != null)
                 builder.SetSource(ev.LoggerName);
 
-            foreach (var p in ev.Properties)
+            foreach (var p in ev.Properties.Where(kvp => !_ignoredEventProperties.Contains(kvp.Key.ToString(), StringComparer.OrdinalIgnoreCase)))
                 builder.AddObject(p.Value, p.Key.ToString());
 
             return builder;
@@ -19,5 +21,11 @@ namespace Exceptionless.NLog {
         public static void SubmitFromLogEvent(this ExceptionlessClient client, LogEventInfo ev) {
             CreateFromLogEvent(client, ev).Submit();
         }
+
+        private static readonly List<string> _ignoredEventProperties = new List<string> {
+            "CallerFilePath",
+            "CallerMemberName",
+            "CallerLineNumber"
+        };
     }
 }
