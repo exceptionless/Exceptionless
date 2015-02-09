@@ -252,6 +252,10 @@ namespace Exceptionless.Core.Repositories {
             return Count(new ElasticSearchOptions<PersistentEvent>().WithOrganizationId(organizationId));
         }
 
+        public long GetCountByStackId(string stackId) {
+            return Count(new ElasticSearchOptions<PersistentEvent>().WithStackId(stackId));
+        }
+
         public override ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return base.GetByOrganizationIds(organizationIds, GetPagingWithSortingOptions(paging), useCache, expiresIn);
         }

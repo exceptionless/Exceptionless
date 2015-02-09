@@ -150,8 +150,12 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected override void BeforeRemove(ICollection<Stack> documents) {
-            foreach (Stack document in documents)
+            foreach (Stack document in documents) {
+                if (_eventRepository.GetCountByStackId(document.Id) > 0)
+                    throw new ApplicationException("Stack \"{0}\" can't be deleted because it has events associated to it.");
+
                 InvalidateCache(GetStackSignatureCacheKey(document));
+            }
 
             base.BeforeRemove(documents);
         }

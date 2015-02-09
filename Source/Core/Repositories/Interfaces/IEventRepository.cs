@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Repositories {
         ICollection<PersistentEvent> GetByOrganizationIds(ICollection<string> organizationIds, string query = null, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null);
 
         long GetCountByOrganizationId(string organizationId);
-
         long GetCountByProjectId(string projectId);
+        long GetCountByStackId(string stackId);
     }
 }
