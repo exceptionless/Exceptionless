@@ -73,6 +73,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Clients\Console\Exceptionless.Console.csproj">
+      <Project>{1e53d5cd-1719-4bfb-a9a8-7d46baca6402}</Project>
+      <Name>Exceptionless.Console</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Clients\Extras\Exceptionless.Extras.csproj">
       <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
       <Name>Exceptionless.Extras</Name>

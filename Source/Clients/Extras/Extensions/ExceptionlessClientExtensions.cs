@@ -47,6 +47,9 @@ namespace Exceptionless.Extras.Extensions {
                     contextData.SetSubmissionMethod("AppDomainUnhandledException");
 
                     exception.ToExceptionless(contextData, client).Submit();
+
+                    // process queue immediately since the app is about to exit.
+                    client.ProcessQueue();
                 };
 
             try {
