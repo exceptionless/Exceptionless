@@ -47,6 +47,10 @@ namespace Exceptionless.Helpers {
             else if (ev.Type == Event.KnownTypes.Log) {
                 ev.Source = LogSources.Random();
                 ev.Message = RandomData.GetString();
+
+                string level = LogLevels.Random();
+                if (!String.IsNullOrEmpty(level))
+                    ev.Data[Event.KnownDataKeys.Level] = level;
             }
 
             if (RandomData.GetBool(80))
@@ -193,6 +197,15 @@ namespace Exceptionless.Helpers {
             "MyClass",
             "CodeGenerator",
             "Exceptionless.Core.Parser.SomeClass"
+        };
+
+        public readonly List<string> LogLevels = new List<string> {
+            "Trace",
+            "Info",
+            "Debug",
+            "Warn",
+            "Error",
+            "Custom"
         };
 
         public readonly List<string> FeatureNames = new List<string> {
