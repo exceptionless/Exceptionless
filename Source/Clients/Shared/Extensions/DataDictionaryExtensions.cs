@@ -14,6 +14,7 @@ using Exceptionless.Dependency;
 using Exceptionless.Extensions;
 using Exceptionless.Json.Linq;
 using Exceptionless.Models;
+using TinyIoC;
 
 namespace Exceptionless {
     public static class DataDictionaryExtensions {
@@ -88,18 +89,24 @@ namespace Exceptionless {
             if (info == null || info.Data == null)
                 return;
 
-            string name = info.Data.GetType().Name;
+            string name;
 
             if (!String.IsNullOrEmpty(info.Name))
                 name = info.Name;
+            else
+                name = info.Data.GetType().Name;
 
             string json = String.Empty;
 
             string[] excludedPropertyNames = info.ExcludedPropertyNames != null ? client.Configuration.DataExclusions.Union(info.ExcludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray();
 
             try {
-                var serializer = DependencyResolver.Default.GetJsonSerializer();
-                json = serializer.Serialize(info.Data, excludedPropertyNames, info.MaxDepthToSerialize.HasValue ? info.MaxDepthToSerialize.Value : 5, info.IgnoreSerializationErrors);
+                if (IsPrimitiveType(info.Data.GetType())) {
+                    json = info.Data.ToString();
+                } else {
+                    var serializer = DependencyResolver.Default.GetJsonSerializer();
+                    json = serializer.Serialize(info.Data, excludedPropertyNames, info.MaxDepthToSerialize.HasValue ? info.MaxDepthToSerialize.Value : 5, info.IgnoreSerializationErrors);
+                }
             } catch (Exception ex) {
                 json = ex.ToString();
             }
@@ -108,6 +115,26 @@ namespace Exceptionless {
                 data.Data[name] = json;
             else
                 data.Data.Add(name, json);
+        }
+
+        private static bool IsPrimitiveType(Type type) {
+            if (type.IsPrimitive)
+                return true;
+
+            if (type == typeof(Decimal)
+                || type == typeof(String)
+                || type == typeof(Guid)
+                || type == typeof(TimeSpan)
+                || type == typeof(Uri))
+                return true;
+
+            if (type.IsEnum)
+                return true;
+
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return IsPrimitiveType(Nullable.GetUnderlyingType(type));
+
+            return false;
         }
     }
 }
