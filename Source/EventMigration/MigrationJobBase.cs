@@ -62,12 +62,15 @@ namespace Exceptionless.EventMigration {
             return server.GetDatabase(url.DatabaseName);
         }
 
+        private static bool _publicIpDisplayed = false;
         protected static void OutputPublicIp() {
             if (_ipAddress == null)
                 _ipAddress = Util.GetExternalIP();
 
-            if (_ipAddress != null)
-                Log.Debug().Message("Public IP: " + _ipAddress).Write();
+            if (_ipAddress != null && !_publicIpDisplayed) {
+                _publicIpDisplayed = true;
+                Log.Info().Message("Public IP: " + _ipAddress).Write();
+            }
         }
 
         protected IEnumerable<string> GetIpAddresses(PersistentEvent ev, RequestInfo request) {
