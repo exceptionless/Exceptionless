@@ -1,6 +1,7 @@
-<%@ Page Language="C#" AutoEventWireup="true" %>
+﻿<%@ Page Language="C#" AutoEventWireup="true" %>
 <%@ Import Namespace="System" %>
 <%@ Import Namespace="Exceptionless" %>
+<%@ Import Namespace="Exceptionless.Configuration" %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -9,7 +10,7 @@
     protected void Page_Load(object sender, EventArgs e) {}
 
     protected void forceButton_Click(object sender, EventArgs e) {
-        ExceptionlessClient.Default.SubmitLog("New server side changes will be applied to the client after this message is submitted.");
+        ​SettingsManager.UpdateSettings(​ExceptionlessClient.Default.Configuration)​;
     }
 
 </script>
