@@ -13,6 +13,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Json.Linq;
 using Exceptionless.Models;
+using FluentValidation;
 using NLog.Fluent;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;
@@ -100,10 +101,9 @@ namespace Exceptionless.Api.Controllers {
                 IsActive = true,
                 FullName = model.Name, 
                 EmailAddress = model.Email,
-                IsEmailAddressVerified = false,
-                VerifyEmailAddressToken = Core.Extensions.StringExtensions.GetNewToken(),
-                VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440)
+                IsEmailAddressVerified = false
             };
+            user.CreateVerifyEmailAddressToken();
             user.Roles.Add(AuthorizationRoles.Client);
             user.Roles.Add(AuthorizationRoles.User);
             AddGlobalAdminRoleIfFirstUser(user);
@@ -113,8 +113,10 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 user = _userRepository.Save(user);
+            } catch (ValidationException ex) {
+                return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                Log.Error().Message("Signup error: {0}", ex.Message).Exception(ex).Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("Signup").AddObject(user).AddObject(model).Submit();
                 return BadRequest("An error occurred.");
             }
 
@@ -391,7 +393,7 @@ namespace Exceptionless.Api.Controllers {
             if (!IsValidPassword(model.Password))
                 return BadRequest("The New Password must be at least 6 characters long.");
 
-            MarkEmailAddressVerified(user);
+            user.MarkEmailAddressVerified();
             ChangePassword(user, model.Password);
 
             ExceptionlessClient.Default.CreateFeatureUsage("Reset Password").AddObject(user).Submit();
@@ -408,7 +410,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return Ok();
             
-            ResetPasswordResetToken(user);
+            user.ResetPasswordResetToken();
             _userRepository.Save(user);
 
             ExceptionlessClient.Default.CreateFeatureUsage("Cancel Reset Password").AddObject(user).Submit();
@@ -454,7 +456,7 @@ namespace Exceptionless.Api.Controllers {
             // Create a new user account or return an existing one.
             if (existingUser != null) {
                 if (!existingUser.IsEmailAddressVerified) {
-                    MarkEmailAddressVerified(existingUser);
+                    existingUser.MarkEmailAddressVerified();
                     _userRepository.Save(existingUser);
                 }
 
@@ -473,7 +475,7 @@ namespace Exceptionless.Api.Controllers {
                 AddGlobalAdminRoleIfFirstUser(user);
             }
 
-            MarkEmailAddressVerified(user);
+            user.MarkEmailAddressVerified();
             user.AddOAuthAccount(userInfo.ProviderName, userInfo.Id, userInfo.Email);
             _userRepository.Save(user);
 
@@ -490,7 +492,7 @@ namespace Exceptionless.Api.Controllers {
                 return;
 
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
-                MarkEmailAddressVerified(user);
+                user.MarkEmailAddressVerified();
                 _userRepository.Save(user);
             }
 
@@ -506,20 +508,10 @@ namespace Exceptionless.Api.Controllers {
                 user.Salt = Core.Extensions.StringExtensions.GetNewToken();
 
             user.Password = password.ToSaltedHash(user.Salt);
-            ResetPasswordResetToken(user);
+            user.ResetPasswordResetToken();
             _userRepository.Save(user);
         }
 
-        private static void ResetPasswordResetToken(User user) {
-            user.PasswordResetToken = null;
-            user.PasswordResetTokenExpiration = DateTime.MinValue;
-        }
-
-        private static void MarkEmailAddressVerified(User user) {
-            user.IsEmailAddressVerified = true;
-            user.VerifyEmailAddressToken = null;
-            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
-        }
 
         private string GetToken(User user) {
             var token = _tokenManager.Create(user);
