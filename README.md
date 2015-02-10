@@ -17,7 +17,7 @@ _** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionl
 3. Install [`Elasticsearch`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html) if you haven't already.
 4. Open the `Exceptionless.sln` Visual Studio solution file.
 5. Select `Exceptionless.Api.IIS` and `Exceptionless.SampleConsole` as startup projects.
-6. Run the project by pressing `f5` to start the console and server.
+6. Run the project by pressing `F5` to start the console and server.
 7. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
 
 Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
@@ -30,7 +30,7 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
 
 1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.io). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 2. If you would rather host Exceptionless yourself, you will need to follow these steps:
-  1. Setup Elasticsearch ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows] (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)), Mongo ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and Redis servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
+  1. Setup `Elasticsearch` ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows] (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)), `Mongo` ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and `Redis `servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
   2. Setup IIS and add the Exceptionless website.
   3. Modify the connection strings in Web.config to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
   4. Change the `WebsiteMode` to `Production` in the `Web.config` appSettings section.
