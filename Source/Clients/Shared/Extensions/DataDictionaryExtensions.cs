@@ -36,11 +36,28 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Sets a property value on the extended data.
+        /// </summary>
+        /// <param name="target">The target object.</param>
+        /// <param name="name">The name of the property to add.</param>
+        /// <param name="value">The property value to add.</param>
+        /// <param name="maxDepth">The max depth of the object to include. Used when the property value is an object.</param>
+        /// <param name="excludedPropertyNames">Any property names that should be excluded in complex object values.</param>
+        /// <param name="ignoreSerializationErrors">Specifies wether complex object properties that throw errors while serializing be ignored</param>
+        /// <param name="client">
+        /// The ExceptionlessClient instance used for configuration. If a client is not specified, it will use
+        /// ExceptionlessClient.Default.
+        /// </param>
+        public static void SetProperty(this IData target, string name, object value, int? maxDepth = null, IEnumerable<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false, ExceptionlessClient client = null) {
+            AddObject(target, value, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors, client);
+        }
+
+        /// <summary>
         /// Adds the object to extended data.
         /// </summary>
         /// <param name="data">The error.</param>
         /// <param name="value">The data object to add.</param>
-        /// <param name="name">The name of the object to add.</param>
+        /// <param name="name">The name of the object to add. If not specified, the name will be implied from the object type.</param>
         /// <param name="maxDepth">The max depth of the object to include.</param>
         /// <param name="excludedPropertyNames">Any property names that should be excluded</param>
         /// <param name="ignoreSerializationErrors">Specifies wether properties that throw errors while serializing be ignored</param>

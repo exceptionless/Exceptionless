@@ -132,8 +132,24 @@ namespace Exceptionless {
         }
 
         /// <summary>
-        ///     Adds the object to extended data. Use either <paramref name="excludedPropertyNames" /> or
+        ///     Sets an extended property value to include with the event. Use either <paramref name="excludedPropertyNames" /> or
         ///     <see cref="Exceptionless.Json.JsonIgnoreAttribute" /> to exclude data from being included in the event report.
+        /// </summary>
+        /// <param name="name">The name of the object to add.</param>
+        /// <param name="value">The data object to add.</param>
+        /// <param name="maxDepth">The max depth of the object to include.</param>
+        /// <param name="excludedPropertyNames">Any property names that should be excluded.</param>
+        /// <param name="ignoreSerializationErrors">Specifies if properties that throw serialization errors should be ignored.</param>
+        public EventBuilder SetProperty(string name, object value, int? maxDepth = null, ICollection<string> excludedPropertyNames = null, bool ignoreSerializationErrors = false) {
+            if (value != null)
+                Target.AddObject(value, name, maxDepth, excludedPropertyNames, ignoreSerializationErrors);
+
+            return this;
+        }
+
+        /// <summary>
+        ///     Adds the object to extended data. Use either <paramref name="excludedPropertyNames" /> or
+        ///     <see cref="Exceptionless.Json.JsonIgnoreAttribute" /> to exclude data from being included in the event.
         /// </summary>
         /// <param name="data">The data object to add.</param>
         /// <param name="name">The name of the object to add.</param>
