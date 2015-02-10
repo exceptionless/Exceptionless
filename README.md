@@ -31,10 +31,11 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
 1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.io). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 2. If you would rather host Exceptionless yourself, you will need to follow these steps:
   1. Setup `Elasticsearch` ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows] (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)), `Mongo` ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and `Redis `servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
-  2. Setup IIS and add the Exceptionless website.
-  3. Modify the connection strings in Web.config to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
-  4. Change the `WebsiteMode` to `Production` in the `Web.config` appSettings section.
-  5. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
+  2. Enable Web Sockets.
+  3. Setup IIS and add the Exceptionless website.
+  4. Modify the connection strings in Web.config to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
+  5. Change the `WebsiteMode` to `Production` in the `Web.config` appSettings section.
+  6. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
 
 
 ##  How is Exceptionless licensed?
