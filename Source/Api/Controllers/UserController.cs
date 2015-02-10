@@ -13,6 +13,8 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using FluentValidation;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/users")]
@@ -77,11 +79,21 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("A user with this email address already exists.");
 
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-				return Ok(new { IsVerified = user.IsEmailAddressVerified });
+                return Ok(new { IsVerified = user.IsEmailAddressVerified });
 
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
-            _repository.Save(user);
+            if (!user.IsEmailAddressVerified)
+                user.CreateVerifyEmailAddressToken();
+
+            try {
+                _repository.Save(user);
+            } catch (ValidationException ex) {
+                return BadRequest(String.Join(", ", ex.Errors));
+            } catch (Exception ex) {
+                ex.ToExceptionless().AddObject(user).AddObject(email, "Email Address").Submit();
+                return BadRequest("An error occurred.");
+            }
 
             if (!user.IsEmailAddressVerified)
                 ResendVerificationEmail(id);
@@ -99,7 +111,7 @@ namespace Exceptionless.Api.Controllers {
             if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
                 return BadRequest("Verify Email Address Token has expired.");
 
-            MarkEmailAddressVerified(user);
+            user.MarkEmailAddressVerified();
             _repository.Save(user);
 
             ExceptionlessClient.Default.CreateFeatureUsage("Verify Email Address").AddObject(user).Submit();
@@ -114,8 +126,8 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
             
             if (!user.IsEmailAddressVerified) {
-                user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
-                user.VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440);
+                user.CreateVerifyEmailAddressToken();
+                _repository.Save(user);
                 _mailer.SendVerifyEmail(user);
             }
 
@@ -178,12 +190,6 @@ namespace Exceptionless.Api.Controllers {
                 return base.GetModels(ids, useCache);
 
             return base.GetModels(ids.Where(id => String.Equals(ExceptionlessUser.Id, id)).ToArray(), useCache);
-        }
-
-        private static void MarkEmailAddressVerified(User user) {
-            user.IsEmailAddressVerified = true;
-            user.VerifyEmailAddressToken = null;
-            user.VerifyEmailAddressTokenExpiration = DateTime.MinValue;
         }
     }
 }
