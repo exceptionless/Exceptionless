@@ -103,6 +103,7 @@ namespace Client.Tests {
             var user = userRepository.GetByEmailAddress("test@exceptionless.io");
             if (user == null)
                 user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.io", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
+
             dataHelper.CreateTestOrganizationAndProject(user.Id);
         }
     }

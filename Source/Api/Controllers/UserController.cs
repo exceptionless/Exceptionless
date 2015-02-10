@@ -108,7 +108,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return NotFound();
 
-            if (user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration > DateTime.Now)
+            if (!user.HasValidEmailAddressTokenExpiration())
                 return BadRequest("Verify Email Address Token has expired.");
 
             user.MarkEmailAddressVerified();

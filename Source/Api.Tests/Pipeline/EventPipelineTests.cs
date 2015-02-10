@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -172,8 +173,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 }
 
                 if (!user.IsEmailAddressVerified) {
-                    user.VerifyEmailAddressToken = Guid.NewGuid().ToString();
-                    user.VerifyEmailAddressTokenExpiration = DateTime.Now.AddDays(1);
+                    user.CreateVerifyEmailAddressToken();
                 }
                 _userRepository.Add(user);
             }

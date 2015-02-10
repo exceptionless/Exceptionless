@@ -19,7 +19,14 @@ namespace Exceptionless.Core.Extensions {
                 return;
 
             user.VerifyEmailAddressToken = StringExtensions.GetNewToken();
-            user.VerifyEmailAddressTokenExpiration = DateTime.Now.AddMinutes(1440);
+            user.VerifyEmailAddressTokenExpiration = DateTime.UtcNow.AddMinutes(1440);
+        }
+
+        public static bool HasValidEmailAddressTokenExpiration(this User user) {
+            if (user == null)
+                return false;
+
+            return user.VerifyEmailAddressTokenExpiration != DateTime.MinValue && user.VerifyEmailAddressTokenExpiration >= DateTime.UtcNow;
         }
 
         public static void MarkEmailAddressVerified(this User user) {
