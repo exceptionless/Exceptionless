@@ -4,7 +4,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ***
  
-_This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Exceptionless/wiki/Exceptionless-2.0-Overview) which is a work in progress. Please switch to the 1.x branch if you are looking for the stable version._
+_This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Exceptionless/wiki/Exceptionless-2.0-Overview) which is a preview version. Please switch to the 1.x branch if you are looking for the stable version._
 
 ***
 
@@ -12,13 +12,13 @@ _This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Excepti
 
 _** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
 
-1. You will need to have Visual Studio 2013 installed.
-2. Start MongoDB and Redis by opening `StartBackendServers.bat`.
-3. Open the `Exceptionless.sln` Visual Studio solution file.
-4. Select `Exceptionless.Api.IIS` and `Exceptionless.SampleConsole` as startup projects.
-5. Run the project.
-6. The app will automatically make the 1st user that is created a Global Admin and will also create a sample `Acme` organization and project.
-7. Send a test error from the sample console application and you should see it show up immediately in the website.
+1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
+2. Start `Elasticsearch`, `MongoDB` and `Redis` by opening `StartBackendServers.bat`.
+3. Install [`Elasticsearch`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html) if you haven't already.
+4. Open the `Exceptionless.sln` Visual Studio solution file.
+5. Select `Exceptionless.Api.IIS` and `Exceptionless.SampleConsole` as startup projects.
+6. Run the project by pressing `f5` to start the console and server.
+7. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
 
 Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 
@@ -30,10 +30,10 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
 
 1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.io). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 2. If you would rather host Exceptionless yourself, you will need to follow these steps:
-  1. Setup Mongo ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and Redis servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
+  1. Setup Elasticsearch ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows] (http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)), Mongo ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and Redis servers  ([Linux](http://redis.io/download), [Windows] (https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
   2. Setup IIS and add the Exceptionless website.
-  3. Modify the connection strings in Web.config to point to your Mongo and Redis servers.
-  4. Change the WebsiteMode to Production in the Web.config appSettings section.
+  3. Modify the connection strings in Web.config to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
+  4. Change the `WebsiteMode` to `Production` in the `Web.config` appSettings section.
   5. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
 
 
