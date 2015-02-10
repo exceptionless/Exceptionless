@@ -7,8 +7,11 @@ namespace Exceptionless.NLog {
     public static class ExceptionlessClientExtensions {
         public static EventBuilder CreateFromLogEvent(this ExceptionlessClient client, LogEventInfo ev) {
             var builder = ev.Exception != null ? client.CreateException(ev.Exception) : client.CreateLog(ev.LoggerName, ev.FormattedMessage, ev.Level.Name);
-
             builder.Target.Date = ev.TimeStamp;
+
+            if (!String.IsNullOrWhiteSpace(ev.FormattedMessage))
+                builder.SetMessage(ev.FormattedMessage);
+
             if (ev.Exception != null)
                 builder.SetSource(ev.LoggerName);
 
