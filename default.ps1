@@ -72,13 +72,19 @@ task Init -depends Clean {
         $build_number = "0"
     }
 
+	If (![string]::IsNullOrWhiteSpace($env:BUILD_SUFFIX)) {
+        $build_suffix = $env:BUILD_SUFFIX
+    } else {
+        $build_suffix = ""
+    }
+	
     If (![string]::IsNullOrWhiteSpace($env:BUILD_VCS_NUMBER_Exceptionless_Master)) {
         $git_hash = $env:BUILD_VCS_NUMBER_Exceptionless_Master.Substring(0, 10)
         TeamCity-ReportBuildProgress "VCS Revision: $git_hash"
     }
 
     $info_version = "$version.$build_number $git_hash".Trim()
-    $script:nuget_version = "$version.$build_number" + "-preview"
+    $script:nuget_version = "$version.$build_number$build_suffix"
     $version = "$version.$build_number"
 
     TeamCity-SetBuildNumber $version
