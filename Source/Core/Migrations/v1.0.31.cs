@@ -24,6 +24,9 @@ namespace Exceptionless.Core.Migrations {
         }
 
         public override void Update() {
+            if (Database.CollectionExists("token"))
+                Database.DropCollection("token");
+
             var projectCollection = GetCollection();
             if (projectCollection.IndexExists("ApiKeys"))
                 projectCollection.DropIndex("ApiKeys");
