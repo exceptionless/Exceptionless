@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
+using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
@@ -12,10 +13,12 @@ using NLog.Fluent;
 
 namespace Exceptionless.EventMigration {
     public class MongoCopyJob : JobBase {
+        private readonly ICacheClient _cacheClient;
         private readonly MongoDatabase _sourceMongoDatabase;
         private readonly MongoDatabase _mongoDatabase;
 
-        public MongoCopyJob(MongoDatabase mongoDatabase) {
+        public MongoCopyJob(ICacheClient cacheClient, MongoDatabase mongoDatabase) {
+            _cacheClient = cacheClient; 
             _sourceMongoDatabase = GetMongoDatabase();
             _mongoDatabase = mongoDatabase;
         }
@@ -39,6 +42,9 @@ namespace Exceptionless.EventMigration {
             new WebHookRepository(_mongoDatabase);
             new UserRepository(_mongoDatabase);
             Log.Info().Message("Finished creating indexes...").Write();
+
+            Log.Info().Message("Flushing redis cache").Write();
+            _cacheClient.FlushAll();
 
             return JobResult.Success;
         }
