@@ -78,7 +78,7 @@ task Init -depends Clean {
     }
 
     $info_version = "$version.$build_number $git_hash".Trim()
-    $script:nuget_version = "$version.$build_number"
+    $script:nuget_version = "$version.$build_number" + "-preview"
     $version = "$version.$build_number"
 
     TeamCity-SetBuildNumber $version
