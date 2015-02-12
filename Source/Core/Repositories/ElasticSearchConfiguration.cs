@@ -43,7 +43,9 @@ namespace Exceptionless.Core.Repositories {
                         .Dynamic(DynamicMappingOption.Ignore)
                         .Transform(t => t.Script(@"ctx._source['fixed'] = !!ctx._source['date_fixed']").Language(ScriptLang.Groovy))
                         .IncludeInAll(false)
+                        .AllField(i => i.Analyzer("standardplus"))
                         .Properties(p => p
+                            .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                             .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                             .String(f => f.Name(s => s.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                             .String(f => f.Name(s => s.SignatureHash).IndexName("signature").Index(FieldIndexOption.NotAnalyzed))
@@ -72,8 +74,9 @@ namespace Exceptionless.Core.Repositories {
                     .IncludeInAll(false)
                     .DisableSizeField(false)
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
-                    .AllField(i => i.IndexAnalyzer("standardplus"))
+                    .AllField(i => i.Analyzer("standardplus"))
                     .Properties(p => p
+                        .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
                         .String(f => f.Name(e => e.StackId).IndexName("stack").Index(FieldIndexOption.NotAnalyzed))
