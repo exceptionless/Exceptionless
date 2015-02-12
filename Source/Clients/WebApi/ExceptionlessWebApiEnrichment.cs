@@ -35,7 +35,6 @@ namespace Exceptionless.WebApi {
             if (context.Client.Configuration.IncludePrivateInformation && principal != null && principal.Identity.IsAuthenticated)
                 ev.SetUserIdentity(principal.Identity.Name);
 
-
             RequestInfo requestInfo = null;
             try {
                 requestInfo = actionContext.GetRequestInfo(context.Client.Configuration);

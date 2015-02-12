@@ -13,6 +13,17 @@ namespace Exceptionless {
         }
 
         /// <summary>
+        /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
+        /// </summary>
+        /// <param name="builder">The event builder object.</param>
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        /// <param name="name">The user's friendly name that the event happened to.</param>
+        public static EventBuilder SetUserIdentity(this EventBuilder builder, string identity, string name) {
+            builder.Target.SetUserIdentity(identity, name);
+            return builder;
+        }
+
+        /// <summary>
         /// Sets the user's description of the event.
         /// </summary>
         /// <param name="builder">The event builder object.</param>

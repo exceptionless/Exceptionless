@@ -9,7 +9,6 @@
 
 using System;
 using Exceptionless.Enrichments;
-using Exceptionless.ExtendedData;
 using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;

@@ -110,17 +110,24 @@ namespace Exceptionless {
         /// <param name="ev">The event</param>
         /// <param name="identity">The user's identity that the event happened to.</param>
         public static void SetUserIdentity(this Event ev, string identity) {
-            if (String.IsNullOrWhiteSpace(identity))
-                return;
-
-            var userInfo = ev.GetUserIdentity() ?? new UserInfo(identity);
-            userInfo.Identity = identity;
-
-            ev.SetUserIdentity(userInfo);
+            ev.SetUserIdentity(identity, null);
         }
 
         /// <summary>
-        /// Sets the user's identity (ie. email address, username, user id) that the event happened to.
+        /// Sets the user's identity (ie. email address, username, user id) and name that the event happened to.
+        /// </summary>
+        /// <param name="ev">The event</param>
+        /// <param name="identity">The user's identity that the event happened to.</param>
+        /// <param name="name">The user's friendly name that the event happened to.</param>
+        public static void SetUserIdentity(this Event ev, string identity, string name) {
+            if (String.IsNullOrWhiteSpace(identity) && String.IsNullOrWhiteSpace(name))
+                return;
+
+            ev.SetUserIdentity(new UserInfo(identity, name));
+        }
+
+        /// <summary>
+        /// Sets the user's identity (ie. email address, username, user id) and name that the event happened to.
         /// </summary>
         /// <param name="ev">The event</param>
         /// <param name="userInfo">The user's identity that the event happened to.</param>
@@ -149,14 +156,7 @@ namespace Exceptionless {
             if (String.IsNullOrWhiteSpace(emailAddress) && String.IsNullOrWhiteSpace(description))
                 return;
 
-            var userDescription = ev.GetUserDescription() ?? new UserDescription(emailAddress, description);
-            if (!String.IsNullOrWhiteSpace(emailAddress))
-                userDescription.EmailAddress = emailAddress.Trim();
-
-            if (!String.IsNullOrWhiteSpace(description))
-                userDescription.Description = description.Trim();
-
-            ev.Data[Event.KnownDataKeys.UserDescription] = userDescription;
+            ev.Data[Event.KnownDataKeys.UserDescription] = new UserDescription(emailAddress, description);
         }
 
         /// <summary>

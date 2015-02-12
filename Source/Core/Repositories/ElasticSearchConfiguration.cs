@@ -127,7 +127,8 @@ namespace Exceptionless.Core.Repositories {
                                 .String(f3 => f3.Name(r => r.Description).IndexName("user.description").Index(FieldIndexOption.Analyzed).IncludeInAll())
                                 .String(f3 => f3.Name(r => r.EmailAddress).IndexName("user.email").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))))
                             .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))))))
+                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))
+                                .String(f3 => f3.Name(r => r.Name).IndexName("user.name").Index(FieldIndexOption.Analyzed).IncludeInAll())))))
                     )
                 )
             );
