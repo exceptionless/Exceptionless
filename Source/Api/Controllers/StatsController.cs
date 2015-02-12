@@ -16,6 +16,7 @@ using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Exceptionless.Models.Stats;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stats")]
@@ -49,7 +50,14 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
-            var result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
+            EventStatsResult result;
+            try {
+                result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
+            } catch (ApplicationException ex) {
+                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset }).AddTags("Search").Submit();
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
             return Ok(result);
         }
 
