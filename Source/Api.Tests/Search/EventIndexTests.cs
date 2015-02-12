@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877555", 2)]
+        [InlineData("1ecd0826e447ad1e78877555", 3)]
         public void GetByOrganizationId(string id, int count) {
             var result = GetByFilter("organization:" + id);
             Assert.NotNull(result);
@@ -44,7 +44,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Theory]
         [InlineData("000000000000000000000000", 0)]
-        [InlineData("1ecd0826e447ad1e78877ab2", 2)]
+        [InlineData("1ecd0826e447ad1e78877ab2", 3)]
         public void GetByProjectId(string id, int count) {
             var result = GetByFilter("project:" + id);
             Assert.NotNull(result);
@@ -54,7 +54,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("000000000000000000000000", 0)]
         [InlineData("1ecd0826e447a44e78877ab1", 1)]
-        [InlineData("2ecd0826e447a44e78877ab2", 1)]
+        [InlineData("2ecd0826e447a44e78877ab2", 2)]
         public void GetByStackId(string id, int count) {
             var result = GetByFilter("stack:" + id);
             Assert.NotNull(result);
@@ -71,7 +71,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("null", 0)]
         [InlineData("00000", 0)]
         [InlineData("12345", 1)]
         public void GetBySessionId(string id, int count) {
@@ -81,9 +80,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("null", 0)]
         [InlineData("log", 1)]
-        [InlineData("error", 1)]
+        [InlineData("error", 2)]
         [InlineData("custom", 0)]
         public void GetByType(string type, int count) {
             var result = GetByFilter("type:" + type);
@@ -100,7 +98,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        // TODO: Add some range queries.
         [InlineData("\"2014-12-09T17:28:44.966\"", 1)]
         [InlineData("\"2014-12-09T17:28:44.966+00:00\"", 1)]
         [InlineData("\"2015-02-11T20:54:04.3457274+00:00\"", 1)]
@@ -111,7 +108,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData(false, 1)]
+        [InlineData(false, 2)]
         [InlineData(true, 1)]
         public void GetByFirst(bool first, int count) {
             var result = GetByFilter("first:" + first.ToString().ToLower());
@@ -129,6 +126,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
+        [InlineData("_missing_:tag", 1)]
         [InlineData("tag:test", 1)]
         [InlineData("tag:Blake", 1)]
         [InlineData("tag:Niemyjski", 1)]
@@ -140,15 +138,17 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData(1, 1)]
-        public void GetByValue(int value, int count) {
-            var result = GetByFilter("value:" + value);
+        [InlineData("_missing_:value", 2)]
+        [InlineData("_exists_:value", 1)]
+        [InlineData("value:1", 1)]
+        public void GetByValue(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
         
         [Theory]
-        [InlineData(false, 1)]
+        [InlineData(false, 2)]
         [InlineData(true, 1)]
         public void GetByFixed(bool @fixed, int count) {
             var result = GetByFilter("fixed:" + @fixed.ToString().ToLower());
@@ -157,7 +157,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData(false, 1)]
+        [InlineData(false, 2)]
         [InlineData(true, 1)]
         public void GetByHidden(bool hidden, int count) {
             var result = GetByFilter("hidden:" + hidden.ToString().ToLower());
@@ -207,9 +207,9 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("Mozilla", 1)]
-        [InlineData("\"Mozilla/5.0\"", 1)]
-        [InlineData("5.0", 1)]
+        [InlineData("Mozilla", 2)]
+        [InlineData("\"Mozilla/5.0\"", 2)]
+        [InlineData("5.0", 2)]
         [InlineData("Macintosh", 1)]
         public void GetByUserAgent(string userAgent, int count) {
             var result = GetByFilter("useragent:" + userAgent);
@@ -226,33 +226,170 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        // TODO: Add tests for non existent.
-        //http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html#query-string-syntax
-
-//browser	browser:Chrome	true	Events	Browser
-//browser.version	browser.version:50.0	true	Events	Browser version
-//browser.major	browser.major:50	true	Events	Browser major version
-//device	device:iPhone	true	Events	Device
-//os	os:"iOS 8"	true	Events	Operating System
-//os.version	os.version:8.0	true	Events	Operating System version
-//os.major	os.major:8	true	Events	Operating System major version
-        
         [Theory]
-        //[InlineData(false, 1)]// -bot:true != bot:false
-        [InlineData(true, 1)]
-        public void GetByBot(bool bot, int count) {
-            var result = GetByFilter("bot:" + bot.ToString().ToLower());
-            Assert.NotNull(result); 
+        [InlineData("Chrome", 2)]
+        [InlineData("\"Chrome Mobile\"", 1)]
+        public void GetByBrowser(string browser, int count) {
+            var result = GetByFilter("browser:" + browser);
+            Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
-//error.code	error.code:500 or 500	false	Events	Error code
-//error.message	error.message:"A NullReferenceException occurred" or "A NullReferenceException occurred"	false	Events	Error message
-//error.type	error.type:"System.NullReferenceException" or "System.NullReferenceException"	false	Events	Error type
-//user	user:"random user identifier" or "random user identifier"	false	Events	Identity assigned to the event
-//description	description:"My description" or "My Description"	false	Stacks	Description
-//user.description	user.description:"I clicked the button" or "I clicked the button"	false	Events	User Description
-//user.email	user.email:"support@exceptionless.io" or "support@exceptionless.io"	false	Events	User Email Address
+        [Theory]
+        [InlineData("Chrome", 2)]
+        [InlineData("39.0.2171", 1)]
+        [InlineData("\"Chrome 39\"", 1)]
+        [InlineData("\"Chrome 39.0.2171\"", 1)]
+        [InlineData("\"Chrome Mobile 26.0.1410\"", 1)]
+        public void GetByBrowserVersion(string browserVersion, int count) {
+            var result = GetByFilter("browser.version:" + browserVersion);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("Chrome", 2)]
+        [InlineData("39", 1)]
+        [InlineData("\"Chrome 39\"", 1)]
+        [InlineData("\"Chrome Mobile 26\"", 1)]
+        public void GetByBrowserMajorVersion(string browserMajorVersion, int count) {
+            var result = GetByFilter("browser.major:" + browserMajorVersion);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+        
+        [Theory]
+        [InlineData("Other", 1)]
+        [InlineData("Huawei", 1)]
+        [InlineData("\"Huawei U8686\"", 1)]
+        public void GetByDevice(string device, int count) {
+            var result = GetByFilter("device:" + device);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("Android", 1)]
+        [InlineData("Mac", 1)]
+        [InlineData("\"Mac OS X\"", 1)]
+        [InlineData("\"Microsoft Windows Server\"", 1)]
+        [InlineData("\"Microsoft Windows Server 2012 R2 Standard\"", 1)]
+        public void GetByOS(string os, int count) {
+            var result = GetByFilter("os:" + os);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("Android", 1)]
+        [InlineData("4.1.1", 1)]
+        [InlineData("\"Android 4.1.1\"", 1)]
+        [InlineData("Mac", 1)]
+        [InlineData("\"Mac OS X\"", 1)]
+        [InlineData("\"Mac OS X 10\"", 1)]
+        [InlineData("\"Mac OS X 10.10.1\"", 1)]
+        public void GetByOSVersion(string osVersion, int count) {
+            var result = GetByFilter("os.version:" + osVersion);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("Android", 1)]
+        [InlineData("4", 1)]
+        [InlineData("\"Android 4\"", 1)]
+        [InlineData("Mac", 1)]
+        [InlineData("\"Mac OS X\"", 1)]
+        [InlineData("\"Mac OS X 10\"", 1)]
+        public void GetByOSMajorVersion(string osMajorVersion, int count) {
+            var result = GetByFilter("os.major:" + osMajorVersion);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+        
+        [Theory]
+        [InlineData("bot:false", 1)]
+        [InlineData("-bot:true", 2)]
+        [InlineData("bot:true", 1)]
+        public void GetByBot(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result); 
+            Assert.Equal(count, result.Count);
+        }
+        
+        [Theory]
+        [InlineData("500", 1)]
+        [InlineData("error.code:\"-1\"", 1)]
+        [InlineData("error.code:500", 1)]
+        [InlineData("error.code:5000", 0)]
+        public void GetByErrorCode(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+        
+        [Theory]
+        [InlineData("\"Invalid hash. Parameter name: hash\"", 1)]
+        [InlineData("error.message:\"Invalid hash. Parameter name: hash\"", 1)]
+        [InlineData("error.message:\"A Task's exception(s)\"", 1)]
+        public void GetByErrorMessage(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("NullReferenceException", 1)]
+        [InlineData("System.NullReferenceException", 1)]
+        [InlineData("error.type:NullReferenceException", 1)]
+        [InlineData("error.type:System.NullReferenceException", 1)]
+        [InlineData("error.type:System.Exception", 1)]
+        public void GetByErrorType(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("\"My-User-Identity\"", 1)]
+        [InlineData("user:\"My-User-Identity\"", 1)]
+        [InlineData("example@exceptionless.com", 1)]
+        [InlineData("user:\"example@exceptionless.com\"", 1)]
+        [InlineData("example", 2)]
+        [InlineData("exceptionless.com", 1)]
+        public void GetByUser(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("Blake", 2)] // Matches due to user name and partial tag
+        [InlineData("user.name:Blake", 1)]
+        public void GetByUserName(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("test@exceptionless.com", 1)]
+        [InlineData("user.email:test@exceptionless.com", 1)]
+        [InlineData("user.email:exceptionless.com", 1)]
+        public void GetByUserEmailAddress(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
+        [InlineData("\"my custom description\"", 1)]
+        [InlineData("user.description:\"my custom description\"", 1)]
+        public void GetByUserDescription(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
 
         private void CreateEvents() {
             ElasticSearchConfiguration.ConfigureMapping(_client, true);

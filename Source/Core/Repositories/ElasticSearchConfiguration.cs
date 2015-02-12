@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
@@ -31,19 +32,23 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
+            IIndicesOperationResponse response;
+
             if (deleteExistingIndexes) {
-                searchclient.DeleteIndex(i => i.AllIndices());
-                searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
+                var deleteResponse = searchclient.DeleteIndex(i => i.AllIndices());
+                Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
+
+                response = searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
+                Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the event index template.");
             }
 
-            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = ElasticSearchRepository<Stack>.StacksIndexName })).Exists)
-                searchclient.CreateIndex(ElasticSearchRepository<Stack>.StacksIndexName, d => d
+            if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = ElasticSearchRepository<Stack>.StacksIndexName })).Exists) {
+                response = searchclient.CreateIndex(ElasticSearchRepository<Stack>.StacksIndexName, d => d
                     .AddAlias("stacks")
                     .AddMapping<Stack>(map => map
                         .Dynamic(DynamicMappingOption.Ignore)
-                        .Transform(t => t.Script(@"ctx._source['fixed'] = !!ctx._source['date_fixed']").Language(ScriptLang.Groovy))
+                        .Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy))
                         .IncludeInAll(false)
-                        .AllField(i => i.Analyzer("standardplus"))
                         .Properties(p => p
                             .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                             .String(f => f.Name(s => s.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -66,7 +71,10 @@ namespace Exceptionless.Core.Repositories {
                     )
                 );
 
-            var response = searchclient.PutTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName, d => d
+                Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred creating the stack index.");
+            }
+
+            response = searchclient.PutTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName, d => d
                 .Template(ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*")
                 .Settings(s => s.Add("analysis", BuildAnalysisSettings()))
                 .AddMapping<PersistentEvent>(map => map
@@ -132,6 +140,8 @@ namespace Exceptionless.Core.Repositories {
                     )
                 )
             );
+
+            Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred creating the event index template");
         }
 
         private static object BuildAnalysisSettings() {
@@ -248,7 +258,9 @@ namespace Exceptionless.Core.Repositories {
 
         #region Scripts
 
-        private static string FLATTEN_ERRORS_SCRIPT = @"
+        private const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
+
+        private const string FLATTEN_ERRORS_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !(ctx._source.data.containsKey('@error') || ctx._source.data.containsKey('@simple_error')))
     return
 
@@ -271,7 +283,7 @@ err['all_types'] = types.join(' ')
 err['all_messages'] = messages.join(' ')
 err['all_codes'] = codes.join(' ')";
 
-        private static string SORTABLE_VERSION_SCRIPT = @"
+        private const string SORTABLE_VERSION_SCRIPT = @"
 if (!ctx._source.containsKey('data') || !ctx._source.data.containsKey('@version'))
     return
 

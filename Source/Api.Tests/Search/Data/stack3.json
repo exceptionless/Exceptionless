@@ -1,0 +1,24 @@
+﻿{
+  "id": "3ecd0826e447a44e78877ab3",
+  "organization_id": "1ecd0826e447ad1e78877555",
+  "project_id": "1ecd0826e447ad1e78877ab2",
+  "type": "log",
+  "signature_hash": "aa2a7ad2b40747584d649b1cc9b359495f2e0000",
+  "signature_info": {
+    "Type": "log",
+    "Source": "GET /Print"
+  },
+  "fixed_in_version": null,
+  "date_fixed": "2015-02-13T20:54:04.3457274Z",
+  "title": "Row not found or changed.",
+  "total_occurrences": 25,
+  "first_occurrence": "2015-02-13T01:05:54.399Z",
+  "last_occurrence": "2015-02-13T20:54:04.3457274Z",
+  "description": null,
+  "disable_notifications": false,
+  "is_hidden": false,
+  "is_regressed": false,
+  "occurrences_are_critical": false,
+  "references": [],
+  "tags": []
+}

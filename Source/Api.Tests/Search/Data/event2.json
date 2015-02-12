@@ -34,14 +34,14 @@
                 "user_id": "5000"
             },
             "data": {
-                "@browser": "",
-                "@browser_version": "",
-                "@browser_major_version": "",
-                "@device": "",
-                "@os": "",
-                "@os_version": "",
-                "@os_major_version": "",
-                "@is_bot": true
+                "@browser": "Chrome",
+                "@browser_version": "Chrome 39.0.2171",
+                "@browser_major_version": "Chrome 39",
+                "@device": "Other",
+                "@os": "Mac OS X",
+                "@os_version": "Mac OS X 10.10.1",
+                "@os_major_version": "Mac OS X 10",
+                "@is_bot": false
             }
         },
         "@environment": {
@@ -68,7 +68,7 @@
         "@error": {
             "message": "Invalid hash. Parameter name: hash",
             "type": "System.Exception",
-            "code": null,
+            "code": 500,
             "data": {
                 "@target": {
                     "ExceptionType": "System.Exception",

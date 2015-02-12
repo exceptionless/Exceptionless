@@ -175,6 +175,7 @@
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
     <Compile Include="Repositories\MongoRepositoryTests.cs" />
+    <Compile Include="Search\StackIndexTests.cs" />
     <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Stats\StatsTests.cs" />
@@ -259,6 +260,8 @@
     <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
     <None Include="Search\Data\event1.json" />
+    <None Include="Search\Data\event3.json" />
+    <None Include="Search\Data\stack3.json" />
     <None Include="Search\Data\stack2.json" />
     <None Include="Search\Data\stack1.json" />
     <None Include="Search\Data\event2.json" />
