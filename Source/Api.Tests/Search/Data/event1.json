@@ -1,0 +1,34 @@
+﻿{
+    "id": "54dbc16ca0f5c61398427b00",
+    "organization_id": "1ecd0826e447ad1e78877555",
+    "project_id": "1ecd0826e447ad1e78877ab2",
+    "stack_id": "1ecd0826e447a44e78877ab1",
+    "is_first_occurrence": false,
+    "is_fixed": true,
+    "is_hidden": false,
+    "created_utc": "2015-02-11T20:54:04.4082284Z",
+    "type": "log",
+    "source": "GET /Print",
+    "date": "2015-02-11T20:54:04.3457274+00:00",
+    "tags": [
+        "test",
+        "Critical"
+    ],
+    "message": null,
+    "geo": "40,-70",
+    "value": 1.0,
+    "data": {
+        "@user": {
+            "identity": "My-User-Identity",
+            "data": { }
+        },
+        "@user_description": {
+            "email_address": "test@exceptionless.com",
+            "description": "my custom description",
+            "data": { }
+        },
+        "@version":  "1.2.3.0"
+    },
+    "reference_id": "876554321",
+    "session_id": "12345"
+}

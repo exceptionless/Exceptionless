@@ -175,6 +175,7 @@
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
     <Compile Include="Repositories\MongoRepositoryTests.cs" />
+    <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SerializerTests.cs" />
     <Compile Include="Stats\StatsTests.cs" />
     <Compile Include="Storage\AzureStorageTests.cs" />
@@ -257,10 +258,15 @@
     <None Include="Plugins\WebHookData\v1.0.stack.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
+    <None Include="Search\Data\event1.json" />
+    <None Include="Search\Data\stack2.json" />
+    <None Include="Search\Data\stack1.json" />
+    <None Include="Search\Data\event2.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

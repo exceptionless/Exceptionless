@@ -1,0 +1,89 @@
+﻿{
+    "id": "54dbc16ca0f5c61398427b01",
+    "organization_id": "1ecd0826e447ad1e78877555",
+    "project_id": "1ecd0826e447ad1e78877ab2",
+    "stack_id": "2ecd0826e447a44e78877ab2",
+    "is_first_occurrence": true,
+    "is_fixed": false,
+    "is_hidden": true,
+    "created_utc": "2014-12-09T17:28:44.966",
+    "type": "error",
+    "source": null,
+    "date": "2014-12-09T17:28:44.966+00:00",
+    "tags": [ "Blake Niemyjski" ],
+    "message": "Invalid hash. Parameter name: hash",
+    "geo": null,
+    "value": null,
+    "data": {
+        "@request": {
+            "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36",
+            "http_method": "POST",
+            "is_secure": true,
+            "host": "admin.example.com",
+            "port": 443,
+            "path": "/user.aspx",
+            "referrer": "https://admin.example.com/user.aspx?UserId=5000",
+            "client_ip_address": "10.0.0.208",
+            "post_data": {
+                "__EVENTTARGET": "",
+                "__EVENTARGUMENT": "",
+                "ctl00$FeatureContentPlaceHolder$Activation1$UnlockButton": "Unlock",
+                "ctl00$FeatureContentPlaceHolder$Activation1$Limit": "3"
+            },
+            "query_string": {
+                "user_id": "5000"
+            },
+            "data": {
+                "@browser": "",
+                "@browser_version": "",
+                "@browser_major_version": "",
+                "@device": "",
+                "@os": "",
+                "@os_version": "",
+                "@os_major_version": "",
+                "@is_bot": true
+            }
+        },
+        "@environment": {
+            "processor_count": 1,
+            "total_physical_memory": 4294496256,
+            "available_physical_memory": 878583808,
+            "command_line": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe -ap \"example-Admin\" -v \"v4.0\" -l \"webengine4.dll\" -a \\\\.\\pipe\\iisipmbef3adf7-67fc-3242-b437-08b71944eef8 -h \"C:\\inetpub\\temp\\apppools\\example-Admin\\example-Admin.config\" -w \"\" -m 0",
+            "process_name": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
+            "process_id": "4932",
+            "process_memory_size": 67293184,
+            "thread_name": null,
+            "thread_id": "4880",
+            "architecture": "x64",
+            "o_s_name": "Microsoft Windows Server 2012 R2 Standard",
+            "o_s_version": "6.3.9600.0",
+            "ip_address": "192.168.0.88",
+            "machine_name": "SERVER-01",
+            "install_id": null,
+            "runtime_version": "4.0.30319.34014",
+            "data": {
+                "AppDomainName": "/LM/W3SVC/76/ROOT-1-130626068279611000"
+            }
+        },
+        "@error": {
+            "message": "Invalid hash. Parameter name: hash",
+            "type": "System.Exception",
+            "code": null,
+            "data": {
+                "@target": {
+                    "ExceptionType": "System.Exception",
+                    "Message": "Invalid hash. Parameter name: hash"
+                }
+            },
+            "inner": null,
+            "stack_trace": [ ],
+            "target_method": null
+        },
+        "@user": {
+            "identity": "example@exceptionless.com",
+            "data": { }
+        }
+    },
+  "reference_id": null,
+  "session_id": null
+}
