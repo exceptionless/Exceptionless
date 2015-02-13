@@ -23,10 +23,10 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public override SummaryData GetStackSummaryData(Stack stack) {
-            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.NotFound))
+            if (!stack.SignatureInfo.ContainsKeyWithValue("Type", Event.KnownTypes.Log))
                 return null;
 
-            return new SummaryData { TemplateKey = "stack-summary", Data = new { Title = stack.Title } };
+            return new SummaryData { TemplateKey = "stack-log-summary", Data = new { Title = stack.Title } };
         }
 
         public override string GetStackTitle(PersistentEvent ev) {
@@ -50,7 +50,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             if (!String.IsNullOrWhiteSpace(level))
                 data.Level = level.Trim();
 
-            return new SummaryData { TemplateKey = "event-summary", Data = data };
+            return new SummaryData { TemplateKey = "event-log-summary", Data = data };
         }
 
         public override MailMessage GetEventNotificationMailMessage(EventNotification model) {
