@@ -29,10 +29,11 @@ namespace Exceptionless.Core.Repositories {
         public UserRepository(MongoDatabase database, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
 
         public User GetByEmailAddress(string emailAddress) {
-            if (String.IsNullOrEmpty(emailAddress))
+            if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
-            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress.ToLowerInvariant())).WithCacheKey(emailAddress));
+            emailAddress = emailAddress.ToLowerInvariant().Trim();
+            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
         }
 
         public User GetByPasswordResetToken(string token) {
@@ -109,15 +110,15 @@ namespace Exceptionless.Core.Repositories {
         #endregion
 
         protected override void BeforeAdd(ICollection<User> documents) {
-            foreach (var user in documents.Where(user => !String.IsNullOrEmpty(user.EmailAddress)))
-                user.EmailAddress = user.EmailAddress.ToLowerInvariant();
+            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
 
             base.BeforeAdd(documents);
         }
 
         protected override void BeforeSave(ICollection<User> originalDocuments, ICollection<User> documents) {
-            foreach (var user in documents.Where(user => !String.IsNullOrEmpty(user.EmailAddress)))
-                user.EmailAddress = user.EmailAddress.ToLowerInvariant();
+            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
+                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
 
             base.BeforeSave(originalDocuments, documents);
         }
@@ -138,7 +139,7 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache || Cache == null)
                 return;
 
-            InvalidateCache(user.EmailAddress.ToLowerInvariant());
+            InvalidateCache(user.EmailAddress.ToLowerInvariant().Trim());
 
             foreach (var organizationId in user.OrganizationIds)
                 InvalidateCache(String.Concat("org:", organizationId));
