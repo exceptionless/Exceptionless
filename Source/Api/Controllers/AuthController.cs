@@ -42,10 +42,10 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("login")]
         public IHttpActionResult Login(LoginModel model) {
-            if (model == null || String.IsNullOrEmpty(model.Email))
+            if (model == null || String.IsNullOrWhiteSpace(model.Email))
                 return BadRequest("Email Address is required.");
 
-            if (String.IsNullOrEmpty(model.Password))
+            if (String.IsNullOrWhiteSpace(model.Password))
                 return BadRequest("Password is required.");
 
             User user;
@@ -62,10 +62,12 @@ namespace Exceptionless.Api.Controllers {
                 return Unauthorized();
 
             string encodedPassword = model.Password.ToSaltedHash(user.Salt);
-            if (!String.Equals(encodedPassword, user.Password))
+            if (!String.Equals(encodedPassword, user.Password)) {
+                ExceptionlessClient.Default.CreateFeatureUsage("Invalid Password").AddTags("Login").SetProperty("Email Address", model.Email).SetProperty("Password Length", model.Password != null ? model.Password.Length : 0).Submit();
                 return Unauthorized();
+            }
 
-			if (!String.IsNullOrEmpty(model.InviteToken))
+            if (!String.IsNullOrEmpty(model.InviteToken))
 				AddInvitedUserToOrganization(model.InviteToken, user);
 
             ExceptionlessClient.Default.CreateFeatureUsage("Login").AddObject(user).Submit();
@@ -84,8 +86,10 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrWhiteSpace(model.Name))
                 return BadRequest("Name is required.");
 
-            if (!IsValidPassword(model.Password))
+            if (!IsValidPassword(model.Password)) {
+                ExceptionlessClient.Default.CreateFeatureUsage("Invalid Password").AddTags("Signup").SetProperty("Email Address", model.Email).SetProperty("Password Length", model.Password != null ? model.Password.Length : 0).Submit();
                 return BadRequest("Password must be at least 6 characters long.");
+            }
 
             User user;
             try {
@@ -150,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "GitHub").AddObject(authInfo).Submit();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -160,14 +164,16 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "GitHub").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("An error occurred while processing user info.");
             }
 
-            if (user == null)
+            if (user == null) {
+                ExceptionlessClient.Default.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "GitHub").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("Unable to process user info.");
+            }
 
-            if (!String.IsNullOrEmpty(authInfo.InviteToken))
+            if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
             return Ok(new { Token = GetToken(user) });
@@ -193,7 +199,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Google").AddObject(authInfo).Submit();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -203,14 +209,16 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Google").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("An error occurred while processing user info.");
             }
 
-            if (user == null)
+            if (user == null) {
+                ExceptionlessClient.Default.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "Google").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("Unable to process user info.");
+            }
 
-            if (!String.IsNullOrEmpty(authInfo.InviteToken))
+            if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
             return Ok(new { Token = GetToken(user) });
@@ -236,7 +244,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Facebook").AddObject(authInfo).Submit();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -246,14 +254,16 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Facebook").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("An error occurred while processing user info.");
             }
 
-            if (user == null)
+            if (user == null) {
+                ExceptionlessClient.Default.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "Facebook").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("Unable to process user info.");
+            }
 
-            if (!String.IsNullOrEmpty(authInfo.InviteToken))
+            if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
             return Ok(new { Token = GetToken(user) });
@@ -279,7 +289,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("Unable to get user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "WindowsLive").AddObject(authInfo).Submit();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -289,14 +299,16 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while processing user info.").Write();
+                ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "WindowsLive").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("An error occurred while processing user info.");
             }
 
-            if (user == null)
+            if (user == null) {
+                ExceptionlessClient.Default.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "WindowsLive").AddObject(authInfo).AddObject(userInfo).Submit();
                 return BadRequest("Unable to process user info.");
+            }
 
-            if (!String.IsNullOrEmpty(authInfo.InviteToken))
+            if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
             return Ok(new { Token = GetToken(user) });
@@ -483,21 +495,27 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private void AddInvitedUserToOrganization(string token, User user) {
-            if (String.IsNullOrEmpty(token) || user == null)
+            if (String.IsNullOrWhiteSpace(token) || user == null)
                 return;
 
             Invite invite;
             var organization = _organizationRepository.GetByInviteToken(token, out invite);
-            if (organization == null)
+            if (organization == null) {
+                Log.Info().Message("Unable to find organization with the invite token: {0}", token).Write();
                 return;
+            }
 
             if (!user.IsEmailAddressVerified && String.Equals(user.EmailAddress, invite.EmailAddress, StringComparison.OrdinalIgnoreCase)) {
+                Log.Info().Message("Marking the invited users email address \"{0}\" as verified", user.EmailAddress).Write();
                 user.MarkEmailAddressVerified();
                 _userRepository.Save(user);
             }
 
-            user.OrganizationIds.Add(organization.Id);
-            _userRepository.Save(user);
+            if (!user.OrganizationIds.Contains(organization.Id)) {
+                ExceptionlessClient.Default.CreateFeatureUsage("Joined From Invite").AddObject(organization).AddObject(user).Submit();
+                user.OrganizationIds.Add(organization.Id);
+                _userRepository.Save(user);
+            }
 
             organization.Invites.Remove(invite);
             _organizationRepository.Save(organization);
