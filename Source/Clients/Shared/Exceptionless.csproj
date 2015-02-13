@@ -33,6 +33,7 @@
     <DefineConstants>TRACE;PORTABLE40;EMBEDDED</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <DocumentationFile>bin\Release\$(TargetFrameworkVersion)\Exceptionless.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\Core\Serialization\DataDictionaryConverter.cs">
