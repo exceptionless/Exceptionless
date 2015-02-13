@@ -139,7 +139,7 @@ namespace Exceptionless.Core.Repositories {
             if (!EnableCache || Cache == null)
                 return;
 
-            InvalidateCache(user.EmailAddress.ToLowerInvariant().Trim());
+            InvalidateCache(user.EmailAddress.ToLowerInvariant());
 
             foreach (var organizationId in user.OrganizationIds)
                 InvalidateCache(String.Concat("org:", organizationId));
