@@ -82,7 +82,7 @@ namespace Exceptionless.Core.Repositories {
                     .IncludeInAll(false)
                     .DisableSizeField(false)
                     .Transform(t => t.Script(FLATTEN_ERRORS_SCRIPT).Language(ScriptLang.Groovy))
-                    .AllField(i => i.Analyzer("standardplus"))
+                    .AllField(i => i.IndexAnalyzer("standardplus").SearchAnalyzer("whitespace_lower"))
                     .Properties(p => p
                         .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed).IncludeInAll())
                         .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
@@ -133,9 +133,9 @@ namespace Exceptionless.Core.Repositories {
                                 .String(f3 => f3.Name(r => r.Architecture).IndexName("architecture").Index(FieldIndexOption.NotAnalyzed))))
                             .Object<UserDescription>(f2 => f2.Name(Event.KnownDataKeys.UserDescription).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name(r => r.Description).IndexName("user.description").Index(FieldIndexOption.Analyzed).IncludeInAll())
-                                .String(f3 => f3.Name(r => r.EmailAddress).IndexName("user.email").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))))
+                                .String(f3 => f3.Name(r => r.EmailAddress).IndexName("user.email").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("simple").IncludeInAll().Boost(1.1))))
                             .Object<UserInfo>(f2 => f2.Name(Event.KnownDataKeys.UserInfo).Path("just_name").Properties(p3 => p3
-                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace").IncludeInAll().Boost(1.1))
+                                .String(f3 => f3.Name(r => r.Identity).IndexName("user").Index(FieldIndexOption.Analyzed).IndexAnalyzer("email").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))
                                 .String(f3 => f3.Name(r => r.Name).IndexName("user.name").Index(FieldIndexOption.Analyzed).IncludeInAll())))))
                     )
                 )
@@ -149,7 +149,6 @@ namespace Exceptionless.Core.Repositories {
                 filter = new {
                     email = new {
                         type = "pattern_capture",
-                        preserve_original = 1,
                         patterns = new[] {
                             @"(\w+)",
                             @"(\p{L}+)",
@@ -160,7 +159,6 @@ namespace Exceptionless.Core.Repositories {
                     },
                     version = new {
                         type = "pattern_capture",
-                        preserve_original = 1,
                         patterns = new[] {
                             @"^(\d+)\.",
                             @"^(\d+\.\d+)",
@@ -189,7 +187,6 @@ namespace Exceptionless.Core.Repositories {
                     },
                     typename = new {
                         type = "pattern_capture",
-                        preserve_original = 1,
                         patterns = new[] {
                             @"\.(\w+)"
                         }
@@ -201,7 +198,7 @@ namespace Exceptionless.Core.Repositories {
                         pattern = @"[,\s]+"
                     },
                     email = new {
-                        tokenizer = "uax_url_email",
+                        tokenizer = "keyword",
                         filter = new[] {
                             "email",
                             "lowercase",
@@ -243,7 +240,7 @@ namespace Exceptionless.Core.Repositories {
                         }
                     },
                     standardplus = new {
-                        tokenizer = "standard",
+                        tokenizer = "whitespace",
                         filter = new[] {
                             "standard",
                             "typename",

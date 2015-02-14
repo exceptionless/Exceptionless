@@ -37,16 +37,16 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                     var info = Parser.GetDefault().Parse(request.UserAgent);
                     request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
                     if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
-                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = info.UserAgent.ToString();
-                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Family + " " + info.UserAgent.Major;
+                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Format("{0}.{1}.{2}", info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch);
+                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
                     }
 
                     request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
 
                     request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
                     if (!String.IsNullOrEmpty(info.OS.Major)) {
-                        request.Data[RequestInfo.KnownDataKeys.OSVersion] = info.OS.ToString();
-                        request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Family + " " + info.OS.Major;
+                        request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Format("{0}.{1}.{2}", info.OS.Major, info.OS.Minor, info.OS.Patch);
+                        request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
                     }
 
                     var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)

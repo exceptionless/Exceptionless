@@ -35,12 +35,12 @@
             },
             "data": {
                 "@browser": "Chrome",
-                "@browser_version": "Chrome 39.0.2171",
-                "@browser_major_version": "Chrome 39",
+                "@browser_version": "39.0.2171",
+                "@browser_major_version": "39",
                 "@device": "Other",
                 "@os": "Mac OS X",
-                "@os_version": "Mac OS X 10.10.1",
-                "@os_major_version": "Mac OS X 10",
+                "@os_version": "10.10.1",
+                "@os_major_version": "10",
                 "@is_bot": false
             }
         },

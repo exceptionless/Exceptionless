@@ -186,7 +186,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
+        [Theory]
         [InlineData("192.168.0.88", 1)]
         [InlineData("ip:192.168.0.88", 1)]
         [InlineData("10.0.0.208", 1)]
@@ -235,23 +235,18 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
-        [InlineData("Chrome", 2)]
+        [Theory]
         [InlineData("39.0.2171", 1)]
-        [InlineData("\"Chrome 39\"", 1)]
-        [InlineData("\"Chrome 39.0.2171\"", 1)]
-        [InlineData("\"Chrome Mobile 26.0.1410\"", 1)]
+        [InlineData("26.0.1410", 1)]
         public void GetByBrowserVersion(string browserVersion, int count) {
             var result = GetByFilter("browser.version:" + browserVersion);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
-        [InlineData("Chrome", 2)]
+        [Theory]
         [InlineData("39", 1)]
-        [InlineData("\"Chrome 39\"", 1)]
-        [InlineData("\"Chrome Mobile 26\"", 1)]
+        [InlineData("26", 1)]
         public void GetByBrowserMajorVersion(string browserMajorVersion, int count) {
             var result = GetByFilter("browser.major:" + browserMajorVersion);
             Assert.NotNull(result);
@@ -280,27 +275,18 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
-        [InlineData("Android", 1)]
+        [Theory]
         [InlineData("4.1.1", 1)]
-        [InlineData("\"Android 4.1.1\"", 1)]
-        [InlineData("Mac", 1)]
-        [InlineData("\"Mac OS X\"", 1)]
-        [InlineData("\"Mac OS X 10\"", 1)]
-        [InlineData("\"Mac OS X 10.10.1\"", 1)]
+        [InlineData("10.10.1", 1)]
         public void GetByOSVersion(string osVersion, int count) {
             var result = GetByFilter("os.version:" + osVersion);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
-        [InlineData("Android", 1)]
+        [Theory]
         [InlineData("4", 1)]
-        [InlineData("\"Android 4\"", 1)]
-        [InlineData("Mac", 1)]
-        [InlineData("\"Mac OS X\"", 1)]
-        [InlineData("\"Mac OS X 10\"", 1)]
+        [InlineData("10", 1)]
         public void GetByOSMajorVersion(string osMajorVersion, int count) {
             var result = GetByFilter("os.major:" + osMajorVersion);
             Assert.NotNull(result);
@@ -350,13 +336,13 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
-        [InlineData("\"My-User-Identity\"", 1)]
-        [InlineData("user:\"My-User-Identity\"", 1)]
+        [Theory]
+        [InlineData("My-User-Identity", 1)]
+        [InlineData("user:My-User-Identity", 1)]
         [InlineData("example@exceptionless.com", 1)]
-        [InlineData("user:\"example@exceptionless.com\"", 1)]
-        [InlineData("example", 2)]
-        [InlineData("exceptionless.com", 1)]
+        [InlineData("user:example@exceptionless.com", 1)]
+        [InlineData("user:exceptionless.com", 1)]
+        [InlineData("example", 1)]
         public void GetByUser(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
@@ -382,7 +368,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(count, result.Count);
         }
 
-        [Theory(Skip = "TODO: Some of these are currently failing")]
+        [Theory]
         [InlineData("\"my custom description\"", 1)]
         [InlineData("user.description:\"my custom description\"", 1)]
         public void GetByUserDescription(string filter, int count) {
