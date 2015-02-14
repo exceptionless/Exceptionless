@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Repositories {
             return String.Concat(projectId, "-", signatureHash, "-", STACKING_VERSION);
         }
 
-        public void IncrementEventCounter(string organizationId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
+        public void IncrementEventCounter(string organizationId, string projectId, string stackId, DateTime minOccurrenceDateUtc, DateTime maxOccurrenceDateUtc, int count, bool sendNotifications = true) {
             // If total occurrences are zero (stack data was reset), then set first occurrence date
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = _elasticClient.Update<Stack>(s => s
@@ -85,6 +85,7 @@ namespace Exceptionless.Core.Repositories {
                     ChangeType = ChangeType.Saved,
                     Id = stackId,
                     OrganizationId = organizationId,
+                    ProjectId = projectId,
                     Type = _entityType
                 }, TimeSpan.FromSeconds(1.5));
             }
