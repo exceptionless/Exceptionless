@@ -2,11 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Storage;
 using Exceptionless.Json;
+using Foundatio.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using NLog.Fluent;
-using FileInfo = Exceptionless.Core.Storage.FileInfo;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
@@ -71,13 +70,13 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
-        public static void DeleteFiles(this IFileStorage storage, IEnumerable<FileInfo> files) {
+        public static void DeleteFiles(this IFileStorage storage, IEnumerable<FileSpec> files) {
             foreach (var file in files)
                 storage.DeleteFile(file.Path);
         }
 
-        public static FileInfo ToFileInfo(this CloudBlockBlob blob) {
-            return new FileInfo {
+        public static FileSpec ToFileInfo(this CloudBlockBlob blob) {
+            return new FileSpec {
                 Path = blob.Name,
                 Size = blob.Properties.Length,
                 Modified = blob.Properties.LastModified.HasValue ? blob.Properties.LastModified.Value.UtcDateTime : DateTime.MinValue,

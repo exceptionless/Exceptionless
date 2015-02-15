@@ -3,17 +3,19 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Queues.Models;
+using Foundatio.Jobs;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using NLog.Fluent;
-using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Jobs {
     public class MailMessageJob : JobBase {
         private readonly IQueue<MailMessage> _queue;
         private readonly IMailSender _mailSender;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IAppStatsClient statsClient) {
+        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IMetricsClient statsClient) {
             _queue = queue;
             _mailSender = mailSender;
             _statsClient = statsClient;
@@ -33,16 +35,16 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
             
-            _statsClient.Counter(StatNames.EmailsDequeued);
+            _statsClient.Counter(MetricNames.EmailsDequeued);
             
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
                 
             try {
                 await _mailSender.SendAsync(queueEntry.Value);
                 Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
-                _statsClient.Counter(StatNames.EmailsSent);
+                _statsClient.Counter(MetricNames.EmailsSent);
             } catch (Exception ex) {
-                _statsClient.Counter(StatNames.EmailsSendErrors);
+                _statsClient.Counter(MetricNames.EmailsSendErrors);
                 queueEntry.Abandon();
 
                 Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();

@@ -4,20 +4,22 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
 using Exceptionless.Models.Data;
+using Foundatio.Jobs;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
     public class EventUserDescriptionsJob : JobBase {
         private readonly IQueue<EventUserDescription> _queue;
         private readonly IEventRepository _eventRepository;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IAppStatsClient statsClient) {
+        public EventUserDescriptionsJob(IQueue<EventUserDescription> queue, IEventRepository eventRepository, IMetricsClient statsClient) {
             _queue = queue;
             _eventRepository = eventRepository;
             _statsClient = statsClient;
@@ -36,20 +38,20 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
                 
-            _statsClient.Counter(StatNames.EventsUserDescriptionDequeued);
+            _statsClient.Counter(MetricNames.EventsUserDescriptionDequeued);
             Log.Trace().Message("Processing user description: id={0}", queueEntry.Id).Write();
 
             try {
                 ProcessUserDescription(queueEntry.Value);
                 Log.Info().Message("Processed user description: id={0}", queueEntry.Id).Write();
-                _statsClient.Counter(StatNames.EventsUserDescriptionProcessed);
+                _statsClient.Counter(MetricNames.EventsUserDescriptionProcessed);
             } catch (DocumentNotFoundException ex){
-                _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
+                _statsClient.Counter(MetricNames.EventsUserDescriptionErrors);
                 queueEntry.Abandon();
                 Log.Error().Exception(ex).Message("An event with this reference id \"{0}\" has not been processed yet or was deleted. Queue Id: {1}", ex.Id, queueEntry.Id).Write();
                 return JobResult.FromException(ex);
             } catch (Exception ex) {
-                _statsClient.Counter(StatNames.EventsUserDescriptionErrors);
+                _statsClient.Counter(MetricNames.EventsUserDescriptionErrors);
                 queueEntry.Abandon();
 
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventUserDescription '{0}': {1}", queueEntry.Id, ex.Message).Write();

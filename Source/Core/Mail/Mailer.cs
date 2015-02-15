@@ -16,9 +16,10 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Plugins.Formatting;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Models;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using RazorSharpEmail;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
@@ -27,9 +28,9 @@ namespace Exceptionless.Core.Mail {
         private readonly IEmailGenerator _emailGenerator;
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IAppStatsClient statsClient) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient statsClient) {
             _emailGenerator = emailGenerator;
             _queue = queue;
             _pluginManager = pluginManager;
@@ -110,7 +111,7 @@ namespace Exceptionless.Core.Mail {
             CleanAddresses(message);
 
             _queue.Enqueue(message.ToMailMessage());
-            _statsClient.Counter(StatNames.EmailsQueued);
+            _statsClient.Counter(MetricNames.EmailsQueued);
         }
 
         private static void CleanAddresses(System.Net.Mail.MailMessage msg) {

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Tests.Utility;
+using Foundatio.Caching;
 using Nest;
 using Xunit;
 

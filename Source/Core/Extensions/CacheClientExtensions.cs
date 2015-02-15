@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Core.Caching;
+using Foundatio.Caching;
 
 namespace Exceptionless.Extensions {
     public static class CacheClientExtensions {

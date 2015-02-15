@@ -13,9 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
+using Foundatio.Caching;
 using MongoDB.Bson;
 using Nest;
 using NLog.Fluent;
@@ -203,7 +203,7 @@ namespace Exceptionless.Core.Repositories {
                 if (Mapper.FindTypeMapFor<T, TModel>() == null)
                     Mapper.CreateMap<T, TModel>();
 
-                result = items.Select(Mapper.Map<T, TModel>).ToList();
+                result = Enumerable.ToList(items.Select(Mapper.Map<T, TModel>));
             } else {
                 result = items as List<TModel>;
             }

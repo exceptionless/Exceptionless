@@ -5,13 +5,14 @@ using System.Threading;
 using CommandLine;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Utility;
 using Exceptionless.EventMigration;
+using Foundatio.Jobs;
+using Foundatio.Queues;
+using Foundatio.Redis.Queues;
+using NLog.Fluent;
 using SimpleInjector;
 using StackExchange.Redis;
-using NLog.Fluent;
 using _NLog = NLog;
 
 namespace Exceptionless.JobRunner {

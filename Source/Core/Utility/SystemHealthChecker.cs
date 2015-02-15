@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Threading.Tasks;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Migrations;
-using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
 using MongoDB.Driver;
 using Nest;
 

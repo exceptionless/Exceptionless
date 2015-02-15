@@ -7,20 +7,21 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Api.Utility;
-using Exceptionless.Core.Filter;
-using Exceptionless.Core.Storage;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using FluentValidation;
+using Foundatio.Metrics;
+using Foundatio.Queues;
+using Foundatio.Storage;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -31,7 +32,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
@@ -42,7 +43,7 @@ namespace Exceptionless.Api.Controllers {
             IStackRepository stackRepository,
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
-            IAppStatsClient statsClient,
+            IMetricsClient statsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage) : base(repository) {
@@ -188,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
         //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
-            _statsClient.Counter(StatNames.EventsUserDescriptionSubmitted);
+            _statsClient.Counter(MetricNames.EventsUserDescriptionSubmitted);
             
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -216,7 +217,7 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ReferenceId = referenceId;
 
             _eventUserDescriptionQueue.Enqueue(eventUserDescription);
-            _statsClient.Counter(StatNames.EventsUserDescriptionQueued);
+            _statsClient.Counter(MetricNames.EventsUserDescriptionQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
         }
@@ -250,7 +251,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
-            _statsClient.Counter(StatNames.PostsSubmitted);
+            _statsClient.Counter(MetricNames.PostsSubmitted);
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
 
@@ -278,7 +279,7 @@ namespace Exceptionless.Api.Controllers {
                 Data = data,
                 ContentEncoding = contentEncoding
             }, _storage);
-            _statsClient.Counter(StatNames.PostsQueued);
+            _statsClient.Counter(MetricNames.PostsQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
         }

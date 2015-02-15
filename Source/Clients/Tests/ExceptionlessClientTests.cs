@@ -12,6 +12,8 @@ using Exceptionless.Core.Utility;
 using Exceptionless.Dependency;
 using Exceptionless.Models;
 using Exceptionless.Storage;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using Microsoft.Owin.Hosting;
 using SimpleInjector;
 using Xunit;
@@ -36,7 +38,7 @@ namespace Client.Tests {
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());
                 
-                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                var statsCounter = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(statsCounter);
                 
                 EnsureSampleData(container);
@@ -48,14 +50,14 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
 
-                Assert.True(statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue));
+                Assert.True(statsCounter.WaitForCounter(MetricNames.EventsProcessed, work: client.ProcessQueue));
 
                 Assert.Equal(0, queue.GetQueueCount());
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsSubmitted));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsQueued));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsParsed));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsDequeued));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.EventsProcessed));
             }
         }
 
@@ -67,7 +69,7 @@ namespace Client.Tests {
                 Assert.NotNull(queue);
                 Assert.Equal(0, queue.GetQueueCount());
 
-                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                var statsCounter = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(statsCounter);
 
                 EnsureSampleData(container);
@@ -86,14 +88,14 @@ namespace Client.Tests {
                 Assert.NotNull(storage);
                 Assert.Equal(1, storage.GetFileList().Count());
                 
-                Assert.True(statsCounter.WaitForCounter(StatNames.EventsProcessed, work: client.ProcessQueue));
+                Assert.True(statsCounter.WaitForCounter(MetricNames.EventsProcessed, work: client.ProcessQueue));
 
                 Assert.Equal(0, queue.GetQueueCount());
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsSubmitted));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsQueued));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsParsed));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.PostsDequeued));
-                Assert.Equal(1, statsCounter.GetCount(StatNames.EventsProcessed));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsSubmitted));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsQueued));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsParsed));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.PostsDequeued));
+                Assert.Equal(1, statsCounter.GetCount(MetricNames.EventsProcessed));
             }
         }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Caching;
 using Exceptionless.Models;
+using Foundatio.Caching;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(50)]

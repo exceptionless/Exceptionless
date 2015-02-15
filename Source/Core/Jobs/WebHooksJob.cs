@@ -3,11 +3,12 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Foundatio.Jobs;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using Newtonsoft.Json;
 using NLog.Fluent;
 
@@ -15,9 +16,9 @@ namespace Exceptionless.Core.Jobs {
     public class WebHooksJob : JobBase {
         private readonly IQueue<WebHookNotification> _queue;
         private readonly IWebHookRepository _webHookRepository;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public WebHooksJob(IQueue<WebHookNotification> queue, IAppStatsClient statsClient, IWebHookRepository webHookRepository) {
+        public WebHooksJob(IQueue<WebHookNotification> queue, IMetricsClient statsClient, IWebHookRepository webHookRepository) {
             _queue = queue;
             _webHookRepository = webHookRepository;
             _statsClient = statsClient;

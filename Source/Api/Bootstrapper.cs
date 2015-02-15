@@ -13,7 +13,7 @@ using System;
 using Exceptionless.Api.Hubs;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
-using Exceptionless.Core.Caching;
+using Foundatio.Caching;
 using Microsoft.AspNet.SignalR;
 using SimpleInjector;
 using SimpleInjector.Packaging;

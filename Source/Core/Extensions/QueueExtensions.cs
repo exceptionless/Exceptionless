@@ -1,8 +1,8 @@
 ﻿using System;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues;
-using Exceptionless.Core.Storage;
+using Foundatio.Queues;
 using NLog.Fluent;
+using Foundatio.Storage;
 
 namespace Exceptionless.Core.Extensions {
     public static class QueueExtensions {

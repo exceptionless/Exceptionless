@@ -3,11 +3,11 @@ using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
+using Foundatio.Caching;
+using Foundatio.Jobs;
 using MongoDB.Driver;
 using NLog.Fluent;
 

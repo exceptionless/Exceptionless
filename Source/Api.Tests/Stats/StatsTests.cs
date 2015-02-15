@@ -8,6 +8,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Tests.Utility;
+using Foundatio.Metrics;
 using Nest;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly EventStats _stats = IoC.GetInstance<EventStats>();
-        private readonly InMemoryAppStatsClient _statsClient = IoC.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+        private readonly InMemoryMetricsClient _statsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Utility;
+using Foundatio.Caching;
 using MaxMind.Db;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;

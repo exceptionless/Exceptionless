@@ -1,5 +1,4 @@
 ﻿using System;
-using Exceptionless.Api.Tests.Messaging;
 using Exceptionless.Api.Utility;
 using Xunit;
 
@@ -25,5 +24,11 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
 
             Assert.Equal(delta.Data, msg.Data);
         }
+
+        public class SimpleMessageB {
+            public string Data { get; set; }
+        }
+
+        public class SimpleMessageA {}
     }
 }

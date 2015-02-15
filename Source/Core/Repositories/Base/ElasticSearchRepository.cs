@@ -13,12 +13,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Elasticsearch.Net;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
 using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using Nest;
 using NLog.Fluent;
 

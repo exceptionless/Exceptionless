@@ -11,7 +11,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -28,14 +27,15 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues;
 using Exceptionless.Helpers;
 using Exceptionless.Models;
 using Exceptionless.Serializer;
 using Exceptionless.Tests.Utility;
+using Foundatio.Messaging;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 using Microsoft.Owin;
 using Xunit;
 
@@ -57,10 +57,10 @@ namespace Exceptionless.Api.Tests.Controllers {
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
 
-                var statsCounter = IoC.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                var statsCounter = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 Assert.NotNull(statsCounter);
                 
-                Assert.True(statsCounter.WaitForCounter(StatNames.PostsQueued, work: () => {
+                Assert.True(statsCounter.WaitForCounter(MetricNames.PostsQueued, work: () => {
                     var actionResult = _eventController.Post(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));

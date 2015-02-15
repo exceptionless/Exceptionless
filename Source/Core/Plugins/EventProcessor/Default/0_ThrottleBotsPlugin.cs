@@ -1,22 +1,23 @@
 ﻿using System;
 using System.Threading.Tasks;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Caching;
+using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
+using Foundatio.Caching;
+using Foundatio.Metrics;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(0)]
     public class ThrottleBotsPlugin : EventProcessorPluginBase {
         private readonly ICacheClient _cacheClient;
-        private readonly IAppStatsClient _stats;
+        private readonly IMetricsClient _stats;
         private readonly IEventRepository _eventRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly TimeSpan _throttlingPeriod = TimeSpan.FromMinutes(5);
 
-        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository, IProjectRepository projectRepository, IAppStatsClient stats) {
+        public ThrottleBotsPlugin(ICacheClient cacheClient, IEventRepository eventRepository, IProjectRepository projectRepository, IMetricsClient stats) {
             _cacheClient = cacheClient;
             _stats = stats;
             _eventRepository = eventRepository;
@@ -49,7 +50,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
 
-            _stats.Counter(StatNames.EventsBotThrottleTriggered);
+            _stats.Counter(MetricNames.EventsBotThrottleTriggered);
             Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
             Task.Run(() => _eventRepository.HideAllByClientIpAndDateAsync(context.Event.OrganizationId, ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));

@@ -5,16 +5,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Core.Queues;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Storage;
 using Exceptionless.Json;
 using Exceptionless.Models;
 using FluentValidation;
+using Foundatio.Jobs;
+using Foundatio.Metrics;
+using Foundatio.Queues;
+using Foundatio.Storage;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {
@@ -22,12 +24,12 @@ namespace Exceptionless.Core.Jobs {
         private readonly IQueue<EventPost> _queue;
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IAppStatsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
             _queue = queue;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
@@ -68,7 +70,7 @@ namespace Exceptionless.Core.Jobs {
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            _statsClient.Counter(StatNames.PostsDequeued);
+            _statsClient.Counter(MetricNames.PostsDequeued);
             Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
@@ -76,11 +78,11 @@ namespace Exceptionless.Core.Jobs {
                 _statsClient.Time(() => {
                     events = ParseEventPost(eventPostInfo);
                     Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
-                }, StatNames.PostsParsingTime);
-                _statsClient.Counter(StatNames.PostsParsed);
-                _statsClient.Gauge(StatNames.PostsEventCount, events.Count);
+                }, MetricNames.PostsParsingTime);
+                _statsClient.Counter(MetricNames.PostsParsed);
+                _statsClient.Gauge(MetricNames.PostsEventCount, events.Count);
             } catch (Exception ex) {
-                _statsClient.Counter(StatNames.PostsParseErrors);
+                _statsClient.Counter(MetricNames.PostsParseErrors);
                 queueEntry.Abandon();
                 _storage.SetNotActive(queueEntry.Value.FilePath);
 

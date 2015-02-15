@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {

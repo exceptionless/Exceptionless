@@ -8,18 +8,18 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
+using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
+using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Api.Utility;
-using Exceptionless.Core.Messaging;
-using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Foundatio.Messaging;
 using NLog.Fluent;
 using Stripe;
 
@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = _repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            var organizations = Enumerable.ToList(_repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>));
             return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -65,7 +65,7 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = _repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            var organizations = Enumerable.ToList(_repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>));
             return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore, page);
         }
 

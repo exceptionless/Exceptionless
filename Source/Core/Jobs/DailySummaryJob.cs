@@ -16,7 +16,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Lock;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
@@ -24,6 +23,8 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
+using Foundatio.Jobs;
+using Foundatio.Lock;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {

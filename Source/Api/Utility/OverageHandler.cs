@@ -17,18 +17,19 @@ using System.Threading.Tasks;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Extensions;
+using Foundatio.Caching;
+using Foundatio.Metrics;
 using NLog.Fluent;
 
 namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ICacheClient _cacheClient;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IAppStatsClient statsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMetricsClient statsClient) {
             _organizationRepository = organizationRepository;
             _cacheClient = cacheClient;
             _statsClient = statsClient;
@@ -56,10 +57,10 @@ namespace Exceptionless.Api.Utility {
             bool tooBig = false;
             if (request.Content != null && request.Content.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
-                _statsClient.Gauge(StatNames.PostsSize, size);
+                _statsClient.Gauge(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
                     Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
-                    _statsClient.Counter(StatNames.PostsDiscarded);
+                    _statsClient.Counter(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
             }
@@ -71,7 +72,7 @@ namespace Exceptionless.Api.Utility {
                 return CreateResponse(request, HttpStatusCode.Accepted, "Event submission discarded for being too large.");
 
             if (overLimit) {
-                _statsClient.Counter(StatNames.PostsBlocked);
+                _statsClient.Counter(MetricNames.PostsBlocked);
                 return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
             }
 

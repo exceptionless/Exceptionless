@@ -12,9 +12,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Core.Caching;
 using Exceptionless.Extensions;
 using Exceptionless.Models;
+using Foundatio.Caching;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.IdGenerators;

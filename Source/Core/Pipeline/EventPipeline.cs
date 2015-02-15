@@ -19,14 +19,15 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Exceptionless.Core.Helpers;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
     public class EventPipeline : PipelineBase<EventContext, EventPipelineActionBase> {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
-        private readonly IAppStatsClient _statsClient;
+        private readonly IMetricsClient _statsClient;
 
-        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IAppStatsClient statsClient) : base(dependencyResolver) {
+        public EventPipeline(IDependencyResolver dependencyResolver, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IMetricsClient statsClient) : base(dependencyResolver) {
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _statsClient = statsClient;
@@ -44,7 +45,7 @@ namespace Exceptionless.Core.Pipeline {
             if (contexts == null || contexts.Count == 0)
                 return contexts ?? new List<EventContext>();
 
-            _statsClient.Counter(StatNames.EventsSubmitted, contexts.Count);
+            _statsClient.Counter(MetricNames.EventsSubmitted, contexts.Count);
             try {
                 if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                     throw new ArgumentException("All Event Ids should not be populated.");
@@ -79,18 +80,18 @@ namespace Exceptionless.Core.Pipeline {
                 foreach (var key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                _statsClient.Time(() => base.Run(contexts), StatNames.EventsProcessingTime);
+                _statsClient.Time(() => base.Run(contexts), MetricNames.EventsProcessingTime);
 
                 var cancelled = contexts.Count(c => c.IsCancelled);
                 if (cancelled > 0)
-                    _statsClient.Counter(StatNames.EventsProcessCancelled, cancelled);
+                    _statsClient.Counter(MetricNames.EventsProcessCancelled, cancelled);
 
                 // TODO: Log the errors out to the events proejct id.
                 var errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
-                    _statsClient.Counter(StatNames.EventsProcessErrors, errors);
+                    _statsClient.Counter(MetricNames.EventsProcessErrors, errors);
             } catch (Exception) {
-                _statsClient.Counter(StatNames.EventsProcessErrors, contexts.Count);
+                _statsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
                 throw;
             }
 

@@ -23,13 +23,13 @@ using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Stats;
+using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Api.Controllers {

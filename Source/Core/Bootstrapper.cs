@@ -14,26 +14,31 @@ using System.Configuration;
 using System.Linq;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
-using Exceptionless.Core.Caching;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Geo;
-using Exceptionless.Core.Lock;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Storage;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Data;
 using FluentValidation;
+using Foundatio.AppStats;
+using Foundatio.Caching;
+using Foundatio.Lock;
+using Foundatio.Messaging;
+using Foundatio.Metrics;
+using Foundatio.Queues;
+using Foundatio.Redis.Cache;
+using Foundatio.Redis.Messaging;
+using Foundatio.Redis.Queues;
+using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
 using RazorSharpEmail;
@@ -48,9 +53,9 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
             if (Settings.Current.EnableAppStats)
-                container.RegisterSingle<IAppStatsClient>(() => new AppStatsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
+                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
             else
-                container.RegisterSingle<IAppStatsClient, InMemoryAppStatsClient>();
+                container.RegisterSingle<IMetricsClient, InMemoryMetricsClient>();
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
@@ -74,30 +79,28 @@ namespace Exceptionless.Core {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
                 container.RegisterSingle(muxer);
 
-                container.RegisterSingle<ICacheClient, HybridCacheClient>();
+                container.RegisterSingle<ICacheClient, RedisHybridCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: StatNames.EmailsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: MetricNames.PostsQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: MetricNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: MetricNames.EventNotificationQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: MetricNames.WebHookQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: MetricNames.EmailsQueueSize, stats: container.GetInstance<IMetricsClient>()));
 
-                container.RegisterSingle<RedisMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
-                container.Register<IMessagePublisher>(container.GetInstance<RedisMessageBus>);
-                container.Register<IMessageSubscriber>(container.GetInstance<RedisMessageBus>);
+                container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
             } else {
                 container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: StatNames.PostsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: StatNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: StatNames.EventNotificationQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: StatNames.WebHookQueueSize, stats: container.GetInstance<IAppStatsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: StatNames.EmailsQueueSize, stats: container.GetInstance<IAppStatsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: MetricNames.EventNotificationQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, stats: container.GetInstance<IMetricsClient>()));
 
-                container.RegisterSingle<InMemoryMessageBus>();
-                container.Register<IMessagePublisher>(container.GetInstance<InMemoryMessageBus>);
-                container.Register<IMessageSubscriber>(container.GetInstance<InMemoryMessageBus>);
+                container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
             }
+            container.RegisterSingle<IMessagePublisher>(container.GetInstance<IMessageBus>);
+            container.RegisterSingle<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));

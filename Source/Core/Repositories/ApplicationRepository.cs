@@ -1,8 +1,8 @@
 ﻿using System;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Models.Admin;
 using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using MongoDB.Driver;
 
 namespace Exceptionless.Core.Repositories {

@@ -13,9 +13,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
+using Foundatio.Messaging;
 using MongoDB.Bson;
 using Nest;
 

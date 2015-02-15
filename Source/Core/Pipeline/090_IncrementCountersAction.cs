@@ -13,22 +13,23 @@ using System;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Plugins.EventProcessor;
+using Foundatio.Metrics;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
     public class IncrementCountersAction : EventPipelineActionBase {
-        private readonly IAppStatsClient _stats;
+        private readonly IMetricsClient _stats;
 
-        public IncrementCountersAction(IAppStatsClient stats) {
+        public IncrementCountersAction(IMetricsClient stats) {
             _stats = stats;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
         public override void Process(EventContext ctx) {
-            _stats.Counter(StatNames.EventsProcessed);
+            _stats.Counter(MetricNames.EventsProcessed);
             if (ctx.Organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(StatNames.EventsPaidProcessed);
+                _stats.Counter(MetricNames.EventsPaidProcessed);
         }
     }
 }

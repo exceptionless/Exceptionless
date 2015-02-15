@@ -14,9 +14,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Lock;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
+using Foundatio.Jobs;
+using Foundatio.Lock;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {

@@ -13,12 +13,11 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Models;
+using Foundatio.Messaging;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
-using NLog.Fluent;
 
 namespace Exceptionless.Api.Hubs {
     [HubName("messages")]

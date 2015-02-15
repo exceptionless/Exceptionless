@@ -12,10 +12,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Core.Caching;
-using Exceptionless.Core.Messaging;
 using Exceptionless.Models;
 using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Messaging;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;

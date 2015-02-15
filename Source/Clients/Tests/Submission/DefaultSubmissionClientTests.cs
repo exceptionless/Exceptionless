@@ -29,8 +29,9 @@ using Microsoft.Owin.Hosting;
 using Nest;
 using SimpleInjector;
 using Xunit;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Queues.Models;
+using Foundatio.Metrics;
+using Foundatio.Queues;
 
 namespace Client.Tests.Submission {
     public class DefaultSubmissionClientTests {
@@ -70,7 +71,7 @@ namespace Client.Tests.Submission {
                 const string referenceId = "fda94ff32921425ebb08b73df1d1d34c";
                 const string badReferenceId = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
 
-                var statsCounter = container.GetInstance<IAppStatsClient>() as InMemoryAppStatsClient;
+                var statsCounter = container.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
                 var descQueue = container.GetInstance<IQueue<EventUserDescription>>() as InMemoryQueue<EventUserDescription>;
 
                 Assert.NotNull(statsCounter);
@@ -85,7 +86,7 @@ namespace Client.Tests.Submission {
                 var description = new UserDescription { EmailAddress = "test@noreply.com", Description = "Some description." };
                 Debug.WriteLine("Before Submit Description");
                 statsCounter.DisplayStats();
-                Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
+                Assert.True(statsCounter.WaitForCounter(MetricNames.EventsUserDescriptionErrors, work: () => {
                     var response = client.PostUserDescription(referenceId, description, configuration, serializer);
                     Debug.WriteLine("After Submit Description");
                     Assert.True(response.Success, response.Message);
@@ -95,15 +96,15 @@ namespace Client.Tests.Submission {
                 Debug.WriteLine(descQueue.GetQueueCount());
 
                 Debug.WriteLine("Before Post Event");
-                Assert.True(statsCounter.WaitForCounter(StatNames.EventsProcessed, work: () => {
+                Assert.True(statsCounter.WaitForCounter(MetricNames.EventsProcessed, work: () => {
                     var response = client.PostEvents(events, configuration, serializer);
                     Debug.WriteLine("After Post Event");
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 }));
                 statsCounter.DisplayStats();
-                if (statsCounter.GetCount(StatNames.EventsUserDescriptionProcessed) == 0)
-                    Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionProcessed));
+                if (statsCounter.GetCount(MetricNames.EventsUserDescriptionProcessed) == 0)
+                    Assert.True(statsCounter.WaitForCounter(MetricNames.EventsUserDescriptionProcessed));
 
                 container.GetInstance<IElasticClient>().Refresh();
                 var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
@@ -111,15 +112,15 @@ namespace Client.Tests.Submission {
                 Assert.NotNull(ev.GetUserDescription());
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());
 
-                Assert.InRange(statsCounter.GetCount(StatNames.EventsUserDescriptionErrors), 1, 5);
-                Assert.True(statsCounter.WaitForCounter(StatNames.EventsUserDescriptionErrors, work: () => {
+                Assert.InRange(statsCounter.GetCount(MetricNames.EventsUserDescriptionErrors), 1, 5);
+                Assert.True(statsCounter.WaitForCounter(MetricNames.EventsUserDescriptionErrors, work: () => {
                     var response = client.PostUserDescription(badReferenceId, description, configuration, serializer);
                     Assert.True(response.Success, response.Message);
                     Assert.Null(response.Message);
                 }));
                 statsCounter.DisplayStats();
 
-                Assert.InRange(statsCounter.GetCount(StatNames.EventsUserDescriptionErrors), 2, 10);
+                Assert.InRange(statsCounter.GetCount(MetricNames.EventsUserDescriptionErrors), 2, 10);
             }
         }
 
