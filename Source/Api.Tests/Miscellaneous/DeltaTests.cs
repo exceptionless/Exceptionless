@@ -25,10 +25,12 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
             Assert.Equal(delta.Data, msg.Data);
         }
 
-        public class SimpleMessageB {
+        public class SimpleMessageA {
             public string Data { get; set; }
         }
 
-        public class SimpleMessageA {}
+        public class SimpleMessageB {
+            public string Data { get; set; }
+        }
     }
 }
