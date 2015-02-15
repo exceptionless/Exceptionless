@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Caching {
@@ -17,7 +18,7 @@ namespace Exceptionless.Core.Caching {
             _memory = new ConcurrentDictionary<string, CacheEntry>();
 
             _cacheDisposedCancellationTokenSource = new CancellationTokenSource();
-            TaskHelper.RunPeriodic(DoMaintenanceWork, TimeSpan.FromSeconds(1), _cacheDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+            TaskHelper.RunPeriodic(DoMaintenanceWork, TimeSpan.FromSeconds(1), _cacheDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)).IgnoreExceptions();
         }
 
         public bool FlushOnDispose { get; set; }
@@ -328,7 +329,7 @@ namespace Exceptionless.Core.Caching {
             }
         }
 
-        private async Task DoMaintenanceWork() {
+        private Task DoMaintenanceWork() {
             var enumerator = _memory.GetEnumerator();
             try {
                 while (enumerator.MoveNext()) {
@@ -339,6 +340,8 @@ namespace Exceptionless.Core.Caching {
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error trying to remove expired items from cache.").Write();
             }
+
+            return TaskHelper.Completed();
         }
 
         private class CacheEntry {

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Messaging {
-    public class InMemoryMessageBus : MessageBusBase, IMessageSubscriber {
+    public class InMemoryMessageBus : MessageBusBase, IMessageBus {
         private readonly BlockingCollection<Subscriber> _subscribers = new BlockingCollection<Subscriber>();
 
         public override void Publish(Type messageType, object message, TimeSpan? delay = null) {

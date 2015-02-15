@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Component;
+using Exceptionless.Core.Extensions;
 
 namespace Exceptionless.Core.Messaging {
     public abstract class MessageBusBase : IMessagePublisher, IDisposable {
@@ -12,7 +13,7 @@ namespace Exceptionless.Core.Messaging {
 
         public MessageBusBase() {
             _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-            TaskHelper.RunPeriodic(DoMaintenance, TimeSpan.FromMilliseconds(500), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+            TaskHelper.RunPeriodic(DoMaintenance, TimeSpan.FromMilliseconds(500), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)).IgnoreExceptions();
         }
 
         private async Task DoMaintenance() {

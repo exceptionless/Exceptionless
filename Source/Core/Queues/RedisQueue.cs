@@ -69,7 +69,7 @@ namespace Exceptionless.Core.Queues {
 
             if (runMaintenanceTasks) {
                 _queueDisposedCancellationTokenSource = new CancellationTokenSource();
-                TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout.Min(TimeSpan.FromMinutes(1)) : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100));
+                TaskHelper.RunPeriodic(DoMaintenanceWork, _workItemTimeout > TimeSpan.FromSeconds(1) ? _workItemTimeout.Min(TimeSpan.FromMinutes(1)) : TimeSpan.FromSeconds(1), _queueDisposedCancellationTokenSource.Token, TimeSpan.FromMilliseconds(100)).IgnoreExceptions();
             }
 
             Log.Trace().Message("Queue {0} created. Retries: {1} Retry Delay: {2}", QueueId, _retries, _retryDelay.ToString()).Write();
@@ -194,7 +194,7 @@ namespace Exceptionless.Core.Queues {
                 Log.Trace().Message("Waiting to dequeue item...").Write();
 
                 // wait for timeout or signal or dispose
-                Task.WaitAny(Task.Delay(timeout.Value), _autoEvent.WaitAsync(_queueDisposedCancellationTokenSource.Token));
+                Task.WaitAny(Task.Delay(timeout.Value).IgnoreExceptions(), _autoEvent.WaitAsync(_queueDisposedCancellationTokenSource.Token).IgnoreExceptions());
                 if (_queueDisposedCancellationTokenSource.IsCancellationRequested)
                     return null;
 

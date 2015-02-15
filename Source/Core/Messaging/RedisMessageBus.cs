@@ -6,7 +6,7 @@ using NLog.Fluent;
 using StackExchange.Redis;
 
 namespace Exceptionless.Core.Messaging {
-    public class RedisMessageBus : MessageBusBase, IMessageSubscriber {
+    public class RedisMessageBus : MessageBusBase, IMessageBus {
         private readonly ISubscriber _subscriber;
         private readonly BlockingCollection<Subscriber> _subscribers = new BlockingCollection<Subscriber>();
         private readonly string _topic;
