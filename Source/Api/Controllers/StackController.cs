@@ -499,7 +499,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private ICollection<StackSummaryModel> GetStackSummaries(IEnumerable<Stack> stacks, IEnumerable<TermStatsItem> terms) {
-            return terms.Join(stacks, tk => tk.Term, s => s.Id, (term, stack) => {
+            return stacks.Join(terms, s => s.Id, tk => tk.Term, (stack, term) => {
                 var data = _formattingPluginManager.GetStackSummaryData(stack);
                 var summary = new StackSummaryModel {
                     TemplateKey = data.TemplateKey,
