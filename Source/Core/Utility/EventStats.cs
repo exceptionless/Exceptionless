@@ -30,7 +30,7 @@ namespace Exceptionless.Core.Utility {
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
                 .WithIndicesFromDateRange();
-            _client.EnableTrace();
+            //_client.EnableTrace();
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Messaging;
+using NLog.Fluent;
 using StackExchange.Redis;
 
 namespace Exceptionless.Core.Caching {
@@ -30,12 +31,13 @@ namespace Exceptionless.Core.Caching {
             if (!String.IsNullOrEmpty(message.CacheId) && String.Equals(_cacheId, message.CacheId))
                 return;
 
+            Log.Trace().Message("Invalidating local cache from remote: id={0} keys={1}", message.CacheId, String.Join(",", message.Keys ?? new string[] {})).Write();
             if (message.FlushAll)
                 _localCache.FlushAll();
             else if (message.Keys != null && message.Keys.Length > 0)
                 _localCache.RemoveAll(message.Keys);
-            else 
-                Debug.Assert(false, "Unknown invalidate cache message");
+            else
+                Log.Warn().Message("Unknown invalidate cache message").Write();
         }
 
         public bool Remove(string key) {
@@ -62,8 +64,10 @@ namespace Exceptionless.Core.Caching {
 
         public T Get<T>(string key) {
             T value;
-            if (_localCache.TryGet(key, out value))
+            if (_localCache.TryGet(key, out value)) {
+                Log.Trace().Message("Local cache hit: {0}", key).Write();
                 return value;
+            }
 
             if (_redisCache.TryGet(key, out value)) {
                 var expiration = _redisCache.GetExpiration(key);
@@ -85,8 +89,10 @@ namespace Exceptionless.Core.Caching {
         }
 
         public bool TryGet<T>(string key, out T value) {
-            if (_localCache.TryGet(key, out value))
+            if (_localCache.TryGet(key, out value)) {
+                Log.Trace().Message("Local cache hit: {0}", key).Write();
                 return true;
+            }
 
             if (_redisCache.TryGet(key, out value)) {
                 _localCache.Set(key, value);

@@ -146,7 +146,7 @@ namespace Exceptionless.Core.Repositories {
 
             countDescriptor.Type(typeof(T));
 
-            _elasticClient.EnableTrace();
+            //_elasticClient.EnableTrace();
             var results = _elasticClient.Count<T>(countDescriptor);
             _elasticClient.DisableTrace();
             if (!results.IsValid)
@@ -189,9 +189,9 @@ namespace Exceptionless.Core.Repositories {
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
             
-            _elasticClient.EnableTrace();
+            //_elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
-            _elasticClient.DisableTrace();
+            //_elasticClient.DisableTrace();
             if (!results.IsValid)
                 throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
 
