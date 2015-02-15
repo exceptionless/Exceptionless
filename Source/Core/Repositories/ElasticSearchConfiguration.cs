@@ -100,6 +100,7 @@ namespace Exceptionless.Core.Repositories {
                         .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
+                        .Object<object>(f => f.Name("fields").Dynamic())
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version_index").SearchAnalyzer("version_search"))
                             .String(f2 => f2.Name(Event.KnownDataKeys.Level).IndexName("level").Index(FieldIndexOption.Analyzed))
@@ -122,6 +123,9 @@ namespace Exceptionless.Core.Repositories {
                             .Object<Error>(f2 => f2.Name(Event.KnownDataKeys.Error).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name("all_codes").IndexName("error.code").Index(FieldIndexOption.NotAnalyzed).Analyzer("whitespace").IncludeInAll().Boost(1.1))
                                 .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())
+                                .Object<DataDictionary>(f4 => f4.Name(e => e.Data).Path("just_name").Properties(p4 => p4
+                                    .Object<object>(f5 => f5.Name(Error.KnownDataKeys.TargetInfo).Path("just_name").Properties(p5 => p5
+                                        .String(f6 => f6.Name("Method").IndexName("error.method").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))))
                                 .String(f3 => f3.Name("all_types").IndexName("error.type").Index(FieldIndexOption.Analyzed).IndexAnalyzer("typename").SearchAnalyzer("whitespace_lower").IncludeInAll().Boost(1.1))))
                             .Object<SimpleError>(f2 => f2.Name(Event.KnownDataKeys.SimpleError).Path("just_name").Properties(p3 => p3
                                 .String(f3 => f3.Name("all_messages").IndexName("error.message").Index(FieldIndexOption.Analyzed).IncludeInAll())

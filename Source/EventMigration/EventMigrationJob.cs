@@ -137,7 +137,7 @@ namespace Exceptionless.EventMigration {
 
                     var targetInfo = new SettingsDictionary(signature.SignatureInfo);
                     if (stackingTarget != null && stackingTarget.Error != null && !targetInfo.ContainsKey("Message"))
-                        targetInfo["Message"] = error.GetStackingTarget().Error.Message;
+                        targetInfo["Message"] = stackingTarget.Error.Message;
 
                     error.Data[Error.KnownDataKeys.TargetInfo] = targetInfo;
                 });

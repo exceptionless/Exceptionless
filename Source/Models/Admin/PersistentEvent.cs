@@ -43,5 +43,10 @@ namespace Exceptionless.Models {
         /// The date that the event was created in the system.
         /// </summary>
         public DateTime CreatedUtc { get; set; }
+
+        /// <summary>
+        /// Used to store primitive data type custom fields for searching the event.
+        /// </summary>
+        public DataDictionary Fields { get; set; }
     }
 }

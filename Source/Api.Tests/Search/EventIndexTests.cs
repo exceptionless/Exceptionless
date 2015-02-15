@@ -325,6 +325,15 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
+        [InlineData("AssociateWithCurrentThread", 1)]
+        [InlineData("error.method:AssociateWithCurrentThread", 1)]
+        public void GetByErrorMethod(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
         [InlineData("NullReferenceException", 1)]
         [InlineData("System.NullReferenceException", 1)]
         [InlineData("error.type:NullReferenceException", 1)]
