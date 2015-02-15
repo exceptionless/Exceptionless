@@ -17,7 +17,7 @@ namespace Exceptionless.Serializer {
         private static IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
         private readonly char[] _filteredChars = { '.', '-', '_' };
 
-        public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
+        public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null, IEnumerable<string> ignoredProperties = null) {
             if (knownDataTypes != null)
                 _dataTypeRegistry.AddRange(knownDataTypes);
 
@@ -37,8 +37,6 @@ namespace Exceptionless.Serializer {
             var json = JObject.Load(reader);
 
             foreach (var p in json.Properties()) {
-                // TODO: Store the propertyName in a local cache so the ToLowerFiltered isn't running a ton.
-                // first set the native properties
                 string propertyName = p.Name.ToLowerFiltered(_filteredChars);
 
                 if (propertyName == "data" && p.Value is JObject) {

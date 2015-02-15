@@ -18,12 +18,14 @@ namespace Exceptionless.Core.Repositories {
                 .MapDefaultTypeNames(m => m.Add(typeof(PersistentEvent), "events").Add(typeof(Stack), "stacks"))
                 .MapDefaultTypeIndices(m => m.Add(typeof(Stack), ElasticSearchRepository<Stack>.StacksIndexName))
                 .MapDefaultTypeIndices(m => m.Add(typeof(PersistentEvent), ElasticSearchRepository<PersistentEvent>.EventsIndexName + "-*"))
-                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
+                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
+                .MaximumRetries(5)
+                .EnableMetrics();
 
-            settings.MaximumRetries(5).EnableMetrics().SetJsonSerializerSettingsModifier(s => {
-                s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
-                s.AddModelConverters();
-            });
+            settings.SetJsonSerializerSettingsModifier(s => {
+                    s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
+                    s.AddModelConverters();
+                });
 
             var client = new ElasticClient(settings, new KeepAliveHttpConnection(settings));
             ConfigureMapping(client, deleteExistingIndexes);
@@ -100,7 +102,7 @@ namespace Exceptionless.Core.Repositories {
                         .Boolean(f => f.Name(e => e.IsFirstOccurrence).IndexName("first"))
                         .Boolean(f => f.Name(e => e.IsFixed).IndexName("fixed"))
                         .Boolean(f => f.Name(e => e.IsHidden).IndexName("hidden"))
-                        .Object<object>(f => f.Name("fields").Dynamic())
+                        .Object<object>(f => f.Name("idx").Dynamic())
                         .Object<DataDictionary>(f => f.Name(e => e.Data).Path("just_name").Properties(p2 => p2
                             .String(f2 => f2.Name(Event.KnownDataKeys.Version).IndexName("version").Index(FieldIndexOption.Analyzed).IndexAnalyzer("version_index").SearchAnalyzer("version_search"))
                             .String(f2 => f2.Name(Event.KnownDataKeys.Level).IndexName("level").Index(FieldIndexOption.Analyzed))

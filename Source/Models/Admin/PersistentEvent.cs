@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace Exceptionless.Models {
     [DebuggerDisplay("{Id}, {Date}")]
     public class PersistentEvent : Event, IOwnedByOrganizationAndProjectAndStackWithIdentity {
+        public PersistentEvent() {
+            Idx = new DataDictionary();
+        }
+
         /// <summary>
         /// Unique id that identifies an event.
         /// </summary>
@@ -45,8 +50,8 @@ namespace Exceptionless.Models {
         public DateTime CreatedUtc { get; set; }
 
         /// <summary>
-        /// Used to store primitive data type custom fields for searching the event.
+        /// Used to store primitive data type custom data values for searching the event.
         /// </summary>
-        public DataDictionary Fields { get; set; }
+        public DataDictionary Idx { get; set; }
     }
 }

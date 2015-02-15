@@ -68,15 +68,15 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var timeInfo = GetTimeInfo(time, offset);
-            var validationResult = QueryValidator.Validate(filter);
-            if (!validationResult.IsValid)
-                return BadRequest(validationResult.Message);
+            var processResult = QueryProcessor.Process(filter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
 
-            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
+            var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
             return OkWithLinks(model,
-                GetEntityResourceLink(_repository.GetPreviousEventId(model, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
-                GetEntityResourceLink(_repository.GetNextEventId(model, systemFilter, filter, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
+                GetEntityResourceLink(_repository.GetPreviousEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
+                GetEntityResourceLink(_repository.GetNextEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),
                 GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
@@ -93,12 +93,12 @@ namespace Exceptionless.Api.Controllers {
             if (skip > MAXIMUM_SKIP)
                 return Ok(new object[0]);
 
-            var validationResult = QueryValidator.Validate(userFilter);
-            if (!validationResult.IsValid)
-                return BadRequest(validationResult.Message);
+            var processResult = QueryProcessor.Process(userFilter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             var sortBy = GetSort(sort);
             var timeInfo = GetTimeInfo(time, offset);
@@ -106,7 +106,7 @@ namespace Exceptionless.Api.Controllers {
 
             ICollection<PersistentEvent> events;
             try {
-                events = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
+                events = _repository.GetByFilter(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
                 ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");

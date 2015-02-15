@@ -146,7 +146,6 @@ namespace Exceptionless.Core.Jobs {
                         _queue.Enqueue(new EventPostInfo {
                             ApiVersion = eventPostInfo.ApiVersion,
                             CharSet = eventPostInfo.CharSet,
-                            ContentEncoding = "application/json",
                             Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventContext.Event)),
                             IpAddress = eventPostInfo.IpAddress,
                             MediaType = eventPostInfo.MediaType,

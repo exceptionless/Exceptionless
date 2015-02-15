@@ -43,16 +43,16 @@ namespace Exceptionless.Api.Controllers {
         public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             var timeInfo = GetTimeInfo(time, offset);
 
-            var validationResult = QueryValidator.Validate(userFilter);
-            if (!validationResult.IsValid)
-                return BadRequest(validationResult.Message);
+            var processResult = QueryProcessor.Process(userFilter);
+            if (!processResult.IsValid)
+                return BadRequest(processResult.Message);
 
             if (String.IsNullOrEmpty(systemFilter))
-                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
+                systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
 
             EventStatsResult result;
             try {
-                result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, userFilter, timeInfo.Offset);
+                result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
                 ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");

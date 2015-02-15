@@ -9,27 +9,30 @@ using Newtonsoft.Json;
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(0)]
     public class JsonEventParserPlugin : IEventParserPlugin {
+        private readonly JsonSerializerSettings _settings = new JsonSerializerSettings {
+                MissingMemberHandling = MissingMemberHandling.Ignore, 
+                ContractResolver = new ExceptionlessContractResolver()
+            };
+
+        public JsonEventParserPlugin() {
+            _settings.AddModelConverters();
+        }
+
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
             if (apiVersion < 2)
                 return null;
 
             var events = new List<PersistentEvent>();
-            var serializerSettings = new JsonSerializerSettings {
-                MissingMemberHandling = MissingMemberHandling.Ignore, 
-                ContractResolver = new ExceptionlessContractResolver()
-            };
-            serializerSettings.AddModelConverters();
-
             switch (input.GetJsonType()) {
                 case JsonType.Object: {
                     PersistentEvent ev;
-                    if (input.TryFromJson(out ev, serializerSettings))
+                    if (input.TryFromJson(out ev, _settings))
                         events.Add(ev);
                     break;
                 }
                 case JsonType.Array: {
                     PersistentEvent[] parsedEvents;
-                    if (input.TryFromJson(out parsedEvents, serializerSettings))
+                    if (input.TryFromJson(out parsedEvents, _settings))
                         events.AddRange(parsedEvents);
                     
                     break;

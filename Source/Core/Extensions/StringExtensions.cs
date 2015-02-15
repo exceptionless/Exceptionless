@@ -42,6 +42,23 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
+        public static bool IsNumeric(this string value) {
+            if (String.IsNullOrEmpty(value))
+                return false;
+
+            for (int i = 0; i < value.Length; i++) {
+                if (Char.IsNumber(value[i]))
+                    continue;
+
+                if (i == 0 && value[i] == '-')
+                    continue;
+
+                return false;
+            }
+
+            return true;
+        }
+
         public static string ToSaltedHash(this string password, string salt) {
             byte[] passwordBytes = Encoding.Unicode.GetBytes(password);
             byte[] saltBytes = Convert.FromBase64String(salt);

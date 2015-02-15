@@ -55,28 +55,28 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.LuceneQueryParser">
-      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.5\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.7\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=1.0.31.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.31\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.32\lib\net45\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Azure, Version=1.0.31.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.Azure, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Azure.1.0.31\lib\net45\Foundatio.Azure.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Azure.1.0.32\lib\net45\Foundatio.Azure.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=1.0.31.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.31\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.1.0.32\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.StatsD, Version=1.0.31.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.31\lib\net45\Foundatio.StatsD.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.StatsD.1.0.32\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
@@ -233,6 +233,7 @@
     <Compile Include="Authorization\GitHubWithPrivateEmailsClient.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
+    <Compile Include="Pipeline\035_MoveSimpleDataToFieldsAction.cs" />
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
@@ -273,7 +274,7 @@
     <Compile Include="Pipeline\Base\PriorityAttribute.cs" />
     <Compile Include="Plugins\EventProcessor\Default\50_DefaultSessionIdPlugin.cs" />
     <Compile Include="Plugins\Formatting\Default\60_LogFormattingPlugin.cs" />
-    <Compile Include="Filter\QueryValidationVisitor.cs" />
+    <Compile Include="Filter\QueryProcessorVisitor.cs" />
     <Compile Include="Repositories\Base\SortOrder.cs" />
     <Compile Include="Utility\EventStats.cs" />
     <Compile Include="Extensions\RequestInfoExtensions.cs" />

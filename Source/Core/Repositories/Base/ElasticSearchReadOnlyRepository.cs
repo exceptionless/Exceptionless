@@ -87,7 +87,9 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
-
+            else
+                searchDescriptor.Source(s => s.Exclude("idx"));
+            
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
                 searchDescriptor.Indices(elasticSearchOptions.Indices);
@@ -185,6 +187,8 @@ namespace Exceptionless.Core.Repositories {
             searchDescriptor.Type(typeof(T));
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
+            else
+                searchDescriptor.Source(s => s.Exclude("idx"));
             if (options.SortBy.Count > 0)
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
@@ -232,7 +236,7 @@ namespace Exceptionless.Core.Repositories {
             // try using the object id to figure out what index the entity is located in
             string index = GetIndexName(id);
             if (index != null)
-                result = _elasticClient.Get<T>(id, index).Source;
+                result = _elasticClient.Get<T>(f => f.Id(id).Index(index).SourceExclude("idx")).Source;
 
             // fallback to doing a find
             if (result == null)
@@ -264,7 +268,7 @@ namespace Exceptionless.Core.Repositories {
             foreach (var id in ids.Except(results.Select(i => i.Id))) {
                 string index = GetIndexName(id);
                 if (index != null)
-                    multiGet.Get<T>(f => f.Id(id).Index(index));
+                    multiGet.Get<T>(f => f.Id(id).Index(index).Source(s => s.Exclude("idx")));
                 else
                     itemsToFind.Add(id);
             }
