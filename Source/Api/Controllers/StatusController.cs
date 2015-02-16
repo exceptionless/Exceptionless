@@ -1,14 +1,30 @@
 ﻿using System;
 using System.Net;
 using System.Web.Http;
+using Exceptionless.Core.Authorization;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
+using Exceptionless.Models.Data;
+using Foundatio.Queues;
 
 namespace Exceptionless.Api.Controllers {
     public class StatusController : ExceptionlessApiController {
         private readonly SystemHealthChecker _healthChecker;
+        private readonly IQueue<EventPost> _eventQueue;
+        private readonly IQueue<MailMessage> _mailQueue;
+        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<WebHookNotification> _webHooksQueue;
+        private readonly IQueue<EventUserDescription> _userDescriptionQueue;
 
-        public StatusController(SystemHealthChecker healthChecker) {
+        public StatusController(SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue,
+            IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue) {
             _healthChecker = healthChecker;
+            _eventQueue = eventQueue;
+            _mailQueue = mailQueue;
+            _notificationQueue = notificationQueue;
+            _webHooksQueue = webHooksQueue;
+            _userDescriptionQueue = userDescriptionQueue;
         }
 
         [HttpGet]
@@ -21,6 +37,39 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new {
                 Message = "All Systems Check",
                 Version = ThisAssembly.AssemblyInformationalVersion
+            });
+        }
+
+        [HttpGet]
+        [Route(API_PREFIX + "/queue-stats")]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult QueueStats() {
+            return Ok(new {
+                EventPosts = new {
+                    Active = _eventQueue.GetQueueCount(),
+                    Deadletter = _eventQueue.GetDeadletterCount(),
+                    Working = _eventQueue.GetWorkingCount()
+                },
+                MailMessages = new {
+                    Active = _mailQueue.GetQueueCount(),
+                    Deadletter = _mailQueue.GetDeadletterCount(),
+                    Working = _mailQueue.GetWorkingCount()
+                },
+                UserDescriptions = new {
+                    Active = _userDescriptionQueue.GetQueueCount(),
+                    Deadletter = _userDescriptionQueue.GetDeadletterCount(),
+                    Working = _userDescriptionQueue.GetWorkingCount()
+                },
+                Notifications = new {
+                    Active = _notificationQueue.GetQueueCount(),
+                    Deadletter = _notificationQueue.GetDeadletterCount(),
+                    Working = _notificationQueue.GetWorkingCount()
+                },
+                WebHooks = new {
+                    Active = _webHooksQueue.GetQueueCount(),
+                    Deadletter = _webHooksQueue.GetDeadletterCount(),
+                    Working = _webHooksQueue.GetWorkingCount()
+                }
             });
         }
     }
