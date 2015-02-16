@@ -35,18 +35,25 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (!String.IsNullOrEmpty(request.UserAgent)) {
                 try {
                     var info = Parser.GetDefault().Parse(request.UserAgent);
-                    request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
-                    if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
-                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new [] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
-                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
+
+                    if (!String.Equals(info.UserAgent.Family, "Other")) {
+                        request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
+                        if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
+                            request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                            request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
+                        }
                     }
 
-                    request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
+                    if (!String.Equals(info.Device.Family, "Other"))
+                        request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
 
-                    request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
-                    if (!String.IsNullOrEmpty(info.OS.Major)) {
-                        request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new [] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
-                        request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
+
+                    if (!String.Equals(info.OS.Family, "Other")) {
+                        request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
+                        if (!String.IsNullOrEmpty(info.OS.Major)) {
+                            request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new[] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                            request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
+                        }
                     }
 
                     var botPatterns = context.Project.Configuration.Settings.ContainsKey(SettingsDictionary.KnownKeys.UserAgentBotPatterns)
