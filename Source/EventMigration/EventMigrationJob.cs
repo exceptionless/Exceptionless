@@ -109,7 +109,7 @@ namespace Exceptionless.EventMigration {
                                 var info = userAgentParser.Parse(request.UserAgent);
                                 request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
                                 if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
-                                    request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Format("{0}.{1}.{2}", info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch);
+                                    request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new [] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
                                     request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
                                 }
 
@@ -117,7 +117,7 @@ namespace Exceptionless.EventMigration {
 
                                 request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
                                 if (!String.IsNullOrEmpty(info.OS.Major)) {
-                                    request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Format("{0}.{1}.{2}", info.OS.Major, info.OS.Minor, info.OS.Patch);
+                                    request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new [] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
                                     request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
                                 }
 
