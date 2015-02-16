@@ -40,20 +40,27 @@ namespace Exceptionless.Extras {
         /// <param name="exception">The exception to populate properties from.</param>
         /// <param name="log">The log implementation used for diagnostic information.</param>
         public static Error ToErrorModel(this Exception exception, IExceptionlessLog log) {
+            return ToErrorModelInternal(exception, log);
+        }
+
+        private static Error ToErrorModelInternal(Exception exception, IExceptionlessLog log, bool isInner = false) {
             Type type = exception.GetType();
 
             var error = new Error {
                 Message = exception.GetMessage(),
-                Modules = GetLoadedModules(log),
                 Type = type.FullName
             };
+
+            if (!isInner)
+                error.Modules = GetLoadedModules(log);
+
             error.PopulateStackTrace(error, exception);
 
             try {
                 PropertyInfo info = type.GetProperty("HResult", BindingFlags.NonPublic | BindingFlags.Instance);
                 if (info != null)
                     error.Code = info.GetValue(exception, null).ToString();
-            } catch (Exception) {}
+            } catch (Exception) { }
 
             if (exception.TargetSite != null) {
                 error.TargetMethod = new Method();
@@ -64,7 +71,7 @@ namespace Exceptionless.Extras {
                 Dictionary<string, object> extraProperties = type.GetPublicProperties().Where(p => !_exceptionExclusions.Contains(p.Name)).ToDictionary(p => p.Name, p => {
                     try {
                         return p.GetValue(exception, null);
-                    } catch {}
+                    } catch { }
                     return null;
                 });
 
@@ -78,10 +85,10 @@ namespace Exceptionless.Extras {
                         MaxDepthToSerialize = 5
                     });
                 }
-            } catch {}
+            } catch { }
 
             if (exception.InnerException != null)
-                error.Inner = exception.InnerException.ToErrorModel(log);
+                error.Inner = ToErrorModelInternal(exception.InnerException, log, true);
 
             return error;
         }
