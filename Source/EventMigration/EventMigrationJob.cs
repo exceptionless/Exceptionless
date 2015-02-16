@@ -22,6 +22,7 @@ using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
+using UAParser;
 using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
@@ -56,6 +57,7 @@ namespace Exceptionless.EventMigration {
             var errorCollection = GetErrorCollection();
             var knownStackIds = new List<string>();
 
+            var userAgentParser = Parser.GetDefault();
             var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
             serializerSettings.AddModelConverters();
 
@@ -98,9 +100,41 @@ namespace Exceptionless.EventMigration {
                         knownStackIds.Add(e.StackId);
                     }
 
-                    var request = e.GetRequestInfo();   
-                    if (request != null)
-                        e.AddRequestInfo(request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH));
+                    var request = e.GetRequestInfo();
+                    if (request != null) {
+                        request = request.ApplyDataExclusions(RequestInfoPlugin.DefaultExclusions, RequestInfoPlugin.MAX_VALUE_LENGTH);
+
+                        if (!String.IsNullOrEmpty(request.UserAgent)) {
+                            try {
+                                var info = userAgentParser.Parse(request.UserAgent);
+                                if (!String.Equals(info.UserAgent.Family, "Other")) {
+                                    request.Data[RequestInfo.KnownDataKeys.Browser] = info.UserAgent.Family;
+                                    if (!String.IsNullOrEmpty(info.UserAgent.Major)) {
+                                        request.Data[RequestInfo.KnownDataKeys.BrowserVersion] = String.Join(".", new[] { info.UserAgent.Major, info.UserAgent.Minor, info.UserAgent.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                                        request.Data[RequestInfo.KnownDataKeys.BrowserMajorVersion] = info.UserAgent.Major;
+                                    }
+                                }
+
+                                if (!String.Equals(info.Device.Family, "Other"))
+                                    request.Data[RequestInfo.KnownDataKeys.Device] = info.Device.Family;
+
+
+                                if (!String.Equals(info.OS.Family, "Other")) {
+                                    request.Data[RequestInfo.KnownDataKeys.OS] = info.OS.Family;
+                                    if (!String.IsNullOrEmpty(info.OS.Major)) {
+                                        request.Data[RequestInfo.KnownDataKeys.OSVersion] = String.Join(".", new[] { info.OS.Major, info.OS.Minor, info.OS.Patch }.Where(v => !String.IsNullOrEmpty(v)));
+                                        request.Data[RequestInfo.KnownDataKeys.OSMajorVersion] = info.OS.Major;
+                                    }
+                                }
+
+                                request.Data[RequestInfo.KnownDataKeys.IsBot] = info.Device.IsSpider;
+                            } catch (Exception ex) {
+                                Log.Warn().Project(e.ProjectId).Message("Unable to parse user agent {0}. Exception: {1}", request.UserAgent, ex.Message).Write();
+                            }
+                        }
+
+                        e.AddRequestInfo(request);
+                    }
 
                     foreach (var ip in GetIpAddresses(e, request)) {
                         var location = _geoIpResolver.ResolveIp(ip);
