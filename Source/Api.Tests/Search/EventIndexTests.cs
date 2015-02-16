@@ -327,7 +327,6 @@ namespace Exceptionless.Api.Tests.Repositories {
         [Theory]
         [InlineData("AssociateWithCurrentThread", 1)]
         [InlineData("error.targetmethod:AssociateWithCurrentThread", 1)]
-        [InlineData("error.targetmethod.raw:AssociateWithCurrentThread", 1)]
         public void GetByErrorTargetMethod(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
