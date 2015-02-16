@@ -74,6 +74,7 @@ namespace Exceptionless.Core {
             });
 
             container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
+            container.Register<ExceptionlessClient>(() => ExceptionlessClient.Default);
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
