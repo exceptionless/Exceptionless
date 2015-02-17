@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Exceptionless.Dependency;
+using Exceptionless.Extensions;
 using Exceptionless.Extras.Utility;
 using Exceptionless.Storage;
-using FileInfo = Exceptionless.Storage.FileInfo;
 
 namespace Exceptionless.Extras.Storage {
-    public class FolderFileStorage : IFileStorage {
+    public class FolderObjectStorage : IObjectStorage {
         private readonly object _lockObject = new object();
+        private readonly IDependencyResolver _resolver;
 
-        public FolderFileStorage(string folder) {
+        public FolderObjectStorage(IDependencyResolver resolver, string folder) {
+            _resolver = resolver;
+
             folder = PathHelper.ExpandPath(folder);
 
             if (!Path.IsPathRooted(folder))
@@ -25,27 +29,32 @@ namespace Exceptionless.Extras.Storage {
 
         public string Folder { get; set; }
 
-        public string GetFileContents(string path) {
+        public T GetObject<T>(string path) where T : class {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
             try {
-                return File.ReadAllText(Path.Combine(Folder, path));
-            } catch (Exception) {
+                var json = File.ReadAllText(Path.Combine(Folder, path));
+                if (String.IsNullOrEmpty(json))
+                    return null;
+
+                var serializer = _resolver.GetJsonSerializer();
+                return serializer.Deserialize<T>(json);
+            } catch (Exception ex) {
+                _resolver.GetLog().Error(ex.Message, exception: ex);
                 return null;
             }
         }
 
-        public FileInfo GetFileInfo(string path) {
+        public ObjectInfo GetObjectInfo(string path) {
             var info = new System.IO.FileInfo(path);
             if (!info.Exists)
                 return null;
 
-            return new FileInfo {
+            return new ObjectInfo {
                 Path = path.Replace(Folder, String.Empty),
                 Created = info.CreationTime,
-                Modified = info.LastWriteTime,
-                Size = info.Length
+                Modified = info.LastWriteTime
             };
         }
 
@@ -53,7 +62,7 @@ namespace Exceptionless.Extras.Storage {
             return File.Exists(Path.Combine(Folder, path));
         }
 
-        public bool SaveFile(string path, string contents) {
+        public bool SaveObject<T>(string path, T value) where T : class {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -62,15 +71,18 @@ namespace Exceptionless.Extras.Storage {
                 Directory.CreateDirectory(directory);
 
             try {
-                File.WriteAllText(Path.Combine(Folder, path), contents);
-            } catch (Exception) {
+                var serializer = _resolver.GetJsonSerializer();
+                string json = serializer.Serialize(value);
+                File.WriteAllText(Path.Combine(Folder, path), json);
+            } catch (Exception ex) {
+                _resolver.GetLog().Error(ex.Message, exception: ex);
                 return false;
             }
 
             return true;
         }
 
-        public bool RenameFile(string oldpath, string newpath) {
+        public bool RenameObject(string oldpath, string newpath) {
             if (String.IsNullOrWhiteSpace(oldpath))
                 throw new ArgumentNullException("oldpath");
             if (String.IsNullOrWhiteSpace(newpath))
@@ -87,7 +99,7 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public bool DeleteFile(string path) {
+        public bool DeleteObject(string path) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -100,25 +112,24 @@ namespace Exceptionless.Extras.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
+        public IEnumerable<ObjectInfo> GetObjectList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
             if (String.IsNullOrEmpty(searchPattern))
                 searchPattern = "*";
 
             if (!maxCreatedDate.HasValue)
                 maxCreatedDate = DateTime.MaxValue;
 
-            var list = new List<FileInfo>();
+            var list = new List<ObjectInfo>();
 
             foreach (var path in Directory.GetFiles(Folder, searchPattern, SearchOption.AllDirectories)) {
                 var info = new System.IO.FileInfo(path);
                 if (!info.Exists || info.CreationTime > maxCreatedDate)
                     continue;
 
-                list.Add(new FileInfo {
+                list.Add(new ObjectInfo {
                     Path = path.Replace(Folder, String.Empty),
                     Created = info.CreationTime,
-                    Modified = info.LastWriteTime,
-                    Size = info.Length
+                    Modified = info.LastWriteTime
                 });
 
                 if (list.Count == limit)

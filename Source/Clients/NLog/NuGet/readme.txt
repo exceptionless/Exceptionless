@@ -25,7 +25,7 @@ Here is an example NLog.config file that shows how to use the Exceptionless NLog
     <add assembly="Exceptionless.NLog"/>
   </extensions>
   
-  <targets>
+  <targets async="true">
     <target name="exceptionless" xsi:type="Exceptionless">
       <field name="host" layout="${machinename}" />
       <field name="identity" layout="${identity}" />

@@ -69,8 +69,8 @@
     <Compile Include="Services\EnvironmentInfoCollector.cs" />
     <Compile Include="Submission\SubmissionClient.cs" />
     <Compile Include="Utility\AssemblyHelper.cs" />
-    <Compile Include="Storage\FolderFileStorage.cs" />
-    <Compile Include="Storage\IsolatedStorageFileStorage.cs" />
+    <Compile Include="Storage\FolderObjectStorage.cs" />
+    <Compile Include="Storage\IsolatedStorageObjectStorage.cs" />
     <Compile Include="Utility\ExceptionlessTraceListener.cs" />
     <Compile Include="Utility\PathHelper.cs" />
     <Compile Include="Utility\Run.cs" />

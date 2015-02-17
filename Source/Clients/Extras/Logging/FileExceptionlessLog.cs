@@ -52,7 +52,18 @@ namespace Exceptionless.Logging {
             return new WrappedDisposable<FileStream>(new FileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite));
         }
 
-        protected virtual long GetFileSize() {
+        protected internal virtual string GetFileContents() {
+            try {
+                if (File.Exists(FilePath))
+                    return File.ReadAllText(FilePath);
+            } catch (IOException ex) {
+                System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
+            }
+
+            return String.Empty;
+        }
+
+        protected internal virtual long GetFileSize() {
             try {
                 if (File.Exists(FilePath))
                     return new FileInfo(FilePath).Length;

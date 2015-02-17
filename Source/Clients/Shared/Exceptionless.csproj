@@ -305,8 +305,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\DefaultEnvironmentInfoCollector.cs" />
     <Compile Include="Services\IEnvironmentInfoCollector.cs" />
-    <Compile Include="Storage\InMemoryFileStorage.cs" />
-    <Compile Include="Storage\IFileStorage.cs" />
+    <Compile Include="Storage\InMemoryObjectStorage.cs" />
+    <Compile Include="Storage\IObjectStorage.cs" />
     <Compile Include="Storage\PersistedDictionary.cs" />
     <Compile Include="Submission\DefaultSubmissionClient.cs" />
     <Compile Include="Submission\ISubmissionClient.cs" />

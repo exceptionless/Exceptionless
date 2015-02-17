@@ -23,9 +23,10 @@ namespace Exceptionless.Utility {
                 } catch {
                     if (attempts <= 0)
                         throw;
+
                     Thread.Sleep(retryInterval.Value);
                 }
-            } while (attempts-- > 1);
+            } while (attempts-- >= 1);
 
             throw new ApplicationException("Should not get here.");
         }

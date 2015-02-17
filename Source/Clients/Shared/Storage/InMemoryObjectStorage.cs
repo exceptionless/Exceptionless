@@ -3,24 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Exceptionless.Extensions;
 
 namespace Exceptionless.Storage {
-    public class InMemoryFileStorage : IFileStorage {
-        private readonly Dictionary<string, Tuple<FileInfo, string>> _storage = new Dictionary<string, Tuple<FileInfo, string>>(StringComparer.OrdinalIgnoreCase);
+    public class InMemoryObjectStorage : IObjectStorage {
+        private readonly Dictionary<string, Tuple<ObjectInfo, object>> _storage = new Dictionary<string, Tuple<ObjectInfo, object>>(StringComparer.OrdinalIgnoreCase);
         private readonly object _lock = new object();
 
-        public InMemoryFileStorage() : this(1024 * 1024 * 256, 100) {}
+        public InMemoryObjectStorage() : this(100) {}
 
-        public InMemoryFileStorage(long maxFileSize, int maxFiles) {
-            MaxFileSize = maxFileSize;
-            MaxFiles = maxFiles;
+        public InMemoryObjectStorage(int maxObjects) {
+            MaxObjects = maxObjects;
         }
 
-        public long MaxFileSize { get; set; }
-        public long MaxFiles { get; set; }
+        public long MaxObjects { get; set; }
 
-        public string GetFileContents(string path) {
+        public T GetObject<T>(string path) where T : class {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -28,11 +25,11 @@ namespace Exceptionless.Storage {
                 if (!_storage.ContainsKey(path))
                     throw new FileNotFoundException();
 
-                return _storage[path].Item2;
+                return _storage[path].Item2 as T;
             }
         }
 
-        public FileInfo GetFileInfo(string path) {
+        public ObjectInfo GetObjectInfo(string path) {
             return Exists(path) ? _storage[path].Item1 : null;
         }
 
@@ -40,36 +37,25 @@ namespace Exceptionless.Storage {
             return _storage.ContainsKey(path);
         }
 
-        private static byte[] ReadBytes(Stream input) {
-            using (var ms = new MemoryStream()) {
-                input.CopyTo(ms);
-                return ms.ToArray();
-            }
-        }
-
-        public bool SaveFile(string path, string contents) {
+        public bool SaveObject<T>(string path, T value) where T : class {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
-            if (contents.Length > MaxFileSize)
-                throw new ArgumentException(String.Format("File size {0} exceeds the maximum size of {1}.", contents.Length.ToFileSizeDisplay(), MaxFileSize.ToFileSizeDisplay()));
-
             lock (_lock) {
-                _storage[path] = Tuple.Create(new FileInfo {
+                _storage[path] = Tuple.Create(new ObjectInfo {
                     Created = DateTime.Now,
                     Modified = DateTime.Now,
-                    Path = path,
-                    Size = contents.Length
-                }, contents);
+                    Path = path
+                }, (object)value);
 
-                if (_storage.Count > MaxFiles)
+                if (_storage.Count > MaxObjects)
                     _storage.Remove(_storage.OrderByDescending(kvp => kvp.Value.Item1.Created).First().Key);
             }
 
             return true;
         }
 
-        public bool RenameFile(string oldpath, string newpath) {
+        public bool RenameObject(string oldpath, string newpath) {
             if (String.IsNullOrWhiteSpace(oldpath))
                 throw new ArgumentNullException("oldpath");
             if (String.IsNullOrWhiteSpace(newpath))
@@ -88,7 +74,7 @@ namespace Exceptionless.Storage {
             return true;
         }
 
-        public bool DeleteFile(string path) {
+        public bool DeleteObject(string path) {
             if (String.IsNullOrWhiteSpace(path))
                 throw new ArgumentNullException("path");
 
@@ -102,7 +88,7 @@ namespace Exceptionless.Storage {
             return true;
         }
 
-        public IEnumerable<FileInfo> GetFileList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
+        public IEnumerable<ObjectInfo> GetObjectList(string searchPattern = null, int? limit = null, DateTime? maxCreatedDate = null) {
             if (searchPattern == null)
                 searchPattern = "*";
             if (!maxCreatedDate.HasValue)

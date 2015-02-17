@@ -46,9 +46,9 @@ namespace Client.Tests {
                 var client = CreateClient();
                 client.SubmitEvent(new Event { Message = "Test" });
 
-                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage;
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryObjectStorage;
                 Assert.NotNull(storage);
-                Assert.Equal(1, storage.GetFileList().Count());
+                Assert.Equal(1, storage.GetObjectList().Count());
 
                 Assert.True(statsCounter.WaitForCounter(MetricNames.EventsProcessed, work: client.ProcessQueue));
 
@@ -84,9 +84,9 @@ namespace Client.Tests {
                     client.SubmitException(ex);
                 }
 
-                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryFileStorage; 
+                var storage = client.Configuration.Resolver.GetFileStorage() as InMemoryObjectStorage; 
                 Assert.NotNull(storage);
-                Assert.Equal(1, storage.GetFileList().Count());
+                Assert.Equal(1, storage.GetObjectList().Count());
                 
                 Assert.True(statsCounter.WaitForCounter(MetricNames.EventsProcessed, work: client.ProcessQueue));
 

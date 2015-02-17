@@ -92,7 +92,7 @@ namespace Client.Tests.Configuration {
             Assert.Equal("2", client.Configuration.Settings["LocalSettingToOverride"]);
             Assert.Equal(3, client.Configuration.Settings.Count);
 
-            var storage = config.Resolver.GetFileStorage() as InMemoryFileStorage;
+            var storage = config.Resolver.GetFileStorage() as InMemoryObjectStorage;
             Assert.True(storage.Exists(config.GetQueueName() + "\\server-settings.json"));
 
             config.Settings.Clear();

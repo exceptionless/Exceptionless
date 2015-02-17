@@ -21,7 +21,7 @@ namespace Exceptionless.Logging {
         protected override void Init() {}
 
         private IsolatedStorageFile GetStore() {
-            return Run.WithRetries(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly, typeof(IsolatedStorageFileStorage), null));
+            return Run.WithRetries(() => IsolatedStorageFile.GetStore(IsolatedStorageScope.Machine | IsolatedStorageScope.Assembly, typeof(IsolatedStorageObjectStorage), null));
         }
 
         protected override WrappedDisposable<StreamWriter> GetWriter(bool append = false) {
@@ -34,7 +34,22 @@ namespace Exceptionless.Logging {
             return new WrappedDisposable<FileStream>(new IsolatedStorageFileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, store), store.Dispose);
         }
 
-        protected override long GetFileSize() {
+        protected internal override string GetFileContents() {
+            return Run.WithRetries(() => {
+                using (var store = GetStore()) {
+                    if (!store.FileExists(FilePath))
+                        return String.Empty;
+
+                    using (var stream = new IsolatedStorageFileStream(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, store)) {
+                        using (var reader = new StreamReader(stream)) {
+                            return reader.ReadToEnd();
+                        }
+                    }
+                }
+            });
+        }
+        
+        protected internal override long GetFileSize() {
             using (var store = GetStore()) {
                 string fullPath = store.GetFullPath(FilePath);
                 try {
@@ -43,9 +58,9 @@ namespace Exceptionless.Logging {
                 } catch (IOException ex) {
                     System.Diagnostics.Trace.WriteLine("Exceptionless: Error getting size of file: {0}", ex.Message);
                 }
-
-                return -1;
             }
+
+            return -1;
         }
     }
 }

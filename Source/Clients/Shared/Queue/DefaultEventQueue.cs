@@ -13,7 +13,7 @@ namespace Exceptionless.Queue {
         private readonly IExceptionlessLog _log;
         private readonly ExceptionlessConfiguration _config;
         private readonly ISubmissionClient _client;
-        private readonly IFileStorage _storage;
+        private readonly IObjectStorage _storage;
         private readonly IJsonSerializer _serializer;
         private Timer _queueTimer;
         private bool _processingQueue;
@@ -21,13 +21,13 @@ namespace Exceptionless.Queue {
         private DateTime? _suspendProcessingUntil;
         private DateTime? _discardQueuedItemsUntil;
 
-        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer): this(config, log, client, fileStorage, serializer, null, null) {}
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IObjectStorage objectStorage, IJsonSerializer serializer): this(config, log, client, objectStorage, serializer, null, null) {}
 
-        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IFileStorage fileStorage, IJsonSerializer serializer, TimeSpan? processQueueInterval, TimeSpan? queueStartDelay) {
+        public DefaultEventQueue(ExceptionlessConfiguration config, IExceptionlessLog log, ISubmissionClient client, IObjectStorage objectStorage, IJsonSerializer serializer, TimeSpan? processQueueInterval, TimeSpan? queueStartDelay) {
             _log = log;
             _config = config;
             _client = client;
-            _storage = fileStorage;
+            _storage = objectStorage;
             _serializer = serializer;
             if (processQueueInterval.HasValue)
                 _processQueueInterval = processQueueInterval.Value;
@@ -41,7 +41,7 @@ namespace Exceptionless.Queue {
                 return;
             }
 
-            _storage.Enqueue(_config.GetQueueName(), ev, _serializer);
+            _storage.Enqueue(_config.GetQueueName(), ev);
         }
 
         public Task ProcessAsync() {

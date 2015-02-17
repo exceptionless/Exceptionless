@@ -64,7 +64,7 @@ namespace Exceptionless {
         }
 
         public static void UseInMemoryStorage(this ExceptionlessConfiguration config) {
-            config.Resolver.Register<IFileStorage, InMemoryFileStorage>();
+            config.Resolver.Register<IObjectStorage, InMemoryObjectStorage>();
         }
 
         /// <summary>

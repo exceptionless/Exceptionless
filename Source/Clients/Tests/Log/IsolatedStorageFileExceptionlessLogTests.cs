@@ -10,15 +10,24 @@
 #endregion
 
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.IO.IsolatedStorage;
+using Exceptionless.Core.Helpers;
+using Exceptionless.Dependency;
 using Exceptionless.Extras.Storage;
 using Exceptionless.Logging;
+using Exceptionless.Serializer;
 
 namespace Exceptionless.Client.Tests.Log {
     public class IsolatedStorageFileExceptionlessLogTests : FileExceptionlessLogTests {
-        private readonly IsolatedStorageFileStorage _storage;
+        private readonly IsolatedStorageObjectStorage _storage;
 
         public IsolatedStorageFileExceptionlessLogTests() {
-            _storage = new IsolatedStorageFileStorage();
+            var resolver = new DefaultDependencyResolver();
+            resolver.Register<IExceptionlessLog, NullExceptionlessLog>();
+            resolver.Register<IJsonSerializer, DefaultJsonSerializer>();
+            _storage = new IsolatedStorageObjectStorage(resolver);
         }
 
         protected override FileExceptionlessLog GetLog(string filePath) {
@@ -31,22 +40,7 @@ namespace Exceptionless.Client.Tests.Log {
 
         protected override void DeleteLog(string path = LOG_FILE) {
             if (LogExists(path))
-                _storage.DeleteFile(path);
-        }
-
-        protected override string GetLogContent(string path = LOG_FILE) {
-            if (!LogExists(path))
-                return String.Empty;
-
-            return _storage.GetFileContents(path);
-        }
-
-        protected override long GetLogSize(string path = LOG_FILE) {
-            var info = _storage.GetFileInfo(path);
-            if (info != null)
-                return info.Size;
-
-            return -1;
+                _storage.DeleteObject(path);
         }
 
         public override void Dispose() {

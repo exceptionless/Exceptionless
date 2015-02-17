@@ -24,11 +24,11 @@ namespace Exceptionless {
         }
 
         public static void UseIsolatedStorage(this ExceptionlessConfiguration config) {
-            config.Resolver.Register<IFileStorage, IsolatedStorageFileStorage>();
+            config.Resolver.Register<IObjectStorage, IsolatedStorageObjectStorage>();
         }
 
         public static void UseFolderStorage(this ExceptionlessConfiguration config, string folder) {
-            config.Resolver.Register<IFileStorage>(new FolderFileStorage(folder));
+            config.Resolver.Register<IObjectStorage>(new FolderObjectStorage(config.Resolver, folder));
         }
 
         public static void UseTraceLogger(this ExceptionlessConfiguration config, LogLevel minLogLevel = LogLevel.Info) {
@@ -58,7 +58,7 @@ namespace Exceptionless {
         }
 
         public static void ReadAllConfig(this ExceptionlessConfiguration config, params Assembly[] configAttributesAssemblies) {
-            if (!config.Resolver.HasRegistration<IFileStorage>())
+            if (!config.Resolver.HasRegistration<IObjectStorage>())
                 config.UseIsolatedStorage();
 
             if (configAttributesAssemblies == null || configAttributesAssemblies.Length == 0)

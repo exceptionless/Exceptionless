@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Dependency;
-using Exceptionless.Extensions;
 using Exceptionless.Logging;
 using Exceptionless.Models;
 using Exceptionless.Storage;
@@ -20,8 +19,8 @@ namespace Exceptionless.Configuration {
                 return new SettingsDictionary();
 
             try {
-                var serializer = config.Resolver.GetJsonSerializer();
-                return fileStorage.GetObject<SettingsDictionary>(configPath, serializer);
+                config.Resolver.GetJsonSerializer();
+                return fileStorage.GetObject<SettingsDictionary>(configPath);
             } catch (Exception ex) {
                 config.Resolver.GetLog().FormattedError(typeof(SettingsManager), ex, "Unable to read and apply saved server settings: {0}", ex.Message);
             }
@@ -59,7 +58,7 @@ namespace Exceptionless.Configuration {
             persistedClientData[String.Concat(config.GetQueueName(), "-ServerConfigVersion")] = response.SettingsVersion.ToString();
 
             var fileStorage = config.Resolver.GetFileStorage();
-            fileStorage.SaveObject(GetConfigPath(config), response.Settings, serializer);
+            fileStorage.SaveObject(GetConfigPath(config), response.Settings);
         }
 
         private static string GetConfigPath(ExceptionlessConfiguration config) {

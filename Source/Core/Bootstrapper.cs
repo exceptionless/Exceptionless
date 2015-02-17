@@ -74,7 +74,11 @@ namespace Exceptionless.Core {
             });
 
             container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
-            container.Register<ExceptionlessClient>(() => ExceptionlessClient.Default);
+
+            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
+            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
+            ExceptionlessClient.Default.Configuration.UseInMemoryStorage();
+            container.RegisterSingle<ExceptionlessClient>(() => ExceptionlessClient.Default);
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);

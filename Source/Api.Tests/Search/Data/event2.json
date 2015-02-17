@@ -37,7 +37,6 @@
                 "@browser": "Chrome",
                 "@browser_version": "39.0.2171",
                 "@browser_major_version": "39",
-                "@device": "Other",
                 "@os": "Mac OS X",
                 "@os_version": "10.10.1",
                 "@os_major_version": "10",

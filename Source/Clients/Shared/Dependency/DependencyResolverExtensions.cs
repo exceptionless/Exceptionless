@@ -48,7 +48,7 @@ namespace Exceptionless.Dependency {
             resolver.Register(typeof(TService), typeof(TService));
         }
 
-        public static void Register<TService, TImplementation>(this IDependencyResolver resolver) {
+        public static void Register<TService, TImplementation>(this IDependencyResolver resolver) where TImplementation : TService {
             if (resolver == null)
                 throw new ArgumentNullException("resolver");
 
@@ -71,8 +71,8 @@ namespace Exceptionless.Dependency {
             return resolver.Resolve<ISubmissionClient>() ?? resolver.Resolve<DefaultSubmissionClient>();
         }
 
-        public static IFileStorage GetFileStorage(this IDependencyResolver resolver) {
-            return resolver.Resolve<IFileStorage>() ?? resolver.Resolve<InMemoryFileStorage>();
+        public static IObjectStorage GetFileStorage(this IDependencyResolver resolver) {
+            return resolver.Resolve<IObjectStorage>() ?? resolver.Resolve<InMemoryObjectStorage>();
         }
 
         public static IEnvironmentInfoCollector GetEnvironmentInfoCollector(this IDependencyResolver resolver) {

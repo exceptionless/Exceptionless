@@ -15,29 +15,29 @@ using Xunit;
 
 namespace Client.Tests.Storage {
     public abstract class FileStorageTestsBase {
-        protected abstract IFileStorage GetStorage();
+        protected abstract IObjectStorage GetStorage();
 
         [Fact]
         public void CanManageFiles() {
             Reset();
 
-            IFileStorage storage = GetStorage();
-            storage.SaveFile("test.txt", "test");
-            Assert.Equal(1, storage.GetFileList("test.txt").Count());
-            Assert.Equal(1, storage.GetFileList().Count());
-            var file = storage.GetFileList().FirstOrDefault();
+            IObjectStorage storage = GetStorage();
+            storage.SaveObject("test.txt", "test");
+            Assert.Equal(1, storage.GetObjectList("test.txt").Count());
+            Assert.Equal(1, storage.GetObjectList().Count());
+            var file = storage.GetObjectList().FirstOrDefault();
             Assert.NotNull(file);
             Assert.Equal("test.txt", file.Path);
-            string content = storage.GetFileContents("test.txt");
+            string content = storage.GetObject<string>("test.txt");
             Assert.Equal("test", content);
-            storage.RenameFile("test.txt", "new.txt");
-            Assert.True(storage.GetFileList().Any(f => f.Path == "new.txt"));
-            storage.DeleteFile("new.txt");
-            Assert.Equal(0, storage.GetFileList().Count());
-            storage.SaveFile("test\\q\\" + Guid.NewGuid().ToString("N") + ".txt", "test");
-            Assert.Equal(1, storage.GetFileList("test\\q\\*.txt").Count());
-            Assert.Equal(1, storage.GetFileList("*", null, DateTime.Now).Count());
-            List<FileInfo> files = storage.GetFileList("*", null, DateTime.Now.Subtract(TimeSpan.FromMinutes(5))).ToList();
+            storage.RenameObject("test.txt", "new.txt");
+            Assert.True(storage.GetObjectList().Any(f => f.Path == "new.txt"));
+            storage.DeleteObject("new.txt");
+            Assert.Equal(0, storage.GetObjectList().Count());
+            storage.SaveObject("test\\q\\" + Guid.NewGuid().ToString("N") + ".txt", "test");
+            Assert.Equal(1, storage.GetObjectList("test\\q\\*.txt").Count());
+            Assert.Equal(1, storage.GetObjectList("*", null, DateTime.Now).Count());
+            List<ObjectInfo> files = storage.GetObjectList("*", null, DateTime.Now.Subtract(TimeSpan.FromMinutes(5))).ToList();
             Debug.WriteLine(String.Join(",", files.Select(f => f.Path + " " + f.Created)));
             Assert.Equal(0, files.Count);
         }
@@ -46,64 +46,64 @@ namespace Client.Tests.Storage {
         public void CanManageQueue() {
             Reset();
 
-            IFileStorage storage = GetStorage();
+            IObjectStorage storage = GetStorage();
             const string queueName = "test";
 
             IJsonSerializer serializer = new DefaultJsonSerializer();
             var ev = new Event { Type = Event.KnownTypes.Log, Message = "test" };
-            storage.Enqueue(queueName, ev, serializer);
-            storage.SaveFile("test.txt", "test");
-            Assert.True(storage.GetFileList().Any(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("0.json")));
-            Assert.Equal(2, storage.GetFileList().Count());
+            storage.Enqueue(queueName, ev);
+            storage.SaveObject("test.txt", "test");
+            Assert.True(storage.GetObjectList().Any(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("0.json")));
+            Assert.Equal(2, storage.GetObjectList().Count());
 
             Assert.True(storage.GetQueueFiles(queueName).All(f => f.Path.EndsWith("0.json")));
             Assert.Equal(1, storage.GetQueueFiles(queueName).Count());
 
-            storage.DeleteFile("test.txt");
-            Assert.Equal(1, storage.GetFileList().Count());
+            storage.DeleteObject("test.txt");
+            Assert.Equal(1, storage.GetObjectList().Count());
 
-            Assert.True(storage.LockFile(storage.GetFileList().FirstOrDefault()));
+            Assert.True(storage.LockFile(storage.GetObjectList().FirstOrDefault()));
             Assert.True(storage.GetQueueFiles(queueName).All(f => f.Path.EndsWith("0.json.x")));
-            Assert.True(storage.ReleaseFile(storage.GetFileList().FirstOrDefault()));
+            Assert.True(storage.ReleaseFile(storage.GetObjectList().FirstOrDefault()));
 
             var batch = storage.GetEventBatch(queueName, serializer);
             Assert.Equal(1, batch.Count);
 
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("1.json.x")));
-            Assert.Equal(1, storage.GetFileList().Count());
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("1.json.x")));
+            Assert.Equal(1, storage.GetObjectList().Count());
 
             Assert.Equal(0, storage.GetQueueFiles(queueName).Count());
             Assert.Equal(0, storage.GetEventBatch(queueName, serializer).Count());
 
-            Assert.False(storage.LockFile(storage.GetFileList().FirstOrDefault()));
+            Assert.False(storage.LockFile(storage.GetObjectList().FirstOrDefault()));
 
             storage.ReleaseBatch(batch);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("1.json")));
-            Assert.Equal(1, storage.GetFileList().Count());
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("1.json")));
+            Assert.Equal(1, storage.GetObjectList().Count());
             Assert.Equal(1, storage.GetQueueFiles(queueName).Count());
 
-            var file = storage.GetFileList().FirstOrDefault();
+            var file = storage.GetObjectList().FirstOrDefault();
             storage.IncrementAttempts(file);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("2.json")));
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("2.json")));
             storage.IncrementAttempts(file);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json")));
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json")));
 
             Assert.True(storage.LockFile(file));
             Assert.NotNull(file);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json.x")));
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json.x")));
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
             storage.ReleaseStaleLocks(queueName, TimeSpan.Zero);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json")));
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("3.json")));
 
             batch = storage.GetEventBatch(queueName, serializer);
             Assert.Equal(1, batch.Count);
-            Assert.True(storage.GetFileList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("4.json.x")));
+            Assert.True(storage.GetObjectList().All(f => f.Path.StartsWith(queueName + "\\q\\") && f.Path.EndsWith("4.json.x")));
             storage.DeleteBatch(batch);
             Assert.Equal(0, storage.GetQueueFiles(queueName).Count());
 
             ev = new Event { Type = Event.KnownTypes.Log, Message = "test" };
-            storage.Enqueue(queueName, ev, serializer);
-            file = storage.GetFileList().FirstOrDefault();
+            storage.Enqueue(queueName, ev);
+            file = storage.GetObjectList().FirstOrDefault();
             Assert.NotNull(file);
             Thread.Sleep(TimeSpan.FromMilliseconds(1));
             storage.CleanupQueueFiles(queueName, TimeSpan.Zero);
@@ -112,20 +112,20 @@ namespace Client.Tests.Storage {
 
         private void Reset() {
             var storage = GetStorage();
-            var files = storage.GetFileList();
+            var files = storage.GetObjectList();
             if (files.Any())
                 Debug.WriteLine("Got files");
             else
                 Debug.WriteLine("No files");
-            storage.DeleteFiles(storage.GetFileList());
-            Assert.Equal(0, storage.GetFileList().Count());
+            storage.DeleteFiles(storage.GetObjectList());
+            Assert.Equal(0, storage.GetObjectList().Count());
         }
 
         [Fact]
         public void CanConcurrentlyManageFiles() {
             Reset();
 
-            IFileStorage storage = GetStorage();
+            IObjectStorage storage = GetStorage();
             IJsonSerializer serializer = new DefaultJsonSerializer();
             const string queueName = "test";
 
@@ -134,9 +134,9 @@ namespace Client.Tests.Storage {
                     Type = Event.KnownTypes.Log,
                     Message = "test" + i
                 };
-                storage.Enqueue(queueName, ev, serializer);
+                storage.Enqueue(queueName, ev);
             });
-            Assert.Equal(25, storage.GetFileList().Count());
+            Assert.Equal(25, storage.GetObjectList().Count());
             var working = new ConcurrentDictionary<string, object>();
 
             Parallel.For(0, 50, i => {

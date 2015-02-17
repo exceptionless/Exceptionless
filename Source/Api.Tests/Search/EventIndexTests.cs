@@ -98,6 +98,14 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
+        [InlineData("Error", 1)]
+        public void GetByLevel(string level, int count) {
+            var result = GetByFilter("level:" + level);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Count);
+        }
+
+        [Theory]
         [InlineData("\"2014-12-09T17:28:44.966\"", 1)]
         [InlineData("\"2014-12-09T17:28:44.966+00:00\"", 1)]
         [InlineData("\"2015-02-11T20:54:04.3457274+00:00\"", 1)]
@@ -227,19 +235,21 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Theory]
-        [InlineData("Chrome", 2)]
-        [InlineData("\"Chrome Mobile\"", 1)]
-        public void GetByBrowser(string browser, int count) {
-            var result = GetByFilter("browser:" + browser);
+        [InlineData("browser:Chrome", 2)]
+        [InlineData("browser:\"Chrome Mobile\"", 1)]
+        [InlineData("browser.raw:\"Chrome Mobile\"", 1)]
+        public void GetByBrowser(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
         [Theory]
-        [InlineData("39.0.2171", 1)]
-        [InlineData("26.0.1410", 1)]
-        public void GetByBrowserVersion(string browserVersion, int count) {
-            var result = GetByFilter("browser.version:" + browserVersion);
+        [InlineData("browser.version:39.0.2171", 1)]
+        [InlineData("browser.version:26.0.1410", 1)]
+        [InlineData("browser.version.raw:26.0.1410", 1)]
+        public void GetByBrowserVersion(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
@@ -254,32 +264,35 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
-        [InlineData("Other", 1)]
-        [InlineData("Huawei", 1)]
-        [InlineData("\"Huawei U8686\"", 1)]
-        public void GetByDevice(string device, int count) {
-            var result = GetByFilter("device:" + device);
+        [InlineData("device:Huawei", 1)]
+        [InlineData("device:\"Huawei U8686\"", 1)]
+        [InlineData("device.raw:\"Huawei U8686\"", 1)]
+        public void GetByDevice(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
         [Theory]
-        [InlineData("Android", 1)]
-        [InlineData("Mac", 1)]
-        [InlineData("\"Mac OS X\"", 1)]
-        [InlineData("\"Microsoft Windows Server\"", 1)]
-        [InlineData("\"Microsoft Windows Server 2012 R2 Standard\"", 1)]
-        public void GetByOS(string os, int count) {
-            var result = GetByFilter("os:" + os);
+        [InlineData("os:Android", 1)]
+        [InlineData("os:Mac", 1)]
+        [InlineData("os:\"Mac OS X\"", 1)]
+        [InlineData("os.raw:\"Mac OS X\"", 1)]
+        [InlineData("os:\"Microsoft Windows Server\"", 1)]
+        [InlineData("os:\"Microsoft Windows Server 2012 R2 Standard\"", 1)]
+        public void GetByOS(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
 
         [Theory]
-        [InlineData("4.1.1", 1)]
-        [InlineData("10.10.1", 1)]
-        public void GetByOSVersion(string osVersion, int count) {
-            var result = GetByFilter("os.version:" + osVersion);
+        [InlineData("os.version:4.1.1", 1)]
+        [InlineData("os.version:10.10.1", 1)]
+        [InlineData("os.version.raw:10.10", 0)]
+        [InlineData("os.version.raw:10.10.1", 1)]
+        public void GetByOSVersion(string filter, int count) {
+            var result = GetByFilter(filter);
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
@@ -395,6 +408,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(result);
             Assert.Equal(count, result.Count);
         }
+
+        //[Theory]
+        //[InlineData("\"data.load time-s\":\"262", 1)]
+        //public void GetByCustomData(string filter, int count) {
+        //    var result = GetByFilter(filter);
+        //    Assert.NotNull(result);
+        //    Assert.Equal(count, result.Count);
+        //}
 
         private void CreateEvents() {
             ElasticSearchConfiguration.ConfigureMapping(_client, true);

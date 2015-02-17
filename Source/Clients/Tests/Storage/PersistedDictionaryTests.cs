@@ -10,7 +10,7 @@ namespace Client.Tests.Storage {
         [Fact]
         public void WillBeSaved() {
             var resetEvent = new AutoResetEvent(false);
-            var storage = new InMemoryFileStorage();
+            var storage = new InMemoryObjectStorage();
             var dict = new PersistedDictionary("test.json", storage, new DefaultJsonSerializer(), 10);
             dict.Saved += (sender, args) => resetEvent.Set();
             dict["test"] = "test";
@@ -23,7 +23,7 @@ namespace Client.Tests.Storage {
         [Fact]
         public void WillSaveOnce() {
             var latch = new CountDownLatch(2);
-            var storage = new InMemoryFileStorage();
+            var storage = new InMemoryObjectStorage();
             var dict = new PersistedDictionary("test.json", storage, new DefaultJsonSerializer(), 50);
             dict.Saved += (sender, args) => latch.Signal();
             for (int i = 0; i < 10; i++)

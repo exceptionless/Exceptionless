@@ -18,28 +18,33 @@
     "geo": "40,-70",
     "value": 1.0,
     "data": {
+        "idx": {
+            "line count-s": "262",
+            "char count-s": "9386",
+            "load time-s": "14.6556ms"
+        },
         "@request": {
-          "user_agent": "Mozilla/5.0 (Linux; Android 4.1.1; Prism II Build/HuaweiU8686) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.58 Mobile Safari/537.31",
-          "http_method": "GET",
-          "is_secure": true,
-          "host": "app.exceptionless.com",
-          "port": 443,
-          "path": "/apple-touch-icon.png",
-          "referrer": null,
-          "client_ip_address": "192.168.0.243",
-          "cookies": {},
-          "post_data": null,
-          "query_string": {},
-          "data": {
-            "@browser": "Chrome Mobile",
-            "@browser_version": "26.0.1410",
-            "@browser_major_version": "26",
-            "@device": "Huawei U8686",
-            "@os": "Android",
-            "@os_version": "4.1.1",
-            "@os_major_version": "4",
-            "@is_bot": true
-          }
+            "user_agent": "Mozilla/5.0 (Linux; Android 4.1.1; Prism II Build/HuaweiU8686) AppleWebKit/537.31 (KHTML, like Gecko) Chrome/26.0.1410.58 Mobile Safari/537.31",
+            "http_method": "GET",
+            "is_secure": true,
+            "host": "app.exceptionless.com",
+            "port": 443,
+            "path": "/apple-touch-icon.png",
+            "referrer": null,
+            "client_ip_address": "192.168.0.243",
+            "cookies": { },
+            "post_data": null,
+            "query_string": { },
+            "data": {
+                "@browser": "Chrome Mobile",
+                "@browser_version": "26.0.1410",
+                "@browser_major_version": "26",
+                "@device": "Huawei U8686",
+                "@os": "Android",
+                "@os_version": "4.1.1",
+                "@os_major_version": "4",
+                "@is_bot": true
+            }
         },
         "@user": {
             "identity": "My-User-Identity",
@@ -50,7 +55,8 @@
             "description": "my custom description",
             "data": { }
         },
-        "@version": "1.2.3.0"
+        "@version": "1.2.3.0",
+        "@level": "Error"
     },
     "reference_id": "876554321",
     "session_id": "12345"

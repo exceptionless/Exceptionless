@@ -42,8 +42,6 @@ namespace Exceptionless.Api {
                 throw new ArgumentNullException("container");
 
             Config = new HttpConfiguration();
-            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
-            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
             ExceptionlessClient.Default.RegisterWebApi(Config);
 
             Log.Info().Message("Starting api...").Write();

@@ -29,7 +29,7 @@ namespace Exceptionless.Client.Tests.Log {
             log.Flush();
 
             Assert.True(LogExists());
-            string contents = GetLogContent();
+            string contents = log.GetFileContents();
 
             Assert.Equal("Test\r\n", contents);
 
@@ -43,13 +43,13 @@ namespace Exceptionless.Client.Tests.Log {
             FileExceptionlessLog log = GetLog(LOG_FILE);
             log.Info("Test");
 
-            string contents = GetLogContent();
+            string contents = log.GetFileContents();
             Assert.Equal("", contents);
 
             Thread.Sleep(1010 * 3);
 
             Assert.True(LogExists());
-            contents = GetLogContent();
+            contents = log.GetFileContents();
 
             Assert.Equal("Test\r\n", contents);
 
@@ -67,13 +67,13 @@ namespace Exceptionless.Client.Tests.Log {
                 log.Info(new string('0', 1024));
 
             log.Flush();
-            Assert.True(GetLogSize() > 1024 * 1024 * 3);
+            Assert.True(log.GetFileSize() > 1024 * 1024 * 3);
 
             // force a check file size call
             log.CheckFileSize();
 
             // make sure it didn't clear the log
-            Assert.True(GetLogSize() > 1024 * 1024 * 3);
+            Assert.True(log.GetFileSize() > 1024 * 1024 * 3);
 
             // write another 3mb of content to the log
             for (int i = 0; i < 1024 * 3; i++)
@@ -84,7 +84,7 @@ namespace Exceptionless.Client.Tests.Log {
             log.CheckFileSize();
 
             // make sure it cleared the log
-            long size = GetLogSize();
+            long size = log.GetFileSize();
 
             // should be 99 lines of text in the file
             Assert.True(size > 1024 * 99);
@@ -108,19 +108,19 @@ namespace Exceptionless.Client.Tests.Log {
             Parallel.For(0, 1024 * 3, i => log.Info(new string('0', 1024)));
 
             log.Flush();
-            Assert.True(GetLogSize() > 1024 * 1024 * 3);
+            Assert.True(log.GetFileSize() > 1024 * 1024 * 3);
 
             // force a check file size call
             log.CheckFileSize();
 
             // make sure it didn't clear the log
-            Assert.True(GetLogSize() > 1024 * 1024 * 3);
+            Assert.True(log.GetFileSize() > 1024 * 1024 * 3);
 
             // write another 3mb of content to the log
             Parallel.For(0, 1024 * 3, i => log.Info(new string('0', 1024)));
             log.Flush();
 
-            long size = GetLogSize();
+            long size = log.GetFileSize();
             Console.WriteLine("File: " + size);
 
             // do the check size while writing to the log from multiple threads
@@ -132,7 +132,7 @@ namespace Exceptionless.Client.Tests.Log {
                 });
 
             // should be more than 99 lines of text in the file
-            size = GetLogSize();
+            size = log.GetFileSize();
             Console.WriteLine("File: " + size);
             Assert.True(size > 1024 * 99);
 
@@ -150,21 +150,6 @@ namespace Exceptionless.Client.Tests.Log {
         protected virtual void DeleteLog(string path = LOG_FILE) {
             if (LogExists(path))
                 File.Delete(path);
-        }
-
-        protected virtual string GetLogContent(string path = LOG_FILE) {
-            if (!LogExists(path))
-                return String.Empty;
-
-            using (FileStream stream = File.Open(LOG_FILE, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)) {
-                using (var reader = new StreamReader(stream))
-                    return reader.ReadToEnd();
-            }
-        }
-
-        protected virtual long GetLogSize(string path = LOG_FILE) {
-            var f = new FileInfo(LOG_FILE);
-            return f.Length;
         }
 
         public virtual void Dispose() {}

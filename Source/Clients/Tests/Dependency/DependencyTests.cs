@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Linq;
-using Exceptionless;
 using Exceptionless.Dependency;
-using Exceptionless.Enrichments.Default;
-using Exceptionless.Models;
 using Xunit;
 
 namespace Client.Tests.Dependency {

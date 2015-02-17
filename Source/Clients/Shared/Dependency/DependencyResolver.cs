@@ -29,8 +29,8 @@ namespace Exceptionless.Dependency {
         }
 
         public static void RegisterDefaultServices(IDependencyResolver resolver) {
-            var fileStorage = new Lazy<IFileStorage>(() => resolver.Resolve<InMemoryFileStorage>());
-            resolver.Register(typeof(IFileStorage), () => fileStorage.Value);
+            var fileStorage = new Lazy<IObjectStorage>(() => resolver.Resolve<InMemoryObjectStorage>());
+            resolver.Register(typeof(IObjectStorage), () => fileStorage.Value);
 
             var exceptionlessLog = new Lazy<IExceptionlessLog>(() => resolver.Resolve<NullExceptionlessLog>());
             resolver.Register(typeof(IExceptionlessLog), () => exceptionlessLog.Value);
@@ -53,7 +53,7 @@ namespace Exceptionless.Dependency {
             var duplicateChecker = new Lazy<IDuplicateChecker>(() => resolver.Resolve<DefaultDuplicateChecker>());
             resolver.Register(typeof(IDuplicateChecker), () => duplicateChecker.Value);
 
-            var persistedClientData = new Lazy<PersistedDictionary>(() => new PersistedDictionary("client-data.json", resolver.Resolve<IFileStorage>(), resolver.Resolve<IJsonSerializer>()));
+            var persistedClientData = new Lazy<PersistedDictionary>(() => new PersistedDictionary("client-data.json", resolver.Resolve<IObjectStorage>(), resolver.Resolve<IJsonSerializer>()));
             resolver.Register(typeof(PersistedDictionary), () => persistedClientData.Value);
         }
     }

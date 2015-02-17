@@ -1,21 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using Exceptionless.Extensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Collections;
 
 namespace Exceptionless.Storage {
     public class PersistedDictionary : SettingsDictionary {
-        private readonly IFileStorage _fileStorage;
-        private readonly IJsonSerializer _serializer;
+        private readonly IObjectStorage _objectStorage;
         private readonly string _path;
         private readonly Timer _timer;
         private readonly int _delay;
 
-        public PersistedDictionary(string path, IFileStorage fileStorage, IJsonSerializer serializer, int delay = 250) {
-            _fileStorage = fileStorage;
-            _serializer = serializer;
+        public PersistedDictionary(string path, IObjectStorage objectStorage, IJsonSerializer serializer, int delay = 250) {
+            _objectStorage = objectStorage;
             _path = path;
             _delay = delay;
             Changed += OnChanged;
@@ -23,7 +20,7 @@ namespace Exceptionless.Storage {
         }
 
         public void Save() {
-            _fileStorage.SaveObject(_path, this, _serializer);
+            _objectStorage.SaveObject(_path, this);
             OnSaved();
         }
 

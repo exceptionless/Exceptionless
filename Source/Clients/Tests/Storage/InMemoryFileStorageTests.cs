@@ -3,8 +3,8 @@ using Exceptionless.Storage;
 
 namespace Client.Tests.Storage {
     public class InMemoryFileStorageTests : FileStorageTestsBase {
-        protected override IFileStorage GetStorage() {
-            return new InMemoryFileStorage();
+        protected override IObjectStorage GetStorage() {
+            return new InMemoryObjectStorage();
         }
     }
 }
