@@ -65,6 +65,7 @@ namespace Exceptionless.EventMigration {
                 total += stacks.Count;
             }
 
+            Log.Info().Message("Finished migrating stacks.").Write();
             return JobResult.Success;
         }
     }

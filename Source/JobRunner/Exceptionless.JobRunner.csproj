@@ -113,6 +113,9 @@
     <None Include="jobs\triggered\QueueEventMigrationsJob\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="jobs\triggered\DownloadGeoIPDatabase\run.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="jobs\triggered\StackMigrationJob\run.bat">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

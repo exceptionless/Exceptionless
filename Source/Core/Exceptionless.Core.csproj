@@ -233,6 +233,7 @@
     <Compile Include="Authorization\GitHubWithPrivateEmailsClient.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
+    <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
