@@ -1,17 +1,14 @@
 using System;
-using System.Linq.Expressions;
-using System.Reflection;
+using Exceptionless.Models;
 #if EMBEDDED
 using Exceptionless.Json;
 using Exceptionless.Json.Converters;
 using Exceptionless.Json.Linq;
-using Exceptionless.Extensions;
 #else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 #endif
-using Exceptionless.Models;
 
 namespace Exceptionless.Serializer {
     internal class DataDictionaryConverter : CustomCreationConverter<DataDictionary> {

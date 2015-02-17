@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Exceptionless.Dependency;
 using Exceptionless.Extensions;
@@ -104,17 +105,21 @@ namespace Exceptionless {
             if (info == null || info.Data == null)
                 return;
 
-            string name;
+            string name = !String.IsNullOrWhiteSpace(info.Name) ? info.Name.Trim() : info.Data.GetType().Name;
 
-            if (!String.IsNullOrEmpty(info.Name))
-                name = info.Name;
-            else
-                name = info.Data.GetType().Name;
+            Type dataType = info.Data.GetType();
+            if (dataType == typeof(bool) || dataType == typeof(string) || dataType.IsNumeric()) {
+                if (data.Data.ContainsKey(name))
+                    data.Data[name] = info.Data;
+                else
+                    data.Data.Add(name, info.Data);
+
+                return;
+            }
 
             string json;
-
             try {
-                if (IsPrimitiveType(info.Data.GetType())) {
+                if (dataType.IsPrimitiveType()) {
                     json = info.Data.ToString();
                 } else {
                     string[] excludedPropertyNames = info.ExcludedPropertyNames != null ? client.Configuration.DataExclusions.Union(info.ExcludedPropertyNames).ToArray() : client.Configuration.DataExclusions.ToArray();
@@ -133,26 +138,6 @@ namespace Exceptionless {
                 data.Data[name] = json;
             else
                 data.Data.Add(name, json);
-        }
-
-        private static bool IsPrimitiveType(Type type) {
-            if (type.IsPrimitive)
-                return true;
-
-            if (type == typeof(Decimal)
-                || type == typeof(String)
-                || type == typeof(Guid)
-                || type == typeof(TimeSpan)
-                || type == typeof(Uri))
-                return true;
-
-            if (type.IsEnum)
-                return true;
-
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-                return IsPrimitiveType(Nullable.GetUnderlyingType(type));
-
-            return false;
         }
     }
 }

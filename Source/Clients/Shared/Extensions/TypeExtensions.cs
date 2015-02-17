@@ -35,5 +35,54 @@ namespace Exceptionless.Extensions {
 
             return type.GetProperties(BindingFlags.FlattenHierarchy | BindingFlags.Public | BindingFlags.Instance);
         }
+
+        public static bool IsNullable(this Type type) {
+            if (type.IsValueType)
+                return false;
+
+            return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        }
+
+        public static bool IsPrimitiveType(this Type type) {
+            if (type.IsPrimitive)
+                return true;
+
+            if (type == typeof(Decimal)
+                || type == typeof(String)
+                || type == typeof(Guid)
+                || type == typeof(TimeSpan)
+                || type == typeof(Uri))
+                return true;
+
+            if (type.IsEnum)
+                return true;
+
+            if (type.IsNullable())
+                return IsPrimitiveType(Nullable.GetUnderlyingType(type));
+
+            return false;
+        }
+        
+        public static bool IsNumeric(this Type type) {
+            if (type.IsArray)
+                return false;
+
+            switch (Type.GetTypeCode(type)) {
+                case TypeCode.Byte:
+                case TypeCode.Decimal:
+                case TypeCode.Double:
+                case TypeCode.Int16:
+                case TypeCode.Int32:
+                case TypeCode.Int64:
+                case TypeCode.SByte:
+                case TypeCode.Single:
+                case TypeCode.UInt16:
+                case TypeCode.UInt32:
+                case TypeCode.UInt64:
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

@@ -77,8 +77,16 @@ namespace Client.Tests.Submission {
                 Assert.NotNull(statsCounter);
 
                 EnsureSampleData(container);
+                
+                var ev = new Event { Message = "Testing", ReferenceId = referenceId };
+                ev.Data.Add("First Name", "Eric");
+                ev.Data.Add("IsVerified", true);
+                ev.Data.Add("Age", Int32.MaxValue);
+                ev.Data.Add(" Birthday ", DateTime.MinValue);
+                ev.Data.Add("@excluded", DateTime.MinValue);
+                ev.Data.Add("Address", new { State = "Texas" });
 
-                var events = new List<Event> { new Event { Message = "Testing", ReferenceId = referenceId } };
+                var events = new List<Event> { ev };
                 var configuration = GetClient().Configuration;
                 var serializer = new DefaultJsonSerializer();
 
@@ -107,7 +115,7 @@ namespace Client.Tests.Submission {
                     Assert.True(statsCounter.WaitForCounter(MetricNames.EventsUserDescriptionProcessed));
 
                 container.GetInstance<IElasticClient>().Refresh();
-                var ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
+                ev = repository.GetByReferenceId("537650f3b77efe23a47914f4", referenceId).FirstOrDefault();
                 Assert.NotNull(ev);
                 Assert.NotNull(ev.GetUserDescription());
                 Assert.Equal(description.ToJson(), ev.GetUserDescription().ToJson());

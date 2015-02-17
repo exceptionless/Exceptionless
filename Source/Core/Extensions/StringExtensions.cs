@@ -42,6 +42,7 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
+        // TODO: Add support for detecting the culture number separators as well as suffix (Ex. 100d)
         public static bool IsNumeric(this string value) {
             if (String.IsNullOrEmpty(value))
                 return false;

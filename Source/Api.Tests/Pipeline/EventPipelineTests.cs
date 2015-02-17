@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
@@ -30,19 +31,51 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
         [Fact]
         public void NoFutureEvents() {
-            var client = IoC.GetInstance<IElasticClient>();
-
             var localTime = DateTime.Now;
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: localTime.AddMinutes(10));
 
             var pipeline = IoC.GetInstance<EventPipeline>();
             Assert.DoesNotThrow(() => pipeline.Run(ev));
 
+            var client = IoC.GetInstance<IElasticClient>();
             client.Refresh();
             ev = _eventRepository.GetById(ev.Id);
             Assert.NotNull(ev);
             Assert.True(ev.Date < localTime.AddMinutes(10));
             Assert.True(ev.Date - localTime < TimeSpan.FromSeconds(5));
+        }
+
+        [Fact]
+        public void CanIndexExtendedData() {
+            PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
+            ev.SetProperty("First Name", "Eric");
+            ev.SetProperty("IsVerified", true);
+            ev.SetProperty("IsVerified1", true.ToString());
+            ev.SetProperty("Age", Int32.MaxValue);
+            ev.SetProperty("Age1", Int32.MaxValue.ToString(CultureInfo.InvariantCulture));
+            ev.SetProperty("AgeDec", Decimal.MaxValue);
+            ev.SetProperty("AgeDec1", Decimal.MaxValue.ToString(CultureInfo.InvariantCulture));
+            ev.SetProperty("AgeDbl", Double.MaxValue);
+            ev.SetProperty("AgeDbl1", Double.MaxValue.ToString("r", CultureInfo.InvariantCulture));
+            ev.SetProperty(" Birthday ", DateTime.MinValue);
+            ev.SetProperty("BirthdayWithOffset", DateTimeOffset.MinValue);
+            ev.SetProperty("@excluded", DateTime.MinValue);
+            ev.AddObject(new { State = "Texas" }, "Address");
+
+            var pipeline = IoC.GetInstance<EventPipeline>();
+            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            Assert.Equal(11, ev.Idx.Count);
+            Assert.True(ev.Idx.ContainsKey("first-name-s"));
+            Assert.True(ev.Idx.ContainsKey("isverified-b"));
+            Assert.True(ev.Idx.ContainsKey("isverified1-b"));
+            Assert.True(ev.Idx.ContainsKey("age-n"));
+            Assert.True(ev.Idx.ContainsKey("age1-n"));
+            Assert.True(ev.Idx.ContainsKey("agedec-n"));
+            Assert.True(ev.Idx.ContainsKey("agedec1-n"));
+            Assert.True(ev.Idx.ContainsKey("agedbl-n"));
+            Assert.True(ev.Idx.ContainsKey("agedbl1-n"));
+            Assert.True(ev.Idx.ContainsKey("birthday-d"));
+            Assert.True(ev.Idx.ContainsKey("birthdaywithoffset-d"));
         }
 
         [Fact]
