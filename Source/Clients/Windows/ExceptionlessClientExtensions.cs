@@ -25,6 +25,11 @@ namespace Exceptionless.Windows.Extensions {
             } catch (Exception ex) {
                 client.Configuration.Resolver.GetLog().Error(typeof(ExceptionlessClientExtensions), ex, "An error occurred while wiring up to the unobserved task exception event.");
             }
+
+            // make sure that queued events are sent when the app exits
+            AppDomain.CurrentDomain.ProcessExit += (sender, args) => {
+                client.ProcessQueue();
+            };
         }
 
         public static void UnregisterApplicationThreadExceptionHandler(this ExceptionlessClient client) {

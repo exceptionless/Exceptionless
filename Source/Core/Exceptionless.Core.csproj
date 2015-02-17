@@ -64,19 +64,19 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.33\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.35\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Azure, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Azure.1.0.33\lib\net45\Foundatio.Azure.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Azure.1.0.35\lib\net45\Foundatio.Azure.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.33\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.1.0.35\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.33\lib\net45\Foundatio.StatsD.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.StatsD.1.0.35\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
