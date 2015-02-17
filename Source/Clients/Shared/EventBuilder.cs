@@ -124,7 +124,7 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="tags">The tags to be added to the event.</param>
         public EventBuilder AddTags(params string[] tags) {
-            if (tags == null)
+            if (tags == null || tags.Length == 0)
                 return this;
 
             Target.Tags.AddRange(tags.Where(t => !String.IsNullOrWhiteSpace(t)).Select(t => t.Trim()));
