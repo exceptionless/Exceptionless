@@ -6,6 +6,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models.Data;
+using Foundatio.Metrics;
 using Foundatio.Queues;
 
 namespace Exceptionless.Api.Controllers {
@@ -16,15 +17,17 @@ namespace Exceptionless.Api.Controllers {
         private readonly IQueue<EventNotification> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
+        private readonly IMetricsClient _metricsClient;
 
         public StatusController(SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue,
-            IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue) {
+            IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
             _healthChecker = healthChecker;
             _eventQueue = eventQueue;
             _mailQueue = mailQueue;
             _notificationQueue = notificationQueue;
             _webHooksQueue = webHooksQueue;
             _userDescriptionQueue = userDescriptionQueue;
+            _metricsClient = metricsClient;
         }
 
         [HttpGet]
@@ -71,6 +74,17 @@ namespace Exceptionless.Api.Controllers {
                     Working = _webHooksQueue.GetWorkingCount()
                 }
             });
+        }
+
+        [HttpGet]
+        [Route(API_PREFIX + "/metric-stats")]
+        [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        public IHttpActionResult MetricStats() {
+            var metricsClient = _metricsClient as InMemoryMetricsClient;
+            if (metricsClient == null)
+                return Ok();
+
+            return Ok(metricsClient.GetMetricStats());
         }
     }
 }
