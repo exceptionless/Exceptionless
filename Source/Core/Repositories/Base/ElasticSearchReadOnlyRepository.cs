@@ -22,6 +22,7 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
+        protected readonly static string _entityType = typeof(T).Name;
         private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
         protected readonly IElasticClient _elasticClient;
         protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
@@ -40,7 +41,7 @@ namespace Exceptionless.Core.Repositories {
         protected ICacheClient Cache { get; private set; }
 
         protected virtual string GetTypeName() {
-            return typeof(T).Name.ToLower();
+            return _entityType.ToLower();
         }
 
         public void InvalidateCache(string cacheKey) {
@@ -76,9 +77,9 @@ namespace Exceptionless.Core.Repositories {
                     result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
 
                 if (options.UseCache && result != null)
-                    Log.Trace().Message("Cache hit: type={0}", typeof(T).Name).Write();
+                    Log.Trace().Message("Cache hit: type={0}", _entityType).Write();
                 else if (options.UseCache)
-                    Log.Trace().Message("Cache miss: type={0}", typeof(T).Name).Write();
+                    Log.Trace().Message("Cache miss: type={0}", _entityType).Write();
 
                 if (result != null)
                     return result;

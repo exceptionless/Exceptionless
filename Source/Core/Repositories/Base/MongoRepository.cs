@@ -25,7 +25,6 @@ namespace Exceptionless.Core.Repositories {
     public abstract class MongoRepository<T> : MongoReadOnlyRepository<T>, IRepository<T> where T : class, IIdentity, new() {
         protected readonly IValidator<T> _validator;
         protected readonly IMessagePublisher _messagePublisher;
-        protected readonly static string _entityType = typeof(T).Name;
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));

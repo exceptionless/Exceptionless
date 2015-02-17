@@ -23,6 +23,7 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class MongoReadOnlyRepository<T> : IReadOnlyRepository<T>, IMongoRepositoryManagement where T : class, IIdentity, new() {
+        protected readonly static string _entityType = typeof(T).Name;
         protected MongoCollection<T> _collection;
         protected Func<string, BsonValue> _getIdValue = id => new BsonObjectId(new ObjectId(id));
 
@@ -43,7 +44,7 @@ namespace Exceptionless.Core.Repositories {
         protected MongoCollection<T> Collection { get { return _collection; } }
 
         protected virtual string GetCollectionName() {
-            return typeof(T).Name.ToLower();
+            return _entityType.ToLower();
         }
 
         void IMongoRepositoryManagement.InitializeCollection(MongoDatabase database) {
