@@ -1,0 +1,114 @@
+{
+  "type": "error",
+  "date": "2015-02-12T17:25:27.1172014+00:00",
+  "message": "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
+  "data": {
+    "@version": "2.0.1039 6f929bbe18",
+    "@error": {
+      "message": "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
+      "type": "System.AggregateException",
+      "code": -1,
+      "data": {
+        "@target": {
+          "ExceptionType": "System.NullReferenceException",
+          "Method": "System.Web.ThreadContext.AssociateWithCurrentThread()",
+          "Message": "Object reference not set to an instance of an object."
+        }
+      },
+      "inner": {
+        "message": "Object reference not set to an instance of an object.",
+        "type": "System.NullReferenceException",
+        "code": null,
+        "data": {
+        },
+        "inner": null,
+        "stack_trace": [
+          {
+            "file_name": null,
+            "line_number": 0,
+            "column": 0,
+            "is_signature_target": false,
+            "declaring_namespace": "System.Web",
+            "declaring_type": "ThreadContext",
+            "name": "AssociateWithCurrentThread",
+            "module_id": -1,
+            "data": {},
+            "generic_arguments": [],
+            "parameters": []
+          },
+          {
+            "file_name": null,
+            "line_number": 0,
+            "column": 0,
+            "is_signature_target": false,
+            "declaring_namespace": "System.Web",
+            "declaring_type": "HttpApplication",
+            "name": "OnThreadEnterPrivate",
+            "module_id": -1,
+            "data": {},
+            "generic_arguments": [],
+            "parameters": []
+          },
+          {
+            "file_name": null,
+            "line_number": 0,
+            "column": 0,
+            "is_signature_target": false,
+            "declaring_namespace": "System.Web",
+            "declaring_type": "HttpApplication",
+            "name": "System.Web.Util.ISyncContext.Enter",
+            "module_id": -1,
+            "data": {},
+            "generic_arguments": [],
+            "parameters": []
+          },
+          {
+            "file_name": null,
+            "line_number": 0,
+            "column": 0,
+            "is_signature_target": false,
+            "declaring_namespace": "System.Web.Util",
+            "declaring_type": "SynchronizationHelper",
+            "name": "SafeWrapCallback",
+            "module_id": -1,
+            "data": {},
+            "generic_arguments": [],
+            "parameters": []
+          },
+          {
+            "file_name": null,
+            "line_number": 0,
+            "column": 0,
+            "is_signature_target": false,
+            "declaring_namespace": "System.Threading.Tasks",
+            "declaring_type": "Task",
+            "name": "Execute",
+            "module_id": -1,
+            "data": {},
+            "generic_arguments": [],
+            "parameters": []
+          }
+        ],
+        "target_method": {
+          "is_signature_target": true,
+          "declaring_namespace": "System.Web",
+          "declaring_type": "ThreadContext",
+          "name": "AssociateWithCurrentThread",
+          "module_id": -1,
+          "data": {},
+          "generic_arguments": [],
+          "parameters": []
+        }
+      },
+      "stack_trace": [],
+      "target_method": null
+    },
+    "@submission_method": "UnobservedTaskException",
+    "@user": {
+      "identity": "example",
+      "name": "Blake",
+      "data": {}
+    }
+  },
+  "session_id": "75753bcae46d4232a84a7a1c0fe14000"
+}
