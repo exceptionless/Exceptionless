@@ -272,7 +272,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.SubscribeDate = DateTime.Now;
 
                     var createCustomer = new StripeCustomerCreateOptions {
-                        TokenId = stripeToken,
+                        Card = new StripeCreditCardOptions { TokenId = stripeToken },
                         PlanId = planId,
                         Description = organization.Name,
                         Email = ExceptionlessUser.EmailAddress
@@ -294,8 +294,8 @@ namespace Exceptionless.Api.Controllers {
                     bool cardUpdated = false;
 
                     if (!String.IsNullOrEmpty(stripeToken)) {
-                        update.TokenId = stripeToken;
-                        create.TokenId = stripeToken;
+                        update.Card = new StripeCreditCardOptions { TokenId = stripeToken };
+                        create.Card = new StripeCreditCardOptions { TokenId = stripeToken };
                         cardUpdated = true;
                     }
                     

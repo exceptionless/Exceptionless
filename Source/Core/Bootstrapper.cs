@@ -54,8 +54,11 @@ namespace Exceptionless.Core {
 
             if (Settings.Current.EnableAppStats)
                 container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
-            else
-                container.RegisterSingle<IMetricsClient, InMemoryMetricsClient>();
+            else {
+                var metricsClient = new InMemoryMetricsClient();
+                metricsClient.StartDisplayingStats();
+                container.RegisterSingle<IMetricsClient>(metricsClient);
+            }
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
