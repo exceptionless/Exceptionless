@@ -257,10 +257,28 @@ task PackageClient -depends TestClient {
 
         $signedNuspec.Save($signedNuspecFile);
 
-        # Sign the assemblies.
-        Get-ChildItem -Path $workingDirectory -Filter *.dll -Recurse | ForEach-Object { Sign-Assembly $_.FullName }
+		# Copy the Exceptionless assemblies to the working directory. This ensures that they are resolved while signing the assemblies.
+		If ($($p.Name) -ne "Exceptionless") {
+			ForEach ($b in $client_build_configurations) {
+				if ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80") {
+					Get-ChildItem -Path "$build_dir\$configuration\Exceptionless\lib\portable-net40+sl50+win+wpa81+wp80" -Filter *.dll | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$workingDirectory\lib\$($b.NuGetDir)" }
+				}
+			}
+		}
 
-        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version }
+        # Sign the assemblies.
+        Get-ChildItem -Path $workingDirectory -Include "$($p.Name).dll" -Recurse | ForEach-Object { Sign-Assembly $_.FullName }
+		
+		# Removed the copied Exceptionless assemblies from the working directory.
+		If ($($p.Name) -ne "Exceptionless") {
+			ForEach ($b in $client_build_configurations) {
+				if ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80") {
+					Remove-Item -Path "$workingDirectory\lib\$($b.NuGetDir)\*" -Include Exceptionless.dll,Exceptionless.Models.dll
+				}
+			}
+		}
+
+        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
     }
 
     Delete-Directory "$build_dir\$configuration"
@@ -337,16 +355,12 @@ Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [str
 }
 
 Function Sign-Assembly ([string] $sourceAssembly) {
-    $sourceAssemblyIL = ([IO.Path]::ChangeExtension($sourceAssembly, ".il"))
-    $sourceAssemblyRes = ([IO.Path]::ChangeExtension($sourceAssembly, ".res"))
+	If (Test-StrongName -AssemblyFile $sourceAssembly) {
+		Return
+	}
 
-    exec { & "$lib_dir\Microsoft\ildasm.exe" $sourceAssembly /nobar /linenum /out:$sourceAssemblyIL }
-    
-    Remove-Item -Path $sourceAssembly
-
-    exec { & ilasm "$sourceAssemblyIL" /dll /debug /resource:$sourceAssemblyRes /key=$sign_file }
-
-    Get-ChildItem -Path $workingDirectory -Recurse -Include *.il,*.res,*.snk | ForEach-Object { Remove-Item -Path $_.FullName }
+	$key= Import-StrongNameKeyPair -KeyFile $sign_file
+	Set-StrongName -AssemblyFile $sourceAssembly -KeyPair $key -NoBackup -Verbose -Force
 }
 
 Function Create-Directory([string] $directory_name) {
