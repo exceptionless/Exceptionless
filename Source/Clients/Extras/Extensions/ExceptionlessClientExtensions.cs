@@ -11,14 +11,14 @@ using Exceptionless.Submission;
 namespace Exceptionless {
     public static class ExceptionlessClientExtensions {
         public static void Startup(this ExceptionlessClient client, AppDomain appDomain = null) {
+            client.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
+            client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
             client.Configuration.ReadAllConfig();
             client.Configuration.UseErrorEnrichment();
             client.Configuration.UseTraceLogEntriesEnrichment();
             client.Configuration.AddEnrichment<VersionEnrichment>();
             client.Configuration.AddEnrichment<PrivateInformationEnrichment>();
-            client.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
-            client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
-            client.Configuration.AddResolversFromConfig();
+            
             client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
             client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
         }

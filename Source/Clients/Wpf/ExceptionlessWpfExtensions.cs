@@ -38,7 +38,6 @@ namespace Exceptionless {
 
         private static void OnSubmittingEvent(object sender, EventSubmittingEventArgs e) {
             //error.ExceptionlessClientInfo.Platform = ".NET WPF";
-
             if (!e.IsUnhandledError)
                 return;
 

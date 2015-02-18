@@ -6,7 +6,6 @@ using Exceptionless.Api;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Queues;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Dependency;

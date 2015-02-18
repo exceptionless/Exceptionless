@@ -65,6 +65,7 @@ namespace Exceptionless {
                 config.ReadFromAttributes(Assembly.GetEntryAssembly(), Assembly.GetCallingAssembly());
             else
                 config.ReadFromAttributes(configAttributesAssemblies);
+
             config.ReadFromConfigSection();
             config.ApplySavedServerSettings();
         }
@@ -130,58 +131,33 @@ namespace Exceptionless {
                         config.Settings[setting.Name] = setting.Value;
                 }
             }
-        }
 
-        public static void AddResolversFromConfig(this ExceptionlessConfiguration config)
-        {
-            ExceptionlessSection section = null;
+            if (section.Registrations != null || section.Registrations.Count != 0) {
+                var types = AppDomain.CurrentDomain.GetAssemblies().Where(a => !a.IsDynamic).SelectMany(a => a.GetTypes()).ToList();
 
-            try {
-                section = ConfigurationManager.GetSection("exceptionless") as ExceptionlessSection;
-            } catch (Exception ex) {
-                config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Concat("An error occurred while retrieving the configuration section. Exception: ", ex.Message));
-            }
+                foreach (RegistrationConfigElement resolver in section.Registrations) {
+                    if (String.IsNullOrEmpty(resolver.Service) || String.IsNullOrEmpty(resolver.Type))
+                        continue;
 
-            if (section == null)
-                return;
+                    Type resolverInterface = types.FirstOrDefault(t => t.Name.Equals(resolver.Service) || t.FullName.Equals(resolver.Service));
+                    if (resolverInterface == null) {
+                        config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Format("An error occurred while retrieving service type \"{0}\".", resolver.Service));
+                        continue;
+                    }
 
-            if (section.Registrations == null || section.Registrations.Count == 0) {
-                return;
-            }
+                    try {
+                        Type implementationType = Type.GetType(resolver.Type);
+                        if (!resolverInterface.IsAssignableFrom(implementationType)) {
+                            config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Format("Type \"{0}\" does not implement \"{1}\".", resolver.Type, resolver.Service));
+                            continue;
+                        }
 
-            foreach (RegistrationConfigElement resolver in section.Registrations) {
-                Type resolverInterface = FindType(resolver.Service);
-                if (resolverInterface == null) {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Format("An error occurred while finding type \"{0}\".", resolver.Service));
-                }
-                try {
-                    Type type = Type.GetType(resolver.Type);
-                    config.Resolver.Register(resolverInterface, type);
-                }
-                catch (Exception ex)
-                {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while retrieving a resolver for {0}. Exception: {1}", resolver.Service, ex.Message));
+                        config.Resolver.Register(resolverInterface, implementationType);
+                    } catch (Exception ex) {
+                        config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while registering service \"{0}\" implementation \"{1}\".", resolver.Service, resolver.Type));
+                    }
                 }
             }
-        }
-
-        /// <summary>
-        /// Looks in all loaded assemblies for the given type.
-        /// </summary>
-        /// <param name="name">
-        /// The name or full name of the type.
-        /// </param>
-        /// <returns>
-        /// The <see cref="Type"/> found; null if not found.
-        /// </returns>
-        /// <references>based on http://stackoverflow.com/a/20862223/2298807</references>
-        private static Type FindType(string name)
-        {
-            return
-                AppDomain.CurrentDomain.GetAssemblies()
-                    .Where(a => !a.IsDynamic)
-                    .SelectMany(a => a.GetTypes())
-                    .FirstOrDefault(t => t.Name.Equals(name) || t.FullName.Equals(name));
         }
     }
 }
