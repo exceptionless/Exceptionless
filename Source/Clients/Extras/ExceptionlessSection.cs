@@ -42,36 +42,36 @@ namespace Exceptionless {
         [ConfigurationProperty("data", IsDefaultCollection = false)]
         public NameValueConfigurationCollection ExtendedData { get { return this["data"] as NameValueConfigurationCollection; } set { this["data"] = value; } }
 
-        [ConfigurationProperty("resolvers", IsDefaultCollection = false, IsRequired = false)]
-        [ConfigurationCollection(typeof(ResolverCollection), AddItemName = "resolver")]
-        public ResolverCollection Resolvers
+        [ConfigurationProperty("registrations", IsDefaultCollection = false, IsRequired = false)]
+        [ConfigurationCollection(typeof(RegistrationCollection), AddItemName = "registration")]
+        public RegistrationCollection Registrations
         {
-            get { return (ResolverCollection)this["resolvers"]; }
-            set { this["resolvers"] = value; }
+            get { return (RegistrationCollection)this["registrations"]; }
+            set { this["registrations"] = value; }
         }
     }
 
-    public class ResolverCollection : ConfigurationElementCollection
+    public class RegistrationCollection : ConfigurationElementCollection
     {
         protected override ConfigurationElement CreateNewElement()
         {
-            return new ResolverConfigElement();
+            return new RegistrationConfigElement();
         }
 
         protected override object GetElementKey(ConfigurationElement element)
         {
-            return ((ResolverConfigElement)element).Interface;
+            return ((RegistrationConfigElement)element).Service;
         }
     }
 
-    public class ResolverConfigElement : ConfigurationElement
+    public class RegistrationConfigElement : ConfigurationElement
     {
 
-        [ConfigurationProperty("interface", IsRequired = true)]
-        public string Interface
+        [ConfigurationProperty("service", IsRequired = true)]
+        public string Service
         {
-            get { return (string)this["interface"]; }
-            set { this["interface"] = value; }
+            get { return (string)this["service"]; }
+            set { this["service"] = value; }
         }
 
         [ConfigurationProperty("type", IsRequired = true)]

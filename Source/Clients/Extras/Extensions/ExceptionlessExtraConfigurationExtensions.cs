@@ -145,17 +145,14 @@ namespace Exceptionless {
             if (section == null)
                 return;
 
-            if (section.Resolvers == null || section.Resolvers.Count == 0) {
+            if (section.Registrations == null || section.Registrations.Count == 0) {
                 return;
             }
 
-            foreach (ResolverConfigElement resolver in section.Resolvers) {
-                if (!IsValidInterface(resolver.Interface)) {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("The provided resolver interface is not known: ", resolver.Interface));
-                }
-                Type resolverInterface = FindType(resolver.Interface);
+            foreach (RegistrationConfigElement resolver in section.Registrations) {
+                Type resolverInterface = FindType(resolver.Service);
                 if (resolverInterface == null) {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("Huh - Internal error - Cannot find interface ", resolver.Interface));
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("Huh - Internal error - Cannot find interface ", resolver.Service));
                 }
                 try {
                     Type type = Type.GetType(resolver.Type);
@@ -163,16 +160,9 @@ namespace Exceptionless {
                 }
                 catch (Exception ex)
                 {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while retrieving a resolver for {0}. Exception: {1}", resolver.Interface, ex.Message));
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while retrieving a resolver for {0}. Exception: {1}", resolver.Service, ex.Message));
                 }
             }
-        }
-
-        private static bool IsValidInterface(string interfaceName) {
-            return interfaceName == "ISubmissionClient" || interfaceName == "IDuplicateChecker"
-                || interfaceName == "IEnvironmentInfoCollector" || interfaceName == "IEventQueue"
-                || interfaceName == "IObjectStorage" || interfaceName == "IJsonSerializer"
-                || interfaceName == "ILastReferenceIdManager" || interfaceName == "IExceptionlessLog";
         }
 
         /// <summary>
