@@ -278,7 +278,7 @@ task PackageClient -depends TestClient {
 			}
 		}
 
-        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
+        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version }
     }
 
     Delete-Directory "$build_dir\$configuration"
