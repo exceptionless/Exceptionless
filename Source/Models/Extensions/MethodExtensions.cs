@@ -26,7 +26,7 @@ namespace Exceptionless {
         }
 
         public static string GetFullName(this Method method) {
-            if (String.IsNullOrEmpty(method.Name))
+            if (method == null || String.IsNullOrEmpty(method.Name))
                 return "<null>";
 
             var sb = new StringBuilder(method.GetDeclaringTypeFullName());
