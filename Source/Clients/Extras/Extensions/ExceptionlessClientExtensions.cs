@@ -18,6 +18,7 @@ namespace Exceptionless {
             client.Configuration.AddEnrichment<PrivateInformationEnrichment>();
             client.Configuration.Resolver.Register<ISubmissionClient, SubmissionClient>();
             client.Configuration.Resolver.Register<IEnvironmentInfoCollector, EnvironmentInfoCollector>();
+            client.Configuration.AddResolversFromConfig();
             client.RegisterAppDomainUnhandledExceptionHandler(appDomain);
             client.RegisterTaskSchedulerUnobservedTaskExceptionHandler();
         }

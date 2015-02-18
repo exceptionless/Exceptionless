@@ -41,5 +41,46 @@ namespace Exceptionless {
 
         [ConfigurationProperty("data", IsDefaultCollection = false)]
         public NameValueConfigurationCollection ExtendedData { get { return this["data"] as NameValueConfigurationCollection; } set { this["data"] = value; } }
+
+        [ConfigurationProperty("resolvers", IsDefaultCollection = false, IsRequired = false)]
+        [ConfigurationCollection(typeof(ResolverCollection), AddItemName = "resolver")]
+        public ResolverCollection Resolvers
+        {
+            get { return (ResolverCollection)this["resolvers"]; }
+            set { this["resolvers"] = value; }
+        }
     }
+
+    public class ResolverCollection : ConfigurationElementCollection
+    {
+        protected override ConfigurationElement CreateNewElement()
+        {
+            return new ResolverConfigElement();
+        }
+
+        protected override object GetElementKey(ConfigurationElement element)
+        {
+            return ((ResolverConfigElement)element).Interface;
+        }
+    }
+
+    public class ResolverConfigElement : ConfigurationElement
+    {
+
+        [ConfigurationProperty("interface", IsRequired = true)]
+        public string Interface
+        {
+            get { return (string)this["interface"]; }
+            set { this["interface"] = value; }
+        }
+
+        [ConfigurationProperty("type", IsRequired = true)]
+        public string Type
+        {
+            get { return (string)this["type"]; }
+            set { this["type"] = value; }
+        }
+
+    }
+
 }
