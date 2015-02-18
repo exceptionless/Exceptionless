@@ -152,7 +152,7 @@ namespace Exceptionless {
             foreach (RegistrationConfigElement resolver in section.Registrations) {
                 Type resolverInterface = FindType(resolver.Service);
                 if (resolverInterface == null) {
-                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("Huh - Internal error - Cannot find interface ", resolver.Service));
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Format("An error occurred while finding type \"{0}\".", resolver.Service));
                 }
                 try {
                     Type type = Type.GetType(resolver.Type);
