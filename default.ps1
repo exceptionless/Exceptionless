@@ -260,7 +260,7 @@ task PackageClient -depends TestClient {
         # Sign the assemblies.
         Get-ChildItem -Path $workingDirectory -Filter *.dll -Recurse | ForEach-Object { Sign-Assembly $_.FullName }
 
-        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
+        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version }
     }
 
     Delete-Directory "$build_dir\$configuration"
