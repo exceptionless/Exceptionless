@@ -340,7 +340,7 @@ Function Sign-Assembly ([string] $sourceAssembly) {
     $sourceAssemblyIL = ([IO.Path]::ChangeExtension($sourceAssembly, ".il"))
     $sourceAssemblyRes = ([IO.Path]::ChangeExtension($sourceAssembly, ".res"))
 
-    exec { & ildasm $sourceAssembly /nobar /linenum /out:$sourceAssemblyIL }
+    exec { & "$lib_dir\Microsoft\ildasm.exe" $sourceAssembly /nobar /linenum /out:$sourceAssemblyIL }
     
     Remove-Item -Path $sourceAssembly
 
