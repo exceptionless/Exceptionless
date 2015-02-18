@@ -346,9 +346,7 @@ Function Sign-Assembly ([string] $sourceAssembly) {
 
     exec { & ilasm "$sourceAssemblyIL" /dll /debug /resource:$sourceAssemblyRes /key=$sign_file }
 
-    Get-ChildItem -Path $workingDirectory -Filter *.il -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
-    Get-ChildItem -Path $workingDirectory -Filter *.res -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
-    Get-ChildItem -Path $workingDirectory -Filter *.snk -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
+    Get-ChildItem -Path $workingDirectory -Recurse -Include *.il,*.res,*.snk | ForEach-Object { Remove-Item -Path $_.FullName }
 }
 
 Function Create-Directory([string] $directory_name) {
