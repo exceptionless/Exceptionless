@@ -33,7 +33,7 @@ properties {
         @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
         @{ Name = "Exceptionless.Console"; 	SourceDir = "$source_dir\Clients\Console"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
         @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.NLog"; 	SourceDir = "$source_dir\Clients\NLog";		ExternalNuGetDependencies = $null;	MergeDependencies = $null; }
+        @{ Name = "Exceptionless.NLog"; 	SourceDir = "$source_dir\Clients\NLog";		ExternalNuGetDependencies = "NLog";	MergeDependencies = $null; }
     )
 
     $client_build_configurations = @(
@@ -72,12 +72,12 @@ task Init -depends Clean {
         $build_number = "0"
     }
 
-	If (![string]::IsNullOrWhiteSpace($env:BUILD_SUFFIX)) {
+    If (![string]::IsNullOrWhiteSpace($env:BUILD_SUFFIX)) {
         $build_suffix = $env:BUILD_SUFFIX
     } else {
         $build_suffix = ""
     }
-	
+    
     If (![string]::IsNullOrWhiteSpace($env:BUILD_VCS_NUMBER_Exceptionless_Master)) {
         $git_hash = $env:BUILD_VCS_NUMBER_Exceptionless_Master.Substring(0, 10)
         TeamCity-ReportBuildProgress "VCS Revision: $git_hash"
@@ -125,7 +125,7 @@ task BuildClient -depends Init {
 task BuildServer -depends Init {			
     TeamCity-ReportBuildStart "Building Server" 
     exec { msbuild "$sln_file" /p:Configuration="$configuration" /p:Platform="Any CPU" /t:Rebuild }
-	TeamCity-ReportBuildFinish "Finished building Server"
+    TeamCity-ReportBuildFinish "Finished building Server"
 }
 
 task Build -depends BuildClient, BuildServer
@@ -223,7 +223,7 @@ task PackageClient -depends TestClient {
             
             ForEach ($d in $($p.ExternalNuGetDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
                 $package = $packages.SelectSinglenode("/packages/package[@id=""$d""]")
-                $nuspec | Select-Xml '//dependency' |% {
+                $nuspec | Select-Xml -XPath '//dependency' |% {
                     If($_.Node.Id.Equals($d)){
                         $_.Node.Version = "$($package.version)"
                     }
@@ -237,6 +237,30 @@ task PackageClient -depends TestClient {
         Create-Directory $packageDir
 
         exec { & $base_dir\nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
+
+        If ($($p.Name) -eq "Exceptionless.Nancy") {
+            Continue;
+        }
+
+        # Create signed version of the assemblies.
+        $signedNuspecFile = ([IO.Path]::ChangeExtension($nuspecFile, ".Signed.nuspec"))
+        Rename-Item -Path $nuspecFile -NewName $signedNuspecFile
+
+        # Update signed NuGet nuspec file.
+        $signedNuspec = [xml](Get-Content $signedNuspecFile)
+        $signedNuspec | Select-Xml -XPath '//id' |% { $_.Node.InnerText = $_.Node.InnerText + ".Signed" }
+        $signedNuspec | Select-Xml -XPath '//dependency' |% {
+            If($_.Node.Id.StartsWith("Exceptionless")){
+                $_.Node.Id = $_.Node.Id + ".Signed"
+            }
+        }
+
+        $signedNuspec.Save($signedNuspecFile);
+
+        # Sign the assemblies.
+        Get-ChildItem -Path $workingDirectory -Filter *.dll -Recurse | ForEach-Object { Sign-Assembly $_.FullName }
+
+        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
     }
 
     Delete-Directory "$build_dir\$configuration"
@@ -256,7 +280,7 @@ task PackageServer -depends TestServer {
     robocopy "$source_dir\Api.IIS\App_Data\JobRunner\jobs" "$source_dir\Api.IIS\App_Data\jobs" /MOVE /E /NP
 
     robocopy "$base_dir" "$source_dir\Api.IIS" DownloadGeoIPDatabase.ps1
-	
+
     TeamCity-ReportBuildProgress "Building Server NuGet Package: Exceptionless.Api"
     exec { & $base_dir\nuget\NuGet.exe pack "$source_dir\Api.IIS\Exceptionless.Api.nuspec" -OutputDirectory $packageDir -Version $nuget_version -NoPackageAnalysis }
 }
@@ -310,6 +334,21 @@ Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [str
         /keyfile:"$sign_file" `
         /t:library `
         $targetplatform }
+}
+
+Function Sign-Assembly ([string] $sourceAssembly) {
+    $sourceAssemblyIL = ([IO.Path]::ChangeExtension($sourceAssembly, ".il"))
+    $sourceAssemblyRes = ([IO.Path]::ChangeExtension($sourceAssembly, ".res"))
+
+    exec { & ildasm $sourceAssembly /nobar /linenum /out:$sourceAssemblyIL }
+    
+    Remove-Item -Path $sourceAssembly
+
+    exec { & ilasm "$sourceAssemblyIL" /dll /debug /resource:$sourceAssemblyRes /key=$sign_file }
+
+    Get-ChildItem -Path $workingDirectory -Filter *.il -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
+    Get-ChildItem -Path $workingDirectory -Filter *.res -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
+    Get-ChildItem -Path $workingDirectory -Filter *.snk -Recurse | ForEach-Object { Remove-Item -Path $_.FullName }
 }
 
 Function Create-Directory([string] $directory_name) {
