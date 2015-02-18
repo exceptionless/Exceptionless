@@ -83,8 +83,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.NLog", "Sourc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Console", "Source\Clients\Console\Exceptionless.Console.csproj", "{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.SampleResolverChangeConsole", "Source\Samples\SampleResolverChangeConsole\Exceptionless.SampleResolverChangeConsole.csproj", "{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -385,16 +383,6 @@ Global
 		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402}.Release|x86.ActiveCfg = Release|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -424,6 +412,5 @@ Global
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
 		{5EB81EEF-ED35-4AD2-9B20-0B3E5C94BBA4} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
 		{1E53D5CD-1719-4BFB-A9A8-7D46BACA6402} = {AD891FB6-E07A-47DB-AA64-B68AA8DEB7CA}
-		{D8B15A6E-7F02-4AF5-ABC9-8DDDAF67729F} = {DAA02D3B-8404-4938-AB04-84AC31C1AD45}
 	EndGlobalSection
 EndGlobal
