@@ -150,6 +150,9 @@ namespace Exceptionless {
             }
 
             foreach (ResolverConfigElement resolver in section.Resolvers) {
+                if (!IsValidInterface(resolver.Interface)) {
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("The provided resolver interface is not known: ", resolver.Interface));
+                }
                 Type resolverInterface = FindType(resolver.Interface);
                 if (resolverInterface == null) {
                     config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Concat("Huh - Internal error - Cannot find interface ", resolver.Interface));
@@ -163,6 +166,13 @@ namespace Exceptionless {
                     config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while retrieving a resolver for {0}. Exception: {1}", resolver.Interface, ex.Message));
                 }
             }
+        }
+
+        private static bool IsValidInterface(string interfaceName) {
+            return interfaceName == "ISubmissionClient" || interfaceName == "IDuplicateChecker"
+                || interfaceName == "IEnvironmentInfoCollector" || interfaceName == "IEventQueue"
+                || interfaceName == "IObjectStorage" || interfaceName == "IJsonSerializer"
+                || interfaceName == "ILastReferenceIdManager" || interfaceName == "IExceptionlessLog";
         }
 
         /// <summary>
