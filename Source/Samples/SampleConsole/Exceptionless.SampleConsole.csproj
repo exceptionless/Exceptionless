@@ -66,6 +66,7 @@
     <Compile Include="..\..\Api.Tests\Utility\RandomEventGenerator.cs">
       <Link>RandomEventGenerator.cs</Link>
     </Compile>
+    <Compile Include="InMemorySubmissionClient.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

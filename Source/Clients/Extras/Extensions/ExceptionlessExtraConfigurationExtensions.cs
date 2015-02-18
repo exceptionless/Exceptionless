@@ -131,5 +131,57 @@ namespace Exceptionless {
                 }
             }
         }
+
+        public static void AddResolversFromConfig(this ExceptionlessConfiguration config)
+        {
+            ExceptionlessSection section = null;
+
+            try {
+                section = ConfigurationManager.GetSection("exceptionless") as ExceptionlessSection;
+            } catch (Exception ex) {
+                config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Concat("An error occurred while retrieving the configuration section. Exception: ", ex.Message));
+            }
+
+            if (section == null)
+                return;
+
+            if (section.Registrations == null || section.Registrations.Count == 0) {
+                return;
+            }
+
+            foreach (RegistrationConfigElement resolver in section.Registrations) {
+                Type resolverInterface = FindType(resolver.Service);
+                if (resolverInterface == null) {
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), String.Format("An error occurred while finding type \"{0}\".", resolver.Service));
+                }
+                try {
+                    Type type = Type.GetType(resolver.Type);
+                    config.Resolver.Register(resolverInterface, type);
+                }
+                catch (Exception ex)
+                {
+                    config.Resolver.GetLog().Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while retrieving a resolver for {0}. Exception: {1}", resolver.Service, ex.Message));
+                }
+            }
+        }
+
+        /// <summary>
+        /// Looks in all loaded assemblies for the given type.
+        /// </summary>
+        /// <param name="name">
+        /// The name or full name of the type.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Type"/> found; null if not found.
+        /// </returns>
+        /// <references>based on http://stackoverflow.com/a/20862223/2298807</references>
+        private static Type FindType(string name)
+        {
+            return
+                AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic)
+                    .SelectMany(a => a.GetTypes())
+                    .FirstOrDefault(t => t.Name.Equals(name) || t.FullName.Equals(name));
+        }
     }
 }

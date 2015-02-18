@@ -41,5 +41,46 @@ namespace Exceptionless {
 
         [ConfigurationProperty("data", IsDefaultCollection = false)]
         public NameValueConfigurationCollection ExtendedData { get { return this["data"] as NameValueConfigurationCollection; } set { this["data"] = value; } }
+
+        [ConfigurationProperty("registrations", IsDefaultCollection = false, IsRequired = false)]
+        [ConfigurationCollection(typeof(RegistrationCollection), AddItemName = "registration")]
+        public RegistrationCollection Registrations
+        {
+            get { return (RegistrationCollection)this["registrations"]; }
+            set { this["registrations"] = value; }
+        }
     }
+
+    public class RegistrationCollection : ConfigurationElementCollection
+    {
+        protected override ConfigurationElement CreateNewElement()
+        {
+            return new RegistrationConfigElement();
+        }
+
+        protected override object GetElementKey(ConfigurationElement element)
+        {
+            return ((RegistrationConfigElement)element).Service;
+        }
+    }
+
+    public class RegistrationConfigElement : ConfigurationElement
+    {
+
+        [ConfigurationProperty("service", IsRequired = true)]
+        public string Service
+        {
+            get { return (string)this["service"]; }
+            set { this["service"] = value; }
+        }
+
+        [ConfigurationProperty("type", IsRequired = true)]
+        public string Type
+        {
+            get { return (string)this["type"]; }
+            set { this["type"] = value; }
+        }
+
+    }
+
 }
