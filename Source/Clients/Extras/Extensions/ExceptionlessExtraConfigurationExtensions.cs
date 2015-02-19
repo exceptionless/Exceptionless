@@ -10,6 +10,7 @@ using Exceptionless.Diagnostics;
 using Exceptionless.Enrichments.Default;
 using Exceptionless.Extras;
 using Exceptionless.Extras.Storage;
+using Exceptionless.Extras.Utility;
 using Exceptionless.Logging;
 using Exceptionless.Storage;
 
@@ -134,7 +135,7 @@ namespace Exceptionless {
             }
 
             if (section.Registrations != null && section.Registrations.Count > 0) {
-                var types = GetTypes(config.Resolver.GetLog());
+                var types = AssemblyHelper.GetTypes(config.Resolver.GetLog());
 
                 foreach (RegistrationConfigElement resolver in section.Registrations) {
                     if (String.IsNullOrEmpty(resolver.Service) || String.IsNullOrEmpty(resolver.Type))
@@ -159,24 +160,6 @@ namespace Exceptionless {
                     }
                 }
             }
-        }
-
-        private static List<Type> GetTypes(IExceptionlessLog log) {
-            var types = new List<Type>();
-
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies) {
-                try {
-                    if (assembly.IsDynamic)
-                        continue;
-
-                    types.AddRange(assembly.GetExportedTypes());
-                } catch (Exception ex) {
-                    log.Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while getting types for assembly \"{0}\".", assembly));
-                }
-            }
-
-            return types;
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reflection;
+using Exceptionless.Logging;
 
 namespace Exceptionless.Extras.Utility {
     public class AssemblyHelper {
@@ -20,6 +22,24 @@ namespace Exceptionless.Extras.Utility {
 
             // If there is an attribute, return its value
             return ((AssemblyTitleAttribute)attributes[0]).Title;
+        }
+
+        public static List<Type> GetTypes(IExceptionlessLog log) {
+            var types = new List<Type>();
+
+            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            foreach (var assembly in assemblies) {
+                try {
+                    if (assembly.IsDynamic)
+                        continue;
+
+                    types.AddRange(assembly.GetExportedTypes());
+                } catch (Exception ex) {
+                    log.Error(typeof(ExceptionlessExtraConfigurationExtensions), ex, String.Format("An error occurred while getting types for assembly \"{0}\".", assembly));
+                }
+            }
+
+            return types;
         }
     }
 }
