@@ -41,9 +41,9 @@ namespace Exceptionless {
                 return;
 
             if (Application.Current != null && !Application.Current.Dispatcher.CheckAccess())
-                e.Cancel = (bool)Application.Current.Dispatcher.Invoke(new Func<EventSubmittingEventArgs, bool>(ShowDialog), DispatcherPriority.Send, e);
+                e.Cancel = !(bool)Application.Current.Dispatcher.Invoke(new Func<EventSubmittingEventArgs, bool>(ShowDialog), DispatcherPriority.Send, e);
             else
-                e.Cancel = ShowDialog(e);
+                e.Cancel = !ShowDialog(e);
         }
         
         private static bool ShowDialog(EventSubmittingEventArgs e) {
