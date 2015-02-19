@@ -15,23 +15,25 @@ You can get your Exceptionless api key by logging into http://exceptionless.io
 and viewing your project configuration page.
 
 -------------------------------------
-		 Windows Integration
+		 Integration
 -------------------------------------
-If your project has an app.config file, the Exceptionless NuGet package 
-will automatically configure your app.config with the required config sections.
-All you need to do is open the app.config and add your Exceptionless api key to 
-the app.config Exceptionless section.
+You can set your api key by calling the following code on startup:
 
-<exceptionless apiKey="API_KEY_HERE" />
+ExceptionlessClient.Default.Configuration.ApiKey = "API_KEY_HERE"
 
-If your project does not have an app.config file, then please add the following 
-assembly attribute and your own Exceptionless api key to your project (E.G., AssemblyInfo class).
+You can also configure the client via attributes. To configure the client using attributes please add 
+the following assembly attribute and your own Exceptionless api key to your project (E.G., AssemblyInfo class).
 
 [assembly: Exceptionless.Configuration.Exceptionless("API_KEY_HERE")]
 
-Finally, you must call the following line of code to start reporting unhandled exceptions.
+Finally, you must call the following line of code to read your configuration from the attribute.
 
-Exceptionless.ExceptionlessClient.Default.Startup()
+Exceptionless.ExceptionlessClient.Default.Configuration.ReadFromAttributes()
+
+Please note that you will need to pass in the the assembly that contains the attributes if you place
+place the above attribute outside of the  entry assembly or calling assembly.
+
+Exceptionless.ExceptionlessClient.Default.Configuration.ReadFromAttributes(typeof(MyClass).Assembly)
 
 -------------------------------------
    Manually reporting an exception
