@@ -133,7 +133,7 @@ namespace Exceptionless {
                 }
             }
 
-            if (section.Registrations != null || section.Registrations.Count > 0) {
+            if (section.Registrations != null && section.Registrations.Count > 0) {
                 var types = GetTypes(config.Resolver.GetLog());
 
                 foreach (RegistrationConfigElement resolver in section.Registrations) {
