@@ -34,7 +34,7 @@ namespace Exceptionless {
         }
         
         public static string GetQueueName(this ExceptionlessConfiguration config) {
-            return config.ApiKey.Substring(0, 8);
+            return !String.IsNullOrEmpty(config.ApiKey) ? config.ApiKey.Substring(0, 8) : null;
         }
 
         public static string GetInstallId(this ExceptionlessConfiguration config) {

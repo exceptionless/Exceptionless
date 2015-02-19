@@ -11,7 +11,6 @@ using System;
 using System.Windows;
 using System.Windows.Threading;
 using Exceptionless.Dialogs;
-using Exceptionless.Models;
 using Exceptionless.Wpf.Extensions;
 
 namespace Exceptionless {

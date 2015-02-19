@@ -33,12 +33,17 @@ namespace Exceptionless {
             EventEnrichmentManager.AddDefaultEnrichments(this);
         }
 
+        internal bool IsLocked {
+            get { return _configLocked; }
+        }
+
         internal void LockConfig() {
             if (_configLocked)
                 return;
 
             _configLocked = true;
             _validationResult = Validate();
+            Enabled = _validationResult.IsValid;
         }
 
         /// <summary>
@@ -226,8 +231,7 @@ namespace Exceptionless {
             var result = new ValidationResult();
 
             string key = ApiKey != null ? ApiKey.Trim() : null;
-            if (String.IsNullOrEmpty(key)
-                 || String.Equals(key, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase))
+            if (String.IsNullOrEmpty(key) || String.Equals(key, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase))
                 result.Messages.Add("ApiKey is not set.");
 
             if (key != null && (key.Length < 10 || key.Contains(" ")))

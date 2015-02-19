@@ -93,6 +93,7 @@ namespace Client.Tests.Configuration {
             Assert.Equal(3, client.Configuration.Settings.Count);
 
             var storage = config.Resolver.GetFileStorage() as InMemoryObjectStorage;
+            Assert.NotNull(config.GetQueueName());
             Assert.True(storage.Exists(config.GetQueueName() + "\\server-settings.json"));
 
             config.Settings.Clear();
