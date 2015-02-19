@@ -8,12 +8,20 @@ using Exceptionless.Storage;
 namespace Exceptionless.Configuration {
     public static class SettingsManager {
         public static void ApplySavedServerSettings(ExceptionlessConfiguration config) {
+            if (String.IsNullOrEmpty(config.ApiKey) || String.Equals(config.ApiKey, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase)) {
+                config.Resolver.GetLog().Error(typeof(SettingsManager), "Unable to apply saved server settings: ApiKey is not set.");
+                return;
+            }
+
             var savedServerSettings = GetSavedServerSettings(config);
             config.Settings.Apply(savedServerSettings);
         }
 
         private static SettingsDictionary GetSavedServerSettings(ExceptionlessConfiguration config) {
             string configPath = GetConfigPath(config);
+            if (String.IsNullOrEmpty(configPath))
+                return new SettingsDictionary();
+
             var fileStorage = config.Resolver.GetFileStorage();
             if (!fileStorage.Exists(configPath))
                 return new SettingsDictionary();
@@ -29,6 +37,11 @@ namespace Exceptionless.Configuration {
         }
 
         public static void CheckVersion(int version, ExceptionlessConfiguration config) {
+            if (String.IsNullOrEmpty(config.ApiKey) || String.Equals(config.ApiKey, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase)) {
+                config.Resolver.GetLog().Error(typeof(SettingsManager), "Unable to check version: ApiKey is not set.");
+                return;
+            }
+
             var persistedClientData = config.Resolver.Resolve<PersistedDictionary>();
             if (version <= persistedClientData.GetInt32(String.Concat(config.GetQueueName(), "-ServerConfigVersion"), -1))
                 return;
@@ -37,6 +50,11 @@ namespace Exceptionless.Configuration {
         }
 
         public static void UpdateSettings(ExceptionlessConfiguration config) {
+            if (String.IsNullOrEmpty(config.ApiKey) || String.Equals(config.ApiKey, "API_KEY_HERE", StringComparison.OrdinalIgnoreCase)) {
+                config.Resolver.GetLog().Error(typeof(SettingsManager), "Unable to update settings: ApiKey is not set.");
+                return;
+            }
+
             var serializer = config.Resolver.GetJsonSerializer();
             var client = config.Resolver.GetSubmissionClient();
 
