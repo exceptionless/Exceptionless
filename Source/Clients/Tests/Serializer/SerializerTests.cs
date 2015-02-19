@@ -121,7 +121,7 @@ namespace Client.Tests.Serializer {
             return contract;
         }
 
-        protected override string ResolvePropertyName(string propertyName) {
+        protected internal override string ResolvePropertyName(string propertyName) {
             return propertyName.ToLowerUnderscoredWords();
         }
     }

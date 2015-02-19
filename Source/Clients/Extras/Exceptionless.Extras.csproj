@@ -48,6 +48,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\GlobalAssemblyInfo.cs">
+      <Link>Properties\GlobalAssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="Enrichments\ErrorEnrichment.cs" />
     <Compile Include="Enrichments\PrivateInformationEnrichment.cs" />
     <Compile Include="Enrichments\TraceLogEnrichment.cs" />

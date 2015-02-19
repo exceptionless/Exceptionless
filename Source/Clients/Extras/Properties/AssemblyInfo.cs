@@ -1,38 +1,22 @@
-﻿using System.Reflection;
+﻿#region Copyright 2014 Exceptionless
+
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+#endregion
+
+using System;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
-// General Information about an assembly is controlled through the following 
-// set of attributes. Change these attribute values to modify the information
-// associated with an assembly.
-[assembly: AssemblyTitle("Extensions")]
-[assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Extensions")]
-[assembly: AssemblyCopyright("Copyright ©  2014")]
-[assembly: AssemblyTrademark("")]
-[assembly: AssemblyCulture("")]
+[assembly: CLSCompliant(true)]
+[assembly: AssemblyTitle("Exceptionless.Extras")]
+[assembly: AssemblyDescription("Exceptionless.Extras")]
 
-// Setting ComVisible to false makes the types in this assembly not visible 
-// to COM components.  If you need to access a type in this assembly from 
-// COM, set the ComVisible attribute to true on that type.
-[assembly: ComVisible(false)]
-
-// The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("9ace31d8-8e0e-467a-8fa7-39125b1914e2")]
-
-// Version information for an assembly consists of the following four values:
-//
-//      Major Version
-//      Minor Version 
-//      Build Number
-//      Revision
-//
-// You can specify all the values or you can default the Build and Revision Numbers 
-// by using the '*' as shown below:
-// [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("1.0.0.0")]
-[assembly: AssemblyFileVersion("1.0.0.0")]
-
+#if SIGNED
+[assembly: InternalsVisibleTo("Client.Tests, PublicKey=0024000004800000940000000602000000240000525341310004000001000100a9357232b9bcad78fd310297fdb41bf42816ee2ca9ccdace999889de2badb6f06df2de1d9f2c8cb17b21f5311f11d6bb328d55e0dd9fe8adc5e2dc4610028c1bdacb3355d2e239b81d0bb0ac83e615fc641f8a3ec49e4fad8e305994953d448ef7b38e8c256601e54af19c035b562e3e5e5461c2a93b8dd11936e451b05034a2")]
+#else
 [assembly: InternalsVisibleTo("Client.Tests")]
+#endif

@@ -25,15 +25,23 @@ properties {
     $sign_file = "$source_dir\Exceptionless.snk"
 
     $client_projects = @(
-        @{ Name = "Exceptionless"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
-        @{ Name = "Exceptionless.Mvc";  	SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.Nancy";  	SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.WebApi";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.Web"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.Windows"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.Console"; 	SourceDir = "$source_dir\Clients\Console"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.Wpf"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
-        @{ Name = "Exceptionless.NLog"; 	SourceDir = "$source_dir\Clients\NLog";		ExternalNuGetDependencies = "NLog";	MergeDependencies = $null; }
+        @{ Name = "Exceptionless"; 					SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
+        @{ Name = "Exceptionless.Signed"; 			SourceDir = "$source_dir\Clients\Shared";	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Models.dll;"; },
+        @{ Name = "Exceptionless.Mvc";  			SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Mvc.Signed";  		SourceDir = "$source_dir\Clients\Mvc"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Nancy";  			SourceDir = "$source_dir\Clients\Nancy"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.WebApi";  			SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.WebApi.Signed";  	SourceDir = "$source_dir\Clients\WebApi"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Web"; 				SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Web.Signed"; 		SourceDir = "$source_dir\Clients\Web"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Windows"; 			SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Windows.Signed"; 	SourceDir = "$source_dir\Clients\Windows"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Console"; 			SourceDir = "$source_dir\Clients\Console"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Console.Signed"; 	SourceDir = "$source_dir\Clients\Console"; 	ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Wpf"; 				SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.Wpf.Signed"; 		SourceDir = "$source_dir\Clients\Wpf"; 		ExternalNuGetDependencies = $null;	MergeDependencies = "Exceptionless.Extras.dll;"; },
+        @{ Name = "Exceptionless.NLog"; 			SourceDir = "$source_dir\Clients\NLog";		ExternalNuGetDependencies = "NLog";	MergeDependencies = $null; }
+        @{ Name = "Exceptionless.NLog.Signed"; 		SourceDir = "$source_dir\Clients\NLog";		ExternalNuGetDependencies = "NLog";	MergeDependencies = $null; }
     )
 
     $client_build_configurations = @(
@@ -96,21 +104,37 @@ task Init -depends Clean {
 task BuildClient -depends Init {
     ForEach ($p in $client_projects) {
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
+            $isPclClient = ($($p.Name) -eq "Exceptionless") -or ($($p.Name) -eq "Exceptionless.Signed")
+            If (($isPclClient -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (!$isPclClient -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
 
             $outputDirectory = "$build_dir\$configuration\$($p.Name)\lib\$($b.NuGetDir)"
-            
+
             TeamCity-ReportBuildStart "Building $($p.Name) ($($b.TargetFrameworkVersionProperty))" 
-            exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
-                /p:Configuration="$configuration" `
-                /p:Platform="AnyCPU" `
-                /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
-                /p:OutputPath="$outputDirectory" `
-                /p:TargetFrameworkVersionProperty="$($b.TargetFrameworkVersionProperty)" `
-                /t:"Rebuild" }
-            
+
+            If ($($p.Name).EndsWith(".Signed")) {
+                $name = $($p.Name).Replace(".Signed", "");
+                exec { & msbuild "$($p.SourceDir)\$name.csproj" `
+                            /p:SignAssembly=true `
+                            /p:AssemblyOriginatorKeyFile="$sign_file" `
+                            /p:Configuration="$configuration" `
+                            /p:Platform="AnyCPU" `
+                            /p:DefineConstants="`"TRACE;SIGNED;$($b.Constants)`"" `
+                            /p:OutputPath="$outputDirectory" `
+                            /p:TargetFrameworkVersionProperty="$($b.TargetFrameworkVersionProperty)" `
+                            /t:"Rebuild" }
+            } else {
+                exec { & msbuild "$($p.SourceDir)\$($p.Name).csproj" `
+                            /p:SignAssembly=false `
+                            /p:Configuration="$configuration" `
+                            /p:Platform="AnyCPU" `
+                            /p:DefineConstants="`"TRACE;$($b.Constants)`"" `
+                            /p:OutputPath="$outputDirectory" `
+                            /p:TargetFrameworkVersionProperty="$($b.TargetFrameworkVersionProperty)" `
+                            /t:"Rebuild" }
+            }
+
             TeamCity-ReportBuildFinish "Finished building $($p.Name) ($($b.TargetFrameworkVersionProperty))"
         }
     }
@@ -160,6 +184,8 @@ task PackageClient -depends TestClient {
     Create-Directory $deploy_dir
 
     ForEach ($p in $client_projects) {
+        $isSignedProject = $($p.Name).EndsWith(".Signed")
+        $assemblyName = $($p.Name).Replace(".Signed", "")
         $workingDirectory = "$working_dir\$($p.Name)"
         Create-Directory $workingDirectory
 
@@ -167,7 +193,8 @@ task PackageClient -depends TestClient {
 
         #copy assemblies from build directory to working directory.
         ForEach ($b in $client_build_configurations) {
-            If ((($($p.Name) -eq "Exceptionless") -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (($($p.Name) -ne "Exceptionless") -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
+            $isPclClient = ($($p.Name) -eq "Exceptionless") -or ($($p.Name) -eq "Exceptionless.Signed")
+            If (($isPclClient -and ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80")) -or (!$isPclClient -and ($($b.NuGetDir) -eq "portable-net40+sl50+win+wpa81+wp80"))) {
                 Continue;
             }
 
@@ -176,13 +203,13 @@ task PackageClient -depends TestClient {
             Create-Directory $workingLibDirectory
 
             #If ($($p.MergeDependencies) -ne $null) {
-            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$($p.Name).dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersionProperty)"
+            #	ILMerge-Assemblies $buildDirectory $workingLibDirectory "$assemblyName.dll" "$($p.MergeDependencies)" "$($b.TargetFrameworkVersionProperty)"
             #} else {
-            #	Copy-Item -Path "$buildDirectory\$($p.Name).dll" -Destination $workingLibDirectory
+            #	Copy-Item -Path "$buildDirectory\$assemblyName.dll" -Destination $workingLibDirectory
             #}
 
             # Work around until we are able to merge dependencies and update other project dependencies pre build (E.G., MVC client references Models)
-            Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$($p.Name).dll" -Or $_.Name -eq "$($p.Name).pdb" -or $_.Name -eq "$($p.Name).xml" } | Copy-Item -Destination $workingLibDirectory
+            Get-ChildItem -Path $buildDirectory | Where-Object { $_.Name -eq "$assemblyName.dll" -Or $_.Name -eq "$assemblyName.pdb" -or $_.Name -eq "$assemblyName.xml" } | Copy-Item -Destination $workingLibDirectory
 
             If ($($p.MergeDependencies) -ne $null) {
                 ForEach ($assembly in $($p.MergeDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
@@ -197,14 +224,12 @@ task PackageClient -depends TestClient {
         robocopy "$base_dir\Source\Models" "$workingDirectory\src\Source\Models" *.cs /S /NP /XD obj
         Copy-Item "$base_dir\Source\GlobalAssemblyInfo.cs" "$workingDirectory\src\Source\GlobalAssemblyInfo.cs"
 
-        If ($p.Name -ne "Exceptionless") {
+        If (($($p.Name) -ne "Exceptionless") -and ($($p.Name) -ne "Exceptionless.Signed")) {
             robocopy "$base_dir\Source\Clients\Extras" "$workingDirectory\src\Source\Clients\Extras" *.cs /S /NP /XD obj
         }
 
-        If ($p.Name -eq "Exceptionless.Mvc") {
+        If ($($p.Name).StartsWith("Exceptionless.Mvc")) {
             robocopy "$base_dir\Source\Clients\Web" "$workingDirectory\src\Source\Clients\Web" *.cs /S /NP /XD obj
-        } ElseIf ($p.Name -eq "Exceptionless.WebApi") {
-            robocopy "$base_dir\Source\CodeSmith.Core" "$workingDirectory\src\Source\CodeSmith.Core" *.cs /S /NP /XD obj
         }
 
         If ((Test-Path -Path "$($p.SourceDir)\NuGet")) {
@@ -215,70 +240,40 @@ task PackageClient -depends TestClient {
         Copy-Item "$($source_dir)\Clients\Shared\NuGet\tools\exceptionless.psm1" "$workingDirectory\tools"
 
         $nuspecFile = "$workingDirectory\$($p.Name).nuspec"
-        
+        If ($isSignedProject){
+            Rename-Item -Path "$workingDirectory\$assemblyName.nuspec" -NewName $nuspecFile
+        }
+
         # update NuGet nuspec file.
+        $nuspec = [xml](Get-Content $nuspecFile)
         If (($($p.ExternalNuGetDependencies) -ne $null) -and (Test-Path -Path "$($p.SourceDir)\packages.config")) {
             $packages = [xml](Get-Content "$($p.SourceDir)\packages.config")
-            $nuspec = [xml](Get-Content $nuspecFile)
             
             ForEach ($d in $($p.ExternalNuGetDependencies).Split(";", [StringSplitOptions]"RemoveEmptyEntries")) {
                 $package = $packages.SelectSinglenode("/packages/package[@id=""$d""]")
                 $nuspec | Select-Xml -XPath '//dependency' |% {
-                    If($_.Node.Id.Equals($d)){
+                    If ($_.Node.Id.Equals($d)){
                         $_.Node.Version = "$($package.version)"
                     }
                 }
             }
-
-            $nuspec.Save($nuspecFile);
         }
-        
+
+        If ($isSignedProject) {
+            $nuspec | Select-Xml -XPath '//id' |% { $_.Node.InnerText = $_.Node.InnerText + ".Signed" }
+            $nuspec | Select-Xml -XPath '//dependency' |% {
+                If($_.Node.Id.StartsWith("Exceptionless")){
+                    $_.Node.Id = $_.Node.Id + ".Signed"
+                }
+            }
+        }
+
+        $nuspec.Save($nuspecFile);
+
         $packageDir = "$deploy_dir\ClientPackages"
         Create-Directory $packageDir
 
         exec { & $base_dir\nuget\NuGet.exe pack $nuspecFile -OutputDirectory $packageDir -Version $nuget_version -Symbols }
-
-        If ($($p.Name) -eq "Exceptionless.Nancy") {
-            Continue;
-        }
-
-        # Create signed version of the assemblies.
-        $signedNuspecFile = ([IO.Path]::ChangeExtension($nuspecFile, ".Signed.nuspec"))
-        Rename-Item -Path $nuspecFile -NewName $signedNuspecFile
-
-        # Update signed NuGet nuspec file.
-        $signedNuspec = [xml](Get-Content $signedNuspecFile)
-        $signedNuspec | Select-Xml -XPath '//id' |% { $_.Node.InnerText = $_.Node.InnerText + ".Signed" }
-        $signedNuspec | Select-Xml -XPath '//dependency' |% {
-            If($_.Node.Id.StartsWith("Exceptionless")){
-                $_.Node.Id = $_.Node.Id + ".Signed"
-            }
-        }
-
-        $signedNuspec.Save($signedNuspecFile);
-
-		# Copy the Exceptionless assemblies to the working directory. This ensures that they are resolved while signing the assemblies.
-		If ($($p.Name) -ne "Exceptionless") {
-			ForEach ($b in $client_build_configurations) {
-				if ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80") {
-					Get-ChildItem -Path "$build_dir\$configuration\Exceptionless\lib\portable-net40+sl50+win+wpa81+wp80" -Filter *.dll | ForEach-Object { Copy-Item -Path $_.FullName -Destination "$workingDirectory\lib\$($b.NuGetDir)" }
-				}
-			}
-		}
-
-        # Sign the assemblies.
-        Get-ChildItem -Path $workingDirectory -Include "$($p.Name).dll" -Recurse | ForEach-Object { Sign-Assembly $_.FullName }
-		
-		# Removed the copied Exceptionless assemblies from the working directory.
-		If ($($p.Name) -ne "Exceptionless") {
-			ForEach ($b in $client_build_configurations) {
-				if ($($b.NuGetDir) -ne "portable-net40+sl50+win+wpa81+wp80") {
-					Remove-Item -Path "$workingDirectory\lib\$($b.NuGetDir)\*" -Include Exceptionless.dll,Exceptionless.Models.dll
-				}
-			}
-		}
-
-        exec { & $base_dir\nuget\NuGet.exe pack $signedNuspecFile -OutputDirectory $packageDir -Version $nuget_version }
     }
 
     Delete-Directory "$build_dir\$configuration"
@@ -352,15 +347,6 @@ Function ILMerge-Assemblies ([string] $sourceDir, [string] $destinationDir, [str
         /keyfile:"$sign_file" `
         /t:library `
         $targetplatform }
-}
-
-Function Sign-Assembly ([string] $sourceAssembly) {
-	If (Test-StrongName -AssemblyFile $sourceAssembly) {
-		Return
-	}
-
-	$key= Import-StrongNameKeyPair -KeyFile $sign_file
-	Set-StrongName -AssemblyFile $sourceAssembly -KeyPair $key -NoBackup -Verbose -Force
 }
 
 Function Create-Directory([string] $directory_name) {
