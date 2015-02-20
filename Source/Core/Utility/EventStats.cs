@@ -68,7 +68,7 @@ namespace Exceptionless.Core.Utility {
                                     )
                                     .Cardinality("unique", u => u
                                         .Field(ev => ev.StackId)
-                                        .PrecisionThreshold(1000)
+                                        .PrecisionThreshold(100)
                                     )
                                     .Terms("new", u => u
                                         .Field(ev => ev.IsFirstOccurrence)
@@ -80,7 +80,7 @@ namespace Exceptionless.Core.Utility {
                             )
                             .Cardinality("unique", u => u
                                 .Field(ev => ev.StackId)
-                                .PrecisionThreshold(1000)
+                                .PrecisionThreshold(100)
                             )
                             .Terms("new", u => u
                                 .Field(ev => ev.IsFirstOccurrence)
@@ -206,7 +206,7 @@ namespace Exceptionless.Core.Utility {
                                 .Aggregations(agg2 => agg2
                                     .Cardinality("tl_unique", u => u
                                         .Field(ev => ev.StackId)
-                                        .PrecisionThreshold(1000)
+                                        .PrecisionThreshold(100)
                                     )
                                     .Terms("tl_new", u => u
                                         .Field(ev => ev.IsFirstOccurrence)
@@ -217,7 +217,7 @@ namespace Exceptionless.Core.Utility {
                             )
                             .Cardinality("unique", u => u
                                 .Field(ev => ev.StackId)
-                                .PrecisionThreshold(1000)
+                                .PrecisionThreshold(100)
                             )
                             .Terms("new", u => u
                                 .Field(ev => ev.IsFirstOccurrence)

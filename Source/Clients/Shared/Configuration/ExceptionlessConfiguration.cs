@@ -43,7 +43,7 @@ namespace Exceptionless {
 
             _configLocked = true;
             _validationResult = Validate();
-            Enabled = _validationResult.IsValid;
+            Enabled = Enabled && _validationResult.IsValid;
         }
 
         /// <summary>
