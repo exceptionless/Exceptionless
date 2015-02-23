@@ -18,8 +18,11 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 context.Event.Message = error.Message;
 
             // TODO: Parse the stack trace and upgrade this to a full error.
-            context.StackSignatureData.Add("ExceptionType", error.Type);
-            context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
+            if (!String.IsNullOrEmpty(error.Type))
+                context.StackSignatureData.Add("ExceptionType", error.Type);
+
+            if (!String.IsNullOrEmpty(error.StackTrace))
+                context.StackSignatureData.Add("StackTrace", error.StackTrace.ToSHA1());
         }
     }
 }

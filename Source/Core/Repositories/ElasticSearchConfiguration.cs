@@ -36,13 +36,13 @@ namespace Exceptionless.Core.Repositories {
         public static void ConfigureMapping(IElasticClient searchclient, bool deleteExistingIndexes = false) {
             IIndicesOperationResponse response;
 
-            if (deleteExistingIndexes) {
-                var deleteResponse = searchclient.DeleteIndex(i => i.AllIndices());
-                Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
+            //if (deleteExistingIndexes) {
+            //    var deleteResponse = searchclient.DeleteIndex(i => i.AllIndices());
+            //    Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
 
-                response = searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
-                Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the event index template.");
-            }
+            //    response = searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
+            //    Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the event index template.");
+            //}
 
             if (!searchclient.IndexExists(new IndexExistsRequest(new IndexNameMarker { Name = ElasticSearchRepository<Stack>.StacksIndexName })).Exists) {
                 response = searchclient.CreateIndex(ElasticSearchRepository<Stack>.StacksIndexName, d => d
