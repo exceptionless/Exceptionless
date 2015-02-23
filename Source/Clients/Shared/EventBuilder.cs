@@ -55,6 +55,9 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="sessionId">The event session id.</param>
         public EventBuilder SetSessionId(string sessionId) {
+            if (!IsValidIdentifier(sessionId))
+                throw new ArgumentException("ReferenceId must contain between 8 and 32 alphanumeric or '-' characters.", "sessionId");
+
             Target.SessionId = sessionId;
             return this;
         }
@@ -64,8 +67,21 @@ namespace Exceptionless {
         /// </summary>
         /// <param name="referenceId">The event reference id.</param>
         public EventBuilder SetReferenceId(string referenceId) {
+            if (!IsValidIdentifier(referenceId))
+                throw new ArgumentException("ReferenceId must contain between 8 and 32 alphanumeric or '-' characters.", "referenceId");
+
             Target.ReferenceId = referenceId;
             return this;
+        }
+
+        private bool IsValidIdentifier(string value) {
+            if (value == null)
+                return true;
+
+            if (value.Length < 8 || value.Length > 32)
+                return false;
+
+            return value.IsValidIdentifier();
         }
 
         /// <summary>

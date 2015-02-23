@@ -1,4 +1,5 @@
 using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
 using FluentValidation;
 using FluentValidation.Results;
@@ -35,8 +36,11 @@ namespace Exceptionless.Core.Validation {
             if (ev.Source != null && (ev.Source.Length < 1 || ev.Source.Length > 2000))
                 result.Errors.Add(new ValidationFailure("Source", "Source cannot be longer than 2000 characters."));
 
-            if (ev.ReferenceId != null && (ev.ReferenceId.Length < 8 || ev.ReferenceId.Length > 32))
-                result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 32 characters"));
+            if (!IsValidIdentifier(ev.ReferenceId))
+                result.Errors.Add(new ValidationFailure("ReferenceId", "ReferenceId must contain between 8 and 32 alphanumeric or '-' characters."));
+
+            if (!IsValidIdentifier(ev.SessionId))
+                result.Errors.Add(new ValidationFailure("SessionId", "SessionId must contain between 8 and 32 alphanumeric or '-' characters."));
 
             foreach (var tag in ev.Tags) {
                 if (String.IsNullOrEmpty(tag))
@@ -46,6 +50,16 @@ namespace Exceptionless.Core.Validation {
             }
 
             return result;
+        }
+
+        private bool IsValidIdentifier(string value) {
+            if (value == null)
+                return true;
+
+            if (value.Length < 8 || value.Length > 32)
+                return false;
+
+            return value.IsValidIdentifier();
         }
 
         private bool IsObjectId(string value) {

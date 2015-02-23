@@ -106,6 +106,18 @@ namespace Exceptionless.Extensions {
             return containsLower && containsUpper;
         }
 
+       public static bool IsValidIdentifier(this string value) {
+            if (value == null)
+                return false;
+
+            for (int index = 0; index < value.Length; index++) {
+                if (!Char.IsLetterOrDigit(value[index]) && value[index] != '-')
+                    return false;
+            }
+
+            return true;
+        }
+
         public static string ToPascalCase(this string value, Regex splitRegex) {
             if (String.IsNullOrEmpty(value))
                 return value;

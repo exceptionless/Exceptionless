@@ -60,6 +60,18 @@ namespace Exceptionless.Core.Extensions {
             return true;
         }
 
+        public static bool IsValidIdentifier(this string value) {
+            if (value == null)
+                return false;
+
+            for (int index = 0; index < value.Length; index++) {
+                if (!Char.IsLetterOrDigit(value[index]) && value[index] != '-')
+                    return false;
+            }
+
+            return true;
+        }
+
         public static string ToSaltedHash(this string password, string salt) {
             byte[] passwordBytes = Encoding.Unicode.GetBytes(password);
             byte[] saltBytes = Convert.FromBase64String(salt);
