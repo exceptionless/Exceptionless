@@ -163,19 +163,20 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
-        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
-        public IHttpActionResult GetByReferenceId(string referenceId, string projectId = null) {
+        public IHttpActionResult GetByReferenceId(string referenceId) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
             
-            if (projectId == null)
-                projectId = DefaultProject.Id;
+            return GetInternal(userFilter: String.Concat("reference:", referenceId));
+        }
 
-            // must have a project id
-            if (String.IsNullOrEmpty(projectId))
-                return BadRequest("No project id specified and no default project was found.");
-
-            Project project = _projectRepository.GetById(projectId, true);
+        [HttpGet]
+        [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
+        public IHttpActionResult GetByReferenceId(string referenceId, string projectId) {
+            if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
+                return NotFound();
+            
+            var project = _projectRepository.GetById(projectId, true);
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
