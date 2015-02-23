@@ -6,15 +6,18 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Stats;
+using Foundatio.Caching;
 using Nest;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
     public class EventStats {
-        private readonly IElasticClient _client;
+        private readonly ICacheClient _cacheClient;
+        private readonly IElasticClient _elasticClient;
 
-        public EventStats(IElasticClient client) {
-            _client = client;
+        public EventStats(ICacheClient cacheClient, IElasticClient elasticClient) {
+            _cacheClient = cacheClient;
+            _elasticClient = elasticClient;
         }
 
         public EventTermStatsResult GetTermsStats(DateTime utcStart, DateTime utcEnd, string term, string systemFilter, string userFilter = null, TimeSpan? displayTimeOffset = null, int max = 25, int desiredDataPoints = 10) {
@@ -30,11 +33,13 @@ namespace Exceptionless.Core.Utility {
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
                 .WithIndicesFromDateRange();
-            //_client.EnableTrace();
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
-                var result = _client.Search<PersistentEvent>(s => s.IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*")).Filter(d => filter.GetElasticSearchFilter()).SortAscending(ev => ev.Date).Take(1));
+                // TODO: Cache this to save an extra search request when a date range isn't filtered.
+                _elasticClient.EnableTrace();
+                var result = _elasticClient.Search<PersistentEvent>(s => s.IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*")).Filter(d => filter.GetElasticSearchFilter()).SortAscending(ev => ev.Date).Take(1));
+                _elasticClient.DisableTrace();
 
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
@@ -46,9 +51,10 @@ namespace Exceptionless.Core.Utility {
 
             utcStart = filter.GetStartDate();
             utcEnd = filter.GetEndDate();
-
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-            var res = _client.Search<PersistentEvent>(s => s
+
+            _elasticClient.EnableTrace();
+            var res = _elasticClient.Search<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*"))
@@ -93,12 +99,12 @@ namespace Exceptionless.Core.Utility {
                 )
             );
 
+            _elasticClient.DisableTrace();
+
             if (!res.IsValid) {
                 Log.Error().Message("Retrieving term stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving term stats failed.");
             }
-
-            _client.DisableTrace();
 
             var filtered = res.Aggs.Filter("filtered");
             if (filtered == null)
@@ -173,11 +179,13 @@ namespace Exceptionless.Core.Utility {
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
                 .WithIndicesFromDateRange();
-            _client.EnableTrace();
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
-                var result = _client.Search<PersistentEvent>(s => s.IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*")).Filter(d => filter.GetElasticSearchFilter()).SortAscending(ev => ev.Date).Take(1));
+                // TODO: Cache this to save an extra search request when a date range isn't filtered.
+                _elasticClient.EnableTrace();
+                var result = _elasticClient.Search<PersistentEvent>(s => s.IgnoreUnavailable().Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*")).Filter(d => filter.GetElasticSearchFilter()).SortAscending(ev => ev.Date).Take(1));
+                _elasticClient.DisableTrace();
 
                 var firstEvent = result.Hits.FirstOrDefault();
                 if (firstEvent != null) {
@@ -189,9 +197,10 @@ namespace Exceptionless.Core.Utility {
 
             utcStart = filter.GetStartDate();
             utcEnd = filter.GetEndDate();
-
             var interval = GetInterval(utcStart, utcEnd, desiredDataPoints);
-            var res = _client.Search<PersistentEvent>(s => s
+
+            _elasticClient.EnableTrace();
+            var res = _elasticClient.Search<PersistentEvent>(s => s
                 .SearchType(SearchType.Count)
                 .IgnoreUnavailable()
                 .Index(filter.Indices.Count > 0 ? String.Join(",", filter.Indices) : String.Concat(ElasticSearchRepository<PersistentEvent>.EventsIndexName, "-*"))
@@ -229,13 +238,12 @@ namespace Exceptionless.Core.Utility {
                     )
                 )
             );
+            _elasticClient.DisableTrace();
 
             if (!res.IsValid) {
                 Log.Error().Message("Retrieving stats failed: {0}", res.ServerError.Error).Write();
                 throw new ApplicationException("Retrieving stats failed.");
             }
-
-            _client.DisableTrace();
 
             var filtered = res.Aggs.Filter("filtered");
             if (filtered == null)

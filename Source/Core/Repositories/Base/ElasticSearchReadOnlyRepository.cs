@@ -98,7 +98,9 @@ namespace Exceptionless.Core.Repositories {
                     searchDescriptor.Sort(sort);
             }
 
+            _elasticClient.EnableTrace();
             var item = _elasticClient.Search<T>(searchDescriptor).Documents.FirstOrDefault();
+            _elasticClient.DisableTrace();
 
             if (typeof(T) != typeof(TModel)) {
                 if (Mapper.FindTypeMapFor<T, TModel>() == null)
@@ -149,9 +151,10 @@ namespace Exceptionless.Core.Repositories {
 
             countDescriptor.Type(typeof(T));
 
-            //_elasticClient.EnableTrace();
+            _elasticClient.EnableTrace();
             var results = _elasticClient.Count<T>(countDescriptor);
-            //_elasticClient.DisableTrace();
+            _elasticClient.DisableTrace();
+
             if (!results.IsValid)
                 throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
 
@@ -194,9 +197,10 @@ namespace Exceptionless.Core.Repositories {
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
             
-            //_elasticClient.EnableTrace();
+            _elasticClient.EnableTrace();
             var results = _elasticClient.Search<T>(searchDescriptor);
-            //_elasticClient.DisableTrace();
+            _elasticClient.DisableTrace();
+
             if (!results.IsValid)
                 throw new ApplicationException(String.Format("ElasticSearch error code \"{0}\".", results.ConnectionStatus.HttpStatusCode), results.ConnectionStatus.OriginalException);
 
@@ -236,8 +240,11 @@ namespace Exceptionless.Core.Repositories {
 
             // try using the object id to figure out what index the entity is located in
             string index = GetIndexName(id);
-            if (index != null)
+            if (index != null) {
+                _elasticClient.EnableTrace();
                 result = _elasticClient.Get<T>(f => f.Id(id).Index(index).SourceExclude("idx")).Source;
+                _elasticClient.DisableTrace();
+            }
 
             // fallback to doing a find
             if (result == null)
@@ -274,12 +281,14 @@ namespace Exceptionless.Core.Repositories {
                     itemsToFind.Add(id);
             }
 
+            _elasticClient.EnableTrace();
             foreach (var doc in _elasticClient.MultiGet(multiGet).Documents) {
                 if (doc.Found)
                     foundItems.Add(doc.Source as T);
                 else
                     itemsToFind.Add(doc.Id);
             }
+            _elasticClient.DisableTrace();
 
             // fallback to doing a find
             if (itemsToFind.Count > 0)

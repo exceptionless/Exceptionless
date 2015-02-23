@@ -249,9 +249,9 @@ namespace Exceptionless.Core.Repositories {
                 .Scroll("4s")
                 .Size(Settings.Current.BulkBatchSize);
 
-            //_elasticClient.EnableTrace();
+            _elasticClient.EnableTrace();
             var scanResults = _elasticClient.Search<T>(searchDescriptor);
-            //_elasticClient.DisableTrace();
+            _elasticClient.DisableTrace();
 
             // Check to see if no scroll id was returned. This will occur when the index doesn't exist.
             if (scanResults.IsValid && String.IsNullOrEmpty(scanResults.ScrollId))
