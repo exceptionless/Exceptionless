@@ -30,7 +30,6 @@ namespace Exceptionless.Core.Pipeline {
             _eventRepository.Add(contexts.Select(c => c.Event).ToList());
         }
 
-        public override void Process(EventContext ctx) {
-        }
+        public override void Process(EventContext ctx) {}
     }
 }

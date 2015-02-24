@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -114,6 +115,23 @@ namespace Exceptionless.Api.Tests.Pipeline {
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
+       [Fact]
+        public void EnsureSingleNewStack() {
+            var pipeline = IoC.GetInstance<EventPipeline>();
+
+            string source = Guid.NewGuid().ToString();
+            var contexts = new List<EventContext> {
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log }),
+                new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log}),
+            };
+
+            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
+            Assert.Equal(1, contexts.Count(c => c.IsNew));
+            Assert.Equal(1, contexts.Count(c => !c.IsNew));
+            Assert.Equal(2, contexts.Count(c => !c.IsRegression));
+        }
+
         [Fact]
         public void EnsureSingleRegression() {
             var pipeline = IoC.GetInstance<EventPipeline>();
@@ -134,15 +152,22 @@ namespace Exceptionless.Api.Tests.Pipeline {
             stack.IsRegressed = false;
             _stackRepository.Save(stack, true);
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1));
-            context = new EventContext(ev);
-            Assert.DoesNotThrow(() => pipeline.Run(context));
-            Assert.True(context.IsRegression);
+            var contexts = new List<EventContext> {
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
+            };
 
-            ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1));
-            context = new EventContext(ev);
-            Assert.DoesNotThrow(() => pipeline.Run(context));
-            Assert.False(context.IsRegression);
+            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            Assert.Equal(1, contexts.Count(c => c.IsRegression));
+            Assert.Equal(1, contexts.Count(c => !c.IsRegression));
+
+            contexts = new List<EventContext> {
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1))),
+                new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
+            };
+
+            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
         [Theory]
