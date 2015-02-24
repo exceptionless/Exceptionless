@@ -72,7 +72,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         
         [Theory]
         [InlineData("00000", 0)]
-        [InlineData("12345", 1)]
+        [InlineData("123452366", 1)]
         public void GetBySessionId(string id, int count) {
             var result = GetByFilter("session:" + id);
             Assert.NotNull(result);
