@@ -60,6 +60,7 @@ namespace Exceptionless.Core.Repositories {
             // Only update the LastOccurrence if the new date is greater then the existing date.
             var result = _elasticClient.Update<Stack>(s => s
                 .Id(stackId)
+                .RetryOnConflict(3)
                 .Lang("groovy")
                 .Script(@"if (ctx._source.total_occurrences == 0 || ctx._source.first_occurrence > minOccurrenceDateUtc) {
                             ctx._source.first_occurrence = minOccurrenceDateUtc;

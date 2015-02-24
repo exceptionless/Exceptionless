@@ -30,6 +30,7 @@ namespace Exceptionless.Core.AppStats {
 
         public const string PostsSubmitted = "posts.submitted";
         public const string PostsQueued = "posts.queued";
+        public const string PostsQueuedErrors = "posts.queued.errors";
         public const string PostsDequeued = "posts.dequeued";
         public const string PostsParsed = "posts.parsed";
         public const string PostsEventCount = "posts.eventcount";

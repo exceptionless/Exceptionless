@@ -54,6 +54,7 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.FromException(ex);
                 }
             }
+
             if (queueEntry == null)
                 return JobResult.Success;
 

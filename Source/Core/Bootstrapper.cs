@@ -89,21 +89,21 @@ namespace Exceptionless.Core {
 
                 container.RegisterSingle<ICacheClient, RedisHybridCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: MetricNames.PostsQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: MetricNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: MetricNames.EventNotificationQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: MetricNames.WebHookQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: MetricNames.EmailsQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
 
                 container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
             } else {
                 container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: MetricNames.EventNotificationQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, stats: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, stats: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
 
                 container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
             }

@@ -8,6 +8,7 @@ using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
+using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
@@ -22,6 +23,7 @@ using FluentValidation;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/events")]
@@ -271,17 +273,23 @@ namespace Exceptionless.Api.Controllers {
                 contentEncoding = "gzip";
             }
 
-            _eventPostQueue.Enqueue(new EventPostInfo {
-                MediaType = Request.Content.Headers.ContentType.MediaType,
-                CharSet = Request.Content.Headers.ContentType.CharSet,
-                ProjectId = projectId,
-                UserAgent = userAgent,
-                ApiVersion = version,
-                Data = data,
-                ContentEncoding = contentEncoding
-            }, _storage);
-            _statsClient.Counter(MetricNames.PostsQueued);
+            try {
+                _eventPostQueue.Enqueue(new EventPostInfo {
+                    MediaType = Request.Content.Headers.ContentType.MediaType,
+                    CharSet = Request.Content.Headers.ContentType.CharSet,
+                    ProjectId = projectId,
+                    UserAgent = userAgent,
+                    ApiVersion = version,
+                    Data = data,
+                    ContentEncoding = contentEncoding
+                }, _storage);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Project(projectId).Message("Error enqueuing event post.").WriteIf(projectId != Settings.Current.InternalProjectId);
+                _statsClient.Counter(MetricNames.PostsQueuedErrors);
+                return StatusCode(HttpStatusCode.InternalServerError);
+            }
 
+           _statsClient.Counter(MetricNames.PostsQueued);
             return StatusCode(HttpStatusCode.Accepted);
         }
 
