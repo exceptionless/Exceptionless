@@ -57,6 +57,9 @@ namespace Exceptionless.Core.Jobs {
             if (!Settings.Current.EnableDailySummary)
                 return Task.FromResult(JobResult.SuccessWithMessage("Summary notifications are disabled."));
 
+            if (_mailer == null)
+                return Task.FromResult(JobResult.SuccessWithMessage("Summary notifications are disabled due to null mailer."));
+
             const int BATCH_SIZE = 25;
 
             var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
@@ -72,16 +75,13 @@ namespace Exceptionless.Core.Jobs {
                         continue;
                     }
 
-                    if (_mailer != null) {
-                        var notification = new SummaryNotification {
-                            Id = project.Id,
-                            UtcStartTime = utcStartTime,
-                            UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
-                        };
+                    var notification = new SummaryNotification {
+                        Id = project.Id,
+                        UtcStartTime = utcStartTime,
+                        UtcEndTime = new DateTime(project.NextSummaryEndOfDayTicks - TimeSpan.TicksPerSecond)
+                    };
 
-                        ProcessSummaryNotification(notification);
-                    } else
-                        Log.Error().Message("Mailer is null").Write();
+                    ProcessSummaryNotification(notification);
                 }
 
                 projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
@@ -109,7 +109,7 @@ namespace Exceptionless.Core.Jobs {
             var paging = new PagingOptions { Limit = 5 };
             List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).ToList();
 
-            var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "project:" + data.Id, max: 5);
+            var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5);
             var termStatsList = result.Terms.Take(5).ToList();
             var stacks = _stackRepository.GetByIds(termStatsList.Select(s => s.Term).ToList());
             bool hasSubmittedErrors = result.Total > 0;
@@ -121,7 +121,7 @@ namespace Exceptionless.Core.Jobs {
                 var stack = stacks.SingleOrDefault(s => s.Id == termStats.Term);
                 if (stack == null)
                     continue;
-                
+
                 mostFrequent.Add(new EventStackResult {
                     First =  termStats.FirstOccurrence,
                     Last = termStats.LastOccurrence,
