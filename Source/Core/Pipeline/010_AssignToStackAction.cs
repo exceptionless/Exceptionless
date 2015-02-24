@@ -93,7 +93,11 @@ namespace Exceptionless.Core.Pipeline {
                     }
 
                     ctx.SignatureHash = ctx.Stack.SignatureHash;
-                    stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
+
+                    if (!stacks.ContainsKey(ctx.Stack.SignatureHash))
+                        stacks.Add(ctx.Stack.SignatureHash, Tuple.Create(false, ctx.Stack));
+                    else
+                        stacks[ctx.Stack.SignatureHash] = Tuple.Create(false, ctx.Stack);
                 }
 
                 if (!ctx.IsNew && ctx.Event.Tags != null && ctx.Event.Tags.Count > 0) {
