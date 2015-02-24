@@ -10,6 +10,8 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -26,10 +28,13 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            _stats.Counter(MetricNames.EventsProcessed);
-            if (ctx.Organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(MetricNames.EventsPaidProcessed);
+        public override void ProcessBatch(ICollection<EventContext> contexts) {
+            _stats.Counter(MetricNames.EventsProcessed, contexts.Count);
+
+            if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
+                _stats.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
         }
+
+        public override void Process(EventContext ctx) {}
     }
 }
