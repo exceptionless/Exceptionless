@@ -19,6 +19,7 @@ using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Models;
+using Foundatio.Caching;
 using Foundatio.Messaging;
 using NLog.Fluent;
 using Stripe;
@@ -27,6 +28,7 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/organizations")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class OrganizationController : RepositoryApiController<IOrganizationRepository, Organization, ViewOrganization, NewOrganization, NewOrganization> {
+        private readonly ICacheClient _cacheClient;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly BillingManager _billingManager;
@@ -35,7 +37,8 @@ namespace Exceptionless.Api.Controllers {
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+            _cacheClient = cacheClient;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
             _billingManager = billingManager;
@@ -594,6 +597,7 @@ namespace Exceptionless.Api.Controllers {
                 Mapper.CreateMap<Organization, ViewOrganization>().AfterMap((o, vo) => {
                     vo.IsOverHourlyLimit = o.IsOverHourlyLimit();
                     vo.IsOverMonthlyLimit = o.IsOverMonthlyLimit();
+                    vo.IsOverRequestLimit = o.IsOverRequestLimit(_cacheClient, Settings.Current.ApiThrottleLimit);
                 });
 
             if (Mapper.FindTypeMapFor<StripeInvoice, InvoiceGridModel>() == null)

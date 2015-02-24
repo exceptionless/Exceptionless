@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
+using Foundatio.Caching;
 
 namespace Exceptionless.Core.Extensions {
     public static class OrganizationExtensions {
@@ -45,6 +46,12 @@ namespace Exceptionless.Core.Extensions {
 
             return organization.MaxEventsPerMonth + bonusEvents;
         } 
+
+        public static bool IsOverRequestLimit(this Organization organization, ICacheClient cacheClient, int apiThrottleLimit) {
+            var cacheKey = String.Concat("api", ":", organization.Id, ":", DateTime.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
+            int? limit = cacheClient.Get<int?>(cacheKey);
+            return limit.HasValue && limit.Value >= apiThrottleLimit;
+        }
 
         public static bool IsOverMonthlyLimit(this Organization organization) {
             if (organization.MaxEventsPerMonth < 0)

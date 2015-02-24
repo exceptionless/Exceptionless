@@ -36,5 +36,6 @@ namespace Exceptionless.Api.Models {
 
         public bool IsOverHourlyLimit { get; set; }
         public bool IsOverMonthlyLimit { get; set; }
+        public bool IsOverRequestLimit { get; set; }
     }
 }
