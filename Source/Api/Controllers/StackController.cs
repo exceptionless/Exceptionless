@@ -462,7 +462,16 @@ namespace Exceptionless.Api.Controllers {
                 systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, validationResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(userFilter));
             
             var timeInfo = GetTimeInfo(time, offset);
-            var terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
+
+            ICollection<TermStatsItem> terms;
+
+            try {
+                terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
+            } catch (ApplicationException ex) {
+                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
+                return BadRequest("An error has occurred. Please check your search filter.");
+            }
+
             if (terms.Count == 0)
                 return Ok(new object[0]);
 
