@@ -45,7 +45,6 @@ namespace Exceptionless.Api {
             ExceptionlessClient.Default.RegisterWebApi(Config);
 
             Log.Info().Message("Starting api...").Write();
-            // if enabled, auto upgrade the database
             if (Settings.Current.ShouldAutoUpgradeDatabase) {
                 var url = new MongoUrl(Settings.Current.MongoConnectionString);
                 string databaseName = url.DatabaseName;
@@ -55,7 +54,8 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
+            Config.Services.Add(typeof(IExceptionLogger), new ExceptionlessExceptionLogger(ExceptionlessClient.Default));
+            Config.Services.Replace(typeof(IExceptionHandler), new ExceptionlessReferenceIdExceptionHandler(ExceptionlessClient.Default));
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
@@ -72,25 +72,7 @@ namespace Exceptionless.Api {
             container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() }));
             container.RegisterWebApiFilterProvider(Config);
 
-            try {
-                container.Verify();
-            } catch (Exception ex) {
-                var tempEx = ex;
-                while (!(tempEx is ReflectionTypeLoadException)) {
-                    if (tempEx.InnerException == null)
-                        break;
-                    tempEx = tempEx.InnerException;
-                }
-
-                var typeLoadException = tempEx as ReflectionTypeLoadException;
-                if (typeLoadException != null) {
-                    foreach (var loaderEx in typeLoadException.LoaderExceptions)
-                        Debug.WriteLine(loaderEx.Message);
-                }
-
-                Debug.WriteLine(ex.Message);
-                throw;
-            }
+            VerifyContainer(container);
 
             Config.MessageHandlers.Add(container.GetInstance<XHttpMethodOverrideDelegatingHandler>());
             Config.MessageHandlers.Add(container.GetInstance<EncodingDelegatingHandler>());
@@ -203,6 +185,28 @@ namespace Exceptionless.Api {
             container.RegisterPackage<Bootstrapper>();
 
             return container;
+        }
+
+        private static void VerifyContainer(Container container) {
+            try {
+                container.Verify();
+            } catch (Exception ex) {
+                var tempEx = ex;
+                while (!(tempEx is ReflectionTypeLoadException)) {
+                    if (tempEx.InnerException == null)
+                        break;
+                    tempEx = tempEx.InnerException;
+                }
+
+                var typeLoadException = tempEx as ReflectionTypeLoadException;
+                if (typeLoadException != null) {
+                    foreach (var loaderEx in typeLoadException.LoaderExceptions)
+                        Debug.WriteLine(loaderEx.Message);
+                }
+
+                Debug.WriteLine(ex.Message);
+                throw;
+            }
         }
 
         public static HttpConfiguration Config { get; private set; }

@@ -18,17 +18,13 @@ using _NLog = NLog;
 namespace Exceptionless.JobRunner {
     internal class Program {
         private static int Main(string[] args) {
+
             try {
                 var ca = new Options();
                 if (!Parser.Default.ParseArguments(args, ca)) {
                     PauseIfDebug();
                     return 0;
                 }
-
-                ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
-                //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
-                ExceptionlessClient.Default.Configuration.IncludePrivateInformation = true;
-                ExceptionlessClient.Default.Startup();
 
                 var type = Type.GetType(ca.JobType);
                 if (type == null) {
@@ -38,6 +34,8 @@ namespace Exceptionless.JobRunner {
                 }
 
                 var container = CreateContainer();
+                ExceptionlessClient.Default.Startup();
+
                 var job = container.GetInstance(Type.GetType(ca.JobType)) as JobBase;
                 if (job == null) {
                     Log.Error().Message("Job Type must derive from Job.").Write();

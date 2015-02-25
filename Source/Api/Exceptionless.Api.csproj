@@ -222,8 +222,9 @@
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
     <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
-    <Compile Include="Utility\NLogExceptionLogger.cs" />
+    <Compile Include="Utility\ExceptionLoggerContext.cs" />
     <Compile Include="Utility\ObjectIdsRouteConstraint.cs" />
+    <Compile Include="Utility\ExceptionlessReferenceIdExceptionHandler.cs" />
     <Compile Include="Utility\Results\MessageContent.cs" />
     <Compile Include="Utility\Results\PermissionActionResult.cs" />
     <Compile Include="Utility\Results\StatusCodeActionResult.cs" />

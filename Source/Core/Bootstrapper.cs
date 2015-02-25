@@ -52,6 +52,12 @@ namespace Exceptionless.Core {
         public void RegisterServices(Container container) {
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
+            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
+            ExceptionlessClient.Default.Configuration.UseInMemoryStorage();
+            ExceptionlessClient.Default.Configuration.UseReferenceIds();
+            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
+            container.RegisterSingle<ExceptionlessClient>(() => ExceptionlessClient.Default);
+
             if (Settings.Current.EnableAppStats)
                 container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
             else {
@@ -77,11 +83,6 @@ namespace Exceptionless.Core {
             });
 
             container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
-
-            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
-            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
-            ExceptionlessClient.Default.Configuration.UseInMemoryStorage();
-            container.RegisterSingle<ExceptionlessClient>(() => ExceptionlessClient.Default);
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
