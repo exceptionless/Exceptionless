@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Xml.Linq;
@@ -40,6 +41,13 @@ namespace Exceptionless.Core.Extensions {
 
             if (!String.IsNullOrEmpty(value))
                 dictionary[key] = value;
+        }
+
+        /// <summary>
+        /// Adds or overwrites the existing value.
+        /// </summary>
+        public static void AddOrUpdate<K, V>(this ConcurrentDictionary<K, V> dictionary, K key, V value) {
+            dictionary.AddOrUpdate(key, value, (oldkey, oldvalue) => value);
         }
 
         public static IDictionary<T1, T2> Merge<T1, T2>(this IDictionary<T1, T2> first, IDictionary<T1, T2> second) {

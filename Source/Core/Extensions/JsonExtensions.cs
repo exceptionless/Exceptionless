@@ -11,6 +11,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -280,7 +281,7 @@ namespace Exceptionless.Core.Extensions {
             }
         }
 
-        private static readonly Dictionary<Type, IMemberAccessor> _countAccessors = new Dictionary<Type, IMemberAccessor>();
+        private static readonly ConcurrentDictionary<Type, IMemberAccessor> _countAccessors = new ConcurrentDictionary<Type, IMemberAccessor>();
         public static bool IsValueEmptyCollection(this JsonProperty property, object target) {
             var value = property.ValueProvider.GetValue(target);
             if (value == null)
@@ -294,11 +295,11 @@ namespace Exceptionless.Core.Extensions {
                 if (typeof(IEnumerable).IsAssignableFrom(property.PropertyType)) {
                     var countProperty = property.PropertyType.GetProperty("Count");
                     if (countProperty != null)
-                        _countAccessors[property.PropertyType] = LateBinder.GetPropertyAccessor(countProperty);
+                        _countAccessors.AddOrUpdate(property.PropertyType, LateBinder.GetPropertyAccessor(countProperty));
                     else
-                        _countAccessors[property.PropertyType] = null;
+                        _countAccessors.AddOrUpdate(property.PropertyType, null);
                 } else {
-                    _countAccessors[property.PropertyType] = null;
+                    _countAccessors.AddOrUpdate(property.PropertyType, null);
                 }
             }
 
