@@ -13,6 +13,8 @@ using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Exceptionless.Dependency;
+using Exceptionless.Logging;
 using Exceptionless.Submission.Net;
 using Exceptionless.Threading.Tasks;
 
@@ -39,11 +41,17 @@ namespace Exceptionless.Extensions {
 
         private static readonly Lazy<PropertyInfo> _userAgentProperty = new Lazy<PropertyInfo>(() => typeof(HttpWebRequest).GetProperty("UserAgent"));
 
-        public static void SetUserAgent(this HttpWebRequest request, string userAgent) {
-            if (_userAgentProperty.Value != null)
-                _userAgentProperty.Value.SetValue(request, userAgent, null);
-            else
-                request.Headers[ExceptionlessHeaders.Client] = userAgent;
+        public static void SetUserAgent(this HttpWebRequest request, ExceptionlessConfiguration configuration) {
+            if (_userAgentProperty.Value != null) {
+                try {
+                    _userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
+                    return;
+                } catch (Exception ex) {
+                    configuration.Resolver.GetLog().Error(ex, "Error occurred setting the user agent.");
+                }
+            }
+
+            request.Headers[ExceptionlessHeaders.Client] = configuration.UserAgent;
         }
 
         public static Task<WebResponse> PostJsonAsync(this HttpWebRequest request, string data) {
