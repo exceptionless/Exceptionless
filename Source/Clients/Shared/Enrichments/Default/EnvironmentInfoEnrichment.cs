@@ -6,11 +6,14 @@ using Exceptionless.Models;
 namespace Exceptionless.Enrichments.Default {
     public class EnvironmentInfoEnrichment : IEventEnrichment {
         public void Enrich(EventEnrichmentContext context, Event ev) {
-            if (ev.Type != Event.KnownTypes.SessionStart)
-                return;
+            //if (ev.Type != Event.KnownTypes.SessionStart)
+            //    return;
 
             try {
                 var collector = context.Resolver.GetEnvironmentInfoCollector();
+                if (collector == null)
+                    return;
+
                 var info = collector.GetEnvironmentInfo();
                 info.InstallId = context.Client.Configuration.GetInstallId();
                 ev.Data.Add(Event.KnownDataKeys.EnvironmentInfo, info);
