@@ -54,7 +54,7 @@ namespace Exceptionless.Api {
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
             }
 
-            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger(ExceptionlessClient.Default));
+            Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), new ExceptionlessReferenceIdExceptionHandler(ExceptionlessClient.Default));
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
