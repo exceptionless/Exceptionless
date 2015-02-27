@@ -313,9 +313,15 @@ namespace Exceptionless.Core.Utility {
             } else if (timePerBlock.TotalHours > 1) {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromHours(1));
                 interval = String.Format("{0}h", timePerBlock.TotalHours.ToString("0"));
-            } else {
+            } else if (timePerBlock.TotalMinutes > 1) {
                 timePerBlock = timePerBlock.Round(TimeSpan.FromMinutes(1));
                 interval = String.Format("{0}m", timePerBlock.TotalMinutes.ToString("0"));
+            } else {
+                timePerBlock = timePerBlock.Round(TimeSpan.FromSeconds(15));
+                if (timePerBlock.TotalSeconds < 1)
+                    timePerBlock = TimeSpan.FromSeconds(15);
+
+                interval = String.Format("{0}s", timePerBlock.TotalSeconds.ToString("0"));
             }
 
             return Tuple.Create(interval, timePerBlock);
