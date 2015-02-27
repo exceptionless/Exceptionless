@@ -45,12 +45,15 @@ namespace Exceptionless.Extensions {
 
             if (_userAgentProperty.Value != null) {
                 try {
-
-                    // this is safe for SL5
-                    request.Headers["UserAgent"] = configuration.UserAgent;
-                    //_userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
+                    _userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
                     return;
-                } catch (Exception ex) {
+                } 
+                catch (NotSupportedException) {
+                    // this is safe in SL
+                    request.Headers["UserAgent"] = configuration.UserAgent;
+                    return;
+                }
+                catch (Exception ex) {
                     configuration.Resolver.GetLog().Error(ex, "Error occurred setting the user agent.");
                 }
             }
@@ -63,9 +66,9 @@ namespace Exceptionless.Extensions {
             request.Method = "POST";
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
-            return request.GetRequestStreamAsync().Then(t => 
-            {
-                    using (var stream = t.Result) stream.Write(buffer, 0, buffer.Length);
+            return request.GetRequestStreamAsync().Then(t => {
+                    using (var stream = t.Result) 
+                        stream.Write(buffer, 0, buffer.Length);
                     return request.GetResponseAsync();
                 });
         }
