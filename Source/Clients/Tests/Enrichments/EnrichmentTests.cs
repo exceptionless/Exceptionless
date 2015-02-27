@@ -31,7 +31,7 @@ namespace Client.Tests.Enrichments {
             }
         }
 
-        [Theory]
+        [Theory(Skip = "TODO: This needs to be skipped until the client is sending session start and end.")]
         [InlineData(Event.KnownTypes.Error)]
         [InlineData(Event.KnownTypes.FeatureUsage)]
         [InlineData(Event.KnownTypes.Log)]

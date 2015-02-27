@@ -6,6 +6,7 @@ using Exceptionless.Models;
 namespace Exceptionless.Enrichments.Default {
     public class EnvironmentInfoEnrichment : IEventEnrichment {
         public void Enrich(EventEnrichmentContext context, Event ev) {
+            //TODO: This needs to be uncommented when the client is sending session start and end.
             //if (ev.Type != Event.KnownTypes.SessionStart)
             //    return;
 

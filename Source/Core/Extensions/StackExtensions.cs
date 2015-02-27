@@ -21,8 +21,11 @@ namespace Exceptionless.Core.Extensions {
             if (stack.DateFixed.HasValue)
                 stack.DateFixed = stack.DateFixed.Value.Add(offset);
 
-            stack.FirstOccurrence = stack.FirstOccurrence.Add(offset);
-            stack.LastOccurrence = stack.LastOccurrence.Add(offset);
+            if (stack.FirstOccurrence != DateTime.MinValue)
+                stack.FirstOccurrence = stack.FirstOccurrence.Add(offset);
+
+            if (stack.LastOccurrence != DateTime.MinValue)
+                stack.LastOccurrence = stack.LastOccurrence.Add(offset);
 
             return stack;
         }
