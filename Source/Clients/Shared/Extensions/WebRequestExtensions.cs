@@ -42,9 +42,13 @@ namespace Exceptionless.Extensions {
         private static readonly Lazy<PropertyInfo> _userAgentProperty = new Lazy<PropertyInfo>(() => typeof(HttpWebRequest).GetProperty("UserAgent"));
 
         public static void SetUserAgent(this HttpWebRequest request, ExceptionlessConfiguration configuration) {
+
             if (_userAgentProperty.Value != null) {
                 try {
-                    _userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
+
+                    // this is safe for SL5
+                    request.Headers["UserAgent"] = configuration.UserAgent;
+                    //_userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
                     return;
                 } catch (Exception ex) {
                     configuration.Resolver.GetLog().Error(ex, "Error occurred setting the user agent.");
@@ -59,8 +63,9 @@ namespace Exceptionless.Extensions {
             request.Method = "POST";
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
-            return request.GetRequestStreamAsync().Then(t => {
-                    t.Result.Write(buffer, 0, buffer.Length);
+            return request.GetRequestStreamAsync().Then(t => 
+            {
+                    using (var stream = t.Result) stream.Write(buffer, 0, buffer.Length);
                     return request.GetResponseAsync();
                 });
         }
