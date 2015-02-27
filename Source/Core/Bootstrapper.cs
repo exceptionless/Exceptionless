@@ -15,10 +15,12 @@ using System.Linq;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
+using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
@@ -28,6 +30,7 @@ using Exceptionless.Core.Validation;
 using Exceptionless.Models;
 using Exceptionless.Models.Admin;
 using Exceptionless.Models.Data;
+using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.AppStats;
 using Foundatio.Caching;
@@ -41,6 +44,7 @@ using Foundatio.Redis.Queues;
 using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
+using Newtonsoft.Json;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
@@ -67,6 +71,12 @@ namespace Exceptionless.Core {
             }
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
+            container.RegisterSingle<JsonSerializerSettings>(() => {
+                var settings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore, ContractResolver = new ExceptionlessContractResolver() };
+                settings.AddModelConverters();
+
+                return settings;
+            });
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))

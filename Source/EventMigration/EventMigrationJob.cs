@@ -27,10 +27,12 @@ using OldModels = Exceptionless.EventMigration.Models;
 
 namespace Exceptionless.EventMigration {
     public class EventMigrationJob : MigrationJobBase {
+        private readonly JsonSerializerSettings _settings;
         private readonly IQueue<EventMigrationBatch> _queue;
 
-        public EventMigrationJob(IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
+        public EventMigrationJob(JsonSerializerSettings settings, IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
             : base(elasticClient, eventUpgraderPluginManager, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
+            _settings = settings; 
             _queue = queue;
         }
 
@@ -58,8 +60,6 @@ namespace Exceptionless.EventMigration {
             var knownStackIds = new List<string>();
 
             var userAgentParser = Parser.GetDefault();
-            var serializerSettings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore };
-            serializerSettings.AddModelConverters();
 
             var query = Query.And(Query.GTE(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.StartTicks), Query.LT(ErrorFieldNames.OccurrenceDate_UTC, queueEntry.Value.EndTicks));
             var errors = errorCollection.Find(query).SetSortOrder(SortBy.Ascending(ErrorFieldNames.OccurrenceDate_UTC)).SetLimit(_batchSize).ToList();
@@ -71,7 +71,7 @@ namespace Exceptionless.EventMigration {
                 var ctx = new EventUpgraderContext(upgradedErrors, new Version(1, 5), true);
                 _eventUpgraderPluginManager.Upgrade(ctx);
 
-                var upgradedEvents = upgradedErrors.FromJson<PersistentEvent>(serializerSettings);
+                var upgradedEvents = upgradedErrors.FromJson<PersistentEvent>(_settings);
 
                 var stackIdsToCheck = upgradedEvents.Where(e => !knownStackIds.Contains(e.StackId)).Select(e => e.StackId).Distinct().ToArray();
                 if (stackIdsToCheck.Length > 0)

@@ -3,19 +3,15 @@ using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Models;
-using Exceptionless.Serializer;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {
     [Priority(0)]
     public class JsonEventParserPlugin : IEventParserPlugin {
-        private readonly JsonSerializerSettings _settings = new JsonSerializerSettings {
-                MissingMemberHandling = MissingMemberHandling.Ignore, 
-                ContractResolver = new ExceptionlessContractResolver()
-            };
+        private readonly JsonSerializerSettings _settings;
 
-        public JsonEventParserPlugin() {
-            _settings.AddModelConverters();
+        public JsonEventParserPlugin(JsonSerializerSettings settings) {
+            _settings = settings;
         }
 
         public List<PersistentEvent> ParseEvents(string input, int apiVersion, string userAgent) {
