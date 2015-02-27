@@ -42,18 +42,11 @@ namespace Exceptionless.Extensions {
         private static readonly Lazy<PropertyInfo> _userAgentProperty = new Lazy<PropertyInfo>(() => typeof(HttpWebRequest).GetProperty("UserAgent"));
 
         public static void SetUserAgent(this HttpWebRequest request, ExceptionlessConfiguration configuration) {
-
             if (_userAgentProperty.Value != null) {
                 try {
                     _userAgentProperty.Value.SetValue(request, configuration.UserAgent, null);
                     return;
-                } 
-                catch (NotSupportedException) {
-                    // this is safe in SL
-                    request.Headers["UserAgent"] = configuration.UserAgent;
-                    return;
-                }
-                catch (Exception ex) {
+                } catch (Exception ex) {
                     configuration.Resolver.GetLog().Error(ex, "Error occurred setting the user agent.");
                 }
             }
@@ -67,10 +60,12 @@ namespace Exceptionless.Extensions {
 
             byte[] buffer = Encoding.UTF8.GetBytes(data);
             return request.GetRequestStreamAsync().Then(t => {
-                    using (var stream = t.Result) 
-                        stream.Write(buffer, 0, buffer.Length);
-                    return request.GetResponseAsync();
-                });
+                using (var stream = t.Result) {
+                    stream.Write(buffer, 0, buffer.Length);
+                }
+
+                return request.GetResponseAsync();
+            });
         }
 
         public static Task<WebResponse> GetJsonAsync(this HttpWebRequest request) {
