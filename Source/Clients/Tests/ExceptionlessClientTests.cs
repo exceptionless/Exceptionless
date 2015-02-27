@@ -28,6 +28,28 @@ namespace Client.Tests {
                 c.UserAgent = "testclient/1.0.0.0";
             });
         }
+        
+        [Fact]
+        public async Task CanAddMultipleDataObjectsToEvent() {
+            var client = CreateClient();
+            var ev = client.CreateLog("Test");
+            Assert.Equal(ev.Target.Type, Event.KnownTypes.Log);
+            ev.AddObject(new Person { Name = "Blake" });
+            ev.AddObject(new Person { Name = "Eric" });
+            ev.AddObject(new Person { Name = "Ryan" });
+            Assert.Equal(ev.Target.Data.Count, 3);
+
+            ev.Target.Data.Clear();
+            Assert.Equal(ev.Target.Data.Count, 0);
+            
+            // The last one in wins.
+            ev.AddObject(new Person { Name = "Eric" }, "Blake");
+            ev.AddObject(new Person { Name = "Blake" }, "Blake");
+            Assert.Equal(ev.Target.Data.Count, 1);
+
+            var person = ev.Target.Data["Blake"].ToString();
+            Assert.True(person.Contains("Blake"));
+        }
 
         [Fact]
         public async Task CanSubmitSimpleEvent() {
@@ -106,6 +128,10 @@ namespace Client.Tests {
                 user = userRepository.Add(new User { FullName = "Test User", EmailAddress = "test@exceptionless.io", VerifyEmailAddressToken = Guid.NewGuid().ToString(), VerifyEmailAddressTokenExpiration = DateTime.MaxValue });
 
             dataHelper.CreateTestOrganizationAndProject(user.Id);
+        }
+
+        private class Person {
+            public string Name { get; set; }
         }
     }
 }

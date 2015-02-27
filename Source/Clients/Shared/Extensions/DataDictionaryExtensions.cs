@@ -105,7 +105,13 @@ namespace Exceptionless {
             if (info == null || info.Data == null)
                 return;
 
-            string name = !String.IsNullOrWhiteSpace(info.Name) ? info.Name.Trim() : info.Data.GetType().Name;
+            string name = !String.IsNullOrWhiteSpace(info.Name) ? info.Name.Trim() : null;
+            if (String.IsNullOrEmpty(name)) {
+                name = info.Data.GetType().Name;
+                int index = 1;
+                while (data.Data.ContainsKey(name))
+                    name = info.Data.GetType().Name + index++;
+            }
 
             Type dataType = info.Data.GetType();
             if (dataType == typeof(bool) || dataType == typeof(string) || dataType.IsNumeric()) {

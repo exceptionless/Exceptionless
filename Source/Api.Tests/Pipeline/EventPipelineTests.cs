@@ -180,10 +180,14 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             var pipeline = IoC.GetInstance<EventPipeline>();
             foreach (var ev in events) {
+                ev.Date = DateTime.UtcNow;
                 ev.ProjectId = TestConstants.ProjectId;
                 ev.OrganizationId = TestConstants.OrganizationId;
 
-                Assert.DoesNotThrow(() => pipeline.Run(ev));
+                var context = new EventContext(ev);
+                Assert.DoesNotThrow(() => pipeline.Run(context));
+                Assert.True(context.IsProcessed);
+                
             }
         }
 
