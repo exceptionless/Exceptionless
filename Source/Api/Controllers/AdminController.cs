@@ -74,7 +74,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("requeue")]
         public IHttpActionResult Requeue(string path) {
             if (String.IsNullOrEmpty(path))
-                return BadRequest();
+                path = @"q\*";
 
             var files = _fileStorage.GetFileList(path);
             foreach (var file in files)
