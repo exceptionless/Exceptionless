@@ -4,22 +4,27 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Models;
 using Foundatio.Messaging;
+using Foundatio.Queues;
+using Foundatio.Storage;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/admin")]
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
     public class AdminController : ExceptionlessApiController {
-        private readonly IOrganizationRepository _repository;
-        private readonly BillingManager _billingManager;
+        private readonly IFileStorage _fileStorage;
         private readonly IMessagePublisher _messagePublisher;
+        private readonly IOrganizationRepository _organizationRepository;
+        private readonly IQueue<EventPost> _eventPostQueue;
 
-        public AdminController(IOrganizationRepository repository, BillingManager billingManager, IMessagePublisher messagePublisher) {
-            _repository = repository;
-            _billingManager = billingManager;
+        public AdminController(IFileStorage fileStorage, IMessagePublisher messagePublisher, IOrganizationRepository organizationRepository, IQueue<EventPost> eventPostQueue) {
+            _fileStorage = fileStorage;
             _messagePublisher = messagePublisher;
+            _organizationRepository = organizationRepository;
+            _eventPostQueue = eventPostQueue;
         }
 
         [HttpPost]
@@ -28,7 +33,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _repository.GetById(organizationId);
+            var organization = _organizationRepository.GetById(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
@@ -40,7 +45,7 @@ namespace Exceptionless.Api.Controllers {
             organization.RemoveSuspension();
             BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser, false);
 
-            _repository.Save(organization);
+            _organizationRepository.Save(organization);
             _messagePublisher.Publish(new PlanChanged {
                 OrganizationId = organization.Id
             });
@@ -54,15 +59,28 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
-            var organization = _repository.GetById(organizationId);
+            var organization = _organizationRepository.GetById(organizationId);
             if (organization == null)
                 return Ok(new { Success = false, Message = "Invalid Organization Id." });
 
             organization.BonusEventsPerMonth = bonusEvents;
             organization.BonusExpiration = expires;
-            _repository.Save(organization);
+            _organizationRepository.Save(organization);
 
             return Ok(new { Success = true });
+        }
+
+        [HttpGet]
+        [Route("requeue")]
+        public IHttpActionResult Requeue(string path) {
+            if (String.IsNullOrEmpty(path))
+                return BadRequest();
+
+            var files = _fileStorage.GetFileList(path);
+            foreach (var file in files)
+                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = false });
+
+            return Ok();
         }
     }
 }
