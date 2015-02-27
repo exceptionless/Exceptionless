@@ -17,6 +17,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.DateTimeExtensions;
 using Exceptionless.Models;
 using Exceptionless.Models.Data;
 using FluentValidation;
@@ -68,6 +69,10 @@ namespace Exceptionless.Api.Controllers {
             var model = GetModel(id);
             if (model == null)
                 return NotFound();
+
+            var organization = _organizationRepository.GetById(model.OrganizationId, true);
+            if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
+                return this.PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
             var timeInfo = GetTimeInfo(time, offset);
             var processResult = QueryProcessor.Process(filter);
