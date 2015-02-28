@@ -31,7 +31,7 @@ namespace Exceptionless.EventMigration {
             _cacheClient.FlushAll();
 
             Log.Info().Message("Resetting elastic search").Write();
-            ElasticSearchConfiguration.ConfigureMapping(_elasticClient, true);
+            ElasticSearchConfiguration.ConfigureMapping(_elasticClient); // true); // NOTE: Set this to true to wipe existing elastic search data.
 
             foreach (var collectionName in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system"))) {
                 Log.Info().Message("Dropping collection: {0}", collectionName).Write();
