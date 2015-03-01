@@ -193,7 +193,7 @@ namespace Exceptionless.Core {
             if (elasticSearchConnectionString != null)
                 settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
 
-            settings.Version = ThisAssembly.AssemblyInformationalVersion;
+            settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
 
             return settings;
         }

@@ -11,7 +11,7 @@ install:
 
 assembly_info:
   patch: true
-  file: GlobalAssemblyInfo.*
+  file: Source\GlobalAssemblyInfo.cs
   assembly_version: "{version}.0"
   assembly_file_version: "{version}.0"
   assembly_informational_version: "{version} $env:GIT_HASH"
@@ -22,8 +22,8 @@ before_build:
 build:
   verbosity: minimal
 
-before_test:
-  - StartBackendServers.bat
+#before_test:
+#  - cmd: StartBackendServers.bat
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Web.Http;
+using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
@@ -39,7 +40,7 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok(new {
                 Message = "All Systems Check",
-                Version = ThisAssembly.AssemblyInformationalVersion
+                Version = Settings.Current.Version
             });
         }
 

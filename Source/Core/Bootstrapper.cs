@@ -59,7 +59,7 @@ namespace Exceptionless.Core {
             //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
             ExceptionlessClient.Default.Configuration.UseInMemoryStorage();
             ExceptionlessClient.Default.Configuration.UseReferenceIds();
-            ExceptionlessClient.Default.Configuration.SetVersion(ThisAssembly.AssemblyInformationalVersion);
+            ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
             container.RegisterSingle<ExceptionlessClient>(() => ExceptionlessClient.Default);
 
             if (Settings.Current.EnableAppStats)
