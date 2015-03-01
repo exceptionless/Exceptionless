@@ -11,6 +11,7 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Newtonsoft.Json;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class WebHooksJob : JobBase {

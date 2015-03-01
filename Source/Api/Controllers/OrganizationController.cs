@@ -23,6 +23,7 @@ using Foundatio.Caching;
 using Foundatio.Messaging;
 using NLog.Fluent;
 using Stripe;
+#pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/organizations")]

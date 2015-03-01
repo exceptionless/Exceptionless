@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Results;
+#pragma warning disable 1998
 
 namespace Exceptionless.Api.Utility {
     public class ExceptionlessReferenceIdExceptionHandler : IExceptionHandler {

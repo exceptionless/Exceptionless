@@ -13,6 +13,7 @@ using Exceptionless.Models;
 using FluentValidation;
 using MongoDB.Driver;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
     public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController

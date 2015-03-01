@@ -5,6 +5,7 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
 using NLog.Fluent;
 using Stripe;
+#pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stripe")]

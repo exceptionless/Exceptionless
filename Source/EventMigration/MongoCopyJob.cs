@@ -10,6 +10,7 @@ using Foundatio.Caching;
 using Foundatio.Jobs;
 using MongoDB.Driver;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.EventMigration {
     public class MongoCopyJob : JobBase {

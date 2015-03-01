@@ -15,6 +15,7 @@ using Foundatio.Jobs;
 using Foundatio.Queues;
 using NLog.Fluent;
 using UAParser;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class EventNotificationsJob : JobBase {

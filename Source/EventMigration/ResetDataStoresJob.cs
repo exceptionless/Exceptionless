@@ -10,6 +10,7 @@ using Foundatio.Jobs;
 using MongoDB.Driver;
 using Nest;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.EventMigration {
     public class ResetDataStoresJob : JobBase {

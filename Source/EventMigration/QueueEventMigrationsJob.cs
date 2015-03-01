@@ -16,6 +16,7 @@ using Foundatio.Queues;
 using MongoDB.Driver.Builders;
 using Nest;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.EventMigration {
     public class QueueEventMigrationsJob : MigrationJobBase {

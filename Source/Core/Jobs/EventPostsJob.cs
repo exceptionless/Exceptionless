@@ -18,6 +18,7 @@ using Foundatio.Queues;
 using Foundatio.Storage;
 using Newtonsoft.Json;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class EventPostsJob : JobBase {

@@ -19,6 +19,7 @@ using Exceptionless.Models;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using NLog.Fluent;
+#pragma warning disable 1998
 
 namespace Exceptionless.Core.Jobs {
     public class StaleAccountsJob : JobBase {
