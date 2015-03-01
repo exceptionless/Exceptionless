@@ -26,6 +26,7 @@ build:
   verbosity: minimal
 
 before_test:
+  - ps: .\Libraries\Enable-Rdp.ps1
   - CD Libraries\Mongo
   - ps: .\bin\mongod.exe --install -f "$(get-location)\mongod.cfg"
   - CD ..
