@@ -1,3 +1,4 @@
-START .\Libraries\Mongo\bin\mongod.exe --journal --dbpath .\Libraries\Mongo\data
 CD Libraries
-START PowerShell .\Start-Elasticsearch.ps1
+.\bin\mongod.exe --install -f .\mongod.cfg
+net start mongodb
+PowerShell .\Start-Elasticsearch.ps1

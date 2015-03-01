@@ -23,8 +23,8 @@ before_build:
 build:
   verbosity: minimal
 
-#before_test:
-#  - cmd: StartBackendServers.bat
+before_test:
+  - StartBackendServers.bat
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION

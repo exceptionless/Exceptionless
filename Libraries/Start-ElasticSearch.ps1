@@ -11,4 +11,6 @@ if (Test-Path -Path "elasticsearch.zip") {
 	rm elasticsearch.zip
 }
 
-&".\elasticsearch-$es_version\bin\elasticsearch.bat"
+$service = ".\elasticsearch-$es_version\bin\service.bat"
+&$service install
+&$service start
