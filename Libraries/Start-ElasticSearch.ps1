@@ -1,10 +1,14 @@
-﻿$env:ElasticSearch_Version = "1.4.4"
-
-if(!(Test-Path -Path "elasticsearch-$env:ElasticSearch_Version" )){
-    wget "http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-$env:ElasticSearch_Version.zip" -OutFile "elasticsearch-$env:ElasticSearch_Version.zip"
-    7z x "elasticsearch-$env:ElasticSearch_Version.zip"
-    rm "elasticsearch-$env:ElasticSearch_Version.zip"
+﻿$es_version = "1.4.4"
+if ($env:ES_VERSION) {
+	$es_version = $env:ES_VERSION
 }
 
-elasticsearch-1.4.4\bin\service.bat install
-elasticsearch-1.4.4\bin\service.bat start
+if (!(Test-Path -Path "elasticsearch-$es_version" )) {
+    wget "http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-$es_version.zip" -OutFile "elasticsearch.zip"
+}
+7z x -y "elasticsearch.zip" > $null
+if (Test-Path -Path "elasticsearch.zip") {
+	rm elasticsearch.zip
+}
+
+&".\elasticsearch-$es_version\bin\elasticsearch.bat"

@@ -51,9 +51,23 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
+    <Reference Include="Exceptionless, Version=2.0.1134.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+    </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.29.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Extras">
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1134-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Models, Version=2.0.1134.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Models.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.WebApi">
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1134-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation, Version=5.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -176,19 +190,11 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="exceptionless.png" />
-    <Content Include="favicon.ico">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="exceptionless.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="favicon.ico" />
+    <Content Include="index.html" />
     <Content Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Utility\Delta\LICENSE.txt" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
@@ -247,6 +253,7 @@
     <Compile Include="Models\WebHook\NewWebHook.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Security\AuthMessageHandler.cs" />
+    <Compile Include="Security\GitHubWithPrivateEmailsClient.cs" />
     <Compile Include="Security\RequireHttpsAttribute.cs" />
     <Compile Include="Security\RequireHttpsExceptLocalAttribute.cs" />
     <Compile Include="Security\TokenManager.cs" />
@@ -283,25 +290,9 @@
     <Compile Include="Utility\XHttpMethodOverrideMessageHandler.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Clients\NLog\Exceptionless.NLog.csproj">
-      <Project>{5eb81eef-ed35-4ad2-9b20-0b3e5c94bba4}</Project>
-      <Name>Exceptionless.NLog</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
-      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Clients\WebApi\Exceptionless.WebApi.csproj">
-      <Project>{d6e6ee87-5869-4a62-8f67-7a685205bcad}</Project>
-      <Name>Exceptionless.WebApi</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
-      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
-      <Name>Exceptionless.Models</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
@@ -312,7 +303,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="NLog.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
   </ItemGroup>

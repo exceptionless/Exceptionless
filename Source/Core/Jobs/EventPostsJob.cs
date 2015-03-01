@@ -10,13 +10,13 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Json;
 using Exceptionless.Models;
 using FluentValidation;
 using Foundatio.Jobs;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Storage;
+using Newtonsoft.Json;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Jobs {

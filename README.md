@@ -13,12 +13,11 @@ _This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Excepti
 _** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
 
 1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
-2. Start `Elasticsearch`, `MongoDB` and `Redis` by opening `StartBackendServers.bat`.
-3. Install [`Elasticsearch`](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html) if you haven't already.
-4. Open the `Exceptionless.sln` Visual Studio solution file.
-5. Select `Exceptionless.Api.IIS` and `Exceptionless.SampleConsole` as startup projects.
-6. Run the project by pressing `F5` to start the console and server.
-7. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
+2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`.
+3. Open the `Exceptionless.sln` Visual Studio solution file.
+4. Select `Exceptionless.Api` as startup projects.
+5. Run the project by pressing `F5` to start the server.
+6. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
 
 Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 

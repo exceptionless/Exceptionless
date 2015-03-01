@@ -1,4 +1,4 @@
-﻿#region Copyright 2014 Exceptionless
+﻿#region Copyright 2015 Exceptionless
 
 // This program is free software: you can redistribute it and/or modify it 
 // under the terms of the GNU Affero General Public License as published 
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Repositories {
             return CollectionName;
         }
 
-        public new static class FieldNames {
+        public static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string EmailAddress = "EmailAddress";
             public const string IsEmailAddressVerified = "IsEmailAddressVerified";

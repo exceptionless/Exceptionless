@@ -51,6 +51,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
+    <Reference Include="Exceptionless">
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+    </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.29.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
@@ -58,6 +61,9 @@
     <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.7\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Models">
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Models.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
@@ -132,19 +138,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\NLog.3.2.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="OAuth2">
-      <HintPath>..\..\packages\OAuth2.0.8.34\lib\OAuth2.dll</HintPath>
-    </Reference>
     <Reference Include="Pegasus.Common">
       <HintPath>..\..\packages\Pegasus.3.1.0\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.6.1.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\RazorEngine.3.6.1\lib\net45\RazorEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="RestSharp, Version=104.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\RestSharp.104.0\lib\net4\RestSharp.dll</HintPath>
     </Reference>
     <Reference Include="SimpleInjector, Version=2.7.2.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -207,10 +206,18 @@
       <Link>Properties\GlobalAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Authorization\AuthorizationRoles.cs" />
-    <Compile Include="Authorization\GitHubWithPrivateEmailsClient.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
+    <Compile Include="Jobs\JobBootstrapper.cs" />
+    <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
+    <Compile Include="Mail\Engine\EmailTemplate.cs" />
+    <Compile Include="Mail\Engine\EmbeddedTemplateResolver.cs" />
+    <Compile Include="Mail\Engine\IEmailGenerator.cs" />
+    <Compile Include="Mail\Engine\LanguageScope.cs" />
+    <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
+    <Compile Include="Mail\Engine\StringExtensions.cs" />
+    <Compile Include="Mail\Engine\TemplatedEmail.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
@@ -368,7 +375,6 @@
     <Compile Include="Validation\UserDescriptionValidator.cs" />
     <Compile Include="Validation\UserValidator.cs" />
     <Compile Include="Validation\WebHookValidator.cs" />
-    <None Include="app.config" />
     <None Include="Mail\Templates\AddedToOrganization\Subject.cshtml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -471,21 +477,9 @@
     <Compile Include="Repositories\UserRepository.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
-      <Project>{14dfd206-b445-4d52-9c3c-8b2f69b22b91}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
-      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
-      <Name>Exceptionless.Models</Name>
-    </ProjectReference>
     <ProjectReference Include="..\MongoMigrations\MongoMigrations.csproj">
       <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
       <Name>MongoMigrations</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\RazorSharpEmail\RazorSharpEmail.csproj">
-      <Project>{B551DBCB-E732-4CFB-9361-CD74F1BA82F5}</Project>
-      <Name>RazorSharpEmail</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,4 @@
-﻿#region Copyright 2014 Exceptionless
+﻿#region Copyright 2015 Exceptionless
 
 // This program is free software: you can redistribute it and/or modify it 
 // under the terms of the GNU Affero General Public License as published 
@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Migrations {
             var occurrenceDateArray = document.GetValue("dt").AsBsonArray;
             var localTicks = occurrenceDateArray[0].AsInt64;
             var date = new DateTime(localTicks);
-            if (date > new DateTime(2014, 3, 14, 12, 30, 0))
+            if (date > new DateTime(2015, 3, 14, 12, 30, 0))
                 return;
 
             var offset = TimeSpan.FromMinutes(occurrenceDateArray[1].AsInt32);

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
 
 namespace Exceptionless.Core.Mail {
-    public class InMemoryMailSender : IMailSender {
+    public class InMemoryMailSender : IMailSender, IDisposable {
         private readonly Queue<MailMessage> _recentMessages = new Queue<MailMessage>();
         private readonly int _messagesToStore;
         private long _totalSent = 0;
@@ -47,6 +47,11 @@ namespace Exceptionless.Core.Mail {
                 _recentMessages.Dequeue();
 
             return Task.FromResult(0);
+        }
+
+        public void Dispose() {
+            if (_waitHandle != null)
+                _waitHandle.Dispose();
         }
     }
 }

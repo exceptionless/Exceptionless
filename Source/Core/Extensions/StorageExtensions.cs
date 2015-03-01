@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Core.Models;
-using Exceptionless.Json;
 using Foundatio.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
+using Newtonsoft.Json;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {

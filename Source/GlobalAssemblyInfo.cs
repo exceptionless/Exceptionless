@@ -1,4 +1,4 @@
-#region Copyright 2014 Exceptionless
+#region Copyright 2015 Exceptionless
 
 // This program is free software: you can redistribute it and/or modify it 
 // under the terms of the GNU Affero General Public License as published 
@@ -15,9 +15,9 @@ using System.Reflection;
 [assembly: AssemblyProduct("Exceptionless")]
 [assembly: AssemblyCompany("Exceptionless")]
 [assembly: AssemblyTrademark("Exceptionless")]
-[assembly: AssemblyCopyright("Copyright (c) 2014 Exceptionless.  All rights reserved.")]
-#if DEBUG
+[assembly: AssemblyCopyright("Copyright (c) 2015 Exceptionless.  All rights reserved.")]
 
+#if DEBUG
 [assembly: AssemblyConfiguration("Debug")]
 #else
 [assembly: AssemblyConfiguration("Release")]
@@ -34,7 +34,7 @@ internal sealed partial class ThisAssembly {
 
     internal const string AssemblyTrademark = "Exceptionless";
 
-    internal const string AssemblyCopyright = "Copyright (c) 2014 Exceptionless.  All rights reserved.";
+    internal const string AssemblyCopyright = "Copyright (c) 2015 Exceptionless.  All rights reserved.";
 
     internal const string AssemblyConfiguration = "Release";
 

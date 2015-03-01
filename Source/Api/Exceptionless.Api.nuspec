@@ -14,5 +14,10 @@
   </metadata>
   <files>
     <file src="**\*.*" target="" exclude="*.nuspec;*.settings;**\*.cs;packages.config;*.csproj;*.user;*.suo;**\*.xsd;obj\**\*.*;**\*.ide" />
+    <file src="..\WebJobs\*.*" target="App_Data\JobRunner\" />
+    <file src="..\WebJobs\continuous\**\*.*" target="App_Data\jobs\continuous\" />
+    <file src="..\WebJobs\triggered\**\*.*" target="App_Data\jobs\triggered\" />
+    <file src="bin\**\*.*" target="App_Data\JobRunner\bin\" />
+    <file src="..\EventMigration\bin\Release\Exceptionless.EventMigration*.*" target="App_Data\JobRunner\bin\" />
   </files>
 </package>

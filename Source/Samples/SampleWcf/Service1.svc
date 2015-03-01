@@ -1,1 +1,0 @@
-﻿<%@ ServiceHost Language="C#" Debug="true" Service="Exceptionless.SampleWcf.Service1" CodeBehind="Service1.svc.cs" %>

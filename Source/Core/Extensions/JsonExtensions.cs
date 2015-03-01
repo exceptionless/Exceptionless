@@ -1,4 +1,4 @@
-﻿#region Copyright 2014 Exceptionless
+﻿#region Copyright 2015 Exceptionless
 
 // This program is free software: you can redistribute it and/or modify it 
 // under the terms of the GNU Affero General Public License as published 
@@ -227,7 +227,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromJson<T>(settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = default(T);
                 return false;
             }
@@ -265,7 +265,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromBson<T>(settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = default(T);
                 return false;
             }
@@ -275,7 +275,7 @@ namespace Exceptionless.Core.Extensions {
             try {
                 value = data.FromBson(objectType, settings);
                 return true;
-            } catch (Exception ex) {
+            } catch (Exception) {
                 value = null;
                 return false;
             }

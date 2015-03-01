@@ -53,9 +53,21 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
+    <Reference Include="Exceptionless">
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Console">
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1134-preview\lib\net45\Exceptionless.Console.dll</HintPath>
+    </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.29.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Extras">
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1134-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.Models">
+      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Models.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
@@ -196,21 +208,9 @@
       <Project>{50717168-44e5-4e69-95ec-eed839630323}</Project>
       <Name>Exceptionless.Api</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Clients\Extras\Exceptionless.Extras.csproj">
-      <Project>{693f3cbf-5bc7-457d-9f31-bdd89c72677e}</Project>
-      <Name>Exceptionless.Extras</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Clients\Shared\Exceptionless.csproj">
-      <Project>{14DFD206-B445-4D52-9C3C-8B2F69B22B91}</Project>
-      <Name>Exceptionless</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Core\Exceptionless.Core.csproj">
       <Project>{3e5b39d5-7acd-486b-9f90-59116b67952d}</Project>
       <Name>Exceptionless.Core</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Models\Exceptionless.Models.csproj">
-      <Project>{a14e78de-a085-4647-ba2d-e6237d7d8057}</Project>
-      <Name>Exceptionless.Models</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -94,7 +94,7 @@ namespace Exceptionless.Api.Controllers {
             TModel model;
             try {
                 model = AddModel(mapped);
-            } catch (WriteConcernException) {
+            } catch (MongoWriteConcernException) {
                 return Conflict();
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());

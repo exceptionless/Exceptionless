@@ -363,11 +363,11 @@ namespace Exceptionless.Core.Extensions {
             return str;
         }
 
-        public static string HtmlEntityDecode(string encodedText) {
+        public static string HtmlEntityDecode(this string encodedText) {
             return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
         }
 
-        public static string HtmlEntityDecode(string encodedText, bool encodeTagsToo) {
+        public static string HtmlEntityDecode(this string encodedText, bool encodeTagsToo) {
             if (encodeTagsToo)
                 return _entityResolver.Replace(encodedText, new MatchEvaluator(ResolveEntityAngleAmp));
             else
