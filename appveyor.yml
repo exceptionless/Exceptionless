@@ -27,7 +27,7 @@ build:
 
 before_test:
   - CD Libraries\Mongo
-  - .\bin\mongod.exe --install -f "$(get-location)\mongod.cfg"
+  - ps: .\bin\mongod.exe --install -f "$(get-location)\mongod.cfg"
   - CD ..
   - Start-Service mongodb
   - ps: .\Start-Elasticsearch.ps1
