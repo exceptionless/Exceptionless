@@ -1,5 +1,6 @@
 CD Libraries\Mongo
-.\bin\mongod.exe --install -f .\mongod.cfg
+SET MongoDir=%cd%
+.\bin\mongod.exe --install -f %cd%\mongod.cfg
 net start mongodb
 CD ..
 PowerShell .\Start-Elasticsearch.ps1
