@@ -26,9 +26,9 @@ build:
   verbosity: minimal
 
 before_test:
-  - ps: .\Libraries\Enable-Rdp.ps1
+#  - ps: .\Libraries\Enable-Rdp.ps1
   - CD Libraries\Mongo
-  - ps: .\bin\mongod.exe --install -f "$(get-location)\mongod.cfg"
+  - ps: .\bin\mongod.exe --config "$(get-location)\mongod.cfg" --install
   - CD ..
   - ps: Start-Service mongodb
   - ps: .\Start-Elasticsearch.ps1
