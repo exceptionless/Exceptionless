@@ -1,4 +1,5 @@
 version: 2.0.{build}
+clone_depth: 2
 
 environment:
   API_URL: https://#{api.hostheader}
