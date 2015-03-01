@@ -26,7 +26,10 @@ build:
   verbosity: minimal
 
 before_test:
-  - StartBackendServers.bat
+  - CD Libraries\Mongo
+  - .\Libraries\Mongo\bin\mongod.exe --install -f $(get-location)\Libraries\Mongo\mongod.cfg
+  - Start-Service mongodb
+  - ps: .\Start-Elasticsearch.ps1
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION
