@@ -2,6 +2,7 @@
 using System.IO;
 using System.Reflection;
 using RazorEngine.Templating;
+#pragma warning disable 618
 
 namespace RazorSharpEmail {
     /// <summary>

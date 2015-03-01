@@ -5,6 +5,7 @@ using System.Web;
 using Exceptionless.Core.Extensions;
 using RazorEngine.Configuration;
 using RazorEngine.Templating;
+#pragma warning disable 618
 
 namespace RazorSharpEmail {
     public class RazorEmailGenerator : IEmailGenerator, IDisposable {
