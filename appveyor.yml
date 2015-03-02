@@ -10,6 +10,9 @@ environment:
   OCTOPUS_API_KEY:
     secure: 9Uk1fnTNb36QtrWfRCe9vrqVsBaEXGcM1K1mRoLUB0A=
 
+init:
+  - git config --global core.autocrlf true
+
 install:
   - ps: $env:GIT_HASH=$env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
