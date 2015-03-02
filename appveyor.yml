@@ -22,7 +22,7 @@ assembly_info:
 
 before_build:
   - nuget restore
-  - ps: .\Libraries\Enable-Rdp.ps1
+#  - ps: .\Libraries\Enable-Rdp.ps1
 
 build:
   verbosity: minimal
