@@ -18,6 +18,6 @@
     <file src="..\WebJobs\continuous\**\*.*" target="App_Data\jobs\continuous\" />
     <file src="..\WebJobs\triggered\**\*.*" target="App_Data\jobs\triggered\" />
     <file src="bin\**\*.*" target="App_Data\JobRunner\bin\" />
-    <file src="..\EventMigration\bin\Release\Exceptionless.EventMigration*.*" target="App_Data\JobRunner\bin\" />
+    <file src="..\Migrations\EventMigration\bin\Release\Exceptionless.EventMigration*.*" target="App_Data\JobRunner\bin\" />
   </files>
 </package>

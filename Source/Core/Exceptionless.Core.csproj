@@ -470,7 +470,7 @@
     <Compile Include="Repositories\UserRepository.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MongoMigrations\MongoMigrations.csproj">
+    <ProjectReference Include="..\Migrations\MongoMigrations\MongoMigrations.csproj">
       <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
       <Name>MongoMigrations</Name>
     </ProjectReference>
