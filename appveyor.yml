@@ -36,11 +36,9 @@ before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
 #  - ps: .\Libraries\Enable-Rdp.ps1
 
-artifacts:
+after_tests:
   - ps: nuget pack .\Source\Api\Exceptionless.Api.nuspec -Version "$env:APPVEYOR_BUILD_VERSION" -NoPackageAnalysis
-  - path: 'Source\Api\*.nupkg'
-
-deploy:
+  - ps: Get-ChildItem Source\Api\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
   - ps: nuget install OctopusTools
   - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:APPVEYOR_BUILD_VERSION" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev --progress'
 
