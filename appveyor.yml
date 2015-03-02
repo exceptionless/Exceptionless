@@ -5,6 +5,7 @@ configuration: Release
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
   ES_VERSION: 1.4.4
+  MONGO_VERSION: 2.6.8
   API_URL: https://#{api.hostheader}
   OCTOPUS_API_URL: https://deploy.codesmithtools.com/api
   OCTOPUS_API_KEY:
@@ -30,9 +31,9 @@ build:
   verbosity: minimal
 
 before_test:
-#  - ps: .\Libraries\Enable-Rdp.ps1
   - ps: .\Libraries\Start-MongoDb.ps1
   - ps: .\Libraries\Start-ElasticSearch.ps1
+  - ps: .\Libraries\Enable-Rdp.ps1
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION
