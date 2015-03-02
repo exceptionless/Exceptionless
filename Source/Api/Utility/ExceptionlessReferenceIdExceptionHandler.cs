@@ -6,14 +6,16 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.ExceptionHandling;
 using System.Web.Http.Results;
+using Exceptionless.Core.Utility;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Utility {
     public class ExceptionlessReferenceIdExceptionHandler : IExceptionHandler {
-        private readonly ExceptionlessClient _exceptionlessClient;
+        private readonly ICoreLastReferenceIdManager _coreLastReferenceIdManager;
 
-        public ExceptionlessReferenceIdExceptionHandler(ExceptionlessClient exceptionlessClient) {
-            _exceptionlessClient = exceptionlessClient;
+        public ExceptionlessReferenceIdExceptionHandler(ICoreLastReferenceIdManager coreLastReferenceIdManager) {
+            _coreLastReferenceIdManager = coreLastReferenceIdManager;
         }
 
         public async Task HandleAsync(ExceptionHandlerContext context, CancellationToken cancellationToken) {
@@ -32,7 +34,7 @@ namespace Exceptionless.Api.Utility {
             HttpConfiguration configuration = request.GetConfiguration();
             HttpError error = new HttpError(ex, request.ShouldIncludeErrorDetail());
 
-            string lastId = _exceptionlessClient.GetLastReferenceId();
+            string lastId = _coreLastReferenceIdManager.GetLastReferenceId();
             if (!String.IsNullOrEmpty(lastId))
                 error.Add("Reference", lastId);
 

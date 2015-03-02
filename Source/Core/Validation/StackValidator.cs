@@ -1,5 +1,5 @@
 using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using FluentValidation.Results;
 

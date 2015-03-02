@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 using FluentValidation;
 
 namespace Exceptionless.Core.Validation {

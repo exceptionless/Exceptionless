@@ -1,7 +1,7 @@
 using System;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 
 namespace Exceptionless.Core.Validation {

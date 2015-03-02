@@ -15,7 +15,7 @@ using System.Linq;
 using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;

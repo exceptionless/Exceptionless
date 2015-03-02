@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 
 namespace Exceptionless.Core.Extensions {

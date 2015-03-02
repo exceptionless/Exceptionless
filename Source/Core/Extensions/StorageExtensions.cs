@@ -1,23 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Foundatio.Storage;
-using Microsoft.WindowsAzure.Storage.Blob;
-using Newtonsoft.Json;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
-        public static bool SaveObject<T>(this IFileStorage storage, string path, T data) {
-            return storage.SaveFile(path, JsonConvert.SerializeObject(data));
-        }
-
-        public static T GetObject<T>(this IFileStorage storage, string path) {
-            string json = storage.GetFileContents(path);
-            return JsonConvert.DeserializeObject<T>(json);
-        }
-
         public static EventPostInfo GetEventPostAndSetActive(this IFileStorage storage, string path) {
             EventPostInfo eventPostInfo = null;
             try {
@@ -68,20 +56,6 @@ namespace Exceptionless.Core.Extensions {
             storage.SetNotActive(path);
 
             return true;
-        }
-
-        public static void DeleteFiles(this IFileStorage storage, IEnumerable<FileSpec> files) {
-            foreach (var file in files)
-                storage.DeleteFile(file.Path);
-        }
-
-        public static FileSpec ToFileInfo(this CloudBlockBlob blob) {
-            return new FileSpec {
-                Path = blob.Name,
-                Size = blob.Properties.Length,
-                Modified = blob.Properties.LastModified.HasValue ? blob.Properties.LastModified.Value.UtcDateTime : DateTime.MinValue,
-                Created = blob.Properties.LastModified.HasValue ? blob.Properties.LastModified.Value.UtcDateTime : DateTime.MinValue
-            };
         }
     }
 }

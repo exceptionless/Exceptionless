@@ -1,6 +1,6 @@
 ﻿using System;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {

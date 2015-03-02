@@ -7,7 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Repositories.Base;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 using Foundatio.Jobs;
 using Foundatio.Metrics;
 using Foundatio.Queues;

@@ -14,7 +14,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Messaging;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;

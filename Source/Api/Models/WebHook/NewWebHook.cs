@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Api.Models {
     public class NewWebHook : IOwnedByOrganizationAndProject {

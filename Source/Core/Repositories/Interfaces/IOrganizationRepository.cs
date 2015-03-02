@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Models.Billing;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {

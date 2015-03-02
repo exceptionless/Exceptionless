@@ -35,8 +35,8 @@ namespace Exceptionless.EventMigration.Models {
         public ExtendedDataDictionary ExtendedData { get; set; }
         public GenericArguments GenericArguments { get; set; }
 
-        public Exceptionless.Models.Data.Parameter ToParameter() {
-            var frame = new Exceptionless.Models.Data.Parameter {
+        public Exceptionless.Core.Models.Data.Parameter ToParameter() {
+            var frame = new Exceptionless.Core.Models.Data.Parameter {
                 Name = Name,
                 Type = Type,
                 TypeNamespace = TypeNamespace

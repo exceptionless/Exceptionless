@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Utility {
         }
 
         private static void Initialize() {
-            _container = AppBuilder.CreateContainer();
+            _container = AppBuilder.CreateContainer(false);
             _initialized = true;
 
             RegisterServices(_container);

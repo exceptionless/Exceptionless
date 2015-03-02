@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 using NLog.Fluent;
 using UAParser;
 

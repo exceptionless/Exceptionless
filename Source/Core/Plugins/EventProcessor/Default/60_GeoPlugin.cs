@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor.Default {
     [Priority(60)]

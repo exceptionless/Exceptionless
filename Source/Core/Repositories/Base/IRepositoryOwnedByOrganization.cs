@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IRepositoryOwnedByOrganization<T> : IRepository<T> where T : class, IOwnedByOrganization, IIdentity, new() {

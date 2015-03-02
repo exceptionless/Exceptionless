@@ -15,7 +15,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 using Foundatio.Queues;
 using NLog.Fluent;
 

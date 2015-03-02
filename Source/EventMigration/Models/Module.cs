@@ -26,8 +26,8 @@ namespace Exceptionless.EventMigration.Models {
         public DateTime ModifiedDate { get; set; }
         public ExtendedDataDictionary ExtendedData { get; set; }
 
-        public Exceptionless.Models.Data.Module ToModule() {
-            var module = new Exceptionless.Models.Data.Module {
+        public Exceptionless.Core.Models.Data.Module ToModule() {
+            var module = new Exceptionless.Core.Models.Data.Module {
                 ModuleId = ModuleId,
                 Name = Name,
                 Version = Version,

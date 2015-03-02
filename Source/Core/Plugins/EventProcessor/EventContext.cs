@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public class EventContext : ExtensibleObject, IPipelineContext {

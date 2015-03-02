@@ -13,8 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
     public static class ErrorExtensions {

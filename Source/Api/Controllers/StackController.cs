@@ -26,11 +26,11 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
-using Exceptionless.Models.Stats;
+using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models.Stats;
 using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stacks")]
@@ -384,7 +384,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             } catch (ApplicationException ex) {
-                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
+                Log.Error().Exception(ex).Write();
+                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 
@@ -468,7 +469,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 terms = _eventStats.GetTermsStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, "stack_id", systemFilter, userFilter, timeInfo.Offset, GetSkip(page + 1, limit) + 1).Terms;
             } catch (ApplicationException ex) {
-                ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
+                Log.Error().Exception(ex).Write();
+                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 

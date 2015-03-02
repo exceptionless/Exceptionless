@@ -5,7 +5,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 #if EMBEDDED
 using Exceptionless.Json;
 using Exceptionless.Json.Serialization;

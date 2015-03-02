@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Models.Stats;
+using Exceptionless.Core.Models.Stats;
 
 namespace Exceptionless.Core.Models {
     public class StackSummaryModel : SummaryData {

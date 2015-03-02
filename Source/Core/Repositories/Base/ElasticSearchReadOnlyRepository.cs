@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using MongoDB.Bson;
 using Nest;

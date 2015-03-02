@@ -1,7 +1,7 @@
 ﻿using System;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
-using Exceptionless.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(10)]

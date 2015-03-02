@@ -3,7 +3,6 @@ using System.Linq;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.Formatting {

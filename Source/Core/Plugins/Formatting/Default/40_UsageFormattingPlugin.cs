@@ -4,7 +4,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
 using RazorSharpEmail;
 
 namespace Exceptionless.Core.Plugins.Formatting {

@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     plugin.EventProcessing(context);
                 } catch (Exception ex) {
-                    ex.ToExceptionless().SetMessage(String.Format("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message)).AddObject(context).Submit();
+                    Log.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }
@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
                 try {
                     plugin.EventProcessed(context);
                 } catch (Exception ex) {
-                    ex.ToExceptionless().SetMessage(String.Format("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message)).AddObject(context).Submit();
+                    Log.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
             }
         }

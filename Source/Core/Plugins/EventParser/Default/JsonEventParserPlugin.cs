@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Plugins.EventParser {

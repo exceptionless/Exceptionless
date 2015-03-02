@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;

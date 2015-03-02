@@ -19,8 +19,7 @@ using Exceptionless.Core.Mail;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Enrichments;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Tests.Utility;
 using Xunit;
 
@@ -73,14 +72,14 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendSimpleErrorNotification() {
             PersistentEvent ev = null;
-            var client = new ExceptionlessClient("123456789");
-            try {
-                throw new Exception("Happy days are here again...");
-            } catch (Exception ex) {
-                var builder = ex.ToExceptionless(client: client);
-                EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
-                ev = Mapper.Map<PersistentEvent>(builder.Target);
-            }
+            //var client = new ExceptionlessClient("123456789");
+            //try {
+            //    throw new Exception("Happy days are here again...");
+            //} catch (Exception ex) {
+            //    var builder = ex.ToExceptionless(client: client);
+            //    EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
+            //    ev = Mapper.Map<PersistentEvent>(builder.Target);
+            //}
 
             ev.Id = "1";
             ev.OrganizationId = "1";
@@ -101,17 +100,17 @@ namespace Exceptionless.Api.Tests.Mail {
         [Fact(Skip = "Used for testing html formatting.")]
         public void SendErrorNotification() {
             PersistentEvent ev = null;
-            var client = new ExceptionlessClient(c => {
-                c.ApiKey = "123456789";
-                c.UseErrorEnrichment();
-            });
-            try {
-                throw new Exception("Happy days are here again...");
-            } catch (Exception ex) {
-                var builder = ex.ToExceptionless(client: client);
-                EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
-                ev = Mapper.Map<PersistentEvent>(builder.Target);
-            }
+            //var client = new ExceptionlessClient(c => {
+            //    c.ApiKey = "123456789";
+            //    c.UseErrorEnrichment();
+            //});
+            //try {
+            //    throw new Exception("Happy days are here again...");
+            //} catch (Exception ex) {
+            //    var builder = ex.ToExceptionless(client: client);
+            //    EventEnrichmentManager.Enrich(new EventEnrichmentContext(client, builder.EnrichmentContextData), builder.Target);
+            //    ev = Mapper.Map<PersistentEvent>(builder.Target);
+            //}
 
             ev.Id = "1";
             ev.OrganizationId = "1";

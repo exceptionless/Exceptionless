@@ -54,8 +54,8 @@ namespace Exceptionless.EventMigration.Models {
         /// </summary>
         public Method TargetMethod { get; set; }
 
-        public Exceptionless.Models.Data.InnerError ToInnerError() {
-            var error = new Exceptionless.Models.Data.InnerError {
+        public Exceptionless.Core.Models.Data.InnerError ToInnerError() {
+            var error = new Exceptionless.Core.Models.Data.InnerError {
                 Message = Message,
                 Type = Type,
                 Code = Code,

@@ -17,7 +17,7 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Helpers;
 using Foundatio.Metrics;
 

@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Queues.Models {
     public class EventUserDescription : UserDescription {

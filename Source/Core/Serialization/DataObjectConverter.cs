@@ -5,7 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Reflection;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;

@@ -4,7 +4,7 @@ using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Nest;
 using Xunit;
 using Xunit.Extensions;

@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 
 namespace Exceptionless.Core.Extensions {

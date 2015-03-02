@@ -18,8 +18,8 @@ namespace Exceptionless.EventMigration.Models {
         public int LineNumber { get; set; }
         public int Column { get; set; }
 
-        public Exceptionless.Models.Data.StackFrame ToStackFrame() {
-            var frame = new Exceptionless.Models.Data.StackFrame {
+        public Exceptionless.Core.Models.Data.StackFrame ToStackFrame() {
+            var frame = new Exceptionless.Core.Models.Data.StackFrame {
                 Name = Name,
                 ModuleId = ModuleId,
                 DeclaringNamespace = DeclaringNamespace,

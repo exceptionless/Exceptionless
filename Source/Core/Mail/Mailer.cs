@@ -17,7 +17,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using RazorSharpEmail;

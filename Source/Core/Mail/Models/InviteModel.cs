@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Mail.Models {
     public class InviteModel : MailModelBase {

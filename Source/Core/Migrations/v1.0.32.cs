@@ -11,7 +11,7 @@
 
 using System;
 using Exceptionless.Core.Billing;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;

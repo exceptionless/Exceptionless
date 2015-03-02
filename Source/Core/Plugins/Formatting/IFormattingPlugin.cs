@@ -1,7 +1,6 @@
 ﻿using System;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
 
 namespace Exceptionless.Core.Plugins.Formatting {
     public interface IFormattingPlugin {

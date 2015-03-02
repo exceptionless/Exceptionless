@@ -22,7 +22,7 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Api.Utility.Results;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.DateTimeExtensions;
 
 namespace Exceptionless.Api.Controllers {

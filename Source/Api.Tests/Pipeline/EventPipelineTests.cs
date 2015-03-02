@@ -10,7 +10,7 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Tests.Utility;
 using Nest;
 using Xunit;
@@ -49,19 +49,19 @@ namespace Exceptionless.Api.Tests.Pipeline {
         [Fact]
         public void CanIndexExtendedData() {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, generateData: false, occurrenceDate: DateTime.Now);
-            ev.SetProperty("First Name", "Eric");
-            ev.SetProperty("IsVerified", true);
-            ev.SetProperty("IsVerified1", true.ToString());
-            ev.SetProperty("Age", Int32.MaxValue);
-            ev.SetProperty("Age1", Int32.MaxValue.ToString(CultureInfo.InvariantCulture));
-            ev.SetProperty("AgeDec", Decimal.MaxValue);
-            ev.SetProperty("AgeDec1", Decimal.MaxValue.ToString(CultureInfo.InvariantCulture));
-            ev.SetProperty("AgeDbl", Double.MaxValue);
-            ev.SetProperty("AgeDbl1", Double.MaxValue.ToString("r", CultureInfo.InvariantCulture));
-            ev.SetProperty(" Birthday ", DateTime.MinValue);
-            ev.SetProperty("BirthdayWithOffset", DateTimeOffset.MinValue);
-            ev.SetProperty("@excluded", DateTime.MinValue);
-            ev.AddObject(new { State = "Texas" }, "Address");
+            ev.Data.Add("First Name", "Eric");
+            ev.Data.Add("IsVerified", true);
+            ev.Data.Add("IsVerified1", true.ToString());
+            ev.Data.Add("Age", Int32.MaxValue);
+            ev.Data.Add("Age1", Int32.MaxValue.ToString(CultureInfo.InvariantCulture));
+            ev.Data.Add("AgeDec", Decimal.MaxValue);
+            ev.Data.Add("AgeDec1", Decimal.MaxValue.ToString(CultureInfo.InvariantCulture));
+            ev.Data.Add("AgeDbl", Double.MaxValue);
+            ev.Data.Add("AgeDbl1", Double.MaxValue.ToString("r", CultureInfo.InvariantCulture));
+            ev.Data.Add(" Birthday ", DateTime.MinValue);
+            ev.Data.Add("BirthdayWithOffset", DateTimeOffset.MinValue);
+            ev.Data.Add("@excluded", DateTime.MinValue);
+            ev.Data.Add("Address", new { State = "Texas" });
 
             var pipeline = IoC.GetInstance<EventPipeline>();
             Assert.DoesNotThrow(() => pipeline.Run(ev));

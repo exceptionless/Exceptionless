@@ -1,7 +1,7 @@
 ﻿using System;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 using Exceptionless.Tests.Utility;
 using Xunit;
 

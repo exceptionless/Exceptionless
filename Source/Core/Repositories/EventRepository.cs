@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Messaging;
 using MongoDB.Bson;

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Core.Models {
+namespace Exceptionless.Core.Queues.Models {
     public class EventPostInfo {
         public string ProjectId { get; set; }
         public byte[] Data { get; set; }

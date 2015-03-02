@@ -18,7 +18,7 @@ using System.Security.Claims;
 using System.Text;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Microsoft.Owin;
 
 namespace Exceptionless.Api.Extensions {

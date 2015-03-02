@@ -12,7 +12,7 @@
 using System;
 using System.Collections.Generic;
 using Exceptionless.Core.Billing;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using MongoDB.Bson;
 using Exceptionless.Core.Extensions;
 

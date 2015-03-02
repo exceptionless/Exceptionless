@@ -10,7 +10,7 @@
 #endregion
 
 using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Models {
     public class WebHookEvent {

@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 
 namespace Exceptionless.Core.Repositories {
     public interface IApplicationRepository : IRepositoryOwnedByOrganization<Application> {}

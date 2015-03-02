@@ -2,8 +2,8 @@
 using System.Security.Claims;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 
 namespace Exceptionless.Api.Security {
     public class TokenManager {

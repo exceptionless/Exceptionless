@@ -9,7 +9,7 @@ using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using Foundatio.Queues;

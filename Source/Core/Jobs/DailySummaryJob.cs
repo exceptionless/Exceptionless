@@ -22,7 +22,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using NLog.Fluent;

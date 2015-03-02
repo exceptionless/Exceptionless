@@ -12,7 +12,7 @@
 using System;
 using Exceptionless.Core.Mail.Models;
 using Exceptionless.Core.Queues.Models;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Mail {
     public interface IMailer {

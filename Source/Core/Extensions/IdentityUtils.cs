@@ -5,8 +5,8 @@ using System.Security.Claims;
 using System.Security.Principal;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 using IIdentity = System.Security.Principal.IIdentity;
 
 namespace Exceptionless.Core.Extensions {

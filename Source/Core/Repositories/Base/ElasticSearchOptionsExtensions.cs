@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {

@@ -17,7 +17,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Messaging;
 using NLog.Fluent;
 

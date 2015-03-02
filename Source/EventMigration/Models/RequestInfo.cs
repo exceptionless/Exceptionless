@@ -83,8 +83,8 @@ namespace Exceptionless.EventMigration.Models {
         /// </summary>
         public ExtendedDataDictionary ExtendedData { get; set; }
 
-        public Exceptionless.Models.Data.RequestInfo ToRequestInfo() {
-            var requestInfo = new Exceptionless.Models.Data.RequestInfo() {
+        public Exceptionless.Core.Models.Data.RequestInfo ToRequestInfo() {
+            var requestInfo = new Exceptionless.Core.Models.Data.RequestInfo() {
                 ClientIpAddress = ClientIpAddress,
                 Cookies = Cookies,
                 Host = Host,

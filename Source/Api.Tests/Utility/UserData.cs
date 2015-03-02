@@ -15,7 +15,7 @@ using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Helpers;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using MongoDB.Bson;
 
 namespace Exceptionless.Tests.Utility {

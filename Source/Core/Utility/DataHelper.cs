@@ -16,8 +16,8 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {

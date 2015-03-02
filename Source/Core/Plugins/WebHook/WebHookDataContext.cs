@@ -11,7 +11,7 @@
 
 using System;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     public class WebHookDataContext : ExtensibleObject {

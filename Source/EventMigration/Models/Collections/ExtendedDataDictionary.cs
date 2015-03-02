@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.EventMigration.Models {
     public class ExtendedDataDictionary : Dictionary<string, object> {

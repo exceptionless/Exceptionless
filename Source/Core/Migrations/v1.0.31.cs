@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models.Admin;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;

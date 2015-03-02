@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Exceptionless.Core.Validation;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Xunit;
 using Xunit.Extensions;
 

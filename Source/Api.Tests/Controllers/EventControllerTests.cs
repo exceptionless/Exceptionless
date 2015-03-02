@@ -29,14 +29,14 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Queues.Models;
 using Exceptionless.Helpers;
-using Exceptionless.Models;
-using Exceptionless.Serializer;
 using Exceptionless.Tests.Utility;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Microsoft.Owin;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Controllers {
@@ -143,7 +143,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 Parallel.For(0, batchCount, i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
-                    var compressedEvents = Encoding.UTF8.GetBytes(new DefaultJsonSerializer().Serialize(events)).Compress();
+                    var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).Compress();
                     var actionResult = _eventController.Post(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
                     Assert.IsType<StatusCodeResult>(actionResult);
                 });

@@ -12,7 +12,7 @@
 using System;
 using System.Diagnostics;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using ModuleCollection = Exceptionless.EventMigration.Models.Collections.ModuleCollection;
 
 namespace Exceptionless.EventMigration.Models {

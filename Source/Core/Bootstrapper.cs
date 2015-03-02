@@ -27,20 +27,15 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Serializer;
 using FluentValidation;
-using Foundatio.AppStats;
+using Foundatio.Metrics;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
-using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Redis.Cache;
-using Foundatio.Redis.Messaging;
-using Foundatio.Redis.Queues;
 using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
@@ -48,27 +43,15 @@ using Newtonsoft.Json;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
-using StackExchange.Redis;
-using Token = Exceptionless.Models.Admin.Token;
 
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
-            //ExceptionlessClient.Default.Configuration.UseLogger(new Exceptionless.NLog.NLogExceptionlessLog());
-            ExceptionlessClient.Default.Configuration.UseInMemoryStorage();
-            ExceptionlessClient.Default.Configuration.UseReferenceIds();
-            ExceptionlessClient.Default.Configuration.SetVersion(Settings.Current.Version);
-            container.RegisterSingle<ExceptionlessClient>(() => ExceptionlessClient.Default);
-
-            if (Settings.Current.EnableAppStats)
-                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
-            else {
-                var metricsClient = new InMemoryMetricsClient();
-                metricsClient.StartDisplayingStats();
-                container.RegisterSingle<IMetricsClient>(metricsClient);
-            }
+            var metricsClient = new InMemoryMetricsClient();
+            metricsClient.StartDisplayingStats();
+            container.RegisterSingle<IMetricsClient>(metricsClient);
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
             container.RegisterSingle<JsonSerializerSettings>(() => {
@@ -94,36 +77,20 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
 
-            if (Settings.Current.EnableRedis) {
-                var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
-                container.RegisterSingle(muxer);
+            container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
-                container.RegisterSingle<ICacheClient, RedisHybridCacheClient>();
+            container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
 
-                container.RegisterSingle<IQueue<EventPost>>(() => new RedisQueue<EventPost>(muxer, statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new RedisQueue<EventUserDescription>(muxer, statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new RedisQueue<EventNotification>(muxer, statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+            container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
 
-                container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber()));
-            } else {
-                container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
-
-                container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventUserDescription>>(() => new InMemoryQueue<EventUserDescription>(statName: MetricNames.EventsUserDescriptionQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<EventNotification>>(() => new InMemoryQueue<EventNotification>(statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<WebHookNotification>>(() => new InMemoryQueue<WebHookNotification>(statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-                container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
-
-                container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
-            }
             container.RegisterSingle<IMessagePublisher>(container.GetInstance<IMessageBus>);
             container.RegisterSingle<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 
-            if (Settings.Current.EnableAzureStorage)
-                container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));
-            else if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
+            if (!String.IsNullOrEmpty(Settings.Current.StorageFolder))
                 container.RegisterSingle<IFileStorage>(new FolderFileStorage(Settings.Current.StorageFolder));
             else
                 container.RegisterSingle<IFileStorage>(new InMemoryFileStorage());
@@ -144,7 +111,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
             container.RegisterSingle<IValidator<Project>, ProjectValidator>();
             container.RegisterSingle<IValidator<Stack>, StackValidator>();
-            container.RegisterSingle<IValidator<Token>, TokenValidator>();
+            container.RegisterSingle<IValidator<Models.Admin.Token>, TokenValidator>();
             container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
             container.RegisterSingle<IValidator<User>, UserValidator>();
             container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();
@@ -164,6 +131,8 @@ namespace Exceptionless.Core {
             container.RegisterSingle<EventPipeline>();
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
+
+            container.RegisterSingle<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
         }
     }
 }

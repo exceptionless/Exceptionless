@@ -107,8 +107,8 @@ namespace Exceptionless.EventMigration.Models {
         /// </summary>
         public ExtendedDataDictionary ExtendedData { get; set; }
 
-        public Exceptionless.Models.Data.EnvironmentInfo ToEnvironmentInfo() {
-            var environmentInfo = new Exceptionless.Models.Data.EnvironmentInfo {
+        public Exceptionless.Core.Models.Data.EnvironmentInfo ToEnvironmentInfo() {
+            var environmentInfo = new Exceptionless.Core.Models.Data.EnvironmentInfo {
                 Architecture = Architecture,
                 AvailablePhysicalMemory = AvailablePhysicalMemory,
                 CommandLine = CommandLine,

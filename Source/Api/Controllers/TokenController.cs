@@ -21,8 +21,8 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Models;
-using Exceptionless.Models.Admin;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]

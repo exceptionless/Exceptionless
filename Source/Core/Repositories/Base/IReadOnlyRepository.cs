@@ -11,7 +11,7 @@
 
 using System;
 using System.Collections.Generic;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Repositories {
     public interface IReadOnlyRepository<T> where T : class, IIdentity, new() {

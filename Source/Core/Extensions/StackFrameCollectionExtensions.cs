@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
     public static class StackFrameCollectionExtensions {

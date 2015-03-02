@@ -14,8 +14,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Utility {
     public class ErrorSignature {

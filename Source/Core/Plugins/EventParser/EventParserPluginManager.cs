@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Dependency;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Plugins.EventParser {

@@ -43,8 +43,8 @@ namespace Exceptionless.EventMigration.Models {
         public GenericArguments GenericArguments { get; set; }
         public ParameterCollection Parameters { get; set; }
 
-        public Exceptionless.Models.Data.Method ToMethod() {
-            var module = new Exceptionless.Models.Data.Method {
+        public Exceptionless.Core.Models.Data.Method ToMethod() {
+            var module = new Exceptionless.Core.Models.Data.Method {
                 Name = Name,
                 ModuleId = ModuleId,
                 DeclaringNamespace = DeclaringNamespace,

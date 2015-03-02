@@ -15,7 +15,7 @@
     <RestorePackages>true</RestorePackages>
     <CodeAnalysisAdditionalOptions>/assemblyCompareMode:StrongNameIgnoringVersion</CodeAnalysisAdditionalOptions>
     <TargetFrameworkProfile />
-    <NuGetPackageImportStamp>9d852a16</NuGetPackageImportStamp>
+    <NuGetPackageImportStamp>68c2152b</NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -52,63 +52,25 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless">
-      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
-    </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.29.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.29\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.7.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.8.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.7\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
-    </Reference>
-    <Reference Include="Exceptionless.Models">
-      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Models.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.8\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="Foundatio">
       <HintPath>..\..\packages\Foundatio.1.0.125\lib\net45\Foundatio.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.125\lib\net45\Foundatio.AzureStorage.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.125\lib\net45\Foundatio.Redis.dll</HintPath>
-    </Reference>
-    <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.125\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.GeoIP2">
       <HintPath>..\..\packages\MaxMind.GeoIP2.2.1.0.0\lib\net40\MaxMind.GeoIP2.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Data.Edm, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Microsoft.Data.Edm.5.6.3\lib\net40\Microsoft.Data.Edm.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Data.OData, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Microsoft.Data.OData.5.6.3\lib\net40\Microsoft.Data.OData.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.Data.Services.Client, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Microsoft.Data.Services.Client.5.6.3\lib\net40\Microsoft.Data.Services.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAzure.Configuration, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Microsoft.WindowsAzure.ConfigurationManager.2.0.3\lib\net40\Microsoft.WindowsAzure.Configuration.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.WindowsAzure.Storage, Version=4.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\WindowsAzure.Storage.4.3.0\lib\net40\Microsoft.WindowsAzure.Storage.dll</HintPath>
     </Reference>
     <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -126,21 +88,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Newtonsoft.Json.6.0.8\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
-    <Reference Include="Nito.AsyncEx">
-      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Concurrent">
-      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Concurrent.dll</HintPath>
-    </Reference>
-    <Reference Include="Nito.AsyncEx.Enlightenment">
-      <HintPath>..\..\packages\Nito.AsyncEx.3.0.0\lib\net45\Nito.AsyncEx.Enlightenment.dll</HintPath>
-    </Reference>
-    <Reference Include="NLog, Version=3.2.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="NLog">
       <HintPath>..\..\packages\NLog.3.2.0.0\lib\net45\NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Pegasus.Common">
-      <HintPath>..\..\packages\Pegasus.3.1.0\lib\net40\Pegasus.Common.dll</HintPath>
+    <Reference Include="Pegasus.Common, Version=3.1.1.0, Culture=neutral, PublicKeyToken=28c69b6c6d100f4a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Pegasus.3.1.1\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
     <Reference Include="RazorEngine, Version=3.6.1.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -158,14 +111,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.2\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="StackExchange.Redis, Version=1.0.316.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\StackExchange.Redis.1.0.394\lib\net45\StackExchange.Redis.dll</HintPath>
-    </Reference>
-    <Reference Include="StatsdClient, Version=1.3.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\StatsdCsharpClient.1.3.0.0\lib\net45\StatsdClient.dll</HintPath>
-    </Reference>
     <Reference Include="Stripe.net, Version=2.7.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Stripe.net.2.7.2\lib\net40\Stripe.net.dll</HintPath>
@@ -177,10 +122,6 @@
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.ServiceModel" />
-    <Reference Include="System.Spatial, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\System.Spatial.5.6.3\lib\net40\System.Spatial.dll</HintPath>
-    </Reference>
     <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
@@ -201,6 +142,8 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
+    <Compile Include="Extensions\EventExtensions.cs" />
+    <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
     <Compile Include="Jobs\JobBootstrapper.cs" />
     <Compile Include="Mail\Engine\DirectoryTemplateResolver.cs" />
@@ -211,7 +154,64 @@
     <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
+    <Compile Include="Models\Application.cs" />
+    <Compile Include="Models\ClientConfiguration.cs" />
+    <Compile Include="Models\Collections\DataDictionary.cs" />
+    <Compile Include="Models\Collections\GenericArguments.cs" />
+    <Compile Include="Models\Collections\ModuleCollection.cs" />
+    <Compile Include="Models\Collections\ObservableDictionary.cs" />
+    <Compile Include="Models\Collections\ParameterCollection.cs" />
+    <Compile Include="Models\Collections\SettingsDictionary.cs" />
+    <Compile Include="Models\Collections\StackFrameCollection.cs" />
+    <Compile Include="Models\Collections\TagSet.cs" />
+    <Compile Include="Models\Data\EnvironmentInfo.cs" />
+    <Compile Include="Models\Data\Error.cs" />
+    <Compile Include="Models\Data\InnerError.cs" />
+    <Compile Include="Models\Data\Method.cs" />
+    <Compile Include="Models\Data\Module.cs" />
+    <Compile Include="Models\Data\Parameter.cs" />
+    <Compile Include="Models\Data\RequestInfo.cs" />
+    <Compile Include="Models\Data\SimpleError.cs" />
+    <Compile Include="Models\Data\StackFrame.cs" />
+    <Compile Include="Models\Data\UserDescription.cs" />
+    <Compile Include="Models\Data\UserInfo.cs" />
+    <Compile Include="Models\Enums\NotificationMode.cs" />
+    <Compile Include="Models\Enums\ResponseStatusType.cs" />
+    <Compile Include="Models\Enums\SuspensionCode.cs" />
+    <Compile Include="Models\Event.cs" />
+    <Compile Include="Models\Interfaces\IData.cs" />
+    <Compile Include="Models\Interfaces\IIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganization.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStack.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectAndStackWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationAndProjectWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByOrganizationWithIdentity.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
+    <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
+    <Compile Include="Models\Invite.cs" />
+    <Compile Include="Models\NotificationSettings.cs" />
+    <Compile Include="Models\OAuthAccount.cs" />
+    <Compile Include="Models\Organization.cs" />
+    <Compile Include="Models\PersistentEvent.cs" />
+    <Compile Include="Models\Project.cs" />
+    <Compile Include="Models\Results\EventResult.cs" />
+    <Compile Include="Models\Results\EventResultBase.cs" />
+    <Compile Include="Models\Results\EventStackResult.cs" />
+    <Compile Include="Models\SessionInfo.cs" />
+    <Compile Include="Models\Stack.cs" />
+    <Compile Include="Models\Stats\EventStatsResult.cs" />
+    <Compile Include="Models\Stats\EventTermStatsResult.cs" />
+    <Compile Include="Models\Stats\Results\PagedResult.cs" />
+    <Compile Include="Models\Stats\Results\PlanPagedResult.cs" />
+    <Compile Include="Models\Stats\TermStatsItem.cs" />
+    <Compile Include="Models\Stats\TermTimelineItem.cs" />
+    <Compile Include="Models\Stats\TimelineItem.cs" />
+    <Compile Include="Models\Token.cs" />
+    <Compile Include="Models\User.cs" />
+    <Compile Include="Models\WebHook.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
+    <Compile Include="Utility\LastReferenceIdManager.cs" />
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="Dependency\DefaultDependencyResolver.cs" />
@@ -318,7 +318,6 @@
     <Compile Include="Extensions\MethodExtensions.cs" />
     <Compile Include="Extensions\OrganizationExtensions.cs" />
     <Compile Include="Extensions\StackExtensions.cs" />
-    <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\JsonExtensions.cs" />
     <Compile Include="Extensions\ProjectExtensions.cs" />
     <Compile Include="Extensions\StackFrameCollectionExtensions.cs" />
@@ -375,7 +374,7 @@
     <Compile Include="Migrations\v1.0.31.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Models\Billing\BillingPlan.cs" />
-    <Compile Include="Models\EventPostInfo.cs" />
+    <Compile Include="Models\Queues\EventPostInfo.cs" />
     <Compile Include="Models\WebHookStack.cs" />
     <Compile Include="Mail\Models\PaymentModel.cs" />
     <Compile Include="Mail\Models\DailySummaryModel.cs" />
@@ -558,12 +557,12 @@
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
+  <Import Project="..\..\packages\Pegasus.3.1.1\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.1\build\Pegasus.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('..\..\packages\Pegasus.3.1.0\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.0\build\Pegasus.targets'))" />
+    <Error Condition="!Exists('..\..\packages\Pegasus.3.1.1\build\Pegasus.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\..\packages\Pegasus.3.1.1\build\Pegasus.targets'))" />
   </Target>
-  <Import Project="..\..\packages\Pegasus.3.1.0\build\Pegasus.targets" Condition="Exists('..\..\packages\Pegasus.3.1.0\build\Pegasus.targets')" />
-  <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
 </Project>

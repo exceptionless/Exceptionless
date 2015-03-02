@@ -18,7 +18,7 @@ using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using NLog.Fluent;

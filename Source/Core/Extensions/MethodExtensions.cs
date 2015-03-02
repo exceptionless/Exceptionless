@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Text;
-using Exceptionless.Models.Data;
+using Exceptionless.Core.Models.Data;
 
 namespace Exceptionless.Core.Extensions {
     public static class MethodExtensions {
@@ -64,6 +64,16 @@ namespace Exceptionless.Core.Extensions {
                 }
                 sb.Append(")");
             }
+        }
+
+        public static string GetDeclaringTypeFullName(this Method method) {
+            if (!String.IsNullOrEmpty(method.DeclaringNamespace) && !String.IsNullOrEmpty(method.DeclaringType))
+                return String.Concat(method.DeclaringNamespace, ".", method.DeclaringType.Replace('+', '.'));
+
+            if (!String.IsNullOrEmpty(method.DeclaringType))
+                return method.DeclaringType.Replace('+', '.');
+
+            return String.Empty;
         }
     }
 }

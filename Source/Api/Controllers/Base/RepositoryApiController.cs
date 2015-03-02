@@ -9,7 +9,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Helpers;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using MongoDB.Driver;
 using NLog.Fluent;

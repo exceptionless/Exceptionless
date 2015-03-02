@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 

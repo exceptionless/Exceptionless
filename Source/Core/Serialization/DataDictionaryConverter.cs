@@ -1,5 +1,5 @@
 using System;
-using Exceptionless.Models;
+using Exceptionless.Core.Models;
 #if EMBEDDED
 using Exceptionless.Json;
 using Exceptionless.Json.Converters;

@@ -64,7 +64,7 @@ namespace Exceptionless.Core {
 
         public int AppStatsServerPort { get; private set; }
 
-        public bool EnableAppStats { get; private set; }
+        public bool EnableMetricsReporting { get; private set; }
 
         public string RedisConnectionString { get; private set; }
 
@@ -158,7 +158,7 @@ namespace Exceptionless.Core {
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
             settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
             settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);
-            settings.EnableAppStats = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
+            settings.EnableMetricsReporting = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
             settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
             settings.IntercomAppSecret = ConfigurationManager.AppSettings["IntercomAppSecret"];
             settings.EnableAccountCreation = ConfigurationManager.AppSettings.GetBool("EnableAccountCreation", true);
