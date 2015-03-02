@@ -47,17 +47,12 @@ using SimpleInjector.Packaging;
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
+            container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
+
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
-
-            container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-
-            var metricsClient = new InMemoryMetricsClient();
-            metricsClient.StartDisplayingStats();
-            container.RegisterSingle<IMetricsClient>(metricsClient);
-
-            container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
+            
             container.RegisterSingle<JsonSerializerSettings>(() => {
                 var settings = new JsonSerializerSettings {
                     MissingMemberHandling = MissingMemberHandling.Ignore,
@@ -68,6 +63,10 @@ namespace Exceptionless.Core {
 
                 return settings;
             });
+
+            var metricsClient = new InMemoryMetricsClient();
+            metricsClient.StartDisplayingStats();
+            container.RegisterSingle<IMetricsClient>(metricsClient);
 
             container.RegisterSingle<MongoDatabase>(() => {
                 if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))
