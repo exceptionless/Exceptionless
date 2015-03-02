@@ -11,6 +11,6 @@ namespace Exceptionless.Api.Tests.Utility {
     }
 
     public class SmartReporter : FirstWorkingReporter {
-        public SmartReporter() : base(BeyondCompareReporter.INSTANCE, NUnitReporter.INSTANCE) {}
+        public SmartReporter() : base(BeyondCompareReporter.INSTANCE, XUnitReporter.INSTANCE) {}
     }
 }
