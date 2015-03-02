@@ -60,9 +60,9 @@ namespace Exceptionless.Core {
 
         public bool ShouldAutoUpgradeDatabase { get; private set; }
 
-        public string AppStatsServerName { get; private set; }
+        public string MetricsServerName { get; private set; }
 
-        public int AppStatsServerPort { get; private set; }
+        public int MetricsServerPort { get; private set; }
 
         public bool EnableMetricsReporting { get; private set; }
 
@@ -156,9 +156,9 @@ namespace Exceptionless.Core {
             settings.MaximumEventPostSize = ConfigurationManager.AppSettings.GetInt("MaximumEventPostSize", Int32.MaxValue);
             settings.EnableDailySummary = ConfigurationManager.AppSettings.GetBool("EnableDailySummary", false);
             settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
-            settings.AppStatsServerName = ConfigurationManager.AppSettings["AppStatsServerName"] ?? "127.0.0.1";
-            settings.AppStatsServerPort = ConfigurationManager.AppSettings.GetInt("AppStatsServerPort", 12000);
-            settings.EnableMetricsReporting = ConfigurationManager.AppSettings.GetBool("EnableAppStats", false);
+            settings.MetricsServerName = ConfigurationManager.AppSettings["MetricsServerName"] ?? "127.0.0.1";
+            settings.MetricsServerPort = ConfigurationManager.AppSettings.GetInt("MetricsServerPort", 12000);
+            settings.EnableMetricsReporting = ConfigurationManager.AppSettings.GetBool("EnableMetricsReporting", false);
             settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
             settings.IntercomAppSecret = ConfigurationManager.AppSettings["IntercomAppSecret"];
             settings.EnableAccountCreation = ConfigurationManager.AppSettings.GetBool("EnableAccountCreation", true);

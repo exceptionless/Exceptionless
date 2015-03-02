@@ -20,7 +20,7 @@ namespace Exceptionless.Insulation {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             if (Settings.Current.EnableMetricsReporting)
-                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.AppStatsServerName, Settings.Current.AppStatsServerPort));
+                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort));
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
@@ -41,7 +41,6 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));
 
             container.RegisterSingle<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
-
         }
     }
 }
