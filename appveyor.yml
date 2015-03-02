@@ -29,7 +29,8 @@ build:
 
 before_test:
 #  - ps: .\Libraries\Enable-Rdp.ps1
-  - StartBackendServers.bat
+  - ps: .\Libraries\Start-MongoDb.ps1
+  - ps: .\Libraries\Start-ElasticSearch.ps1
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION
