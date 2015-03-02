@@ -29,8 +29,8 @@ before_test:
 #  - ps: .\Libraries\Enable-Rdp.ps1
   - CD Libraries\Mongo
   - ps: .\bin\mongod.exe --config "$(get-location)\mongod.cfg" --install
-  - CD ..
   - ps: Start-Service mongodb
+  - CD ..
   - ps: .\Start-Elasticsearch.ps1
 
 after_test:
