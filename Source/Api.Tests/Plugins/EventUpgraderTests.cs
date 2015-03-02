@@ -10,7 +10,7 @@ using Xunit;
 using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
-    [UseReporter(typeof(SmartReporter))]
+    [UseReporter(typeof(HappyDiffReporter))]
     public class EventUpgraderTests {
         private readonly EventUpgraderPluginManager _eventUpgraderPluginManager = IoC.GetInstance<EventUpgraderPluginManager>();
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();

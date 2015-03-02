@@ -14,7 +14,7 @@ using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins
 {
-    [UseReporter(typeof(SmartReporter))]
+    [UseReporter(typeof(HappyDiffReporter))]
     public class WebHookDataTests {
         private readonly WebHookDataPluginManager _webHookDataPluginManager = IoC.GetInstance<WebHookDataPluginManager>();
         private readonly FormattingPluginManager _formattingPluginManager = IoC.GetInstance<FormattingPluginManager>();
