@@ -47,6 +47,10 @@ using SimpleInjector.Packaging;
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
+            JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
+                DateParseHandling = DateParseHandling.DateTimeOffset
+            };
+
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
             var metricsClient = new InMemoryMetricsClient();
@@ -55,7 +59,11 @@ namespace Exceptionless.Core {
 
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
             container.RegisterSingle<JsonSerializerSettings>(() => {
-                var settings = new JsonSerializerSettings { MissingMemberHandling = MissingMemberHandling.Ignore, ContractResolver = new ExceptionlessContractResolver() };
+                var settings = new JsonSerializerSettings {
+                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                    DateParseHandling = DateParseHandling.DateTimeOffset,
+                    ContractResolver = new ExceptionlessContractResolver()
+                };
                 settings.AddModelConverters();
 
                 return settings;
