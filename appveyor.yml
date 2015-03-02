@@ -36,7 +36,7 @@ before_test:
 #  - ps: .\Libraries\Enable-Rdp.ps1
 
 after_test:
-  - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version {version}
+  - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version "{version}"
   - nuget install OctopusTools
   - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "{version}" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev --progress'
 
