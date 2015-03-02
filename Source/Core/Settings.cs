@@ -78,15 +78,11 @@ namespace Exceptionless.Core {
 
         public string Version { get; private set; }
 
-        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppId) && !String.IsNullOrEmpty(IntercomAppSecret); ; } }
-
-        public string IntercomAppId { get; private set; }
+        public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppSecret); } }
 
         public string IntercomAppSecret { get; private set; }
 
         public bool EnableAccountCreation { get; private set; }
-
-        public string GoogleAnalyticsId { get; private set; }
 
         public string MicrosoftAppId { get; private set; }
 
@@ -108,8 +104,6 @@ namespace Exceptionless.Core {
 
         public string StripeApiKey { get; private set; }
 
-        public string StripePublishableApiKey { get; private set; }
-
         public string StorageFolder { get; private set; }
 
         public string AzureStorageConnectionString { get; set; }
@@ -120,10 +114,9 @@ namespace Exceptionless.Core {
         
         private static Settings Init() {
             var settings = new Settings();
+            settings.EnableSSL = GetBool("EnableSSL");
 
-            settings.EnableSSL = ConfigurationManager.AppSettings.GetBool("EnableSSL", false);
-
-            string value = ConfigurationManager.AppSettings["BaseURL"];
+            string value = GetString("BaseURL");
             if (!String.IsNullOrEmpty(value)) {
                 if (value.EndsWith("/"))
                     value = value.Substring(0, value.Length - 1);
@@ -136,62 +129,62 @@ namespace Exceptionless.Core {
                 settings.BaseURL = value;
             }
 
-            settings.InternalProjectId = ConfigurationManager.AppSettings["InternalProjectId"];
-            settings.WebsiteMode = ConfigurationManager.AppSettings.GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
-            settings.TestEmailAddress = ConfigurationManager.AppSettings["TestEmailAddress"];
-            settings.AllowedOutboundAddresses = ConfigurationManager.AppSettings.GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
-            settings.GeoIPDatabasePath = ConfigurationManager.AppSettings["GeoIPDatabasePath"]; 
-            settings.RunJobsInProcess = ConfigurationManager.AppSettings.GetBool("RunJobsInProcess", true);
-            settings.LogJobLocks = ConfigurationManager.AppSettings.GetBool("LogJobLocks", false);
-            settings.LogJobEvents = ConfigurationManager.AppSettings.GetBool("LogJobEvents", false);
-            settings.LogJobCompleted = ConfigurationManager.AppSettings.GetBool("LogJobCompleted", false);
-            settings.LogStackingInfo = ConfigurationManager.AppSettings.GetBool("LogStackingInfo", false);
-            settings.AppendMachineNameToDatabase = ConfigurationManager.AppSettings.GetBool("AppendMachineNameToDatabase", false);
-            settings.SaveIncomingErrorsToDisk = ConfigurationManager.AppSettings.GetBool("SaveIncomingErrorsToDisk", false);
-            settings.IncomingErrorPath = ConfigurationManager.AppSettings["IncomingErrorPath"];
-            settings.EnableLogErrorReporting = ConfigurationManager.AppSettings.GetBool("EnableLogErrorReporting", false);
-            settings.EnableSignalR = ConfigurationManager.AppSettings.GetBool("EnableSignalR", true);
-            settings.BotThrottleLimit = ConfigurationManager.AppSettings.GetInt("BotThrottleLimit", 25);
-            settings.ApiThrottleLimit = ConfigurationManager.AppSettings.GetInt("ApiThrottleLimit", Int32.MaxValue);
-            settings.MaximumEventPostSize = ConfigurationManager.AppSettings.GetInt("MaximumEventPostSize", Int32.MaxValue);
-            settings.EnableDailySummary = ConfigurationManager.AppSettings.GetBool("EnableDailySummary", false);
-            settings.ShouldAutoUpgradeDatabase = ConfigurationManager.AppSettings.GetBool("ShouldAutoUpgradeDatabase", true);
-            settings.MetricsServerName = ConfigurationManager.AppSettings["MetricsServerName"] ?? "127.0.0.1";
-            settings.MetricsServerPort = ConfigurationManager.AppSettings.GetInt("MetricsServerPort", 12000);
-            settings.EnableMetricsReporting = ConfigurationManager.AppSettings.GetBool("EnableMetricsReporting", false);
-            settings.IntercomAppId = ConfigurationManager.AppSettings["IntercomAppId"];
-            settings.IntercomAppSecret = ConfigurationManager.AppSettings["IntercomAppSecret"];
-            settings.EnableAccountCreation = ConfigurationManager.AppSettings.GetBool("EnableAccountCreation", true);
-            settings.GoogleAppId = ConfigurationManager.AppSettings["GoogleAppId"];
-            settings.GoogleAppSecret = ConfigurationManager.AppSettings["GoogleAppSecret"];
-            settings.MicrosoftAppId = ConfigurationManager.AppSettings["MicrosoftAppId"];
-            settings.MicrosoftAppSecret = ConfigurationManager.AppSettings["MicrosoftAppSecret"];
-            settings.FacebookAppId = ConfigurationManager.AppSettings["FacebookAppId"];
-            settings.FacebookAppSecret = ConfigurationManager.AppSettings["FacebookAppSecret"];
-            settings.GitHubAppId = ConfigurationManager.AppSettings["GitHubAppId"];
-            settings.GitHubAppSecret = ConfigurationManager.AppSettings["GitHubAppSecret"];
-            settings.StripeApiKey = ConfigurationManager.AppSettings["StripeApiKey"];
-            settings.StripePublishableApiKey = ConfigurationManager.AppSettings["StripePublishableApiKey"];
-            settings.StorageFolder = ConfigurationManager.AppSettings["StorageFolder"];
-            settings.BulkBatchSize = ConfigurationManager.AppSettings.GetInt("BulkBatchSize", 1000);
+            settings.InternalProjectId = GetString("InternalProjectId");
+            settings.WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
+            settings.TestEmailAddress = GetString("TestEmailAddress");
+            settings.AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
+            settings.GeoIPDatabasePath = GetString("GeoIPDatabasePath"); 
+            settings.RunJobsInProcess = GetBool("RunJobsInProcess", true);
+            settings.LogJobLocks = GetBool("LogJobLocks");
+            settings.LogJobEvents = GetBool("LogJobEvents");
+            settings.LogJobCompleted = GetBool("LogJobCompleted");
+            settings.LogStackingInfo = GetBool("LogStackingInfo");
+            settings.AppendMachineNameToDatabase = GetBool("AppendMachineNameToDatabase");
+            settings.SaveIncomingErrorsToDisk = GetBool("SaveIncomingErrorsToDisk");
+            settings.IncomingErrorPath = GetString("IncomingErrorPath");
+            settings.EnableLogErrorReporting = GetBool("EnableLogErrorReporting");
+            settings.EnableSignalR = GetBool("EnableSignalR", true);
+            settings.BotThrottleLimit = GetInt("BotThrottleLimit", 25);
+            settings.ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
+            settings.MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
+            settings.EnableDailySummary = GetBool("EnableDailySummary");
+            settings.ShouldAutoUpgradeDatabase = GetBool("ShouldAutoUpgradeDatabase", true);
+            settings.MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
+            settings.MetricsServerPort = GetInt("MetricsServerPort", 12000);
+            settings.EnableMetricsReporting = GetBool("EnableMetricsReporting");
+            settings.IntercomAppSecret = GetString("IntercomAppSecret");
+            settings.EnableAccountCreation = GetBool("EnableAccountCreation", true);
+            settings.GoogleAppId = GetString("GoogleAppId");
+            settings.GoogleAppSecret = GetString("GoogleAppSecret");
+            settings.MicrosoftAppId = GetString("MicrosoftAppId");
+            settings.MicrosoftAppSecret = GetString("MicrosoftAppSecret");
+            settings.FacebookAppId = GetString("FacebookAppId");
+            settings.FacebookAppSecret = GetString("FacebookAppSecret");
+            settings.GitHubAppId = GetString("GitHubAppId");
+            settings.GitHubAppSecret = GetString("GitHubAppSecret");
+            settings.StripeApiKey = GetString("StripeApiKey");
+            settings.StorageFolder = GetString("StorageFolder");
+            settings.BulkBatchSize = GetInt("BulkBatchSize", 1000);
 
-            var redisConnectionString = ConfigurationManager.ConnectionStrings["RedisConnectionString"];
-            if (redisConnectionString != null)
-                settings.RedisConnectionString = redisConnectionString.ConnectionString;
-            settings.EnableRedis = ConfigurationManager.AppSettings.GetBool("EnableRedis", !String.IsNullOrEmpty(settings.RedisConnectionString));
+            string connectionString = GetConnectionString("RedisConnectionString");
+            if (!String.IsNullOrEmpty(connectionString)) {
+                settings.RedisConnectionString = connectionString;
+                settings.EnableRedis = GetBool("EnableRedis", !String.IsNullOrEmpty(settings.RedisConnectionString));
+            }
 
-            var azureConnectionInfo = ConfigurationManager.ConnectionStrings["AzureStorageConnectionString"];
-            if (azureConnectionInfo != null)
-                settings.AzureStorageConnectionString = azureConnectionInfo.ConnectionString;
-            settings.EnableAzureStorage = ConfigurationManager.AppSettings.GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+            connectionString = GetConnectionString("AzureStorageConnectionString");
+            if (!String.IsNullOrEmpty(connectionString)) {
+                settings.AzureStorageConnectionString = connectionString;
+                settings.EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
+            }
 
-            var mongoConnectionString = ConfigurationManager.ConnectionStrings["MongoConnectionString"];
-            if (mongoConnectionString != null)
-                settings.MongoConnectionString = mongoConnectionString.ConnectionString;
+            connectionString = GetConnectionString("MongoConnectionString");
+            if (!String.IsNullOrEmpty(connectionString))
+                settings.MongoConnectionString = connectionString;
 
-            var elasticSearchConnectionString = ConfigurationManager.ConnectionStrings["ElasticSearchConnectionString"];
-            if (elasticSearchConnectionString != null)
-                settings.ElasticSearchConnectionString = elasticSearchConnectionString.ConnectionString;
+            connectionString = GetConnectionString("ElasticSearchConnectionString");
+            if (!String.IsNullOrEmpty(connectionString))
+                settings.ElasticSearchConnectionString = connectionString;
 
             settings.Version = FileVersionInfo.GetVersionInfo(typeof(Settings).Assembly.Location).ProductVersion;
 
@@ -209,6 +202,75 @@ namespace Exceptionless.Core {
         public static Settings Current { get { return _instance.Value; } }
 
         #endregion
+
+        private static bool GetBool(string name, bool defaultValue = false) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetBool(name, defaultValue);
+            
+            bool boolean;
+            return Boolean.TryParse(value, out boolean) ? boolean : defaultValue;
+        }
+
+        private static string GetConnectionString(string name) {
+            string value = GetEnvironmentalVariable(name);
+            if (!String.IsNullOrEmpty(value))
+                return value;
+
+            var connectionString = ConfigurationManager.ConnectionStrings[name];
+            return connectionString != null ? connectionString.ConnectionString : null;
+        }
+
+        private static T GetEnum<T>(string name, T? defaultValue = null) where T : struct {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetEnum(name, defaultValue);
+
+            try {
+                return (T)Enum.Parse(typeof(T), value, true);
+            } catch (ArgumentException ex) {
+                if (defaultValue.HasValue && defaultValue is T)
+                    return (T)defaultValue;
+
+                string message = String.Format("Configuration key '{0}' has value '{1}' that could not be parsed as a member of the {2} enum type.", name, value, typeof(T).Name);
+                throw new ConfigurationErrorsException(message, ex);
+            }
+        }
+
+        private static int GetInt(string name, int defaultValue = 0) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetInt(name, defaultValue);
+
+            int number;
+            return Int32.TryParse(value, out number) ? number : defaultValue;
+        }
+
+        private static string GetString(string name) {
+            return GetEnvironmentalVariable(name) ?? ConfigurationManager.AppSettings[name];
+        }
+
+        private static List<string> GetStringList(string name, string defaultValues = null, char[] separators = null) {
+            string value = GetEnvironmentalVariable(name);
+            if (String.IsNullOrEmpty(value))
+                return ConfigurationManager.AppSettings.GetStringList(name, defaultValues, separators);
+
+            if (separators == null)
+                separators = new[] { ',' };
+
+            return value.Split(separators, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList();
+        }
+
+        private static string GetEnvironmentalVariable(string name) {
+            if (String.IsNullOrEmpty(name))
+                return null;
+
+            try {
+                return Environment.GetEnvironmentVariable(name);
+            } catch (Exception) {
+                return null;
+            }
+        }
     }
 
     public enum WebsiteMode {
