@@ -6,8 +6,9 @@ if ($env:ES_VERSION) {
 if (!(Test-Path -Path "elasticsearch-$es_version" )) {
     wget "http://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-$es_version.zip" -OutFile "elasticsearch.zip"
 }
-7z x -y "elasticsearch.zip" > $null
 if (Test-Path -Path "elasticsearch.zip") {
+    7z x -y "elasticsearch.zip" > $null
+    cp .\elasticsearch.yml .\elasticsearch-$es_version\config -Force
 	rm elasticsearch.zip
 }
 

@@ -28,11 +28,7 @@ build:
 
 before_test:
 #  - ps: .\Libraries\Enable-Rdp.ps1
-  - CD Libraries\Mongo
-  - ps: .\bin\mongod.exe --config "$(get-location)\mongod.cfg" --install
-  - ps: Start-Service mongodb
-  - CD ..
-  - ps: .\Start-Elasticsearch.ps1
+  - StartBackendServers.bat
 
 after_test:
   - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version $env:APPVEYOR_BUILD_VERSION
