@@ -21,7 +21,7 @@ if (Test-Path -Path "mongodb.msi") {
     Start-Process -FilePath "msiexec" -ArgumentList $list -Wait
 	rm .\mongodb.msi
     if (!(Test-Path -Path "$(Get-Location)\MongoDB\data")) {
-        mkdir "$(Get-Location)\MongoDB\data"
+        mkdir "$(Get-Location)\MongoDB\data" | Out-Null
     }
 }
 
