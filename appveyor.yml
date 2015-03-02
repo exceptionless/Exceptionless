@@ -36,7 +36,7 @@ before_test:
   - ps: .\Libraries\Start-ElasticSearch.ps1
 #  - ps: .\Libraries\Enable-Rdp.ps1
 
-after_tests:
+after_test:
   - ps: nuget pack .\Source\Api\Exceptionless.Api.nuspec -Version "$env:APPVEYOR_BUILD_VERSION" -NoPackageAnalysis
   - ps: Get-ChildItem Source\Api\*.nupkg | % { Push-AppveyorArtifact $_.FullName -FileName $_.Name }
   - ps: nuget install OctopusTools
