@@ -4,7 +4,6 @@ using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Models;
-using Exceptionless.Serializer;
 using Newtonsoft.Json;
 using NLog.Fluent;
 

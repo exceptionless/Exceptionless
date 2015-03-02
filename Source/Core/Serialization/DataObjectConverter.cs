@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Reflection;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
@@ -17,7 +17,7 @@ namespace Exceptionless.Serializer {
         private static IDictionary<string, IMemberAccessor> _propertyAccessors = new Dictionary<string, IMemberAccessor>(StringComparer.OrdinalIgnoreCase);
         private readonly char[] _filteredChars = { '.', '-', '_' };
 
-        public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null, IEnumerable<string> ignoredProperties = null) {
+        public DataObjectConverter(IEnumerable<KeyValuePair<string, Type>> knownDataTypes = null) {
             if (knownDataTypes != null)
                 _dataTypeRegistry.AddRange(knownDataTypes);
 
@@ -49,7 +49,26 @@ namespace Exceptionless.Serializer {
                 IMemberAccessor value;
                 var accessor = _propertyAccessors.TryGetValue(propertyName, out value) ? value : null;
                 if (accessor != null) {
-                    accessor.SetValue(target, p.Value.Type != JTokenType.Null ? p.Value.ToObject(accessor.MemberType, serializer) : null);
+                    if (p.Value.Type == JTokenType.None || p.Value.Type == JTokenType.Undefined)
+                        continue;
+
+                    if (p.Value.Type == JTokenType.Null) {
+                        accessor.SetValue(target, null);
+                        continue;
+                    }
+
+                    if (accessor.MemberType == typeof(DateTime)) {
+                        accessor.SetValue(target, p.Value.ToObject<DateTimeOffset>(serializer).DateTime);
+                        continue;
+                    }
+
+                    if (accessor.MemberType == typeof(DateTime?)) {
+                        var offset = p.Value.ToObject<DateTimeOffset?>(serializer);
+                        accessor.SetValue(target, offset.HasValue ? offset.Value.DateTime : (DateTime?)null);
+                        continue;
+                    }
+
+                    accessor.SetValue(target, p.Value.ToObject(accessor.MemberType, serializer));
                     continue;
                 }
 

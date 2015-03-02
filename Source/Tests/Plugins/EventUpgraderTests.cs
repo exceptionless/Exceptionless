@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Plugins {
 
         [Theory]
         [PropertyData("Errors")]
-        public void ParseEvents(string errorFilePath) {
+        public void ParseErrors(string errorFilePath) {
             var json = File.ReadAllText(errorFilePath);
             var ctx = new EventUpgraderContext(json);
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("{Id}, {Date}")]

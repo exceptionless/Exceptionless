@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Plugins.EventParser;
+using Foundatio.Extensions;
+using Newtonsoft.Json;
 using Xunit;
 using Xunit.Extensions;
 
 namespace Exceptionless.Api.Tests.Plugins {
+    [UseReporter(typeof(HappyDiffReporter))]
     public class EventParserTests {
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
+        private readonly JsonSerializer _serializer = JsonSerializer.Create(IoC.GetInstance<JsonSerializerSettings>());
 
         public static IEnumerable<object[]> EventData {
             get {
@@ -38,6 +45,37 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.Equal(expectedMessage[index], ev.Message);
                 Assert.Equal(expectedType, ev.Type);
                 Assert.NotEqual(DateTimeOffset.MinValue, ev.Date);
+            }
+        }
+
+        [Theory]
+        [PropertyData("Events")]
+        public void VerifyEventParserSerialization(string eventsFilePath) {
+            var json = File.ReadAllText(eventsFilePath);
+
+            var events = _eventParserPluginManager.ParseEvents(json, 2, "exceptionless/2.0.0.0");
+            Assert.Equal(1, events.Count);
+
+            ApprovalsUtility.VerifyFile(eventsFilePath, events.First().ToJson(Formatting.Indented, IoC.GetInstance<JsonSerializerSettings>()));
+        }
+
+        [Theory]
+        [PropertyData("Events")]
+        public void CanDeserializeEvents(string eventsFilePath) {
+            var json = File.ReadAllText(eventsFilePath);
+
+            PersistentEvent ev = null;
+            Assert.DoesNotThrow(() => { ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>()); });
+            Assert.NotNull(ev);
+        }
+
+        public static IEnumerable<object[]> Events {
+            get {
+                var result = new List<object[]>();
+                foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
+                    result.Add(new object[] { Path.GetFullPath(file) });
+
+                return result.ToArray();
             }
         }
     }
