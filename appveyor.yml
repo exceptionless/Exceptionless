@@ -28,6 +28,7 @@ before_build:
   - nuget restore -verbosity quiet
 
 build:
+  parallel: true
   verbosity: minimal
 
 before_test:
