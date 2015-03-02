@@ -36,9 +36,9 @@ before_test:
 #  - ps: .\Libraries\Enable-Rdp.ps1
 
 after_test:
-  - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -version "$env:appveyor_build_version"
+  - nuget pack .\Source\Api\Exceptionless.Api.nuspec -NoPackageAnalysis -Version $env:APPVEYOR_BUILD_VERSION
   - nuget install OctopusTools
-  - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:appveyor_build_version" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev --progress'
+  - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:APPVEYOR_BUILD_VERSION" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev --progress'
 
 artifacts:
   - path: 'Source\Api\*.nupkg'
