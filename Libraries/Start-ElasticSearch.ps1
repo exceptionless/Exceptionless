@@ -1,6 +1,6 @@
 ﻿$es_version = "1.4.4"
 if ($env:ES_VERSION) {
-	$es_version = $env:ES_VERSION
+    $es_version = $env:ES_VERSION
 }
 
 Push-Location $PSScriptRoot
@@ -12,7 +12,7 @@ if (!(Test-Path -Path "elasticsearch-$es_version") -And !(Test-Path -Path "elast
 if (Test-Path -Path "elasticsearch.zip") {
     7z x -y "elasticsearch.zip" > $null
     cp .\elasticsearch.yml .\elasticsearch-$es_version\config -Force
-	rm elasticsearch.zip
+    rm elasticsearch.zip
 }
 
 Start-Process -NoNewWindow "$(Get-Location)\elasticsearch-$es_version\bin\elasticsearch.bat"
