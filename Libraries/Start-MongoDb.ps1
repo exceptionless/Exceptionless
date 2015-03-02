@@ -3,6 +3,8 @@ if ($env:MONGO_VERSION) {
 	$mongo_version = $env:MONGO_VERSION
 }
 
+Push-Location $PSScriptRoot
+
 if (!(Test-Path -Path "MongoDB") -And !(Test-Path -Path "mongodb.msi")) {
     wget "https://fastdl.mongodb.org/win32/mongodb-win32-x86_64-2008plus-$mongo_version-signed.msi" -OutFile 'mongodb.msi'
 }
@@ -24,3 +26,5 @@ if (Test-Path -Path "mongodb.msi") {
 }
 
 Start-Process -NoNewWindow "$(Get-Location)\MongoDB\bin\mongod.exe" -ArgumentList "-dbpath $(Get-Location)\MongoDB\data"
+
+Pop-Location
