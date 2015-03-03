@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.Helpers;
 using Xunit;
 
-namespace Exceptionless.Api.Tests.Miscelaneous {
+namespace Exceptionless.Api.Tests.Miscellaneous {
     public class RunTests {
         [Fact]
         public void CanRunOnceWithConcurrency() {
