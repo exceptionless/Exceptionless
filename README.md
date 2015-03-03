@@ -1,4 +1,4 @@
-﻿# Exceptionless [![Build Status](http://teamcity.codesmithtools.com/app/rest/builds/buildType:\(id:Exceptionless_Master\)/statusIcon)](http://teamcity.codesmithtools.com/viewType.html?buildTypeId=Exceptionless_Master) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/exceptionless/Exceptionless?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+﻿# Exceptionless [![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/exceptionless/Exceptionless?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time .NET error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
