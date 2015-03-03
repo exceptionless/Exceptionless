@@ -41,19 +41,19 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.134\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.137\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.AzureStorage, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.134\lib\net45\Foundatio.AzureStorage.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.137\lib\net45\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.134\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.1.0.137\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.134\lib\net45\Foundatio.StatsD.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.StatsD.1.0.137\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Edm, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -136,6 +136,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="app.config" />
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
