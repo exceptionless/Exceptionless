@@ -14,15 +14,12 @@ environment:
 init:
   - git config --global core.autocrlf true
 
-install:
-  - ps: $env:GIT_HASH=$env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
-
 assembly_info:
   patch: true
   file: Source\GlobalAssemblyInfo.cs
   assembly_version: "{version}.0"
   assembly_file_version: "{version}.0"
-  assembly_informational_version: "{version} $env:GIT_HASH"
+  assembly_informational_version: "{version} " + $env:APPVEYOR_REPO_COMMIT.Substring(0, 10)
 
 before_build:
   - nuget restore -verbosity quiet
