@@ -10,7 +10,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		apiary.apib = apiary.apib
 		appveyor.yml = appveyor.yml
 		CONTRIBUTING.md = CONTRIBUTING.md
-		default.ps1 = default.ps1
 		LICENSE.txt = LICENSE.txt
 		Source\nlog.config = Source\nlog.config
 		README.md = README.md
