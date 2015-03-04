@@ -139,7 +139,6 @@ namespace Exceptionless.Core {
             container.RegisterSingle<EventPluginManager>();
             container.RegisterSingle<FormattingPluginManager>();
 
-            container.RegisterSingle<IStartupManager, NullStartupManager>();
             container.RegisterSingle<ICoreLastReferenceIdManager, NullCoreLastReferenceIdManager>();
         }
     }

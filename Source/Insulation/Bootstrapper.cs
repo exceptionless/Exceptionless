@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.AppStats;
@@ -12,6 +14,7 @@ using Foundatio.Redis.Cache;
 using Foundatio.Redis.Messaging;
 using Foundatio.Redis.Queues;
 using Foundatio.Storage;
+using Owin;
 using SimpleInjector;
 using SimpleInjector.Packaging;
 using StackExchange.Redis;
@@ -40,8 +43,15 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));
 
-            container.RegisterSingle<IStartupManager, NullStartupManager>();
+            var client = ExceptionlessClient.Default;
             container.RegisterSingle<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
+            container.RegisterSingle<ExceptionlessClient>(() => client);
+
+            client.Configuration.SetVersion(Settings.Current.Version);
+            client.Register();
+            container.AddConfiguration<HttpConfiguration>(config => client.RegisterWebApi(config));
+            client.Configuration.UseInMemoryStorage();
+            client.Configuration.UseReferenceIds();
         }
     }
 }

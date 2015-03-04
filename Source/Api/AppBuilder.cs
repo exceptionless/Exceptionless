@@ -43,7 +43,6 @@ namespace Exceptionless.Api {
 
             Config = new HttpConfiguration();
 
-            Log.Info().Message("Starting api...").Write();
             if (Settings.Current.ShouldAutoUpgradeDatabase) {
                 var url = new MongoUrl(Settings.Current.MongoConnectionString);
                 string databaseName = url.DatabaseName;
@@ -71,8 +70,9 @@ namespace Exceptionless.Api {
 
             VerifyContainer(container);
 
-            var manager = container.GetInstance<IStartupManager>();
-            manager.Startup(Config);
+            container.Configure(Config);
+            container.Configure(app);
+            Log.Info().Message("Starting api...").Write();
 
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());

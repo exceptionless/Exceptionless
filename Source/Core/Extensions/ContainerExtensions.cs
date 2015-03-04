@@ -10,7 +10,10 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using SimpleInjector;
+using SimpleInjector.Advanced;
 using SimpleInjector.Packaging;
 
 namespace Exceptionless.Core.Extensions {
@@ -31,6 +34,19 @@ namespace Exceptionless.Core.Extensions {
             var registration = Lifestyle.Singleton.CreateRegistration(implementationType, implementationType, container);
             foreach (var serviceType in serviceTypesToRegisterFor)
                 container.AddRegistration(serviceType, registration);
+        }
+
+        public static void Configure<T>(this Container container, T target) {
+            foreach (var configuation in container.GetAllInstances<Action<T>>()) {
+                configuation(target);
+            }
+        }
+
+        public static void AddConfiguration<T>(this Container container, Action<T> configuration) {
+            var tran = Lifestyle.Transient;
+            var type = typeof(Action<T>);
+
+            container.AppendToCollection(type, tran.CreateRegistration(type, () => configuration, container));
         }
     }
 }
