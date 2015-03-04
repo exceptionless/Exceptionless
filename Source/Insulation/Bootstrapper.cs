@@ -40,6 +40,7 @@ namespace Exceptionless.Insulation {
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString));
 
+            container.RegisterSingle<IStartupManager, NullStartupManager>();
             container.RegisterSingle<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();
         }
     }

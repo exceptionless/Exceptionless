@@ -30,14 +30,22 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless">
-      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=2.0.1236.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.2.0.1236-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.Models">
-      <HintPath>..\..\packages\Exceptionless.2.0.1134-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Models.dll</HintPath>
+    <Reference Include="Exceptionless.Console">
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1236-preview\lib\net45\Exceptionless.Console.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.NLog">
-      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1134-preview\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.Extras">
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1236-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.NLog, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1236-preview\lib\net45\Exceptionless.NLog.dll</HintPath>
+    </Reference>
+    <Reference Include="Exceptionless.WebApi">
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1236-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -111,6 +119,10 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\System.Spatial.5.6.3\lib\net40\System.Spatial.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web.Http, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Core.5.2.3\lib\net45\System.Web.Http.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -123,6 +135,7 @@
     </Compile>
     <Compile Include="Bootstrapper.cs" />
     <Compile Include="ExceptionlessClientLastReferenceIdManager.cs" />
+    <Compile Include="StartupManager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

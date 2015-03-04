@@ -22,6 +22,9 @@ namespace Exceptionless.EventMigration {
             else
                 container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new InMemoryQueue<EventMigrationBatch>(retries: 5, workItemTimeout: TimeSpan.FromHours(2)));
 
+            var manager = container.GetInstance<IStartupManager>();
+            manager.Startup();
+
             return container;
         }
     }

@@ -4,8 +4,7 @@ using System.Text.RegularExpressions;
 
 namespace Exceptionless.EventMigration {
     public static class Util {
-        public static IPAddress GetExternalIP()
-        {
+        public static IPAddress GetExternalIP() {
             try {
                 var client = new WebClient();
                 string content = client.DownloadString("http://checkip.dyndns.org/");

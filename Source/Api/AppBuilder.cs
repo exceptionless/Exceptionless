@@ -71,6 +71,9 @@ namespace Exceptionless.Api {
 
             VerifyContainer(container);
 
+            var manager = container.GetInstance<IStartupManager>();
+            manager.Startup(Config);
+
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
