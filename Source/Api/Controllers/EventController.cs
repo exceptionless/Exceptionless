@@ -71,7 +71,7 @@ namespace Exceptionless.Api.Controllers {
 
             var organization = _organizationRepository.GetById(model.OrganizationId, true);
             if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
-                return this.PlanLimitReached("Unable to view event occurrence due to plan limits.");
+                return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
             var timeInfo = GetTimeInfo(time, offset);
             var processResult = QueryProcessor.Process(filter);

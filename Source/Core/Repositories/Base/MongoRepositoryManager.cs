@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         public IEnumerable<IMongoRepositoryManagement> GetRepositories() {
             if (_repositoryTypes == null)
                 _repositoryTypes = TypeHelper.GetDerivedTypes<IMongoRepositoryManagement>(new[] { typeof(IMongoRepositoryManagement).Assembly }).ToArray();
-            return _repositoryTypes.Select(repostitoryType => _dependencyResolver.GetService(repostitoryType) as IMongoRepositoryManagement);
+            return _repositoryTypes.Select(repositoryType => _dependencyResolver.GetService(repositoryType) as IMongoRepositoryManagement);
         }
 
         public void InitializeRepositories() {

@@ -14,7 +14,6 @@ using Foundatio.Redis.Cache;
 using Foundatio.Redis.Messaging;
 using Foundatio.Redis.Queues;
 using Foundatio.Storage;
-using Owin;
 using SimpleInjector;
 using SimpleInjector.Packaging;
 using StackExchange.Redis;

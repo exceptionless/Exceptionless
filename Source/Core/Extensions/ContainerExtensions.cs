@@ -24,8 +24,8 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static void Bootstrap<T>(this Container container, T target) {
-            foreach (var configuation in container.GetAllInstances<Action<T>>()) {
-                configuation(target);
+            foreach (var configuration in container.GetAllInstances<Action<T>>()) {
+                configuration(target);
             }
         }
 

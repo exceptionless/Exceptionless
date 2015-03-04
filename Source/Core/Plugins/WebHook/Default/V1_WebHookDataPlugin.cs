@@ -1,8 +1,7 @@
 ﻿using System;
-using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Pipeline;
 
 namespace Exceptionless.Core.Plugins.WebHook {
     [Priority(10)]

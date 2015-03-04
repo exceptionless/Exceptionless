@@ -1,10 +1,6 @@
 using System;
 using System.IO;
-#if EMBEDDED
-using Exceptionless.Json;
-#else
 using Newtonsoft.Json;
-#endif
 
 namespace Exceptionless.Serializer {
     internal class JsonTextWriterWithDepth : JsonTextWriter {

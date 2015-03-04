@@ -6,7 +6,7 @@ using System.Xml.Linq;
 
 namespace Exceptionless.Core.Extensions {
     public static class DictionaryExtensions {
-        public static bool ContainsKeyAndValueIsNullOrEmtpy(this Dictionary<string, object> map, string key) {
+        public static bool ContainsKeyAndValueIsNullOrEmpty(this Dictionary<string, object> map, string key) {
             return map.ContainsKey(key) && (map[key] == null || map[key].ToString().IsNullOrEmpty());
         }
 

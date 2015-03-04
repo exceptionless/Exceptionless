@@ -1,23 +1,12 @@
 using System;
 using System.Reflection;
 using Exceptionless.Core.Models;
-#if EMBEDDED
-using Exceptionless.Json;
-using Exceptionless.Json.Serialization;
-using Exceptionless.Extensions;
-#else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using Exceptionless.Core.Extensions;
-#endif
 
 namespace Exceptionless.Serializer {
-#if EMBEDDED
-    internal
-#else
-    public
-#endif
-    class ExceptionlessContractResolver : DefaultContractResolver {
+    public class ExceptionlessContractResolver : DefaultContractResolver {
         private readonly Func<JsonProperty, object, bool> _includeProperty;
 
         public ExceptionlessContractResolver(Func<JsonProperty, object, bool> includeProperty = null) {
@@ -43,12 +32,7 @@ namespace Exceptionless.Serializer {
             return contract;
         }
 
-#if EMBEDDED
-        protected internal
-#else
-        protected
-#endif
-        override string ResolvePropertyName(string propertyName) {
+        protected override string ResolvePropertyName(string propertyName) {
             return propertyName.ToLowerUnderscoredWords();
         }
     }

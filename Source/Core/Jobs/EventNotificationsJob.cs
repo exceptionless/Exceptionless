@@ -148,8 +148,8 @@ namespace Exceptionless.Core.Jobs {
 
                 Log.Trace().Message("Loaded user: email={0}", user.EmailAddress).WriteIf(shouldLog);
 
-                bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError(); ;
-                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError(); ;
+                bool shouldReportNewError = settings.ReportNewErrors && eventNotification.IsNew && eventNotification.Event.IsError();
+                bool shouldReportCriticalError = settings.ReportCriticalErrors && eventNotification.IsCritical && eventNotification.Event.IsError();
                 bool shouldReportRegression = settings.ReportEventRegressions && eventNotification.IsRegression;
                 bool shouldReportNewEvent = settings.ReportNewEvents && eventNotification.IsNew;
                 bool shouldReportCriticalEvent = settings.ReportCriticalEvents && eventNotification.IsCritical;

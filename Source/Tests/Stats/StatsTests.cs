@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
-using System.Threading;
 using Exceptionless.Api.Tests.Utility;
-using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;

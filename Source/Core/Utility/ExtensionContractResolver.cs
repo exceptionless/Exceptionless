@@ -1,26 +1,15 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-#if EMBEDDED
-using Exceptionless.Json;
-using Exceptionless.Json.Serialization;
-#else
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-#endif
 
 namespace Exceptionless.Serializer {
-#if EMBEDDED
-    internal
-#else
-    public
-#endif
-    class ExtensionContractResolver : DefaultContractResolver {
+    public class ExtensionContractResolver : DefaultContractResolver {
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
             if (!typeof(IData).IsAssignableFrom(member.DeclaringType))

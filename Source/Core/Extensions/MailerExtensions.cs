@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using System.Net.Mail;
-using System.Threading.Tasks;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
 namespace Exceptionless.Core.Extensions {

@@ -6,7 +6,6 @@ using System.Web.Http;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
-using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;

@@ -401,10 +401,10 @@ namespace Exceptionless.Core.Extensions {
             return !matchToProcess.Groups["decimal"].Success ? (!matchToProcess.Groups["hex"].Success ? (!matchToProcess.Groups["html"].Success ? "Y" : EntityLookup(matchToProcess.Groups["html"].Value)) : Convert.ToChar(HexToInt(matchToProcess.Groups["hex"].Value)).ToString()) : Convert.ToChar(Convert.ToInt32(matchToProcess.Groups["decimal"].Value)).ToString();
         }
 
-        public static int HexToInt(string hexstr) {
+        public static int HexToInt(string input) {
             int num = 0;
-            hexstr = hexstr.ToUpper();
-            char[] chArray = hexstr.ToCharArray();
+            input = input.ToUpper();
+            char[] chArray = input.ToCharArray();
             for (int index = chArray.Length - 1; index >= 0; --index) {
                 if ((int)chArray[index] >= 48 && (int)chArray[index] <= 57)
                     num += ((int)chArray[index] - 48) * (int)Math.Pow(16.0, (double)(chArray.Length - 1 - index));

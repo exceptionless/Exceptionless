@@ -3,10 +3,8 @@ using System.Net;
 using System.Web.Http;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
-using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models.Data;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 
