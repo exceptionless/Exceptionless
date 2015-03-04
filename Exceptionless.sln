@@ -29,6 +29,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventMigration", "Source\Mi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exceptionless.Insulation", "Source\Insulation\Exceptionless.Insulation.csproj", "{75D9D89F-09F2-43A6-8B53-E1518E9FA822}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Jobs", "Jobs", "{958CE8C9-D156-4861-9BF3-4EE683191A4C}"
+	ProjectSection(SolutionItems) = preProject
+		Source\WebJobs\App.config = Source\WebJobs\App.config
+		Source\WebJobs\Job.bat = Source\WebJobs\Job.bat
+		Source\WebJobs\NLog.config = Source\WebJobs\NLog.config
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -117,5 +124,6 @@ Global
 		{FCB2CF19-EBE7-4DCF-BD48-EC164015BA3F} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
 		{0B4F8485-F0A8-48F7-876F-65490E788DC7} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
 		{D5F5FEF6-A603-40FA-B5EC-DC7BE2089509} = {E37C2237-3223-421C-B94A-2B9FC2411A77}
+		{958CE8C9-D156-4861-9BF3-4EE683191A4C} = {98A5A2F7-BBA9-4B65-91C9-88E18D474341}
 	EndGlobalSection
 EndGlobal
