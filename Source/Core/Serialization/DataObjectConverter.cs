@@ -93,9 +93,10 @@ namespace Exceptionless.Serializer {
                         target.Data[dataKey] = serializer.Deserialize(new StringReader(p.Value.ToString()), dataType);
                     else
                         target.Data[dataKey] = p.Value.ToObject(dataType, serializer);
+
                     return;
-                } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error serializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
+                } catch (Exception) {
+                    Log.Info().Message("Error deserializing known data type \"{0}\": {1}", p.Name, p.Value.ToString()).Write();
                 }
             }
 
