@@ -30,22 +30,25 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=2.0.1236.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.2.0.1236-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.2.0.1243-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.Console">
-      <HintPath>..\..\packages\Exceptionless.Console.2.0.1236-preview\lib\net45\Exceptionless.Console.dll</HintPath>
+    <Reference Include="Exceptionless.Console, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1243-preview\lib\net45\Exceptionless.Console.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.Extras">
-      <HintPath>..\..\packages\Exceptionless.Console.2.0.1236-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1243-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
     </Reference>
     <Reference Include="Exceptionless.NLog, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1236-preview\lib\net45\Exceptionless.NLog.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1243-preview\lib\net45\Exceptionless.NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.WebApi">
-      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1236-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1243-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -119,6 +122,11 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Net.Http.Formatting, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\Microsoft.AspNet.WebApi.Client.5.2.3\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
     <Reference Include="System.Spatial, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\System.Spatial.5.6.3\lib\net40\System.Spatial.dll</HintPath>

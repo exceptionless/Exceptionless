@@ -74,6 +74,8 @@ namespace Exceptionless.Api {
             container.Configure(app);
             Log.Info().Message("Starting api...").Write();
 
+            Log.Info().Message("Starting api...").Write();
+
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
