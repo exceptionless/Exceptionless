@@ -1,13 +1,7 @@
 # Exceptionless
 [![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/exceptionless/Discuss)
 
-The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time .NET error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
-
-***
- 
-_This branch is for [Exceptionless 2.0] (http://github.com/exceptionless/Exceptionless/wiki/Exceptionless-2.0-Overview) which is a preview version. Please switch to the 1.x branch if you are looking for the stable version._
-
-***
+The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
 ## Getting Started
 
