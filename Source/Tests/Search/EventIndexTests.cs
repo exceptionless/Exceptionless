@@ -149,6 +149,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         [InlineData("_missing_:value", 2)]
         [InlineData("_exists_:value", 1)]
         [InlineData("value:1", 1)]
+        [InlineData("value:>0", 1)]
+        [InlineData("value:(>0 AND <=10)", 1)]
         public void GetByValue(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
