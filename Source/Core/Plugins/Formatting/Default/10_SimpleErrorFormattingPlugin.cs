@@ -77,6 +77,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = model.Event.GetSimpleError();
+            if (error == null)
+                return null;
+
             var requestInfo = model.Event.GetRequestInfo();
 
             string notificationType = String.Concat(error.Type, " Occurrence");

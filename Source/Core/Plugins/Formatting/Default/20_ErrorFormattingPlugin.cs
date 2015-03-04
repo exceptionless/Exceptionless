@@ -97,7 +97,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var error = model.Event.GetError();
+            if (error == null)
+                return null;
+
             var stackingTarget = error.GetStackingTarget();
+            if (stackingTarget == null)
+                return null;
+
             var requestInfo = model.Event.GetRequestInfo();
 
             string notificationType = String.Concat(stackingTarget.Error.Type, " occurrence");

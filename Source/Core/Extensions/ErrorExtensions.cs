@@ -19,6 +19,9 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless.Core.Extensions {
     public static class ErrorExtensions {
         public static StackingTarget GetStackingTarget(this Error error) {
+            if (error == null)
+                return null;
+
             InnerError targetError = error;
             while (targetError != null) {
                 StackFrame m = targetError.StackTrace.FirstOrDefault(st => st.IsSignatureTarget);
