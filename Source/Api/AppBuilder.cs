@@ -70,8 +70,8 @@ namespace Exceptionless.Api {
 
             VerifyContainer(container);
 
-            container.Configure(Config);
-            container.Configure(app);
+            container.Bootstrap(Config);
+            container.Bootstrap(app);
             Log.Info().Message("Starting api...").Write();
 
             Log.Info().Message("Starting api...").Write();

@@ -25,9 +25,6 @@ namespace Exceptionless.Core.Jobs {
             if (insulationAssembly != null)
                 container.RegisterPackages(new[] { insulationAssembly });
 
-            var manager = container.GetInstance<IStartupManager>();
-            manager.Startup();
-
             return container;
         }
     }

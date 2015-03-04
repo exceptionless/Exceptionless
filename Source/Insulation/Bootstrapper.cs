@@ -49,7 +49,7 @@ namespace Exceptionless.Insulation {
 
             client.Configuration.SetVersion(Settings.Current.Version);
             client.Register();
-            container.AddConfiguration<HttpConfiguration>(config => client.RegisterWebApi(config));
+            container.AddBootstrapper<HttpConfiguration>(config => client.RegisterWebApi(config));
             client.Configuration.UseInMemoryStorage();
             client.Configuration.UseReferenceIds();
         }
