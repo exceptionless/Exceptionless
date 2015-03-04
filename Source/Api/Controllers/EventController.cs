@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Controllers {
             var timeInfo = GetTimeInfo(time, offset);
             var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
-                return BadRequest(processResult.Message);
+                return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
