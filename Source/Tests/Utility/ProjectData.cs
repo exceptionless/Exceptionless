@@ -1,21 +1,8 @@
-﻿#region Copyright 2015 Exceptionless
-
-// This program is free software: you can redistribute it and/or modify it 
-// under the terms of the GNU Affero General Public License as published 
-// by the Free Software Foundation, either version 3 of the License, or 
-// (at your option) any later version.
-// 
-//     http://www.gnu.org/licenses/agpl-3.0.html
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using MongoDB.Bson;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Helpers;
 
 namespace Exceptionless.Tests.Utility {
     internal static class ProjectData {
