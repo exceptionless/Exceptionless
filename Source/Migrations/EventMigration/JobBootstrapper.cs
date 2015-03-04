@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Reflection;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Foundatio.Queues;
 using Foundatio.Redis.Queues;
 using Foundatio.ServiceProvider;
+using NLog.Fluent;
 using SimpleInjector;
 using StackExchange.Redis;
 
@@ -21,6 +23,16 @@ namespace Exceptionless.EventMigration {
                 container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new RedisQueue<EventMigrationBatch>(container.GetInstance<ConnectionMultiplexer>(), retries: 5, workItemTimeout: TimeSpan.FromHours(2)));
             else
                 container.RegisterSingle<IQueue<EventMigrationBatch>>(() => new InMemoryQueue<EventMigrationBatch>(retries: 5, workItemTimeout: TimeSpan.FromHours(2)));
+
+            Assembly insulationAssembly = null;
+            try {
+                insulationAssembly = Assembly.Load("Exceptionless.Insulation");
+            } catch (Exception ex) {
+                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
+            }
+
+            if (insulationAssembly != null)
+                container.RegisterPackages(new[] { insulationAssembly });
 
             var manager = container.GetInstance<IStartupManager>();
             manager.Startup();
