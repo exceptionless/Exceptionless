@@ -18,10 +18,22 @@ namespace Exceptionless.Core.Pipeline {
         protected override bool ContinueOnError { get { return true; } }
 
         public override void ProcessBatch(ICollection<EventContext> contexts) {
-            _stats.Counter(MetricNames.EventsProcessed, contexts.Count);
+            try {
+                _stats.Counter(MetricNames.EventsProcessed, contexts.Count);
 
-            if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                _stats.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
+                if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
+                    _stats.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
+            } catch (Exception ex) {
+                foreach (var context in contexts) {
+                    bool cont = false;
+                    try {
+                        cont = HandleError(ex, context);
+                    } catch {}
+
+                    if (!cont)
+                        context.SetError(ex.Message, ex);
+                }
+            }
         }
 
         public override void Process(EventContext ctx) {}

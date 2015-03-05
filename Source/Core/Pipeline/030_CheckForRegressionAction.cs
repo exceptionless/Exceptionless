@@ -21,20 +21,32 @@ namespace Exceptionless.Core.Pipeline {
         public override void ProcessBatch(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => c.Stack != null && c.Stack.DateFixed.HasValue && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
-                var context = stackGroup.First();
-                Log.Trace().Message("Marking stack and events as regression.").Write();
-                _stackRepository.MarkAsRegressed(context.Stack.Id);
-                _eventRepository.MarkAsRegressedByStack(context.Event.OrganizationId, context.Stack.Id);
+                try {
+                    var context = stackGroup.First();
+                    Log.Trace().Message("Marking stack and events as regression.").Write();
+                    _stackRepository.MarkAsRegressed(context.Stack.Id);
+                    _eventRepository.MarkAsRegressedByStack(context.Event.OrganizationId, context.Stack.Id);
 
-                _stackRepository.InvalidateCache(context.Event.ProjectId, context.Event.StackId, context.SignatureHash);
+                    _stackRepository.InvalidateCache(context.Event.ProjectId, context.Event.StackId, context.SignatureHash);
 
-                bool isFirstEvent = true;
-                foreach (var ctx in stackGroup) {
-                    ctx.Event.IsFixed = false;
+                    bool isFirstEvent = true;
+                    foreach (var ctx in stackGroup) {
+                        ctx.Event.IsFixed = false;
 
-                    // Only mark the first event context as regressed.
-                    ctx.IsRegression = isFirstEvent;
-                    isFirstEvent = false;
+                        // Only mark the first event context as regressed.
+                        ctx.IsRegression = isFirstEvent;
+                        isFirstEvent = false;
+                    }
+                } catch (Exception ex) {
+                    foreach (var context in stackGroup) {
+                        bool cont = false;
+                        try {
+                            cont = HandleError(ex, context);
+                        } catch {}
+
+                        if (!cont)
+                            context.SetError(ex.Message, ex);
+                    }
                 }
             }
         }
