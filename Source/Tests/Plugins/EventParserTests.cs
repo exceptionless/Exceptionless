@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using ApprovalTests.Reporters;
 using Exceptionless.Api.Tests.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
-using Foundatio.Extensions;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Extensions;
@@ -15,7 +15,6 @@ namespace Exceptionless.Api.Tests.Plugins {
     [UseReporter(typeof(HappyDiffReporter))]
     public class EventParserTests {
         private readonly EventParserPluginManager _eventParserPluginManager = IoC.GetInstance<EventParserPluginManager>();
-        private readonly JsonSerializer _serializer = JsonSerializer.Create(IoC.GetInstance<JsonSerializerSettings>());
 
         public static IEnumerable<object[]> EventData {
             get {
