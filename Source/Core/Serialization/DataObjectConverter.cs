@@ -82,17 +82,22 @@ namespace Exceptionless.Serializer {
             if (target.Data == null)
                 target.Data = new DataDictionary();
 
+            string dataKey = GetDataKey(target.Data, p.Name);
+            String unknownTypeDataKey = GetDataKey(target.Data, p.Name, true);
+
             // when adding items to data, see if they are a known type and deserialize to the registered type
             Type dataType;
             if (_dataTypeRegistry.TryGetValue(p.Name, out dataType)) {
                 try {
-                    string dataKey = p.Name;
-                    if (target.Data.ContainsKey(dataKey))
-                        dataKey = "_" + dataKey;
-                    if (p.Value is JValue && p.Value.Type == JTokenType.String)
-                        target.Data[dataKey] = serializer.Deserialize(new StringReader(p.Value.ToString()), dataType);
-                    else
+                    if (p.Value is JValue && p.Value.Type == JTokenType.String) {
+                        string value = p.Value.ToString();
+                        if (value.IsJson())
+                            target.Data[dataKey] = serializer.Deserialize(new StringReader(value), dataType);
+                        else
+                            target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                    } else {
                         target.Data[dataKey] = p.Value.ToObject(dataType, serializer);
+                    }
 
                     return;
                 } catch (Exception) {
@@ -100,31 +105,45 @@ namespace Exceptionless.Serializer {
                 }
             }
 
-            // add item to data as a JObject, JArray or native type.
-            if (p.Value is JObject)
-                target.Data[p.Name] = p.Value.ToObject<JObject>();
-            else if (p.Value is JArray)
-                target.Data[p.Name] = p.Value.ToObject<JArray>();
-            else if (p.Value is JValue && p.Value.Type != JTokenType.String)
-                target.Data[p.Name] = ((JValue)p.Value).Value;
-            else {
+            // Add item to data as a JObject, JArray or native type.
+            if (p.Value is JObject) {
+                target.Data[dataType == typeof(JObject) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JObject>();
+            } else if (p.Value is JArray) {
+                target.Data[dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
+            } else if (p.Value is JValue && p.Value.Type != JTokenType.String) {
+                var value = ((JValue)p.Value).Value;
+                target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+            } else {
                 string value = p.Value.ToString();
                 var jsonType = value.GetJsonType();
                 if (jsonType == JsonType.Object) {
                     JObject obj;
                     if (value.TryFromJson(out obj))
-                        target.Data[p.Name] = obj;
+                        target.Data[dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
                     else
-                        target.Data[p.Name] = value;
+                        target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
                 } else if (jsonType == JsonType.Array) {
                     JArray obj;
                     if (value.TryFromJson(out obj))
-                        target.Data[p.Name] = obj;
+                        target.Data[dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
                     else
-                        target.Data[p.Name] = value;
-                } else
-                    target.Data[p.Name] = value;
+                        target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                } else {
+                    target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                }
             }
+        }
+
+        private string GetDataKey(DataDictionary data, string dataKey, bool isUnknownType = false) {
+            if (data.ContainsKey(dataKey) || isUnknownType)
+                dataKey = dataKey.TrimStart('@');
+
+            int count = 1;
+            string key = dataKey;
+            while (data.ContainsKey(key) || (isUnknownType &&_dataTypeRegistry.ContainsKey(key)))
+                key = dataKey + count++;
+
+            return key;
         }
 
         public override T Create(Type objectType) {

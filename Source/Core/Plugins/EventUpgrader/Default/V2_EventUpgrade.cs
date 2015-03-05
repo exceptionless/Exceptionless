@@ -126,12 +126,13 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
             try {
                 var extraProperties = JObject.Parse(json);
                 foreach (var property in extraProperties.Properties()) {
-                    string dataKey = property.Name;
-                    if (extendedData[dataKey] != null)
-                        dataKey = "_" + dataKey;
-
                     if (property.IsNullOrEmpty())
                         continue;
+                    
+                    int count = 1;
+                    string dataKey = property.Name;
+                    while (extendedData[dataKey] != null)
+                        dataKey = property.Name + count++;
 
                     ext.Add(dataKey, property.Value);
                 }

@@ -49,6 +49,34 @@ namespace Exceptionless.Api.Tests {
         }
 
         [Fact]
+        public void CanDeserializeEventWithInvalidKnownDataTypes() {
+            const string json = @"{""Message"":""Hello"",""Some"":""{\""Blah\"":\""SomeVal\""}"",""@Some"":""{\""Blah\"":\""SomeVal\""}""}";
+            const string jsonWithInvalidDataType = @"{""Message"":""Hello"",""@Some"":""Testing"",""@string"":""Testing""}";
+            
+            var settings = new JsonSerializerSettings();
+            var knownDataTypes = new Dictionary<string, Type> {
+                { "Some", typeof(SomeModel) },
+                { "@Some", typeof(SomeModel) },
+                { "@string", typeof(String) }
+            };
+            settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
+
+            var ev = json.FromJson<Event>(settings);
+            Assert.Equal(2, ev.Data.Count);
+            Assert.True(ev.Data.ContainsKey("Some"));
+            Assert.Equal("SomeVal", ((SomeModel)ev.Data["Some"]).Blah);
+            Assert.True(ev.Data.ContainsKey("@Some"));
+            Assert.Equal("SomeVal", ((SomeModel)ev.Data["@Some"]).Blah);
+
+            ev = jsonWithInvalidDataType.FromJson<Event>(settings);
+            Assert.Equal(2, ev.Data.Count);
+            Assert.True(ev.Data.ContainsKey("Some1"));
+            Assert.Equal("Testing", ev.Data["Some1"] as string);
+            Assert.True(ev.Data.ContainsKey("@string"));
+            Assert.Equal("Testing", ev.Data["@string"] as string);
+        }
+
+        [Fact]
         public void CanDeserializeEventWithData() {
             const string json = @"{""Message"":""Hello"",""Data"":{""Blah"":""SomeVal""}}";
             var settings = new JsonSerializerSettings();
