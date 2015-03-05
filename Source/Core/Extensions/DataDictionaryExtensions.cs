@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.Core.Extensions {
     public static class DataDictionaryExtensions {
@@ -12,10 +13,17 @@ namespace Exceptionless.Core.Extensions {
             object data = extendedData[key];
             if (data is T)
                 return (T)data;
-
-            if (data is string) {
+            
+            if (data is JObject) {
                 try {
-                    return JsonConvert.DeserializeObject<T>((string)data);
+                    return ((JObject)data).ToObject<T>();
+                } catch {}
+            }
+
+            string json = data as string;
+            if (json.IsJson()) {
+                try {
+                    return JsonConvert.DeserializeObject<T>(json);
                 } catch {}
             }
 

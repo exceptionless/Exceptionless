@@ -24,8 +24,12 @@ namespace Exceptionless.Core.Extensions {
 
             var dictionary = data as Dictionary<string, string>;
             if (dictionary == null && data is string) {
+                string json = (string)data;
+                if (!json.IsJson())
+                    return data;
+
                 try {
-                    dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>((string)data);
+                    dictionary = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
                 } catch (Exception) {}
             }
 

@@ -152,6 +152,7 @@ namespace Exceptionless.Core.Extensions {
             target.Remove(name);
             return value;
         }
+
         public static bool IsJson(this string value) {
             return value.GetJsonType() != JsonType.None;
         }
