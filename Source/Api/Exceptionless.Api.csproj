@@ -327,8 +327,9 @@
   </ProjectExtensions>
   <Import Project="..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets" Condition="Exists('..\..\packages\AutoMapper.3.3.1\tools\AutoMapper.targets')" />
   <PropertyGroup>
-    <PostBuildEvent>
-    </PostBuildEvent>
+    <PostBuildEvent>robocopy $(ProjectDir)..\Insulation\bin\$(ConfigurationName) $(TargetDir) /S /NFL /NDL /NJH /NJS /nc /ns /np 
+IF %25ERRORLEVEL%25 GEQ 8 exit 1
+exit 0</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

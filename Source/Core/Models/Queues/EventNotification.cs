@@ -1,9 +1,8 @@
 ﻿using System;
-using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
 
 namespace Exceptionless.Core.Queues.Models {
-    public class EventNotification : ExtensibleObject {
+    public class EventNotification {
         public PersistentEvent Event { get; set; }
         public bool IsNew { get; set; }
         public bool IsCritical { get; set; }
