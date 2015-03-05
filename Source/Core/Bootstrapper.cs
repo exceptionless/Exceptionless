@@ -24,6 +24,7 @@ using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Queues;
+using Foundatio.Serializer;
 using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
@@ -40,17 +41,17 @@ namespace Exceptionless.Core {
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
-            
-            container.RegisterSingle<JsonSerializerSettings>(() => {
-                var settings = new JsonSerializerSettings {
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    DateParseHandling = DateParseHandling.DateTimeOffset,
-                    ContractResolver = new ExceptionlessContractResolver()
-                };
-                settings.AddModelConverters();
 
-                return settings;
-            });
+
+            var settings = new JsonSerializerSettings {
+                MissingMemberHandling = MissingMemberHandling.Ignore,
+                DateParseHandling = DateParseHandling.DateTimeOffset,
+                ContractResolver = new ExceptionlessContractResolver()
+            };
+
+            settings.AddModelConverters();
+            container.RegisterSingle<JsonSerializerSettings>(settings);
+            container.RegisterSingle<ISerializer>(() => new JsonNetSerializer(settings));
 
             var metricsClient = new InMemoryMetricsClient();
             metricsClient.StartDisplayingStats();
