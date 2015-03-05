@@ -438,7 +438,7 @@
     <Compile Include="Mail\Mailer.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Mail\Models\AddedToOrganizationModel.cs" />
-    <Compile Include="Mail\Models\ErrorNotificationModel.cs" />
+    <Compile Include="Mail\Models\EventNotificationModel.cs" />
     <Compile Include="Mail\Models\InviteModel.cs" />
     <Compile Include="Mail\Models\MailModelBase.cs" />
     <Compile Include="Mail\Models\UserModel.cs" />

@@ -11,12 +11,12 @@ using NLog.Fluent;
 namespace Exceptionless.Core.Pipeline {
     [Priority(70)]
     public class QueueNotificationAction : EventPipelineActionBase {
-        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHookNotificationQueue;
         private readonly IWebHookRepository _webHookRepository;
         private readonly WebHookDataPluginManager _webHookDataPluginManager;
 
-        public QueueNotificationAction(IQueue<EventNotification> notificationQueue, 
+        public QueueNotificationAction(IQueue<EventNotificationWorkItem> notificationQueue, 
             IQueue<WebHookNotification> webHookNotificationQueue, 
             IWebHookRepository webHookRepository,
             WebHookDataPluginManager webHookDataPluginManager) {
@@ -34,8 +34,8 @@ namespace Exceptionless.Core.Pipeline {
                 return;
 
             if (ShouldQueueNotification(ctx))
-                _notificationQueue.Enqueue(new EventNotification {
-                    Event = ctx.Event,
+                _notificationQueue.Enqueue(new EventNotificationWorkItem {
+                    EventId = ctx.Event.Id,
                     IsNew = ctx.IsNew,
                     IsCritical = ctx.Event.IsCritical(),
                     IsRegression = ctx.IsRegression,

@@ -13,13 +13,13 @@ namespace Exceptionless.Api.Controllers {
         private readonly SystemHealthChecker _healthChecker;
         private readonly IQueue<EventPost> _eventQueue;
         private readonly IQueue<MailMessage> _mailQueue;
-        private readonly IQueue<EventNotification> _notificationQueue;
+        private readonly IQueue<EventNotificationWorkItem> _notificationQueue;
         private readonly IQueue<WebHookNotification> _webHooksQueue;
         private readonly IQueue<EventUserDescription> _userDescriptionQueue;
         private readonly IMetricsClient _metricsClient;
 
         public StatusController(SystemHealthChecker healthChecker, IQueue<EventPost> eventQueue, IQueue<MailMessage> mailQueue,
-            IQueue<EventNotification> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
+            IQueue<EventNotificationWorkItem> notificationQueue, IQueue<WebHookNotification> webHooksQueue, IQueue<EventUserDescription> userDescriptionQueue, IMetricsClient metricsClient) {
             _healthChecker = healthChecker;
             _eventQueue = eventQueue;
             _mailQueue = mailQueue;
