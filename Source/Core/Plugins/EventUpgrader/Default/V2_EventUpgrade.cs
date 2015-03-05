@@ -128,11 +128,10 @@ namespace Exceptionless.Core.Plugins.EventUpgrader {
                 foreach (var property in extraProperties.Properties()) {
                     if (property.IsNullOrEmpty())
                         continue;
-                    
-                    int count = 1;
+
                     string dataKey = property.Name;
-                    while (extendedData[dataKey] != null)
-                        dataKey = property.Name + count++;
+                    if (extendedData[dataKey] != null)
+                        dataKey = "_" + dataKey;
 
                     ext.Add(dataKey, property.Value);
                 }

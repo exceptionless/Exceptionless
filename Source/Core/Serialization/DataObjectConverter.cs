@@ -136,11 +136,11 @@ namespace Exceptionless.Serializer {
 
         private string GetDataKey(DataDictionary data, string dataKey, bool isUnknownType = false) {
             if (data.ContainsKey(dataKey) || isUnknownType)
-                dataKey = dataKey.TrimStart('@');
+                dataKey = dataKey.StartsWith("@") ? "_" + dataKey : dataKey;
 
             int count = 1;
             string key = dataKey;
-            while (data.ContainsKey(key) || (isUnknownType &&_dataTypeRegistry.ContainsKey(key)))
+            while (data.ContainsKey(key) || (isUnknownType && _dataTypeRegistry.ContainsKey(key)))
                 key = dataKey + count++;
 
             return key;

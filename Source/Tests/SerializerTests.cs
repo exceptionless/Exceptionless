@@ -57,6 +57,7 @@ namespace Exceptionless.Api.Tests {
             var knownDataTypes = new Dictionary<string, Type> {
                 { "Some", typeof(SomeModel) },
                 { "@Some", typeof(SomeModel) },
+                { "_@Some", typeof(SomeModel) },
                 { "@string", typeof(String) }
             };
             settings.Converters.Add(new DataObjectConverter<Event>(knownDataTypes));
@@ -70,8 +71,8 @@ namespace Exceptionless.Api.Tests {
 
             ev = jsonWithInvalidDataType.FromJson<Event>(settings);
             Assert.Equal(2, ev.Data.Count);
-            Assert.True(ev.Data.ContainsKey("Some1"));
-            Assert.Equal("Testing", ev.Data["Some1"] as string);
+            Assert.True(ev.Data.ContainsKey("_@Some1"));
+            Assert.Equal("Testing", ev.Data["_@Some1"] as string);
             Assert.True(ev.Data.ContainsKey("@string"));
             Assert.Equal("Testing", ev.Data["@string"] as string);
         }
