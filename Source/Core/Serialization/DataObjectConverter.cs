@@ -107,29 +107,29 @@ namespace Exceptionless.Serializer {
 
             // Add item to data as a JObject, JArray or native type.
             if (p.Value is JObject) {
-                target.Data[dataType == typeof(JObject) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JObject>();
+                target.Data[dataType == null || dataType == typeof(JObject) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JObject>();
             } else if (p.Value is JArray) {
-                target.Data[dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
+                target.Data[dataType == null || dataType == typeof(JArray) ? dataKey : unknownTypeDataKey] = p.Value.ToObject<JArray>();
             } else if (p.Value is JValue && p.Value.Type != JTokenType.String) {
                 var value = ((JValue)p.Value).Value;
-                target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
             } else {
                 string value = p.Value.ToString();
                 var jsonType = value.GetJsonType();
                 if (jsonType == JsonType.Object) {
                     JObject obj;
                     if (value.TryFromJson(out obj))
-                        target.Data[dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
+                        target.Data[dataType == null || dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
                     else
-                        target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                        target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
                 } else if (jsonType == JsonType.Array) {
                     JArray obj;
                     if (value.TryFromJson(out obj))
-                        target.Data[dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
+                        target.Data[dataType == null || dataType == obj.GetType() ? dataKey : unknownTypeDataKey] = obj;
                     else
-                        target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                        target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
                 } else {
-                    target.Data[dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
+                    target.Data[dataType == null || dataType == value.GetType() ? dataKey : unknownTypeDataKey] = value;
                 }
             }
         }
