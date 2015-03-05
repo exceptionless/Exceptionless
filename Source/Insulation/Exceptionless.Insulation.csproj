@@ -50,21 +50,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1243-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.137\lib\net45\Foundatio.dll</HintPath>
+    <Reference Include="Foundatio">
+      <HintPath>..\..\packages\Foundatio.1.0.139\lib\net45\Foundatio.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.AzureStorage, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.137\lib\net45\Foundatio.AzureStorage.dll</HintPath>
+    <Reference Include="Foundatio.AzureStorage">
+      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.139\lib\net45\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.137\lib\net45\Foundatio.Redis.dll</HintPath>
+    <Reference Include="Foundatio.Redis">
+      <HintPath>..\..\packages\Foundatio.Redis.1.0.139\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
-    <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.137\lib\net45\Foundatio.StatsD.dll</HintPath>
+    <Reference Include="Foundatio.StatsD">
+      <HintPath>..\..\packages\Foundatio.StatsD.1.0.139\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Edm, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
