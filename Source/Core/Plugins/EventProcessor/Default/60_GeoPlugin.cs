@@ -33,7 +33,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         private IEnumerable<string> GetIpAddresses(PersistentEvent ev) {
-            if (ev.Geo.Contains(".") || ev.Geo.Contains(":"))
+            if (!String.IsNullOrEmpty(ev.Geo) && (ev.Geo.Contains(".") || ev.Geo.Contains(":")))
                 yield return ev.Geo;
 
             var request = ev.GetRequestInfo();
