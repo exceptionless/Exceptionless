@@ -18,6 +18,9 @@ namespace Exceptionless.Core.Utility {
                 return Path.GetFullPath(path);
 
             string dataDirectory = GetDataDirectory();
+            if (String.IsNullOrEmpty(dataDirectory))
+                return path;
+
             int length = DATA_DIRECTORY.Length;
 
             if (path.Length <= length)
@@ -40,11 +43,17 @@ namespace Exceptionless.Core.Utility {
         /// </summary>
         /// <returns>The DataDirectory path.</returns>
         public static string GetDataDirectory() {
-            string dataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
+            string dataDirectory = Environment.GetEnvironmentVariable("WEBROOT_PATH");
+            if (!String.IsNullOrEmpty(dataDirectory))
+                dataDirectory = Path.Combine(dataDirectory, "App_Data");
+
+            if (String.IsNullOrEmpty(dataDirectory))
+                dataDirectory = AppDomain.CurrentDomain.GetData("DataDirectory") as string;
+
             if (String.IsNullOrEmpty(dataDirectory))
                 dataDirectory = AppDomain.CurrentDomain.BaseDirectory;
 
-            return Path.GetFullPath(dataDirectory);
+            return !String.IsNullOrEmpty(dataDirectory) ? Path.GetFullPath(dataDirectory) : null;
         }
     }
 }
