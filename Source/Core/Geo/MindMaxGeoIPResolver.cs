@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Geo {
             if (_database != null)
                 return _database;
 
-            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= DateTime.UtcNow.SubtractMinutes(5))
+            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= DateTime.UtcNow.SubtractSeconds(30))
                 return null;
 
             _databaseLastChecked = DateTime.UtcNow;
@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Geo {
                 databasePath = Path.GetFullPath(databasePath);
 
             if (!File.Exists(databasePath)) {
-                Log.Warn().Message("No GeoIP database was found.").Write();
+                Log.Warn().Message("No GeoIP database was found \"{0}\"", databasePath).Write();
                 return null;
             }
 
