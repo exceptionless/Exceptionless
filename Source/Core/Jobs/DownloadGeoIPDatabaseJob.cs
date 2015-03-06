@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Jobs {
 
             try {
                 if (File.Exists(path)) {
-                    Log.Info().Message("Deleting existing GeoIP database.").Write();
+                    Log.Info().Message("Deleting existing GeoIP database \\{0}\".", path).Write();
                     File.Delete(path);
                 }
 
@@ -29,14 +29,14 @@ namespace Exceptionless.Core.Jobs {
                 if (!file.IsSuccessStatusCode)
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
-                Log.Info().Message("Extracting GeoIP database.").Write();
+                Log.Info().Message("Extracting GeoIP database to \\{0}\".", path).Write();
                 using (FileStream decompressedFileStream = new FileStream(path, FileMode.CreateNew)) {
                     using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync(), CompressionMode.Decompress)) {
                         decompressionStream.CopyTo(decompressedFileStream);
                     }
                 }
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database.").Write();
+                Log.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database \\{0}\".", path).Write();
                 return JobResult.FromException(ex);
             }
 
