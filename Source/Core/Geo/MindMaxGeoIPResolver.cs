@@ -60,7 +60,7 @@ namespace Exceptionless.Core.Geo {
             if (_database != null)
                 return _database;
 
-            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= DateTime.UtcNow.SubtractSeconds(10))
+            if (_databaseLastChecked.HasValue && _databaseLastChecked.Value >= DateTime.UtcNow.SubtractMinutes(5))
                 return null;
 
             _databaseLastChecked = DateTime.UtcNow;
