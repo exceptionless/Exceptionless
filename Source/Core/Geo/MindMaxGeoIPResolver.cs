@@ -9,8 +9,8 @@ using MaxMind.GeoIP2.Exceptions;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Geo {
-    public class MindMaxGeoIPResolver : IGeoIPResolver {
-        private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 50 };
+    public class MindMaxGeoIPResolver : IGeoIPResolver, IDisposable {
+        private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 250 };
         private DatabaseReader _database;
         private DateTime? _databaseLastChecked;
         
@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Geo {
                 return location;
             } catch (Exception ex) {
                 if (ex is AddressNotFoundException || ex is GeoIP2Exception) {
-                    Log.Info().Message(ex.Message).Write();
+                    Log.Trace().Message(ex.Message).Write();
                     _cache.Set<Location>(ip, null);
                 } else {
                     Log.Error().Exception(ex).Message("Unable to resolve geo location for ip: " + ip).Write();
@@ -102,6 +102,14 @@ namespace Exceptionless.Core.Geo {
 
             // 192.168.0.0 – 192.168.255.255 (Class C)
             return ip.StartsWith("192.168.");
+        }
+
+        public void Dispose() {
+            if (_database == null)
+                return;
+
+            _database.Dispose();
+            _database = null;
         }
     }
 }
