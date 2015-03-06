@@ -14,11 +14,6 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
         }
 
         public override void EventProcessing(EventContext context) {
-            if (String.IsNullOrWhiteSpace(context.Event.Geo)) {
-                context.Event.Geo = null;
-                return;
-            }
-
             Location location;
             if (Location.TryParse(context.Event.Geo, out location) && location.IsValid()) {
                 context.Event.Geo = location.ToString();
