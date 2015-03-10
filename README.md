@@ -5,7 +5,7 @@ The definition of the word exceptionless is: to be without exception. [Exception
 
 ## Getting Started
 
-_** NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
+_NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
 
 1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
 2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`.
