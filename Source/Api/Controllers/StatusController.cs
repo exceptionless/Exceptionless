@@ -11,6 +11,7 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 
 namespace Exceptionless.Api.Controllers {
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class StatusController : ExceptionlessApiController {
         private readonly SystemHealthChecker _healthChecker;
         private readonly IQueue<EventPost> _eventQueue;
@@ -48,7 +49,6 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route(API_PREFIX + "/queue-stats")]
-        [ApiExplorerSettings(IgnoreApi = true)]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult QueueStats() {
             return Ok(new {
@@ -83,7 +83,6 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route(API_PREFIX + "/metric-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult MetricStats() {
             var metricsClient = _metricsClient as InMemoryMetricsClient;
             if (metricsClient == null)

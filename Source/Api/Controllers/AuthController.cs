@@ -150,12 +150,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
-        /// <summary>
-        /// Login with GitHub
-        /// </summary>
-        /// <param name="value">The external login model.</param>
-        /// <response code="400">An error occurred while logging in.</response>
-        /// <response code="404">Invalid authentication code or external auth is disabled.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("github")]
         [ResponseType(typeof(TokenResult))]
@@ -204,12 +199,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
-        /// <summary>
-        /// Login with Google
-        /// </summary>
-        /// <param name="value">The external login model.</param>
-        /// <response code="400">An error occurred while logging in.</response>
-        /// <response code="404">Invalid authentication code or external auth is disabled.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("google")]
         [ResponseType(typeof(TokenResult))]
@@ -258,12 +248,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
-        /// <summary>
-        /// Login with Facebook
-        /// </summary>
-        /// <param name="value">The external login model.</param>
-        /// <response code="400">An error occurred while logging in.</response>
-        /// <response code="404">Invalid authentication code or external auth is disabled.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("facebook")]
         [ResponseType(typeof(TokenResult))]
@@ -312,12 +297,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
-        /// <summary>
-        /// Login with Windows Live
-        /// </summary>
-        /// <param name="value">The external login model.</param>
-        /// <response code="400">An error occurred while logging in.</response>
-        /// <response code="404">Invalid authentication code or external auth is disabled.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("live")]
         [ResponseType(typeof(TokenResult))]
@@ -366,12 +346,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
-        /// <summary>
-        /// Remove external login
-        /// </summary>
-        /// <param name="providerName">The name of the external login provider.</param>
-        /// <param name="providerUserId">The external login provider id.</param>
-        /// <response code="400">An error occurred while removing the external login.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
@@ -417,12 +392,7 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
-        /// <summary>
-        /// Check for unique email address
-        /// </summary>
-        /// <param name="email">The email address to check.</param>
-        /// <response code="201">The email address is available.</response>
-        /// <response code="204">The email address is not available.</response>
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet]
         [Route("check-email-address/{email:minlength(1)}")]
         public IHttpActionResult IsEmailAddressAvailable(string email) {

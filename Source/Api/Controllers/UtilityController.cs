@@ -5,6 +5,7 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Filter;
 
 namespace Exceptionless.Api.Controllers {
+    [ApiExplorerSettings(IgnoreApi = true)]
     [RoutePrefix(API_PREFIX)]
     public class UtilityController : ExceptionlessApiController {
         /// <summary>
@@ -24,7 +25,6 @@ namespace Exceptionless.Api.Controllers {
 
         [Route("notfound")]
         [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Http404(string link) {
             return Ok(new {
                 Message = "Not found",
@@ -34,7 +34,6 @@ namespace Exceptionless.Api.Controllers {
 
         [Route("boom")]
         [HttpGet, HttpPut, HttpPatch, HttpPost, HttpHead]
-        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Boom() {
             throw new ApplicationException("Boom!");
         }
