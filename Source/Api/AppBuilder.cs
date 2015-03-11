@@ -15,13 +15,12 @@ using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
@@ -151,11 +150,12 @@ namespace Exceptionless.Api {
             app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
 
             Config.EnableSwagger("schema/{apiVersion}", c => {
-                c.SingleApiVersion("v2", "Exceptionless").TermsOfService("https://exceptionless.io/terms/").Contact(cc => cc.Url("https://github.com/exceptionless/Exceptionless"));
+                c.SingleApiVersion("v2", "Exceptionless");
                 c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
                 c.BasicAuth("basic").Description("Basic HTTP Authentication");
                 c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
                 c.IgnoreObsoleteActions();
+                c.DocumentFilter<FilterRoutesDocumentFilter>();
             }).EnableSwaggerUi("docs/{*assetPath}", c => {
                 c.InjectStylesheet(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.css");
                 c.InjectJavaScript(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.js");
