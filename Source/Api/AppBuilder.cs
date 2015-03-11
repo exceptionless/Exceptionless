@@ -30,6 +30,7 @@ using NLog.Fluent;
 using Owin;
 using SimpleInjector;
 using SimpleInjector.Integration.WebApi;
+using Swashbuckle.Application;
 
 namespace Exceptionless.Api {
     public static class AppBuilder {
@@ -72,8 +73,6 @@ namespace Exceptionless.Api {
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
-            Log.Info().Message("Starting api...").Write();
-
             Log.Info().Message("Starting api...").Write();
 
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
@@ -149,6 +148,16 @@ namespace Exceptionless.Api {
             if (Settings.Current.EnableRedis)
                 resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
+
+            Config.EnableSwagger("schema/{apiVersion}", c => {
+                c.SingleApiVersion("v2", "Exceptionless");
+                c.ApiKey("access_token").In("header").Name("access_token");
+                c.BasicAuth("basic");
+                c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
+            }).EnableSwaggerUi("docs/{*assetPath}", c => {
+                c.InjectStylesheet(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.css");
+                c.InjectJavaScript(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.js");
+            });
 
             Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
 

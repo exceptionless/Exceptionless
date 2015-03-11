@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
@@ -26,9 +28,17 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         #region CRUD
-        
+
+        /// <summary>
+        /// Get by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
+        [ResponseType(typeof(List<ViewToken>))]
         public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
@@ -40,8 +50,16 @@ namespace Exceptionless.App.Controllers.API {
             return OkWithResourceLinks(results, options.HasMore, page);
         }
 
+        /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
+        [ResponseType(typeof(List<ViewToken>))]
         public IHttpActionResult GetByProject(string projectId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -57,8 +75,14 @@ namespace Exceptionless.App.Controllers.API {
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
+        /// <summary>
+        /// Get a projects default token
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
+        [ResponseType(typeof(ViewToken))]
         public IHttpActionResult GetDefaultToken(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -74,36 +98,86 @@ namespace Exceptionless.App.Controllers.API {
             return Post(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the token.</param>
+        /// <response code="404">The token could not be found.</response>
         [HttpGet]
         [Route("{id:token}", Name = "GetTokenById")]
+        [ResponseType(typeof(ViewToken))]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// To create a new token, you must specify an organization_id. There are three valid scopes: client, user and admin.
+        /// </remarks>
+        /// <param name="token">The token.</param>
+        /// <response code="400">An error occurred while creating the token.</response>
+        /// <response code="409">The token already exists.</response>
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(NewToken value) {
-            return base.Post(value);
+        [ResponseType(typeof(ViewToken))]
+        public override IHttpActionResult Post(NewToken token) {
+            return base.Post(token);
         }
 
+        /// <summary>
+        /// Create for project
+        /// </summary>
+        /// <remarks>
+        /// This is a helper action that makes it easier to create a token for a specific project.
+        /// You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.
+        /// </remarks>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="token">The token.</param>
+        /// <response code="400">An error occurred while creating the token.</response>
+        /// <response code="409">The token already exists.</response>
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [HttpPost]
-        public IHttpActionResult PostByProject(string projectId, NewToken value) {
-            if (value == null)
-                value = new NewToken();
-            value.ProjectId = projectId;
-            return base.Post(value);
+        [ResponseType(typeof(ViewToken))]
+        public IHttpActionResult PostByProject(string projectId, NewToken token) {
+            if (token == null)
+                token = new NewToken();
+
+            token.ProjectId = projectId;
+            return base.Post(token);
         }
 
+        /// <summary>
+        /// Create for organization
+        /// </summary>
+        /// <remarks>
+        /// This is a helper action that makes it easier to create a token for a specific organization.
+        /// You may also specify a scope when creating a token. There are three valid scopes: client, user and admin.
+        /// </remarks>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="token">The token.</param>
+        /// <response code="400">An error occurred while creating the token.</response>
+        /// <response code="409">The token already exists.</response>
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [HttpPost]
-        public IHttpActionResult PostByOrganization(string organizationId, NewToken value) {
-            if (value == null)
-                value = new NewToken();
-            value.OrganizationId = organizationId;
-            return base.Post(value);
+        [ResponseType(typeof(ViewToken))]
+        public IHttpActionResult PostByOrganization(string organizationId, NewToken token) {
+            if (token == null)
+                token = new NewToken();
+
+            token.OrganizationId = organizationId;
+            return base.Post(token);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of token identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more tokens were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete]
         [Route("{ids:tokens}")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/{ids:tokens}")]

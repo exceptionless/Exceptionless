@@ -26,6 +26,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\</OutputPath>
+    <DocumentationFile>bin\Exceptionless.Api.xml</DocumentationFile>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -34,6 +35,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\</OutputPath>
+    <DocumentationFile>bin\Exceptionless.Api.xml</DocumentationFile>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -152,6 +154,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Stripe.net.2.7.2\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
+    <Reference Include="Swashbuckle.Core">
+      <HintPath>..\..\packages\Swashbuckle.Core.5.0.3\lib\net40\Swashbuckle.Core.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
@@ -177,6 +182,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Content\docs.js" />
+    <EmbeddedResource Include="Content\docs.css" />
     <Content Include="exceptionless.png" />
     <Content Include="favicon.ico" />
     <Content Include="index.html" />
@@ -226,17 +233,21 @@
     <Compile Include="Models\Auth\LoginModel.cs" />
     <Compile Include="Models\Auth\ResetPasswordModel.cs" />
     <Compile Include="Models\Auth\SignupModel.cs" />
+    <Compile Include="Models\Auth\StatusResult.cs" />
     <Compile Include="Models\Event\UpdateEvent.cs" />
     <Compile Include="Models\Organization\Invoice.cs" />
     <Compile Include="Models\Organization\InvoiceGridModel.cs" />
     <Compile Include="Models\Organization\InvoiceLineItem.cs" />
+    <Compile Include="Models\Organization\ChangePlanResult.cs" />
     <Compile Include="Models\Organization\NewOrganization.cs" />
     <Compile Include="Models\Organization\ViewOrganization.cs" />
     <Compile Include="Models\Project\NewProject.cs" />
     <Compile Include="Models\Project\UpdateProject.cs" />
     <Compile Include="Models\Project\ViewProject.cs" />
+    <Compile Include="Models\Status\StatusResult.cs" />
     <Compile Include="Models\Token\NewToken.cs" />
     <Compile Include="Models\Token\ViewToken.cs" />
+    <Compile Include="Models\User\ChangePlanResult.cs" />
     <Compile Include="Models\User\UpdateUser.cs" />
     <Compile Include="Models\User\ViewCurrentUser.cs" />
     <Compile Include="Models\User\ViewUser.cs" />

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -62,8 +63,18 @@ namespace Exceptionless.Api.Controllers {
             AllowedFields.Add("date");
         }
         
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the event.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="404">The event occurrence could not be found.</response>
+        /// <response code="426">Unable to view event occurrence due to plan limits.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetPersistentEventById")]
+        [ResponseType(typeof(PersistentEvent))]
         public IHttpActionResult GetById(string id, string filter = null, string time = null, string offset = null) {
             var model = GetModel(id);
             if (model == null)
@@ -86,13 +97,24 @@ namespace Exceptionless.Api.Controllers {
                 GetEntityResourceLink<Stack>(model.StackId, "parent"));
         }
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         [HttpGet]
         [Route]
+        [ResponseType(typeof(List<PersistentEvent>))]
         public IHttpActionResult Get(string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             return GetInternal(null, filter, sort, time, offset, mode, page, limit);
         }
 
-        public IHttpActionResult GetInternal(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        private IHttpActionResult GetInternal(string systemFilter = null, string userFilter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
             var skip = GetSkip(page + 1, limit);
@@ -133,8 +155,21 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(events, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
+        /// <summary>
+        /// Get by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/events")]
+        [ResponseType(typeof(List<PersistentEvent>))]
         public IHttpActionResult GetByOrganization(string organizationId = null, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(organizationId) || !CanAccessOrganization(organizationId))
                 return NotFound();
@@ -142,9 +177,22 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(String.Concat("organization:", organizationId), filter, sort, time, offset, mode, page, limit);
         }
 
+        /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events")]
-        public IHttpActionResult GetByProjectId(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public IHttpActionResult GetByProject(string projectId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -155,9 +203,22 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(String.Concat("project:", projectId), filter, sort, time, offset, mode, page, limit);
         }
 
+        /// <summary>
+        /// Get by stack
+        /// </summary>
+        /// <param name="stackId">The identifier of the stack.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <param name="mode">If no mode is set then the whole event object will be returned. If the mode is set to summary than a light weight object will be returned.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The stack could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/events")]
-        public IHttpActionResult GetByStackId(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
+        [ResponseType(typeof(List<PersistentEvent>))]
+        public IHttpActionResult GetByStack(string stackId, string filter = null, string sort = null, string time = null, string offset = null, string mode = null, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();
 
@@ -168,8 +229,14 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(String.Concat("stack:", stackId), filter, sort, time, offset, mode, page, limit);
         }
 
+        /// <summary>
+        /// Get by reference id
+        /// </summary>
+        /// <param name="referenceId">An identifier used that references an event instance.</param>
+        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
         [Route("by-ref/{referenceId:minlength(8)}")]
+        [ResponseType(typeof(List<PersistentEvent>))]
         public IHttpActionResult GetByReferenceId(string referenceId) {
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -177,8 +244,15 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(userFilter: String.Concat("reference:", referenceId));
         }
 
+        /// <summary>
+        /// Get by reference id
+        /// </summary>
+        /// <param name="referenceId">An identifier used that references an event instance.</param>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}")]
+        [ResponseType(typeof(List<PersistentEvent>))]
         public IHttpActionResult GetByReferenceId(string referenceId, string projectId) {
             if (String.IsNullOrEmpty(referenceId) || String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -190,12 +264,22 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(String.Concat("project:", projectId), String.Concat("reference:", referenceId));
         }
 
+        /// <summary>
+        /// Set user description
+        /// </summary>
+        /// <remarks>You can also save an end users contact information and a description of the event. This is really useful for error events as a user can specify reproduction steps in the description.</remarks>
+        /// <param name="referenceId">An identifier used that references an event instance.</param>
+        /// <param name="description">The user description.</param>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <response code="400">Description must be specified.</response>
+        /// <response code="404">The event occurrence with the specified reference id could not be found.</response>
         [HttpPost]
         [Route("by-ref/{referenceId:minlength(8)}/user-description")]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/events/by-ref/{referenceId:minlength(8)}/user-description")]
         [OverrideAuthorization]
         //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
+        [ResponseType(typeof(List<PersistentEvent>))]
         public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
             _statsClient.Counter(MetricNames.EventsUserDescriptionSubmitted);
             
@@ -235,6 +319,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
@@ -251,6 +336,47 @@ namespace Exceptionless.Api.Controllers {
             return SetUserDescription(id, userDescription);
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <remarks>
+        /// You can create an event by posting any uncompressed or compressed (gzip or deflate) string or json object. If we know how to handle it 
+        /// we will create a new event. If none of the JSON properties match the event object then we will create a new event and place your JSON 
+        /// object into the events data collection.
+        /// 
+        /// You can also post a multiline string. We automatically split strings by the \n character and create a new log event for every line.
+        /// 
+        /// Simple event:
+        /// <code>
+        ///     { "message": "Exceptionless is amazing!" }
+        /// </code>
+        /// 
+        /// Multiple events from string content:
+        /// <code>
+        ///     Exceptionless is amazing!
+        ///     Exceptionless is really amazing!
+        /// </code>
+        /// 
+        /// Simple error:
+        /// <code>
+        ///     {  
+        ///         "type": "error",
+        ///         "date": "2020-10-16T18:59:09.579Z",
+        ///         "@simple_error": {  
+        ///             "message": "Simple Exception",
+        ///             "type": "System.Exception",
+        ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in c:\\Code\\Exceptionless\\Source\\Clients\\Tests\\ExceptionlessClientTests.cs:line 77"
+        ///         }
+        ///     }
+        /// </code>
+        /// </remarks>
+        /// <param name="data">The raw data.</param>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="version">The api version that should be used</param>
+        /// <param name="userAgent">The user agent that submitted the event.</param>
+        /// <response code="202">Accepted</response>
+        /// <response code="400">No project id specified and no default project was found.</response>
+        /// <response code="404">No project was found.</response>
         [HttpPost]
         [Route("~/api/v{version:int=1}/error")]
         [Route("~/api/v{version:int=1}/events")]
@@ -298,6 +424,14 @@ namespace Exceptionless.Api.Controllers {
             return StatusCode(HttpStatusCode.Accepted);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of event identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more event occurrences were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {

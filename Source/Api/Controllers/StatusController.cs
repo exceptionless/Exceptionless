@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Net;
 using System.Web.Http;
+using System.Web.Http.Description;
+using Exceptionless.Api.Models;
 using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Queues.Models;
@@ -29,21 +31,24 @@ namespace Exceptionless.Api.Controllers {
             _metricsClient = metricsClient;
         }
 
+        /// <summary>
+        /// Get the status of the API
+        /// </summary>
+        /// <response code="503">Contains a message detailing the service outage message.</response>
         [HttpGet]
         [Route(API_PREFIX + "/status")]
+        [ResponseType(typeof(StatusResult))]
         public IHttpActionResult Index() {
             var result = _healthChecker.CheckAll();
             if (!result.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message);
 
-            return Ok(new {
-                Message = "All Systems Check",
-                Version = Settings.Current.Version
-            });
+            return Ok(new StatusResult { Message = "All Systems Check", Version = Settings.Current.Version });
         }
 
         [HttpGet]
         [Route(API_PREFIX + "/queue-stats")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
         public IHttpActionResult QueueStats() {
             return Ok(new {
@@ -78,6 +83,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route(API_PREFIX + "/metric-stats")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult MetricStats() {
             var metricsClient = _metricsClient as InMemoryMetricsClient;
             if (metricsClient == null)

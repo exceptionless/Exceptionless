@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Web.Http;
+using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
@@ -14,6 +15,7 @@ using Foundatio.Storage;
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/admin")]
     [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class AdminController : ExceptionlessApiController {
         private readonly IFileStorage _fileStorage;
         private readonly IMessagePublisher _messagePublisher;

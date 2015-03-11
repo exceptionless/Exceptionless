@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Web.Http;
+using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Repositories;
@@ -24,13 +26,20 @@ namespace Exceptionless.Api.Controllers {
             _stats = stats;
         }
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
         [HttpGet]
         [Route]
+        [ResponseType(typeof(EventStatsResult))]
         public IHttpActionResult Get(string filter = null, string time = null, string offset = null) {
             return GetInternal(null, filter, time, offset);
         }
 
-        public IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
+        private IHttpActionResult GetInternal(string systemFilter, string userFilter = null, string time = null, string offset = null) {
             var timeInfo = GetTimeInfo(time, offset);
 
             var processResult = QueryProcessor.Process(userFilter);
@@ -52,8 +61,17 @@ namespace Exceptionless.Api.Controllers {
             return Ok(result);
         }
 
+        /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/stats")]
+        [ResponseType(typeof(EventStatsResult))]
         public IHttpActionResult GetByProject(string projectId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -65,8 +83,17 @@ namespace Exceptionless.Api.Controllers {
             return GetInternal(String.Concat("project:", projectId), filter, time, offset);
         }
 
+        /// <summary>
+        /// Get by stack
+        /// </summary>
+        /// <param name="stackId">The identifier of the stack.</param>
+        /// <param name="filter">A filter that controls what data is returned from the server.</param>
+        /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>
+        /// <param name="offset">The time offset in minutes that controls what data is returned based on the time filter. This is used for time zone support.</param>
+        /// <response code="404">The stack could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/stacks/{stackId:objectid}/stats")]
+        [ResponseType(typeof(EventStatsResult))]
         public IHttpActionResult GetByStack(string stackId, string filter = null, string time = null, string offset = null) {
             if (String.IsNullOrEmpty(stackId))
                 return NotFound();

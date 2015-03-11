@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -34,8 +35,14 @@ namespace Exceptionless.Api.Controllers {
 
         #region CRUD
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         [HttpGet]
         [Route]
+        [ResponseType(typeof(List<ViewProject>))]
         public IHttpActionResult Get(int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
@@ -44,8 +51,16 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore, page);
         }
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="organization">The identifier of the organization.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organization:objectid}/projects")]
+        [ResponseType(typeof(List<ViewProject>))]
         public IHttpActionResult GetByOrganization(string organization, int page = 1, int limit = 10) {
             if (!String.IsNullOrEmpty(organization) && !CanAccessOrganization(organization))
                 return NotFound();
@@ -63,8 +78,14 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetProjectById")]
+        [ResponseType(typeof(ViewProject))]
         public override IHttpActionResult GetById(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -74,12 +95,27 @@ namespace Exceptionless.Api.Controllers {
             return Ok(PopulateProjectStats(viewProject));
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="project">The project.</param>
+        /// <returns></returns>
+        /// <response code="400">An error occurred while creating the project.</response>
+        /// <response code="409">The project already exists.</response>
         [HttpPost]
         [Route]
-        public override IHttpActionResult Post(NewProject value) {
-            return base.Post(value);
+        [ResponseType(typeof(ViewProject))]
+        public override IHttpActionResult Post(NewProject project) {
+            return base.Post(project);
         }
 
+        /// <summary>
+        /// Update
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="changes">The changes</param>
+        /// <response code="400">An error occurred while updating the project.</response>
+        /// <response code="404">The project could not be found.</response>
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
@@ -87,6 +123,14 @@ namespace Exceptionless.Api.Controllers {
             return base.Patch(id, changes);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of project identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more projects were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more projects.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
@@ -95,12 +139,18 @@ namespace Exceptionless.Api.Controllers {
 
         #endregion
 
+        /// <summary>
+        /// Get configuration settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("config")]
         [Route("{id:objectid}/config")]
         [Route("~/api/v1/project/config")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
+        [ResponseType(typeof(ClientConfiguration))]
         public IHttpActionResult GetConfig(string id = null) {
             if (String.IsNullOrEmpty(id))
                 id = User.GetProjectId();
@@ -112,6 +162,14 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.Configuration);
         }
 
+        /// <summary>
+        /// Add configuration value
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the configuration object.</param>
+        /// <param name="value">The configuration value.</param>
+        /// <response code="400">Invalid configuration value.</response>
+        /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult SetConfig(string id, string key, [NakedBody] string value) {
@@ -129,6 +187,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Remove configuration value
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the configuration object.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/config/{key:minlength(1)}")]
         public IHttpActionResult DeleteConfig(string id, string key) {
@@ -144,6 +208,11 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Reset project data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}/reset-data")]
         public async Task<IHttpActionResult> ResetDataAsync(string id) {
@@ -160,6 +229,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("{id:objectid}/notifications")]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult GetNotificationSettings(string id) {
             var project = GetModel(id);
             if (project == null)
@@ -168,8 +238,15 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings);
         }
 
+        /// <summary>
+        /// Get user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
+        [ResponseType(typeof(NotificationSettings))]
         public IHttpActionResult GetNotificationSettings(string id, string userId) {
             var project = GetModel(id);
             if (project == null)
@@ -182,6 +259,13 @@ namespace Exceptionless.Api.Controllers {
             return Ok(project.NotificationSettings.TryGetValue(userId, out settings) ? settings : new NotificationSettings());
         }
 
+        /// <summary>
+        /// Set user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <param name="settings">The notification settings.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
@@ -203,6 +287,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Remove user notification settings
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="userId">The identifier of the user.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("~/" + API_PREFIX + "/users/{userId:objectid}/projects/{id:objectid}/notifications")]
         public IHttpActionResult DeleteNotificationSettings(string id, string userId) {
@@ -221,6 +311,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Promote tab
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="name">The tab name.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPut]
         [HttpPost]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
@@ -237,6 +333,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Demote tab
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="name">The tab name.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/promotedtabs/{name:minlength(1)}")]
         public IHttpActionResult DemoteTab(string id, string name) {
@@ -252,6 +354,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Check for unique name
+        /// </summary>
+        /// <param name="name">The project name to check.</param>
+        /// <response code="201">The project name is available.</response>
+        /// <response code="204">The project name is not available.</response>
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
@@ -269,6 +377,13 @@ namespace Exceptionless.Api.Controllers {
             return !_repository.GetByOrganizationIds(organizationIds).Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
+        /// <summary>
+        /// Add custom data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <param name="value">Any string value.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult PostData(string id, string key, string value) {
@@ -282,6 +397,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Remove custom data
+        /// </summary>
+        /// <param name="id">The identifier of the project.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult DeleteData(string id, string key) {

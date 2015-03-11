@@ -5,6 +5,7 @@ using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -51,8 +52,14 @@ namespace Exceptionless.Api.Controllers {
 
         #region CRUD
 
+        /// <summary>
+        /// Get all
+        /// </summary>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
         [HttpGet]
         [Route]
+        [ResponseType(typeof(List<ViewOrganization>))]
         public IHttpActionResult Get(int page = 1, int limit = 10) {
             page = GetPage(page);
             limit = GetLimit(limit);
@@ -65,6 +72,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/admin/organizations")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult GetForAdmins(string criteria = null, bool? paid = null, bool? suspended = null, int page = 1, int limit = 10, OrganizationSortBy sort = OrganizationSortBy.Newest) {
             page = GetPage(page);
             limit = GetLimit(limit);
@@ -77,12 +85,19 @@ namespace Exceptionless.Api.Controllers {
         [Route("~/" + API_PREFIX + "/admin/organizations/stats")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult PlanStats() {
             return Ok(_repository.GetBillingPlanStats());
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetOrganizationById")]
+        [ResponseType(typeof(ViewOrganization))]
         public override IHttpActionResult GetById(string id) {
             var organization = GetModel(id);
             if (organization == null)
@@ -92,12 +107,27 @@ namespace Exceptionless.Api.Controllers {
             return Ok(PopulateOrganizationStats(viewOrganization));
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="organization">The organization.</param>
+        /// <returns></returns>
+        /// <response code="400">An error occurred while creating the organization.</response>
+        /// <response code="409">The organization already exists.</response>
         [HttpPost]
         [Route]
-        public override IHttpActionResult Post(NewOrganization value) {
-            return base.Post(value);
+        [ResponseType(typeof(ViewOrganization))]
+        public override IHttpActionResult Post(NewOrganization organization) {
+            return base.Post(organization);
         }
 
+        /// <summary>
+        /// Update
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="changes">The changes</param>
+        /// <response code="400">An error occurred while updating the organization.</response>
+        /// <response code="404">The organization could not be found.</response>
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
@@ -105,6 +135,14 @@ namespace Exceptionless.Api.Controllers {
             return base.Patch(id, changes);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of organization identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more organizations were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more organizations.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
@@ -113,8 +151,14 @@ namespace Exceptionless.Api.Controllers {
 
         #endregion
 
+        /// <summary>
+        /// Get invoice
+        /// </summary>
+        /// <param name="id">The identifier of the invoice.</param>
+        /// <response code="404">The invoice was not found.</response>
         [HttpGet]
         [Route("invoice/{id:minlength(10)}")]
+        [ResponseType(typeof(Invoice))]
         public IHttpActionResult GetInvoice(string id) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
@@ -173,8 +217,17 @@ namespace Exceptionless.Api.Controllers {
             return Ok(invoice);
         }
 
+        /// <summary>
+        /// Get invoices
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="before">A cursor for use in pagination. before is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, starting with obj_bar, your subsequent call can include before=obj_bar in order to fetch the previous page of the list.</param>
+        /// <param name="after">A cursor for use in pagination. after is an object ID that defines your place in the list. For instance, if you make a list request and receive 100 objects, ending with obj_foo, your subsequent call can include after=obj_foo in order to fetch the next page of the list.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/invoices")]
+        [ResponseType(typeof(List<Invoice>))]
         public IHttpActionResult GetInvoices(string id, string before = null, string after = null, int limit = 12) {
             if (!Settings.Current.EnableBilling)
                 return NotFound();
@@ -198,8 +251,17 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
 
+        /// <summary>
+        /// Get plans
+        /// </summary>
+        /// <remarks>
+        /// Gets available plans for a specific organization.
+        /// </remarks>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <response code="404">The organization was not found.</response>
         [HttpGet]
         [Route("{id:objectid}/plans")]
+        [ResponseType(typeof(List<BillingPlan>))]
         public IHttpActionResult GetPlans(string id) {
             var organization = GetModel(id);
             if (organization == null)
@@ -230,30 +292,43 @@ namespace Exceptionless.Api.Controllers {
             return Ok(plans);
         }
 
+        /// <summary>
+        /// Change plan
+        /// </summary>
+        /// <remarks>
+        /// Upgrades or downgrades the organizations plan.
+        /// </remarks>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="planId">The identifier of the plan.</param>
+        /// <param name="stripeToken">The token returned from the stripe service.</param>
+        /// <param name="last4">The last four numbers of the card.</param>
+        /// <param name="couponId">The coupon id.</param>
+        /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/change-plan")]
+        [ResponseType(typeof(ChangePlanResult))]
         public IHttpActionResult ChangePlan(string id, string planId, string stripeToken = null, string last4 = null, string couponId = null) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
-                return BadRequest("Invalid organization id.");
+                return NotFound();
 
             if (!Settings.Current.EnableBilling)
-                return Ok(new { Success = false, Message = "Plans cannot be changed while billing is disabled." });
+                return Ok(ChangePlanResult.FailWithMessage("Plans cannot be changed while billing is disabled."));
 
             Organization organization = _repository.GetById(id);
             if (organization == null)
-                return Ok(new { Success = false, Message = "Invalid OrganizationId." });
+                return Ok(ChangePlanResult.FailWithMessage("Invalid OrganizationId."));
 
             BillingPlan plan = BillingManager.GetBillingPlan(planId);
             if (plan == null)
-                return Ok(new { Success = false, Message = "Invalid PlanId." });
+                return Ok(ChangePlanResult.FailWithMessage("Invalid PlanId."));
 
             if (String.Equals(organization.PlanId, plan.Id) && String.Equals(BillingManager.FreePlan.Id, plan.Id))
-                return Ok(new { Success = true, Message = "Your plan was not changed as you were already on the free plan." });
+                return Ok(ChangePlanResult.SuccessWithMessage("Your plan was not changed as you were already on the free plan."));
 
             // Only see if they can downgrade a plan if the plans are different.
             string message;
             if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, ExceptionlessUser, out message))
-                return Ok(new { Success = false, Message = message });
+                return Ok(ChangePlanResult.FailWithMessage(message));
 
             var customerService = new StripeCustomerService();
             var subscriptionService = new StripeSubscriptionService();
@@ -271,7 +346,7 @@ namespace Exceptionless.Api.Controllers {
                     organization.RemoveSuspension();
                 } else if (String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     if (String.IsNullOrEmpty(stripeToken))
-                        return Ok(new { Success = false, Message = "Billing information was not set." });
+                        return Ok(ChangePlanResult.FailWithMessage("Billing information was not set."));
 
                     organization.SubscribeDate = DateTime.Now;
 
@@ -322,27 +397,32 @@ namespace Exceptionless.Api.Controllers {
 
                 BillingManager.ApplyBillingPlan(organization, plan, ExceptionlessUser);
                 _repository.Save(organization);
-
-                _messagePublisher.Publish(new PlanChanged {
-                    OrganizationId = organization.Id
-                });
+                _messagePublisher.Publish(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
                 Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Write();
-                return Ok(new { Success = false, Message = e.Message });
+                return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
-            return Ok(new { Success = true });
+            return Ok(new ChangePlanResult { Success = true });
         }
 
+        /// <summary>
+        /// Add user
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="email">The email address of the user you wish to add to your organization.</param>
+        /// <response code="404">The organization was not found.</response>
+        /// <response code="426">Please upgrade your plan to add an additional user.</response>
         [HttpPost]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
+        [ResponseType(typeof(User))]
         public async Task<IHttpActionResult> AddUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
-                return BadRequest();
+                return NotFound();
 
             Organization organization = _repository.GetById(id);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             if (!_billingManager.CanAddUser(organization))
                 return PlanLimitReached("Please upgrade your plan to add an additional user.");
@@ -379,15 +459,22 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new User { EmailAddress = email });
         }
 
+        /// <summary>
+        /// Remove user
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="email">The email address of the user you wish to remove from your organization.</param>
+        /// <response code="400">The error occurred while removing the user from your organization</response>
+        /// <response code="404">The organization was not found.</response>
         [HttpDelete]
         [Route("{id:objectid}/users/{email:minlength(1)}")]
         public IHttpActionResult RemoveUser(string id, string email) {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id))
-                return BadRequest();
+                return NotFound();
 
             Organization organization = _repository.GetById(id);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             User user = _userRepository.GetByEmailAddress(email);
             if (user == null || !user.OrganizationIds.Contains(id)) {
@@ -428,10 +515,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/suspend")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Suspend(string id, SuspensionCode code, string notes = null) {
             var organization = GetModel(id, false);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             organization.IsSuspended = true;
             organization.SuspensionDate = DateTime.Now;
@@ -447,10 +535,11 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/suspend")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Unsuspend(string id) {
             var organization = GetModel(id, false);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             organization.IsSuspended = false;
             organization.SuspensionDate = null;
@@ -462,12 +551,19 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Add custom data
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <param name="value">Any string value.</param>
+        /// <response code="404">The organization was not found.</response>
         [HttpPost]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult PostData(string id, string key, string value) {
             var organization = GetModel(id, false);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             organization.Data[key] = value;
             _repository.Save(organization);
@@ -475,12 +571,18 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Remove custom data
+        /// </summary>
+        /// <param name="id">The identifier of the organization.</param>
+        /// <param name="key">The key name of the data object.</param>
+        /// <response code="404">The organization was not found.</response>
         [HttpDelete]
         [Route("{id:objectid}/data/{key:minlength(1)}")]
         public IHttpActionResult DeleteData(string id, string key) {
             var organization = GetModel(id, false);
             if (organization == null)
-                return BadRequest();
+                return NotFound();
 
             if (organization.Data.Remove(key))
                 _repository.Save(organization);
@@ -488,6 +590,12 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Check for unique name
+        /// </summary>
+        /// <param name="name">The organization name to check.</param>
+        /// <response code="201">The organization name is available.</response>
+        /// <response code="204">The organization name is not available.</response>
         [HttpGet]
         [Route("check-name/{name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {

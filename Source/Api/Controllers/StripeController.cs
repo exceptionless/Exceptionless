@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using Exceptionless.Core.Billing;
 using Exceptionless.Api.Utility;
 using NLog.Fluent;
@@ -9,6 +10,7 @@ using Stripe;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/stripe")]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class StripeController : ExceptionlessApiController {
         private readonly StripeEventHandler _stripeEventHandler;
 

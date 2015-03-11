@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Web.Http.Description;
 using Exceptionless.Api.Controllers;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -27,8 +29,16 @@ namespace Exceptionless.App.Controllers.API {
 
         #region CRUD
         
+        /// <summary>
+        /// Get by project
+        /// </summary>
+        /// <param name="projectId">The identifier of the project.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The project could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/webhooks")]
+        [ResponseType(typeof(List<WebHook>))]
         public IHttpActionResult GetByProject(string projectId, int page = 1, int limit = 10) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
@@ -44,18 +54,39 @@ namespace Exceptionless.App.Controllers.API {
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the web hook.</param>
+        /// <response code="404">The web hook could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetWebHookById")]
+        [ResponseType(typeof(WebHook))]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="webhook">The web hook.</param>
+        /// <returns></returns>
+        /// <response code="400">An error occurred while creating the web hook.</response>
+        /// <response code="409">The web hook already exists.</response>
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(NewWebHook value) {
-            return base.Post(value);
+        public override IHttpActionResult Post(NewWebHook webhook) {
+            return base.Post(webhook);
         }
 
+        /// <summary>
+        /// Remove
+        /// </summary>
+        /// <param name="ids">A comma delimited list of web hook identifiers.</param>
+        /// <response code="204">No Content.</response>
+        /// <response code="400">One or more validation errors occurred.</response>
+        /// <response code="404">One or more web hooks were not found.</response>
+        /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
         public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
@@ -67,14 +98,13 @@ namespace Exceptionless.App.Controllers.API {
         /// <summary>
         /// This controller action is called by zapier to create a hook subscription.
         /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
         [HttpPost]
         [Route("subscribe")]
         [Route("~/api/v{version:int=2}/webhooks/subscribe")]
         [Route("~/api/v1/projecthook/subscribe")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Subscribe(JObject data, int version = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
@@ -97,6 +127,7 @@ namespace Exceptionless.App.Controllers.API {
         [AllowAnonymous]
         [Route("unsubscribe")]
         [Route("~/api/v1/projecthook/unsubscribe")]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Unsubscribe(JObject data) {
             var targetUrl = data.GetValue("target_url").Value<string>();
 
@@ -117,6 +148,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/api/v1/projecthook/test")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult Test() {
             return Ok(new[] {
                 new { id = 1, Message = "Test message 1." },

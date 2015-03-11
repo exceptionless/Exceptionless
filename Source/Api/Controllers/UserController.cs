@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Web.Http;
+using System.Web.Http.Description;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
@@ -27,8 +28,13 @@ namespace Exceptionless.Api.Controllers {
             _mailer = mailer;
         }
 
+        /// <summary>
+        /// Get current user
+        /// </summary>
+        /// <response code="404">The current user could not be found.</response>
         [HttpGet]
         [Route("me")]
+        [ResponseType(typeof(ViewCurrentUser))]
         public IHttpActionResult GetCurrentUser() {
             var currentUser = GetModel(ExceptionlessUser.Id);
             if (currentUser == null)
@@ -37,15 +43,29 @@ namespace Exceptionless.Api.Controllers {
             return Ok(new ViewCurrentUser(currentUser));
         }
 
+        /// <summary>
+        /// Get by id
+        /// </summary>
+        /// <param name="id">The identifier of the user.</param>
+        /// <response code="404">The user could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}", Name = "GetUserById")]
+        [ResponseType(typeof(ViewUser))]
         public override IHttpActionResult GetById(string id) {
             return base.GetById(id);
         }
 
+        /// <summary>
+        /// Get by organization
+        /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
+        /// <param name="page">The page parameter is used for pagination. This value must be greater than 0.</param>
+        /// <param name="limit">A limit on the number of objects to be returned. Limit can range between 1 and 100 items.</param>
+        /// <response code="404">The organization could not be found.</response>
         [HttpGet]
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/users")]
-        public IHttpActionResult GetByOrganizationId(string organizationId, int page = 1, int limit = 10) {
+        [ResponseType(typeof(List<ViewUser>))]
+        public IHttpActionResult GetByOrganization(string organizationId, int page = 1, int limit = 10) {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
@@ -59,6 +79,13 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit, page);
         }
 
+        /// <summary>
+        /// Update
+        /// </summary>
+        /// <param name="id">The identifier of the user.</param>
+        /// <param name="changes">The changes</param>
+        /// <response code="400">An error occurred while updating the user.</response>
+        /// <response code="404">The user could not be found.</response>
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
@@ -66,8 +93,16 @@ namespace Exceptionless.Api.Controllers {
             return base.Patch(id, changes);
         }
 
+        /// <summary>
+        /// Update email address
+        /// </summary>
+        /// <param name="id">The identifier of the user.</param>
+        /// <param name="email">The new email address.</param>
+        /// <response code="400">An error occurred while updating the users email address.</response>
+        /// <response code="404">The user could not be found.</response>
         [HttpPost]
         [Route("{id:objectid}/email-address/{email:minlength(1)}")]
+        [ResponseType(typeof(UpdateEmailAddressResult))]
         public IHttpActionResult UpdateEmailAddress(string id, string email) {
             var user = GetModel(id, false);
             if (user == null)
@@ -78,7 +113,7 @@ namespace Exceptionless.Api.Controllers {
                 return BadRequest("A user with this email address already exists.");
 
             if (String.Equals(ExceptionlessUser.EmailAddress, email, StringComparison.OrdinalIgnoreCase))
-                return Ok(new { IsVerified = user.IsEmailAddressVerified });
+                return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
 
             user.EmailAddress = email;
             user.IsEmailAddressVerified = user.OAuthAccounts.Count(oa => String.Equals(oa.EmailAddress(), email, StringComparison.OrdinalIgnoreCase)) > 0;
@@ -98,9 +133,15 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified)
                 ResendVerificationEmail(id);
 
-            return Ok(new { IsVerified = user.IsEmailAddressVerified });
+            return Ok(new UpdateEmailAddressResult { IsVerified = user.IsEmailAddressVerified });
         }
 
+        /// <summary>
+        /// Verify email address
+        /// </summary>
+        /// <param name="token">The token identifier.</param>
+        /// <response code="400">Verify Email Address Token has expired.</response>
+        /// <response code="404">The user could not be found.</response>
         [HttpGet]
         [Route("verify-email-address/{token:token}")]
         public IHttpActionResult Verify(string token) {
@@ -118,6 +159,11 @@ namespace Exceptionless.Api.Controllers {
             return Ok();
         }
 
+        /// <summary>
+        /// Resend verification email
+        /// </summary>
+        /// <param name="id">The identifier of the user.</param>
+        /// <response code="404">The user could not be found.</response>
         [HttpGet]
         [Route("{id:objectid}/resend-verification-email")]
         public IHttpActionResult ResendVerificationEmail(string id) {
@@ -138,6 +184,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/admin-role")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult AddAdminRole(string id) {
             var user = GetModel(id, false);
             if (user == null)
@@ -155,6 +202,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("{id:objectid}/admin-role")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.GlobalAdmin)]
+        [ApiExplorerSettings(IgnoreApi = true)]
         public IHttpActionResult DeleteAdminRole(string id) {
             var user = GetModel(id, false);
             if (user == null)
