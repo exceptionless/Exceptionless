@@ -184,6 +184,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Content\docs.js" />
     <EmbeddedResource Include="Content\docs.css" />
+    <EmbeddedResource Include="Content\logo.png" />
     <Content Include="exceptionless.png" />
     <Content Include="favicon.ico" />
     <Content Include="index.html" />

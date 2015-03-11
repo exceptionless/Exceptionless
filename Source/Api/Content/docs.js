@@ -5,3 +5,8 @@
         window.authorizations.add('key', new ApiKeyAuthorization('Authorization', key, 'header'));
     }
 });
+
+$(document).prop('title', 'Exceptionless API');
+$('#logo').text(' ');
+$('#logo').attr("href", "http://www.exceptionless.io/");
+$('#logo').show();
