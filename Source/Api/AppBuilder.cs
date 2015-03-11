@@ -15,6 +15,7 @@ using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Helpers;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Repositories;
@@ -150,10 +151,11 @@ namespace Exceptionless.Api {
             app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
 
             Config.EnableSwagger("schema/{apiVersion}", c => {
-                c.SingleApiVersion("v2", "Exceptionless");
-                c.ApiKey("access_token").In("header").Name("access_token");
-                c.BasicAuth("basic");
+                c.SingleApiVersion("v2", "Exceptionless").TermsOfService("https://exceptionless.io/terms/").Contact(cc => cc.Url("https://github.com/exceptionless/Exceptionless"));
+                c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
+                c.BasicAuth("basic").Description("Basic HTTP Authentication");
                 c.IncludeXmlComments(String.Format(@"{0}\bin\Exceptionless.Api.xml", AppDomain.CurrentDomain.BaseDirectory));
+                c.IgnoreObsoleteActions();
             }).EnableSwaggerUi("docs/{*assetPath}", c => {
                 c.InjectStylesheet(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.css");
                 c.InjectJavaScript(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.js");

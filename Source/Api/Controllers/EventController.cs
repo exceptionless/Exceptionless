@@ -379,12 +379,12 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">No project was found.</response>
         [HttpPost]
         [Route("~/api/v{version:int=1}/error")]
-        [Route("~/api/v{version:int=1}/events")]
-        [Route("~/api/v{version:int=1}/projects/{projectId:objectid}/events")]
+        [Route("~/api/v{version:int=2}/events")]
+        [Route("~/api/v{version:int=2}/projects/{projectId:objectid}/events")]
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
-        public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 1, [UserAgent]string userAgent = null) {
+        public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
             _statsClient.Counter(MetricNames.PostsSubmitted);
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();

@@ -154,7 +154,7 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("github")]
         [ResponseType(typeof(TokenResult))]
-        public IHttpActionResult Github(JObject value) {
+        public IHttpActionResult GitHub(JObject value) {
             var authInfo = value.ToObject<ExternalAuthInfo>();
             if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
                 return NotFound();
@@ -434,10 +434,10 @@ namespace Exceptionless.Api.Controllers {
         }
 
         /// <summary>
-        /// Forgot password
+        /// Reset password
         /// </summary>
         /// <param name="model">The reset password model.</param>
-        /// <response code="400">Invalid reset password model.</response
+        /// <response code="400">Invalid reset password model.</response>
         [HttpPost]
         [Route("reset-password")]
         public IHttpActionResult ResetPassword(ResetPasswordModel model) {
