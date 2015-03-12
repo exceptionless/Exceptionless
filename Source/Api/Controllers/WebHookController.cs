@@ -10,7 +10,6 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Api.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Admin;
 using Newtonsoft.Json.Linq;

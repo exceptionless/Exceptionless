@@ -43,6 +43,17 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Login
         /// </summary>
+        /// <remarks>
+        /// Log in with your email address and password to generate a token scoped with your users roles.
+        /// 
+        /// <code>{ "email": "noreply@exceptionless.io", "password": "exceptionless" }</code>
+        /// 
+        /// This token can then be used to access the api. You can use this token in the header (bearer auth)
+        /// or append it onto the query string: ?access_token=MY_TOKEN
+        /// 
+        /// Please note that you can also use this token on the documentation site by placing it in the 
+        /// headers api_key input box.
+        /// </remarks>
         /// <param name="model">The login model.</param>
         /// <response code="400">The login model is invalid.</response>
         /// <response code="401">Login failed.</response>
