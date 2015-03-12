@@ -1,13 +1,13 @@
 ﻿.swagger-section #header {
-  background-color: #47525d;
+  background-color: #333333;
 }
 
 .swagger-section #header form#api_selector .input a#explore {
-  background-color: #333333;
+  background-color: #696969;
 }
 
 .swagger-section #header form#api_selector .input a#explore:hover {
-  background-color: #333333;
+  background-color: #797979;
 }
 
 .swagger-section #header a#logo {
