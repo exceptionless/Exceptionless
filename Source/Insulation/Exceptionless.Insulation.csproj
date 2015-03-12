@@ -30,41 +30,41 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless, Version=2.0.1247.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.2.0.1243-preview\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.2.0.1247\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.Console, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.Console, Version=2.0.1247.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.Console.2.0.1243-preview\lib\net45\Exceptionless.Console.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1247\lib\net45\Exceptionless.Console.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.Extras, Version=2.0.1247.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1243-preview\lib\net45\Exceptionless.Extras.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.Console.2.0.1247\lib\net45\Exceptionless.Extras.dll</HintPath>
     </Reference>
     <Reference Include="Exceptionless.NLog, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1243-preview\lib\net45\Exceptionless.NLog.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.NLog.2.0.1247\lib\net45\Exceptionless.NLog.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=2.0.1243.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.WebApi, Version=2.0.1247.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1243-preview\lib\net45\Exceptionless.WebApi.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.WebApi.2.0.1247\lib\net45\Exceptionless.WebApi.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.140\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.142\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.AzureStorage, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.140\lib\net45\Foundatio.AzureStorage.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.AzureStorage.1.0.142\lib\net45\Foundatio.AzureStorage.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.Redis.1.0.140\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.Redis.1.0.142\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.StatsD, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.StatsD.1.0.140\lib\net45\Foundatio.StatsD.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.StatsD.1.0.142\lib\net45\Foundatio.StatsD.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Data.Edm, Version=5.6.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -105,14 +105,17 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector">
-      <HintPath>..\..\packages\SimpleInjector.2.7.2\lib\net45\SimpleInjector.dll</HintPath>
+    <Reference Include="SimpleInjector, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Diagnostics">
-      <HintPath>..\..\packages\SimpleInjector.2.7.2\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
+    <Reference Include="SimpleInjector.Diagnostics, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.2.7.3\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
     </Reference>
-    <Reference Include="SimpleInjector.Packaging">
-      <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.2\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
+    <Reference Include="SimpleInjector.Packaging, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.3\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
     <Reference Include="StackExchange.Redis">
       <HintPath>..\..\packages\StackExchange.Redis.1.0.394\lib\net45\StackExchange.Redis.dll</HintPath>
