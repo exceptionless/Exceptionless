@@ -23,7 +23,7 @@ namespace Exceptionless.Insulation {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             if (Settings.Current.EnableMetricsReporting)
-                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort));
+                container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
