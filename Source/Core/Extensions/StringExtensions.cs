@@ -96,30 +96,29 @@ namespace Exceptionless.Core.Extensions {
             return Convert.ToBase64String(result);
         }
 
-        public static string ToDelimitedString<T>(this IEnumerable<T> values, string delimiter) {
+        public static string ToDelimitedString(this IEnumerable<string> values, string delimiter = ",") {
+            if (String.IsNullOrEmpty(delimiter))
+                delimiter = ",";
+            
             var sb = new StringBuilder();
             foreach (var i in values) {
                 if (sb.Length > 0)
                     sb.Append(delimiter);
-                sb.Append(i.ToString());
-            }
 
-            return sb.ToString();
-        }
-
-        public static string ToDelimitedString(this IEnumerable<string> values) {
-            return ToDelimitedString(values, ",");
-        }
-
-        public static string ToDelimitedString(this IEnumerable<string> values, string delimiter) {
-            var sb = new StringBuilder();
-            foreach (var i in values) {
-                if (sb.Length > 0)
-                    sb.Append(delimiter);
                 sb.Append(i);
             }
 
             return sb.ToString();
+        }
+
+        public static string[] FromDelimitedString(this string value, string delimiter = ",") {
+            if (String.IsNullOrEmpty(value))
+                return null;
+
+            if (String.IsNullOrEmpty(delimiter))
+                delimiter = ",";
+
+            return value.Split(new[] { delimiter }, StringSplitOptions.RemoveEmptyEntries).ToArray();
         }
 
         public static string ToLowerUnderscoredWords(this string value) {

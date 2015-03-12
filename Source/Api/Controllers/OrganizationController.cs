@@ -145,8 +145,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more organizations.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
-            return base.Delete(ids);
+        public Task<IHttpActionResult> Delete(string ids) {
+            return base.Delete(ids.FromDelimitedString());
         }
 
         #endregion

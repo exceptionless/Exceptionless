@@ -264,7 +264,6 @@
     <Compile Include="Serialization\ExceptionlessJsonMediaTypeFormatter.cs" />
     <Compile Include="Serialization\SignalRContractResolver.cs" />
     <Compile Include="Startup.cs" />
-    <Compile Include="Utility\CommaDelimitedArrayParameterBinding.cs" />
     <Compile Include="Utility\ConfigurationResponseFilterAttribute.cs" />
     <Compile Include="Utility\Delta\Delta.cs" />
     <Compile Include="Utility\Delta\NonValidatingParameterBindingAttribute.cs" />

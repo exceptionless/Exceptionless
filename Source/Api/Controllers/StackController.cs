@@ -80,8 +80,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-fixed")]
-        public IHttpActionResult MarkFixed([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkFixed(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -124,7 +124,7 @@ namespace Exceptionless.Api.Controllers {
             if (id.StartsWith("http"))
                 id = id.Substring(id.LastIndexOf('/') + 1);
 
-            return MarkFixed(new [] { id });
+            return MarkFixed(id);
         }
 
         /// <summary>
@@ -213,8 +213,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkCritical([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkCritical(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -237,8 +237,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-critical")]
-        public IHttpActionResult MarkNotCritical([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkNotCritical(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -260,8 +260,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/notifications")]
-        public IHttpActionResult EnableNotifications([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult EnableNotifications(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -284,8 +284,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/notifications")]
-        public IHttpActionResult DisableNotifications([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult DisableNotifications(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -308,8 +308,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-fixed")]
-        public IHttpActionResult MarkNotFixed([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkNotFixed(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -333,8 +333,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpPost]
         [Route("{ids:objectids}/mark-hidden")]
-        public IHttpActionResult MarkHidden([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkHidden(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -357,8 +357,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="404">One or more stacks could not be found.</response>
         [HttpDelete]
         [Route("{ids:objectids}/mark-hidden")]
-        public IHttpActionResult MarkNotHidden([CommaDelimitedArray]string[] ids) {
-            var stacks = GetModels(ids, false);
+        public IHttpActionResult MarkNotHidden(string ids) {
+            var stacks = GetModels(ids.FromDelimitedString(), false);
             if (!stacks.Any())
                 return NotFound();
 
@@ -420,8 +420,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more stacks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public override Task<IHttpActionResult> Delete([CommaDelimitedArray]string[] ids) {
-            return base.Delete(ids);
+        public Task<IHttpActionResult> Delete(string ids) {
+            return base.Delete(ids.FromDelimitedString());
         }
 
         protected override async Task DeleteModels(ICollection<Stack> values) {
