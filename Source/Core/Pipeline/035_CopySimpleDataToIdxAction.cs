@@ -6,6 +6,8 @@ using Exceptionless.Core.Plugins.EventProcessor;
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
+        protected override bool ContinueOnError { get { return true; } }
+
         public override void Process(EventContext ctx) {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
@@ -18,11 +20,11 @@ namespace Exceptionless.Core.Pipeline {
 
                 Type dataType = ctx.Event.Data[key].GetType();
                 if (dataType == typeof(bool)) {
-                    ctx.Event.Idx.Add(field + "-b", ctx.Event.Data[key]);
+                    ctx.Event.Idx[field + "-b"] = ctx.Event.Data[key];
                 } else if (dataType.IsNumeric()) {
-                    ctx.Event.Idx.Add(field + "-n", ctx.Event.Data[key]);
+                    ctx.Event.Idx[field + "-n"] = ctx.Event.Data[key];
                 } else if (dataType == typeof(DateTime) || dataType == typeof(DateTimeOffset)) {
-                    ctx.Event.Idx.Add(field + "-d", ctx.Event.Data[key]);
+                    ctx.Event.Idx[field + "-d"] = ctx.Event.Data[key];
                 } else if (dataType == typeof(string)) {
                     var input = (string)ctx.Event.Data[key];
                     if (input.Length >= 1000)
@@ -39,15 +41,15 @@ namespace Exceptionless.Core.Pipeline {
                     Decimal decValue;
                     Double dblValue;
                     if (Boolean.TryParse(input, out value))
-                        ctx.Event.Idx.Add(field + "-b", value);
+                        ctx.Event.Idx[field + "-b"] = value;
                     else if (DateTimeOffset.TryParse(input, out dtoValue))
-                        ctx.Event.Idx.Add(field + "-d", dtoValue);
+                        ctx.Event.Idx[field + "-d"] = dtoValue;
                     else if (Decimal.TryParse(input, out decValue))
-                        ctx.Event.Idx.Add(field + "-n", decValue);
+                        ctx.Event.Idx[field + "-n"] = decValue;
                     else if (Double.TryParse(input, out dblValue))
-                        ctx.Event.Idx.Add(field + "-n", dblValue);
+                        ctx.Event.Idx[field + "-n"] = dblValue;
                     else
-                        ctx.Event.Idx.Add(field + "-s", input);
+                        ctx.Event.Idx[field + "-s"] = input;
                 }
             }
         }
