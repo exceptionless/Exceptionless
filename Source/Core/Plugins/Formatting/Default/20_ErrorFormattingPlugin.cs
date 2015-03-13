@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             if (stackingTarget.Method != null) {
                 data.Method = stackingTarget.Method.Name;
-                data.MethodFullName = stackingTarget.Method.GetFullName();
+                data.MethodFullName = stackingTarget.Method != null ? stackingTarget.Method.GetFullName() : null;
             }
 
             var requestInfo = ev.GetRequestInfo();
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
                 Message = stackingTarget.Error.Message,
                 TypeFullName = stackingTarget.Error.Type,
-                MethodFullName = stackingTarget.Method.GetFullName(),
+                MethodFullName = stackingTarget.Method != null ? stackingTarget.Method.GetFullName() : null
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "NoticeError").ToMailMessage();

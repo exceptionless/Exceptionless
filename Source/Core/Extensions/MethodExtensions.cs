@@ -5,19 +5,25 @@ using Exceptionless.Core.Models.Data;
 namespace Exceptionless.Core.Extensions {
     public static class MethodExtensions {
         public static string GetFullName(this Method method) {
+            if (method == null)
+                return null;
+
             var sb = new StringBuilder();
             AppendMethod(method, sb, includeParameters: false);
             return sb.ToString();
         }
 
         public static string GetSignature(this Method method) {
+            if (method == null)
+                return null;
+
             var sb = new StringBuilder();
             AppendMethod(method, sb);
             return sb.ToString();
         }
 
         internal static void AppendMethod(Method method, StringBuilder sb, bool includeParameters = true) {
-            if (String.IsNullOrEmpty(method.Name)) {
+            if (method == null || String.IsNullOrEmpty(method.Name)) {
                 sb.Append("<null>");
                 return;
             }
@@ -67,6 +73,9 @@ namespace Exceptionless.Core.Extensions {
         }
 
         public static string GetDeclaringTypeFullName(this Method method) {
+            if (method == null)
+                return null;
+
             if (!String.IsNullOrEmpty(method.DeclaringNamespace) && !String.IsNullOrEmpty(method.DeclaringType))
                 return String.Concat(method.DeclaringNamespace, ".", method.DeclaringType.Replace('+', '.'));
 
