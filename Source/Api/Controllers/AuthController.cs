@@ -432,8 +432,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return BadRequest("No user was found with this Email Address.");
 
-            user.PasswordResetToken = Core.Extensions.StringExtensions.GetNewToken();
-            user.PasswordResetTokenExpiration = DateTime.Now.AddMinutes(1440);
+            user.CreatePasswordResetToken();
             _userRepository.Save(user);
 
             _mailer.SendPasswordReset(user);
@@ -457,7 +456,7 @@ namespace Exceptionless.Api.Controllers {
             if (user == null)
                 return BadRequest("Invalid Password Reset Token.");
 
-            if (!user.HasValidEmailAddressTokenExpiration())
+            if (!user.HasValidPasswordResetTokenExpiration())
                 return BadRequest("Verify Email Address Token has expired.");
 
             if (!IsValidPassword(model.Password))

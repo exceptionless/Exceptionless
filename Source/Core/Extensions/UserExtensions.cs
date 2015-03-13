@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Extensions {
             user.VerifyEmailAddressTokenExpiration = DateTime.UtcNow.AddMinutes(1440);
         }
 
-        public static bool HasValidEmailAddressTokenExpiration(this User user) {
+        public static bool HasValidVerifyEmailAddressTokenExpiration(this User user) {
             if (user == null)
                 return false;
 
@@ -34,6 +34,21 @@ namespace Exceptionless.Core.Extensions {
 
             user.PasswordResetToken = null;
             user.PasswordResetTokenExpiration = DateTime.MinValue;
+        }
+
+        public static void CreatePasswordResetToken(this User user) {
+            if (user == null)
+                return;
+
+            user.PasswordResetToken = StringExtensions.GetNewToken();
+            user.PasswordResetTokenExpiration = DateTime.UtcNow.AddMinutes(1440);
+        }
+
+        public static bool HasValidPasswordResetTokenExpiration(this User user) {
+            if (user == null)
+                return false;
+
+            return user.PasswordResetTokenExpiration != DateTime.MinValue && user.PasswordResetTokenExpiration >= DateTime.UtcNow;
         }
 
         public static void AddOAuthAccount(this User user, string providerName, string providerUserId, string username, SettingsDictionary data = null) {
