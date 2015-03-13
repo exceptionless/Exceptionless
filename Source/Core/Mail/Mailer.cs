@@ -9,6 +9,7 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Models;
 using Foundatio.Metrics;
 using Foundatio.Queues;
+using NLog.Fluent;
 using RazorSharpEmail;
 using MailMessage = Exceptionless.Core.Queues.Models.MailMessage;
 
@@ -35,6 +36,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "PasswordReset");
             msg.To.Add(user.EmailAddress);
+
             QueueMessage(msg);
         }
 
@@ -44,6 +46,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "VerifyEmail");
             msg.To.Add(user.EmailAddress);
+
             QueueMessage(msg);
         }
 
@@ -55,6 +58,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "Invite");
             msg.To.Add(invite.EmailAddress);
+
             QueueMessage(msg);
         }
 
@@ -65,6 +69,7 @@ namespace Exceptionless.Core.Mail {
                 BaseUrl = Settings.Current.BaseURL
             }, "PaymentFailed");
             msg.To.Add(owner.EmailAddress);
+
             QueueMessage(msg);
         }
 
@@ -82,8 +87,10 @@ namespace Exceptionless.Core.Mail {
 
         public void SendNotice(string emailAddress, EventNotification model) {
             var message = _pluginManager.GetEventNotificationMailMessage(model);
-            if (message == null)
+            if (message == null) {
+                Log.Warn().Message("Unable to create event notification mail message for event \"{0}\". User: \"{1}\"", model.EventId, emailAddress).Write();
                 return;
+            }
 
             message.To = emailAddress;
             QueueMessage(message.ToMailMessage());
@@ -93,6 +100,7 @@ namespace Exceptionless.Core.Mail {
             notification.BaseUrl = Settings.Current.BaseURL;
             System.Net.Mail.MailMessage msg = _emailGenerator.GenerateMessage(notification, "DailySummary");
             msg.To.Add(emailAddress);
+
             QueueMessage(msg);
         }
 

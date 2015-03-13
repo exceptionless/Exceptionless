@@ -36,18 +36,17 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Success;
             
             _statsClient.Counter(MetricNames.EmailsDequeued);
-            
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
-                
+            
             try {
                 await _mailSender.SendAsync(queueEntry.Value);
-                Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
                 _statsClient.Counter(MetricNames.EmailsSent);
+                Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
             } catch (Exception ex) {
                 _statsClient.Counter(MetricNames.EmailsSendErrors);
-                queueEntry.Abandon();
-
                 Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
+
+                queueEntry.Abandon();
             }
 
             queueEntry.Complete();
