@@ -28,16 +28,14 @@ namespace Exceptionless.Api.Controllers {
         private readonly IUserRepository _userRepository;
         private readonly IMailer _mailer;
         private readonly TokenManager _tokenManager;
-        private readonly DataHelper _dataHelper;
 
         private static bool _isFirstUserChecked;
 
-        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager, DataHelper dataHelper) {
+        public AuthController(IOrganizationRepository organizationRepository, IUserRepository userRepository, IMailer mailer, TokenManager tokenManager) {
             _organizationRepository = organizationRepository;
             _userRepository = userRepository;
             _mailer = mailer;
             _tokenManager = tokenManager;
-            _dataHelper = dataHelper;
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
         /// 
         /// <code>{ "email": "noreply@exceptionless.io", "password": "exceptionless" }</code>
         /// 
-        /// This token can then be used to access the api. You can use this token in the header (bearer auth)
+        /// This token can then be used to access the api. You can use this token in the header (bearer authentication)
         /// or append it onto the query string: ?access_token=MY_TOKEN
         /// 
         /// Please note that you can also use this token on the documentation site by placing it in the 
