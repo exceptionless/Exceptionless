@@ -46,6 +46,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetDefaultProjectId(this HttpRequestMessage message) {
+            if (message == null)
+                return null;
+
             var project = message.GetDefaultProject();
             if (project != null)
                 return project.Id;
@@ -54,6 +57,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static ClaimsPrincipal GetClaimsPrincipal(this HttpRequestMessage message) {
+            if (message == null)
+                return null;
+
             var context = message.GetOwinContext();
             if (context == null || context.Request == null || context.Request.User == null)
                 return null;
@@ -62,11 +68,17 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static AuthType GetAuthType(this HttpRequestMessage message) {
+            if (message == null)
+                return AuthType.Anonymous;
+
             var principal = message.GetClaimsPrincipal();
             return principal == null ? AuthType.Anonymous : principal.GetAuthType();
         }
 
         public static bool CanAccessOrganization(this HttpRequestMessage message, string organizationId) {
+            if (message == null)
+                return false;
+
             if (message.IsInOrganization(organizationId))
                 return true;
 
@@ -74,11 +86,17 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static bool IsGlobalAdmin(this HttpRequestMessage message) {
+            if (message == null)
+                return false;
+
             var principal = message.GetClaimsPrincipal();
             return principal != null && principal.IsInRole(AuthorizationRoles.GlobalAdmin);
         }
 
         public static bool IsInOrganization(this HttpRequestMessage message, string organizationId) {
+            if (message == null)
+                return false;
+
             if (String.IsNullOrEmpty(organizationId))
                 return false;
 
@@ -86,6 +104,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static ICollection<string> GetAssociatedOrganizationIds(this HttpRequestMessage message) {
+            if (message == null)
+                return new List<string>();
+
             if (message.GetUser() != null)
                 return message.GetUser().OrganizationIds;
 
@@ -94,11 +115,17 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetDefaultOrganizationId(this HttpRequestMessage message) {
+            if (message == null)
+                return null;
+
             // TODO: Try to figure out the 1st organization that the user owns instead of just selecting from associated orgs.
             return message.GetAssociatedOrganizationIds().FirstOrDefault();
         }
 
         public static string GetClientIpAddress(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
             var context = request.GetOwinContext();
             if (context != null)
                 return context.Request.RemoteIpAddress;
@@ -107,6 +134,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetQueryString(this HttpRequestMessage request, string key) {
+            if (request == null)
+                return null;
+
             var queryStrings = request.GetQueryNameValuePairs();
             if (queryStrings == null)
                 return null;
@@ -119,6 +149,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static string GetCookie(this HttpRequestMessage request, string cookieName) {
+            if (request == null)
+                return null;
+
             CookieHeaderValue cookie = request.Headers.GetCookies(cookieName).FirstOrDefault();
             if (cookie != null)
                 return cookie[cookieName].Value;
@@ -127,6 +160,9 @@ namespace Exceptionless.Api.Extensions {
         }
 
         public static AuthInfo GetBasicAuth(this HttpRequestMessage request) {
+            if (request == null)
+                return null;
+
             var authHeader = request.Headers.Authorization;
 
             if (authHeader == null || authHeader.Scheme.ToLower() != "basic")
