@@ -6,8 +6,6 @@ using Exceptionless.Core.Plugins.EventProcessor;
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
-        protected override bool ContinueOnError { get { return true; } }
-
         public override void Process(EventContext ctx) {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;

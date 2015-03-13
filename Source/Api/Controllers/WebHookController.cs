@@ -186,8 +186,8 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override WebHook AddModel(WebHook value) {
-            if (!IsValidWebHookVersion(value.Version))
-                value.Version = new Version(2, 0);
+            int version = IsValidWebHookVersion(value.Version) ? value.Version.Major : 2;
+            value.Version = new Version(version, 0, 0, 0);
 
             return base.AddModel(value);
         }

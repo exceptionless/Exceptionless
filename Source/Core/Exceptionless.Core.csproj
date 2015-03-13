@@ -155,6 +155,7 @@
     <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
+    <Compile Include="Migrations\v1.0.36.cs" />
     <Compile Include="Models\Application.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\DataDictionary.cs" />
