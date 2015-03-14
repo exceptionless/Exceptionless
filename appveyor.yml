@@ -42,10 +42,6 @@ after_test:
   - ps: nuget install OctopusTools
   - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:APPVEYOR_BUILD_VERSION" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev'
 
-deploy:
-  - provider: Environment
-    name: MyGet
-
 notifications:
   - provider: HipChat
     auth_token:
