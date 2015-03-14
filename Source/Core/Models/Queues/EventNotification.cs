@@ -6,7 +6,7 @@ namespace Exceptionless.Core.Queues.Models {
         public EventNotification() {}
 
         public EventNotification(EventNotificationWorkItem workItem, PersistentEvent ev) {
-            EventId = workItem.EventId;
+            EventId = workItem.EventId ?? ev.Id;
             IsNew = workItem.IsNew;
             IsCritical = workItem.IsCritical;
             IsRegression = workItem.IsRegression;
