@@ -56,9 +56,9 @@ namespace Exceptionless.Api.Utility {
 
             bool overLimit = _organizationRepository.IncrementUsage(project.OrganizationId, tooBig);
 
-            // block large submissions, but return success status code so the client doesn't keep sending them
+            // block large submissions, client should break them up or remove some of the data.
             if (tooBig)
-                return CreateResponse(request, HttpStatusCode.Accepted, "Event submission discarded for being too large.");
+                return CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
 
             if (overLimit) {
                 _statsClient.Counter(MetricNames.PostsBlocked);
