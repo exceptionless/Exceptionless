@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Pipeline {
                     ctx.Event.Idx[field + "-d"] = ctx.Event.Data[key];
                 } else if (dataType == typeof(string)) {
                     var input = (string)ctx.Event.Data[key];
-                    if (input.Length >= 1000)
+                    if (String.IsNullOrEmpty(input) || input.Length >= 1000)
                         continue;
 
                     if (input.GetJsonType() != JsonType.None)
