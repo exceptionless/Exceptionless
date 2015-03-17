@@ -29,7 +29,7 @@ namespace Exceptionless.Api.Utility {
                     && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
                     string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
-                    if (response.Content != null)
+                    if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
                         response.Content = new CompressedContent(response.Content, encodingType);
                 }
 
