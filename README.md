@@ -50,13 +50,16 @@ In appreciation for anyone who submits a non-trivial pull request, we will give 
 
 ## Roadmap
 
-This is a list of high level things that we are planning to do:
-- ~~Refactor client so that the base client is a PCL library thus supporting WinRT and Mono. **(Completed)**~~
-- ~~Refactor the API to be MUCH simpler and allow for clients to be easily developed while at the same time making the entire sytem much more flexible and able to gather additional data like log messages and feature usage. **(Completed)**~~
-- ~~Implement search features using ElasticSearch. **(Completed)**~~
-- JavaScript client for reporting client side errors. **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
-- ~~Refactor the API and UI to be completely separate layers and rewrite the UI as a SPA app using AngularJS. **(Completed)**~~
-- ~~Add a server side plugin system  that allows new functionality to be easily added like HipChat notifications. **(Completed)**~~
+We are currently in the planning process for 2.1. However, this is a list of high level things that we are planning to do:
+- Native clients 
+  *  JavaScript **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
+  *  Java
+  *  Swift
+  *  PHP
+  *  and many more
+- New Dashboards
+- vnext support
+- [Let us know what you'd like us to work on!](https://github.com/exceptionless/Exceptionless/issues)
 
 
 ##Thanks
