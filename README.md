@@ -55,7 +55,6 @@ We are currently in the planning process for 2.1. However, this is a list of hig
   *  JavaScript **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
   *  Java
   *  Swift
-  *  PHP
   *  and many more
 - New Dashboards
 - vnext support
