@@ -65,7 +65,7 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.142\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.145\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>

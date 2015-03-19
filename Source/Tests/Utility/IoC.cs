@@ -6,40 +6,25 @@ using SimpleInjector;
 
 namespace Exceptionless.Api.Tests.Utility {
     public static class IoC {
+        private static readonly Lazy<Container> _container = new Lazy<Container>(CreateContainer);
+
         private static void RegisterServices(Container container) {
             container.Register<IMailer, NullMailer>();
         }
 
-        #region Bootstrap
-
-        private static Container _container;
-        private static bool _initialized = false;
-
         public static TService GetInstance<TService>() where TService : class {
-            if (!_initialized)
-                Initialize();
-
-            object result = _container.GetInstance(typeof(TService));
+            object result = _container.Value.GetInstance(typeof(TService));
             return result as TService;
         }
 
-        public static Container GetContainer() {
-            if (!_initialized)
-                Initialize();
+        private static Container CreateContainer() {
+            var container = AppBuilder.CreateContainer(false);
+            RegisterServices(container);
 
-            return _container;
-        }
-
-        private static void Initialize() {
-            _container = AppBuilder.CreateContainer(false);
-            _initialized = true;
-
-            RegisterServices(_container);
-
-            var searchclient = _container.GetInstance<IElasticClient>();
+            var searchclient = container.GetInstance<IElasticClient>();
             searchclient.DeleteIndex(i => i.AllIndices());
-        }
 
-        #endregion
+            return container;
+        }
     }
 }

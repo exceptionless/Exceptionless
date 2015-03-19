@@ -74,13 +74,13 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("requeue")]
-        public IHttpActionResult Requeue(string path) {
+        public IHttpActionResult Requeue(string path = null, bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
             var files = _fileStorage.GetFileList(path);
             foreach (var file in files)
-                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = false });
+                _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
             return Ok();
         }
