@@ -43,7 +43,7 @@ after_test:
   - ps: '&(ls .\OctopusTools*\Octo.exe) create-release --project="Exceptionless Master" --version "$env:APPVEYOR_BUILD_VERSION" --server "$env:OCTOPUS_API_URL" --apiKey "$env:OCTOPUS_API_KEY" --deployto Dev'
 
 notifications:
-  - provider: HipChat
+  - provider: Slack
     auth_token:
-      secure: WxN+iiJf8AT50n50y8/AkTMl+Cvma6lwSdffFaBU6/o=
-    room: Notifications
+      secure: PigIGGo7UUDwdb0KGM/s7OfpAng/OMJx7q33jKfzudFBiXi1EBEd0DRmkbCc7CiX
+    room: notifications
