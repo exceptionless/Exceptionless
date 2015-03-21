@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Threading;
 using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Queues.Models;
 using Foundatio.Caching;
+using Foundatio.Messaging;
+using Foundatio.Queues;
+using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
 
@@ -9,16 +14,19 @@ namespace Exceptionless.Core.Utility {
         private readonly ICacheClient _cacheClient;
         private readonly MongoDatabase _db;
         private readonly IElasticClient _elasticClient;
+        private readonly IFileStorage _storage;
+        private readonly IQueue<StatusMessage> _queue;
+        private readonly IMessageBus _messageBus;
 
-        public SystemHealthChecker(ICacheClient cacheClient, MongoDatabase db, IElasticClient elasticClient) {
+        public SystemHealthChecker(ICacheClient cacheClient, MongoDatabase db, IElasticClient elasticClient, IFileStorage storage, IQueue<StatusMessage> queue, IMessageBus messageBus) {
             _cacheClient = cacheClient;
             _db = db;
             _elasticClient = elasticClient;
+            _storage = storage;
+            _queue = queue;
+            _messageBus = messageBus;
         }
-
-        // TODO: Check storage
-        // TODO: Check queues
-        // TODO: Check message bus
+    
         public HealthCheckResult CheckCache() {
             try {
                 if (_cacheClient.Get<string>("__PING__") != null)
@@ -55,6 +63,55 @@ namespace Exceptionless.Core.Utility {
             return HealthCheckResult.Healthy;
         }
 
+        public HealthCheckResult CheckStorage() {
+            try {
+                _storage.GetFileList(limit: 1);
+            } catch (Exception ex) {
+                return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
+            }
+
+            return HealthCheckResult.Healthy;
+        }
+
+        public HealthCheckResult CheckQueue() {
+            var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
+            try {
+                _queue.Enqueue(message);
+                if (_queue.GetQueueCount() == 0)
+                    return HealthCheckResult.NotHealthy("Queue Not Working: No items were enqueued.");
+      
+                var workItem = _queue.Dequeue(TimeSpan.Zero);
+                if (workItem == null)
+                    return HealthCheckResult.NotHealthy("Queue Not Working: No items could be dequeued.");
+
+                workItem.Complete();
+            } catch (Exception ex) {
+                return HealthCheckResult.NotHealthy("Queues Not Working: " + ex.Message);
+            }
+
+            return HealthCheckResult.Healthy;
+        }
+
+         public HealthCheckResult CheckMessageBus() {
+            //var message = new StatusMessage { Id = Guid.NewGuid().ToString() };
+            //var resetEvent = new AutoResetEvent(false);
+            //Action<StatusMessage> handler = msg => resetEvent.Set();
+
+             //try {
+             //    _messageBus.Subscribe(handler);
+             //    _messageBus.Publish(message);
+             //    bool success = resetEvent.WaitOne(5000);
+             //    if (!success)
+             //        return HealthCheckResult.NotHealthy("MessageBus Not Working: Failed to receive message.");
+             //} catch (Exception ex) {
+             //    return HealthCheckResult.NotHealthy("MessageBus Not Working: " + ex.Message);
+             //} finally {
+             //    _messageBus.Unsubscribe(handler);
+             //}
+        
+             return HealthCheckResult.Healthy;
+        }
+    
         public HealthCheckResult CheckAll() {
             var result = CheckCache();
             if (!result.IsHealthy)
@@ -65,6 +122,18 @@ namespace Exceptionless.Core.Utility {
                 return result;
 
             result = CheckElasticSearch();
+            if (!result.IsHealthy)
+                return result;
+
+            result = CheckStorage();
+            if (!result.IsHealthy)
+                return result;
+
+            result = CheckQueue();
+            if (!result.IsHealthy)
+                return result;
+
+            result = CheckMessageBus();
             if (!result.IsHealthy)
                 return result;
 

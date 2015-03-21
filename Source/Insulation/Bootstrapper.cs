@@ -36,6 +36,7 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingle<IQueue<EventNotificationWorkItem>>(() => new RedisQueue<EventNotificationWorkItem>(muxer, container.GetInstance<ISerializer>(), statName: MetricNames.EventNotificationQueueSize, metrics: container.GetInstance<IMetricsClient>()));
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, container.GetInstance<ISerializer>(), statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
                 container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, container.GetInstance<ISerializer>(), statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
+                container.RegisterSingle<IQueue<StatusMessage>>(() => new RedisQueue<StatusMessage>(muxer, container.GetInstance<ISerializer>()));
 
                 container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber(), serializer: container.GetInstance<ISerializer>()));
             }

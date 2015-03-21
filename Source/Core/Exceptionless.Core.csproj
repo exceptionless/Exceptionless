@@ -52,20 +52,20 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.33.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.34.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.33\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.DateTimeExtensions.3.0.34\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.12.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.LuceneQueryParser, Version=1.0.13.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.12\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
+      <HintPath>..\..\packages\Exceptionless.LuceneQueryParser.1.0.13\lib\net45\Exceptionless.LuceneQueryParser.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation">
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.145\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.146\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
@@ -197,6 +197,7 @@
     <Compile Include="Models\Organization.cs" />
     <Compile Include="Models\PersistentEvent.cs" />
     <Compile Include="Models\Project.cs" />
+    <Compile Include="Models\Queues\StatusMessage.cs" />
     <Compile Include="Models\Results\EventResult.cs" />
     <Compile Include="Models\Results\EventResultBase.cs" />
     <Compile Include="Models\Results\EventStackResult.cs" />

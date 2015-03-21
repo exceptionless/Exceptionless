@@ -39,9 +39,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.33.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.34.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Exceptionless.DateTimeExtensions.3.0.33\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
+      <HintPath>..\..\..\packages\Exceptionless.DateTimeExtensions.3.0.34\lib\portable-net40+win+wpa81\Exceptionless.DateTimeExtensions.dll</HintPath>
     </Reference>
     <Reference Include="FluentValidation, Version=5.5.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -49,11 +49,11 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Foundatio.1.0.145\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.1.0.146\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\Foundatio.Redis.1.0.145\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.Redis.1.0.146\lib\net45\Foundatio.Redis.dll</HintPath>
     </Reference>
     <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -104,7 +104,7 @@
     </Reference>
     <Reference Include="StackExchange.Redis, Version=1.0.316.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\packages\StackExchange.Redis.1.0.394\lib\net45\StackExchange.Redis.dll</HintPath>
+      <HintPath>..\..\..\packages\StackExchange.Redis.1.0.414\lib\net45\StackExchange.Redis.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
