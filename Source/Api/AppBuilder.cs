@@ -42,14 +42,8 @@ namespace Exceptionless.Api {
             if (container == null)
                 throw new ArgumentNullException("container");
 
-            if (Settings.Current.ShouldAutoUpgradeDatabase) {
-                var url = new MongoUrl(Settings.Current.MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (Settings.Current.AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
-            }
+            if (Settings.Current.ShouldAutoUpgradeDatabase)
+                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
             Config = new HttpConfiguration();
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);

@@ -62,13 +62,8 @@ namespace Exceptionless.Core {
                     throw new ConfigurationErrorsException("MongoConnectionString was not found in the Web.config.");
 
                 MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
-                var url = new MongoUrl(Settings.Current.MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (Settings.Current.AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                MongoServer server = new MongoClient(url).GetServer();
-                return server.GetDatabase(databaseName);
+                MongoServer server = new MongoClient(new MongoUrl(Settings.Current.MongoConnectionString)).GetServer();
+                return server.GetDatabase(Settings.Current.MongoDatabaseName);
             });
 
             container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));

@@ -150,13 +150,7 @@ namespace Exceptionless.Core.Utility {
                     return _dbIsUpToDate.Value;
 
                 _lastDbUpToDateCheck = DateTime.Now;
-
-                var url = new MongoUrl(Settings.Current.MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (Settings.Current.AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-                
-                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, databaseName);
+                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
                 return _dbIsUpToDate.Value;
             }

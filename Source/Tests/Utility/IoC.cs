@@ -27,14 +27,8 @@ namespace Exceptionless.Api.Tests.Utility {
             var searchclient = container.GetInstance<IElasticClient>();
             searchclient.DeleteIndex(i => i.AllIndices());
 
-            if (Settings.Current.ShouldAutoUpgradeDatabase) {
-                var url = new MongoUrl(Settings.Current.MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (Settings.Current.AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, databaseName);
-            }
+            if (Settings.Current.ShouldAutoUpgradeDatabase)
+                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
             return container;
         }

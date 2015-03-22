@@ -4,6 +4,7 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
+using MongoDB.Driver;
 
 namespace Exceptionless.Core {
     public class Settings {
@@ -60,6 +61,20 @@ namespace Exceptionless.Core {
         public bool EnableRedis { get; private set; }
 
         public string MongoConnectionString { get; private set; }
+
+        public string MongoDatabaseName {
+            get {
+                if (String.IsNullOrEmpty(MongoConnectionString))
+                    return null;
+
+                var url = new MongoUrl(MongoConnectionString);
+                string databaseName = url.DatabaseName;
+                if (AppendMachineNameToDatabase)
+                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
+
+                return databaseName;
+            }
+        }
 
         public string ElasticSearchConnectionString { get; set; }
 
