@@ -8,7 +8,7 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         public void CanSetUnknownProperties() {
             dynamic delta = new Delta<SimpleMessageA>();
             delta.Data = "Blah";
-            Assert.DoesNotThrow(() => delta.SomeUnknown = "yes");
+            delta.SomeUnknown = "yes";
             Assert.Equal(1, delta.UnknownProperties.Count);
         }
 

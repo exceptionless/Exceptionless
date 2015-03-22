@@ -65,7 +65,7 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.146\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.147\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Core, Version=2.2.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -150,9 +150,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\StackExchange.Redis.StrongName.1.0.414\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.7.2.0, Culture=neutral, processorArchitecture=MSIL">
+    <Reference Include="Stripe.net, Version=2.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.7.2\lib\net40\Stripe.net.dll</HintPath>
+      <HintPath>..\..\packages\Stripe.net.2.8.0\lib\net40\Stripe.net.dll</HintPath>
     </Reference>
     <Reference Include="Swashbuckle.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cd1bb07a5ac7c7bc, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -271,7 +271,7 @@
     <Compile Include="Utility\EncodingDelegatingHandler.cs" />
     <Compile Include="Utility\ExceptionlessHeaders.cs" />
     <Compile Include="Utility\ExceptionlessReferenceIdExceptionHandler.cs" />
-    <Compile Include="Utility\ExceptionLoggerContext.cs" />
+    <Compile Include="Utility\NLogExceptionLogger.cs" />
     <Compile Include="Utility\FilterRoutesDocumentFilter.cs" />
     <Compile Include="Utility\LowercaseHttpRoute.cs" />
     <Compile Include="Utility\NakedParameterBinding.cs" />

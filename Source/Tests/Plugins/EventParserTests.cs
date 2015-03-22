@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var json = File.ReadAllText(eventsFilePath);
 
             PersistentEvent ev = null;
-            Assert.DoesNotThrow(() => { ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>()); });
+            ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>());
             Assert.NotNull(ev);
         }
 

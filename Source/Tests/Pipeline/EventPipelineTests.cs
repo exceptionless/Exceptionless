@@ -36,7 +36,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: localTime.AddMinutes(10));
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            pipeline.Run(ev);
 
             var client = IoC.GetInstance<IElasticClient>();
             client.Refresh();
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Data.Add("Address", new { State = "Texas" });
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            pipeline.Run(ev);
             Assert.Equal(11, ev.Idx.Count);
             Assert.True(ev.Idx.ContainsKey("first-name-s"));
             Assert.True(ev.Idx.ContainsKey("isverified-b"));
@@ -90,7 +90,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev.Tags.Add(Tag1);
 
             var pipeline = IoC.GetInstance<EventPipeline>();
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            pipeline.Run(ev);
 
             client.Refresh();
             ev = _eventRepository.GetById(ev.Id);
@@ -103,19 +103,19 @@ namespace Exceptionless.Api.Tests.Pipeline {
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2);
 
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            pipeline.Run(ev);
             stack = _stackRepository.GetById(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
 
             ev = EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, generateTags: false, occurrenceDate: DateTime.Now);
             ev.Tags.Add(Tag2_Lowercase);
 
-            Assert.DoesNotThrow(() => pipeline.Run(ev));
+            pipeline.Run(ev);
             stack = _stackRepository.GetById(ev.StackId, true);
             Assert.Equal(new TagSet { Tag1, Tag2 }, stack.Tags);
         }
 
-       [Fact]
+        [Fact]
         public void EnsureSingleNewStack() {
             var pipeline = IoC.GetInstance<EventPipeline>();
 
@@ -125,7 +125,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(new PersistentEvent { ProjectId = TestConstants.ProjectId, OrganizationId = TestConstants.OrganizationId, Message = "Test Sample", Source = source, Date = DateTime.UtcNow, Type = Event.KnownTypes.Log}),
             };
 
-            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            pipeline.Run(contexts);
             Assert.True(contexts.All(c => c.Stack.Id == contexts.First().Stack.Id));
             Assert.Equal(1, contexts.Count(c => c.IsNew));
             Assert.Equal(1, contexts.Count(c => !c.IsNew));
@@ -139,7 +139,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
 
             PersistentEvent ev = EventData.GenerateEvent(projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow);
             var context = new EventContext(ev);
-            Assert.DoesNotThrow(() => pipeline.Run(context));
+            pipeline.Run(context);
             Assert.True(context.IsProcessed);
             Assert.False(context.IsRegression);
 
@@ -157,7 +157,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
             };
 
-            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            pipeline.Run(contexts);
             Assert.Equal(1, contexts.Count(c => c.IsRegression));
             Assert.Equal(1, contexts.Count(c => !c.IsRegression));
 
@@ -166,7 +166,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 new EventContext(EventData.GenerateEvent(stackId: ev.StackId, projectId: TestConstants.ProjectId, organizationId: TestConstants.OrganizationId, occurrenceDate: DateTime.UtcNow.AddMinutes(1)))
             };
 
-            Assert.DoesNotThrow(() => pipeline.Run(contexts));
+            pipeline.Run(contexts);
             Assert.Equal(2, contexts.Count(c => !c.IsRegression));
         }
 
@@ -185,7 +185,7 @@ namespace Exceptionless.Api.Tests.Pipeline {
                 ev.OrganizationId = TestConstants.OrganizationId;
 
                 var context = new EventContext(ev);
-                Assert.DoesNotThrow(() => pipeline.Run(context));
+                pipeline.Run(context);
                 Assert.True(context.IsProcessed);
                 
             }
