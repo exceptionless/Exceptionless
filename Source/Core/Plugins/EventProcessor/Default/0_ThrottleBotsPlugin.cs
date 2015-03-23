@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Metrics;
@@ -35,6 +36,9 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             // Throttle errors by client ip address to no more than X every 5 minutes.
             var ri = context.Event.GetRequestInfo();
             if (ri == null || String.IsNullOrEmpty(ri.ClientIpAddress))
+                return;
+
+            if (IPHelper.IsPrivateNetwork(ri.ClientIpAddress))
                 return;
 
             string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
