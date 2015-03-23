@@ -78,8 +78,6 @@ namespace Exceptionless.Core {
 
         public string ElasticSearchConnectionString { get; set; }
 
-        public string GeoIPDatabasePath { get; set; }
-
         public string Version { get; private set; }
 
         public bool EnableIntercom { get { return !String.IsNullOrEmpty(IntercomAppSecret); } }
@@ -137,7 +135,6 @@ namespace Exceptionless.Core {
             settings.WebsiteMode = GetEnum<WebsiteMode>("WebsiteMode", WebsiteMode.Dev);
             settings.TestEmailAddress = GetString("TestEmailAddress");
             settings.AllowedOutboundAddresses = GetStringList("AllowedOutboundAddresses", "exceptionless.io").Select(v => v.ToLowerInvariant()).ToList();
-            settings.GeoIPDatabasePath = GetString("GeoIPDatabasePath"); 
             settings.RunJobsInProcess = GetBool("RunJobsInProcess", true);
             settings.LogJobLocks = GetBool("LogJobLocks");
             settings.LogJobEvents = GetBool("LogJobEvents");

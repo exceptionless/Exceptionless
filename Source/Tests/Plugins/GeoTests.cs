@@ -1,10 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using Exceptionless.Core;
+using System.Threading.Tasks;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Utility;
+using Foundatio.Storage;
 using Xunit;
 using Xunit.Extensions;
 
@@ -13,22 +14,25 @@ namespace Exceptionless.Api.Tests.Plugins {
         protected readonly IGeoIPResolver _resolver;
 
         public GeoTests() {
-            var databasePath = PathHelper.ExpandPath(Settings.Current.GeoIPDatabasePath);
-            if (String.IsNullOrWhiteSpace(databasePath) || !File.Exists(databasePath)) {
-                Console.WriteLine("Unable to resolve GeoIP Database Path");
-                return;
+            var dataDirectory = PathHelper.ExpandPath(".\\");
+            var storage = new FolderFileStorage(dataDirectory);
+
+            if (!storage.Exists(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
+                var job = new DownloadGeoIPDatabaseJob(storage).Run();
+                Assert.NotNull(job);
+                Assert.True(job.IsSuccess);
             }
 
-            _resolver = new MindMaxGeoIPResolver();
+            _resolver = new MindMaxGeoIPResolver(storage);
         }
 
         [Theory]
         [PropertyData("IPData")]
-        public void CanResolveIp(string ip, bool canResolve) {
+        public async Task CanResolveIp(string ip, bool canResolve) {
             if (_resolver == null)
                 return;
 
-            var result = _resolver.ResolveIp(ip);
+            var result = await _resolver.ResolveIpAsync(ip);
             if (canResolve)
                 Assert.NotNull(result);
             else
@@ -36,7 +40,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         }
 
         [Fact]
-        public void CanResolveIpFromCache() {
+        public async Task CanResolveIpFromCache() {
             if (_resolver == null)
                 return;
 
@@ -44,10 +48,10 @@ namespace Exceptionless.Api.Tests.Plugins {
             sw.Start();
             
             for (int i = 0; i < 1000; i++)
-                Assert.NotNull(_resolver.ResolveIp("8.8.4.4"));
+                Assert.NotNull(await _resolver.ResolveIpAsync("8.8.4.4"));
 
             sw.Stop();
-            Assert.InRange(sw.ElapsedMilliseconds, 0, 510);
+            Assert.InRange(sw.ElapsedMilliseconds, 0, 900);
         }
 
         public static IEnumerable<object[]> IPData {

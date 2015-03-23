@@ -1,8 +1,10 @@
 ﻿using System;
 using System.IO;
-using Exceptionless.Core.Utility;
+using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
+using Foundatio.Storage;
 using MaxMind.Db;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
@@ -10,11 +12,19 @@ using NLog.Fluent;
 
 namespace Exceptionless.Core.Geo {
     public class MindMaxGeoIPResolver : IGeoIPResolver, IDisposable {
+        internal const string GEO_IP_DATABASE_PATH = "GeoLite2-City.mmdb";
+
         private readonly InMemoryCacheClient _cache = new InMemoryCacheClient { MaxItems = 250 };
+        private readonly IFileStorage _storage;
         private DatabaseReader _database;
         private DateTime? _databaseLastChecked;
         
-        public Location ResolveIp(string ip) {
+
+        public MindMaxGeoIPResolver(IFileStorage storage) {
+            _storage = storage;
+        }
+
+        public async Task<Location> ResolveIpAsync(string ip, CancellationToken cancellationToken = new CancellationToken()) {
             if (String.IsNullOrWhiteSpace(ip) || (!ip.Contains(".") && !ip.Contains(":")))
                 return null;
 
@@ -27,7 +37,7 @@ namespace Exceptionless.Core.Geo {
             if (IsPrivateNetwork(ip))
                 return null;
 
-            var database = GetDatabase();
+            var database = await GetDatabaseAsync(cancellationToken);
             if (database == null)
                 return null;
 
@@ -50,7 +60,7 @@ namespace Exceptionless.Core.Geo {
             }
         }
 
-        private DatabaseReader GetDatabase() {
+        private async Task<DatabaseReader> GetDatabaseAsync(CancellationToken cancellationToken) {
             // Try to load the new database from disk if the current one is an hour old.
             if (_database != null && _databaseLastChecked.HasValue && _databaseLastChecked.Value < DateTime.UtcNow.SubtractHours(1)) {
                 _database.Dispose();
@@ -65,18 +75,15 @@ namespace Exceptionless.Core.Geo {
 
             _databaseLastChecked = DateTime.UtcNow;
 
-            string databasePath = PathHelper.ExpandPath(Settings.Current.GeoIPDatabasePath);
-            if (!Path.IsPathRooted(databasePath))
-                databasePath = Path.GetFullPath(databasePath);
-
-            if (!File.Exists(databasePath)) {
-                Log.Warn().Message("No GeoIP database was found \"{0}\"", databasePath).Write();
+            if (!await _storage.ExistsAsync(GEO_IP_DATABASE_PATH)) {
+                Log.Warn().Message("No GeoIP database was found.").Write();
                 return null;
             }
 
-            Log.Info().Message("Loading GeoIP database from \"{0}\"", databasePath).Write();
+            Log.Info().Message("Loading GeoIP database.").Write();
             try {
-                _database = new DatabaseReader(databasePath, FileAccessMode.Memory);
+                using (var stream = await _storage.GetFileStreamAsync(GEO_IP_DATABASE_PATH, cancellationToken))
+                    _database = new DatabaseReader(stream);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Unable to open GeoIP database.").Write();
             }

@@ -77,7 +77,7 @@ namespace Exceptionless.EventMigration {
                 if (stackIdsToCheck.Length > 0)
                     knownStackIds.AddRange(_eventRepository.ExistsByStackIds(stackIdsToCheck));
                         
-                upgradedEvents.ForEach(e => {
+                upgradedEvents.ForEach(async e => {
                     if (e.Date.UtcDateTime > DateTimeOffset.UtcNow.AddHours(1))
                         e.Date = DateTimeOffset.Now;
 
@@ -137,7 +137,7 @@ namespace Exceptionless.EventMigration {
                     }
 
                     foreach (var ip in GetIpAddresses(e, request)) {
-                        var location = _geoIpResolver.ResolveIp(ip);
+                        var location = await _geoIpResolver.ResolveIpAsync(ip, token);
                         if (location == null || !location.IsValid())
                             continue;
 

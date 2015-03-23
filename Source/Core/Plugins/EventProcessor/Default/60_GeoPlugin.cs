@@ -21,7 +21,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
 
             foreach (var ip in GetIpAddresses(context.Event)) {
-                location = _geoIpResolver.ResolveIp(ip);
+                location = _geoIpResolver.ResolveIpAsync(ip).Result;
                 if (location == null || !location.IsValid())
                     continue;
 
