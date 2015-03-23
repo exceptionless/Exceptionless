@@ -1,12 +1,10 @@
 ﻿using System;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Utility;
+using Exceptionless.Core.Extensions;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Storage;
-using MaxMind.Db;
 using MaxMind.GeoIP2;
 using MaxMind.GeoIP2.Exceptions;
 using NLog.Fluent;
@@ -35,7 +33,7 @@ namespace Exceptionless.Core.Geo {
             if (_cache.TryGet(ip, out location))
                 return location;
 
-            if (IPHelper.IsPrivateNetwork(ip))
+            if (ip.IsPrivateNetwork())
                 return null;
 
             var database = await GetDatabaseAsync(cancellationToken);

@@ -214,7 +214,6 @@
     <Compile Include="Models\User.cs" />
     <Compile Include="Models\WebHook.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
-    <Compile Include="Utility\IPHelper.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
     <Compile Include="Utility\MetricNames.cs" />
     <Compile Include="Bootstrapper.cs" />

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Caching;
 using Foundatio.Metrics;
@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (ri == null || String.IsNullOrEmpty(ri.ClientIpAddress))
                 return;
 
-            if (IPHelper.IsPrivateNetwork(ri.ClientIpAddress))
+            if (ri.ClientIpAddress.IsPrivateNetwork())
                 return;
 
             string throttleCacheKey = String.Concat("bot:", ri.ClientIpAddress, ":", DateTime.Now.Floor(_throttlingPeriod).Ticks);
