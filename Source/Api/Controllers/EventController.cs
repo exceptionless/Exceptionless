@@ -384,7 +384,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
-        public async Task <IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+        public async Task <IHttpActionResult> PostAsync([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
             _statsClient.Counter(MetricNames.PostsSubmitted);
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();

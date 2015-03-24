@@ -75,7 +75,7 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("requeue")]
-        public async Task<IHttpActionResult> Requeue(string path = null, bool archive = false) {
+        public async Task<IHttpActionResult> RequeueAsync(string path = null, bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
