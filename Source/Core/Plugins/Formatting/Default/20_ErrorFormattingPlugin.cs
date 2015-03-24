@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var stackingTarget = error.GetStackingTarget();
-            if (stackingTarget == null)
+            if (stackingTarget == null || stackingTarget.Error == null)
                 return null;
 
             dynamic data = new ExpandoObject();
@@ -100,7 +100,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var stackingTarget = error.GetStackingTarget();
-            if (stackingTarget == null)
+            if (stackingTarget == null || stackingTarget.Error == null)
                 return null;
 
             var requestInfo = model.Event.GetRequestInfo();
