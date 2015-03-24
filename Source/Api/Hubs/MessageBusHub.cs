@@ -18,6 +18,8 @@ namespace Exceptionless.Api.Hubs {
             subscriber.Subscribe<PlanChanged>(OnPlanChanged);
             subscriber.Subscribe<PlanOverage>(OnPlanOverage);
             subscriber.Subscribe<UserMembershipChanged>(OnUserMembershipChanged);
+            subscriber.Subscribe<ReleaseNotification>(OnReleaseNotification);
+            subscriber.Subscribe<SystemNotification>(OnSystemNotification);
         }
 
         private void OnUserMembershipChanged(UserMembershipChanged userMembershipChanged) {
@@ -69,6 +71,18 @@ namespace Exceptionless.Api.Hubs {
                 return;
 
             Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
+        }
+
+        private void OnReleaseNotification(ReleaseNotification notification) {
+            try {
+                Clients.All.releaseNotification(notification);
+            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
+        }
+
+        private void OnSystemNotification(SystemNotification notification) {
+            try {
+                Clients.All.systemNotification(notification);
+            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
         }
 
         public override Task OnConnected() {

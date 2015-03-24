@@ -17,7 +17,6 @@ using Exceptionless.DateTimeExtensions;
 namespace Exceptionless.Api.Controllers {
     [RequireHttpsExceptLocal]
     public abstract class ExceptionlessApiController : ApiController {
-        public const int API_CURRENT_VERSION = 2;
         public const string API_PREFIX = "api/v2";
         protected const int DEFAULT_LIMIT = 10;
         protected const int MAXIMUM_LIMIT = 100;

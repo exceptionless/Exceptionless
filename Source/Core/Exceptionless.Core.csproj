@@ -192,6 +192,8 @@
     <Compile Include="Models\Interfaces\IOwnedByProject.cs" />
     <Compile Include="Models\Interfaces\IOwnedByStack.cs" />
     <Compile Include="Models\Invite.cs" />
+    <Compile Include="Models\Messaging\ReleaseNotification.cs" />
+    <Compile Include="Models\Messaging\SystemNotification.cs" />
     <Compile Include="Models\NotificationSettings.cs" />
     <Compile Include="Models\OAuthAccount.cs" />
     <Compile Include="Models\Organization.cs" />
