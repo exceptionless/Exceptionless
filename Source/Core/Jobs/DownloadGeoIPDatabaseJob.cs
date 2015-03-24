@@ -31,13 +31,8 @@ namespace Exceptionless.Core.Jobs {
                     return JobResult.FailedWithMessage("Unable to download GeoIP database.");
 
                 Log.Info().Message("Extracting GeoIP database").Write();
-                using (var decompressedMemoryStream = new MemoryStream()) {
-                    using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync(), CompressionMode.Decompress)) {
-                        decompressionStream.CopyTo(decompressedMemoryStream);
-                    }
-
-                    await _storage.SaveFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, decompressedMemoryStream, token);
-                }
+                using (GZipStream decompressionStream = new GZipStream(await file.Content.ReadAsStreamAsync(), CompressionMode.Decompress))
+                    await _storage.SaveFileAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH, decompressionStream, token);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("An error occurred while downloading the GeoIP database.").Write();
                 return JobResult.FromException(ex);

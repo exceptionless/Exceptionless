@@ -44,6 +44,9 @@ namespace Exceptionless.Api.Tests.Plugins {
             if (_resolver == null)
                 return;
 
+            // Load the database
+            await _resolver.ResolveIpAsync("0.0.0.0");
+
             var sw = new Stopwatch();
             sw.Start();
             
@@ -51,7 +54,7 @@ namespace Exceptionless.Api.Tests.Plugins {
                 Assert.NotNull(await _resolver.ResolveIpAsync("8.8.4.4"));
 
             sw.Stop();
-            Assert.InRange(sw.ElapsedMilliseconds, 0, 900);
+            Assert.InRange(sw.ElapsedMilliseconds, 0, 65);
         }
 
         public static IEnumerable<object[]> IPData {
