@@ -482,6 +482,7 @@ namespace Exceptionless.Api.Controllers {
         /// <summary>
         /// Get by organization
         /// </summary>
+        /// <param name="organizationId">The identifier of the organization.</param>
         /// <param name="filter">A filter that controls what data is returned from the server.</param>
         /// <param name="sort">Controls the sort order that the data is returned in. In this example -date returns the results descending by date.</param>
         /// <param name="time">The time filter that limits the data being returned to a specific date range.</param>

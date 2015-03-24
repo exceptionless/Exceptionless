@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostString() {
+        public void CanPostString() {
             _eventQueue.DeleteQueue();
             RemoveAllEvents();
 
@@ -109,7 +109,7 @@ namespace Exceptionless.Api.Tests.Controllers {
         }
 
         [Fact]
-        public async Task CanPostManyEvents() {
+        public void CanPostManyEvents() {
             _eventQueue.DeleteQueue();
             RemoveAllEvents();
 
@@ -129,13 +129,13 @@ namespace Exceptionless.Api.Tests.Controllers {
                     countdown.Signal();
                 });
 
-                Parallel.For(0, batchCount, async i => {
+                Parallel.For(0, batchCount, i => {
                     _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), true, false);
                     var events = new RandomEventGenerator().Generate(batchSize);
-                    var compressedEvents = await Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync();
-                    var actionResult = await _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0");
+                    var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().Result;
+                    var actionResult = _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").Result;
                     Assert.IsType<StatusCodeResult>(actionResult);
-                });
+                });;
 
                 Assert.Equal(batchCount, _eventQueue.GetQueueCount());
 
