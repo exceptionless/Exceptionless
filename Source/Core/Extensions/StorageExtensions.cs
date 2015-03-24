@@ -1,19 +1,22 @@
 ﻿using System;
 using System.IO;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Storage;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Extensions {
     public static class StorageExtensions {
-        public static EventPostInfo GetEventPostAndSetActive(this IFileStorage storage, string path) {
-            EventPostInfo eventPostInfo = null;
+        public static async Task<EventPostInfo> GetEventPostAndSetActiveAsync(this IFileStorage storage, string path, CancellationToken cancellationToken = default(CancellationToken)) {
+            EventPostInfo eventPostInfo;
             try {
-                eventPostInfo = storage.GetObject<EventPostInfo>(path);
+                eventPostInfo = await storage.GetObjectAsync<EventPostInfo>(path, cancellationToken);
                 if (eventPostInfo == null)
                     return null;
 
-                if (!storage.Exists(path + ".x") && !storage.SaveFile(path + ".x", String.Empty))
+                if (!await storage.ExistsAsync(path + ".x") && !await storage.SaveFileAsync(path + ".x", new MemoryStream(Encoding.UTF8.GetBytes(String.Empty)), cancellationToken))
                     return null;
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error retrieving event post data \"{0}\".", path).Write();
@@ -23,9 +26,9 @@ namespace Exceptionless.Core.Extensions {
             return eventPostInfo;
         }
 
-        public static bool SetNotActive(this IFileStorage storage, string path) {
+        public static async Task<bool> SetNotActiveAsync(this IFileStorage storage, string path, CancellationToken cancellationToken = default(CancellationToken)) {
             try {
-                return storage.DeleteFile(path + ".x");
+                return await storage.DeleteFileAsync(path + ".x", cancellationToken);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("Error deleting work marker \"{0}\".", path + ".x").Write();
             }
@@ -33,7 +36,7 @@ namespace Exceptionless.Core.Extensions {
             return false;
         }
 
-        public static bool CompleteEventPost(this IFileStorage storage, string path, string projectId, DateTime created, bool shouldArchive = true) {
+        public static async Task<bool> CompleteEventPostAsync(this IFileStorage storage, string path, string projectId, DateTime created, bool shouldArchive = true, CancellationToken cancellationToken = default(CancellationToken)) {
             // don't move files that are already in the archive
             if (path.StartsWith("archive"))
                 return true;
@@ -42,10 +45,10 @@ namespace Exceptionless.Core.Extensions {
             
             try {
                 if (shouldArchive) {
-                    if (!storage.RenameFile(path, archivePath))
+                    if (!await storage.RenameFileAsync(path, archivePath, cancellationToken))
                         return false;
                 } else {
-                    if (!storage.DeleteFile(path))
+                    if (!await storage.DeleteFileAsync(path, cancellationToken))
                         return false;
                 }
             } catch (Exception ex) {
@@ -53,7 +56,7 @@ namespace Exceptionless.Core.Extensions {
                 return false;
             }
 
-            storage.SetNotActive(path);
+            await storage.SetNotActiveAsync(path, cancellationToken);
 
             return true;
         }

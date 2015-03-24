@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
+using System.Threading.Tasks;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Caching;
@@ -51,9 +53,9 @@ namespace Exceptionless.Core.Utility {
             return HealthCheckResult.Healthy;
         }
 
-        public HealthCheckResult CheckElasticSearch() {
+        public async Task<HealthCheckResult> CheckElasticSearchAsync() {
             try {
-                var res = _elasticClient.Ping();
+                var res = await _elasticClient.PingAsync();
                 if (!res.IsValid)
                     return HealthCheckResult.NotHealthy("ElasticSearch Ping Failed");
             } catch (Exception ex) {
@@ -63,9 +65,9 @@ namespace Exceptionless.Core.Utility {
             return HealthCheckResult.Healthy;
         }
 
-        public HealthCheckResult CheckStorage() {
+        public async Task<HealthCheckResult> CheckStorageAsync() {
             try {
-                _storage.GetFileList(limit: 1);
+                await _storage.GetFileListAsync(limit: 1);
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Storage Not Working: " + ex.Message);
             }
@@ -112,7 +114,7 @@ namespace Exceptionless.Core.Utility {
              return HealthCheckResult.Healthy;
         }
     
-        public HealthCheckResult CheckAll() {
+        public async Task<HealthCheckResult> CheckAllAsync() {
             var result = CheckCache();
             if (!result.IsHealthy)
                 return result;
@@ -121,11 +123,11 @@ namespace Exceptionless.Core.Utility {
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckElasticSearch();
+            result = await CheckElasticSearchAsync();
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckStorage();
+            result = await CheckStorageAsync();
             if (!result.IsHealthy)
                 return result;
 

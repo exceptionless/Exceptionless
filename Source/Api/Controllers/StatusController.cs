@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Api.Models;
@@ -39,8 +40,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route(API_PREFIX + "/status")]
         [ResponseType(typeof(StatusResult))]
-        public IHttpActionResult Index() {
-            var result = _healthChecker.CheckAll();
+        public async Task<IHttpActionResult> Index() {
+            var result = await _healthChecker.CheckAllAsync();
             if (!result.IsHealthy)
                 return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message);
 

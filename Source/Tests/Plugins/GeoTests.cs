@@ -17,7 +17,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             var dataDirectory = PathHelper.ExpandPath(".\\");
             var storage = new FolderFileStorage(dataDirectory);
 
-            if (!storage.Exists(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH)) {
+            if (!storage.ExistsAsync(MindMaxGeoIPResolver.GEO_IP_DATABASE_PATH).Result) {
                 var job = new DownloadGeoIPDatabaseJob(storage).Run();
                 Assert.NotNull(job);
                 Assert.True(job.IsSuccess);

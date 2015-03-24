@@ -384,7 +384,7 @@ namespace Exceptionless.Api.Controllers {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
-        public IHttpActionResult Post([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+        public async Task <IHttpActionResult> Post([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
             _statsClient.Counter(MetricNames.PostsSubmitted);
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
@@ -400,12 +400,12 @@ namespace Exceptionless.Api.Controllers {
             string contentEncoding = Request.Content.Headers.ContentEncoding.ToString();
             bool isCompressed = contentEncoding == "gzip" || contentEncoding == "deflate";
             if (!isCompressed && data.Length > 1000) {
-                data = data.Compress();
+                data = await data.CompressAsync();
                 contentEncoding = "gzip";
             }
 
             try {
-                _eventPostQueue.Enqueue(new EventPostInfo {
+                await _eventPostQueue.EnqueueAsync(new EventPostInfo {
                     MediaType = Request.Content.Headers.ContentType.MediaType,
                     CharSet = Request.Content.Headers.ContentType.CharSet,
                     ProjectId = projectId,

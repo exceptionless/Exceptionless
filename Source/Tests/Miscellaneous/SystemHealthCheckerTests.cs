@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Migrations;
@@ -13,10 +14,10 @@ namespace Exceptionless.Api.Tests.Miscellaneous {
         }
 
         [Fact]
-        public void CheckAll() {
+        public async Task CheckAll() {
             var checker = IoC.GetInstance<SystemHealthChecker>();
             Assert.NotNull(checker);
-            var health = checker.CheckAll();
+            var health = await checker.CheckAllAsync();
             Assert.True(health.IsHealthy, health.Message);
         }
     }

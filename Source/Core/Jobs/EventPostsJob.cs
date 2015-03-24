@@ -64,10 +64,10 @@ namespace Exceptionless.Core.Jobs {
                 return JobResult.Cancelled;
             }
 
-            EventPostInfo eventPostInfo = _storage.GetEventPostAndSetActive(queueEntry.Value.FilePath);
+            EventPostInfo eventPostInfo = await _storage.GetEventPostAndSetActiveAsync(queueEntry.Value.FilePath, token);
             if (eventPostInfo == null) {
                 queueEntry.Abandon();
-                _storage.SetNotActive(queueEntry.Value.FilePath);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
                 return JobResult.FailedWithMessage(String.Format("Unable to retrieve post data '{0}'.", queueEntry.Value.FilePath));
             }
 
@@ -86,7 +86,7 @@ namespace Exceptionless.Core.Jobs {
             } catch (Exception ex) {
                 _statsClient.Counter(MetricNames.PostsParseErrors);
                 queueEntry.Abandon();
-                _storage.SetNotActive(queueEntry.Value.FilePath);
+                _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).RunSynchronously();
 
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
@@ -99,7 +99,7 @@ namespace Exceptionless.Core.Jobs {
        
             if (events == null) {
                 queueEntry.Abandon();
-                _storage.SetNotActive(queueEntry.Value.FilePath);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
                 return JobResult.Success;
             }
 
@@ -120,7 +120,7 @@ namespace Exceptionless.Core.Jobs {
 
             if (events == null) {
                 queueEntry.Abandon();
-                _storage.SetNotActive(queueEntry.Value.FilePath);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
                 return JobResult.Success;
             }
 
@@ -145,7 +145,7 @@ namespace Exceptionless.Core.Jobs {
 
                     if (!isSingleEvent) {
                         // Put this single event back into the queue so we can retry it separately.
-                        _queue.Enqueue(new EventPostInfo {
+                        await _queue.EnqueueAsync(new EventPostInfo {
                             ApiVersion = eventPostInfo.ApiVersion,
                             CharSet = eventPostInfo.CharSet,
                             Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventContext.Event)),
@@ -153,7 +153,7 @@ namespace Exceptionless.Core.Jobs {
                             MediaType = eventPostInfo.MediaType,
                             ProjectId = eventPostInfo.ProjectId,
                             UserAgent = eventPostInfo.UserAgent
-                        }, _storage, false);
+                        }, _storage, false, token);
                     }
                 }
             } catch (ArgumentException ex) {
@@ -166,14 +166,14 @@ namespace Exceptionless.Core.Jobs {
 
             if (isSingleEvent && errorCount > 0) {
                 queueEntry.Abandon();
-                _storage.SetNotActive(queueEntry.Value.FilePath);
+                await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
             } else {
                 queueEntry.Complete();
                 if (queueEntry.Value.ShouldArchive)
-                    _storage.CompleteEventPost(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive);
+                    await _storage.CompleteEventPostAsync(queueEntry.Value.FilePath, eventPostInfo.ProjectId, created, queueEntry.Value.ShouldArchive, token);
                 else {
-                    _storage.DeleteFile(queueEntry.Value.FilePath);
-                    _storage.SetNotActive(queueEntry.Value.FilePath);
+                    await _storage.DeleteFileAsync(queueEntry.Value.FilePath, token);
+                    await _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token);
                 }
             }
 

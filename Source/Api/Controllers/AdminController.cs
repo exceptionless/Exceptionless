@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using Exceptionless.Core.Authorization;
@@ -74,12 +75,11 @@ namespace Exceptionless.Api.Controllers {
 
         [HttpGet]
         [Route("requeue")]
-        public IHttpActionResult Requeue(string path = null, bool archive = false) {
+        public async Task<IHttpActionResult> Requeue(string path = null, bool archive = false) {
             if (String.IsNullOrEmpty(path))
                 path = @"q\*";
 
-            var files = _fileStorage.GetFileList(path);
-            foreach (var file in files)
+            foreach (var file in await _fileStorage.GetFileListAsync(path))
                 _eventPostQueue.Enqueue(new EventPost { FilePath = file.Path, ShouldArchive = archive });
 
             return Ok();

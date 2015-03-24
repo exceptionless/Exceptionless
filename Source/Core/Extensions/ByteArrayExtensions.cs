@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class ByteArrayExtensions {
@@ -26,11 +28,11 @@ namespace Exceptionless.Core.Extensions {
             return decompressedData;
         }
 
-        public static byte[] Compress(this byte[] data) {
+        public static async Task<byte[]> CompressAsync(this byte[] data, CancellationToken cancellationToken = default(CancellationToken)) {
             byte[] compressesData;
             using (var outputStream = new MemoryStream()) {
                 using (var zip = new GZipStream(outputStream, CompressionMode.Compress)) {
-                    zip.Write(data, 0, data.Length);
+                    await zip.WriteAsync(data, 0, data.Length, cancellationToken);
                 }
 
                 compressesData = outputStream.ToArray();
