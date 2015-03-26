@@ -28,7 +28,7 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   2. Enable Web Sockets.
   3. Setup IIS and add the Exceptionless API website ([Download](https://github.com/exceptionless/Exceptionless/releases)).
   4. Update the connection strings in the `Web.config` file to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
-  5. Update the app settings in the `Web.config` file (`BaseURL`, `EnableSSL`, `WebsiteMode`, etc..).
+  5. Update the app settings (`BaseURL`, `EnableSSL`, `WebsiteMode`, etc..) in the `Web.config` file.
   6. Update the mail settings in the `Web.config` file.
   7. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
 
