@@ -3,7 +3,7 @@
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
-## Getting Started
+## Getting Started (Development)
 
 _NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
 
