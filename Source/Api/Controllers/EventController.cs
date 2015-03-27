@@ -84,13 +84,16 @@ namespace Exceptionless.Api.Controllers {
             if (organization.RetentionDays > 0 && model.Date.UtcDateTime < DateTime.UtcNow.SubtractDays(organization.RetentionDays))
                 return PlanLimitReached("Unable to view event occurrence due to plan limits.");
 
-            var timeInfo = GetTimeInfo(time, offset);
+            if (!String.IsNullOrEmpty(filter))
+                filter = filter.ReplaceFirst("stack:current", "stack:" + model.StackId);
+
             var processResult = QueryProcessor.Process(filter);
             if (!processResult.IsValid)
                 return OkWithLinks(model, GetEntityResourceLink<Stack>(model.StackId, "parent"));
 
             var systemFilter = GetAssociatedOrganizationsFilter(_organizationRepository, processResult.UsesPremiumFeatures, HasOrganizationOrProjectFilter(filter));
 
+            var timeInfo = GetTimeInfo(time, offset);
             return OkWithLinks(model,
                 GetEntityResourceLink(_repository.GetPreviousEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "previous"),
                 GetEntityResourceLink(_repository.GetNextEventId(model, systemFilter, processResult.ExpandedQuery, timeInfo.UtcRange.Start, timeInfo.UtcRange.End), "next"),

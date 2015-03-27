@@ -213,15 +213,17 @@ namespace Exceptionless.Core.Extensions {
             return _whitespace.Replace(s, String.Empty);
         }
 
-        public static string ReplaceFirst(this string s, string find, string replace) {
-            var i = s.IndexOf(find);
-            if (i >= 0) {
-                var pre = s.Substring(0, i);
-                var post = s.Substring(i + find.Length);
-                return String.Concat(pre, replace, post);
-            }
+        public static string ReplaceFirst(this string input, string find, string replace) {
+            if (String.IsNullOrEmpty(input))
+                return input;
 
-            return s;
+            var i = input.IndexOf(find, StringComparison.Ordinal);
+            if (i < 0)
+                return input;
+
+            var pre = input.Substring(0, i);
+            var post = input.Substring(i + find.Length);
+            return String.Concat(pre, replace, post);
         }
 
         public static IEnumerable<string> SplitLines(this string text) {
