@@ -50,7 +50,7 @@
     </Reference>
     <Reference Include="Elasticsearch.Net, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Elasticsearch.Net.1.4.2\lib\net45\Elasticsearch.Net.dll</HintPath>
+      <HintPath>..\..\packages\Elasticsearch.Net.1.4.3\lib\net45\Elasticsearch.Net.dll</HintPath>
     </Reference>
     <Reference Include="Exceptionless.DateTimeExtensions, Version=3.0.34.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -65,7 +65,7 @@
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.159\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.160\lib\net45\Foundatio.dll</HintPath>
     </Reference>
     <Reference Include="MaxMind.Db">
       <HintPath>..\..\packages\MaxMind.Db.1.0.0.0\lib\net40\MaxMind.Db.dll</HintPath>
@@ -83,7 +83,7 @@
     </Reference>
     <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\NEST.1.4.2\lib\net45\Nest.dll</HintPath>
+      <HintPath>..\..\packages\NEST.1.4.3\lib\net45\Nest.dll</HintPath>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -96,9 +96,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Pegasus.3.1.1\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
-    <Reference Include="RazorEngine, Version=3.6.1.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
+    <Reference Include="RazorEngine, Version=3.6.4.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\RazorEngine.3.6.1\lib\net45\RazorEngine.dll</HintPath>
+      <HintPath>..\..\packages\RazorEngine.3.6.4\lib\net45\RazorEngine.dll</HintPath>
     </Reference>
     <Reference Include="SimpleInjector, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

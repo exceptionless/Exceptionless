@@ -40,7 +40,7 @@ namespace Exceptionless.Core.Repositories {
                 var deleteResponse = searchclient.DeleteIndex(i => i.AllIndices());
                 Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
 
-                if (searchclient.TemplateExists(new TemplateExistsRequest(ElasticSearchRepository<PersistentEvent>.EventsIndexName)).Exists) {
+                if (searchclient.TemplateExists(ElasticSearchRepository<PersistentEvent>.EventsIndexName).Exists) {
                     response = searchclient.DeleteTemplate(ElasticSearchRepository<PersistentEvent>.EventsIndexName);
                     Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the event index template.");
                 }
