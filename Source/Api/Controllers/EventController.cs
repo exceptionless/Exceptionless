@@ -364,11 +364,10 @@ namespace Exceptionless.Api.Controllers {
         /// <code>
         ///     {  
         ///         "type": "error",
-        ///         "date": "2020-10-16T18:59:09.579Z",
         ///         "@simple_error": {  
         ///             "message": "Simple Exception",
         ///             "type": "System.Exception",
-        ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in c:\\Code\\Exceptionless\\Source\\Clients\\Tests\\ExceptionlessClientTests.cs:line 77"
+        ///             "stack_trace": "   at Client.Tests.ExceptionlessClientTests.CanSubmitSimpleException() in ExceptionlessClientTests.cs:line 77"
         ///         }
         ///     }
         /// </code>
