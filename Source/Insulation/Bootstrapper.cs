@@ -5,7 +5,6 @@ using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
-using Foundatio.AppStats;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
