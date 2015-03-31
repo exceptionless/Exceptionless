@@ -16,12 +16,12 @@ namespace Exceptionless.Api.Utility {
     public sealed class OverageHandler : DelegatingHandler {
         private readonly IOrganizationRepository _organizationRepository;
         private readonly ICacheClient _cacheClient;
-        private readonly IMetricsClient _statsClient;
+        private readonly IMetricsClient _metricsClient;
 
-        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMetricsClient statsClient) {
+        public OverageHandler(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IMetricsClient metricsClient) {
             _organizationRepository = organizationRepository;
             _cacheClient = cacheClient;
-            _statsClient = statsClient;
+            _metricsClient = metricsClient;
         }
 
         private bool IsEventPost(HttpRequestMessage request) {
@@ -32,24 +32,24 @@ namespace Exceptionless.Api.Utility {
                 || String.Equals(request.RequestUri.AbsolutePath, "/api/v1/error", StringComparison.OrdinalIgnoreCase);
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (!IsEventPost(request))
-                return base.SendAsync(request, cancellationToken);
+                return await base.SendAsync(request, cancellationToken);
 
             if (_cacheClient.TryGet("ApiDisabled", false))
-                return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
+                return await CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             var project = request.GetDefaultProject();
             if (project == null)
-                return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
+                return await CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             bool tooBig = false;
             if (request.Content != null && request.Content.Headers != null) {
                 long size = request.Content.Headers.ContentLength.GetValueOrDefault();
-                _statsClient.Gauge(MetricNames.PostsSize, size);
+                await _metricsClient.GaugeAsync(MetricNames.PostsSize, size);
                 if (size > Settings.Current.MaximumEventPostSize) {
                     Log.Warn().Message("Event submission discarded for being too large: {0}", size).Project(project.Id).Write();
-                    _statsClient.Counter(MetricNames.PostsDiscarded);
+                    await _metricsClient.CounterAsync(MetricNames.PostsDiscarded);
                     tooBig = true;
                 }
             }
@@ -58,14 +58,14 @@ namespace Exceptionless.Api.Utility {
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)
-                return CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
+                return await CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
 
             if (overLimit) {
-                _statsClient.Counter(MetricNames.PostsBlocked);
-                return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
+                await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
+                return await CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
             }
 
-            return base.SendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken);
         }
 
         private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {

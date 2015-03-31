@@ -9,20 +9,20 @@ using Foundatio.Metrics;
 namespace Exceptionless.Core.Pipeline {
     [Priority(90)]
     public class IncrementCountersAction : EventPipelineActionBase {
-        private readonly IMetricsClient _stats;
+        private readonly IMetricsClient _metricsClient;
 
-        public IncrementCountersAction(IMetricsClient stats) {
-            _stats = stats;
+        public IncrementCountersAction(IMetricsClient metricsClient) {
+            _metricsClient = metricsClient;
         }
 
         protected override bool ContinueOnError { get { return true; } }
 
         public override void ProcessBatch(ICollection<EventContext> contexts) {
             try {
-                _stats.Counter(MetricNames.EventsProcessed, contexts.Count);
+                _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
 
                 if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                    _stats.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
+                    _metricsClient.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;

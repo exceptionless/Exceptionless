@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Repositories;
@@ -18,7 +19,7 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
         private readonly IStackRepository _stackRepository = IoC.GetInstance<IStackRepository>();
         private readonly EventStats _stats = IoC.GetInstance<EventStats>();
-        private readonly InMemoryMetricsClient _statsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
+        private readonly InMemoryMetricsClient _metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]
@@ -30,7 +31,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount, false);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
@@ -55,7 +56,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount, false);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(DateTime.MinValue, DateTime.MaxValue, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.Equal(eventCount, result.Timeline.Sum(t => t.Total));
@@ -80,7 +81,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var resultUtc = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null);
             Assert.Equal(eventCount, resultUtc.Total);
             Assert.Equal(eventCount, resultUtc.Timeline.Sum(t => t.Total));
@@ -99,7 +100,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount, false);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "tags", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             // each event can be in multiple tag buckets since an event can have up to 3 sample tags
@@ -122,7 +123,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount, false);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "stack_id", null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 25);
@@ -145,7 +146,7 @@ namespace Exceptionless.Api.Tests.Stats {
             CreateData(eventCount);
 
             _client.Refresh(d => d.Force());
-            _statsClient.DisplayStats();
+            _metricsClient.DisplayStats();
             var result = _stats.GetTermsStats(startDate, DateTime.UtcNow, "project_id", null);
             Assert.Equal(eventCount, result.Total);
             Assert.InRange(result.Terms.Count, 1, 3); // 3 sample projects
@@ -157,16 +158,16 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanSetGauges() {
-            _statsClient.Gauge("mygauge", 12d);
-            Assert.Equal(12d, _statsClient.GetGaugeValue("mygauge"));
-            _statsClient.Gauge("mygauge", 10d);
-            _statsClient.Gauge("mygauge", 5d);
-            _statsClient.Gauge("mygauge", 4d);
-            _statsClient.Gauge("mygauge", 12d);
-            _statsClient.Gauge("mygauge", 20d);
-            Assert.Equal(20d, _statsClient.GetGaugeValue("mygauge"));
-            _statsClient.DisplayStats();
+        public async Task CanSetGauges() {
+            await _metricsClient.GaugeAsync("mygauge", 12d);
+            Assert.Equal(12d, _metricsClient.GetGaugeValue("mygauge"));
+            await _metricsClient.GaugeAsync("mygauge", 10d);
+            await _metricsClient.GaugeAsync("mygauge", 5d);
+            await _metricsClient.GaugeAsync("mygauge", 4d);
+            await _metricsClient.GaugeAsync("mygauge", 12d);
+            await _metricsClient.GaugeAsync("mygauge", 20d);
+            Assert.Equal(20d, _metricsClient.GetGaugeValue("mygauge"));
+            _metricsClient.DisplayStats();
         }
 
         protected void CreateData(int eventCount = 100, bool multipleProjects = true) {

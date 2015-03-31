@@ -18,13 +18,13 @@ namespace Exceptionless.Core.Mail {
         private readonly IEmailGenerator _emailGenerator;
         private readonly IQueue<MailMessage> _queue;
         private readonly FormattingPluginManager _pluginManager;
-        private readonly IMetricsClient _statsClient;
+        private readonly IMetricsClient _metricsClient;
 
-        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient statsClient) {
+        public Mailer(IEmailGenerator emailGenerator, IQueue<MailMessage> queue, FormattingPluginManager pluginManager, IMetricsClient metricsClient) {
             _emailGenerator = emailGenerator;
             _queue = queue;
             _pluginManager = pluginManager;
-            _statsClient = statsClient;
+            _metricsClient = metricsClient;
         }
 
         public void SendPasswordReset(User user) {
@@ -108,7 +108,7 @@ namespace Exceptionless.Core.Mail {
             CleanAddresses(message);
 
             _queue.Enqueue(message.ToMailMessage());
-            _statsClient.Counter(MetricNames.EmailsQueued);
+            _metricsClient.Counter(MetricNames.EmailsQueued);
         }
 
         private static void CleanAddresses(System.Net.Mail.MailMessage msg) {

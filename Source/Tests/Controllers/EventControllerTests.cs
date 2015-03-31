@@ -46,10 +46,10 @@ namespace Exceptionless.Api.Tests.Controllers {
             try {
                 _eventController.Request = CreateRequestMessage(new ClaimsPrincipal(IdentityUtils.CreateUserIdentity(TestConstants.UserEmail, TestConstants.UserId, new[] { TestConstants.OrganizationId }, new[] { AuthorizationRoles.Client }, TestConstants.ProjectId)), false, false);
 
-                var statsCounter = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
-                Assert.NotNull(statsCounter);
+                var metricsClient = IoC.GetInstance<IMetricsClient>() as InMemoryMetricsClient;
+                Assert.NotNull(metricsClient);
                 
-                Assert.True(statsCounter.WaitForCounter(MetricNames.PostsQueued, work: async () => {
+                Assert.True(metricsClient.WaitForCounter(MetricNames.PostsQueued, work: async () => {
                     var actionResult = await _eventController.PostAsync(Encoding.UTF8.GetBytes("simple string"));
                     Assert.IsType<StatusCodeResult>(actionResult);
                 }));

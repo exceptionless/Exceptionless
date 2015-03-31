@@ -35,7 +35,7 @@ namespace Exceptionless.Api.Controllers {
         private readonly IStackRepository _stackRepository;
         private readonly IQueue<EventPost> _eventPostQueue;
         private readonly IQueue<EventUserDescription> _eventUserDescriptionQueue;
-        private readonly IMetricsClient _statsClient;
+        private readonly IMetricsClient _metricsClient;
         private readonly IValidator<UserDescription> _userDescriptionValidator;
         private readonly FormattingPluginManager _formattingPluginManager;
         private readonly IFileStorage _storage;
@@ -46,7 +46,7 @@ namespace Exceptionless.Api.Controllers {
             IStackRepository stackRepository,
             IQueue<EventPost> eventPostQueue, 
             IQueue<EventUserDescription> eventUserDescriptionQueue,
-            IMetricsClient statsClient,
+            IMetricsClient metricsClient,
             IValidator<UserDescription> userDescriptionValidator,
             FormattingPluginManager formattingPluginManager,
             IFileStorage storage) : base(repository) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Api.Controllers {
             _stackRepository = stackRepository;
             _eventPostQueue = eventPostQueue;
             _eventUserDescriptionQueue = eventUserDescriptionQueue;
-            _statsClient = statsClient;
+            _metricsClient = metricsClient;
             _userDescriptionValidator = userDescriptionValidator;
             _formattingPluginManager = formattingPluginManager;
             _storage = storage;
@@ -283,8 +283,8 @@ namespace Exceptionless.Api.Controllers {
         //[Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ResponseType(typeof(List<PersistentEvent>))]
-        public IHttpActionResult SetUserDescription(string referenceId, UserDescription description, string projectId = null) {
-            _statsClient.Counter(MetricNames.EventsUserDescriptionSubmitted);
+        public async Task<IHttpActionResult> SetUserDescriptionAsync(string referenceId, UserDescription description, string projectId = null) {
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionSubmitted);
             
             if (String.IsNullOrEmpty(referenceId))
                 return NotFound();
@@ -312,7 +312,7 @@ namespace Exceptionless.Api.Controllers {
             eventUserDescription.ReferenceId = referenceId;
 
             _eventUserDescriptionQueue.Enqueue(eventUserDescription);
-            _statsClient.Counter(MetricNames.EventsUserDescriptionQueued);
+            await _metricsClient.CounterAsync(MetricNames.EventsUserDescriptionQueued);
 
             return StatusCode(HttpStatusCode.Accepted);
         }
@@ -323,7 +323,7 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult LegacyPatch(string id, Delta<UpdateEvent> changes) {
+        public async Task<IHttpActionResult> LegacyPatch(string id, Delta<UpdateEvent> changes) {
             if (changes == null)
                 return Ok();
 
@@ -336,7 +336,7 @@ namespace Exceptionless.Api.Controllers {
             var userDescription = new UserDescription();
             changes.Patch(userDescription);
 
-            return SetUserDescription(id, userDescription);
+            return await SetUserDescriptionAsync(id, userDescription);
         }
 
         /// <summary>
@@ -387,7 +387,8 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public async Task <IHttpActionResult> PostAsync([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
-            _statsClient.Counter(MetricNames.PostsSubmitted);
+            await _metricsClient.CounterAsync(MetricNames.PostsSubmitted);
+
             if (projectId == null)
                 projectId = Request.GetDefaultProjectId();
 
@@ -418,11 +419,12 @@ namespace Exceptionless.Api.Controllers {
                 }, _storage);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Project(projectId).Message("Error enqueuing event post.").WriteIf(projectId != Settings.Current.InternalProjectId);
-                _statsClient.Counter(MetricNames.PostsQueuedErrors);
+                // TODO: Change to async once vnext is released.
+                _metricsClient.Counter(MetricNames.PostsQueuedErrors);
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
-           _statsClient.Counter(MetricNames.PostsQueued);
+            await _metricsClient.CounterAsync(MetricNames.PostsQueued);
             return StatusCode(HttpStatusCode.Accepted);
         }
 

@@ -13,12 +13,12 @@ namespace Exceptionless.Core.Jobs {
     public class MailMessageJob : JobBase {
         private readonly IQueue<MailMessage> _queue;
         private readonly IMailSender _mailSender;
-        private readonly IMetricsClient _statsClient;
+        private readonly IMetricsClient _metricsClient;
 
-        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IMetricsClient statsClient) {
+        public MailMessageJob(IQueue<MailMessage> queue, IMailSender mailSender, IMetricsClient metricsClient) {
             _queue = queue;
             _mailSender = mailSender;
-            _statsClient = statsClient;
+            _metricsClient = metricsClient;
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
@@ -35,15 +35,16 @@ namespace Exceptionless.Core.Jobs {
             if (queueEntry == null)
                 return JobResult.Success;
             
-            _statsClient.Counter(MetricNames.EmailsDequeued);
+            await _metricsClient.CounterAsync(MetricNames.EmailsDequeued);
             Log.Trace().Message("Processing message '{0}'.", queueEntry.Id).Write();
             
             try {
                 await _mailSender.SendAsync(queueEntry.Value);
-                _statsClient.Counter(MetricNames.EmailsSent);
+                await _metricsClient.CounterAsync(MetricNames.EmailsSent);
                 Log.Info().Message("Sent message: to={0} subject=\"{1}\"", queueEntry.Value.To, queueEntry.Value.Subject).Write();
             } catch (Exception ex) {
-                _statsClient.Counter(MetricNames.EmailsSendErrors);
+                // TODO: Change to async once vnext is released.
+                _metricsClient.Counter(MetricNames.EmailsSendErrors);
                 Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
 
                 queueEntry.Abandon();

@@ -25,16 +25,16 @@ namespace Exceptionless.Core.Jobs {
         private readonly IQueue<EventPost> _queue;
         private readonly EventParserPluginManager _eventParserPluginManager;
         private readonly EventPipeline _eventPipeline;
-        private readonly IMetricsClient _statsClient;
+        private readonly IMetricsClient _metricsClient;
         private readonly IOrganizationRepository _organizationRepository;
         private readonly IProjectRepository _projectRepository;
         private readonly IFileStorage _storage;
 
-        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient statsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
+        public EventPostsJob(IQueue<EventPost> queue, EventParserPluginManager eventParserPluginManager, EventPipeline eventPipeline, IMetricsClient metricsClient, IOrganizationRepository organizationRepository, IProjectRepository projectRepository, IFileStorage storage) {
             _queue = queue;
             _eventParserPluginManager = eventParserPluginManager;
             _eventPipeline = eventPipeline;
-            _statsClient = statsClient;
+            _metricsClient = metricsClient;
             _organizationRepository = organizationRepository;
             _projectRepository = projectRepository;
             _storage = storage;
@@ -72,21 +72,22 @@ namespace Exceptionless.Core.Jobs {
             }
 
             bool isInternalProject = eventPostInfo.ProjectId == Settings.Current.InternalProjectId;
-            _statsClient.Counter(MetricNames.PostsDequeued);
+            await _metricsClient.CounterAsync(MetricNames.PostsDequeued);
             Log.Info().Message("Processing post: id={0} path={1} project={2} ip={3} v={4} agent={5}", queueEntry.Id, queueEntry.Value.FilePath, eventPostInfo.ProjectId, eventPostInfo.IpAddress, eventPostInfo.ApiVersion, eventPostInfo.UserAgent).WriteIf(!isInternalProject);
             
             List<PersistentEvent> events = null;
             try {
-                _statsClient.Time(() => {
+                _metricsClient.Time(() => {
                     events = ParseEventPost(eventPostInfo);
                     Log.Info().Message("Parsed {0} events for post: id={1}", events.Count, queueEntry.Id).WriteIf(!isInternalProject);
                 }, MetricNames.PostsParsingTime);
-                _statsClient.Counter(MetricNames.PostsParsed);
-                _statsClient.Gauge(MetricNames.PostsEventCount, events.Count);
+                await _metricsClient.CounterAsync(MetricNames.PostsParsed);
+                await _metricsClient.GaugeAsync(MetricNames.PostsEventCount, events.Count);
             } catch (Exception ex) {
-                _statsClient.Counter(MetricNames.PostsParseErrors);
+                // TODO: Change to async once vnext is released.
+                _metricsClient.Counter(MetricNames.PostsParseErrors);
                 queueEntry.Abandon();
-                _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).RunSynchronously();
+                _storage.SetNotActiveAsync(queueEntry.Value.FilePath, token).Wait(token);
 
                 Log.Error().Exception(ex).Message("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message).Write();
                 return JobResult.FromException(ex, String.Format("An error occurred while processing the EventPost '{0}': {1}", queueEntry.Id, ex.Message));
