@@ -63,14 +63,18 @@ namespace Exceptionless.Api.Hubs {
             if (planOverage == null)
                 return;
 
-            Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
+            try {
+                Clients.Group(planOverage.OrganizationId).planOverage(planOverage);
+            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
         }
 
         private void OnPlanChanged(PlanChanged planChanged) {
             if (planChanged == null)
                 return;
-
-            Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
+            
+            try {
+                Clients.Group(planChanged.OrganizationId).planChanged(planChanged);
+            } catch (NullReferenceException) {} // TODO: Remove this when SignalR bug is fixed.
         }
 
         private void OnReleaseNotification(ReleaseNotification notification) {
