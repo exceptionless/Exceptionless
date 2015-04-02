@@ -38,7 +38,7 @@ namespace Exceptionless.Core.Extensions {
 
         public static bool IsOverRequestLimit(this Organization organization, ICacheClient cacheClient, int apiThrottleLimit) {
             var cacheKey = String.Concat("api", ":", organization.Id, ":", DateTime.UtcNow.Floor(TimeSpan.FromMinutes(15)).Ticks);
-            int? limit = cacheClient.Get<int?>(cacheKey);
+            long? limit = cacheClient.Get<long?>(cacheKey);
             return limit.HasValue && limit.Value >= apiThrottleLimit;
         }
 
