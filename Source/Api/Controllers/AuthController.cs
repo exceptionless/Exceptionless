@@ -10,9 +10,8 @@ using Exceptionless.Core;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Utility;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using FluentValidation;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
@@ -59,35 +58,49 @@ namespace Exceptionless.Api.Controllers {
         [Route("login")]
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Login(LoginModel model) {
-            if (model == null || String.IsNullOrWhiteSpace(model.Email))
+            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+                Log.Error().Message("Login failed: Email Address is required.").Tag("Login").Write();
                 return BadRequest("Email Address is required.");
+            }
 
-            if (String.IsNullOrWhiteSpace(model.Password))
+            if (String.IsNullOrWhiteSpace(model.Password)) {
+                Log.Error().Message("Login failed: Password is required.").Tag("Login").Property("Email Address", model.Email).Write();
                 return BadRequest("Password is required.");
+            }
 
             User user;
             try {
                 user = _userRepository.GetByEmailAddress(model.Email);
-            } catch (Exception) {
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Critical().Message("Login failed: {0}", ex.Message).Tag("Login").Property("Email Address", model.Email).Write();
                 return Unauthorized();
             }
 
-            if (user == null || !user.IsActive)
+            if (user == null) {
+                Log.Error().Message("Login failed: No user was found with this email address.").Tag("Login").Property("Email Address", model.Email).Write();
                 return Unauthorized();
+            }
+            
+            if (!user.IsActive) {
+                Log.Error().Message("Login failed: The user account \"{0}\" is inactive.", user.Id).Tag("Login").Property("User", user).Write();
+                return Unauthorized();
+            }
 
-            if (String.IsNullOrEmpty(user.Salt))
+            if (String.IsNullOrEmpty(user.Salt)) {
+                Log.Error().Message("Login failed: The user account \"{0}\" has no salt defined.", user.Id).Tag("Login").Property("User", user).Write();
                 return Unauthorized();
+            }
 
             string encodedPassword = model.Password.ToSaltedHash(user.Salt);
             if (!String.Equals(encodedPassword, user.Password)) {
-                //_exceptionless.CreateFeatureUsage("Invalid Password").AddTags("Login").SetProperty("Email Address", model.Email).SetProperty("Password Length", model.Password != null ? model.Password.Length : 0).Submit();
+                Log.Error().Message("Login failed: Invalid Password for user account \"{0}\".", user.Id).Tag("Login").Property("User", user).Write();
                 return Unauthorized();
             }
 
             if (!String.IsNullOrEmpty(model.InviteToken))
 				AddInvitedUserToOrganization(model.InviteToken, user);
 
-            //_exceptionless.CreateFeatureUsage("Login").AddObject(user).Submit();
+            Log.Info().Message("Login").Tag("Login").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -104,26 +117,33 @@ namespace Exceptionless.Api.Controllers {
             if (!Settings.Current.EnableAccountCreation) 
                 return BadRequest("Account Creation is currently disabled.");
 
-            if (model == null || String.IsNullOrWhiteSpace(model.Email))
+            if (model == null || String.IsNullOrWhiteSpace(model.Email)) {
+                Log.Error().Message("Signup failed: Email Address is required.").Tag("Signup").Property("Name", model != null ? model.Name : "<null>").Write();
                 return BadRequest("Email Address is required.");
+            }
 
-            if (String.IsNullOrWhiteSpace(model.Name))
+            if (String.IsNullOrWhiteSpace(model.Name)) {
+                Log.Error().Message("Signup failed: Name is required.").Tag("Signup").Property("Name", model.Name).Write();
                 return BadRequest("Name is required.");
+            }
 
             if (!IsValidPassword(model.Password)) {
-                //_exceptionless.CreateFeatureUsage("Invalid Password").AddTags("Signup").SetProperty("Email Address", model.Email).SetProperty("Password Length", model.Password != null ? model.Password.Length : 0).Submit();
+                Log.Error().Message("Signup failed: Invalid Password").Tag("Signup").Property("Email Address", model.Email).Property("Password Length", model.Password != null ? model.Password.Length : 0).Write();
                 return BadRequest("Password must be at least 6 characters long.");
             }
 
             User user;
             try {
                 user = _userRepository.GetByEmailAddress(model.Email);
-            } catch (Exception) {
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Critical().Message("Signup failed: {0}", ex.Message).Tag("Signup").Property("Email Address", model.Email).Write();
                 return BadRequest();
             }
 
-            if (user != null)
+            if (user != null) {
+                Log.Error().Message("Signup failed: A user already exists with \"{0}\" email address.", user.Id).Tag("Signup").Property("Email Address", model.Email).Write();
                 return BadRequest("A user already exists with this email address.");
+            }
 
             user = new User {
                 IsActive = true,
@@ -142,10 +162,11 @@ namespace Exceptionless.Api.Controllers {
             try {
                 user = _userRepository.Save(user);
             } catch (ValidationException ex) {
-                return BadRequest(String.Join(", ", ex.Errors));
+                var errors = String.Join(", ", ex.Errors);
+                Log.Error().Critical().Message("Signup failed: {0}", errors).Tag("Signup").Property("Email Address", model.Email).Write();
+                return BadRequest(errors);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("Signup").AddObject(user).AddObject(model).Submit();
+                Log.Error().Exception(ex).Critical().Message("Signup failed: {0}", ex.Message).Tag("Signup").Property("User", user).Write();
                 return BadRequest("An error occurred.");
             }
 
@@ -155,7 +176,7 @@ namespace Exceptionless.Api.Controllers {
             if (!user.IsEmailAddressVerified)
                 _mailer.SendVerifyEmail(user);
 
-            //_exceptionless.CreateFeatureUsage("Signup").AddObject(user).Submit();
+            Log.Info().Message("Signup").Tag("Signup").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -165,8 +186,10 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult GitHub(JObject value) {
             var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "GitHub").Property("Auth Info", authInfo).Write();
                 return NotFound();
+            }
 
             if (String.IsNullOrEmpty(Settings.Current.GitHubAppId) || String.IsNullOrEmpty(Settings.Current.GitHubAppSecret))
                 return NotFound();
@@ -181,8 +204,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "GitHub").AddObject(authInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "GitHub").Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -192,19 +214,19 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "GitHub").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "GitHub").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
             if (user == null) {
-                //_exceptionless.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "GitHub").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Message("External login failed: Unable to process user info.").Critical().Tag("External Login", "GitHub").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to process user info.");
             }
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
+            Log.Info().Message("Login").Tag("External Login", "GitHub").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -214,8 +236,10 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Google(JObject value) {
             var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "Google").Property("Auth Info", authInfo).Write();
                 return NotFound();
+            }
 
             if (String.IsNullOrEmpty(Settings.Current.GoogleAppId) || String.IsNullOrEmpty(Settings.Current.GoogleAppSecret))
                 return NotFound();
@@ -230,8 +254,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Google").AddObject(authInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "Google").Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -241,19 +264,19 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Google").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "Google").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
             if (user == null) {
-                //_exceptionless.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "Google").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Message("External login failed: Unable to process user info.").Critical().Tag("External Login", "Google").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to process user info.");
             }
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
+            Log.Info().Message("Login").Tag("External Login", "Google").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -263,8 +286,10 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Facebook(JObject value) {
             var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "Facebook").Property("Auth Info", authInfo).Write();
                 return NotFound();
+            }
 
             if (String.IsNullOrEmpty(Settings.Current.FacebookAppId) || String.IsNullOrEmpty(Settings.Current.FacebookAppSecret))
                 return NotFound();
@@ -279,8 +304,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Facebook").AddObject(authInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "Facebook").Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to get user info.");
             }
 
@@ -290,19 +314,19 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "Facebook").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "Facebook").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
             if (user == null) {
-                //_exceptionless.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "Facebook").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Message("External login failed: Unable to process user info.").Critical().Tag("External Login", "Facebook").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to process user info.");
             }
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
+            Log.Info().Message("Login").Tag("External Login", "Facebook").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -312,8 +336,10 @@ namespace Exceptionless.Api.Controllers {
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Live(JObject value) {
             var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code))
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "WindowsLive").Property("Auth Info", authInfo).Write();
                 return NotFound();
+            }
 
             if (String.IsNullOrEmpty(Settings.Current.MicrosoftAppId) || String.IsNullOrEmpty(Settings.Current.MicrosoftAppSecret))
                 return NotFound();
@@ -328,9 +354,8 @@ namespace Exceptionless.Api.Controllers {
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "WindowsLive").AddObject(authInfo).Submit();
-                return BadRequest("Unable to get user info.");
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "WindowsLive").Property("Auth Info", authInfo).Write();
+                return BadRequest("External login failed: Unable to get user info.");
             }
 
             User user;
@@ -339,19 +364,19 @@ namespace Exceptionless.Api.Controllers {
             } catch (ApplicationException) {
                 return BadRequest("Account Creation is currently disabled.");
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().MarkAsCritical().AddTags("External Login", "WindowsLive").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Exception(ex).Critical().Message("External login failed: {0}", ex.Message).Tag("External Login", "WindowsLive").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("An error occurred while processing user info.");
             }
 
             if (user == null) {
-                //_exceptionless.CreateLog(typeof(AuthController).Name, "Unable to process user info.", "Error").AddTags("External Login", "WindowsLive").AddObject(authInfo).AddObject(userInfo).Submit();
+                Log.Error().Message("External login failed: Unable to process user info.").Critical().Tag("External Login", "WindowsLive").Property("User Info", userInfo).Property("Auth Info", authInfo).Write();
                 return BadRequest("Unable to process user info.");
             }
 
             if (!String.IsNullOrWhiteSpace(authInfo.InviteToken))
                 AddInvitedUserToOrganization(authInfo.InviteToken, user);
 
+            Log.Info().Message("Login").Tag("External Login", "WindowsLive").Property("User", user).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
         }
 
@@ -360,16 +385,20 @@ namespace Exceptionless.Api.Controllers {
         [Route("unlink/{providerName:minlength(1)}")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult RemoveExternalLogin(string providerName, [NakedBody] string providerUserId) {
-            if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId))
+            if (String.IsNullOrEmpty(providerName) || String.IsNullOrEmpty(providerUserId)) {
+                Log.Error().Message("Remove external login failed: Invalid Provider Name or Provider User Id.").Tag("External Login", providerName).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).Write();
                 return BadRequest("Invalid Provider Name or Provider User Id.");
+            }
 
-            if (ExceptionlessUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(ExceptionlessUser.Password))
+            if (ExceptionlessUser.OAuthAccounts.Count <= 1 && String.IsNullOrEmpty(ExceptionlessUser.Password)) {
+                Log.Error().Message("Remove external login failed: You must set a local password before removing your external login.").Tag("External Login", providerName).Property("User", ExceptionlessUser).Property("Provider User Id", providerUserId).Write();
                 return BadRequest("You must set a local password before removing your external login.");
+            }
 
             if (ExceptionlessUser.RemoveOAuthAccount(providerName, providerUserId))
                 _userRepository.Save(ExceptionlessUser);
 
-            //_exceptionless.CreateFeatureUsage("Remove External Login").AddTags(providerName).AddObject(ExceptionlessUser).Submit();
+            Log.Info().Message("Remove External Login").Tag("External Login", providerName).Property("User", ExceptionlessUser).Write();
             return Ok();
         }
 
@@ -382,22 +411,28 @@ namespace Exceptionless.Api.Controllers {
         [Route("change-password")]
         [Authorize(Roles = AuthorizationRoles.User)]
         public IHttpActionResult ChangePassword(ChangePasswordModel model) {
-            if (model == null || !IsValidPassword(model.Password))
+            if (model == null || !IsValidPassword(model.Password)) {
+                Log.Error().Message("Change password failed: The New Password must be at least 6 characters long.").Tag("Change Password").Property("User", ExceptionlessUser).Property("Password Length", model != null && model.Password != null ? model.Password.Length : 0).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
+            }
 
             // User has a local account..
             if (!String.IsNullOrWhiteSpace(ExceptionlessUser.Password)) {
-                if (String.IsNullOrWhiteSpace(model.CurrentPassword))
+                if (String.IsNullOrWhiteSpace(model.CurrentPassword)) {
+                    Log.Error().Message("Change password failed: The current password is incorrect.").Tag("Change Password").Property("User", ExceptionlessUser).Write();
                     return BadRequest("The current password is incorrect.");
+                }
 
                 string encodedPassword = model.CurrentPassword.ToSaltedHash(ExceptionlessUser.Salt);
-                if (!String.Equals(encodedPassword, ExceptionlessUser.Password))
+                if (!String.Equals(encodedPassword, ExceptionlessUser.Password)) {
+                    Log.Error().Message("Change password failed: The current password is incorrect.").Tag("Change Password").Property("User", ExceptionlessUser).Write();
                     return BadRequest("The current password is incorrect.");
+                }
             }
 
             ChangePassword(ExceptionlessUser, model.Password);
 
-            //_exceptionless.CreateFeatureUsage("Change Password").AddObject(ExceptionlessUser).Submit();
+            Log.Info().Message("Change Password").Property("User", ExceptionlessUser).Write();
             return Ok();
         }
 
@@ -425,19 +460,23 @@ namespace Exceptionless.Api.Controllers {
         [HttpGet]
         [Route("forgot-password/{email:minlength(1)}")]
         public IHttpActionResult ForgotPassword(string email) {
-            if (String.IsNullOrWhiteSpace(email))
+            if (String.IsNullOrWhiteSpace(email)) {
+                Log.Error().Message("Forgot password failed: Please specify a valid Email Address.").Tag("Forgot Password").Write();
                 return BadRequest("Please specify a valid Email Address.");
+            }
 
             var user = _userRepository.GetByEmailAddress(email);
-            if (user == null)
+            if (user == null) {
+                Log.Error().Message("Forgot password failed: No user was found with \"{0}\" Email Address.", email).Tag("Forgot Password").Property("Email Address", email).Write();
                 return BadRequest("No user was found with this Email Address.");
+            }
 
             user.CreatePasswordResetToken();
             _userRepository.Save(user);
 
             _mailer.SendPasswordReset(user);
 
-            //_exceptionless.CreateFeatureUsage("Forgot Password").AddObject(user).Submit();
+            Log.Info().Message("Forgot Password").Property("User", user).Write();
             return Ok();
         }
 
@@ -449,23 +488,31 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("reset-password")]
         public IHttpActionResult ResetPassword(ResetPasswordModel model) {
-            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken))
+            if (model == null || String.IsNullOrEmpty(model.PasswordResetToken)) {
+                Log.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").Write();
                 return BadRequest("Invalid Password Reset Token.");
+            }
 
             var user = _userRepository.GetByPasswordResetToken(model.PasswordResetToken);
-            if (user == null)
+            if (user == null) {
+                Log.Error().Message("Reset password failed: Invalid Password Reset Token.").Tag("Reset Password").Write();
                 return BadRequest("Invalid Password Reset Token.");
+            }
 
-            if (!user.HasValidPasswordResetTokenExpiration())
+            if (!user.HasValidPasswordResetTokenExpiration()) {
+                Log.Error().Message("Reset password failed: Verify Email Address Token has expired.").Tag("Reset Password").Property("User", user).Write();
                 return BadRequest("Verify Email Address Token has expired.");
+            }
 
-            if (!IsValidPassword(model.Password))
+            if (!IsValidPassword(model.Password)) {
+                Log.Error().Message("Reset password failed: The New Password must be at least 6 characters long.").Tag("Reset Password").Property("User", user).Property("Password Length", model.Password != null ? model.Password.Length : 0).Write();
                 return BadRequest("The New Password must be at least 6 characters long.");
+            }
 
             user.MarkEmailAddressVerified();
             ChangePassword(user, model.Password);
 
-            //_exceptionless.CreateFeatureUsage("Reset Password").AddObject(user).Submit();
+            Log.Info().Message("Reset Password").Property("User", user).Write();
             return Ok();
         }
 
@@ -477,8 +524,10 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route("cancel-reset-password/{token:minlength(1)}")]
         public IHttpActionResult CancelResetPassword(string token) {
-            if (String.IsNullOrEmpty(token))
+            if (String.IsNullOrEmpty(token)) {
+                Log.Error().Message("Cancel reset password failed: Invalid Password Reset Token.").Tag("Reset Password").Write();
                 return BadRequest("Invalid password reset token.");
+            }
 
             var user = _userRepository.GetByPasswordResetToken(token);
             if (user == null)
@@ -487,7 +536,7 @@ namespace Exceptionless.Api.Controllers {
             user.ResetPasswordResetToken();
             _userRepository.Save(user);
 
-            //_exceptionless.CreateFeatureUsage("Cancel Reset Password").AddObject(user).Submit();
+            Log.Info().Message("Cancel Reset Password").Property("User", user).Write();
             return Ok();
         }
 
@@ -503,7 +552,6 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private User AddExternalLogin(UserInfo userInfo) {
-            //_exceptionless.CreateFeatureUsage("External Login").AddTags(userInfo.ProviderName).AddObject(userInfo).Submit();
             User existingUser = _userRepository.GetUserByOAuthProvider(userInfo.ProviderName, userInfo.Id);
 
             // Link user accounts.
@@ -574,7 +622,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!user.OrganizationIds.Contains(organization.Id)) {
-                //_exceptionless.CreateFeatureUsage("Joined From Invite").AddObject(organization).AddObject(user).Submit();
+                Log.Info().Message("Joined From Invite").Tag("Invite").Property("Organization", organization).Property("User", user).Write();
                 user.OrganizationIds.Add(organization.Id);
                 _userRepository.Save(user);
             }
