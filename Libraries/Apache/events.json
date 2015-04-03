@@ -1,6 +1,6 @@
 {
   "type": "error",
-  "message": "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
+  "message": "STRESS TEST EVENT: A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
   "data": {
     "@version": "2.0.1039 6f929bbe18",
     "@error": {
