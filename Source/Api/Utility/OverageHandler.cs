@@ -37,11 +37,11 @@ namespace Exceptionless.Api.Utility {
                 return await base.SendAsync(request, cancellationToken);
 
             if (_cacheClient.TryGet("ApiDisabled", false))
-                return await CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
+                return CreateResponse(request, HttpStatusCode.ServiceUnavailable, "Service Unavailable");
 
             var project = request.GetDefaultProject();
             if (project == null)
-                return await CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
+                return CreateResponse(request, HttpStatusCode.Unauthorized, "Unauthorized");
 
             bool tooBig = false;
             if (request.Content != null && request.Content.Headers != null) {
@@ -58,22 +58,22 @@ namespace Exceptionless.Api.Utility {
 
             // block large submissions, client should break them up or remove some of the data.
             if (tooBig)
-                return await CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
+                return CreateResponse(request, HttpStatusCode.RequestEntityTooLarge, "Event submission discarded for being too large.");
 
             if (overLimit) {
                 await _metricsClient.CounterAsync(MetricNames.PostsBlocked);
-                return await CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
+                return CreateResponse(request, HttpStatusCode.PaymentRequired, "Event limit exceeded.");
             }
 
             return await base.SendAsync(request, cancellationToken);
         }
 
-        private Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
+        private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
             response.Content = new StringContent(message);
 
-            return Task.FromResult(response);
+            return response;
         }
     }
 }

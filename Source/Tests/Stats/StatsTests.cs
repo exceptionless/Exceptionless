@@ -23,12 +23,12 @@ namespace Exceptionless.Api.Tests.Stats {
         private readonly EventPipeline _eventPipeline = IoC.GetInstance<EventPipeline>();
 
         [Fact]
-        public void CanGetEventStats() {
+        public async Task CanGetEventStats() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount, false);
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -48,12 +48,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventStatsWithoutDateRange() {
+        public async Task CanGetEventStatsWithoutDateRange() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount, false);
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -73,12 +73,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventStatsForTimeZone() {
+        public async Task CanGetEventStatsForTimeZone() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 1;
             RemoveData();
-            CreateData(eventCount);
+            await CreateDataAsync(eventCount);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -92,12 +92,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventTermStatsByTag() {
+        public async Task CanGetEventTermStatsByTag() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount, false);
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -115,12 +115,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventTermStatsByStack() {
+        public async Task CanGetEventTermStatsByStack() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount, false);
+            await CreateDataAsync(eventCount, false);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -138,12 +138,12 @@ namespace Exceptionless.Api.Tests.Stats {
         }
 
         [Fact]
-        public void CanGetEventTermStatsByProject() {
+        public async Task CanGetEventTermStatsByProject() {
             // capture start date before generating data to make sure that our time range for stats includes all items
             var startDate = DateTime.UtcNow.SubtractDays(60);
             const int eventCount = 100;
             RemoveData();
-            CreateData(eventCount);
+            await CreateDataAsync(eventCount);
 
             _client.Refresh(d => d.Force());
             _metricsClient.DisplayStats();
@@ -170,7 +170,7 @@ namespace Exceptionless.Api.Tests.Stats {
             _metricsClient.DisplayStats();
         }
 
-        protected void CreateData(int eventCount = 100, bool multipleProjects = true) {
+        private async Task CreateDataAsync(int eventCount = 100, bool multipleProjects = true) {
             var orgs = OrganizationData.GenerateSampleOrganizations();
             _organizationRepository.Add(orgs);
 
@@ -179,10 +179,10 @@ namespace Exceptionless.Api.Tests.Stats {
 
             var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.Now.SubtractDays(60), endDate: DateTimeOffset.Now);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
-                _eventPipeline.Run(eventGroup);
+                await _eventPipeline.RunAsync(eventGroup);
         }
 
-        protected void RemoveData() {
+        private void RemoveData() {
             _organizationRepository.RemoveAll();
             _projectRepository.RemoveAll();
             _eventRepository.RemoveAll();

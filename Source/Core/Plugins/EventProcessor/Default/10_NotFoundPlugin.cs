@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
@@ -6,7 +7,7 @@ using Exceptionless.Core.Models;
 namespace Exceptionless.Core.Plugins.EventProcessor {
     [Priority(10)]
     public class NotFoundPlugin : EventProcessorPluginBase {
-        public override void EventProcessing(EventContext context) {
+        public override async Task EventProcessingAsync(EventContext context) {
             if (context.Event.Type != Event.KnownTypes.NotFound)
                 return;
 

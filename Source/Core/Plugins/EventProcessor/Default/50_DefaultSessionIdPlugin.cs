@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             _cacheClient = cacheClient;
         }
 
-        public override void EventProcessing(EventContext context) {
+        public override async Task EventProcessingAsync(EventContext context) {
             var user = context.Event.GetUserIdentity();
             if (user == null || String.IsNullOrEmpty(user.Identity) || !String.IsNullOrEmpty(context.Event.SessionId))
                 return;

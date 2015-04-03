@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Models;
@@ -13,7 +14,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             _geoIpResolver = geoIpResolver;
         }
 
-        public override void EventProcessing(EventContext context) {
+        public override async Task EventProcessingAsync(EventContext context) {
             Location location;
             if (Location.TryParse(context.Event.Geo, out location) && location.IsValid()) {
                 context.Event.Geo = location.ToString();
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor.Default {
             }
 
             foreach (var ip in GetIpAddresses(context.Event)) {
-                location = _geoIpResolver.ResolveIpAsync(ip).Result;
+                location = await _geoIpResolver.ResolveIpAsync(ip);
                 if (location == null || !location.IsValid())
                     continue;
 

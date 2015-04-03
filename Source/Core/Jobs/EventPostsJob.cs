@@ -129,7 +129,7 @@ namespace Exceptionless.Core.Jobs {
             var created = DateTime.UtcNow;
             try {
                 events.ForEach(e => e.CreatedUtc = created);
-                var results = _eventPipeline.Run(events.Take(eventsToProcess).ToList());
+                var results = await _eventPipeline.RunAsync(events.Take(eventsToProcess).ToList());
                 Log.Info().Message("Ran {0} events through the pipeline: id={1} project={2} success={3} error={4}", results.Count, queueEntry.Id, eventPostInfo.ProjectId, results.Count(r => r.IsProcessed), results.Count(r => r.HasError)).WriteIf(!isInternalProject);
                 foreach (var eventContext in results) {
                     if (eventContext.IsCancelled)

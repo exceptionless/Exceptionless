@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Exceptionless.Api.Utility {
     public class EncodingDelegatingHandler : DelegatingHandler {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             if (request.Method != HttpMethod.Get && request.Content != null
                 && !(request.RequestUri.AbsolutePath.EndsWith("/events") && request.Method == HttpMethod.Post)
                 && !(request.RequestUri.AbsolutePath.EndsWith("/error") && request.Method == HttpMethod.Post)
@@ -20,21 +20,15 @@ namespace Exceptionless.Api.Utility {
                     request.Content = new CompressedContent(request.Content, encodingType);
             }
 
-            return base.SendAsync(request, cancellationToken).ContinueWith(responseToCompleteTask => {
-                HttpResponseMessage response = responseToCompleteTask.Result;
+            var response = await base.SendAsync(request, cancellationToken);
+            if (response.RequestMessage != null && response.RequestMessage.Headers != null && response.RequestMessage.Headers.AcceptEncoding != null && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
+                string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
 
-                if (response.RequestMessage != null
-                    && response.RequestMessage.Headers != null
-                    && response.RequestMessage.Headers.AcceptEncoding != null
-                    && response.RequestMessage.Headers.AcceptEncoding.Count > 0) {
-                    string encodingType = response.RequestMessage.Headers.AcceptEncoding.First().Value;
+                if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
+                    response.Content = new CompressedContent(response.Content, encodingType);
+            }
 
-                    if (response.Content != null && (encodingType == "gzip" || encodingType == "deflate"))
-                        response.Content = new CompressedContent(response.Content, encodingType);
-                }
-
-                return response;
-            }, TaskContinuationOptions.OnlyOnRanToCompletion);
+            return response;
         }
     }
 

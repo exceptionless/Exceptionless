@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Plugins.EventProcessor {
     public interface IEventProcessorPlugin {
-        void Startup();
-        void EventProcessing(EventContext context);
-        void EventProcessed(EventContext context);
+        Task StartupAsync();
+        Task EventProcessingAsync(EventContext context);
+        Task EventProcessedAsync(EventContext context);
     }
 }

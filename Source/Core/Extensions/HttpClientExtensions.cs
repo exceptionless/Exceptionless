@@ -3,15 +3,16 @@
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Extensions {
     public static class HttpClientExtensions {
-        public static HttpResponseMessage PostAsJson(this HttpClient httpClient, string url, string json) {
+        public static async Task<HttpResponseMessage> PostAsJsonAsync(this HttpClient httpClient, string url, string json) {
             var message = new HttpRequestMessage(HttpMethod.Post, new Uri(url)) {
                 Content = new StringContent(json, Encoding.UTF8, "application/json")
             };
 
-            return httpClient.SendAsync(message).Result;
+            return await httpClient.SendAsync(message);
         }
     }
 }

@@ -24,17 +24,13 @@ namespace Exceptionless.Api.Security {
             _userRepository = userRepository;
         }
 
-        protected virtual Task<HttpResponseMessage> BaseSendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
-            return base.SendAsync(request, cancellationToken);
-        }
-
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             var authHeader = request.Headers.Authorization;
             string scheme = authHeader != null ? authHeader.Scheme.ToLower() : null;
             string token = null;
-            if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme))
+            if (authHeader != null && (scheme == BearerScheme || scheme == TokenScheme)) {
                 token = authHeader.Parameter;
-            else if (authHeader != null && scheme == BasicScheme) {
+            } else if (authHeader != null && scheme == BasicScheme) {
                 var authInfo = request.GetBasicAuth();
                 if (authInfo != null) {
                     if (authInfo.Username.ToLower() == "client")
@@ -46,22 +42,21 @@ namespace Exceptionless.Api.Security {
                         try {
                             user = _userRepository.GetByEmailAddress(authInfo.Username);
                         } catch (Exception) {
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+                            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
                         }
 
                         if (user == null || !user.IsActive)
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+                            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
                         if (String.IsNullOrEmpty(user.Salt))
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+                            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
                         string encodedPassword = authInfo.Password.ToSaltedHash(user.Salt);
                         if (!String.Equals(encodedPassword, user.Password))
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
+                            return new HttpResponseMessage(HttpStatusCode.Unauthorized);
 
                         request.GetRequestContext().Principal = new ClaimsPrincipal(user.ToIdentity());
-
-                        return BaseSendAsync(request, cancellationToken);
+                        return await base.SendAsync(request, cancellationToken);
                     }
                 }
             } else {
@@ -69,16 +64,14 @@ namespace Exceptionless.Api.Security {
                 if (!String.IsNullOrEmpty(queryToken))
                     token = queryToken;
             }
-            
-            if (String.IsNullOrEmpty(token))
-                return BaseSendAsync(request, cancellationToken);
 
-            //try {
-            IPrincipal principal = _tokenManager.Validate(token);
-            if (principal != null)
-                request.GetRequestContext().Principal = principal;
+            if (!String.IsNullOrEmpty(token)) {
+                IPrincipal principal = _tokenManager.Validate(token);
+                if (principal != null)
+                    request.GetRequestContext().Principal = principal;
+            }
 
-            return BaseSendAsync(request, cancellationToken);
+            return await base.SendAsync(request, cancellationToken);
         }
     }
 }

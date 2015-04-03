@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
     [Priority(40)]
     public class CopySimpleDataToIdxAction : EventPipelineActionBase {
-        public override void Process(EventContext ctx) {
+        public override async Task ProcessAsync(EventContext ctx) {
             if (!ctx.Organization.HasPremiumFeatures)
                 return;
 

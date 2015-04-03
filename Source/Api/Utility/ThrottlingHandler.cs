@@ -45,7 +45,7 @@ namespace Exceptionless.Api.Utility {
             return String.Concat("api", ":", userIdentifier, ":", DateTime.UtcNow.Floor(_period).Ticks);
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) {
             string identifier = GetUserIdentifier(request);
             if (String.IsNullOrEmpty(identifier))
                 return CreateResponse(request, HttpStatusCode.Forbidden, "Could not identify client.");
@@ -58,33 +58,29 @@ namespace Exceptionless.Api.Utility {
                     _cacheClient.SetExpiration(cacheKey, _period);
             } catch {}
 
-            Task<HttpResponseMessage> response = null;
+            HttpResponseMessage response;
             long maxRequests = _maxRequestsForUserIdentifier(identifier);
             if (requestCount > maxRequests)
                 response = CreateResponse(request, HttpStatusCode.Conflict, _message);
             else
-                response = base.SendAsync(request, cancellationToken);
+                response = await base.SendAsync(request, cancellationToken);
 
-            return response.ContinueWith(task => {
-                long remaining = maxRequests - requestCount;
-                if (remaining < 0)
-                    remaining = 0;
+            long remaining = maxRequests - requestCount;
+            if (remaining < 0)
+                remaining = 0;
 
-                HttpResponseMessage httpResponse = task.Result;
-                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
-                httpResponse.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
+            response.Headers.Add(ExceptionlessHeaders.RateLimit, maxRequests.ToString());
+            response.Headers.Add(ExceptionlessHeaders.RateLimitRemaining, remaining.ToString());
 
-                return httpResponse;
-            }, cancellationToken);
+            return response;
         }
 
-        protected Task<HttpResponseMessage> CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
-            var tsc = new TaskCompletionSource<HttpResponseMessage>();
+        private HttpResponseMessage CreateResponse(HttpRequestMessage request, HttpStatusCode statusCode, string message) {
             HttpResponseMessage response = request.CreateResponse(statusCode);
             response.ReasonPhrase = message;
             response.Content = new StringContent(message);
-            tsc.SetResult(response);
-            return tsc.Task;
+
+            return response;
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
@@ -23,7 +24,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             "ARRAffinity"
         };
 
-        public override void EventProcessing(EventContext context) {
+        public override async Task EventProcessingAsync(EventContext context) {
             var request = context.Event.GetRequestInfo();
             if (request == null)
                 return;

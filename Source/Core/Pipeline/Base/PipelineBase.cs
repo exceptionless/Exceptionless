@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Helpers;
@@ -34,20 +35,20 @@ namespace Exceptionless.Core.Pipeline {
         /// Runs all the actions of the pipeline with the specified context.
         /// </summary>
         /// <param name="context">The context to run the actions with.</param>
-        public virtual TContext Run(TContext context) {
-            return Run(new[] { context }).First();
+        public virtual async Task<TContext> RunAsync(TContext context) {
+            await RunAsync(new[] { context });
+            return context;
         }
 
         /// <summary>
         /// Runs all the specified actions with the specified context.
         /// </summary>
         /// <param name="contexts">The context to run the actions with.</param>
-        public virtual ICollection<TContext> Run(ICollection<TContext> contexts) {
+        public virtual async Task<ICollection<TContext>> RunAsync(ICollection<TContext> contexts) {
             PipelineRunning(contexts);
 
             foreach (var action in _actions) {
-                action.ProcessBatch(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList());
-
+                await action.ProcessBatchAsync(contexts.Where(c => c.IsCancelled == false && !c.HasError).ToList());
                 if (contexts.All(c => c.IsCancelled || c.HasError))
                     break;
             }

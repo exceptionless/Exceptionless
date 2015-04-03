@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Exceptionless.Core.Pipeline {
     public interface IPipelineAction<TContext> where TContext : IPipelineContext {
@@ -7,13 +8,13 @@ namespace Exceptionless.Core.Pipeline {
         /// Processes this action using the specified pipeline context.
         /// </summary>
         /// <param name="context">The pipeline context.</param>
-        void Process(TContext context);
+        Task ProcessAsync(TContext context);
 
         /// <summary>
         /// Processes this action using the specified pipeline context.
         /// </summary>
         /// <param name="contexts">The pipeline context.</param>
-        void ProcessBatch(ICollection<TContext> contexts);
+        Task ProcessBatchAsync(ICollection<TContext> contexts);
 
         /// <summary>
         /// Handle exceptions thrown by this action.
@@ -35,16 +36,16 @@ namespace Exceptionless.Core.Pipeline {
         /// Processes this action using the specified pipeline context.
         /// </summary>
         /// <param name="context">The pipeline context.</param>
-        public abstract void Process(TContext context);
+        public abstract Task ProcessAsync(TContext context);
 
         /// <summary>
         /// Processes this action using the specified pipeline context.
         /// </summary>
         /// <param name="contexts">The pipeline context.</param>
-        public virtual void ProcessBatch(ICollection<TContext> contexts) {
+        public virtual async Task ProcessBatchAsync(ICollection<TContext> contexts) {
             foreach (var ctx in contexts) {
                 try {
-                    Process(ctx);
+                    await ProcessAsync(ctx);
                 } catch (Exception ex) {
                     bool cont = false;
                     try {

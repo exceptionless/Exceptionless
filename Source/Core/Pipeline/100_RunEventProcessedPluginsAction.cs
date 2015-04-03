@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 
 namespace Exceptionless.Core.Pipeline {
@@ -12,8 +13,8 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
-            _pluginManager.EventProcessed(ctx);
+        public override async Task ProcessAsync(EventContext ctx) {
+            await _pluginManager.EventProcessedAsync(ctx);
         }
     }
 }

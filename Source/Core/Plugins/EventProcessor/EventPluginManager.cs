@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using NLog.Fluent;
 
@@ -10,10 +11,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// <summary>
         /// Runs all of the event plugins startup method.
         /// </summary>
-        public void Startup() {
+        public async Task StartupAsync() {
             foreach (var plugin in Plugins.Values.ToList()) {
                 try {
-                    plugin.Startup();
+                    await plugin.StartupAsync();
                 } catch (Exception ex) {
                     Log.Error().Exception(ex).Message("Error calling startup in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
                 }
@@ -23,10 +24,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// <summary>
         /// Runs all of the event plugins event processing method.
         /// </summary>
-        public void EventProcessing(EventContext context) {
+        public async Task EventProcessingAsync(EventContext context) {
             foreach (var plugin in Plugins.Values) {
                 try {
-                    plugin.EventProcessing(context);
+                    await plugin.EventProcessingAsync(context);
                 } catch (Exception ex) {
                     Log.Error().Message("Error calling event processing in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }
@@ -36,10 +37,10 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
         /// <summary>
         /// Runs all of the event plugins event processed method.
         /// </summary>
-        public void EventProcessed(EventContext context) {
+        public async Task EventProcessedAsync(EventContext context) {
             foreach (var plugin in Plugins.Values) {
                 try {
-                    plugin.EventProcessed(context);
+                    await plugin.EventProcessedAsync(context);
                 } catch (Exception ex) {
                     Log.Error().Message("Error calling event processed in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Exception(ex).Write();
                 }

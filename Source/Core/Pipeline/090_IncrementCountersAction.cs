@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -17,12 +18,12 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void ProcessBatch(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             try {
-                _metricsClient.Counter(MetricNames.EventsProcessed, contexts.Count);
+                await _metricsClient.CounterAsync(MetricNames.EventsProcessed, contexts.Count);
 
                 if (contexts.First().Organization.PlanId != BillingManager.FreePlan.Id)
-                    _metricsClient.Counter(MetricNames.EventsPaidProcessed, contexts.Count);
+                    await _metricsClient.CounterAsync(MetricNames.EventsPaidProcessed, contexts.Count);
             } catch (Exception ex) {
                 foreach (var context in contexts) {
                     bool cont = false;
@@ -36,6 +37,8 @@ namespace Exceptionless.Core.Pipeline {
             }
         }
 
-        public override void Process(EventContext ctx) {}
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
+        }
     }
 }

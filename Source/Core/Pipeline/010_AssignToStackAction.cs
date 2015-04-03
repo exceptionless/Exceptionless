@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -30,7 +31,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void ProcessBatch(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = new Dictionary<string, Tuple<bool, Stack>>();
             foreach (var ctx in contexts) {
                 if (String.IsNullOrEmpty(ctx.Event.StackId)) {
@@ -128,6 +129,8 @@ namespace Exceptionless.Core.Pipeline {
             });
         }
 
-        public override void Process(EventContext ctx) {}
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
+        }
     }
 }

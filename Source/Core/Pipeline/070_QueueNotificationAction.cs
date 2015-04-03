@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
@@ -28,7 +29,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void Process(EventContext ctx) {
+        public override async Task ProcessAsync(EventContext ctx) {
             // if they don't have premium features, then we don't need to queue notifications
             if (!ctx.Organization.HasPremiumFeatures)
                 return;

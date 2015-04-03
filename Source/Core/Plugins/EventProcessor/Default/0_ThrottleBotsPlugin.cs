@@ -25,7 +25,7 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             _projectRepository = projectRepository;
         }
 
-        public override void EventProcessing(EventContext context) {
+        public override async Task EventProcessingAsync(EventContext context) {
             if (Settings.Current.WebsiteMode == WebsiteMode.Dev)
                 return;
 
@@ -54,10 +54,12 @@ namespace Exceptionless.Core.Plugins.EventProcessor {
             if (requestCount < Settings.Current.BotThrottleLimit)
                 return;
 
-            _metricsClient.Counter(MetricNames.EventsBotThrottleTriggered);
+            await _metricsClient.CounterAsync(MetricNames.EventsBotThrottleTriggered);
             Log.Info().Message("Bot throttle triggered. IP: {0} Time: {1} Project: {2}", ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), context.Event.ProjectId).Project(context.Event.ProjectId).Write();
+            
+            // TODO: We should kick this off into a long running task.
             // the throttle was triggered, go and delete all the errors that triggered the throttle to reduce bot noise in the system
-            Task.Run(() => _eventRepository.HideAllByClientIpAndDateAsync(context.Event.OrganizationId, ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod)));
+            _eventRepository.HideAllByClientIpAndDateAsync(context.Event.OrganizationId, ri.ClientIpAddress, DateTime.Now.Floor(_throttlingPeriod), DateTime.Now.Ceiling(_throttlingPeriod));
             context.IsCancelled = true;
         }
     }

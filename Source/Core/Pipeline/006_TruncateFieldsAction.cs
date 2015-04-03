@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Plugins.EventProcessor;
 
@@ -7,7 +8,7 @@ namespace Exceptionless.Core.Pipeline {
     public class TruncateFieldsAction : EventPipelineActionBase {
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventContext ctx) {
+        public override async Task ProcessAsync(EventContext ctx) {
             if (ctx.Event.Tags != null)
                 ctx.Event.Tags.RemoveWhere(t => String.IsNullOrEmpty(t) || t.Length > 255);
 

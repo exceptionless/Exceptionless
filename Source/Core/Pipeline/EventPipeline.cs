@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Extensions;
@@ -22,19 +23,19 @@ namespace Exceptionless.Core.Pipeline {
             _metricsClient = metricsClient;
         }
 
-        public EventContext Run(PersistentEvent ev) {
-            return Run(new EventContext(ev));
+        public Task<EventContext> RunAsync(PersistentEvent ev) {
+            return RunAsync(new EventContext(ev));
         }
 
-        public ICollection<EventContext> Run(IEnumerable<PersistentEvent> events) {
-            return Run(events.Select(ev => new EventContext(ev)).ToList());
+        public Task<ICollection<EventContext>> RunAsync(IEnumerable<PersistentEvent> events) {
+            return RunAsync(events.Select(ev => new EventContext(ev)).ToList());
         }
 
-        public override ICollection<EventContext> Run(ICollection<EventContext> contexts) {
+        public override async Task<ICollection<EventContext>> RunAsync(ICollection<EventContext> contexts) {
             if (contexts == null || contexts.Count == 0)
                 return contexts ?? new List<EventContext>();
 
-            _metricsClient.Counter(MetricNames.EventsSubmitted, contexts.Count);
+            await _metricsClient.CounterAsync(MetricNames.EventsSubmitted, contexts.Count);
             try {
                 if (contexts.Any(c => !String.IsNullOrEmpty(c.Event.Id)))
                     throw new ArgumentException("All Event Ids should not be populated.");
@@ -69,17 +70,18 @@ namespace Exceptionless.Core.Pipeline {
                 foreach (var key in project.Data.Keys)
                     contexts.ForEach(c => c.SetProperty(key, project.Data[key]));
 
-                _metricsClient.Time(() => base.Run(contexts), MetricNames.EventsProcessingTime);
+                _metricsClient.Time(() => base.RunAsync(contexts), MetricNames.EventsProcessingTime);
 
                 var cancelled = contexts.Count(c => c.IsCancelled);
                 if (cancelled > 0)
-                    _metricsClient.Counter(MetricNames.EventsProcessCancelled, cancelled);
+                    await _metricsClient.CounterAsync(MetricNames.EventsProcessCancelled, cancelled);
 
                 // TODO: Log the errors out to the events proejct id.
                 var errors = contexts.Count(c => c.HasError);
                 if (errors > 0)
-                    _metricsClient.Counter(MetricNames.EventsProcessErrors, errors);
+                    await _metricsClient.CounterAsync(MetricNames.EventsProcessErrors, errors);
             } catch (Exception) {
+                // TODO: Update once we update to vnext.
                 _metricsClient.Counter(MetricNames.EventsProcessErrors, contexts.Count);
                 throw;
             }

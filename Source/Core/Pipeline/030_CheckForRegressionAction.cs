@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 using NLog.Fluent;
@@ -18,7 +19,7 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool ContinueOnError { get { return true; } }
 
-        public override void ProcessBatch(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => c.Stack != null && c.Stack.DateFixed.HasValue && c.Stack.DateFixed.Value < c.Event.Date.UtcDateTime).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
@@ -51,6 +52,8 @@ namespace Exceptionless.Core.Pipeline {
             }
         }
 
-        public override void Process(EventContext ctx) { }
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
+        }
     }
 }

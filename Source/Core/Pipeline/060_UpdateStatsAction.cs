@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Repositories;
 
@@ -15,9 +16,11 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override void Process(EventContext ctx) {}
+        public override Task ProcessAsync(EventContext ctx) {
+            return Task.FromResult(0);
+        }
 
-        public override void ProcessBatch(ICollection<EventContext> contexts) {
+        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = contexts.Where(c => !c.IsNew).GroupBy(c => c.Event.StackId);
             foreach (var stackGroup in stacks) {
                 try {
