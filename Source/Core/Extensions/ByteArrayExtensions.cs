@@ -31,10 +31,11 @@ namespace Exceptionless.Core.Extensions {
         public static async Task<byte[]> CompressAsync(this byte[] data, CancellationToken cancellationToken = default(CancellationToken)) {
             byte[] compressesData;
             using (var outputStream = new MemoryStream()) {
-                using (var zip = new GZipStream(outputStream, CompressionMode.Compress)) {
+                using (var zip = new GZipStream(outputStream, CompressionMode.Compress, true)) {
                     await zip.WriteAsync(data, 0, data.Length, cancellationToken);
                 }
 
+                await outputStream.FlushAsync(cancellationToken);
                 compressesData = outputStream.ToArray();
             }
 
