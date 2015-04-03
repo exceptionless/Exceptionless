@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using NLog.Fluent;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
 using OAuth2.Configuration;
@@ -41,8 +42,22 @@ namespace Exceptionless.Api.Security {
             return userInfo;
         }
 
+        protected override UserInfo ParseUserInfo(string content) {
+            try {
+                return base.ParseUserInfo(content);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Critical().Tag("GitHub").Property("Content", content).Write();
+                throw;
+            }
+        }
+
         protected virtual List<UserEmails> ParseEmailAddresses(string content) {
-            return JsonConvert.DeserializeObject<List<UserEmails>>(content);
+            try {
+                return JsonConvert.DeserializeObject<List<UserEmails>>(content);
+            } catch (Exception ex) {
+                Log.Error().Exception(ex).Critical().Message("Error while parsing email addresses. Message: {0}", content).Tag("GitHub").Property("Content", content).Write();
+                throw;
+            }
         }
 
         protected virtual Endpoint UserEmailServiceEndpoint {
