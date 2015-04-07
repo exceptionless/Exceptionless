@@ -49,14 +49,15 @@ namespace Exceptionless.Core.Pipeline {
                     continue;
 
                 var context = new WebHookDataContext(hook.Version, ctx.Event, ctx.Organization, ctx.Project, ctx.Stack, ctx.IsNew, ctx.IsRegression);
-                _webHookNotificationQueue.Enqueue(new WebHookNotification {
+                var notification = new WebHookNotification {
                     OrganizationId = ctx.Event.OrganizationId,
-                    ProjectId = ctx.Event.ProjectId, 
+                    ProjectId = ctx.Event.ProjectId,
                     Url = hook.Url,
                     Data = _webHookDataPluginManager.CreateFromEvent(context)
-                });
+                };
 
-                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Write();
+                _webHookNotificationQueue.Enqueue(notification);
+                Log.Trace().Project(ctx.Event.ProjectId).Message("Web hook queued: project={0} url={1}", ctx.Event.ProjectId, hook.Url).Property("Web Hook Notification", notification).Write();
             }
         }
 
