@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -88,8 +89,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public Task<IHttpActionResult> Delete(string ids) {
-            return base.Delete(ids.FromDelimitedString());
+        public async Task<IHttpActionResult> DeleteAsync(string ids) {
+            return await base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -156,8 +157,34 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override WebHook GetModel(string id, bool useCache = true) {
-            var model = base.GetModel(id, useCache);
-            return model != null && IsInProject(model.ProjectId) ? model : null;
+            if (String.IsNullOrEmpty(id))
+                return null;
+
+            var webHook = _repository.GetById(id, useCache);
+            if (webHook == null)
+                return null;
+
+            if (!String.IsNullOrEmpty(webHook.OrganizationId) && !IsInOrganization(webHook.OrganizationId))
+                return null;
+
+            if (!String.IsNullOrEmpty(webHook.ProjectId) && !IsInProject(webHook.ProjectId))
+                return null;
+
+            return webHook;
+        }
+
+        protected override ICollection<WebHook> GetModels(string[] ids, bool useCache = true) {
+            if (ids == null || ids.Length == 0)
+                return new List<WebHook>();
+
+            ICollection<WebHook> webHooks = _repository.GetByIds(ids, useCache: useCache);
+            if (webHooks == null)
+                return new List<WebHook>();
+
+            return webHooks.Where(m => 
+                    (!String.IsNullOrEmpty(m.OrganizationId) && IsInOrganization(m.OrganizationId)) || 
+                    (!String.IsNullOrEmpty(m.ProjectId) && IsInProject(m.ProjectId))
+                ).ToList();
         }
 
         protected override PermissionResult CanAdd(WebHook value) {
@@ -171,18 +198,16 @@ namespace Exceptionless.App.Controllers.API {
             if (!String.IsNullOrEmpty(value.ProjectId)) {
                 project = _projectRepository.GetById(value.ProjectId, true);
                 if (!IsInProject(project))
-                    return PermissionResult.Deny;
-
-                if (!String.IsNullOrEmpty(value.OrganizationId))
-                    value.OrganizationId = project.OrganizationId;
-            } else if (!IsInOrganization(value.OrganizationId)) {
-                return PermissionResult.Deny;
+                    return PermissionResult.DenyWithMessage("Invalid project id specified.");
             }
+
+            if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             if (!_billingManager.HasPremiumFeatures(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
-            return base.CanAdd(value);
+            return PermissionResult.Allow;
         }
 
         protected override WebHook AddModel(WebHook value) {
@@ -193,10 +218,13 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override PermissionResult CanDelete(WebHook value) {
-            if (!IsInProject(value.ProjectId))
+            if (!String.IsNullOrEmpty(value.ProjectId) && !IsInProject(value.ProjectId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
-            return base.CanDelete(value);
+            if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
+                return PermissionResult.DenyWithNotFound(value.Id);
+
+            return PermissionResult.Allow;
         }
 
         private bool IsInProject(string projectId) {

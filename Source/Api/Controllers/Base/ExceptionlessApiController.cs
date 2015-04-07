@@ -111,6 +111,9 @@ namespace Exceptionless.Api.Controllers {
         }
 
         public bool IsInOrganization(string organizationId) {
+            if (String.IsNullOrEmpty(organizationId))
+                return false;
+
             return Request.IsInOrganization(organizationId);
         }
 

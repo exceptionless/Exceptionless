@@ -180,8 +180,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete]
         [Route("{ids:tokens}")]
-        public Task<IHttpActionResult> Delete(string ids) {
-            return base.Delete(ids.FromDelimitedString());
+        public async Task<IHttpActionResult> DeleteAsync(string ids) {
+            return await base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion

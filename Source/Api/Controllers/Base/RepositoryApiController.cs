@@ -182,7 +182,7 @@ namespace Exceptionless.Api.Controllers {
 
         #region Delete
 
-        public virtual async Task<IHttpActionResult> Delete(string[] ids) {
+        public virtual async Task<IHttpActionResult> DeleteAsync(string[] ids) {
             var items = GetModels(ids, false);
             if (!items.Any())
                 return NotFound();

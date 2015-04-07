@@ -42,7 +42,6 @@ namespace Exceptionless.Core {
                 DateParseHandling = DateParseHandling.DateTimeOffset
             };
 
-
             var settings = new JsonSerializerSettings {
                 MissingMemberHandling = MissingMemberHandling.Ignore,
                 DateParseHandling = DateParseHandling.DateTimeOffset,
