@@ -45,7 +45,7 @@ namespace Exceptionless.Core.Utility {
             if (String.IsNullOrEmpty(projectId))
                 return;
 
-            Project project = _projectRepository.GetById(projectId);
+            var project = _projectRepository.GetById(projectId);
             if (project == null)
                 return;
 
