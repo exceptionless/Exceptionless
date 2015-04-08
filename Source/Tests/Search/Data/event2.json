@@ -7,16 +7,12 @@
   "is_fixed": false,
   "is_hidden": true,
   "created_utc": "2014-12-09T17:28:44.966",
-  "idx": {},
   "type": "error",
-  "source": null,
   "date": "2014-12-09T17:28:44.966+00:00",
   "tags": [
     "Blake Niemyjski"
   ],
   "message": "Invalid hash. Parameter name: hash",
-  "geo": null,
-  "value": null,
   "data": {
     "@request": {
       "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.71 Safari/537.36",
@@ -27,7 +23,6 @@
       "path": "/user.aspx",
       "referrer": "https://admin.example.com/user.aspx?UserId=5000",
       "client_ip_address": "10.0.0.208",
-      "cookies": {},
       "post_data": {
         "__EVENTTARGET": "",
         "__EVENTARGUMENT": "",
@@ -55,21 +50,18 @@
       "process_name": "C:\\Windows\\SysWOW64\\inetsrv\\w3wp.exe",
       "process_id": "4932",
       "process_memory_size": 67293184,
-      "thread_name": null,
       "thread_id": "4880",
       "architecture": "x64",
       "o_s_name": "Microsoft Windows Server 2012 R2 Standard",
       "o_s_version": "6.3.9600.0",
       "ip_address": "192.168.0.88",
       "machine_name": "SERVER-01",
-      "install_id": null,
       "runtime_version": "4.0.30319.34014",
       "data": {
         "AppDomainName": "/LM/W3SVC/76/ROOT-1-130626068279611000"
       }
     },
     "@error": {
-      "modules": [],
       "message": "Invalid hash. Parameter name: hash",
       "type": "System.Exception",
       "code": "500",
@@ -78,17 +70,10 @@
           "ExceptionType": "System.Exception",
           "Message": "Invalid hash. Parameter name: hash"
         }
-      },
-      "inner": null,
-      "stack_trace": [],
-      "target_method": null
+      }
     },
     "@user": {
-      "identity": "example@exceptionless.com",
-      "name": null,
-      "data": {}
+      "identity": "example@exceptionless.com"
     }
-  },
-  "reference_id": null,
-  "session_id": null
+  }
 }
