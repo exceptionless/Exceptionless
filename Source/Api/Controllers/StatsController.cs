@@ -53,8 +53,13 @@ namespace Exceptionless.Api.Controllers {
             try {
                 result = _stats.GetOccurrenceStats(timeInfo.UtcRange.Start, timeInfo.UtcRange.End, systemFilter, processResult.ExpandedQuery, timeInfo.Offset);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset }).AddTags("Search").Submit();
+                Log.Error().Exception(ex)
+                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
+                    .Tag("Search")
+                    .Property("User", ExceptionlessUser)
+                    .ContextProperty("HttpActionContext", ActionContext)
+                    .Write();
+
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
 

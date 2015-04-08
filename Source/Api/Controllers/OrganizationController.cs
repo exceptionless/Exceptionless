@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService();
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Write();
+                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
@@ -399,7 +399,7 @@ namespace Exceptionless.Api.Controllers {
                 _repository.Save(organization);
                 _messagePublisher.Publish(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Write();
+                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 
@@ -661,10 +661,10 @@ namespace Exceptionless.Api.Controllers {
             var currentUser = ExceptionlessUser;
 
             foreach (var organization in organizations) {
-                Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Write();
+                Log.Info().Message("User {0} deleting organization {1}.", currentUser.Id, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
 
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
-                    Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                    Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
 
                     var subscriptionService = new StripeSubscriptionService();
                     var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
@@ -676,10 +676,10 @@ namespace Exceptionless.Api.Controllers {
                 foreach (User user in users) {
                     // delete the user if they are not associated to any other organizations and they are not the current user
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
-                        Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();
+                        Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                         _userRepository.Remove(user.Id);
                     } else {
-                        Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Write();
+                        Log.Info().Message("Removing user '{0}' from organization '{1}' with Id: '{2}'", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                         user.OrganizationIds.Remove(organization.Id);
                         _userRepository.Save(user);
                     }
@@ -688,15 +688,15 @@ namespace Exceptionless.Api.Controllers {
                 List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
                 if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
                     foreach (Project project in projects) {
-                        Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Write();
+                        Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                         await _projectController.ResetDataAsync(project.Id);
                     }
 
-                    Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                    Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                     _projectRepository.Save(projects);
                 }
 
-                Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
+                Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 await base.DeleteModels(new[] { organization });
             }
         }

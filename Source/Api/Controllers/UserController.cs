@@ -125,8 +125,7 @@ namespace Exceptionless.Api.Controllers {
             } catch (ValidationException ex) {
                 return BadRequest(String.Join(", ", ex.Errors));
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().AddObject(user).AddObject(email, "Email Address").Submit();
+                Log.Error().Exception(ex).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
                 return BadRequest("An error occurred.");
             }
 
