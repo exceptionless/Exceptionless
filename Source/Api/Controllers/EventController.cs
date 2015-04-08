@@ -139,8 +139,13 @@ namespace Exceptionless.Api.Controllers {
             try {
                 events = _repository.GetByFilter(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex).Write();
-                //ex.ToExceptionless().SetProperty("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit }).AddTags("Search").Submit();
+                Log.Error().Exception(ex)
+                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
+                    .Tag("Search")
+                    .Property("User", ExceptionlessUser)
+                    .ContextProperty("HttpActionContext", ActionContext)
+                    .Write();
+
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
             
@@ -418,7 +423,13 @@ namespace Exceptionless.Api.Controllers {
                     ContentEncoding = contentEncoding
                 }, _storage);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Project(projectId).Message("Error enqueuing event post.").WriteIf(projectId != Settings.Current.InternalProjectId);
+                Log.Error().Exception(ex)
+                    .Message("Error enqueuing event post.")
+                    .Project(projectId)
+                    .Property("User", ExceptionlessUser)
+                    .ContextProperty("HttpActionContext", ActionContext)
+                    .WriteIf(projectId != Settings.Current.InternalProjectId);
+
                 // TODO: Change to async once vnext is released.
                 _metricsClient.Counter(MetricNames.PostsQueuedErrors);
                 return StatusCode(HttpStatusCode.InternalServerError);
