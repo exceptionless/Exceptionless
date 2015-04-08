@@ -71,7 +71,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             };
         }
 
-        private class VersionOneWebHookEvent {
+        public class VersionOneWebHookEvent {
             public string Id { get; set; }
             public string Url { get { return String.Concat(Settings.Current.BaseURL, "/event/", ErrorStackId, "/", Id); } }
             public DateTimeOffset OccurrenceDate { get; set; }
@@ -101,7 +101,7 @@ namespace Exceptionless.Core.Plugins.WebHook {
             public bool IsCritical { get { return Tags != null && Tags.Contains("Critical"); } }
         }
 
-        private class VersionOneWebHookStack {
+        public class VersionOneWebHookStack {
             public string Id { get; set; }
             public string Url { get { return String.Concat(Settings.Current.BaseURL, "/stack/", Id); } }
             public string Title { get; set; }

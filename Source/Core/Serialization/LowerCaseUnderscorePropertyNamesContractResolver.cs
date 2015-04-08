@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Reflection;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Core.Serialization {
     public class LowerCaseUnderscorePropertyNamesContractResolver : DefaultContractResolver {
-        public LowerCaseUnderscorePropertyNamesContractResolver() : base(true) {}
+        private readonly Func<Type, bool> _useDefaultContract;
+
+        public LowerCaseUnderscorePropertyNamesContractResolver(Func<Type, bool> useDefaultContract = null) : base(true) {
+            _useDefaultContract = useDefaultContract;
+        }
 
         protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
             JsonProperty property = base.CreateProperty(member, memberSerialization);
@@ -18,11 +21,10 @@ namespace Exceptionless.Core.Serialization {
         }
 
         protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
-                return base.CreateDictionaryContract(objectType);
+            var contract = base.CreateDictionaryContract(objectType);
+            if (_useDefaultContract != null && _useDefaultContract(objectType))
+                contract.PropertyNameResolver = propertyName => propertyName;
 
-            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
-            contract.PropertyNameResolver = propertyName => propertyName;
             return contract;
         }
 

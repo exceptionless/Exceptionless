@@ -11,7 +11,6 @@ using System.Web.Http.Routing;
 using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
-using Exceptionless.Api.Serialization;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
@@ -24,8 +23,8 @@ using Exceptionless.Core.Utility;
 using Microsoft.AspNet.SignalR;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
-using MongoDB.Driver;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using NLog.Fluent;
 using Owin;
 using SimpleInjector;
@@ -49,7 +48,7 @@ namespace Exceptionless.Api {
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver();
+            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = container.GetInstance<IContractResolver>();
 
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
@@ -57,9 +56,7 @@ namespace Exceptionless.Api {
             constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
             constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
             Config.MapHttpAttributeRoutes(constraintResolver);
-            //Config.EnableSystemDiagnosticsTracing();
 
-            container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(new JsonSerializerSettings { ContractResolver = new SignalRContractResolver() }));
             container.RegisterWebApiFilterProvider(Config);
 
             VerifyContainer(container);

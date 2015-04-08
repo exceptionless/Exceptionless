@@ -1,39 +1,35 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
-using Exceptionless.Core.Models;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Serialization;
+using Newtonsoft.Json.Serialization;
 
 namespace Exceptionless.Serializer {
     public class ExceptionlessContractResolver : DefaultContractResolver {
-        private readonly Func<JsonProperty, object, bool> _includeProperty;
+        private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
+        private readonly HashSet<Type> _types = new HashSet<Type>();
 
-        public ExceptionlessContractResolver(Func<JsonProperty, object, bool> includeProperty = null) {
-            _includeProperty = includeProperty;
+        private readonly IContractResolver _defaultContractSerializer = new DefaultContractResolver();
+        private readonly IContractResolver _camelCaseContractResolver;
+
+        public ExceptionlessContractResolver() {
+            _camelCaseContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver(t => _types.Contains(t) || _assemblies.Contains(t.Assembly));
         }
 
-        protected override JsonProperty CreateProperty(MemberInfo member, MemberSerialization memberSerialization) {
-            JsonProperty property = base.CreateProperty(member, memberSerialization);
-            if (_includeProperty == null)
-                return property;
-            
-            Predicate<object> shouldSerialize = property.ShouldSerialize;
-            property.ShouldSerialize = obj => _includeProperty(property, obj) && (shouldSerialize == null || shouldSerialize(obj));
-            return property;
+        public void UseDefaultResolverFor(params Assembly[] assemblies) {
+            _assemblies.AddRange(assemblies);
         }
 
-        protected override JsonDictionaryContract CreateDictionaryContract(Type objectType) {
-            if (objectType != typeof(DataDictionary) && objectType != typeof(SettingsDictionary))
-                return base.CreateDictionaryContract(objectType);
-
-            JsonDictionaryContract contract = base.CreateDictionaryContract(objectType);
-            contract.PropertyNameResolver = propertyName => propertyName;
-            return contract;
+        public void UseDefaultResolverFor(params Type[] types) {
+            _types.AddRange(types);
         }
 
-        protected override string ResolvePropertyName(string propertyName) {
-            return propertyName.ToLowerUnderscoredWords();
+        public override JsonContract ResolveContract(Type type) {
+            if (_types.Contains(type) || _assemblies.Contains(type.Assembly))
+                return _defaultContractSerializer.ResolveContract(type);
+
+            return _camelCaseContractResolver.ResolveContract(type);
         }
     }
 }

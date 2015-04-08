@@ -4,10 +4,11 @@ using System.Linq;
 using Exceptionless.Core.AppStats;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
@@ -15,20 +16,15 @@ using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
-using Exceptionless.Core.Models.Admin;
-using Exceptionless.Core.Models.Data;
-using Exceptionless.Serializer;
 using FluentValidation;
-using Foundatio.Metrics;
 using Foundatio.Caching;
 using Foundatio.Lock;
 using Foundatio.Messaging;
+using Foundatio.Metrics;
 using Foundatio.Queues;
-using Foundatio.Serializer;
 using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
-using Newtonsoft.Json;
 using RazorSharpEmail;
 using SimpleInjector;
 using SimpleInjector.Packaging;
@@ -37,20 +33,6 @@ namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
-
-            JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
-                DateParseHandling = DateParseHandling.DateTimeOffset
-            };
-
-            var settings = new JsonSerializerSettings {
-                MissingMemberHandling = MissingMemberHandling.Ignore,
-                DateParseHandling = DateParseHandling.DateTimeOffset,
-                ContractResolver = new ExceptionlessContractResolver()
-            };
-
-            settings.AddModelConverters();
-            container.RegisterSingle<JsonSerializerSettings>(settings);
-            container.RegisterSingle<ISerializer>(() => new JsonNetSerializer(settings));
 
             var metricsClient = new InMemoryMetricsClient();
             metricsClient.StartDisplayingStats();

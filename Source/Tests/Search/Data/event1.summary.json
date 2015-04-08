@@ -1,0 +1,11 @@
+﻿{
+  "id": "54dbc16ca0f5c61398427b00",
+  "date": "2015-02-11T20:54:04.3457274+00:00",
+  "template_key": "event-log-summary",
+  "data": {
+    "message": null,
+    "source": "GET /Print",
+    "type": "log",
+    "level": "Error"
+  }
+}

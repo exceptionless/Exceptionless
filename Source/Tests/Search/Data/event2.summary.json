@@ -1,0 +1,12 @@
+﻿{
+  "id": "54dbc16ca0f5c61398427b01",
+  "date": "2014-12-09T17:28:44.966+00:00",
+  "template_key": "event-error-summary",
+  "data": {
+    "id": "54dbc16ca0f5c61398427b01",
+    "message": "Invalid hash. Parameter name: hash",
+    "type": "Exception",
+    "type_full_name": "System.Exception",
+    "path": "/user.aspx"
+  }
+}

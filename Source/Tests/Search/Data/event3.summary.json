@@ -1,0 +1,13 @@
+﻿{
+  "id": "54dbc16ca0f5c61398427b02",
+  "date": "2015-02-12T17:25:27.1172014+00:00",
+  "template_key": "event-error-summary",
+  "data": {
+    "id": "54dbc16ca0f5c61398427b02",
+    "message": "A Task's exception(s) were not observed either by Waiting on the Task or accessing its Exception property. As a result, the unobserved exception was rethrown by the finalizer thread.",
+    "type": "NullReferenceException",
+    "type_full_name": "System.NullReferenceException",
+    "method": "AssociateWithCurrentThread",
+    "method_full_name": "System.Web.ThreadContext.AssociateWithCurrentThread"
+  }
+}

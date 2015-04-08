@@ -181,11 +181,11 @@ namespace Exceptionless.Api.Tests.Repositories {
         private void CreateStacks() {
             ElasticSearchConfiguration.ConfigureMapping(_client, true);
 
-            var serializer = JsonSerializer.CreateDefault(new JsonSerializerSettings {
-                ContractResolver = new LowerCaseUnderscorePropertyNamesContractResolver()
-            });
-
+            var serializer = IoC.GetInstance<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {
+                if (file.EndsWith("summary.json"))
+                    continue;    
+
                 using (var stream = new FileStream(file, FileMode.Open)) {
                     using (var streamReader = new StreamReader(stream)) {
                         var stack = serializer.Deserialize(streamReader, typeof(Stack)) as Stack;

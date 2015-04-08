@@ -3,7 +3,6 @@ using Exceptionless.Api.Tests.Mail;
 using Exceptionless.Core;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Migrations;
-using MongoDB.Driver;
 using Nest;
 using SimpleInjector;
 

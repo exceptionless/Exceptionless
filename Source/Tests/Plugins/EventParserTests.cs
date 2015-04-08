@@ -63,8 +63,7 @@ namespace Exceptionless.Api.Tests.Plugins {
         public void CanDeserializeEvents(string eventsFilePath) {
             var json = File.ReadAllText(eventsFilePath);
 
-            PersistentEvent ev = null;
-            ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>());
+            var ev = json.FromJson<PersistentEvent>(IoC.GetInstance<JsonSerializerSettings>());
             Assert.NotNull(ev);
         }
 
@@ -72,7 +71,8 @@ namespace Exceptionless.Api.Tests.Plugins {
             get {
                 var result = new List<object[]>();
                 foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories))
-                    result.Add(new object[] { Path.GetFullPath(file) });
+                    if (!file.EndsWith("summary.json"))
+                        result.Add(new object[] { Path.GetFullPath(file) });
 
                 return result.ToArray();
             }

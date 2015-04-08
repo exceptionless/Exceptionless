@@ -424,6 +424,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
+                if (file.EndsWith("summary.json"))
+                    continue;    
+
                 var events = parserPluginManager.ParseEvents(File.ReadAllText(file), 2, "exceptionless/2.0.0.0");
                 Assert.NotNull(events);
                 Assert.True(events.Count > 0);

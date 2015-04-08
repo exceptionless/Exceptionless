@@ -433,15 +433,12 @@
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
     <Compile Include="Serialization\ExceptionlessContractResolver.cs" />
-    <Compile Include="Serialization\DataDictionaryConverter.cs" />
     <Compile Include="Serialization\JsonTextWriterWithDepth.cs" />
     <Compile Include="Serialization\LowerCaseUnderscorePropertyNamesContractResolver.cs" />
-    <Compile Include="Serialization\RequestInfoConverter.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
     <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
-    <Compile Include="Utility\ExtensionContractResolver.cs" />
     <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />

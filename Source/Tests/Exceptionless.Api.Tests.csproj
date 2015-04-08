@@ -177,6 +177,7 @@
     <Compile Include="Plugins\EventUpgraderTests.cs" />
     <Compile Include="Plugins\GeoTests.cs" />
     <Compile Include="Plugins\EventParserTests.cs" />
+    <Compile Include="Plugins\SummaryDataTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\ElasticSearchRepositoryTests.cs" />
     <Compile Include="Repositories\StackRepositoryTests.cs" />
