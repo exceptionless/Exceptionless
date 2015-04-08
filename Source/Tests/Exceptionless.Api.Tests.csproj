@@ -65,8 +65,8 @@
       <HintPath>..\..\packages\FluentValidation.5.5.0.0\lib\Net40\FluentValidation.dll</HintPath>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Foundatio.1.0.178\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\packages\Foundatio.1.0.186\lib\net45\Foundatio.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="MaxMind.Db, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -257,11 +257,17 @@
     <None Include="Plugins\WebHookData\v2.0.event.expected.json" />
     <None Include="Plugins\WebHookData\v2.0.stack.expected.json" />
     <None Include="Search\Data\event1.json" />
+    <None Include="Search\Data\event1.summary.json" />
+    <None Include="Search\Data\event2.summary.json" />
     <None Include="Search\Data\event3.json" />
+    <None Include="Search\Data\event3.summary.json" />
+    <None Include="Search\Data\stack1.summary.json" />
+    <None Include="Search\Data\stack2.summary.json" />
     <None Include="Search\Data\stack3.json" />
     <None Include="Search\Data\stack2.json" />
     <None Include="Search\Data\stack1.json" />
     <None Include="Search\Data\event2.json" />
+    <None Include="Search\Data\stack3.summary.json" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
