@@ -1,5 +1,6 @@
 ﻿{
-  "url": "http://localhost:50000/event/1ecd0826e447a44e78877ab1/",
+  "id": "22cd0826e447a44e78877a22",
+  "url": "http://localhost:50000/event/22cd0826e447a44e78877a22",
   "occurrence_date": "2014-01-17T14:37:02.739-06:00",
   "type": "error",
   "message": "A potentially dangerous Request.Path value was detected from the client (&).",

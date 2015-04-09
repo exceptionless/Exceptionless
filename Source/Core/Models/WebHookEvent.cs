@@ -3,7 +3,7 @@
 namespace Exceptionless.Core.Models {
     public class WebHookEvent {
         public string Id { get; set; }
-        public string Url { get { return String.Concat(Settings.Current.BaseURL, "/event/", StackId, "/", Id); } }
+        public string Url { get { return String.Concat(Settings.Current.BaseURL, "/event/", Id); } }
         public DateTimeOffset OccurrenceDate { get; set; }
         public TagSet Tags { get; set; }
         public string Type { get; set; }

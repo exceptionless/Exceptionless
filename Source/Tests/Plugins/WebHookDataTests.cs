@@ -66,6 +66,7 @@ namespace Exceptionless.Api.Tests.Plugins {
             ev.OrganizationId = TestConstants.OrganizationId;
             ev.ProjectId = TestConstants.ProjectId;
             ev.StackId = TestConstants.StackId;
+            ev.Id = TestConstants.EventId;
 
             var context = new WebHookDataContext(version, ev, OrganizationData.GenerateSampleOrganization(), ProjectData.GenerateSampleProject());
             context.Stack = StackData.GenerateStack(id: TestConstants.StackId, organizationId: TestConstants.OrganizationId, projectId: TestConstants.ProjectId, title: _formattingPluginManager.GetStackTitle(ev), signatureHash: "722e7afd4dca4a3c91f4d94fec89dfdc");

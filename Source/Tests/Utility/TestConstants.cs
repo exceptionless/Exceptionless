@@ -30,6 +30,8 @@ namespace Exceptionless.Tests.Utility {
         public const string InvalidUserId = "0ec44826e447ad1e78444ab0";
         public const string InvalidUserEmail = "invalid@exceptionless.io";
 
+        public const string EventId = "22cd0826e447a44e78877a22";
+
         public const string StackId = "1ecd0826e447a44e78877ab1";
         public const string StackId2 = "2ecd0826e447a44e78877ab2";
         public const string InvalidStackId = "0ecd0826e447ad1e78877ab0";
