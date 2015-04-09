@@ -1,4 +1,4 @@
-$mongo_version = "2.6.8"
+$mongo_version = "3.0.0"
 if ($env:MONGO_VERSION) {
 	$mongo_version = $env:MONGO_VERSION
 }
