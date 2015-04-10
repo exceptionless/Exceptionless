@@ -16,13 +16,7 @@ namespace Exceptionless.Api.Tests.Jobs {
 
         [Fact]
         public void CanRunJobWithBootstrapper() {
-            var job = JobRunner.CreateJobInstance(typeof(EventPostsJob).AssemblyQualifiedName, Guid.NewGuid().ToString());
-            Assert.Null(job);
-
-            job = JobRunner.CreateJobInstance(typeof(EventPostsJob).AssemblyQualifiedName, typeof(TestJob).AssemblyQualifiedName);
-            Assert.Null(job);
-
-            job = JobRunner.CreateJobInstance(typeof(EventPostsJob).AssemblyQualifiedName);
+            var job = JobRunner.CreateJobInstance(typeof(EventPostsJob).AssemblyQualifiedName);
             Assert.NotNull(job);
 
             job = JobRunner.CreateJobInstance(typeof(EventPostsJob).AssemblyQualifiedName, typeof(EventPostsJob).AssemblyQualifiedName);
