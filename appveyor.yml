@@ -25,7 +25,7 @@ assembly_info:
   assembly_informational_version: "{version} $(GIT_HASH)"
 
 before_build:
-  - nuget restore -verbosity quiet
+  - nuget restore -verbosity detailed
 
 build:
   parallel: true
