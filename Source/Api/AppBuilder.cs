@@ -18,9 +18,10 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
+using Exceptionless.Serializer;
 using Microsoft.AspNet.SignalR;
+using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
 using Microsoft.Owin.Cors;
 using Newtonsoft.Json;
@@ -41,6 +42,11 @@ namespace Exceptionless.Api {
             if (container == null)
                 throw new ArgumentNullException("container");
 
+            var contractResolver = container.GetInstance<IContractResolver>();
+            var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
+            if (exceptionlessContractResolver != null)
+                exceptionlessContractResolver.UseDefaultResolverFor(typeof(Connection).Assembly);
+
             if (Settings.Current.ShouldAutoUpgradeDatabase)
                 MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
@@ -48,7 +54,7 @@ namespace Exceptionless.Api {
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
             Config.Formatters.Remove(Config.Formatters.XmlFormatter);
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
-            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = container.GetInstance<IContractResolver>();
+            Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
             var constraintResolver = new DefaultInlineConstraintResolver();
             constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
