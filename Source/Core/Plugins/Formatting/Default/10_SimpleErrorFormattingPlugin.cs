@@ -61,8 +61,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             dynamic data = new ExpandoObject();
             data.Message = ev.Message;
-            data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-            data.TypeFullName = error.Type;
+
+            if (!String.IsNullOrEmpty(error.Type)) {
+                data.Type = error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                data.TypeFullName = error.Type;
+            }
 
             var requestInfo = ev.GetRequestInfo();
             if (requestInfo != null && !String.IsNullOrEmpty(requestInfo.Path))

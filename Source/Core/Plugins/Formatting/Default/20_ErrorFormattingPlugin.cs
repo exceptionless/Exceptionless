@@ -76,8 +76,11 @@ namespace Exceptionless.Core.Plugins.Formatting {
             dynamic data = new ExpandoObject();
             data.Id = ev.Id;
             data.Message = ev.Message;
-            data.Type = stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
-            data.TypeFullName = stackingTarget.Error.Type;
+
+            if (!String.IsNullOrEmpty(stackingTarget.Error.Type)) {
+                data.Type = stackingTarget.Error.Type.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
+                data.TypeFullName = stackingTarget.Error.Type;
+            }
 
             if (stackingTarget.Method != null) {
                 data.Method = stackingTarget.Method.Name;
