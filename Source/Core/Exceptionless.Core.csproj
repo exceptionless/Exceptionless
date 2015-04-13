@@ -105,9 +105,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\Pegasus.3.1.1\lib\net40\Pegasus.Common.dll</HintPath>
     </Reference>
-    <Reference Include="RazorEngine, Version=3.6.4.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\RazorEngine.3.6.4\lib\net45\RazorEngine.dll</HintPath>
+    <Reference Include="RazorEngine, Version=3.6.5.0, Culture=neutral, PublicKeyToken=9ee697374c7e744a, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\RazorEngine.3.6.5\lib\net45\RazorEngine.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="SimpleInjector, Version=2.7.3.0, Culture=neutral, PublicKeyToken=984cb50dea722e99, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -121,9 +121,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\SimpleInjector.Packaging.2.7.3\lib\net40-client\SimpleInjector.Packaging.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.8.0\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.2.9.0\lib\net40\Stripe.net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />

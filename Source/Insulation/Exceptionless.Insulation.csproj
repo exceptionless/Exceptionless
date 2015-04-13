@@ -30,24 +30,24 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Exceptionless, Version=3.0.1318.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.3.0.1318\lib\net45\Exceptionless.dll</HintPath>
+    <Reference Include="Exceptionless, Version=3.0.1319.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.0.1319\lib\net45\Exceptionless.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Extras, Version=3.0.1318.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.0.1318\lib\net45\Exceptionless.Extras.dll</HintPath>
+    <Reference Include="Exceptionless.Extras, Version=3.0.1319.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.3.0.1319\lib\net45\Exceptionless.Extras.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.NLog, Version=3.0.1318.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.NLog.3.0.1318\lib\net45\Exceptionless.NLog.dll</HintPath>
+    <Reference Include="Exceptionless.NLog, Version=3.0.1319.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.NLog.3.0.1319\lib\net45\Exceptionless.NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.Portable, Version=3.0.1318.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.Portable.3.0.1318\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Portable.dll</HintPath>
+    <Reference Include="Exceptionless.Portable, Version=3.0.1319.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.Portable.3.0.1319\lib\portable-net40+sl50+win+wpa81+wp80\Exceptionless.Portable.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Exceptionless.WebApi, Version=3.0.1318.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Exceptionless.WebApi.3.0.1318\lib\net45\Exceptionless.WebApi.dll</HintPath>
+    <Reference Include="Exceptionless.WebApi, Version=3.0.1319.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Exceptionless.WebApi.3.0.1319\lib\net45\Exceptionless.WebApi.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">

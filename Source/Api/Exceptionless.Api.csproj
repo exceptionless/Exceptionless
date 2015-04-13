@@ -163,12 +163,12 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\packages\StackExchange.Redis.StrongName.1.0.414\lib\net45\StackExchange.Redis.StrongName.dll</HintPath>
     </Reference>
-    <Reference Include="Stripe.net, Version=2.8.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\Stripe.net.2.8.0\lib\net40\Stripe.net.dll</HintPath>
+    <Reference Include="Stripe.net, Version=2.9.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\Stripe.net.2.9.0\lib\net40\Stripe.net.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Swashbuckle.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=cd1bb07a5ac7c7bc, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\Swashbuckle.Core.5.1.0\lib\net40\Swashbuckle.Core.dll</HintPath>
+      <HintPath>..\..\packages\Swashbuckle.Core.5.0.4\lib\net40\Swashbuckle.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
