@@ -392,6 +392,9 @@ namespace Exceptionless.Api.Controllers {
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ConfigurationResponseFilter]
         public async Task <IHttpActionResult> PostAsync([NakedBody]byte[] data, string projectId = null, int version = 2, [UserAgent]string userAgent = null) {
+            if (data == null || data.Length == 0)
+                return StatusCode(HttpStatusCode.Accepted);
+
             await _metricsClient.CounterAsync(MetricNames.PostsSubmitted);
 
             if (projectId == null)
