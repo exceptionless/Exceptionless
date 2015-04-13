@@ -148,10 +148,10 @@ namespace Exceptionless.Core.Jobs {
                         // Put this single event back into the queue so we can retry it separately.
                         await _queue.EnqueueAsync(new EventPostInfo {
                             ApiVersion = eventPostInfo.ApiVersion,
-                            CharSet = eventPostInfo.CharSet,
                             Data = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventContext.Event)),
                             IpAddress = eventPostInfo.IpAddress,
                             MediaType = eventPostInfo.MediaType,
+                            CharSet = eventPostInfo.CharSet,
                             ProjectId = eventPostInfo.ProjectId,
                             UserAgent = eventPostInfo.UserAgent
                         }, _storage, false, token);

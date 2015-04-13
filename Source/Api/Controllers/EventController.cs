@@ -414,8 +414,8 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await _eventPostQueue.EnqueueAsync(new EventPostInfo {
-                    MediaType = Request.Content.Headers.ContentType.MediaType,
-                    CharSet = Request.Content.Headers.ContentType.CharSet,
+                    MediaType = Request.Content.Headers.ContentType != null ? Request.Content.Headers.ContentType.MediaType : null,
+                    CharSet = Request.Content.Headers.ContentType != null ? Request.Content.Headers.ContentType.CharSet : null,
                     ProjectId = projectId,
                     UserAgent = userAgent,
                     ApiVersion = version,
