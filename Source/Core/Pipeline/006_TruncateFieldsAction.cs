@@ -14,9 +14,13 @@ namespace Exceptionless.Core.Pipeline {
 
             if (ctx.Event.Message != null && ctx.Event.Message.Length > 2000)
                 ctx.Event.Message = ctx.Event.Message.Truncate(2000);
+            else if (String.IsNullOrEmpty(ctx.Event.Message))
+                ctx.Event.Message = null;
 
             if (ctx.Event.Source != null && ctx.Event.Source.Length > 2000)
                 ctx.Event.Source = ctx.Event.Source.Truncate(2000);
+            else if (String.IsNullOrEmpty(ctx.Event.Source))
+                ctx.Event.Source = null;
         }
     }
 }
