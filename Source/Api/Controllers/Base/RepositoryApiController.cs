@@ -57,7 +57,7 @@ namespace Exceptionless.Api.Controllers {
                 return null;
 
             TModel model = _repository.GetById(id, useCache);
-            if (_isOwnedByOrganization && model != null && !IsInOrganization(((IOwnedByOrganization)model).OrganizationId))
+            if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
                 return null;
 
             return model;
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
 
             ICollection<TModel> models = _repository.GetByIds(ids, useCache: useCache);
             if (_isOwnedByOrganization && models != null)
-                models = models.Where(m => IsInOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
+                models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
 
             return models;
         }
@@ -126,7 +126,7 @@ namespace Exceptionless.Api.Controllers {
             if (_isOrganization || orgModel == null)
                 return PermissionResult.Allow;
 
-            if (!IsInOrganization(orgModel.OrganizationId))
+            if (!CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             return PermissionResult.Allow;
@@ -164,7 +164,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
             var orgModel = original as IOwnedByOrganization;
-            if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
+            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithMessage("Invalid organization id specified.");
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
@@ -218,7 +218,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected virtual PermissionResult CanDelete(TModel value) {
             var orgModel = value as IOwnedByOrganization;
-            if (orgModel != null && !IsInOrganization(orgModel.OrganizationId))
+            if (orgModel != null && !CanAccessOrganization(orgModel.OrganizationId))
                 return PermissionResult.DenyWithNotFound(value.Id);
 
             return PermissionResult.Allow;

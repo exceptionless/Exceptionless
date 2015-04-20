@@ -178,7 +178,7 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             var organization = _repository.GetByStripeCustomerId(stripeInvoice.CustomerId);
-            if (organization == null || !IsInOrganization(organization.Id))
+            if (organization == null || !CanAccessOrganization(organization.Id))
                 return NotFound();
 
             var invoice = new Invoice {
