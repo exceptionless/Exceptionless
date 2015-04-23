@@ -56,6 +56,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset })
                     .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();

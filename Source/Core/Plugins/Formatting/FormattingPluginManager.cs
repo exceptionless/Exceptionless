@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetStackSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("Stack", stack).Write();
                 }
             }
 
@@ -36,7 +36,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventSummaryHtml in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 
@@ -53,7 +53,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetStackTitle in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetStackTitle in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 
@@ -70,7 +70,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (result != null)
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventNotificationMailMessage in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("EventNotification", model).Write();
                 }
             }
 
@@ -87,7 +87,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                     if (!String.IsNullOrEmpty(result))
                         return result;
                 } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Error calling GetEventViewName in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Write();
+                    Log.Error().Exception(ex).Message("Error calling GetEventViewName in plugin \"{0}\": {1}", plugin.GetType().FullName, ex.Message).Property("PersistentEvent", ev).Write();
                 }
             }
 

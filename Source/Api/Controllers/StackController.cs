@@ -471,6 +471,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();
@@ -629,6 +630,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Time = time, Offset = offset, Page = page, Limit = limit })
                     .Tag("Search")
+                    .Identity(ExceptionlessUser.EmailAddress)
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .Write();

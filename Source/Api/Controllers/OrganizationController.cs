@@ -171,7 +171,7 @@ namespace Exceptionless.Api.Controllers {
                 var invoiceService = new StripeInvoiceService();
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
-                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
             }
 
             if (stripeInvoice == null || String.IsNullOrEmpty(stripeInvoice.CustomerId))
@@ -399,7 +399,7 @@ namespace Exceptionless.Api.Controllers {
                 _repository.Save(organization);
                 _messagePublisher.Publish(new PlanChanged { OrganizationId = organization.Id });
             } catch (Exception e) {
-                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Exception(e).Message("An error occurred while trying to update your billing plan: " + e.Message).Critical().Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return Ok(ChangePlanResult.FailWithMessage(e.Message));
             }
 

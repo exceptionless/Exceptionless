@@ -205,7 +205,7 @@ namespace Exceptionless.Api.Controllers {
             try {
                 await DeleteModels(items);
             } catch (Exception ex){
-                Log.Error().Exception(ex).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
+                Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
 
