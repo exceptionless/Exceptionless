@@ -51,7 +51,7 @@ namespace Exceptionless.Api.Controllers {
         public async Task<IHttpActionResult> Index() {
             var result = await _healthChecker.CheckAllAsync();
             if (!result.IsHealthy)
-                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message);
+                return StatusCodeWithMessage(HttpStatusCode.ServiceUnavailable, result.Message, result.Message);
 
             return Ok(new StatusResult { Message = "All Systems Check", Version = Settings.Current.Version });
         }
