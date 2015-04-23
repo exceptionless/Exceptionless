@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using NLog.Fluent;
 using OAuth2.Client;
 using OAuth2.Client.Impl;
@@ -44,7 +45,24 @@ namespace Exceptionless.Api.Security {
 
         protected override UserInfo ParseUserInfo(string content) {
             try {
-                return base.ParseUserInfo(content);
+                var cnt = JObject.Parse(content);
+                var names = (cnt["name"].SafeGet(x => x.Value<string>()) ?? string.Empty).Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                const string avatarUriTemplate = "{0}&s={1}";
+                var avatarUri = cnt["avatar_url"].Value<string>();
+                var result = new UserInfo {
+                    Email = cnt["email"].SafeGet(x => x.Value<string>()),
+                    ProviderName = this.Name,
+                    Id = cnt["id"].Value<string>(),
+                    FirstName = names.Count > 0 ? names.First() : cnt["login"].Value<string>(),
+                    LastName = names.Count > 1 ? names.Last() : string.Empty,
+                    AvatarUri = {
+                        Small = !string.IsNullOrWhiteSpace(avatarUri) ? string.Format(avatarUriTemplate, avatarUri, 36) : string.Empty,
+                        Normal = avatarUri,
+                        Large = !string.IsNullOrWhiteSpace(avatarUri) ? string.Format(avatarUriTemplate, avatarUri, 300) : string.Empty
+                    }
+                };
+
+                return result;
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Critical().Tag("GitHub").Property("Content", content).Write();
                 throw;
