@@ -4,7 +4,6 @@ using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
 using Foundatio.Queues;
-using Foundatio.Redis.Queues;
 using Foundatio.ServiceProvider;
 using NLog.Fluent;
 using SimpleInjector;
