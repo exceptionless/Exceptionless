@@ -52,13 +52,12 @@ In appreciation for anyone who submits a non-trivial pull request, we will give 
 ## Roadmap
 
 We are currently in the planning process for 2.1. However, this is a list of high level things that we are planning to do:
-- Native clients 
-  *  JavaScript **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
-  *  Java
-  *  Swift
-  *  and many more
+- JavaScript Client **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
+- [Improve Self Hosted experience](https://github.com/exceptionless/Exceptionless/issues/77).
+- [Improved support for machines that don't fully support PCL libraries](https://github.com/exceptionless/Exceptionless.Net/issues/12).
 - New Dashboards
 - vnext support
+- Bug fixes (Example: [Serialization](https://github.com/exceptionless/Exceptionless.Net/issues/2))
 - [Let us know what you'd like us to work on!](https://github.com/exceptionless/Exceptionless/issues)
 
 
