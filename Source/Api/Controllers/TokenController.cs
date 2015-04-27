@@ -239,10 +239,10 @@ namespace Exceptionless.App.Controllers.API {
 
             if (!String.IsNullOrEmpty(value.ProjectId)) {
                 Project project = _projectRepository.GetById(value.ProjectId, true);
-                value.OrganizationId = project.OrganizationId;
-
                 if (!IsInProject(project))
                     return PermissionResult.Deny;
+
+                value.OrganizationId = project.OrganizationId;
             }
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
