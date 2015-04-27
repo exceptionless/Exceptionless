@@ -2,7 +2,7 @@
 using System.Reflection;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Utility;
-using Foundatio.ServiceProvider;
+using Foundatio.ServiceProviders;
 using NLog.Fluent;
 using SimpleInjector;
 
