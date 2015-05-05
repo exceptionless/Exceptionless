@@ -3,19 +3,6 @@
 
 The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time error reporting for your ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
-## Getting Started (Development)
-
-_NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
-
-1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
-2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`. *Please ensure that [dynamic scripting is enabled in the elasticsearch.yml file](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml#L12).*
-3. Open the `Exceptionless.sln` Visual Studio solution file.
-4. Select `Exceptionless.Api` as startup projects.
-5. Run the project by pressing `F5` to start the server.
-6. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
-
-Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
-
 ## Using Exceptionless
 
 Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.exceptionless.io)
@@ -32,22 +19,24 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
   6. Update the mail settings in the `Web.config` file.
   7. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
 
-
-##  How is Exceptionless licensed?
-
-The Exceptionless server is licensed under GNU AGPL v3.0. The client libraries are licensed under Apache License v2.0.
-
-We want Exceptionless to be free for those of you who want to host the application and data internally or just simply do not want to pay for a hosted account. Our hope is that by making the application free and open source that more people will be aware of it and use it which will indirectly result in more people using our hosted service.
-
-The server is licensed under the AGPL license to ensure that any modifications that are made will be contributed back to the community.
-
-We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
-
 ## Contributing
 
 Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
 
 In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.io) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan.
+
+## Getting Started (Development)
+
+_NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
+
+1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
+2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`. *Please ensure that [dynamic scripting is enabled in the elasticsearch.yml file](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml#L12).*
+3. Open the `Exceptionless.sln` Visual Studio solution file.
+4. Select `Exceptionless.Api` as startup projects.
+5. Run the project by pressing `F5` to start the server.
+6. (OPTIONAL) For a user interface you must also setup and configure the [Exceptionless.UI](https://github.com/exceptionless/Exceptionless.UI) project.
+
+Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuBoDs) showing how to get started with the project.
 
 ## Roadmap
 
@@ -60,6 +49,15 @@ We are currently in the planning process for 2.1. However, this is a list of hig
 - Bug fixes (Example: [Serialization](https://github.com/exceptionless/Exceptionless.Net/issues/2))
 - [Let us know what you'd like us to work on!](https://github.com/exceptionless/Exceptionless/issues)
 
+##  How is Exceptionless licensed?
+
+The Exceptionless server is licensed under GNU AGPL v3.0. The client libraries are licensed under Apache License v2.0.
+
+We want Exceptionless to be free for those of you who want to host the application and data internally or just simply do not want to pay for a hosted account. Our hope is that by making the application free and open source that more people will be aware of it and use it which will indirectly result in more people using our hosted service.
+
+The server is licensed under the AGPL license to ensure that any modifications that are made will be contributed back to the community.
+
+We chose to release the client libraries under Apache License v2.0 to remove any ambiguity as to the extent of the server license — you do not have to license any software that uses Exceptionless under AGPL and are completely free to use any licensing mechanism of your choice.
 
 ##Thanks
 Thanks to the community for your support!
