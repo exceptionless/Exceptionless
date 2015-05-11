@@ -47,7 +47,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
                 Subject = String.Concat("Feature: ", model.Event.Source.Truncate(120)),
-                Source = model.Event.Source.Truncate(120)
+                Source = model.Event.Source
             };
 
             return _emailGenerator.GenerateMessage(mailerModel, "Notice").ToMailMessage();
