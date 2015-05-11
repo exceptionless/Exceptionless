@@ -73,8 +73,8 @@ namespace Exceptionless.Core.Utility {
                     continue;
 
                 foreach (StackFrame stackFrame in stackTrace.Where(IsUserFrame)) {
-                    SignatureInfo.Add("ExceptionType", e.Type);
-                    SignatureInfo.Add("Method", GetStackFrameSignature(stackFrame));
+                    SignatureInfo.AddItemIfNotEmpty("ExceptionType", e.Type);
+                    SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(stackFrame));
                     if (ShouldFlagSignatureTarget)
                         stackFrame.IsSignatureTarget = true;
                     AddSpecialCaseDetails(e);
@@ -88,23 +88,20 @@ namespace Exceptionless.Core.Utility {
 
             if (innerMostError.TargetMethod != null) {
                 // Use the target method if it exists.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.TargetMethod));
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
+                SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(innerMostError.TargetMethod));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.TargetMethod.IsSignatureTarget = true;
             } else if (innerMostError.StackTrace != null && innerMostError.StackTrace.Count > 0) {
                 // Use the topmost stack frame.
-                SignatureInfo.Add("ExceptionType", innerMostError.Type);
-                SignatureInfo.Add("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
+                SignatureInfo.AddItemIfNotEmpty("Method", GetStackFrameSignature(innerMostError.StackTrace[0]));
                 if (ShouldFlagSignatureTarget)
                     innerMostError.StackTrace[0].IsSignatureTarget = true;
             } else {
                 // All else failed, use the type and message.
-                if (!String.IsNullOrWhiteSpace(innerMostError.Type))
-                    SignatureInfo.Add("ExceptionType", innerMostError.Type);
-
-                if (!String.IsNullOrWhiteSpace(innerMostError.Message))
-                    SignatureInfo.Add("Message", innerMostError.Message);
+                SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
+                SignatureInfo.AddItemIfNotEmpty("Message", innerMostError.Message);
             }
 
             AddSpecialCaseDetails(innerMostError);
