@@ -40,22 +40,22 @@ namespace Exceptionless.Core.Plugins.Formatting {
             data.Title = stack.Title;
 
             string value;
-            if (stack.SignatureInfo.TryGetValue("ExceptionType", out value)) {
+            if (stack.SignatureInfo.TryGetValue("ExceptionType", out value) && !String.IsNullOrEmpty(value)) {
                 data.Type = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
                 data.TypeFullName = value;
             }
 
-            if (stack.SignatureInfo.TryGetValue("Method", out value)) {
+            if (stack.SignatureInfo.TryGetValue("Method", out value) && !String.IsNullOrEmpty(value)) {
                 string method = value.Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries).Last();
                 int index = method.IndexOf('(');
                 data.Method = index > 0 ? method.Substring(0, index) : method;
                 data.MethodFullName = value;
             }
 
-            if (stack.SignatureInfo.TryGetValue("Message", out value))
+            if (stack.SignatureInfo.TryGetValue("Message", out value) && !String.IsNullOrEmpty(value))
                 data.Message = value;
 
-            if (stack.SignatureInfo.TryGetValue("Path", out value))
+            if (stack.SignatureInfo.TryGetValue("Path", out value) && !String.IsNullOrEmpty(value))
                 data.Path = value;
 
             return new SummaryData { TemplateKey = "stack-error-summary", Data = data };
@@ -84,7 +84,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
 
             if (stackingTarget.Method != null) {
                 data.Method = stackingTarget.Method.Name;
-                data.MethodFullName = stackingTarget.Method != null ? stackingTarget.Method.GetFullName() : null;
+                data.MethodFullName = stackingTarget.Method.GetFullName();
             }
 
             var requestInfo = ev.GetRequestInfo();
