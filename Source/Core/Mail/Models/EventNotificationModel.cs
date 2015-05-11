@@ -17,6 +17,7 @@ namespace Exceptionless.Core.Mail.Models {
         public string Url { get; set; }
         public string Subject { get; set; }
         public string Message { get; set; }
+        public string Source { get; set; }
 
         public string MethodFullName { get; set; }
         public string TypeFullName { get; set; }

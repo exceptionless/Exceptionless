@@ -107,12 +107,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var requestInfo = model.Event.GetRequestInfo();
+            string errorType = !String.IsNullOrEmpty(stackingTarget.Error.Type) ? stackingTarget.Error.Type : "Error";
 
-            string notificationType = String.Concat(stackingTarget.Error.Type, " occurrence");
+            string notificationType = String.Concat(errorType, " occurrence");
             if (model.IsNew)
                 notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
             else if (model.IsRegression)
-                notificationType = String.Concat(stackingTarget.Error.Type, " regression");
+                notificationType = String.Concat(errorType, " regression");
 
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);
@@ -122,7 +123,7 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 Subject = String.Concat(notificationType, ": ", stackingTarget.Error.Message.Truncate(120)),
                 Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null,
                 Message = stackingTarget.Error.Message,
-                TypeFullName = stackingTarget.Error.Type,
+                TypeFullName = errorType,
                 MethodFullName = stackingTarget.Method != null ? stackingTarget.Method.GetFullName() : null
             };
 

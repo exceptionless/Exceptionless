@@ -37,7 +37,8 @@ namespace Exceptionless.Core.Plugins.Formatting {
         }
 
         public MailMessage GetEventNotificationMailMessage(EventNotification model) {
-            if (String.IsNullOrEmpty(model.Event.Message))
+            string messageOrSource = !String.IsNullOrEmpty(model.Event.Message) ? model.Event.Message : model.Event.Source;
+            if (String.IsNullOrEmpty(messageOrSource))
                 return null;
 
             string notificationType = "Occurrence event";
@@ -52,8 +53,9 @@ namespace Exceptionless.Core.Plugins.Formatting {
             var requestInfo = model.Event.GetRequestInfo();
             var mailerModel = new EventNotificationModel(model) {
                 BaseUrl = Settings.Current.BaseURL,
-                Subject = String.Concat(notificationType, ": ", model.Event.Message.Truncate(120)),
-                Message =  model.Event.Message,
+                Subject = String.Concat(notificationType, ": ", messageOrSource.Truncate(120)),
+                Message = model.Event.Message,
+                Source = model.Event.Source,
                 Url = requestInfo != null ? requestInfo.GetFullPath(true, true, true) : null
             };
 

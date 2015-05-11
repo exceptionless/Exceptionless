@@ -83,12 +83,13 @@ namespace Exceptionless.Core.Plugins.Formatting {
                 return null;
 
             var requestInfo = model.Event.GetRequestInfo();
+            string errorType = !String.IsNullOrEmpty(error.Type) ? error.Type : "Error";
 
-            string notificationType = String.Concat(error.Type, " Occurrence");
+            string notificationType = String.Concat(errorType, " Occurrence");
             if (model.IsNew)
-                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", error.Type);
+                notificationType = String.Concat(!model.IsCritical ? "New " : "new ", errorType);
             else if (model.IsRegression)
-                notificationType = String.Concat(error.Type, " Regression");
+                notificationType = String.Concat(errorType, " Regression");
 
             if (model.IsCritical)
                 notificationType = String.Concat("Critical ", notificationType);

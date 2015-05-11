@@ -31,15 +31,14 @@ namespace Exceptionless.Core.Pipeline {
 
         protected override bool IsCritical { get { return true; } }
 
-        public override async Task ProcessBatchAsync(ICollection<EventContext> contexts) {
+        public override Task ProcessBatchAsync(ICollection<EventContext> contexts) {
             var stacks = new Dictionary<string, Tuple<bool, Stack>>();
             foreach (var ctx in contexts) {
                 if (String.IsNullOrEmpty(ctx.Event.StackId)) {
                     // only add default signature info if no other signature info has been added
                     if (ctx.StackSignatureData.Count == 0) {
-                        ctx.StackSignatureData.Add("Type", ctx.Event.Type);
-                        if (!String.IsNullOrEmpty(ctx.Event.Source))
-                            ctx.StackSignatureData.Add("Source", ctx.Event.Source);
+                        ctx.StackSignatureData.AddItemIfNotEmpty("Type", ctx.Event.Type);
+                        ctx.StackSignatureData.AddItemIfNotEmpty("Source", ctx.Event.Source);
                     }
 
                     string signatureHash = ctx.StackSignatureData.Values.ToSHA1();
@@ -127,6 +126,8 @@ namespace Exceptionless.Core.Pipeline {
             contexts.ForEach(ctx => {
                 ctx.Event.StackId = ctx.Stack != null ? ctx.Stack.Id : null;
             });
+
+            return Task.FromResult(0);
         }
 
         public override Task ProcessAsync(EventContext ctx) {
