@@ -29,6 +29,8 @@ In appreciation for anyone who submits a non-trivial pull request, we will give 
 
 _NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless.io](http://exceptionless.io) and signup for a free account and you will be up and running in seconds._
 
+**This section is for development purposes only! If you are trying to self host Exceptionless, than please refer to the `Hosting Options` section above.**
+
 1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
 2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`. *Please ensure that [dynamic scripting is enabled in the elasticsearch.yml file](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml#L12).*
 3. Open the `Exceptionless.sln` Visual Studio solution file.
