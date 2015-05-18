@@ -361,7 +361,7 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="201">The project name is available.</response>
         /// <response code="204">The project name is not available.</response>
         [HttpGet]
-        [Route("check-name/{name:minlength(1)}")]
+        [Route("check-name/{*name:minlength(1)}")]
         public IHttpActionResult IsNameAvailable(string name) {
             if (IsProjectNameAvailableInternal(null, name))
                 return StatusCode(HttpStatusCode.NoContent);
