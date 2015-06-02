@@ -1,10 +1,15 @@
 using System;
 using Exceptionless.Core.Jobs;
 using Foundatio.Jobs;
+using Foundatio.ServiceProviders;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Jobs {
     public class JobTests {
+        public JobTests() {
+            ServiceProvider.SetServiceProvider(typeof(JobBootstrapper));
+        }
+
         [Fact]
         public void CanRunJobWithNoBootstrapper() {
             var job = JobRunner.CreateJobInstance(typeof(TestJob).AssemblyQualifiedName);
