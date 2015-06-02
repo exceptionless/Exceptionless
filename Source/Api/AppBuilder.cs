@@ -165,14 +165,14 @@ namespace Exceptionless.Api {
             CreateSampleData(container);
 
             if (Settings.Current.RunJobsInProcess) {
-                Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<MailMessageJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventNotificationsJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<WebHooksJob>().RunContinuousAsync(token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<DailySummaryJob>().RunContinuousAsync(delay: TimeSpan.FromMinutes(15), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<RetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<StaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), token: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                Task.Factory.StartNew(() => container.GetInstance<MailMessageJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                Task.Factory.StartNew(() => container.GetInstance<EventNotificationsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                Task.Factory.StartNew(() => container.GetInstance<WebHooksJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                //Task.Factory.StartNew(() => container.GetInstance<DailySummaryJob>().RunContinuousAsync(delay: TimeSpan.FromMinutes(15), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                //Task.Factory.StartNew(() => container.GetInstance<RetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
+                //Task.Factory.StartNew(() => container.GetInstance<StaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
             }
         }
 
