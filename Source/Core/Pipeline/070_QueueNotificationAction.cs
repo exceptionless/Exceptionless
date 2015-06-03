@@ -62,6 +62,9 @@ namespace Exceptionless.Core.Pipeline {
         }
 
         private bool ShouldCallWebHook(WebHook hook, EventContext ctx) {
+            if (!String.IsNullOrEmpty(hook.ProjectId) && !String.Equals(ctx.Project.Id, hook.ProjectId))
+                return false;
+
             if (ctx.IsNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHookRepository.EventTypes.NewError))
                 return true;
 

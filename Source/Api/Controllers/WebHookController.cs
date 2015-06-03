@@ -194,16 +194,18 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(value.ProjectId) && String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
+            if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
+                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
+
             Project project = null;
             if (!String.IsNullOrEmpty(value.ProjectId)) {
                 project = _projectRepository.GetById(value.ProjectId, true);
                 if (!IsInProject(project))
                     return PermissionResult.DenyWithMessage("Invalid project id specified.");
+
+                value.OrganizationId = project.OrganizationId;
             }
-
-            if (!String.IsNullOrEmpty(value.OrganizationId) && !IsInOrganization(value.OrganizationId))
-                return PermissionResult.DenyWithMessage("Invalid organization id specified.");
-
+            
             if (!_billingManager.HasPremiumFeatures(project != null ? project.OrganizationId : value.OrganizationId))
                 return PermissionResult.DenyWithPlanLimitReached("Please upgrade your plan to add integrations.");
 
