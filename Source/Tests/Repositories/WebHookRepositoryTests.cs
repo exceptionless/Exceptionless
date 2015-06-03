@@ -10,7 +10,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         private readonly IWebHookRepository _repository = IoC.GetInstance<IWebHookRepository>();
 
         [Fact]
-        public void GetGetByOrganizationIdOrProjectId() {
+        public void GetByOrganizationIdOrProjectId() {
             RemoveData();
 
             _repository.Add(new WebHook { OrganizationId = TestConstants.OrganizationId, Url = "http://localhost:40000/test", EventTypes = new[] { WebHookRepository.EventTypes.StackPromoted } });

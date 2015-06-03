@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public async Task RemoveAllByProjectIdsAsync(string[] projectIds) {
+        public virtual async Task RemoveAllByProjectIdsAsync(string[] projectIds) {
             await Task.Run(() => RemoveAll(new QueryOptions().WithProjectIds(projectIds)));
         }
 

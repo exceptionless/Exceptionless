@@ -21,13 +21,17 @@ namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
     [Authorize(Roles = AuthorizationRoles.User)]
     public class ProjectController : RepositoryApiController<IProjectRepository, Project, ViewProject, NewProject, UpdateProject> {
-        private readonly OrganizationRepository _organizationRepository;      
+        private readonly OrganizationRepository _organizationRepository;
+        private readonly ITokenRepository _tokenRepository;
+        private readonly IWebHookRepository _webHookRepository;
         private readonly BillingManager _billingManager; 
         private readonly DataHelper _dataHelper;
         private readonly EventStats _stats;
 
-        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, BillingManager billingManager, DataHelper dataHelper, EventStats stats) : base(projectRepository) {
+        public ProjectController(IProjectRepository projectRepository, OrganizationRepository organizationRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, BillingManager billingManager, DataHelper dataHelper, EventStats stats) : base(projectRepository) {
             _organizationRepository = organizationRepository;
+            _tokenRepository = tokenRepository;
+            _webHookRepository = webHookRepository;
             _billingManager = billingManager;
             _dataHelper = dataHelper;
             _stats = stats;
@@ -452,10 +456,14 @@ namespace Exceptionless.Api.Controllers {
             return base.CanUpdate(original, changes);
         }
 
-        protected override async Task DeleteModels(ICollection<Project> values) {
-            foreach (var value in values)
-                await _dataHelper.ResetProjectDataAsync(value.Id);
-            await base.DeleteModels(values);
+        protected override async Task DeleteModels(ICollection<Project> projects) {
+            foreach (var project in projects) {
+                await _tokenRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
+                await _webHookRepository.RemoveAllByProjectIdsAsync(new[] { project.Id });
+                await _dataHelper.ResetProjectDataAsync(project.Id);
+            }
+
+            await base.DeleteModels(projects);
         }
 
         private ViewProject PopulateProjectStats(ViewProject project) {

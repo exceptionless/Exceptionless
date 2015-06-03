@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Core.Models.Admin;
 using FluentValidation;
 using Foundatio.Caching;
@@ -12,9 +13,7 @@ using MongoDB.Driver.Builders;
 
 namespace Exceptionless.Core.Repositories {
     public class TokenRepository : MongoRepositoryOwnedByOrganizationAndProject<Token>, ITokenRepository {
-        public TokenRepository(MongoDatabase database, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(database, validator, cacheClient, messagePublisher)
-        {
+        public TokenRepository(MongoDatabase database, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) {
             _getIdValue = s => s;
         }
 
@@ -72,6 +71,39 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("refreshToken");
 
             return FindOne<Token>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Refresh, refreshToken)));
+        }
+
+        public override ICollection<Token> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            var query = Query.Or(
+                Query.EQ(CommonFieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
+                Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(new ObjectId(projectId)))
+            );
+
+            return Find<Token>(new MongoOptions()
+                .WithQuery(query)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
+                .WithExpiresIn(expiresIn));
+        }
+
+        public override async Task RemoveAllByProjectIdsAsync(string[] projectIds) {
+            if (projectIds == null || projectIds.Length == 0)
+                return;
+
+            IMongoQuery query;
+            if (projectIds.Length == 1) {
+                query = Query.Or(
+                    Query.EQ(CommonFieldNames.ProjectId, new BsonObjectId(new ObjectId(projectIds.First()))), 
+                    Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(new ObjectId(projectIds.First())))
+                );
+            } else {
+                query = Query.Or(
+                    Query.In(CommonFieldNames.ProjectId, projectIds.Select(id => new BsonObjectId(new ObjectId(id)))), 
+                    Query.In(FieldNames.DefaultProjectId, projectIds.Select(id => new BsonObjectId(new ObjectId(id))))
+                );
+            }
+
+            await Task.Run(() => RemoveAll(new MongoOptions().WithQuery(query)));
         }
 
         #region Collection Setup

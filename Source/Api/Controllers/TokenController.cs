@@ -143,8 +143,13 @@ namespace Exceptionless.App.Controllers.API {
             if (token == null)
                 token = new NewToken();
 
+            var project = _projectRepository.GetById(projectId, true);
+            if (!IsInProject(project))
+                return BadRequest();
+
+            token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return base.Post(token);
+            return Post(token);
         }
 
         /// <summary>
@@ -165,8 +170,11 @@ namespace Exceptionless.App.Controllers.API {
             if (token == null)
                 token = new NewToken();
 
+            if (!IsInOrganization(organizationId))
+                return BadRequest();
+
             token.OrganizationId = organizationId;
-            return base.Post(token);
+            return Post(token);
         }
 
         /// <summary>
@@ -212,7 +220,7 @@ namespace Exceptionless.App.Controllers.API {
             if (String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
+            if ((!String.IsNullOrEmpty(value.ProjectId) || !String.IsNullOrEmpty(value.DefaultProjectId)) && !String.IsNullOrEmpty(value.UserId))
                 return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
             foreach (string scope in value.Scopes.ToList()) {
@@ -239,6 +247,15 @@ namespace Exceptionless.App.Controllers.API {
 
             if (!String.IsNullOrEmpty(value.ProjectId)) {
                 Project project = _projectRepository.GetById(value.ProjectId, true);
+                if (!IsInProject(project))
+                    return PermissionResult.Deny;
+
+                value.OrganizationId = project.OrganizationId;
+                value.DefaultProjectId = null;
+            }
+
+            if (!String.IsNullOrEmpty(value.DefaultProjectId)) {
+                Project project = _projectRepository.GetById(value.DefaultProjectId, true);
                 if (!IsInProject(project))
                     return PermissionResult.Deny;
 

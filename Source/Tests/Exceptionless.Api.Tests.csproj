@@ -178,6 +178,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repositories\ElasticSearchRepositoryTests.cs" />
     <Compile Include="Repositories\StackRepositoryTests.cs" />
+    <Compile Include="Repositories\TokenRepositoryTests.cs" />
     <Compile Include="Repositories\WebHookRepositoryTests.cs" />
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />

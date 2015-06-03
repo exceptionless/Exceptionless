@@ -16,10 +16,10 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using NLog.Fluent;
@@ -33,16 +33,20 @@ namespace Exceptionless.Api.Controllers {
         private readonly ICacheClient _cacheClient;
         private readonly IUserRepository _userRepository;
         private readonly IProjectRepository _projectRepository;
+        private readonly ITokenRepository _tokenRepository;
+        private readonly IWebHookRepository _webHookRepository;
         private readonly BillingManager _billingManager;
         private readonly ProjectController _projectController;
         private readonly IMailer _mailer;
         private readonly IMessagePublisher _messagePublisher;
         private readonly EventStats _stats;
 
-        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
+        public OrganizationController(IOrganizationRepository organizationRepository, ICacheClient cacheClient, IUserRepository userRepository, IProjectRepository projectRepository, ITokenRepository tokenRepository, IWebHookRepository webHookRepository, BillingManager billingManager, ProjectController projectController, IMailer mailer, IMessagePublisher messagePublisher, EventStats stats) : base(organizationRepository) {
             _cacheClient = cacheClient;
             _userRepository = userRepository;
             _projectRepository = projectRepository;
+            _tokenRepository = tokenRepository;
+            _webHookRepository = webHookRepository;
             _billingManager = billingManager;
             _projectController = projectController;
             _mailer = mailer;
@@ -672,7 +676,7 @@ namespace Exceptionless.Api.Controllers {
                         subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
                 }
 
-                List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
+                var users = _userRepository.GetByOrganizationId(organization.Id);
                 foreach (User user in users) {
                     // delete the user if they are not associated to any other organizations and they are not the current user
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
@@ -685,7 +689,10 @@ namespace Exceptionless.Api.Controllers {
                     }
                 }
 
-                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
+                await _tokenRepository.RemoveAllByOrganizationIdsAsync(new [] { organization.Id });
+                await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id });
+
+                var projects = _projectRepository.GetByOrganizationId(organization.Id);
                 if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
                     foreach (Project project in projects) {
                         Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
