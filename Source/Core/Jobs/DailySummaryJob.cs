@@ -76,7 +76,7 @@ namespace Exceptionless.Core.Jobs {
                 projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
             }
 
-            return Task.FromResult(new JobResult { Message = "Successfully sent summary notifications." });
+            return Task.FromResult(JobResult.SuccessWithMessage("Successfully sent summary notifications."));
         }
 
         private void ProcessSummaryNotification(SummaryNotification data) {
