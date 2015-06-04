@@ -86,26 +86,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public override async Task RemoveAllByProjectIdsAsync(string[] projectIds) {
-            if (projectIds == null || projectIds.Length == 0)
-                return;
-
-            IMongoQuery query;
-            if (projectIds.Length == 1) {
-                query = Query.Or(
-                    Query.EQ(CommonFieldNames.ProjectId, new BsonObjectId(new ObjectId(projectIds.First()))), 
-                    Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(new ObjectId(projectIds.First())))
-                );
-            } else {
-                query = Query.Or(
-                    Query.In(CommonFieldNames.ProjectId, projectIds.Select(id => new BsonObjectId(new ObjectId(id)))), 
-                    Query.In(FieldNames.DefaultProjectId, projectIds.Select(id => new BsonObjectId(new ObjectId(id))))
-                );
-            }
-
-            await Task.Run(() => RemoveAll(new MongoOptions().WithQuery(query)));
-        }
-
         #region Collection Setup
 
         public const string CollectionName = "token";

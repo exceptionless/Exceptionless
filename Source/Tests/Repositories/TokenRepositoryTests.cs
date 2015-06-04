@@ -17,29 +17,29 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
             _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
+            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, ProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
             _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
             _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
-            _repository.Add(new Token { OrganizationId = TestConstants.OrganizationId, DefaultProjectId = TestConstants.ProjectIdWithNoRoles, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
+            _repository.Add(new Token { DefaultProjectId = TestConstants.ProjectIdWithNoRoles, UserId = TestConstants.UserId, CreatedUtc = DateTime.UtcNow, ModifiedUtc = DateTime.UtcNow, Id = StringExtensions.GetNewToken() });
 
-            Assert.Equal(6, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
-            Assert.Equal(3, _repository.GetByProjectId(TestConstants.ProjectId).Count);
-            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
+            Assert.Equal(5, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
+            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectId).Count);
+            Assert.Equal(3, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
 
             await _repository.RemoveAllByProjectIdsAsync(new []{ TestConstants.ProjectId });
-            Assert.Equal(3, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
-            Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectId).Count);
-            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
+            Assert.Equal(4, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
+            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectId).Count);
+            Assert.Equal(3, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
 
             await _repository.RemoveAllByProjectIdsAsync(new[] { TestConstants.ProjectIdWithNoRoles });
-            Assert.Equal(1, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
-            Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectId).Count);
-            Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
+            Assert.Equal(3, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
+            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectId).Count);
+            Assert.Equal(2, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
 
             await _repository.RemoveAllByOrganizationIdsAsync(new[] { TestConstants.OrganizationId });
             Assert.Equal(0, _repository.GetByOrganizationId(TestConstants.OrganizationId).Count);
             Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectId).Count);
-            Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
+            Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Count);
         }
 
         protected void RemoveData() {

@@ -217,10 +217,11 @@ namespace Exceptionless.App.Controllers.API {
         }
 
         protected override PermissionResult CanAdd(Token value) {
+            // We only allow users to create organization scoped tokens.
             if (String.IsNullOrEmpty(value.OrganizationId))
                 return PermissionResult.Deny;
 
-            if ((!String.IsNullOrEmpty(value.ProjectId) || !String.IsNullOrEmpty(value.DefaultProjectId)) && !String.IsNullOrEmpty(value.UserId))
+            if (!String.IsNullOrEmpty(value.ProjectId) && !String.IsNullOrEmpty(value.UserId))
                 return PermissionResult.DenyWithMessage("Token can't be associated to both user and project.");
 
             foreach (string scope in value.Scopes.ToList()) {
@@ -258,8 +259,6 @@ namespace Exceptionless.App.Controllers.API {
                 Project project = _projectRepository.GetById(value.DefaultProjectId, true);
                 if (!IsInProject(project))
                     return PermissionResult.Deny;
-
-                value.OrganizationId = project.OrganizationId;
             }
 
             if (!String.IsNullOrEmpty(value.ApplicationId)) {
