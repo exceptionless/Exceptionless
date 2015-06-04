@@ -66,8 +66,10 @@ namespace Exceptionless.Core.Extensions {
 
             if (!requestInfo.Path.StartsWith("/"))
                 sb.Append("/");
+
             sb.Append(requestInfo.Path);
-            if (includeQueryString && requestInfo.QueryString.Count > 0)
+
+            if (includeQueryString && requestInfo.QueryString != null && requestInfo.QueryString.Count > 0)
                 sb.Append("?").Append(CreateQueryString(requestInfo.QueryString));
 
             return sb.ToString();

@@ -430,7 +430,7 @@ namespace Exceptionless.Api.Controllers {
                 Log.Error().Exception(ex)
                     .Message("Error enqueuing event post.")
                     .Project(projectId)
-                    .Identity(ExceptionlessUser.EmailAddress)
+                    .Identity(ExceptionlessUser != null ? ExceptionlessUser.EmailAddress : null)
                     .Property("User", ExceptionlessUser)
                     .ContextProperty("HttpActionContext", ActionContext)
                     .WriteIf(projectId != Settings.Current.InternalProjectId);
