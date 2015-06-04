@@ -11,6 +11,7 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
+using NLog.Fluent;
 using SimpleInjector;
 using SimpleInjector.Packaging;
 using StackExchange.Redis;
@@ -20,6 +21,8 @@ namespace Exceptionless.Insulation {
         public void RegisterServices(Container container) {
             if (Settings.Current.EnableMetricsReporting)
                 container.RegisterSingle<IMetricsClient>(() => new StatsDMetricsClient(Settings.Current.MetricsServerName, Settings.Current.MetricsServerPort, "ex"));
+            else
+                Log.Warn().Message("StatsD Metrics is NOT enabled.").Write();
 
             if (Settings.Current.EnableRedis) {
                 var muxer = ConnectionMultiplexer.Connect(Settings.Current.RedisConnectionString);
@@ -35,10 +38,14 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingle<IQueue<StatusMessage>>(() => new RedisQueue<StatusMessage>(muxer, container.GetInstance<ISerializer>()));
 
                 container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber(), serializer: container.GetInstance<ISerializer>()));
+            } else {
+                Log.Warn().Message("Redis is NOT enabled.").Write();
             }
 
             if (Settings.Current.EnableAzureStorage)
                 container.RegisterSingle<IFileStorage>(new AzureFileStorage(Settings.Current.AzureStorageConnectionString, "ex-events"));
+            else
+                Log.Warn().Message("Azure Storage is NOT enabled.").Write();
 
             var client = ExceptionlessClient.Default;
             container.RegisterSingle<ICoreLastReferenceIdManager, ExceptionlessClientCoreLastReferenceIdManager>();

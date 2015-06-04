@@ -20,6 +20,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Serializer;
+using Foundatio.Jobs;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Infrastructure;
 using Microsoft.Owin;
@@ -56,21 +57,15 @@ namespace Exceptionless.Api {
             Config.Formatters.JsonFormatter.SerializerSettings.Formatting = Formatting.Indented;
             Config.Formatters.JsonFormatter.SerializerSettings.ContractResolver = contractResolver;
 
-            var constraintResolver = new DefaultInlineConstraintResolver();
-            constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
-            constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
-            constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
-            constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
-            Config.MapHttpAttributeRoutes(constraintResolver);
-
+            SetupRouteConstraints(Config);
             container.RegisterWebApiFilterProvider(Config);
 
             VerifyContainer(container);
 
             container.Bootstrap(Config);
             container.Bootstrap(app);
-            Log.Info().Message("Starting api...").Write();
 
+            Log.Info().Message("Starting api...").Write();
             Config.Services.Add(typeof(IExceptionLogger), new NLogExceptionLogger());
             Config.Services.Replace(typeof(IExceptionHandler), container.GetInstance<ExceptionlessReferenceIdExceptionHandler>());
 
@@ -85,18 +80,16 @@ namespace Exceptionless.Api {
             Config.MessageHandlers.Add(container.GetInstance<OverageHandler>());
 
             app.UseCors(new CorsOptions {
-                    PolicyProvider = new CorsPolicyProvider
-                    {
-                        PolicyResolver = ctx => Task.FromResult(new CorsPolicy
-                        {
-                            AllowAnyHeader = true,
-                            AllowAnyMethod = true,
-                            AllowAnyOrigin = true,
-                            SupportsCredentials = true,
-                            PreflightMaxAge = 60 * 5
-                        })
-                    }
-                });
+                PolicyProvider = new CorsPolicyProvider {
+                    PolicyResolver = ctx => Task.FromResult(new CorsPolicy {
+                        AllowAnyHeader = true,
+                        AllowAnyMethod = true,
+                        AllowAnyOrigin = true,
+                        SupportsCredentials = true,
+                        PreflightMaxAge = 60 * 5
+                    })
+                }
+            });
 
             app.CreatePerContext<Lazy<User>>("User", ctx => new Lazy<User>(() => {
                 if (ctx.Request.User == null || ctx.Request.User.Identity == null || !ctx.Request.User.Identity.IsAuthenticated)
@@ -145,7 +138,42 @@ namespace Exceptionless.Api {
                 resolver.UseRedis(new RedisScaleoutConfiguration(Settings.Current.RedisConnectionString, "exceptionless.signalr"));
             app.MapSignalR("/api/v2/push", new HubConfiguration { Resolver = resolver });
 
-            Config.EnableSwagger("schema/{apiVersion}", c => {
+            SetupSwagger(Config);
+
+            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
+            CreateSampleData(container);
+
+            if (Settings.Current.RunJobsInProcess) {
+                Log.Warn().Message("Jobs running in process.").Write();
+
+                var context = new OwinContext(app.Properties);
+                var token = context.Get<CancellationToken>("host.OnAppDisposing");
+                JobRunner.RunContinuousAsync<EventPostsJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventUserDescriptionsJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<MailMessageJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<EventNotificationsJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<WebHooksJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<StaleAccountsJob>(cancellationToken: token);
+
+                JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
+            } else {
+                Log.Info().Message("Jobs running out of process.").Write();
+            }
+        }
+
+        private static void SetupRouteConstraints(HttpConfiguration config) {
+            var constraintResolver = new DefaultInlineConstraintResolver();
+            constraintResolver.ConstraintMap.Add("objectid", typeof(ObjectIdRouteConstraint));
+            constraintResolver.ConstraintMap.Add("objectids", typeof(ObjectIdsRouteConstraint));
+            constraintResolver.ConstraintMap.Add("token", typeof(TokenRouteConstraint));
+            constraintResolver.ConstraintMap.Add("tokens", typeof(TokensRouteConstraint));
+            config.MapHttpAttributeRoutes(constraintResolver);
+        }
+
+        private static void SetupSwagger(HttpConfiguration config) {
+            config.EnableSwagger("schema/{apiVersion}", c => {
                 c.SingleApiVersion("v2", "Exceptionless");
                 c.ApiKey("access_token").In("header").Name("access_token").Description("API Key Authentication");
                 c.BasicAuth("basic").Description("Basic HTTP Authentication");
@@ -156,24 +184,6 @@ namespace Exceptionless.Api {
                 c.InjectStylesheet(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.css");
                 c.InjectJavaScript(typeof(AppBuilder).Assembly, "Exceptionless.Api.Content.docs.js");
             });
-
-            Mapper.Configuration.ConstructServicesUsing(container.GetInstance);
-
-            var context = new OwinContext(app.Properties);
-            var token = context.Get<CancellationToken>("host.OnAppDisposing");
-
-            CreateSampleData(container);
-
-            if (Settings.Current.RunJobsInProcess) {
-                Task.Factory.StartNew(() => container.GetInstance<EventPostsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventUserDescriptionsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<MailMessageJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<EventNotificationsJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                Task.Factory.StartNew(() => container.GetInstance<WebHooksJob>().RunContinuousAsync(cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<DailySummaryJob>().RunContinuousAsync(delay: TimeSpan.FromMinutes(15), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<RetentionLimitsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-                //Task.Factory.StartNew(() => container.GetInstance<StaleAccountsJob>().RunContinuousAsync(delay: TimeSpan.FromHours(8), cancellationToken: token), token, TaskCreationOptions.LongRunning, TaskScheduler.Default).IgnoreExceptions();
-            }
         }
 
         private static void CreateSampleData(Container container) {
