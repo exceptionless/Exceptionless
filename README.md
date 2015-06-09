@@ -42,12 +42,12 @@ Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuB
 ## Roadmap
 
 We are currently in the planning process for 2.1. However, this is a list of high level things that we are planning to do:
-- JavaScript Client **([In Progress](https://github.com/exceptionless/Exceptionless.JavaScript))**
-- [Improve Self Hosted experience](https://github.com/exceptionless/Exceptionless/issues/77).
-- [Improved support for machines that don't fully support PCL libraries](https://github.com/exceptionless/Exceptionless.Net/issues/12).
+- ~~JavaScript Client **([Completed](https://github.com/exceptionless/Exceptionless.JavaScript))**~~
+- [Improve Self Hosted experience](https://github.com/exceptionless/Exceptionless/issues/77) **(In Progress)**.
+- ~~Improved support for machines that don't fully support PCL libraries. **([Completed](https://github.com/exceptionless/Exceptionless.Net/issues/12))**~~
+- Bug fixes (Example: [Serialization](https://github.com/exceptionless/Exceptionless.Net/issues/2)) **(In Progress)**
 - New Dashboards
 - vnext support
-- Bug fixes (Example: [Serialization](https://github.com/exceptionless/Exceptionless.Net/issues/2))
 - [Let us know what you'd like us to work on!](https://github.com/exceptionless/Exceptionless/issues)
 
 ##  How is Exceptionless licensed?
