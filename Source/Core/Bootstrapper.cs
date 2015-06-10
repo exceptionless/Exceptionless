@@ -26,6 +26,7 @@ using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
+using Foundatio.ServiceProviders;
 using Foundatio.Storage;
 using MongoDB.Driver;
 using Nest;
@@ -38,6 +39,8 @@ using SimpleInjector.Packaging;
 namespace Exceptionless.Core {
     public class Bootstrapper : IPackage {
         public void RegisterServices(Container container) {
+            // Foundation service provider
+            ServiceProvider.Current = container;
             container.RegisterSingle<IDependencyResolver>(() => new SimpleInjectorCoreDependencyResolver(container));
 
             JsonConvert.DefaultSettings = () => new JsonSerializerSettings {
