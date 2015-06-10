@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Core.Models {
-    public class User : IIdentity {
+    public class User : IIdentity, IHaveDates {
         public User() {
             IsActive = true;
             OAuthAccounts = new Collection<OAuthAccount>();
@@ -45,5 +45,8 @@ namespace Exceptionless.Core.Models {
         public bool IsActive { get; set; }
 
         public ICollection<string> Roles { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
+        public DateTime ModifiedUtc { get; set; }
     }
 }

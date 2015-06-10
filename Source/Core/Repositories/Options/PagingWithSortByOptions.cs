@@ -1,10 +1,10 @@
 ﻿using System;
 
 namespace Exceptionless.Core.Repositories {
-    internal class PagingWitSortByOptions<TQuery, TSortBy> : PagingOptions {
+    internal class PagingWithSortByOptions<TQuery, TSortBy> : PagingOptions {
         private readonly PagingOptions _options;
 
-        public PagingWitSortByOptions(PagingOptions options) {
+        public PagingWithSortByOptions(PagingOptions options) {
             _options = options ?? new PagingOptions();
         }
 

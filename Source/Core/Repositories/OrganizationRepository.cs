@@ -39,14 +39,14 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<Organization>(new MongoOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
         }
 
-        public ICollection<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
+        public FindResults<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
             return Find<Organization>(new MongoOptions()
                 .WithQuery(Query.GT(FieldNames.RetentionDays, 0))
                 .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
                 .WithPaging(paging));
         }
 
-        public ICollection<Organization> GetAbandoned(int? limit = 20) {
+        public FindResults<Organization> GetAbandoned(int? limit = 20) {
             // TODO: This is not going to work right now because LastEventDate doesn't exist any more. Maybe create a daily job to update first event, last event and odometer.
             var query = Query.And(
                 Query.EQ(FieldNames.PlanId, BillingManager.FreePlan.Id),
@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Repositories {
             return Find<Organization>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
-        public ICollection<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
+        public FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var options = new MongoOptions().WithPaging(paging);
             if (!String.IsNullOrWhiteSpace(criteria))
                 options.Query = options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
@@ -111,7 +111,7 @@ namespace Exceptionless.Core.Repositories {
         public BillingPlanStats GetBillingPlanStats() {
             var results = Find<Organization>(new MongoOptions()
                 .WithFields(FieldNames.PlanId, FieldNames.IsSuspended, FieldNames.BillingPrice, FieldNames.BillingStatus)
-                .WithSort(SortBy.Descending(FieldNames.PlanId)));
+                .WithSort(SortBy.Descending(FieldNames.PlanId))).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();

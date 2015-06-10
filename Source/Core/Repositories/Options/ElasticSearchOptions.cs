@@ -7,13 +7,16 @@ namespace Exceptionless.Core.Repositories {
         public ElasticSearchOptions() {
             SortBy = new List<Func<SortFieldDescriptor<T>, IFieldSort>>();
             Indices = new List<string>();
+            DefaultQueryOperator = Operator.And;
         }
 
         public List<Func<SortFieldDescriptor<T>, IFieldSort>> SortBy { get; private set; }
         public FilterContainer BeforeQuery { get; set; }
         public FilterContainer AfterQuery { get; set; }
+        public FilterContainer SystemFilter { get; set; }
         public FilterContainer Filter { get; set; }
         public string Query { get; set; }
+        public Operator DefaultQueryOperator { get; set; }
         public List<string> Indices { get; private set; }
     }
 } 

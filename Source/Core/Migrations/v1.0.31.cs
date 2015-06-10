@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;

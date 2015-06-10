@@ -15,7 +15,6 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -47,9 +46,6 @@ namespace Exceptionless.Api {
             var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
             if (exceptionlessContractResolver != null)
                 exceptionlessContractResolver.UseDefaultResolverFor(typeof(Connection).Assembly);
-
-            if (Settings.Current.ShouldAutoUpgradeDatabase)
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
             Config = new HttpConfiguration();
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
@@ -114,7 +110,7 @@ namespace Exceptionless.Api {
                 if (String.IsNullOrEmpty(projectId)) {
                     var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
                     if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).FirstOrDefault();
+                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).Documents.FirstOrDefault();
                         if (project != null)
                             return project;
                     }

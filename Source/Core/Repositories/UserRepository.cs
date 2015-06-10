@@ -46,12 +46,16 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
         }
 
-        public ICollection<User> GetByOrganizationId(string id) {
+        public FindResults<User> GetByOrganizationId(string id) {
             if (String.IsNullOrEmpty(id))
-                return new List<User>();
+                return new FindResults<User>();
 
             var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
             return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
+        }
+
+        public long CountByOrganizationId(string organizationId) {
+            throw new NotImplementedException();
         }
 
         #region Collection Setup

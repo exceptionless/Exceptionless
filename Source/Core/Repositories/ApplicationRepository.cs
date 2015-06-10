@@ -1,5 +1,5 @@
 ﻿using System;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;

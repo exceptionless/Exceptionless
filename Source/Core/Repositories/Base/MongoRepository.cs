@@ -162,7 +162,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
             string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
-            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()) : new List<T>();
+            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()).Documents : new List<T>();
 
             BeforeSave(originalDocuments, documents);
 

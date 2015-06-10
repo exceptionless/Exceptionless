@@ -12,7 +12,7 @@ namespace Exceptionless.Core.Repositories {
         public ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, validator, cacheClient, messagePublisher) {}
 
-        public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual FindResults<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find(new ElasticSearchOptions<T>()
                 .WithStackId(stackId)
                 .WithPaging(paging)

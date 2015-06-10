@@ -20,7 +20,8 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public static T WithOrganizationId<T>(this T options, string id) where T : QueryOptions {
-            options.OrganizationIds.Add(id);
+            if (!String.IsNullOrEmpty(id))
+                options.OrganizationIds.Add(id);
             return options;
         }
 

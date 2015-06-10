@@ -51,8 +51,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore, page);
+            var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
+            var viewProjects = projects.Documents.Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore, page, projects.Total);
         }
 
         /// <summary>
@@ -78,8 +79,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var projects = _repository.GetByOrganizationIds(organizationIds, options).Select(Mapper.Map<Project, ViewProject>).ToList();
-            return OkWithResourceLinks(PopulateProjectStats(projects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var projects = _repository.GetByOrganizationIds(organizationIds, options);
+            var viewProjects = projects.Documents.Select(Mapper.Map<Project, ViewProject>).ToList();
+            return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
         /// <summary>
@@ -109,8 +111,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route]
         [ResponseType(typeof(ViewProject))]
-        public override IHttpActionResult Post(NewProject project) {
-            return base.Post(project);
+        public override Task<IHttpActionResult> PostAsync(NewProject project) {
+            return base.PostAsync(project);
         }
 
         /// <summary>
@@ -137,8 +139,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more projects.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -378,7 +380,7 @@ namespace Exceptionless.Api.Controllers {
                 return false;
 
             ICollection<string> organizationIds = !String.IsNullOrEmpty(organizationId) ? new List<string> { organizationId } : GetAssociatedOrganizationIds();
-            return !_repository.GetByOrganizationIds(organizationIds).Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
+            return !_repository.GetByOrganizationIds(organizationIds).Documents.Any(o => String.Equals(o.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -481,7 +483,7 @@ namespace Exceptionless.Api.Controllers {
                     builder.Append(" OR ");
 
                 var project = projects[index];
-                var organization = organizations.FirstOrDefault(o => o.Id == project.Id);
+                var organization = organizations.Documents.FirstOrDefault(o => o.Id == project.Id);
                 if (organization != null && organization.RetentionDays > 0)
                     builder.AppendFormat("(project:{0} AND (date:[now/d-{1}d TO now/d+1d}} OR last:[now/d-{1}d TO now/d+1d}}))", project.Id, organization.RetentionDays);
                 else

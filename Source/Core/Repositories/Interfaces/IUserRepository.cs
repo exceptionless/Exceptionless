@@ -8,6 +8,7 @@ namespace Exceptionless.Core.Repositories {
         User GetByPasswordResetToken(string token);
         User GetUserByOAuthProvider(string provider, string providerUserId);
         User GetByVerifyEmailAddressToken(string token);
-        ICollection<User> GetByOrganizationId(string id);
+        FindResults<User> GetByOrganizationId(string id);
+        long CountByOrganizationId(string organizationId);
     }
 }

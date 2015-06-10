@@ -80,6 +80,7 @@ _TeamCity*
 # NCrunch
 *.ncrunch*
 .*crunch*.local.xml
+_Ncrunch*
 
 # Installshield output folder
 [Ee]xpress/
@@ -166,5 +167,3 @@ lib
 node_modules
 App_Data
 Exceptionless.sln.GhostDoc.xml
-/Libraries/elasticsearch*/
-/Libraries/MongoDB

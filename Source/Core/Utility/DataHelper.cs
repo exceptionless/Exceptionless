@@ -6,7 +6,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
 using NLog.Fluent;
 
 namespace Exceptionless.Core.Utility {
@@ -84,7 +83,7 @@ namespace Exceptionless.Core.Utility {
         public string CreateDefaultOrganizationAndProject(User user) {
             string organizationId = user.OrganizationIds.FirstOrDefault();
             if (!String.IsNullOrEmpty(organizationId)) {
-                var defaultProject = _projectRepository.GetByOrganizationId(user.OrganizationIds.First(), useCache: true).FirstOrDefault();
+                var defaultProject = _projectRepository.GetByOrganizationId(user.OrganizationIds.First(), useCache: true).Documents.FirstOrDefault();
                 if (defaultProject != null)
                     return defaultProject.Id;
             } else {

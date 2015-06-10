@@ -1,6 +1,6 @@
 using System;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using FluentValidation;
 
 namespace Exceptionless.Core.Validation {

@@ -18,8 +18,10 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByProject = typeof(IOwnedByProject).IsAssignableFrom(typeof(T));
         protected readonly static bool _isOwnedByStack = typeof(IOwnedByStack).IsAssignableFrom(typeof(T));
+        protected readonly static bool _hasDates = typeof(IHaveDates).IsAssignableFrom(typeof(T));
+        protected readonly static bool _hasCreatedDate = typeof(IHaveCreatedDate).IsAssignableFrom(typeof(T));
 
-        protected ElasticSearchRepository(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, cacheClient) {
+        protected ElasticSearchRepository(IElasticClient elasticClient, string index = null, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, cacheClient) {
             _validator = validator;
             _messagePublisher = messagePublisher;
         }
@@ -34,7 +36,14 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeAdd(ICollection<T> documents) { }
+        protected virtual void BeforeAdd(ICollection<T> documents) {
+            if (_hasDates)
+                documents.Cast<IHaveDates>().SetDates();
+            else if (_hasCreatedDate)
+                documents.Cast<IHaveCreatedDate>().SetCreatedDates();
+
+            documents.EnsureIds();
+        }
 
         public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
@@ -52,7 +61,7 @@ namespace Exceptionless.Core.Repositories {
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
             else {
-                var result = _elasticClient.IndexMany(documents);
+                var result = _elasticClient.IndexMany(documents, _index);
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
@@ -104,7 +113,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
             BeforeRemove(documents);
-            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))));
+            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(_index));
             AfterRemove(documents, sendNotification);
         }
 
@@ -153,6 +162,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
 
             var searchDescriptor = new SearchDescriptor<T>()
+                .Index(_index)
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
                 .Size(Settings.Current.BulkBatchSize);
@@ -176,14 +186,18 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) { }
+        protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) {
+            documents.EnsureIds();
+            if (_hasDates)
+                documents.Cast<IHaveDates>().SetDates();
+        }
 
         public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to save.", "documents");
 
             string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
-            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()) : new List<T>();
+            var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()).Documents : new List<T>();
 
             BeforeSave(originalDocuments, documents);
 
@@ -196,7 +210,7 @@ namespace Exceptionless.Core.Repositories {
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             } else {
-                var result = _elasticClient.IndexMany(documents);
+                var result = _elasticClient.IndexMany(documents, _index);
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
@@ -231,6 +245,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
 
             var searchDescriptor = new SearchDescriptor<T>()
+                .Index(_index)
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(f => f.Id))
                 .SearchType(SearchType.Scan)

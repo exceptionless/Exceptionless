@@ -8,7 +8,6 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
@@ -109,7 +108,7 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IValidator<PersistentEvent>, PersistentEventValidator>();
             container.RegisterSingle<IValidator<Project>, ProjectValidator>();
             container.RegisterSingle<IValidator<Stack>, StackValidator>();
-            container.RegisterSingle<IValidator<Models.Admin.Token>, TokenValidator>();
+            container.RegisterSingle<IValidator<Models.Token>, TokenValidator>();
             container.RegisterSingle<IValidator<UserDescription>, UserDescriptionValidator>();
             container.RegisterSingle<IValidator<User>, UserValidator>();
             container.RegisterSingle<IValidator<WebHook>, WebHookValidator>();

@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -18,7 +18,7 @@ namespace Exceptionless.Core.Repositories {
             RemoveAll(new MongoOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
         }
 
-        public ICollection<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
+        public FindResults<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
             var query = Query.Or(
                     Query.EQ(FieldNames.OrganizationId, new BsonObjectId(ObjectId.Parse(organizationId))), 
                     Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId)))

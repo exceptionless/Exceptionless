@@ -15,7 +15,11 @@ namespace Exceptionless.Core.Repositories {
         public MongoRepositoryOwnedByOrganization(MongoDatabase database, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(database, validator, cacheClient, messagePublisher) {}
 
-        public virtual ICollection<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public long CountByOrganizationId(string organizationId) {
+            throw new NotImplementedException();
+        }
+
+        public virtual FindResults<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<T>(new MultiOptions()
                 .WithOrganizationId(organizationId)
                 .WithPaging(paging)
@@ -23,9 +27,9 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public virtual ICollection<T> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual FindResults<T> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
-                return new List<T>();
+                return new FindResults<T>();
 
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             return Find<T>(new MultiOptions()

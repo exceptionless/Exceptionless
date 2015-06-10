@@ -12,7 +12,6 @@ using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
 
 namespace Exceptionless.App.Controllers.API {
     [RoutePrefix(API_PREFIX + "/tokens")]
@@ -45,8 +44,9 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore, page);
+            var tokens = _repository.GetByTypeAndOrganizationId(TokenType.Access, organizationId, options);
+            var viewTokens = tokens.Documents.Select(Mapper.Map<Token, ViewToken>).ToList();
+            return OkWithResourceLinks(viewTokens, options.HasMore, page, tokens.Total);
         }
 
         /// <summary>
@@ -70,8 +70,9 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options).Select(Mapper.Map<Token, ViewToken>).ToList();
-            return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var tokens = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, options);
+            var viewTokens = tokens.Documents.Select(Mapper.Map<Token, ViewToken>).ToList();
+            return OkWithResourceLinks(viewTokens, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, tokens.Total);
         }
 
         /// <summary>
@@ -82,7 +83,7 @@ namespace Exceptionless.App.Controllers.API {
         [HttpGet]
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens/default")]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult GetDefaultToken(string projectId) {
+        public async Task<IHttpActionResult> GetDefaultToken(string projectId) {
             if (String.IsNullOrEmpty(projectId))
                 return NotFound();
 
@@ -90,11 +91,11 @@ namespace Exceptionless.App.Controllers.API {
             if (project == null || !CanAccessOrganization(project.OrganizationId))
                 return NotFound();
 
-            var token = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).FirstOrDefault();
+            var token = _repository.GetByTypeAndProjectId(TokenType.Access, projectId, new PagingOptions { Limit = 1 }).Documents.FirstOrDefault();
             if (token != null)
                 return Ok(Mapper.Map<Token, ViewToken>(token));
 
-            return Post(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
+            return await PostAsync(new NewToken { OrganizationId = project.OrganizationId, ProjectId = projectId});
         }
 
         /// <summary>
@@ -121,8 +122,8 @@ namespace Exceptionless.App.Controllers.API {
         [Route]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public override IHttpActionResult Post(NewToken token) {
-            return base.Post(token);
+        public override Task<IHttpActionResult> PostAsync(NewToken token) {
+            return base.PostAsync(token);
         }
 
         /// <summary>
@@ -139,7 +140,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/projects/{projectId:objectid}/tokens")]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult PostByProject(string projectId, NewToken token) {
+        public async Task<IHttpActionResult> PostByProject(string projectId, NewToken token) {
             if (token == null)
                 token = new NewToken();
 
@@ -149,7 +150,7 @@ namespace Exceptionless.App.Controllers.API {
 
             token.OrganizationId = project.OrganizationId;
             token.ProjectId = projectId;
-            return Post(token);
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -166,7 +167,7 @@ namespace Exceptionless.App.Controllers.API {
         [Route("~/" + API_PREFIX + "/organizations/{organizationId:objectid}/tokens")]
         [HttpPost]
         [ResponseType(typeof(ViewToken))]
-        public IHttpActionResult PostByOrganization(string organizationId, NewToken token) {
+        public async Task<IHttpActionResult> PostByOrganization(string organizationId, NewToken token) {
             if (token == null)
                 token = new NewToken();
 
@@ -174,7 +175,7 @@ namespace Exceptionless.App.Controllers.API {
                 return BadRequest();
 
             token.OrganizationId = organizationId;
-            return Post(token);
+            return await PostAsync(token);
         }
 
         /// <summary>
@@ -187,8 +188,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more tokens.</response>
         [HttpDelete]
         [Route("{ids:tokens}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Exceptionless.Core.Models.Admin {
+namespace Exceptionless.Core.Models {
     public class WebHook : IOwnedByOrganizationAndProjectWithIdentity {
         public string Id { get; set; }
         public string OrganizationId { get; set; }

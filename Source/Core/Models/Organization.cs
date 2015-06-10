@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace Exceptionless.Core.Models {
-    public class Organization : IData, IOwnedByOrganizationWithIdentity {
+    public class Organization : IData, IOwnedByOrganizationWithIdentity, IHaveDates {
         public Organization() {
             Invites = new Collection<Invite>();
             BillingStatus = BillingStatus.Trialing;
@@ -151,6 +151,10 @@ namespace Exceptionless.Core.Models {
         /// Optional data entries that contain additional configuration information for this organization.
         /// </summary>
         public DataDictionary Data { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
+        
+        public DateTime ModifiedUtc { get; set; }
 
         string IOwnedByOrganization.OrganizationId { get { return Id; } set { Id = value; } }
     }

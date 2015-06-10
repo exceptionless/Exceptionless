@@ -68,8 +68,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = Enumerable.ToList(_repository.GetByIds(GetAssociatedOrganizationIds(), options).Select(Mapper.Map<Organization, ViewOrganization>));
-            return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            var organizations = _repository.GetByIds(GetAssociatedOrganizationIds(), options);
+            var viewOrganizations = organizations.Documents.Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
         [HttpGet]
@@ -81,8 +82,9 @@ namespace Exceptionless.Api.Controllers {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var organizations = Enumerable.ToList(_repository.GetByCriteria(criteria, options, sort, paid, suspended).Select(Mapper.Map<Organization, ViewOrganization>));
-            return OkWithResourceLinks(PopulateOrganizationStats(organizations), options.HasMore, page);
+            var organizations = _repository.GetByCriteria(criteria, options, sort, paid, suspended);
+            var viewOrganizations = organizations.Documents.Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore, page, organizations.Total);
         }
 
         [HttpGet]
@@ -121,8 +123,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPost]
         [Route]
         [ResponseType(typeof(ViewOrganization))]
-        public override IHttpActionResult Post(NewOrganization organization) {
-            return base.Post(organization);
+        public override Task<IHttpActionResult> PostAsync(NewOrganization organization) {
+            return base.PostAsync(organization);
         }
 
         /// <summary>
@@ -149,8 +151,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more organizations.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -424,7 +426,7 @@ namespace Exceptionless.Api.Controllers {
             if (String.IsNullOrEmpty(id) || !CanAccessOrganization(id) || String.IsNullOrEmpty(email))
                 return NotFound();
 
-            Organization organization = _repository.GetById(id);
+            Organization organization = GetModel(id);
             if (organization == null)
                 return NotFound();
 
@@ -492,10 +494,10 @@ namespace Exceptionless.Api.Controllers {
                 if (!user.OrganizationIds.Contains(organization.Id))
                     return BadRequest();
 
-                if (_userRepository.GetByOrganizationId(organization.Id).Count() == 1)
+                if (_userRepository.GetByOrganizationId(organization.Id).Total == 1)
                     return BadRequest("An organization must contain at least one user.");
 
-                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
+                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).Documents.Where(p => p.NotificationSettings.ContainsKey(user.Id)).ToList();
                 if (projects.Count > 0) {
                     foreach (Project project in projects)
                         project.NotificationSettings.Remove(user.Id);
@@ -610,7 +612,7 @@ namespace Exceptionless.Api.Controllers {
         }
 
         private bool IsOrganizationNameAvailableInternal(string name) {
-            return !String.IsNullOrWhiteSpace(name) && !_repository.GetByIds(GetAssociatedOrganizationIds()).Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
+            return !String.IsNullOrWhiteSpace(name) && !_repository.GetByIds(GetAssociatedOrganizationIds()).Documents.Any(o => o.Name.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase));
         }
 
         protected override PermissionResult CanAdd(Organization value) {
@@ -654,7 +656,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(value.StripeCustomerId) && User.IsInRole(AuthorizationRoles.GlobalAdmin))
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it has a subscription.", value.Id);
 
-            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).ToList();
+            List<Project> projects = _projectRepository.GetByOrganizationId(value.Id).Documents.ToList();
             if (!User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Any())
                 return PermissionResult.DenyWithMessage("An organization cannot be deleted if it contains any projects.", value.Id);
 
@@ -677,7 +679,7 @@ namespace Exceptionless.Api.Controllers {
                 }
 
                 var users = _userRepository.GetByOrganizationId(organization.Id);
-                foreach (User user in users) {
+                foreach (User user in users.Documents) {
                     // delete the user if they are not associated to any other organizations and they are not the current user
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id)) && !String.Equals(user.Id, currentUser.Id)) {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -693,14 +695,14 @@ namespace Exceptionless.Api.Controllers {
                 await _webHookRepository.RemoveAllByOrganizationIdsAsync(new[] { organization.Id });
 
                 var projects = _projectRepository.GetByOrganizationId(organization.Id);
-                if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Count > 0) {
-                    foreach (Project project in projects) {
+                if (User.IsInRole(AuthorizationRoles.GlobalAdmin) && projects.Total > 0) {
+                    foreach (Project project in projects.Documents) {
                         Log.Info().Message("Resetting all project data for project '{0}' with Id: '{1}'.", project.Name, project.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
                         await _projectController.ResetDataAsync(project.Id);
                     }
 
                     Log.Info().Message("Deleting all projects for organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
-                    _projectRepository.Save(projects);
+                    _projectRepository.Remove(projects.Documents);
                 }
 
                 Log.Info().Message("Deleting organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -747,7 +749,7 @@ namespace Exceptionless.Api.Controllers {
                 var organizationStats = result.Terms.FirstOrDefault(t => t.Term == organization.Id);
                 organization.EventCount = organizationStats != null ? organizationStats.Total : 0;
                 organization.StackCount = organizationStats != null ? organizationStats.Unique : 0;
-                organization.ProjectCount = _projectRepository.GetByOrganizationId(organization.Id, useCache: true).Count;
+                organization.ProjectCount = _projectRepository.GetByOrganizationId(organization.Id, useCache: true).Documents.Count;
             }
 
             return organizations;

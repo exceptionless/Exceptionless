@@ -51,7 +51,7 @@ namespace Exceptionless.Core.Jobs {
 
             const int BATCH_SIZE = 25;
 
-            var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
+            var projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE).Documents;
             while (projects.Count > 0 && !token.IsCancellationRequested) {
                 var documentsUpdated = _projectRepository.IncrementNextSummaryEndOfDayTicks(projects.Select(p => p.Id).ToList());
                 Log.Info().Message("Got {0} projects to process. ", projects.Count).Write();
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Jobs {
                     ProcessSummaryNotification(notification);
                 }
 
-                projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE);
+                projects = _projectRepository.GetByNextSummaryNotificationOffset(9, BATCH_SIZE).Documents;
             }
 
             return Task.FromResult(JobResult.SuccessWithMessage("Successfully sent summary notifications."));
@@ -88,7 +88,7 @@ namespace Exceptionless.Core.Jobs {
                 return;
             }
 
-            var users = _userRepository.GetByIds(userIds).Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
+            var users = _userRepository.GetByIds(userIds).Documents.Where(u => u.IsEmailAddressVerified && u.EmailNotificationsEnabled && u.OrganizationIds.Contains(organization.Id)).ToList();
             if (users.Count == 0) {
                 Log.Info().Message("Project \"{0}\" has no users to send summary to.", project.Id).Write();
                 return;
@@ -96,7 +96,7 @@ namespace Exceptionless.Core.Jobs {
 
             Log.Info().Message("Sending daily summary: users={0} project={1}", users.Count, project.Id).Write();
             var paging = new PagingOptions { Limit = 5 };
-            List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).ToList();
+            List<Stack> newest = _stackRepository.GetNew(project.Id, data.UtcStartTime, data.UtcEndTime, paging).Documents.ToList();
 
             var result = _stats.GetTermsStats(data.UtcStartTime, data.UtcEndTime, "stack_id", "type:error project:" + data.Id, max: 5);
             //var termStatsList = result.Terms.Take(5).ToList();

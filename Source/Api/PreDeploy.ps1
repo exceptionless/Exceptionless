@@ -5,6 +5,7 @@
         $variables
     )
 
+    Write-Host "Updating config file `"$configPath`""
     [xml]$xml = New-Object XML
     $xml.Load($configPath)
 

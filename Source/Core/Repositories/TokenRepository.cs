@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -17,7 +17,24 @@ namespace Exceptionless.Core.Repositories {
             _getIdValue = s => s;
         }
 
-        public ICollection<Token> GetByTypeAndOrganizationId(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public FindResults<Token> GetApiTokens(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return null;
+            //var filter = Filter<Token>.Term(e => e.Type, TokenType.Access) && Filter<Token>.Missing(e => e.UserId);
+            //return Find(new ElasticSearchOptions<Token>()
+            //    .WithOrganizationId(organizationId)
+            //    .WithFilter(filter)
+            //    .WithPaging(paging)
+            //    .WithCacheKey(useCache ? String.Concat("api-org:", organizationId) : null)
+            //    .WithExpiresIn(expiresIn));
+        }
+
+        public FindResults<Token> GetByUserId(string userId) {
+            return null;
+            //var filter = Filter<Token>.Term(e => e.UserId, userId);
+            //return Find(new ElasticSearchOptions<Token>().WithFilter(filter));
+        }
+
+        public FindResults<Token> GetByTypeAndOrganizationId(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find<Token>(new MongoOptions()
                 .WithOrganizationId(organizationId)
                 .WithQuery(Query.EQ(FieldNames.Type, type))
@@ -26,9 +43,9 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public ICollection<Token> GetByTypeAndOrganizationIds(TokenType type, ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public FindResults<Token> GetByTypeAndOrganizationIds(TokenType type, ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
-                return new List<Token>();
+                return new FindResults<Token>();
 
             string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
             return Find<Token>(new MongoOptions()
@@ -39,7 +56,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public ICollection<Token> GetByTypeAndProjectId(TokenType type, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public FindResults<Token> GetByTypeAndProjectId(TokenType type, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var query = Query.And(Query.Or(
                             Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId))), 
                             Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
@@ -52,7 +69,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
 
-        public ICollection<Token> GetByTypeAndOrganizationIdOrProjectId(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public FindResults<Token> GetByTypeAndOrganizationIdOrProjectId(TokenType type, string organizationId, string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var query = Query.And(Query.Or(
                 Query.EQ(FieldNames.OrganizationId, new BsonObjectId(ObjectId.Parse(organizationId))), 
                 Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId))), 
@@ -73,7 +90,7 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<Token>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Refresh, refreshToken)));
         }
 
-        public override ICollection<Token> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public override FindResults<Token> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             var query = Query.Or(
                 Query.EQ(CommonFieldNames.ProjectId, new BsonObjectId(new ObjectId(projectId))),
                 Query.EQ(FieldNames.DefaultProjectId, new BsonObjectId(new ObjectId(projectId)))

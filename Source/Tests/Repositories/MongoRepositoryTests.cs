@@ -44,19 +44,19 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(organizations);
-            Assert.Equal(1, organizations.Count);
+            Assert.Equal(1, organizations.Total);
 
             var organizations2 = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(2).WithLimit(1));
             Assert.NotNull(organizations);
-            Assert.Equal(1, organizations.Count);
+            Assert.Equal(1, organizations.Total);
 
-            Assert.NotEqual(organizations.First(), organizations2.First());
+            Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
            
             organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions());
             Assert.NotNull(organizations);
-            Assert.Equal(2, organizations.Count);
+            Assert.Equal(2, organizations.Total);
 
-            _repository.Remove(organizations);
+            _repository.Remove(organizations.Documents);
             Assert.Equal(1, _repository.Count());
             _repository.RemoveAll();
         }

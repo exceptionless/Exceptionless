@@ -1,11 +1,10 @@
 version: 2.0.{build}
-clone_depth: 2
 configuration: Release
+clone_depth: 2
 
 environment:
   JAVA_HOME: C:\Program Files (x86)\Java\jdk1.8.0
-  ES_VERSION: 1.5.0
-  MONGO_VERSION: 3.0.0
+  ES_VERSION: 1.5.2
   API_URL: https://#{api.hostheader}
   OCTOPUS_API_URL: https://deploy.codesmithtools.com/api
   OCTOPUS_API_KEY:
@@ -32,7 +31,6 @@ build:
   verbosity: minimal
 
 before_test:
-  - ps: .\Libraries\Start-MongoDb.ps1
   - ps: .\Libraries\Start-ElasticSearch.ps1
 #  - ps: .\Libraries\Enable-Rdp.ps1
 

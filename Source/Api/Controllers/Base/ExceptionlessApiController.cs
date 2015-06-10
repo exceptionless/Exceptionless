@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web.Http;
 using System.Web.Http.Results;
+using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -65,7 +67,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             return Tuple.Create(AllowedFields.Contains(sort) ? sort : null, order);
-        } 
+        }
 
         protected int GetLimit(int limit) {
             if (limit < 1)
@@ -125,7 +127,7 @@ namespace Exceptionless.Api.Controllers {
             if (hasOrganizationOrProjectFilter && Request.IsGlobalAdmin())
                 return null;
 
-            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
+            var organizations = repository.GetByIds(GetAssociatedOrganizationIds(), useCache: true).Documents.Where(o => !o.IsSuspended || o.HasPremiumFeatures || (!o.HasPremiumFeatures && !filterUsesPremiumFeatures)).ToList();
             if (organizations.Count == 0)
                 return "organization:none";
 
@@ -195,8 +197,8 @@ namespace Exceptionless.Api.Controllers {
             return new OkWithResourceLinks<TEntity>(content, this, hasMore, null, pagePropertyAccessor, headers, isDescending);
         }
 
-        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
-            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page);
+        public OkWithResourceLinks<TEntity> OkWithResourceLinks<TEntity>(ICollection<TEntity> content, bool hasMore, int page, long? total = null, IEnumerable<KeyValuePair<string, IEnumerable<string>>> headers = null) where TEntity : class {
+            return new OkWithResourceLinks<TEntity>(content, this, hasMore, page, total);
         }
 
         protected Dictionary<string, IEnumerable<string>> GetLimitedByPlanHeader(long totalLimitedByPlan) {
@@ -213,5 +215,73 @@ namespace Exceptionless.Api.Controllers {
         protected bool NextPageExceedsSkipLimit(int page, int limit) {
             return (page + 1) * limit >= MAXIMUM_SKIP;
         }
+
+        public string GetSystemFilter(bool filterUsesPremiumFeatures, bool hasOrganizationFilter) {
+            if (hasOrganizationFilter && Request.IsGlobalAdmin())
+                return null;
+
+            return null;
+        }
+
+        protected bool HasOrganizationFilter(string filter) {
+            if (String.IsNullOrWhiteSpace(filter))
+                return false;
+
+            return filter.Contains("organization:");
+        }
+
+        #region Mapping
+
+        private bool _mapsCreated = false;
+        private static readonly object _lock = new object();
+        private void EnsureMaps() {
+            if (_mapsCreated)
+                return;
+
+            lock (_lock) {
+                if (_mapsCreated)
+                    return;
+
+                CreateMaps();
+
+                _mapsCreated = true;
+            }
+        }
+
+        protected virtual void CreateMaps() { }
+
+        protected TDestination Map<TDestination>(object source, bool isResult = false) {
+            EnsureMaps();
+            var destination = Mapper.Map<TDestination>(source);
+            if (isResult)
+                AfterResultMap(destination);
+            return destination;
+        }
+
+        protected ICollection<TDestination> MapCollection<TDestination>(object source, bool isResult = false) {
+            EnsureMaps();
+            var destination = Mapper.Map<ICollection<TDestination>>(source);
+            if (isResult)
+                destination.ForEach(d => AfterResultMap(d));
+            return destination;
+        }
+
+        protected virtual void AfterResultMap(object model) {
+            var dataModel = model as IData;
+            if (dataModel != null)
+                dataModel.Data.RemoveSensitiveData();
+
+            var enumerable = model as IEnumerable;
+            if (enumerable == null)
+                return;
+
+            foreach (var item in enumerable) {
+                var itemDataModel = item as IData;
+                if (itemDataModel != null)
+                    itemDataModel.Data.RemoveSensitiveData();
+            }
+        }
+
+        #endregion
     }
 }

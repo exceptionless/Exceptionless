@@ -129,13 +129,13 @@ namespace Exceptionless.Core.Repositories {
             return _collection.FindOneAs<T>(findArgs) != null;
         }
 
-        protected ICollection<TModel> Find<TModel>(MultiOptions options) where TModel : class, new() {
+        protected FindResults<TModel> Find<TModel>(MultiOptions options) where TModel : class, new() {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            ICollection<TModel> result;
+            FindResults<TModel> result;
             if (EnableCache && options.UseCache) {
-                result = Cache.Get<ICollection<TModel>>(GetScopedCacheKey(options.CacheKey));
+                result = Cache.Get<FindResults<TModel>>(GetScopedCacheKey(options.CacheKey));
                 if (result != null)
                     return result;
             }
@@ -153,11 +153,13 @@ namespace Exceptionless.Core.Repositories {
             if (mongoOptions != null && mongoOptions.SortBy != null)
                 cursor.SetSortOrder(mongoOptions.SortBy);
 
-            result = cursor.ToList();
+            result = new FindResults<TModel> { Documents = cursor.ToList() };
+            result.Total = result.Documents.Count;
+
             if (options.UseLimit) {
-                if (result.Count > options.GetLimit())
+                if (result.Total > options.GetLimit())
                     options.HasMore = true;
-                result = result.Take(options.GetLimit()).ToList();
+                result.Documents = result.Documents.Take(options.GetLimit()).ToList();
             }
 
             if (EnableCache && options.UseCache)
@@ -177,28 +179,43 @@ namespace Exceptionless.Core.Repositories {
             return FindOne<T>(new OneOptions().WithIds(id).WithCacheKey(useCache ? id : null).WithExpiresIn(expiresIn));
         }
 
-        public ICollection<T> GetByIds(ICollection<string> ids, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public FindResults<T> GetByIds(ICollection<string> ids, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (ids == null || ids.Count == 0)
-                return new List<T>();
+                return new FindResults<T>();
 
             var results = new List<T>();
             if (EnableCache && useCache)
                 results.AddRange(ids.Select(id => Cache.Get<T>(GetScopedCacheKey(id))).Where(cacheHit => cacheHit != null));
 
             var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
-            if (notCachedIds.Length == 0)
-                return results;
+            if (notCachedIds.Length == 0) {
+                return new FindResults<T> {
+                    Documents = results,
+                    Total = results.Count
+                };
+            }
 
             var foundItems = Find<T>(new MultiOptions().WithIds(ids.Except(results.Select(i => i.Id))));
 
-            if (EnableCache && useCache && foundItems.Count > 0) {
-                foreach (var item in foundItems)
+            if (EnableCache && useCache && foundItems.Total > 0) {
+                foreach (var item in foundItems.Documents)
                     Cache.Set(GetScopedCacheKey(item.Id), item, expiresIn.HasValue ? DateTime.Now.Add(expiresIn.Value) : DateTime.Now.AddSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
             }
 
-            results.AddRange(foundItems);
+            results.AddRange(foundItems.Documents);
 
-            return results;
+            return new FindResults<T> {
+                Documents = results,
+                Total = results.Count
+            };
+        }
+
+        public FindResults<T> GetAll(string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {
+            throw new NotImplementedException();
+        }
+
+        public FindResults<T> GetBySearch(string systemFilter, string userFilter = null, string query = null, string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {
+            throw new NotImplementedException();
         }
 
         public bool Exists(string id) {

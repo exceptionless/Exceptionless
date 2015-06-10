@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(_stackRepository.Count(), result.Timeline.Sum(t => t.New));
 
             var stacks = _stackRepository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
-            foreach (var stack in stacks) {
+            foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(_stackRepository.Count(), result.Timeline.Sum(t => t.New));
 
             var stacks = _stackRepository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
-            foreach (var stack in stacks) {
+            foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);

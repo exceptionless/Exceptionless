@@ -63,6 +63,15 @@ namespace Exceptionless.Api.Security {
                 string queryToken = request.GetQueryString("access_token");
                 if (!String.IsNullOrEmpty(queryToken))
                     token = queryToken;
+
+                queryToken = request.GetQueryString("api_key");
+                if (String.IsNullOrEmpty(token) && !String.IsNullOrEmpty(queryToken))
+                    token = queryToken;
+
+                queryToken = request.GetQueryString("apikey");
+                if (String.IsNullOrEmpty(token) && !String.IsNullOrEmpty(queryToken))
+                    token = queryToken;
+
             }
 
             if (!String.IsNullOrEmpty(token)) {

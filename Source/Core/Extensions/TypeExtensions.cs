@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -19,6 +20,11 @@ namespace Exceptionless.Core.Extensions {
                 return false;
 
             return type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        }
+
+        private static readonly ConcurrentDictionary<Type, object> _defaultValues = new ConcurrentDictionary<Type, object>(); 
+        public static object GetDefaultValue(this Type type) {
+            return _defaultValues.GetOrAdd(type, t => type.IsValueType ? Activator.CreateInstance(type) : null);
         }
 
         public static bool IsNumeric(this Type type) {

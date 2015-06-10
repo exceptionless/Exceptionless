@@ -39,7 +39,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
-            var organizations = _organizationRepository.GetAbandoned();
+            var organizations = _organizationRepository.GetAbandoned().Documents;
             while (organizations.Count > 0 && !token.IsCancellationRequested) {
                 foreach (var organization in organizations) {
                     if (token.IsCancellationRequested)
@@ -48,7 +48,7 @@ namespace Exceptionless.Core.Jobs {
                     TryDeleteOrganization(organization);
                 }
 
-                organizations = _organizationRepository.GetAbandoned();
+                organizations = _organizationRepository.GetAbandoned().Documents;
             }
 
             return JobResult.Success;
@@ -57,7 +57,7 @@ namespace Exceptionless.Core.Jobs {
         private void TryDeleteOrganization(Organization organization) {
             try {
                 Log.Info().Message("Removing empty projects: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
-                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).ToList();
+                List<Project> projects = _projectRepository.GetByOrganizationId(organization.Id).Documents.ToList();
                 if (projects.Any(project => _eventRepository.GetCountByProjectId(project.Id) > 0)) {
                     Log.Info().Message("Organization has data: org=\"{0}\" id={1}", organization.Name, organization.Id).Write();
                     return;
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Jobs {
                 _projectRepository.Remove(projects);
 
                 Log.Info().Message("Removing users from organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Write();
-                List<User> users = _userRepository.GetByOrganizationId(organization.Id).ToList();
+                List<User> users = _userRepository.GetByOrganizationId(organization.Id).Documents.ToList();
                 foreach (User user in users) {
                     if (user.OrganizationIds.All(oid => String.Equals(oid, organization.Id))) {
                         Log.Info().Message("Removing user '{0}' as they do not belong to any other organizations.", user.Id, organization.Name, organization.Id).Write();

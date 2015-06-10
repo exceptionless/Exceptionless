@@ -27,12 +27,12 @@ namespace Exceptionless.Core.Jobs {
 
         protected override Task<JobResult> RunInternalAsync(CancellationToken token) {
             var page = 1;
-            var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100));
+            var organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithLimit(100)).Documents;
             while (organizations.Count > 0 && !token.IsCancellationRequested) {
                 foreach (var organization in organizations)
                     EnforceEventCountLimits(organization);
 
-                organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(++page).WithLimit(100));
+                organizations = _organizationRepository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(++page).WithLimit(100)).Documents;
             }
 
             return Task.FromResult(JobResult.Success);

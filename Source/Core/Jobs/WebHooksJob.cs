@@ -41,7 +41,7 @@ namespace Exceptionless.Core.Jobs {
 
             var client = new HttpClient();
             try {
-                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented));
+                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented), token);
                 if (response.StatusCode == HttpStatusCode.Gone) {
                     _webHookRepository.RemoveByUrl(body.Url);
                     Log.Warn().Project(body.ProjectId).Message("Deleting web hook: org={0} project={1} url={2}", body.OrganizationId, body.ProjectId, body.Url).Write();

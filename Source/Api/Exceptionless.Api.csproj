@@ -218,6 +218,7 @@
     <Compile Include="Controllers\Base\ExceptionlessApiController.cs" />
     <Compile Include="Controllers\Base\ModelActionResults.cs" />
     <Compile Include="Controllers\Base\PermissionResult.cs" />
+    <Compile Include="Controllers\Base\ReadOnlyRepositoryApiController.cs" />
     <Compile Include="Controllers\Base\RepositoryApiController.cs" />
     <Compile Include="Controllers\Base\TimeInfo.cs" />
     <Compile Include="Controllers\EventController.cs" />

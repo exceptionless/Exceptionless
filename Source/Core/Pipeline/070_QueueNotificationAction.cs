@@ -5,7 +5,7 @@ using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Models.Admin;
+using Exceptionless.Core.Models;
 using Foundatio.Queues;
 using NLog.Fluent;
 
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Pipeline {
                     ProjectName = ctx.Project.Name
                 });
 
-            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId)) {
+            foreach (WebHook hook in _webHookRepository.GetByOrganizationIdOrProjectId(ctx.Event.OrganizationId, ctx.Event.ProjectId).Documents) {
                 if (!ShouldCallWebHook(hook, ctx))
                     continue;
 
