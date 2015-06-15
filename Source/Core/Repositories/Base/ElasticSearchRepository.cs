@@ -5,6 +5,7 @@ using Elasticsearch.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -21,7 +22,7 @@ namespace Exceptionless.Core.Repositories {
         protected readonly static bool _hasDates = typeof(IHaveDates).IsAssignableFrom(typeof(T));
         protected readonly static bool _hasCreatedDate = typeof(IHaveCreatedDate).IsAssignableFrom(typeof(T));
 
-        protected ElasticSearchRepository(IElasticClient elasticClient, string index = null, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, cacheClient) {
+        protected ElasticSearchRepository(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, cacheClient) {
             _validator = validator;
             _messagePublisher = messagePublisher;
         }
@@ -56,12 +57,12 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: _index.Name, index: String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
             else {
-                var result = _elasticClient.IndexMany(documents, _index);
+                var result = _elasticClient.IndexMany(documents, _index.VersionedName);
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
@@ -113,7 +114,10 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
             BeforeRemove(documents);
-            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(_index));
+
+            string indexName = _isEvent ? _index.VersionedName + "-*" : _index.VersionedName;
+            _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(indexName));
+
             AfterRemove(documents, sendNotification);
         }
 
@@ -138,7 +142,7 @@ namespace Exceptionless.Core.Repositories {
                 Cache.FlushAll();
 
             if (_isEvent)
-                _elasticClient.DeleteIndex(d => d.Index(String.Concat(EventsIndexName, "-*")));
+                _elasticClient.DeleteIndex(d => d.Index(_index.VersionedName + "-*"));
             else
                 RemoveAll(new QueryOptions(), false);
         }
@@ -158,20 +162,22 @@ namespace Exceptionless.Core.Repositories {
                 fields.Add("signature_hash");
 
             long recordsAffected = 0;
-
             var searchDescriptor = new SearchDescriptor<T>()
-                .Index(_index)
+                .Index(_index.Name)
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
                 .Size(Settings.Current.BulkBatchSize);
 
+            _elasticClient.EnableTrace();
             var documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
+            _elasticClient.DisableTrace();
             while (documents.Count > 0) {
                 recordsAffected += documents.Count;
                 Remove(documents, sendNotifications);
 
                 documents = _elasticClient.Search<T>(searchDescriptor).Documents.ToList();
             }
+            _elasticClient.DisableTrace();
 
             return recordsAffected;
         }
@@ -204,11 +210,11 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: "events", index: String.Concat(EventsIndexName, "-", group.Key.ToString("yyyyMM")));
+                    var result = _elasticClient.IndexMany(group.ToList(), type: _index.Name, index: String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             } else {
-                var result = _elasticClient.IndexMany(documents, _index);
+                var result = _elasticClient.IndexMany(documents, _index.VersionedName);
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
@@ -243,7 +249,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
 
             var searchDescriptor = new SearchDescriptor<T>()
-                .Index(_index)
+                .Index(_index.Name)
                 .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(f => f.Id))
                 .SearchType(SearchType.Scan)

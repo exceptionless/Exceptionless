@@ -5,10 +5,11 @@ using AutoMapper;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
-using MongoDB.Bson;
 using Nest;
 using NLog.Fluent;
 using System.Linq.Expressions;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Core.Repositories {
     public class FindResults<T> {
@@ -25,15 +26,13 @@ namespace Exceptionless.Core.Repositories {
         protected static readonly string _entityType = typeof(T).Name;
         protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
         protected static readonly bool _isStack = typeof(T) == typeof(Stack);
-        public static string EventsIndexName = "events-v1";
-        public static string StacksIndexName = "stacks-v1";
 
         protected readonly IElasticClient _elasticClient;
-        protected readonly string _index;
+        protected readonly IElasticSearchIndex _index;
 
-        protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, string index = null, ICacheClient cacheClient = null) {
+        protected ElasticSearchReadOnlyRepository(IElasticClient elasticClient, IElasticSearchIndex index, ICacheClient cacheClient = null) {
             _elasticClient = elasticClient;
-            _index = index; // TODO: Calculate this if it's not set. (index and type name? or default? or dynamic index name).
+            _index = index;
             Cache = cacheClient;
             EnableCache = cacheClient != null;
         }
@@ -43,7 +42,7 @@ namespace Exceptionless.Core.Repositories {
         protected ICacheClient Cache { get; private set; }
 
         protected virtual string[] GetIndices() {
-            return String.IsNullOrEmpty(_index) ? new string[0] : new[] { _index };
+            return _index != null ? new[] { _index.Name } : new string[0];
         }
 
         protected virtual string GetTypeName() {
@@ -354,16 +353,15 @@ namespace Exceptionless.Core.Repositories {
         }
 
         private string GetIndexName(string id) {
-            string index = null;
             if (_isEvent) {
                 ObjectId objectId;
                 if (ObjectId.TryParse(id, out objectId) && objectId.CreationTime > MIN_OBJECTID_DATE)
-                    index = String.Concat(EventsIndexName, "-", objectId.CreationTime.ToString("yyyyMM"));
-            } else if (_isStack) {
-                index = StacksIndexName;
+                    return String.Concat(_index.VersionedName, "-", objectId.CreationTime.ToString("yyyyMM"));
+
+                return null;
             }
 
-            return index ?? _index;
+            return _index.VersionedName;
         }
 
         public FindResults<T> GetAll(string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {

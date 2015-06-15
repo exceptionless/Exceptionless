@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -15,8 +16,8 @@ namespace Exceptionless.Core.Repositories {
         private const string STACKING_VERSION = "v2";
         private readonly IEventRepository _eventRepository;
 
-        public StackRepository(IElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, validator, cacheClient, messagePublisher) {
+        public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
+            : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
         }
 

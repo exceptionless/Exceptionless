@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Messaging;
 using MongoDB.Bson;
@@ -10,8 +11,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public class EventRepository : ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<PersistentEvent>, IEventRepository {
-        public EventRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, validator, null, messagePublisher) {
+        public EventRepository(IElasticClient elasticClient, EventIndex index,  IValidator<PersistentEvent> validator = null, IMessagePublisher messagePublisher = null)
+            : base(elasticClient, index, validator, null, messagePublisher) {
             EnableCache = false;
             BatchNotifications = true;
         }

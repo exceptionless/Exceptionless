@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -8,7 +9,7 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepositoryOwnedByOrganizationAndProject<T> : ElasticSearchRepositoryOwnedByOrganization<T>, IRepositoryOwnedByProject<T> where T : class, IOwnedByProject, IIdentity, IOwnedByOrganization, new() {
-        public ElasticSearchRepositoryOwnedByOrganizationAndProject(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, null, validator, cacheClient, messagePublisher) { }
+        public ElasticSearchRepositoryOwnedByOrganizationAndProject(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public virtual FindResults<T> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find(new ElasticSearchOptions<T>()
