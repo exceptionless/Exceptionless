@@ -143,6 +143,8 @@ namespace Exceptionless.Core.Repositories {
                 _elasticClient.DeleteIndex(d => d.Index(StacksIndexName));
             else
                 RemoveAll(new QueryOptions(), false);
+
+            // TODO: Update alias..
         }
 
         protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {

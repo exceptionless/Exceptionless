@@ -421,7 +421,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         //}
 
         private void CreateEvents() {
-            _configuration.ConfigureIndexes(_client, true);
+            _configuration.DeleteIndexes(_client);
+            _configuration.ConfigureIndexes(_client);
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {

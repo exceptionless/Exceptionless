@@ -179,7 +179,8 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private void CreateStacks() {
-            _configuration.ConfigureIndexes(_client, true);
+            _configuration.DeleteIndexes(_client);
+            _configuration.ConfigureIndexes(_client);
 
             var serializer = IoC.GetInstance<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {

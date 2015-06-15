@@ -24,8 +24,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public virtual CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
-            idx.AddMapping<T>(CreateMapping);
-            return idx;
+            return idx.AddMapping<T>(CreateMapping);
         }
 
         protected virtual PutMappingDescriptor<T> CreateMapping(PutMappingDescriptor<T> map) {
