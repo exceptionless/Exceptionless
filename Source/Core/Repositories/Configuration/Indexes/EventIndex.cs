@@ -166,6 +166,7 @@ err['all_codes'] = codes.join(' ')";
                         pattern = @"[,\s]+"
                     },
                     email = new {
+                        type = "custom",
                         tokenizer = "keyword",
                         filter = new[] {
                             "email",
@@ -174,6 +175,7 @@ err['all_codes'] = codes.join(' ')";
                         }
                     },
                     version_index = new {
+                        type = "custom",
                         tokenizer = "whitespace",
                         filter = new[] {
                             "version_pad1",
@@ -186,6 +188,7 @@ err['all_codes'] = codes.join(' ')";
                         }
                     },
                     version_search = new {
+                        type = "custom",
                         tokenizer = "whitespace",
                         filter = new[] {
                             "version_pad1",
@@ -196,10 +199,12 @@ err['all_codes'] = codes.join(' ')";
                         }
                     },
                     whitespace_lower = new {
+                        type = "custom",
                         tokenizer = "whitespace",
                         filter = new[] { "lowercase" }
                     },
                     typename = new {
+                        type = "custom",
                         tokenizer = "whitespace",
                         filter = new[] {
                             "typename",
@@ -208,6 +213,7 @@ err['all_codes'] = codes.join(' ')";
                         }
                     },
                     standardplus = new {
+                        type = "custom",
                         tokenizer = "whitespace",
                         filter = new[] {
                             "standard",
