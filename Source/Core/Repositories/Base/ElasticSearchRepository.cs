@@ -139,12 +139,8 @@ namespace Exceptionless.Core.Repositories {
 
             if (_isEvent)
                 _elasticClient.DeleteIndex(d => d.Index(String.Concat(EventsIndexName, "-*")));
-            else if (_isStack)
-                _elasticClient.DeleteIndex(d => d.Index(StacksIndexName));
             else
                 RemoveAll(new QueryOptions(), false);
-
-            // TODO: Update alias..
         }
 
         protected long RemoveAll(QueryOptions options, bool sendNotifications = true) {
