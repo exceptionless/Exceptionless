@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
 using AutoMapper;
@@ -89,8 +90,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<UpdateUser> changes) {
-            return base.Patch(id, changes);
+        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
+            return base.PatchAsync(id, changes);
         }
 
         /// <summary>

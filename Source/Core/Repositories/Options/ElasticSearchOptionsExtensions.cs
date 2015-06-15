@@ -43,19 +43,19 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static FilterContainer GetElasticSearchFilter<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class {
+        public static FilterContainer GetElasticSearchFilter<T>(this ElasticSearchOptions<T> options) where T : class {
             var container = Filter<T>.MatchAll();
 
-            container = ApplyQueryOptionsFilters<T>(options, container, supportSoftDeletes);
+            container = ApplyQueryOptionsFilters<T>(options, container);
             container = ApplyElasticSearchOptionsFilters(options, container);
 
             return container;
         }
 
-        public static FilterContainer GetElasticSearchFilter<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
+        public static FilterContainer GetElasticSearchFilter<T>(this QueryOptions options) where T : class {
             var container = Filter<T>.MatchAll();
 
-            container = ApplyQueryOptionsFilters<T>(options, container, supportSoftDeletes);
+            container = ApplyQueryOptionsFilters<T>(options, container);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             if (elasticSearchOptions != null)
@@ -64,7 +64,7 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        private static FilterContainer ApplyQueryOptionsFilters<T>(QueryOptions options, FilterContainer container, bool supportSoftDeletes = false) where T : class {
+        private static FilterContainer ApplyQueryOptionsFilters<T>(QueryOptions options, FilterContainer container) where T : class {
             if (container == null)
                 container = Filter<T>.MatchAll();
 
@@ -112,11 +112,11 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        public static QueryContainer GetElasticSearchQuery<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class {
+        public static QueryContainer GetElasticSearchQuery<T>(this ElasticSearchOptions<T> options) where T : class {
             var container = Query<T>.MatchAll();
 
             var filterContainer = Filter<T>.MatchAll();
-            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer, supportSoftDeletes);
+            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer);
             filterContainer = ApplyElasticSearchOptionsFilters(options, filterContainer, true);
 
             container &= Query<T>.Filtered(f => f.Filter(d => filterContainer));
@@ -127,11 +127,11 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
+        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options) where T : class {
             var container = Query<T>.MatchAll();
 
             var filterContainer = Filter<T>.MatchAll();
-            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer, supportSoftDeletes);
+            filterContainer = ApplyQueryOptionsFilters<T>(options, filterContainer);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
             if (elasticSearchOptions != null)

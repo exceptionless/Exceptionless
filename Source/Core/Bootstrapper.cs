@@ -6,20 +6,24 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Dependency;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
+using Exceptionless.Core.Jobs.WorkItemHandlers;
 using Exceptionless.Core.Mail;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Pipeline;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.Formatting;
 using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using Exceptionless.Core.Validation;
 using Exceptionless.Serializer;
 using FluentValidation;
 using Foundatio.Caching;
+using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
@@ -71,8 +75,7 @@ namespace Exceptionless.Core {
                 return server.GetDatabase(Settings.Current.MongoDatabaseName);
             });
 
-            container.RegisterSingle<IElasticClient>(() => ElasticSearchConfiguration.GetElasticClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
-
+            container.RegisterSingle<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingle<ICacheClient, InMemoryCacheClient>();
 
             container.RegisterSingle<IQueue<EventPost>>(() => new InMemoryQueue<EventPost>(statName: MetricNames.PostsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
@@ -82,8 +85,13 @@ namespace Exceptionless.Core {
             container.RegisterSingle<IQueue<MailMessage>>(() => new InMemoryQueue<MailMessage>(statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
             container.RegisterSingle<IQueue<StatusMessage>>(() => new InMemoryQueue<StatusMessage>());
 
-            container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
+            var workItemHandlers = new WorkItemHandlers();
+            workItemHandlers.Register<ReindexWorkItem, ReindexWorkItemHandler>();
+            container.RegisterSingle<WorkItemHandlers>(workItemHandlers);
+            container.RegisterSingle<IQueue<WorkItemData>>(() => new InMemoryQueue<WorkItemData>(statName: MetricNames.WorkItemQueueSize, metrics: container.GetInstance<IMetricsClient>(), workItemTimeout: TimeSpan.FromHours(1)));
+            
 
+            container.RegisterSingle<IMessageBus, InMemoryMessageBus>();
             container.RegisterSingle<IMessagePublisher>(container.GetInstance<IMessageBus>);
             container.RegisterSingle<IMessageSubscriber>(container.GetInstance<IMessageBus>);
 

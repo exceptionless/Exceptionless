@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using Xunit;
 using Xunit.Extensions;
@@ -13,6 +13,7 @@ using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
+        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private static bool _createdEvents;
 
@@ -420,7 +421,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         //}
 
         private void CreateEvents() {
-            ElasticSearchConfiguration.ConfigureMapping(_client, true);
+            _configuration.ConfigureIndexes(_client, true);
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {

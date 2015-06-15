@@ -150,7 +150,6 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
-    <Compile Include="Extensions\ElasticSearchIndexExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
@@ -249,8 +248,11 @@
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
+    <Compile Include="Repositories\Configuration\ElasticSearchIndexBase.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
     <Compile Include="Repositories\Configuration\IElasticSearchIndex.cs" />
-    <Compile Include="Repositories\Configuration\OrganizationIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />
+    <Compile Include="Repositories\Configuration\Indexes\StackIndex.cs" />
     <Compile Include="Repositories\Options\ObjectMappingDescriptorExtensions.cs" />
     <Compile Include="Repositories\Options\PagingWithSortByOptions.cs" />
     <Compile Include="Utility\LastReferenceIdManager.cs" />
@@ -261,7 +263,6 @@
     <Compile Include="Dependency\IDependencyResolver.cs" />
     <Compile Include="Extensions\TaskExtensions.cs" />
     <Compile Include="Extensions\UserExtensions.cs" />
-    <Compile Include="Repositories\ElasticSearchConfiguration.cs" />
     <Compile Include="Extensions\ConcurrentQueueExtensions.cs" />
     <Compile Include="Extensions\DictionaryExtensions.cs" />
     <Compile Include="Extensions\ElasticSearchExtensions.cs" />

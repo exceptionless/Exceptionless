@@ -5,27 +5,17 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Helpers;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using FluentValidation;
-using MongoDB.Driver;
 using NLog.Fluent;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
-    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel>
-            where TRepository : IRepository<TModel>
-            where TModel : class, IIdentity, new()
-            where TViewModel : class, IIdentity, new()
-            where TNewModel : class, new()
-            where TUpdateModel : class, new() {
-        protected readonly TRepository _repository;
-        protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
-        protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
-
+    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : IRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
         public RepositoryApiController(TRepository repository) : base(repository) {}
 
         public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {
@@ -76,7 +66,7 @@ namespace Exceptionless.Api.Controllers {
             models.ForEach(m => modelUpdateFunc(m));
             _repository.Save(models);
             models.ForEach(async m => await AfterUpdateAsync(m));
-            
+
             if (typeof(TViewModel) == typeof(TModel))
                 return Ok(models);
 
@@ -84,19 +74,27 @@ namespace Exceptionless.Api.Controllers {
         }
 
         protected virtual string GetEntityLink(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id });
+            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+                id
+            });
         }
 
         protected virtual string GetEntityResourceLink(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id }), type);
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+                id
+            }), type);
         }
 
         protected virtual string GetEntityLink<TEntityType>(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id });
+            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+                id
+            });
         }
 
         protected virtual string GetEntityResourceLink<TEntityType>(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id }), type);
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+                id
+            }), type);
         }
 
         protected virtual PermissionResult CanAdd(TModel value) {
@@ -114,37 +112,35 @@ namespace Exceptionless.Api.Controllers {
             return _repository.Add(value);
         }
 
-        protected virtual Task<TModel> AfterAddAsync(TModel value)
-        {
+        protected virtual Task<TModel> AfterAddAsync(TModel value) {
             return Task.FromResult(value);
         }
 
-        protected virtual Task<TModel> AfterUpdateAsync(TModel value)
-        {
+        protected virtual Task<TModel> AfterUpdateAsync(TModel value) {
             return Task.FromResult(value);
         }
 
-        public virtual IHttpActionResult Patch(string id, Delta<TUpdateModel> changes) {
-            // if there are no changes in the delta, then ignore the request
-            if (changes == null || !changes.GetChangedPropertyNames().Any())
-                return Ok();
-
+        public virtual async Task<IHttpActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
             TModel original = GetModel(id, false);
             if (original == null)
                 return NotFound();
+
+            // if there are no changes in the delta, then ignore the request
+            if (changes == null || !changes.GetChangedPropertyNames().Any())
+                return OkModel(original);
 
             var permission = CanUpdate(original, changes);
             if (!permission.Allowed)
                 return Permission(permission);
 
             try {
-                UpdateModelAsync(original, changes);
-                AfterPatchAsync(original);
+                await UpdateModelAsync(original, changes);
+                await AfterPatchAsync(original);
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
 
-            return Ok();
+            return OkModel(original);
         }
 
         protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
@@ -154,11 +150,11 @@ namespace Exceptionless.Api.Controllers {
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
                 return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
-            
+
             return PermissionResult.Allow;
         }
 
-        protected virtual TModel UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
+        protected virtual async Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
             return _repository.Save(original);
         }
@@ -189,7 +185,7 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await DeleteModels(items);
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }

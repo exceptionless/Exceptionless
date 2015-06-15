@@ -6,6 +6,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Utility;
 using Foundatio.Caching;
+using Foundatio.Jobs;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
@@ -36,6 +37,7 @@ namespace Exceptionless.Insulation {
                 container.RegisterSingle<IQueue<WebHookNotification>>(() => new RedisQueue<WebHookNotification>(muxer, container.GetInstance<ISerializer>(), statName: MetricNames.WebHookQueueSize, metrics: container.GetInstance<IMetricsClient>()));
                 container.RegisterSingle<IQueue<MailMessage>>(() => new RedisQueue<MailMessage>(muxer, container.GetInstance<ISerializer>(), statName: MetricNames.EmailsQueueSize, metrics: container.GetInstance<IMetricsClient>()));
                 container.RegisterSingle<IQueue<StatusMessage>>(() => new RedisQueue<StatusMessage>(muxer, container.GetInstance<ISerializer>()));
+                container.RegisterSingle<IQueue<WorkItemData>>(() => new RedisQueue<WorkItemData>(muxer, statName: MetricNames.WorkItemQueueSize, metrics: container.GetInstance<IMetricsClient>(), workItemTimeout: TimeSpan.FromHours(1)));
 
                 container.RegisterSingle<IMessageBus>(() => new RedisMessageBus(muxer.GetSubscriber(), serializer: container.GetInstance<ISerializer>()));
             } else {

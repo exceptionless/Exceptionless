@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Jobs;
 using MongoDB.Driver;
@@ -15,11 +16,13 @@ using NLog.Fluent;
 namespace Exceptionless.EventMigration {
     public class ResetDataStoresJob : JobBase {
         private readonly ICacheClient _cacheClient;
+        private readonly ElasticSearchConfiguration _configuration;
         private readonly IElasticClient _elasticClient;
         private readonly MongoDatabase _mongoDatabase;
 
-        public ResetDataStoresJob(ICacheClient cacheClient, IElasticClient elasticClient, MongoDatabase mongoDatabase) {
+        public ResetDataStoresJob(ICacheClient cacheClient, ElasticSearchConfiguration configuration, IElasticClient elasticClient, MongoDatabase mongoDatabase) {
             _cacheClient = cacheClient;
+            _configuration = configuration;
             _elasticClient = elasticClient;
             _mongoDatabase = mongoDatabase;
         }
@@ -32,7 +35,7 @@ namespace Exceptionless.EventMigration {
             _cacheClient.FlushAll();
 
             Log.Info().Message("Resetting elastic search").Write();
-            ElasticSearchConfiguration.ConfigureMapping(_elasticClient, true); // NOTE: Set this to true to wipe existing elastic search data.
+            _configuration.ConfigureIndexes(_elasticClient, true); // NOTE: Set this to true to wipe existing elastic search data.
 
             foreach (var collectionName in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system"))) {
                 Log.Info().Message("Dropping collection: {0}", collectionName).Write();

@@ -7,7 +7,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
         int Version { get; }
         string Name { get; }
         string VersionedName { get; }
-        IDictionary<Type, string> GetIndexTypes();
+        IDictionary<Type, string> GetIndexTypeNames();
+        IEnumerable<KeyValuePair<Type, string>> GetTypeIndices();
         CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx);
+    }
+
+    public interface ITemplatedElasticSeachIndex : IElasticSearchIndex {
+        PutTemplateDescriptor CreateTemplate(PutTemplateDescriptor template);
     }
 }

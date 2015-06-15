@@ -21,8 +21,8 @@ namespace Exceptionless.Core.Repositories {
     }
 
     public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
-        protected static readonly string _entityType = typeof(T).Name;
         private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
+        protected static readonly string _entityType = typeof(T).Name;
         protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
         protected static readonly bool _isStack = typeof(T) == typeof(Stack);
         public static string EventsIndexName = "events-v1";
@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
         protected ICacheClient Cache { get; private set; }
 
         protected virtual string[] GetIndices() {
-            return new[] { _index };
+            return String.IsNullOrEmpty(_index) ? new string[0] : new[] { _index };
         }
 
         protected virtual string GetTypeName() {
@@ -77,16 +77,22 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            FindResults<TModel> result;
-            if (EnableCache && options.UseCache) {
-                result = Cache.Get<FindResults<TModel>>(GetScopedCacheKey(options.CacheKey));
+            FindResults<TModel> result = null;
+            if (EnableCache) {
+                if (options.UseCache) {
+                    result = Cache.Get<FindResults<TModel>>(GetScopedCacheKey(options.CacheKey));
+                    Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
+                }
+
                 if (result != null)
                     return result;
             }
 
             result = new FindResults<TModel>();
 
-            var searchDescriptor = options.SortBy == null || options.SortBy.Count == 0 ? new SearchDescriptor<T>().Query(options.GetElasticSearchQuery()) : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter());
+            var searchDescriptor = options.SortBy.Count == 0 
+                ? new SearchDescriptor<T>().Query(options.GetElasticSearchQuery()) 
+                : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter());
 
             searchDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
             searchDescriptor.IgnoreUnavailable();
@@ -100,6 +106,7 @@ namespace Exceptionless.Core.Repositories {
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
             else
                 searchDescriptor.Source(s => s.Exclude("idx"));
+
             if (options.SortBy.Count > 0)
                 foreach (var sort in options.SortBy)
                     searchDescriptor.Sort(sort);
@@ -143,13 +150,10 @@ namespace Exceptionless.Core.Repositories {
             TModel result = null;
 
             if (EnableCache) {
-                if (options.UseCache)
+                if (options.UseCache) {
                     result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
-
-                if (options.UseCache && result != null)
-                    Log.Trace().Message("Cache hit: type={0}", _entityType).Write();
-                else if (options.UseCache)
-                    Log.Trace().Message("Cache miss: type={0}", _entityType).Write();
+                    Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
+                }
 
                 if (result != null)
                     return result;
@@ -204,7 +208,6 @@ namespace Exceptionless.Core.Repositories {
             var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
-            // searchDescriptor.Indices(_index);
             searchDescriptor.Indices(elasticSearchOptions != null && elasticSearchOptions.Indices.Any() ? elasticSearchOptions.Indices.ToArray() : GetIndices());
 
             if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
@@ -228,7 +231,6 @@ namespace Exceptionless.Core.Repositories {
 
             var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter())));
             countDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
-            countDescriptor.Indices(_index);
             countDescriptor.IgnoreUnavailable();
 
             countDescriptor.Type(typeof(T));
@@ -281,8 +283,6 @@ namespace Exceptionless.Core.Repositories {
                     return result;
             }
 
-
-            //             result = _elasticClient.Get<T>(id, _index).Source;
             // try using the object id to figure out what index the entity is located in
             string index = GetIndexName(id);
             if (index != null) {
@@ -291,6 +291,7 @@ namespace Exceptionless.Core.Repositories {
                 _elasticClient.DisableTrace();
             }
 
+            // TODO:see if we can get rid of this.
             // fallback to doing a find
             if (result == null)
                 result = FindOne(new OneOptions().WithId(id).WithCacheKey(EnableCache && useCache ? id : null).WithExpiresIn(expiresIn));
@@ -362,7 +363,7 @@ namespace Exceptionless.Core.Repositories {
                 index = StacksIndexName;
             }
 
-            return index;
+            return index ?? _index;
         }
 
         public FindResults<T> GetAll(string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {

@@ -125,8 +125,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<UpdateProject> changes) {
-            return base.Patch(id, changes);
+        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateProject> changes) {
+            return base.PatchAsync(id, changes);
         }
 
         /// <summary>

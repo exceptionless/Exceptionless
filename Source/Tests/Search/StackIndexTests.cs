@@ -3,6 +3,7 @@ using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
@@ -12,6 +13,7 @@ using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
+        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private static bool _createdStacks;
 
@@ -177,7 +179,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         private void CreateStacks() {
-            ElasticSearchConfiguration.ConfigureMapping(_client, true);
+            _configuration.ConfigureIndexes(_client, true);
 
             var serializer = IoC.GetInstance<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {

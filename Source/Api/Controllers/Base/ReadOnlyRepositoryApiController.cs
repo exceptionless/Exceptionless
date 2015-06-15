@@ -18,17 +18,12 @@ namespace Exceptionless.Api.Controllers {
             _repository = repository;
         }
 
-        #region Get
-
         public virtual IHttpActionResult GetById(string id) {
             TModel model = GetModel(id);
             if (model == null)
                 return NotFound();
 
-            if (typeof(TViewModel) == typeof(TModel))
-                return Ok(model);
-
-            return Ok(Mapper.Map<TModel, TViewModel>(model));
+            return OkModel(model);
         }
 
         protected IHttpActionResult OkModel(TModel model) {
@@ -85,13 +80,14 @@ namespace Exceptionless.Api.Controllers {
             try {
                 models = _repository.GetBySearch(systemFilter, userFilter, query, sortBy.Item1, sortBy.Item2, options);
             } catch (ApplicationException ex) {
-                Log.Error().Exception(ex)
-                    .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Offset = offset, Page = page, Limit = limit })
-                    .Tag("Search")
-                    .Identity(ExceptionlessUser.EmailAddress)
-                    .Property("User", ExceptionlessUser)
-                    .ContextProperty("HttpActionContext", ActionContext)
-                    .Write();
+                Log.Error().Exception(ex).Property("Search Filter", new {
+                    SystemFilter = systemFilter,
+                    UserFilter = userFilter,
+                    Sort = sort,
+                    Offset = offset,
+                    Page = page,
+                    Limit = limit
+                }).Tag("Search").Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
 
                 return BadRequest("An error has occurred. Please check your search filter.");
             }
@@ -102,15 +98,9 @@ namespace Exceptionless.Api.Controllers {
             return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
 
-        #endregion
-
-        #region Mapping
-
         protected override void CreateMaps() {
             if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
                 Mapper.CreateMap<TModel, TViewModel>();
         }
-
-        #endregion
     }
 }

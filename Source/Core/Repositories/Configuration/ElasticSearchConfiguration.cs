@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Elasticsearch.Net.ConnectionPool;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models.WorkItems;
+using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Utility;
 using Foundatio.Jobs;
 using Foundatio.Queues;
@@ -21,62 +23,87 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var connectionPool = new StaticConnectionPool(serverUris);
             var indexes = GetIndexes();
             var settings = new ConnectionSettings(connectionPool)
-                .MapDefaultTypeIndices(t => t.AddRange(indexes.ToTypeIndices()))
-                .MapDefaultTypeNames(t => {
-                    t.AddRange(indexes.SelectMany(idx => idx.GetIndexTypes()));
-                })
+                .SetDefaultIndex("_all")
+                .MapDefaultTypeIndices(t => t.AddRange(indexes.SelectMany(idx => idx.GetTypeIndices())))
+                .MapDefaultTypeNames(t => t.AddRange(indexes.SelectMany(idx => idx.GetIndexTypeNames())))
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
-                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords());
+                .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
+                .MaximumRetries(5)
+                .EnableMetrics();
+
+            settings.SetJsonSerializerSettingsModifier(s => {
+                s.ContractResolver = new EmptyCollectionElasticContractResolver(settings);
+                s.AddModelConverters();
+            });
+
             var client = new ElasticClient(settings, new KeepAliveHttpConnection(settings));
             ConfigureIndexes(client);
             return client;
         }
 
-        public void ConfigureIndexes(IElasticClient client) {
+        public void ConfigureIndexes(IElasticClient client, bool deleteExisting = false) {
+            if (deleteExisting) {
+                var deleteResponse = client.DeleteIndex(i => i.AllIndices());
+                Debug.Assert(deleteResponse.IsValid, deleteResponse.ServerError != null ? deleteResponse.ServerError.Error : "An error occurred deleting the indexes.");
+            }
+
             var indexes = GetIndexes();
             foreach (var index in indexes) {
-                var idx = index;
-                int currentVersion = GetAliasVersion(client, idx.Name);
+                IIndicesOperationResponse response = null;
+                int currentVersion = GetAliasVersion(client, index.Name);
 
-                if (!client.IndexExists(idx.VersionedName).Exists)
-                    client.CreateIndex(idx.VersionedName, idx.CreateIndex);
+                var templatedIndex = index as ITemplatedElasticSeachIndex;
+                if (templatedIndex != null) {
+                    if (deleteExisting && client.TemplateExists(index.VersionedName).Exists) {
+                        response = client.DeleteTemplate(index.VersionedName);
+                        Debug.Assert(response.IsValid, response.ServerError != null ? response.ServerError.Error : "An error occurred deleting the index template.");
+                    }
 
-                if (!client.AliasExists(idx.Name).Exists)
-                    client.Alias(a => a
-                        .Add(add => add
-                            .Index(idx.VersionedName)
-                            .Alias(idx.Name)
-                        )
-                    );
+                    response = client.PutTemplate(index.VersionedName, template => templatedIndex.CreateTemplate(template));
+                } else if (!client.IndexExists(index.VersionedName).Exists) {
+                    response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor));
+                }
+
+                Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
+
+                if (templatedIndex == null && !client.AliasExists(index.Name).Exists) {
+                    if (templatedIndex != null)
+                        response = client.Alias(a => a.Add(add => add.Alias(index.Name)));
+                    else
+                        response = client.Alias(a => a.Add(add => add.Index(index.VersionedName).Alias(index.Name)));
+
+                    Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
+                }
 
                 // already on current version
-                if (currentVersion >= idx.Version || currentVersion < 1)
+                if (currentVersion >= index.Version || currentVersion < 1)
                     continue;
 
                 // upgrade
                 _workItemQueue.Enqueue(new ReindexWorkItem {
-                    OldIndex = String.Concat(idx.Name, "-v", currentVersion),
-                    NewIndex = idx.VersionedName,
-                    Alias = idx.Name,
+                    OldIndex = String.Concat(index.Name, "-v", currentVersion),
+                    NewIndex = index.VersionedName,
+                    Alias = index.Name,
                     DeleteOld = true
                 });
             }
         }
 
-        public IEnumerable<IElasticSearchIndex> GetIndexes() {
+        private IEnumerable<IElasticSearchIndex> GetIndexes() {
             return new IElasticSearchIndex[] {
+                new EventIndex(), 
                 new OrganizationIndex()
             };
         }
 
-        public int GetAliasVersion(IElasticClient client, string alias) {
+        private int GetAliasVersion(IElasticClient client, string alias) {
             var res = client.GetAlias(a => a.Alias(alias));
             if (!res.Indices.Any())
                 return -1;
 
             string indexName = res.Indices.FirstOrDefault().Key;
-            string[] parts = indexName.Split('-');
-            if (parts.Length != 2)
+            string[] parts = indexName.Split(new[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length < 2)
                 return -1;
 
             int version;
