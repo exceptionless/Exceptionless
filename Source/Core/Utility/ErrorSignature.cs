@@ -99,9 +99,8 @@ namespace Exceptionless.Core.Utility {
                 if (ShouldFlagSignatureTarget)
                     innerMostError.StackTrace[0].IsSignatureTarget = true;
             } else {
-                // All else failed, use the type and message.
+                // All else failed, use the type.
                 SignatureInfo.AddItemIfNotEmpty("ExceptionType", innerMostError.Type);
-                SignatureInfo.AddItemIfNotEmpty("Message", innerMostError.Message);
             }
 
             AddSpecialCaseDetails(innerMostError);
