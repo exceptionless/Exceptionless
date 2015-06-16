@@ -261,7 +261,7 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.DisableTrace();
 
             // Check to see if no scroll id was returned. This will occur when the index doesn't exist.
-            if (scanResults.IsValid && String.IsNullOrEmpty(scanResults.ScrollId))
+            if (String.IsNullOrEmpty(scanResults.ScrollId))
                 return 0;
 
             var results = _elasticClient.Scroll<T>("4s", scanResults.ScrollId);

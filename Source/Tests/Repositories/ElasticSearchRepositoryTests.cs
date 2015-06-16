@@ -44,19 +44,20 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             var stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(stacks);
-            Assert.Equal(1, stacks.Total);
+            Assert.Equal(3, stacks.Total);
+            Assert.Equal(1, stacks.Documents.Count);
 
             var stacks2 = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(1));
             Assert.NotNull(stacks);
-            Assert.Equal(1, stacks.Total);
+            Assert.Equal(1, stacks.Documents.Count);
 
             Assert.NotEqual(stacks.Documents.First().Id, stacks2.Documents.First().Id);
 
             stacks = _repository.GetByOrganizationId(TestConstants.OrganizationId);
             Assert.NotNull(stacks);
-            Assert.Equal(3, stacks.Total);
+            Assert.Equal(3, stacks.Documents.Count);
 
-            _repository.Remove(stacks.Documents );
+            _repository.Remove(stacks.Documents);
             Assert.Equal(0, _repository.Count());
             _repository.RemoveAll();
         }

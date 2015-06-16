@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var connectionPool = new StaticConnectionPool(serverUris);
             var indexes = GetIndexes();
             var settings = new ConnectionSettings(connectionPool)
-                //.MapDefaultTypeIndices(t => t.AddRange(indexes.SelectMany(idx => idx.GetTypeIndices())))
+                .MapDefaultTypeIndices(t => t.AddRange(indexes.SelectMany(idx => idx.GetTypeIndices())))
                 .MapDefaultTypeNames(t => t.AddRange(indexes.SelectMany(idx => idx.GetIndexTypeNames())))
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
@@ -44,13 +44,15 @@ namespace Exceptionless.Core.Repositories.Configuration {
             foreach (var index in GetIndexes()) {
                 IIndicesOperationResponse response = null;
                 int currentVersion = GetAliasVersion(client, index.Name);
-
+                
+                client.EnableTrace();
                 var templatedIndex = index as ITemplatedElasticSeachIndex;
                 if (templatedIndex != null)
                     response = client.PutTemplate(index.VersionedName, template => templatedIndex.CreateTemplate(template).AddAlias(index.Name));
                 else if (!client.IndexExists(index.VersionedName).Exists)
                     response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name));
-
+                
+                client.DisableTrace();
                 Debug.Assert(response == null || response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
 
                 // Add existing indexes to the alias.
@@ -65,7 +67,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
                     Debug.Assert(response != null && response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the alias.");
                 }
-
+                
                 // already on current version
                 if (currentVersion >= index.Version || currentVersion < 1)
                     continue;

@@ -52,12 +52,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(events.Count, _repository.Count());
 
             var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
-            Assert.Equal(2, results.Total);
+            Assert.Equal(2, results.Documents.Count);
             Assert.Equal(results.Documents.First().Id, events[2].Id);
             Assert.Equal(results.Documents.Last().Id, events[3].Id);
 
             results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(3).WithLimit(2));
-            Assert.Equal(2, results.Total);
+            Assert.Equal(2, results.Documents.Count);
             Assert.Equal(results.Documents.First().Id, events[4].Id);
             Assert.Equal(results.Documents.Last().Id, events[5].Id);
         }
