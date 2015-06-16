@@ -7,7 +7,6 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using MongoDB.Bson;
 using Nest;
 using NLog.Fluent;
 
@@ -19,13 +18,6 @@ namespace Exceptionless.Core.Repositories {
         public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
-        }
-
-        protected override void BeforeAdd(ICollection<Stack> documents) {
-            foreach (var ev in documents.Where(ev => ev.Id == null))
-                ev.Id = ObjectId.GenerateNewId().ToString();
-
-            base.BeforeAdd(documents);
         }
 
         protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {

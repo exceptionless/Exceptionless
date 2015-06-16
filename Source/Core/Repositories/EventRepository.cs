@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
-using Exceptionless.Core.Utility;
 using FluentValidation;
 using Foundatio.Messaging;
 using Nest;
@@ -15,16 +14,6 @@ namespace Exceptionless.Core.Repositories {
             : base(elasticClient, index, validator, null, messagePublisher) {
             EnableCache = false;
             BatchNotifications = true;
-        }
-
-        protected override void BeforeAdd(ICollection<PersistentEvent> documents) {
-            foreach (var ev in documents.Where(ev => ev.Id == null))
-                ev.Id = ObjectId.GenerateNewId().ToString();
-
-            foreach (var ev in documents.Where(ev => ev.CreatedUtc == default(DateTime)))
-                ev.CreatedUtc = DateTime.UtcNow;
-
-            base.BeforeAdd(documents);
         }
 
         public void UpdateFixedByStack(string organizationId, string stackId, bool value) {
