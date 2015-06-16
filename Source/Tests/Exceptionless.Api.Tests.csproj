@@ -174,7 +174,6 @@
     <Compile Include="Repositories\WebHookRepositoryTests.cs" />
     <Compile Include="Repositories\EventRepositoryTests.cs" />
     <Compile Include="Repositories\OrganizationRepositoryTests.cs" />
-    <Compile Include="Repositories\MongoRepositoryTests.cs" />
     <Compile Include="Search\StackIndexTests.cs" />
     <Compile Include="Search\EventIndexTests.cs" />
     <Compile Include="SerializerTests.cs" />
