@@ -4,9 +4,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
 using FluentValidation;
 using Foundatio.Messaging;
-using MongoDB.Bson;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {

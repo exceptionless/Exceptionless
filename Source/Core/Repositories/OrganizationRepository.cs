@@ -4,28 +4,27 @@ using System.Linq;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
+using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Billing;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Extensions;
-using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class OrganizationRepository : MongoRepository<Organization>, IOrganizationRepository {
-        public OrganizationRepository(MongoDatabase database, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
+    public class OrganizationRepository : ElasticSearchRepository<Organization>, IOrganizationRepository {
+        public OrganizationRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public Organization GetByInviteToken(string token, out Invite invite) {
             invite = null;
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var organization = FindOne<Organization>(new MongoOptions().WithQuery(Query.EQ(FieldNames.Invites_Token, token)));
+            var filter = Filter<Organization>.Term(FieldNames.Invites_Token, token);
+            var organization = FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
             if (organization != null)
                 invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
 
@@ -36,82 +35,77 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException("customerId");
 
-            return FindOne<Organization>(new MongoOptions().WithQuery(Query.EQ(FieldNames.StripeCustomerId, customerId)));
+            var filter = Filter<Organization>.Term(FieldNames.StripeCustomerId, customerId);
+            return FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
         }
 
         public FindResults<Organization> GetByRetentionDaysEnabled(PagingOptions paging) {
-            return Find<Organization>(new MongoOptions()
-                .WithQuery(Query.GT(FieldNames.RetentionDays, 0))
+            var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
+            return Find(new ElasticSearchOptions<Organization>()
+                .WithFilter(filter)
                 .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
                 .WithPaging(paging));
         }
 
         public FindResults<Organization> GetAbandoned(int? limit = 20) {
             // TODO: This is not going to work right now because LastEventDate doesn't exist any more. Maybe create a daily job to update first event, last event and odometer.
-            var query = Query.And(
-                Query.EQ(FieldNames.PlanId, BillingManager.FreePlan.Id),
-                Query.LTE(FieldNames.TotalEventCount, new BsonInt64(0)),
-                Query.GTE(FieldNames.Id, new BsonObjectId(ObjectId.GenerateNewId(DateTime.Now.SubtractDays(90)))),
-                Query.GTE(FieldNames.LastEventDate, DateTime.Now.SubtractDays(90)),
-                Query.NotExists(FieldNames.StripeCustomerId));
+            var filter = Filter<Organization>.MatchAll();
+            filter &= Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
+            //filter &= Filter<Organization>.Range(r => r.OnField(o => o.TotalEventCount).LowerOrEquals(0));
+            filter &= Filter<Organization>.Range(r => r.OnField(o => o.CreatedUtc).GreaterOrEquals(DateTime.UtcNow.Date.SubtractDays(90)));
+            //filter &= Filter<Organization>.Range(r => r.OnField(o => o.LastEventDate).GreaterOrEquals(DateTime.UtcNow.Date.SubtractDays(90)));
+            filter &= Filter<Organization>.Missing(m => m.StripeCustomerId);
 
-            return Find<Organization>(new MongoOptions().WithQuery(query).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
+            return Find(new ElasticSearchOptions<Organization>().WithFilter(filter).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
         }
 
         public FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
-            var options = new MongoOptions().WithPaging(paging);
+            var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
-                options.Query = options.Query.And(Query.Matches(FieldNames.Name, new BsonRegularExpression(String.Format("/{0}/i", criteria))));
-            
+                filter &= Filter<Organization>.Term(o => o.Name, criteria);
+
             if (paid.HasValue) {
                 if (paid.Value)
-                    options.Query = options.Query.And(Query.NE(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                    filter &= !Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
                 else
-                    options.Query = options.Query.And(Query.EQ(FieldNames.PlanId, new BsonString(BillingManager.FreePlan.Id)));
+                    filter &= Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
             }
 
             if (suspended.HasValue) {
                 if (suspended.Value)
-                    options.Query = options.Query.And(
-                        Query.Or(
-                            Query.And(
-                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), 
-                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), 
-                                Query.NE(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))
-                            ), 
-                            Query.EQ(FieldNames.IsSuspended, new BsonBoolean(true))));
+                    filter &= Filter<Organization>.And(and => ((
+                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) && 
+                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) && 
+                            !Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Filter<Organization>.Term(o => o.IsSuspended, true)));
                 else
-                    options.Query = options.Query.And(
-                        Query.Or(
-                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Active)), 
-                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Trialing)), 
-                            Query.EQ(FieldNames.BillingStatus, new BsonInt32((int)BillingStatus.Canceled))
-                        ), 
-                        Query.EQ(FieldNames.IsSuspended, new BsonBoolean(false)));
+                    filter &= Filter<Organization>.And(and => ((
+                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Active) &&
+                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Trialing) &&
+                            Filter<Organization>.Term(o => o.BillingStatus, BillingStatus.Canceled)
+                        ) || Filter<Organization>.Term(o => o.IsSuspended, false)));
             }
 
+            Func<SortFieldDescriptor<Organization>, IFieldSort> sort = descriptor => descriptor.OnField(o => o.Name).Ascending();
             switch (sortBy) {
                 case OrganizationSortBy.Newest:
-                    options.SortBy = SortBy.Descending(FieldNames.Id);
+                    sort = descriptor => descriptor.OnField(o => o.Id).Descending();
                     break;
                 case OrganizationSortBy.Subscribed:
-                    options.SortBy = SortBy.Descending(FieldNames.SubscribeDate);
+                    sort = descriptor => descriptor.OnField(o => o.SubscribeDate).Descending();
                     break;
-                case OrganizationSortBy.MostActive:
-                    options.SortBy = SortBy.Descending(FieldNames.TotalEventCount);
-                    break;
-                default:
-                    options.SortBy = SortBy.Ascending(FieldNames.Name);
-                    break;
+                // case OrganizationSortBy.MostActive:
+                //    sort = descriptor => descriptor.OnField(o => o.TotalEventCount).Descending();
+                //    break;
             }
-
-            return Find<Organization>(options);
+            
+            return Find(new ElasticSearchOptions<Organization>().WithPaging(paging).WithFilter(filter).WithSort(sort));
         }
 
         public BillingPlanStats GetBillingPlanStats() {
-            var results = Find<Organization>(new MongoOptions()
+            var results = Find(new ElasticSearchOptions<Organization>()
                 .WithFields(FieldNames.PlanId, FieldNames.IsSuspended, FieldNames.BillingPrice, FieldNames.BillingStatus)
-                .WithSort(SortBy.Descending(FieldNames.PlanId))).Documents;
+                .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
             List<Organization> mediumOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.MediumPlan.Id) && o.BillingPrice > 0).ToList();
@@ -252,15 +246,7 @@ namespace Exceptionless.Core.Repositories {
 
             return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
         }
-
-        #region Collection Setup
-
-        public const string CollectionName = "organization";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
-        }
-
+        
         private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string Name = "Name";
@@ -292,54 +278,13 @@ namespace Exceptionless.Core.Repositories {
             public const string OverageHours = "OverageHours";
         }
 
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
+        //protected override void InitializeCollection(MongoDatabase database) {
+        //    base.InitializeCollection(database);
 
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_Token), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_EmailAddress), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StripeCustomerId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
-        }
-
-        protected override void ConfigureClassMap(BsonClassMap<Organization> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
-            cm.GetMemberMap(c => c.StripeCustomerId).SetElementName(FieldNames.StripeCustomerId).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.PlanId).SetElementName(FieldNames.PlanId).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.CardLast4).SetElementName(FieldNames.CardLast4).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.SubscribeDate).SetElementName(FieldNames.SubscribeDate).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.BillingChangeDate).SetElementName(FieldNames.BillingChangeDate).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.BillingChangedByUserId).SetElementName(FieldNames.BillingChangedByUserId).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.BillingStatus).SetElementName(FieldNames.BillingStatus);
-            cm.GetMemberMap(c => c.BillingPrice).SetElementName(FieldNames.BillingPrice);
-            cm.GetMemberMap(c => c.RetentionDays).SetElementName(FieldNames.RetentionDays);
-            cm.GetMemberMap(c => c.HasPremiumFeatures).SetElementName(FieldNames.HasPremiumFeatures);
-            cm.GetMemberMap(c => c.MaxUsers).SetElementName(FieldNames.MaxUsers);
-            cm.GetMemberMap(c => c.MaxProjects).SetElementName(FieldNames.MaxProjects);
-            cm.GetMemberMap(c => c.MaxEventsPerMonth).SetElementName(FieldNames.MaxEventsPerMonth);
-            cm.GetMemberMap(c => c.IsSuspended).SetElementName(FieldNames.IsSuspended);
-            cm.GetMemberMap(c => c.SuspensionCode).SetElementName(FieldNames.SuspensionCode).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.SuspensionNotes).SetElementName(FieldNames.SuspensionNotes).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.SuspensionDate).SetElementName(FieldNames.SuspensionDate).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.SuspendedByUserId).SetElementName(FieldNames.SuspendedByUserId).SetIgnoreIfNull(true);
-
-            cm.GetMemberMap(c => c.Invites).SetElementName(FieldNames.Invites).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Invites.Any());
-            cm.GetMemberMap(c => c.Usage).SetElementName(FieldNames.Usage).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).Usage.Any());
-            cm.GetMemberMap(c => c.OverageHours).SetElementName(FieldNames.OverageHours).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Organization)obj).OverageHours.Any());
-
-            
-            if (!BsonClassMap.IsClassMapRegistered(typeof(UsageInfo))) {
-                BsonClassMap.RegisterClassMap<UsageInfo>(cmm => {
-                    cmm.AutoMap();
-                    cmm.SetIgnoreExtraElements(true);
-                    cmm.GetMemberMap(c => c.Date).SetIgnoreIfDefault(true);
-                    cmm.GetMemberMap(c => c.Total).SetIgnoreIfDefault(true);
-                    cmm.GetMemberMap(c => c.Blocked).SetIgnoreIfDefault(true);
-                    cmm.GetMemberMap(c => c.Limit).SetIgnoreIfDefault(true);
-                });
-            }
-        }
-
-        #endregion
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_Token), IndexOptions.SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_EmailAddress), IndexOptions.SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StripeCustomerId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+        //}
     }
 
     public enum OrganizationSortBy {

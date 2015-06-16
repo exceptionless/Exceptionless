@@ -1,43 +1,29 @@
 ﻿using System;
-using System.Collections.Generic;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.IdGenerators;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
+using Nest;
 
 namespace Exceptionless.Core.Repositories {
-    public class WebHookRepository : MongoRepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
-        public WebHookRepository(MongoDatabase database, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
+    public class WebHookRepository : ElasticSearchRepositoryOwnedByOrganizationAndProject<WebHook>, IWebHookRepository {
+        public WebHookRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public void RemoveByUrl(string targetUrl) {
-            RemoveAll(new MongoOptions().WithQuery(Query.EQ(FieldNames.Url, targetUrl)));
+            var filter = Filter<WebHook>.Term(e => e.Url, targetUrl);
+            RemoveAll(new ElasticSearchOptions<WebHook>().WithFilter(filter));
         }
 
         public FindResults<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
-            var query = Query.Or(
-                    Query.EQ(FieldNames.OrganizationId, new BsonObjectId(ObjectId.Parse(organizationId))), 
-                    Query.EQ(FieldNames.ProjectId, new BsonObjectId(ObjectId.Parse(projectId)))
-                );
-
-            return Find<WebHook>(new MongoOptions()
-                .WithQuery(query)
+            var filter = Filter<WebHook>.Term(e => e.OrganizationId, organizationId) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+            return Find(new ElasticSearchOptions<WebHook>()
+                .WithFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
         }
-
-        #region Collection Setup
-
-        public const string CollectionName = "webhook";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
-        }
-
+        
         private static class FieldNames {
             public const string Id = CommonFieldNames.Id;
             public const string OrganizationId = CommonFieldNames.OrganizationId;
@@ -56,23 +42,21 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
 
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
+        //protected override void InitializeCollection(MongoDatabase database) {
+        //    base.InitializeCollection(database);
 
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
-        }
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId), IndexOptions.SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
+        //}
 
-        protected override void ConfigureClassMap(BsonClassMap<WebHook> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
-            cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
-        }
-
-        #endregion
-
+        //protected override void ConfigureClassMap(BsonClassMap<WebHook> cm) {
+        //    base.ConfigureClassMap(cm);
+        //    cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()).SetIgnoreIfNull(true);
+        //    cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
+        //    cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
+        //}
+        
         public override void InvalidateCache(WebHook hook) {
             if (!EnableCache || Cache == null)
                 return;
@@ -80,6 +64,5 @@ namespace Exceptionless.Core.Repositories {
             Cache.Remove(GetScopedCacheKey(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)));
             base.InvalidateCache(hook);
         }
-
     }
 }

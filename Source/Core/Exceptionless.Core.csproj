@@ -150,6 +150,7 @@
     <Compile Include="Authorization\AuthorizationRoles.cs" />
     <Compile Include="Billing\BillingManager.cs" />
     <Compile Include="Billing\StripeEventHandler.cs" />
+    <Compile Include="Extensions\ElasticSearchIndexExtensions.cs" />
     <Compile Include="Extensions\EventExtensions.cs" />
     <Compile Include="Extensions\ParameterExtensions.cs" />
     <Compile Include="Jobs\DownloadGeoIPDatabaseJob.cs" />
@@ -248,7 +249,6 @@
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
     <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
-    <Compile Include="Repositories\Configuration\ElasticSearchIndexBase.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
     <Compile Include="Repositories\Configuration\IElasticSearchIndex.cs" />
     <Compile Include="Repositories\Configuration\Indexes\OrganizationIndex.cs" />

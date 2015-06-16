@@ -8,7 +8,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
         string Name { get; }
         string VersionedName { get; }
         IDictionary<Type, string> GetIndexTypeNames();
-        IEnumerable<KeyValuePair<Type, string>> GetTypeIndices();
         CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx);
     }
 

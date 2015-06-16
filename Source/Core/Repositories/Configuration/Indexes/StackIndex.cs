@@ -1,15 +1,28 @@
 using System;
+using System.Collections.Generic;
 using Exceptionless.Core.Models;
 using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
-    public class StackIndex : ElasticSearchIndexBase<Stack> {
-        public override string Name { get { return "stacks"; } }
+    public class StackIndex : IElasticSearchIndex {
+        public string Name { get { return "stacks"; } }
+        
+        public int Version { get { return 1; } }
 
-        protected override PutMappingDescriptor<Stack> CreateMapping(PutMappingDescriptor<Stack> map) {
+        public string VersionedName {
+            get { return String.Concat(Name, "-v", Version); }
+        }
+
+        public virtual IDictionary<Type, string> GetIndexTypeNames() {
+            return new Dictionary<Type, string> {
+                { typeof(Stack), "stack" }
+            };
+        }
+
+        public virtual CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
             const string SET_FIXED_SCRIPT = @"ctx._source['fixed'] = !!ctx._source['date_fixed']";
 
-            return map
+            return idx.AddMapping<Stack>(map => map
                 .Dynamic(DynamicMappingOption.Ignore)
                 .Transform(t => t.Script(SET_FIXED_SCRIPT).Language(ScriptLang.Groovy))
                 .IncludeInAll(false)
@@ -31,7 +44,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Boolean(f => f.Name(s => s.IsRegressed).IndexName("regressed"))
                     .Boolean(f => f.Name(s => s.OccurrencesAreCritical).IndexName("critical"))
                     .Number(f => f.Name(s => s.TotalOccurrences).IndexName("occurrences"))
-                );
+                ));
         }
     }
 }

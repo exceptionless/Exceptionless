@@ -23,8 +23,8 @@ namespace Exceptionless.Core.Repositories.Configuration {
             var connectionPool = new StaticConnectionPool(serverUris);
             var indexes = GetIndexes();
             var settings = new ConnectionSettings(connectionPool)
-                .MapDefaultTypeIndices(t => t.AddRange(indexes.SelectMany(idx => idx.GetTypeIndices())))
-                .MapDefaultTypeNames(t => t.AddRange(indexes.SelectMany(idx => idx.GetIndexTypeNames())))
+                .MapDefaultTypeIndices(t => t.AddRange(indexes.GetTypeIndices()))
+                .MapDefaultTypeNames(t => t.AddRange(indexes.GetIndexTypeNames()))
                 .SetDefaultTypeNameInferrer(p => p.Name.ToLowerUnderscoredWords())
                 .SetDefaultPropertyNameInferrer(p => p.ToLowerUnderscoredWords())
                 .MaximumRetries(5)
@@ -45,22 +45,25 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 IIndicesOperationResponse response = null;
                 int currentVersion = GetAliasVersion(client, index.Name);
                 
-                client.EnableTrace();
                 var templatedIndex = index as ITemplatedElasticSeachIndex;
                 if (templatedIndex != null)
                     response = client.PutTemplate(index.VersionedName, template => templatedIndex.CreateTemplate(template).AddAlias(index.Name));
                 else if (!client.IndexExists(index.VersionedName).Exists)
                     response = client.CreateIndex(index.VersionedName, descriptor => index.CreateIndex(descriptor).AddAlias(index.Name));
                 
-                client.DisableTrace();
                 Debug.Assert(response == null || response.IsValid, response != null && response.ServerError != null ? response.ServerError.Error : "An error occurred creating the index or template.");
 
                 // Add existing indexes to the alias.
                 if (!client.AliasExists(index.Name).Exists) {
                     if (templatedIndex != null) {
                         var indices = client.IndicesStats().Indices.Where(kvp => kvp.Key.StartsWith(index.VersionedName)).Select(kvp => kvp.Key).ToList();
-                        foreach (string name in indices)
-                            response = client.Alias(a => a.Add(add => add.Index(name).Alias(index.Name)));
+                        if (indices.Count > 0) {
+                            var descriptor = new AliasDescriptor();
+                            foreach (string name in indices)
+                                descriptor.Add(add => add.Index(name).Alias(index.Name));
+
+                            response = client.Alias(descriptor);
+                        }
                     } else {
                         response = client.Alias(a => a.Add(add => add.Index(index.VersionedName).Alias(index.Name)));
                     }

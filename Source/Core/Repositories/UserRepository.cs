@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -11,24 +12,29 @@ using MongoDB.Bson.Serialization.Options;
 using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using MongoDB.Driver.Linq;
+using Nest;
+using IndexOptions = MongoDB.Driver.Builders.IndexOptions;
 
 namespace Exceptionless.Core.Repositories {
-    public class UserRepository : MongoRepository<User>, IUserRepository {
-        public UserRepository(MongoDatabase database, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(database, validator, cacheClient, messagePublisher) { }
+    public class UserRepository : ElasticSearchRepository<User>, IUserRepository {
+        public UserRepository(IElasticClient elasticClient, OrganizationIndex index, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(elasticClient, index, validator, cacheClient, messagePublisher) { }
 
         public User GetByEmailAddress(string emailAddress) {
             if (String.IsNullOrWhiteSpace(emailAddress))
                 return null;
 
             emailAddress = emailAddress.ToLowerInvariant().Trim();
-            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.EmailAddress, emailAddress)).WithCacheKey(emailAddress));
+            var filter = Filter<User>.Term(u => u.EmailAddress, emailAddress);
+            return FindOne(new ElasticSearchOptions<User>().WithFilter(filter).WithCacheKey(emailAddress));
         }
 
         public User GetByPasswordResetToken(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.PasswordResetToken, token)));
+            var filter = Filter<User>.Term(u => u.PasswordResetToken, token);
+            return FindOne(new ElasticSearchOptions<User>().WithFilter(filter));
         }
 
         public User GetUserByOAuthProvider(string provider, string providerUserId) {
@@ -36,34 +42,31 @@ namespace Exceptionless.Core.Repositories {
                 return null;
 
             provider = provider.ToLowerInvariant();
-            return _collection.AsQueryable().FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider && o.ProviderUserId == providerUserId));
+
+            var filter = Filter<User>.Term(OrganizationIndex.Fields.User.OAuthAccountProviderUserId, new List<string>() { providerUserId });
+            var results = Find(new ElasticSearchOptions<User>().WithFilter(filter)).Documents;
+
+            return results.FirstOrDefault(u => u.OAuthAccounts.Any(o => o.Provider == provider));
         }
 
         public User GetByVerifyEmailAddressToken(string token) {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            return FindOne<User>(new MongoOptions().WithQuery(Query.EQ(FieldNames.VerifyEmailAddressToken, token)));
+            var filter = Filter<User>.Term(u => u.VerifyEmailAddressToken, token);
+            return FindOne(new ElasticSearchOptions<User>().WithFilter(filter));
         }
 
         public FindResults<User> GetByOrganizationId(string id) {
             if (String.IsNullOrEmpty(id))
                 return new FindResults<User>();
 
-            var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
-            return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
+            var filter = Filter<User>.Term(u => u.OrganizationIds, new List<string>() { id });
+            return Find(new ElasticSearchOptions<User>().WithFilter(filter).WithCacheKey(String.Concat("org:", id)));
         }
 
         public long CountByOrganizationId(string organizationId) {
-            throw new NotImplementedException();
-        }
-
-        #region Collection Setup
-
-        public const string CollectionName = "user";
-
-        protected override string GetCollectionName() {
-            return CollectionName;
+            return Count(new ElasticSearchOptions<User>().WithOrganizationId(organizationId));
         }
 
         public static class FieldNames {
@@ -78,29 +81,27 @@ namespace Exceptionless.Core.Repositories {
             public const string PasswordResetToken = "PasswordResetToken";
         }
 
-        protected override void InitializeCollection(MongoDatabase database) {
-            base.InitializeCollection(database);
+        //protected override void InitializeCollection(MongoDatabase database) {
+        //    base.InitializeCollection(database);
 
-            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
-            _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
-            _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
-        }
+        //    _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.OrganizationIds), IndexOptions.SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys<User>.Ascending(u => u.EmailAddress), IndexOptions.SetUnique(true).SetBackground(true));
+        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OAuthAccounts_Provider, FieldNames.OAuthAccounts_ProviderUserId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+        //}
 
-        protected override void ConfigureClassMap(BsonClassMap<User> cm) {
-            base.ConfigureClassMap(cm);
-            cm.GetMemberMap(p => p.OrganizationIds).SetSerializationOptions(new ArraySerializationOptions(new RepresentationSerializationOptions(BsonType.ObjectId)));
-            cm.GetMemberMap(c => c.IsActive).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.IsEmailAddressVerified).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.Password).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.PasswordResetToken).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.PasswordResetTokenExpiration).SetIgnoreIfDefault(true);
-            cm.GetMemberMap(c => c.Salt).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.VerifyEmailAddressToken).SetIgnoreIfNull(true);
-            cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
-        }
+        //protected override void ConfigureClassMap(BsonClassMap<User> cm) {
+        //    base.ConfigureClassMap(cm);
+        //    cm.GetMemberMap(p => p.OrganizationIds).SetSerializationOptions(new ArraySerializationOptions(new RepresentationSerializationOptions(BsonType.ObjectId)));
+        //    cm.GetMemberMap(c => c.IsActive).SetIgnoreIfDefault(true);
+        //    cm.GetMemberMap(c => c.IsEmailAddressVerified).SetIgnoreIfDefault(true);
+        //    cm.GetMemberMap(c => c.Password).SetIgnoreIfNull(true);
+        //    cm.GetMemberMap(c => c.PasswordResetToken).SetIgnoreIfNull(true);
+        //    cm.GetMemberMap(c => c.PasswordResetTokenExpiration).SetIgnoreIfDefault(true);
+        //    cm.GetMemberMap(c => c.Salt).SetIgnoreIfNull(true);
+        //    cm.GetMemberMap(c => c.VerifyEmailAddressToken).SetIgnoreIfNull(true);
+        //    cm.GetMemberMap(c => c.VerifyEmailAddressTokenExpiration).SetIgnoreIfDefault(true);
+        //}
         
-        #endregion
-
         protected override void BeforeAdd(ICollection<User> documents) {
             foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
                 user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();

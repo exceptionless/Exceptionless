@@ -24,7 +24,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(messages.Add);
 
-            var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            var o = _repository.Add(new Organization {
+                Name = "Test",
+                MaxEventsPerMonth = 750,
+                PlanId = BillingManager.FreePlan.Id
+            });
+
             Assert.False(_repository.IncrementUsage(o.Id, false, 4));
             Assert.Equal(0, messages.Count);
             Assert.Equal(4, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
@@ -39,7 +44,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
             Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
-            o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            o = _repository.Add(new Organization {
+                Name = "Test",
+                MaxEventsPerMonth = 750,
+                PlanId = BillingManager.FreePlan.Id
+            });
             Assert.True(_repository.IncrementUsage(o.Id, false, 751));
             //Assert.Equal(2, messages.Count);
             Assert.Equal(751, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
@@ -48,28 +57,23 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(745, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
         }
 
-        private string GetHourlyBlockedCacheKey(string organizationId)
-        {
+        private string GetHourlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetHourlyTotalCacheKey(string organizationId)
-        {
+        private string GetHourlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyBlockedCacheKey(string organizationId)
-        {
+        private string GetMonthlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
-        private string GetMonthlyTotalCacheKey(string organizationId)
-        {
+        private string GetMonthlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
-        private string GetUsageSavedCacheKey(string organizationId)
-        {
+        private string GetUsageSavedCacheKey(string organizationId) {
             return String.Concat("usage-saved", ":", organizationId);
         }
     }
