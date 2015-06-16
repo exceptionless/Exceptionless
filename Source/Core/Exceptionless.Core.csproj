@@ -74,14 +74,6 @@
     <Reference Include="MaxMind.GeoIP2">
       <HintPath>..\..\packages\MaxMind.GeoIP2.2.1.0.0\lib\net40\MaxMind.GeoIP2.dll</HintPath>
     </Reference>
-    <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Bson.dll</HintPath>
-    </Reference>
-    <Reference Include="MongoDB.Driver, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\packages\mongocsharpdriver.1.10.0\lib\net35\MongoDB.Driver.dll</HintPath>
-    </Reference>
     <Reference Include="Nest, Version=1.0.0.0, Culture=neutral, PublicKeyToken=96c599bbe3e70f5d, processorArchitecture=MSIL">
       <HintPath>..\..\packages\NEST.1.5.1\lib\net45\Nest.dll</HintPath>
       <Private>True</Private>
@@ -164,19 +156,6 @@
     <Compile Include="Mail\Engine\RazorEmailGenerator.cs" />
     <Compile Include="Mail\Engine\StringExtensions.cs" />
     <Compile Include="Mail\Engine\TemplatedEmail.cs" />
-    <Compile Include="Migrations\MongoMigrationChecker.cs" />
-    <Compile Include="Migrations\v1.0.27.cs" />
-    <Compile Include="Migrations\v1.0.28.cs" />
-    <Compile Include="Migrations\v1.0.29.cs" />
-    <Compile Include="Migrations\v1.0.30.cs" />
-    <Compile Include="Migrations\v1.0.31.cs" />
-    <Compile Include="Migrations\v1.0.32.cs" />
-    <Compile Include="Migrations\v1.0.33.cs" />
-    <Compile Include="Migrations\v1.0.34.cs" />
-    <Compile Include="Migrations\v1.0.35.cs" />
-    <Compile Include="Migrations\v1.0.36.cs" />
-    <Compile Include="Migrations\v1.0.37.cs" />
-    <Compile Include="Migrations\v1.0.38.cs" />
     <Compile Include="Models\Application.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
     <Compile Include="Models\Collections\DataDictionary.cs" />
@@ -239,15 +218,6 @@
     <Compile Include="Models\WebHook.cs" />
     <Compile Include="Models\WorkItems\ReindexWorkItem.cs" />
     <Compile Include="Pipeline\035_CopySimpleDataToIdxAction.cs" />
-    <Compile Include="Repositories\Base\IMongoRepositoryManagement.cs" />
-    <Compile Include="Repositories\Base\MongoOptions.cs" />
-    <Compile Include="Repositories\Base\MongoOptionsExtensions.cs" />
-    <Compile Include="Repositories\Base\MongoPagingOptions.cs" />
-    <Compile Include="Repositories\Base\MongoReadOnlyRepository.cs" />
-    <Compile Include="Repositories\Base\MongoRepository.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
-    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
     <Compile Include="Repositories\Configuration\ElasticSearchConfiguration.cs" />
     <Compile Include="Repositories\Configuration\Indexes\EventIndex.cs" />
     <Compile Include="Repositories\Configuration\IElasticSearchIndex.cs" />
@@ -304,7 +274,6 @@
     <Compile Include="Repositories\Exceptions\DocumentNotFoundException.cs" />
     <Compile Include="Serialization\EmptyCollectionElasticContractResolver.cs" />
     <Compile Include="Extensions\MailerExtensions.cs" />
-    <Compile Include="Extensions\MongoQueryExtensions.cs" />
     <Compile Include="Extensions\ValidationExtensions.cs" />
     <Compile Include="Jobs\EventUserDescriptionsJob.cs" />
     <Compile Include="Jobs\MailMessageJob.cs" />
@@ -454,7 +423,6 @@
     <Compile Include="Plugins\EventProcessor\Default\20_ErrorPlugin.cs" />
     <Compile Include="Plugins\EventProcessor\EventPluginManager.cs" />
     <Compile Include="Plugins\EventProcessor\IEventProcessorPlugin.cs" />
-    <Compile Include="Utility\UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Utility\InjectAttribute.cs" />
     <Compile Include="Utility\InjectAttributePropertySelectionBehavior.cs" />
     <Compile Include="Utility\DataHelper.cs" />
@@ -490,12 +458,6 @@
     <Compile Include="Repositories\OrganizationRepository.cs" />
     <Compile Include="Repositories\ProjectRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Migrations\MongoMigrations\MongoMigrations.csproj">
-      <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
-      <Name>MongoMigrations</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Mail\Templates\AddedToOrganization\Html.cshtml">

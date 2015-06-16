@@ -30,7 +30,6 @@ using Foundatio.Metrics;
 using Foundatio.Queues;
 using Foundatio.Serializer;
 using Foundatio.Storage;
-using MongoDB.Driver;
 using Nest;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
@@ -65,15 +64,6 @@ namespace Exceptionless.Core {
             var metricsClient = new InMemoryMetricsClient();
             metricsClient.StartDisplayingStats();
             container.RegisterSingle<IMetricsClient>(metricsClient);
-
-            container.RegisterSingle<MongoDatabase>(() => {
-                if (String.IsNullOrEmpty(Settings.Current.MongoConnectionString))
-                    throw new ConfigurationErrorsException("MongoConnectionString was not found in the Web.config.");
-
-                MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
-                MongoServer server = new MongoClient(new MongoUrl(Settings.Current.MongoConnectionString)).GetServer();
-                return server.GetDatabase(Settings.Current.MongoDatabaseName);
-            });
 
             container.RegisterSingle<IElasticClient>(() => container.GetInstance<ElasticSearchConfiguration>().GetClient(Settings.Current.ElasticSearchConnectionString.Split(',').Select(url => new Uri(url))));
             container.RegisterSingle<ICacheClient, InMemoryCacheClient>();

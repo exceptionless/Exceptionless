@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Security.Claims;
 using System.Text;
@@ -19,19 +16,29 @@ using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Queues.Models;
+using Exceptionless.Core.Repositories;
 using Exceptionless.Helpers;
 using Exceptionless.Tests.Utility;
 using Foundatio.Messaging;
 using Foundatio.Metrics;
 using Foundatio.Queues;
 using Microsoft.Owin;
+using Nest;
 using Newtonsoft.Json;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Controllers {
-    public class EventControllerTests : MongoTestHelper {
+    public class EventControllerTests {
+        private static bool _databaseReset;
+        private static bool _sampleOrganizationsAdded;
+        private static bool _sampleProjectsAdded;
+
+        private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private readonly EventController _eventController = IoC.GetInstance<EventController>();
+        private readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         private readonly IQueue<EventPost> _eventQueue = IoC.GetInstance<IQueue<EventPost>>();
+        private readonly IOrganizationRepository _organizationRepository = IoC.GetInstance<IOrganizationRepository>();
+        private readonly IProjectRepository _projectRepository = IoC.GetInstance<IProjectRepository>();
 
         public EventControllerTests() {
             ResetDatabase();
@@ -135,7 +142,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                     var compressedEvents = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(events)).CompressAsync().Result;
                     var actionResult = _eventController.PostAsync(compressedEvents, version: 2, userAgent: "exceptionless/2.0.0.0").Result;
                     Assert.IsType<StatusCodeResult>(actionResult);
-                });;
+                });
 
                 Assert.Equal(batchCount, _eventQueue.GetQueueCount());
 
@@ -155,9 +162,7 @@ namespace Exceptionless.Api.Tests.Controllers {
                 _eventQueue.DeleteQueue();
             }
         }
-
-        #region Helpers
-
+        
         private HttpRequestMessage CreateRequestMessage(ClaimsPrincipal user, bool isCompressed, bool isJson, string charset = "utf-8") {
             var request = new HttpRequestMessage();
 
@@ -174,16 +179,60 @@ namespace Exceptionless.Api.Tests.Controllers {
             return request;
         }
 
-        private static IEnumerable<object[]> Events {
-            get {
-                var result = new List<object[]>();
-                foreach (var file in Directory.GetFiles(@"..\..\EventData\", "*.txt", SearchOption.AllDirectories).Where(f => !f.EndsWith(".expected.json")))
-                    result.Add(new object[] { file });
+        private void ResetDatabase(bool force = false) {
+            if (_databaseReset && !force)
+                return;
+            
+            RemoveAllEvents();
+            RemoveAllProjects();
+            RemoveAllOrganizations();
 
-                return result.ToArray();
-            }
+            _databaseReset = true;
         }
 
-        #endregion
+        public void RemoveAllOrganizations() {
+            _organizationRepository.RemoveAll();
+            _client.Refresh(r => r.Force());
+            _sampleOrganizationsAdded = false;
+        }
+
+        public void RemoveAllProjects() {
+            _projectRepository.RemoveAll();
+            _client.Refresh(r => r.Force());
+            _sampleProjectsAdded = false;
+        }
+
+        public void RemoveAllEvents() {
+            _eventRepository.RemoveAll();
+            _client.Refresh(r => r.Force());
+        }
+
+        public long EventCount() {
+            _client.Refresh(r => r.Force());
+            return _eventRepository.Count();
+        }
+        
+        public void AddSampleProjects() {
+            if (_sampleProjectsAdded)
+                return;
+
+            _projectRepository.Add(ProjectData.GenerateSampleProjects());
+            _client.Refresh(r => r.Force());
+            _sampleProjectsAdded = true;
+        }
+        
+        public void AddSampleOrganizations() {
+            if (_sampleOrganizationsAdded)
+                return;
+
+            _organizationRepository.Add(OrganizationData.GenerateSampleOrganizations());
+            _client.Refresh(r => r.Force());
+            _sampleOrganizationsAdded = true;
+        }
+
+        public void AddSamples() {
+            AddSampleProjects();
+            AddSampleOrganizations();
+        }
     }
 }

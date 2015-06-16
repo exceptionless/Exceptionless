@@ -121,8 +121,22 @@
     </Compile>
     <Compile Include="JobBootstrapper.cs" />
     <Compile Include="MigrationJobBase.cs" />
+    <Compile Include="Migrations\MongoMigrationChecker.cs" />
+    <Compile Include="Migrations\v1.0.27.cs" />
+    <Compile Include="Migrations\v1.0.28.cs" />
+    <Compile Include="Migrations\v1.0.29.cs" />
+    <Compile Include="Migrations\v1.0.30.cs" />
+    <Compile Include="Migrations\v1.0.31.cs" />
+    <Compile Include="Migrations\v1.0.32.cs" />
+    <Compile Include="Migrations\v1.0.33.cs" />
+    <Compile Include="Migrations\v1.0.34.cs" />
+    <Compile Include="Migrations\v1.0.35.cs" />
+    <Compile Include="Migrations\v1.0.36.cs" />
+    <Compile Include="Migrations\v1.0.37.cs" />
+    <Compile Include="Migrations\v1.0.38.cs" />
     <Compile Include="QueueEventMigrationsJob.cs" />
     <Compile Include="StackMigrationJob.cs" />
+    <Compile Include="UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Util.cs" />
     <Compile Include="MongoCopyJob.cs" />
     <Compile Include="ResetDataStoresJob.cs" />
@@ -155,6 +169,10 @@
     <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MongoMigrations\MongoMigrations.csproj">
+      <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
+      <Name>MongoMigrations</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

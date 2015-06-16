@@ -4,7 +4,6 @@ using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using Exceptionless.Core.Extensions;
-using MongoDB.Driver;
 
 namespace Exceptionless.Core {
     public class Settings {
@@ -29,9 +28,7 @@ namespace Exceptionless.Core {
         public bool LogJobCompleted { get; private set; }
 
         public bool LogStackingInfo { get; private set; }
-
-        public bool AppendMachineNameToDatabase { get; private set; }
-
+       
         public bool SaveIncomingErrorsToDisk { get; private set; }
 
         public string IncomingErrorPath { get; private set; }
@@ -48,8 +45,6 @@ namespace Exceptionless.Core {
 
         public bool EnableDailySummary { get; private set; }
 
-        public bool ShouldAutoUpgradeDatabase { get; private set; }
-
         public string MetricsServerName { get; private set; }
 
         public int MetricsServerPort { get; private set; }
@@ -59,23 +54,7 @@ namespace Exceptionless.Core {
         public string RedisConnectionString { get; private set; }
 
         public bool EnableRedis { get; private set; }
-
-        public string MongoConnectionString { get; private set; }
-
-        public string MongoDatabaseName {
-            get {
-                if (String.IsNullOrEmpty(MongoConnectionString))
-                    return null;
-
-                var url = new MongoUrl(MongoConnectionString);
-                string databaseName = url.DatabaseName;
-                if (AppendMachineNameToDatabase)
-                    databaseName += String.Concat("-", Environment.MachineName.ToLower());
-
-                return databaseName;
-            }
-        }
-
+        
         public string ElasticSearchConnectionString { get; set; }
 
         public string Version { get; private set; }
@@ -140,7 +119,6 @@ namespace Exceptionless.Core {
             settings.LogJobEvents = GetBool("LogJobEvents");
             settings.LogJobCompleted = GetBool("LogJobCompleted");
             settings.LogStackingInfo = GetBool("LogStackingInfo");
-            settings.AppendMachineNameToDatabase = GetBool("AppendMachineNameToDatabase");
             settings.SaveIncomingErrorsToDisk = GetBool("SaveIncomingErrorsToDisk");
             settings.IncomingErrorPath = GetString("IncomingErrorPath");
             settings.EnableLogErrorReporting = GetBool("EnableLogErrorReporting");
@@ -149,7 +127,6 @@ namespace Exceptionless.Core {
             settings.ApiThrottleLimit = GetInt("ApiThrottleLimit", Int32.MaxValue);
             settings.MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
             settings.EnableDailySummary = GetBool("EnableDailySummary");
-            settings.ShouldAutoUpgradeDatabase = GetBool("ShouldAutoUpgradeDatabase", true);
             settings.MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
             settings.MetricsServerPort = GetInt("MetricsServerPort", 12000);
             settings.EnableMetricsReporting = GetBool("EnableMetricsReporting");
@@ -178,10 +155,6 @@ namespace Exceptionless.Core {
                 settings.AzureStorageConnectionString = connectionString;
                 settings.EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(settings.AzureStorageConnectionString));
             }
-
-            connectionString = GetConnectionString("MongoConnectionString");
-            if (!String.IsNullOrEmpty(connectionString))
-                settings.MongoConnectionString = connectionString;
 
             connectionString = GetConnectionString("ElasticSearchConnectionString");
             if (!String.IsNullOrEmpty(connectionString))

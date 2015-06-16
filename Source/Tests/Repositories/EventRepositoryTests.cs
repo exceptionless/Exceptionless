@@ -8,8 +8,8 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
-using MongoDB.Bson;
 using Nest;
 using Xunit;
 

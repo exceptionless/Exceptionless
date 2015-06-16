@@ -6,14 +6,7 @@ using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Bson.Serialization.Options;
-using MongoDB.Driver;
-using MongoDB.Driver.Builders;
-using MongoDB.Driver.Linq;
 using Nest;
-using IndexOptions = MongoDB.Driver.Builders.IndexOptions;
 
 namespace Exceptionless.Core.Repositories {
     public class UserRepository : ElasticSearchRepository<User>, IUserRepository {

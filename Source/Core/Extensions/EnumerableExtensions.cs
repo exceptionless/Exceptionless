@@ -103,8 +103,10 @@ namespace Exceptionless.Core.Extensions {
             if (values == null)
                 return;
 
-            foreach (var value in values.Where(value => value.Id == null))
-                value.Id = ObjectId.GenerateNewId().ToString();
+            foreach (var value in values) {
+                if (value.Id == null)
+                    value.Id = ObjectId.GenerateNewId().ToString();
+            }
         }
 
         public static void SetDates<T>(this IEnumerable<T> values) where T : class, IHaveDates {

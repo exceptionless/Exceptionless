@@ -67,7 +67,7 @@ namespace Exceptionless.Api.Controllers {
             if (!processResult.IsValid)
                 return BadRequest(processResult.Message);
 
-            if (systemFilter == null)
+            if (String.IsNullOrEmpty(systemFilter))
                 systemFilter = GetSystemFilter(processResult.UsesPremiumFeatures, HasOrganizationFilter(query));
 
             var sortBy = GetSort(sort);
