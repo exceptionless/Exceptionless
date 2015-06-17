@@ -30,29 +30,18 @@ namespace Exceptionless.Core.Repositories {
             return UpdateAll((string)null, new QueryOptions().WithProjectIds(ids), script, false);
         }
 
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string Name = "Name";
-            public const string Configuration = "Configuration";
-            public const string Configuration_Version = "Configuration.Version";
-            public const string NotificationSettings = "NotificationSettings";
-            public const string PromotedTabs = "PromotedTabs";
-            public const string CustomContent = "CustomContent";
-            public const string TotalEventCount = "TotalEventCount";
-            public const string LastEventDate = "LastEventDate";
-            public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
-        }
-
-        //protected override void ConfigureClassMap(BsonClassMap<Project> cm) {
-        //    base.ConfigureClassMap(cm);
-        //    cm.GetMemberMap(c => c.Name).SetElementName(FieldNames.Name);
-        //    cm.GetMemberMap(c => c.Configuration).SetElementName(FieldNames.Configuration);
-        //    cm.GetMemberMap(c => c.CustomContent).SetElementName(FieldNames.CustomContent).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.NextSummaryEndOfDayTicks).SetElementName(FieldNames.NextSummaryEndOfDayTicks);
-
-        //    cm.GetMemberMap(c => c.PromotedTabs).SetElementName(FieldNames.PromotedTabs).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).PromotedTabs.Any());
-        //    cm.GetMemberMap(c => c.NotificationSettings).SetElementName(FieldNames.NotificationSettings).SetIgnoreIfNull(true).SetShouldSerializeMethod(obj => ((Project)obj).NotificationSettings.Any());
+        //private static class FieldNames {
+        //    public const string Id = CommonFieldNames.Id;
+        //    public const string OrganizationId = CommonFieldNames.OrganizationId;
+        //    public const string Name = "Name";
+        //    public const string Configuration = "Configuration";
+        //    public const string Configuration_Version = "Configuration.Version";
+        //    public const string NotificationSettings = "NotificationSettings";
+        //    public const string PromotedTabs = "PromotedTabs";
+        //    public const string CustomContent = "CustomContent";
+        //    public const string TotalEventCount = "TotalEventCount";
+        //    public const string LastEventDate = "LastEventDate";
+        //    public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
         //}
     }
 }

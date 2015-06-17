@@ -31,7 +31,7 @@ namespace Exceptionless.Core.Repositories {
         public FindResults<Token> GetByTypeAndOrganizationId(TokenType type, string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find(new ElasticSearchOptions<Token>()
                 .WithOrganizationId(organizationId)
-                .WithFilter(Filter<Token>.Term(FieldNames.Type, type))
+                .WithFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? String.Concat("type:", type, "-org:", organizationId) : null)
                 .WithExpiresIn(expiresIn));
@@ -44,7 +44,7 @@ namespace Exceptionless.Core.Repositories {
             string cacheKey = String.Concat("type:", type, "-org:", String.Join("", organizationIds).GetHashCode().ToString());
             return Find(new ElasticSearchOptions<Token>()
                 .WithOrganizationIds(organizationIds)
-                .WithFilter(Filter<Token>.Term(FieldNames.Type, type))
+                .WithFilter(Filter<Token>.Term(t => t.Type, type))
                 .WithPaging(paging)
                 .WithCacheKey(useCache ? cacheKey : null)
                 .WithExpiresIn(expiresIn));
@@ -78,7 +78,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(refreshToken))
                 throw new ArgumentNullException("refreshToken");
 
-            return FindOne(new ElasticSearchOptions<Token>().WithFilter(Filter<Token>.Term(FieldNames.Refresh, refreshToken)));
+            return FindOne(new ElasticSearchOptions<Token>().WithFilter(Filter<Token>.Term(t => t.Refresh, refreshToken)));
         }
 
         public override FindResults<Token> GetByProjectId(string projectId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
@@ -91,40 +91,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
         
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string ProjectId = CommonFieldNames.ProjectId;
-            public const string UserId = "uid";
-            public const string ApplicationId = "aid";
-            public const string DefaultProjectId = "def";
-            public const string Refresh = "ref";
-            public const string Type = "typ";
-            public const string Scopes = "scp";
-            public const string ExpiresUtc = "exp";
-            public const string Notes = "not";
-            public const string CreatedUtc = CommonFieldNames.Date;
-            public const string ModifiedUtc = "mdt";
-        }
-        
-        //protected override void ConfigureClassMap(BsonClassMap<Token> cm) {
-        //    cm.AutoMap();
-        //    cm.SetIgnoreExtraElements(true);
-        //    cm.SetIdMember(cm.GetMemberMap(c => c.Id));
-        //    cm.GetMemberMap(c => c.OrganizationId).SetElementName(FieldNames.OrganizationId).SetRepresentation(BsonType.ObjectId).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.ProjectId).SetElementName(FieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.UserId).SetElementName(FieldNames.UserId).SetRepresentation(BsonType.ObjectId).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.ApplicationId).SetElementName(FieldNames.ApplicationId).SetRepresentation(BsonType.ObjectId).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.DefaultProjectId).SetElementName(FieldNames.DefaultProjectId).SetRepresentation(BsonType.ObjectId).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.Refresh).SetElementName(FieldNames.Refresh).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.Type).SetElementName(FieldNames.Type);
-        //    cm.GetMemberMap(c => c.Scopes).SetElementName(FieldNames.Scopes).SetShouldSerializeMethod(obj => ((Token)obj).Scopes.Any());
-        //    cm.GetMemberMap(c => c.ExpiresUtc).SetElementName(FieldNames.ExpiresUtc).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.Notes).SetElementName(FieldNames.Notes).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.CreatedUtc).SetElementName(FieldNames.CreatedUtc);
-        //    cm.GetMemberMap(c => c.ModifiedUtc).SetElementName(FieldNames.ModifiedUtc).SetIgnoreIfDefault(true);
-        //}
-
         public override void InvalidateCache(Token token) {
             if (!EnableCache || Cache == null)
                 return;

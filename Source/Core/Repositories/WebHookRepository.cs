@@ -24,14 +24,6 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
         }
         
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string OrganizationId = CommonFieldNames.OrganizationId;
-            public const string ProjectId = CommonFieldNames.ProjectId;
-            public const string Url = "Url";
-            public const string EventTypes = "EventTypes";
-        }
-
         public static class EventTypes {
             // TODO: Add support for these new web hook types.
             public const string NewError = "NewError";
@@ -41,21 +33,6 @@ namespace Exceptionless.Core.Repositories {
             public const string StackRegression = "StackRegression";
             public const string StackPromoted = "StackPromoted";
         }
-
-        //protected override void InitializeCollection(MongoDatabase database) {
-        //    base.InitializeCollection(database);
-
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.OrganizationId), IndexOptions.SetBackground(true));
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.ProjectId), IndexOptions.SetBackground(true));
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Url), IndexOptions.SetBackground(true));
-        //}
-
-        //protected override void ConfigureClassMap(BsonClassMap<WebHook> cm) {
-        //    base.ConfigureClassMap(cm);
-        //    cm.GetMemberMap(c => c.ProjectId).SetElementName(CommonFieldNames.ProjectId).SetRepresentation(BsonType.ObjectId).SetIdGenerator(new StringObjectIdGenerator()).SetIgnoreIfNull(true);
-        //    cm.GetMemberMap(c => c.Url).SetElementName(FieldNames.Url);
-        //    cm.GetMemberMap(c => c.EventTypes).SetElementName(FieldNames.EventTypes);
-        //}
         
         public override void InvalidateCache(WebHook hook) {
             if (!EnableCache || Cache == null)

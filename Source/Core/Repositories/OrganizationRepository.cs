@@ -23,7 +23,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(token))
                 return null;
 
-            var filter = Filter<Organization>.Term(FieldNames.Invites_Token, token);
+            var filter = Filter<Organization>.Term(OrganizationIndex.Fields.Organization.InviteToken, token);
             var organization = FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
             if (organization != null)
                 invite = organization.Invites.FirstOrDefault(i => String.Equals(i.Token, token, StringComparison.OrdinalIgnoreCase));
@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(customerId))
                 throw new ArgumentNullException("customerId");
 
-            var filter = Filter<Organization>.Term(FieldNames.StripeCustomerId, customerId);
+            var filter = Filter<Organization>.Term(o => o.StripeCustomerId, customerId);
             return FindOne(new ElasticSearchOptions<Organization>().WithFilter(filter));
         }
 
@@ -247,43 +247,35 @@ namespace Exceptionless.Core.Repositories {
             return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
         }
         
-        private static class FieldNames {
-            public const string Id = CommonFieldNames.Id;
-            public const string Name = "Name";
-            public const string StripeCustomerId = "StripeCustomerId";
-            public const string PlanId = "PlanId";
-            public const string CardLast4 = "CardLast4";
-            public const string SubscribeDate = "SubscribeDate";
-            public const string BillingChangeDate = "BillingChangeDate";
-            public const string BillingChangedByUserId = "BillingChangedByUserId";
-            public const string BillingStatus = "BillingStatus";
-            public const string BillingPrice = "BillingPrice";
-            public const string RetentionDays = "RetentionDays";
-            public const string HasPremiumFeatures = "HasPremiumFeatures";
-            public const string MaxUsers = "MaxUsers";
-            public const string MaxProjects = "MaxProjects";
-            public const string MaxEventsPerMonth = "MaxEventsPerMonth";
-            public const string TotalEventCount = "TotalEventCount";
-            public const string LastEventDate = "LastEventDate";
-            public const string IsSuspended = "IsSuspended";
-            public const string SuspensionCode = "SuspensionCode";
-            public const string SuspensionNotes = "SuspensionNotes";
-            public const string SuspensionDate = "SuspensionDate";
-            public const string SuspendedByUserId = "SuspendedByUserId";
-            public const string Invites = "Invites";
-            public const string Invites_Token = "Invites.Token";
-            public const string Invites_EmailAddress = "Invites.EmailAddress";
-            public const string Invites_DateAdded = "Invites.DateAdded";
-            public const string Usage = "Usage";
-            public const string OverageHours = "OverageHours";
-        }
-
-        //protected override void InitializeCollection(MongoDatabase database) {
-        //    base.InitializeCollection(database);
-
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_Token), IndexOptions.SetBackground(true));
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.Invites_EmailAddress), IndexOptions.SetBackground(true));
-        //    _collection.CreateIndex(IndexKeys.Ascending(FieldNames.StripeCustomerId), IndexOptions.SetUnique(true).SetSparse(true).SetBackground(true));
+        //private static class FieldNames {
+        //    public const string Id = CommonFieldNames.Id;
+        //    public const string Name = "Name";
+        //    public const string StripeCustomerId = "StripeCustomerId";
+        //    public const string PlanId = "PlanId";
+        //    public const string CardLast4 = "CardLast4";
+        //    public const string SubscribeDate = "SubscribeDate";
+        //    public const string BillingChangeDate = "BillingChangeDate";
+        //    public const string BillingChangedByUserId = "BillingChangedByUserId";
+        //    public const string BillingStatus = "BillingStatus";
+        //    public const string BillingPrice = "BillingPrice";
+        //    public const string RetentionDays = "RetentionDays";
+        //    public const string HasPremiumFeatures = "HasPremiumFeatures";
+        //    public const string MaxUsers = "MaxUsers";
+        //    public const string MaxProjects = "MaxProjects";
+        //    public const string MaxEventsPerMonth = "MaxEventsPerMonth";
+        //    public const string TotalEventCount = "TotalEventCount";
+        //    public const string LastEventDate = "LastEventDate";
+        //    public const string IsSuspended = "IsSuspended";
+        //    public const string SuspensionCode = "SuspensionCode";
+        //    public const string SuspensionNotes = "SuspensionNotes";
+        //    public const string SuspensionDate = "SuspensionDate";
+        //    public const string SuspendedByUserId = "SuspendedByUserId";
+        //    public const string Invites = "Invites";
+        //    public const string Invites_Token = "Invites.Token";
+        //    public const string Invites_EmailAddress = "Invites.EmailAddress";
+        //    public const string Invites_DateAdded = "Invites.DateAdded";
+        //    public const string Usage = "Usage";
+        //    public const string OverageHours = "OverageHours";
         //}
     }
 
