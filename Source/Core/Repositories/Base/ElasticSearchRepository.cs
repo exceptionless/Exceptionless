@@ -55,13 +55,13 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            if (_isEvent)
+            if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: _index.Name, index: String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
+                    var result = _elasticClient.IndexMany(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
                 }
-            else {
+            } else {
                 var result = _elasticClient.IndexMany(documents, _index.VersionedName);
                 if (!result.IsValid)
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
@@ -208,11 +208,12 @@ namespace Exceptionless.Core.Repositories {
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
 
-            if (_isEvent)
+            if (_isEvent) {
                 foreach (var group in documents.Cast<PersistentEvent>().GroupBy(e => e.Date.ToUniversalTime().Date)) {
-                    var result = _elasticClient.IndexMany(group.ToList(), type: _index.Name, index: String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
+                    var result = _elasticClient.IndexMany(group.ToList(), String.Concat(_index.VersionedName, "-", group.Key.ToString("yyyyMM")));
                     if (!result.IsValid)
                         throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
+                }
             } else {
                 var result = _elasticClient.IndexMany(documents, _index.VersionedName);
                 if (!result.IsValid)
