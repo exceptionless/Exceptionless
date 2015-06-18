@@ -402,7 +402,6 @@
     <Compile Include="Models\Queues\WebHookNotification.cs" />
     <Compile Include="Models\Queues\SummaryNotification.cs" />
     <Compile Include="Repositories\ApplicationRepository.cs" />
-    <Compile Include="Repositories\Base\CommonFieldNames.cs" />
     <Compile Include="Repositories\Options\OneOptions.cs" />
     <Compile Include="Repositories\Options\MultiOptions.cs" />
     <Compile Include="Repositories\Interfaces\IRepositoryOwnedByOrganizationAndProject.cs" />

@@ -111,13 +111,13 @@ namespace Exceptionless.Core.Repositories {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            var fields = new List<string>(new[] { "id" });//CommonFieldNames.Id });
+            var fields = new List<string>(new[] { "id" });
             if (_isOwnedByOrganization)
-                fields.Add("organization_id");//CommonFieldNames.OrganizationId);
+                fields.Add("organization_id");
             if (_isOwnedByProject)
-                fields.Add("project_id");//CommonFieldNames.ProjectId);
+                fields.Add("project_id");
             if (_isOwnedByStack)
-                fields.Add("stack_id");//CommonFieldNames.StackId);
+                fields.Add("stack_id");
             if (_isStack)
                 fields.Add("signature_hash");
 

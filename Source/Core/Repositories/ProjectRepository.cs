@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
 
         public FindResults<Project> GetByNextSummaryNotificationOffset(byte hourToSendNotificationsAfterUtcMidnight, int limit = 10) {
             var filter = Filter<Project>.Range(r => r.OnField(o => o.NextSummaryEndOfDayTicks).Lower(DateTime.UtcNow.Ticks - (TimeSpan.TicksPerHour * hourToSendNotificationsAfterUtcMidnight)));
-            return Find(new ElasticSearchOptions<Project>().WithFilter(filter).WithFields(FieldNames.Id, FieldNames.NextSummaryEndOfDayTicks).WithLimit(limit));
+            return Find(new ElasticSearchOptions<Project>().WithFilter(filter).WithFields("id", "next_summary_end_of_day_ticks").WithLimit(limit));
         }
 
         public long IncrementNextSummaryEndOfDayTicks(ICollection<string> ids) {
@@ -29,19 +29,5 @@ namespace Exceptionless.Core.Repositories {
             string script = String.Format("ctx._source.next_summary_end_of_day_ticks += {0};", TimeSpan.TicksPerDay);
             return UpdateAll((string)null, new QueryOptions().WithProjectIds(ids), script, false);
         }
-
-        //private static class FieldNames {
-        //    public const string Id = CommonFieldNames.Id;
-        //    public const string OrganizationId = CommonFieldNames.OrganizationId;
-        //    public const string Name = "Name";
-        //    public const string Configuration = "Configuration";
-        //    public const string Configuration_Version = "Configuration.Version";
-        //    public const string NotificationSettings = "NotificationSettings";
-        //    public const string PromotedTabs = "PromotedTabs";
-        //    public const string CustomContent = "CustomContent";
-        //    public const string TotalEventCount = "TotalEventCount";
-        //    public const string LastEventDate = "LastEventDate";
-        //    public const string NextSummaryEndOfDayTicks = "NextSummaryEndOfDayTicks";
-        //}
     }
 }

@@ -43,7 +43,7 @@ namespace Exceptionless.Core.Repositories {
             var filter = Filter<Organization>.Range(r => r.OnField(o => o.RetentionDays).Greater(0));
             return Find(new ElasticSearchOptions<Organization>()
                 .WithFilter(filter)
-                .WithFields(FieldNames.Id, FieldNames.Name, FieldNames.RetentionDays)
+                .WithFields("id", "name", "retention_days")
                 .WithPaging(paging));
         }
 
@@ -56,7 +56,7 @@ namespace Exceptionless.Core.Repositories {
             //filter &= Filter<Organization>.Range(r => r.OnField(o => o.LastEventDate).GreaterOrEquals(DateTime.UtcNow.Date.SubtractDays(90)));
             filter &= Filter<Organization>.Missing(m => m.StripeCustomerId);
 
-            return Find(new ElasticSearchOptions<Organization>().WithFilter(filter).WithFields(FieldNames.Id, FieldNames.Name).WithLimit(limit));
+            return Find(new ElasticSearchOptions<Organization>().WithFilter(filter).WithFields("id", "name").WithLimit(limit));
         }
 
         public FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
@@ -104,7 +104,7 @@ namespace Exceptionless.Core.Repositories {
 
         public BillingPlanStats GetBillingPlanStats() {
             var results = Find(new ElasticSearchOptions<Organization>()
-                .WithFields(FieldNames.PlanId, FieldNames.IsSuspended, FieldNames.BillingPrice, FieldNames.BillingStatus)
+                .WithFields("plan_id", "is_suspended", "billing_price", "billing_status")
                 .WithSort(s => s.OnField(o => o.PlanId).Order(Nest.SortOrder.Descending))).Documents;
 
             List<Organization> smallOrganizations = results.Where(o => String.Equals(o.PlanId, BillingManager.SmallPlan.Id) && o.BillingPrice > 0).ToList();
@@ -246,37 +246,6 @@ namespace Exceptionless.Core.Repositories {
 
             return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
         }
-        
-        //private static class FieldNames {
-        //    public const string Id = CommonFieldNames.Id;
-        //    public const string Name = "Name";
-        //    public const string StripeCustomerId = "StripeCustomerId";
-        //    public const string PlanId = "PlanId";
-        //    public const string CardLast4 = "CardLast4";
-        //    public const string SubscribeDate = "SubscribeDate";
-        //    public const string BillingChangeDate = "BillingChangeDate";
-        //    public const string BillingChangedByUserId = "BillingChangedByUserId";
-        //    public const string BillingStatus = "BillingStatus";
-        //    public const string BillingPrice = "BillingPrice";
-        //    public const string RetentionDays = "RetentionDays";
-        //    public const string HasPremiumFeatures = "HasPremiumFeatures";
-        //    public const string MaxUsers = "MaxUsers";
-        //    public const string MaxProjects = "MaxProjects";
-        //    public const string MaxEventsPerMonth = "MaxEventsPerMonth";
-        //    public const string TotalEventCount = "TotalEventCount";
-        //    public const string LastEventDate = "LastEventDate";
-        //    public const string IsSuspended = "IsSuspended";
-        //    public const string SuspensionCode = "SuspensionCode";
-        //    public const string SuspensionNotes = "SuspensionNotes";
-        //    public const string SuspensionDate = "SuspensionDate";
-        //    public const string SuspendedByUserId = "SuspendedByUserId";
-        //    public const string Invites = "Invites";
-        //    public const string Invites_Token = "Invites.Token";
-        //    public const string Invites_EmailAddress = "Invites.EmailAddress";
-        //    public const string Invites_DateAdded = "Invites.DateAdded";
-        //    public const string Usage = "Usage";
-        //    public const string OverageHours = "OverageHours";
-        //}
     }
 
     public enum OrganizationSortBy {

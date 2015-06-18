@@ -1,7 +1,7 @@
 ﻿using System;
 
 namespace Exceptionless.Core.Models {
-    public class Application : IOwnedByOrganizationWithIdentity {
+    public class Application : IOwnedByOrganizationWithIdentity, IHaveDates {
         public string Id { get; set; }
         public string OrganizationId { get; set; }
         public string Secret { get; set; }
@@ -10,5 +10,7 @@ namespace Exceptionless.Core.Models {
         public string Description { get; set; }
         public string CallbackUrl { get; set; }
         public string ImageUrl { get; set; }
+        public DateTime CreatedUtc { get; set; }
+        public DateTime ModifiedUtc { get; set; }
     }
 }

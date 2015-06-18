@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Exceptionless.Core.Models {
     [DebuggerDisplay("Id: {Id}, Name: {Name}, NextSummaryEndOfDayTicks: {NextSummaryEndOfDayTicks}")]
-    public class Project : IOwnedByOrganizationWithIdentity, IData {
+    public class Project : IOwnedByOrganizationWithIdentity, IData, IHaveDates {
         public Project() {
             Configuration = new ClientConfiguration();
             NotificationSettings = new Dictionary<string, NotificationSettings>();
@@ -42,5 +42,9 @@ namespace Exceptionless.Core.Models {
         /// projects local time.
         /// </summary>
         public Int64 NextSummaryEndOfDayTicks { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
+
+        public DateTime ModifiedUtc { get; set; }
     }
 }
