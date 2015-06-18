@@ -8,10 +8,12 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
+using Nest;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class OrganizationRepositoryTests {
+        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
 
         [Fact]
@@ -45,13 +47,14 @@ namespace Exceptionless.Api.Tests.Repositories {
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
+            _client.Refresh();
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(organizations);
-            Assert.Equal(1, organizations.Total);
+            Assert.Equal(1, organizations.Documents.Count);
 
             var organizations2 = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(2).WithLimit(1));
             Assert.NotNull(organizations);
-            Assert.Equal(1, organizations.Total);
+            Assert.Equal(1, organizations.Documents.Count);
 
             Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
            

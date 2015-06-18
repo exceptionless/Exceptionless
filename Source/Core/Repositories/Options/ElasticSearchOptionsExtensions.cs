@@ -43,8 +43,7 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
-        public static FilterContainer GetElasticSearchFilter<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class
-        {
+        public static FilterContainer GetElasticSearchFilter<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class {
             var container = Filter<T>.MatchAll();
 
             container = ApplyQueryOptionsFilters<T>(options, container, supportSoftDeletes);
@@ -53,8 +52,7 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        public static FilterContainer GetElasticSearchFilter<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class
-        {
+        public static FilterContainer GetElasticSearchFilter<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
             var container = Filter<T>.MatchAll();
 
             container = ApplyQueryOptionsFilters<T>(options, container, supportSoftDeletes);
@@ -66,20 +64,32 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        private static FilterContainer ApplyQueryOptionsFilters<T>(QueryOptions options, FilterContainer container, bool supportSoftDeletes = false) where T : class
-        {
+        private static FilterContainer ApplyQueryOptionsFilters<T>(QueryOptions options, FilterContainer container, bool supportSoftDeletes = false) where T : class {
             if (container == null)
                 container = Filter<T>.MatchAll();
 
             if (options.Ids.Count > 0)
                 container &= Filter<T>.Ids(options.Ids);
 
-            if (options.OrganizationIds.Count > 0)
-            {
+            if (options.OrganizationIds.Count > 0) {
                 if (options.OrganizationIds.Count == 1)
                     container &= Filter<T>.Term("organization", options.OrganizationIds.First());
                 else
                     container &= Filter<T>.Terms("organization", options.OrganizationIds.ToArray());
+            }
+
+            if (options.ProjectIds.Count > 0) {
+                if (options.ProjectIds.Count == 1)
+                    container &= Filter<T>.Term("project", options.ProjectIds.First());
+                else
+                    container &= Filter<T>.Terms("project", options.ProjectIds.ToArray());
+            }
+
+            if (options.StackIds.Count > 0) {
+                if (options.StackIds.Count == 1)
+                    container &= Filter<T>.Term("stack", options.StackIds.First());
+                else
+                    container &= Filter<T>.Terms("stack", options.StackIds.ToArray());
             }
 
             return container;
@@ -116,8 +126,7 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        public static QueryContainer GetElasticSearchQuery<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class
-        {
+        public static QueryContainer GetElasticSearchQuery<T>(this ElasticSearchOptions<T> options, bool supportSoftDeletes = false) where T : class {
             var container = Query<T>.MatchAll();
 
             var filterContainer = Filter<T>.MatchAll();
@@ -132,8 +141,7 @@ namespace Exceptionless.Core.Repositories {
             return container;
         }
 
-        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class
-        {
+        public static QueryContainer GetElasticSearchQuery<T>(this QueryOptions options, bool supportSoftDeletes = false) where T : class {
             var container = Query<T>.MatchAll();
 
             var filterContainer = Filter<T>.MatchAll();

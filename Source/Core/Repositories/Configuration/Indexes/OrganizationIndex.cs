@@ -81,7 +81,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                      .String(f => f.Name(e => e.ApplicationId).IndexName("application").Index(FieldIndexOption.NotAnalyzed))
                      .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
                      .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.DefaultProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                     .String(f => f.Name(e => e.DefaultProjectId).IndexName("default_project").Index(FieldIndexOption.NotAnalyzed))
                      .String(f => f.Name(e => e.UserId).IndexName("user").Index(FieldIndexOption.NotAnalyzed))
                 );
         }
