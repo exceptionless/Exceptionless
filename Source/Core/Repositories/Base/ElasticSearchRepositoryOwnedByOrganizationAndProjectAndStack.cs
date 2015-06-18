@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -23,12 +25,12 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => RemoveAll(new QueryOptions().WithStackIds(stackIds)));
         }
 
-        public override void InvalidateCache(T document) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments) {
+            if (!EnableCache)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(String.Concat("stack:", document.StackId)));
-            base.InvalidateCache(document);
+            documents.ForEach(d => InvalidateCache(String.Concat("stack:", d.StackId)));
+            base.InvalidateCache(documents, originalDocuments);
         }
     }
 }

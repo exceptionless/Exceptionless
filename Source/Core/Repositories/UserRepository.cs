@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -50,54 +51,55 @@ namespace Exceptionless.Core.Repositories {
             return FindOne(new ElasticSearchOptions<User>().WithFilter(filter));
         }
 
-        public FindResults<User> GetByOrganizationId(string id) {
-            if (String.IsNullOrEmpty(id))
-                return new FindResults<User>();
-
-            var filter = Filter<User>.Term(u => u.OrganizationIds, new List<string>() { id });
-            return Find(new ElasticSearchOptions<User>().WithFilter(filter).WithCacheKey(String.Concat("org:", id)));
+        public virtual FindResults<User> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            return GetByOrganizationIds(new[] { organizationId }, paging, useCache, expiresIn);
         }
 
         public long CountByOrganizationId(string organizationId) {
-            return Count(new ElasticSearchOptions<User>().WithOrganizationId(organizationId));
-        }
-        
-        protected override void BeforeAdd(ICollection<User> documents) {
-            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
-                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
+            var filter = Filter<User>.Term(u => u.OrganizationIds, new[] { organizationId });
+            var options = new ElasticSearchOptions<User>()
+                .WithFilter(filter);
 
-            base.BeforeAdd(documents);
+            return Count(options);
         }
 
-        protected override void BeforeSave(ICollection<User> originalDocuments, ICollection<User> documents) {
-            foreach (var user in documents.Where(user => !String.IsNullOrWhiteSpace(user.EmailAddress)))
-                user.EmailAddress = user.EmailAddress.ToLowerInvariant().Trim();
+        public virtual FindResults<User> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+            if (organizationIds == null || organizationIds.Count == 0)
+                return new FindResults<User> { Documents = new List<User>(), Total = 0 };
 
-            base.BeforeSave(originalDocuments, documents);
+            string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
+            var filter = Filter<User>.Term(u => u.OrganizationIds, organizationIds);
+            return Find(new ElasticSearchOptions<User>()
+                .WithFilter(filter)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
         }
 
-        protected override void AfterSave(ICollection<User> originalDocuments, ICollection<User> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
-            if (EnableCache) {
-                foreach (var document in documents) {
-                    foreach (var organizationId in document.OrganizationIds) {
-                        InvalidateCache(String.Concat("org:", organizationId));
-                    }
-                }
-            }
-
-            base.AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
-        }
-
-        public override void InvalidateCache(User user) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<User> users, ICollection<User> originalUsers)
+        {
+            if (!EnableCache)
                 return;
 
-            InvalidateCache(user.EmailAddress.ToLowerInvariant());
+            if (users == null)
+                throw new ArgumentNullException("users");
 
-            foreach (var organizationId in user.OrganizationIds)
-                InvalidateCache(String.Concat("org:", organizationId));
+            var combinedUsers = new List<User>();
+            combinedUsers.AddRange(users);
+            if (originalUsers != null)
+                combinedUsers.AddRange(originalUsers);
 
-            base.InvalidateCache(user);
+            combinedUsers
+                .Select(u => u.EmailAddress)
+                .Distinct()
+                .ForEach(email => InvalidateCache(email));
+
+            combinedUsers
+                .SelectMany(u => u.OrganizationIds)
+                .Distinct()
+                .ForEach(organizationId => InvalidateCache("org:" + organizationId));
+
+            base.InvalidateCache(users, originalUsers);
         }
     }
 }

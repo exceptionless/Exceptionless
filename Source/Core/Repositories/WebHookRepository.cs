@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -34,12 +36,12 @@ namespace Exceptionless.Core.Repositories {
             public const string StackPromoted = "StackPromoted";
         }
         
-        public override void InvalidateCache(WebHook hook) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<WebHook> hooks, ICollection<WebHook> originalHooks) {
+            if (!EnableCache)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(String.Concat("org:", hook.OrganizationId, "-project:", hook.ProjectId)));
-            base.InvalidateCache(hook);
+            hooks.ForEach(h => InvalidateCache(String.Concat("org:", h.OrganizationId, "-project:", h.ProjectId)));
+            base.InvalidateCache(hooks, originalHooks);
         }
     }
 }

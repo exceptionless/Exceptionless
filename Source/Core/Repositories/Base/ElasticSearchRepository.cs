@@ -29,7 +29,8 @@ namespace Exceptionless.Core.Repositories {
 
         public bool BatchNotifications { get; set; }
 
-        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
+        public T Add(T document, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true)
+        {
             if (document == null)
                 throw new ArgumentNullException("document");
 
@@ -37,20 +38,11 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeAdd(ICollection<T> documents) {
-            if (_hasDates)
-                documents.Cast<IHaveDates>().SetDates();
-            else if (_hasCreatedDate)
-                documents.Cast<IHaveCreatedDate>().SetCreatedDates();
-
-            documents.EnsureIds();
-        }
-
         public void Add(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
-                throw new ArgumentException("Must provide one or more documents to add.", "documents");
+                return;
 
-            BeforeAdd(documents);
+            OnDocumentChanging(ChangeType.Added, documents);
 
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
@@ -67,28 +59,14 @@ namespace Exceptionless.Core.Repositories {
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
 
-            AfterAdd(documents, addToCache, expiresIn, sendNotification);
+            if (addToCache)
+                AddToCache(documents, expiresIn);
+
+            if (sendNotification)
+                SendNotifications(ChangeType.Added, documents);
+
+            OnDocumentChanged(ChangeType.Added, documents);
         }
-
-        protected virtual void AfterAdd(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            if (!EnableCache && !sendNotification)
-                return;
-            
-            foreach (var document in documents) {
-                if (EnableCache) {
-                    InvalidateCache(document);
-                    if (addToCache && Cache != null)
-                        Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
-                }
-
-                if (sendNotification && !BatchNotifications)
-                    PublishMessage(ChangeType.Added, document);
-            }
-
-            if (sendNotification && BatchNotifications)
-                PublishMessage(ChangeType.Added, documents);
-        }
-
         public void Remove(string id, bool sendNotification = true) {
             if (String.IsNullOrEmpty(id))
                 throw new ArgumentNullException("id");
@@ -104,37 +82,19 @@ namespace Exceptionless.Core.Repositories {
             Remove(new[] { document }, sendNotification);
         }
 
-        protected virtual void BeforeRemove(ICollection<T> documents) {
-            if (EnableCache)
-                documents.ForEach(InvalidateCache);
-        }
-
         public void Remove(ICollection<T> documents, bool sendNotification = true) {
             if (documents == null || documents.Count == 0)
                 throw new ArgumentException("Must provide one or more documents to remove.", "documents");
 
-            BeforeRemove(documents);
+            OnDocumentChanging(ChangeType.Removed, documents);
 
             string indexName = _isEvent ? _index.VersionedName + "-*" : _index.VersionedName;
             _elasticClient.DeleteByQuery<T>(q => q.Query(q1 => q1.Ids(documents.Select(d => d.Id))).Index(indexName));
+			
+            if (sendNotification)
+                SendNotifications(ChangeType.Removed, documents);
 
-            AfterRemove(documents, sendNotification);
-        }
-
-        protected virtual void AfterRemove(ICollection<T> documents, bool sendNotification = true) {
-            if (!EnableCache && !sendNotification)
-                return;
-
-            foreach (var document in documents) {
-                if (EnableCache)
-                    InvalidateCache(document);
-
-                if (sendNotification && !BatchNotifications)
-                    PublishMessage(ChangeType.Removed, document);
-            }
-
-            if (sendNotification && BatchNotifications)
-                PublishMessage(ChangeType.Removed, documents);
+            OnDocumentChanged(ChangeType.Removed, documents);
         }
 
         public void RemoveAll() {
@@ -164,7 +124,7 @@ namespace Exceptionless.Core.Repositories {
             long recordsAffected = 0;
             var searchDescriptor = new SearchDescriptor<T>()
                 .Index(_index.Name)
-                .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
+                .Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes) ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(fields.ToArray()))
                 .Size(Settings.Current.BulkBatchSize);
 
@@ -190,20 +150,14 @@ namespace Exceptionless.Core.Repositories {
             return document;
         }
 
-        protected virtual void BeforeSave(ICollection<T> originalDocuments, ICollection<T> documents) {
-            documents.EnsureIds();
-            if (_hasDates)
-                documents.Cast<IHaveDates>().SetDates();
-        }
-
         public void Save(ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
             if (documents == null || documents.Count == 0)
-                throw new ArgumentException("Must provide one or more documents to save.", "documents");
+                return;
 
             string[] ids = documents.Where(d => !String.IsNullOrEmpty(d.Id)).Select(d => d.Id).ToArray();
             var originalDocuments = ids.Length > 0 ? GetByIds(documents.Select(d => d.Id).ToArray()).Documents : new List<T>();
 
-            BeforeSave(originalDocuments, documents);
+            OnDocumentChanging(ChangeType.Saved, documents, originalDocuments);
 
             if (_validator != null)
                 documents.ForEach(_validator.ValidateAndThrow);
@@ -220,26 +174,13 @@ namespace Exceptionless.Core.Repositories {
                     throw new ApplicationException(String.Join("\r\n", result.ItemsWithErrors.Select(i => i.Error)), result.ConnectionStatus.OriginalException);
             }
 
-            AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotifications);
-        }
+            if (addToCache)
+                AddToCache(documents, expiresIn);
 
-        protected virtual void AfterSave(ICollection<T> originalDocuments, ICollection<T> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotifications = true) {
-            if (!EnableCache && !sendNotifications)
-                return;
+            if (sendNotifications)
+                SendNotifications(ChangeType.Saved, documents, originalDocuments);
 
-            if (EnableCache) 
-                originalDocuments.ForEach(InvalidateCache);
-
-            foreach (var document in documents) {
-                if (EnableCache && addToCache && Cache != null)
-                    Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
-
-                if (sendNotifications && !BatchNotifications)
-                    PublishMessage(ChangeType.Saved, document);
-            }
-
-            if (sendNotifications && BatchNotifications)
-                PublishMessage(ChangeType.Saved, documents);
+            OnDocumentChanged(ChangeType.Saved, documents, originalDocuments);
         }
 
         protected long UpdateAll(string organizationId, QueryOptions options, object update, bool sendNotifications = true) {
@@ -251,7 +192,7 @@ namespace Exceptionless.Core.Repositories {
 
             var searchDescriptor = new SearchDescriptor<T>()
                 .Index(_index.Name)
-                .Filter(options.GetElasticSearchFilter<T>() ?? Filter<T>.MatchAll())
+                .Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes) ?? Filter<T>.MatchAll())
                 .Source(s => s.Include(f => f.Id))
                 .SearchType(SearchType.Scan)
                 .Scroll("4s")
@@ -262,7 +203,7 @@ namespace Exceptionless.Core.Repositories {
             _elasticClient.DisableTrace();
 
             // Check to see if no scroll id was returned. This will occur when the index doesn't exist.
-            if (String.IsNullOrEmpty(scanResults.ScrollId))
+            if (scanResults.IsValid && String.IsNullOrEmpty(scanResults.ScrollId))
                 return 0;
 
             var results = _elasticClient.Scroll<T>("4s", scanResults.ScrollId);
@@ -306,11 +247,54 @@ namespace Exceptionless.Core.Repositories {
             return recordsAffected;
         }
 
-        protected void PublishMessage(ChangeType changeType, T document) {
-            PublishMessage(changeType, new[] { document });
+        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanging;
+
+        private void OnDocumentChanging(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
+            if (changeType != ChangeType.Added)
+                InvalidateCache(documents);
+
+            if (changeType != ChangeType.Removed)
+            {
+                if (_hasDates)
+                    documents.Cast<IHaveDates>().SetDates();
+                else if (_hasCreatedDate)
+                    documents.Cast<IHaveCreatedDate>().SetCreatedDates();
+
+                documents.EnsureIds();
+            }
+
+            if (DocumentChanging != null)
+                DocumentChanging(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
         }
 
-        protected virtual void PublishMessage(ChangeType changeType, IEnumerable<T> documents) {
+        public event EventHandler<DocumentChangeEventArgs<T>> DocumentChanged;
+
+        private void OnDocumentChanged(ChangeType changeType, ICollection<T> documents, ICollection<T> orginalDocuments = null) {
+            if (DocumentChanged != null)
+                DocumentChanged(this, new DocumentChangeEventArgs<T>(changeType, documents, this, orginalDocuments));
+        }
+
+        protected virtual void AddToCache(ICollection<T> documents, TimeSpan? expiresIn = null) {
+            if (!EnableCache)
+                return;
+
+            foreach (var document in documents)
+                Cache.Set(GetScopedCacheKey(document.Id), document, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
+        }
+
+        protected virtual void SendNotifications(ChangeType changeType, ICollection<T> documents, ICollection<T> originalDocuments = null) {
+            if (BatchNotifications)
+                PublishMessage(changeType, documents);
+            else
+                documents.ForEach(d => PublishMessage(changeType, d));
+        }
+
+        protected void PublishMessage(ChangeType changeType, T document, IDictionary<string, object> data = null)
+        {
+            PublishMessage(changeType, new[] { document }, data);
+        }
+
+        protected void PublishMessage(ChangeType changeType, IEnumerable<T> documents, IDictionary<string, object> data = null) {
             if (_isOwnedByOrganization && _isOwnedByProject) {
                 foreach (var projectDocs in documents.Cast<IOwnedByOrganizationAndProjectWithIdentity>().GroupBy(d => d.ProjectId)) {
                     var firstDoc = projectDocs.FirstOrDefault();
@@ -323,7 +307,8 @@ namespace Exceptionless.Core.Repositories {
                         OrganizationId = firstDoc.OrganizationId,
                         ProjectId = projectDocs.Key,
                         Id = count == 1 ? firstDoc.Id : null,
-                        Type = _entityType
+                        Type = _entityType,
+						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
                     PublishMessage(message, TimeSpan.FromSeconds(1.5));
@@ -339,7 +324,8 @@ namespace Exceptionless.Core.Repositories {
                         ChangeType = changeType,
                         OrganizationId = orgDocs.Key,
                         Id = count == 1 ? firstDoc.Id : null,
-                        Type = _entityType
+                        Type = _entityType,
+						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
                     PublishMessage(message, TimeSpan.FromSeconds(1.5));
@@ -349,7 +335,8 @@ namespace Exceptionless.Core.Repositories {
                     var message = new EntityChanged {
                         ChangeType = changeType,
                         Id = doc.Id,
-                        Type = _entityType
+                        Type = _entityType,
+						Data = new DataDictionary(data ?? new Dictionary<string, object>())
                     };
 
                     PublishMessage(message, TimeSpan.FromSeconds(1.5));

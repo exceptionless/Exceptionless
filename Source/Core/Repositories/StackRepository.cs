@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Messaging.Models;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
@@ -18,15 +19,38 @@ namespace Exceptionless.Core.Repositories {
         public StackRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
             : base(elasticClient, index, validator, cacheClient, messagePublisher) {
             _eventRepository = eventRepository;
+            DocumentChanging += OnDocumentChanging;
+            DocumentChanged += OnDocumentChanged;
         }
 
-        protected override void AfterAdd(ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            base.AfterAdd(documents, addToCache, expiresIn, sendNotification);
-            if (!EnableCache || !addToCache)
+        private void OnDocumentChanging(object sender, DocumentChangeEventArgs<Stack> args) {
+            if (args.ChangeType != ChangeType.Removed)
                 return;
 
+            foreach (Stack document in args.Documents) {
+                if (_eventRepository.GetCountByStackId(document.Id) > 0)
+                    throw new ApplicationException(String.Format("Stack \"{0}\" can't be deleted because it has events associated to it.", document.Id));
+            }
+        }
+
+        private void OnDocumentChanged(object sender, DocumentChangeEventArgs<Stack> args) {
+            if (args.ChangeType != ChangeType.Saved)
+                return;
+
+            foreach (var original in args.OriginalDocuments) {
+                var updated = args.Documents.First(d => d.Id == original.Id);
+                if (original.DateFixed != updated.DateFixed)
+                    _eventRepository.UpdateFixedByStack(updated.OrganizationId, updated.Id, updated.DateFixed.HasValue);
+
+                if (original.IsHidden != updated.IsHidden)
+                    _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
+            }
+        }
+
+        protected override void AddToCache(ICollection<Stack> documents, TimeSpan? expiresIn = null) {
+            base.AddToCache(documents, expiresIn);
             foreach (var stack in documents)
-                Cache.Set(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack);
+                Cache.Set(GetScopedCacheKey(GetStackSignatureCacheKey(stack)), stack, expiresIn.HasValue ? expiresIn.Value : TimeSpan.FromSeconds(RepositoryConstants.DEFAULT_CACHE_EXPIRATION_SECONDS));
         }
 
         private string GetStackSignatureCacheKey(Stack stack) {
@@ -120,48 +144,17 @@ namespace Exceptionless.Core.Repositories {
             Save(stack, true);
         }
 
-        public override void InvalidateCache(Stack entity) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<Stack> stacks, ICollection<Stack> originalStacks) {
+            if (!EnableCache)
                 return;
 
-            InvalidateCache(GetStackSignatureCacheKey(entity));
-            base.InvalidateCache(entity);
+            stacks.ForEach(s => InvalidateCache(GetStackSignatureCacheKey(s)));
+            base.InvalidateCache(stacks, originalStacks);
         }
 
         public void InvalidateCache(string projectId, string stackId, string signatureHash) {
             InvalidateCache(stackId);
             InvalidateCache(GetStackSignatureCacheKey(projectId, signatureHash));
-        }
-
-        protected override void BeforeRemove(ICollection<Stack> documents) {
-            foreach (Stack document in documents) {
-                if (_eventRepository.GetCountByStackId(document.Id) > 0)
-                    throw new ApplicationException(String.Format("Stack \"{0}\" can't be deleted because it has events associated to it.", document.Id));
-
-                InvalidateCache(GetStackSignatureCacheKey(document));
-            }
-
-            base.BeforeRemove(documents);
-        }
-
-        protected override void AfterRemove(ICollection<Stack> documents, bool sendNotification = true) {
-            foreach (Stack document in documents)
-                InvalidateCache(GetStackSignatureCacheKey(document));
-
-            base.AfterRemove(documents, sendNotification);
-        }
-
-        protected override void AfterSave(ICollection<Stack> originalDocuments, ICollection<Stack> documents, bool addToCache = false, TimeSpan? expiresIn = null, bool sendNotification = true) {
-            base.AfterSave(originalDocuments, documents, addToCache, expiresIn, sendNotification);
-
-            foreach (var original in originalDocuments) {
-                var updated = documents.First(d => d.Id == original.Id);
-                if (original.DateFixed != updated.DateFixed)
-                    _eventRepository.UpdateFixedByStack(updated.OrganizationId, updated.Id, updated.DateFixed.HasValue);
-
-                if (original.IsHidden != updated.IsHidden)
-                    _eventRepository.UpdateHiddenByStack(updated.OrganizationId, updated.Id, updated.IsHidden);
-            }
         }
     }
 }

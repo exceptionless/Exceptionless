@@ -22,6 +22,7 @@ namespace Exceptionless.Core.Repositories {
     }
 
     public abstract class ElasticSearchReadOnlyRepository<T> : IReadOnlyRepository<T> where T : class, IIdentity, new() {
+        protected readonly static bool _supportsSoftDeletes = typeof(ISupportSoftDeletes).IsAssignableFrom(typeof(T));
         private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
         protected static readonly string _entityType = typeof(T).Name;
         protected static readonly bool _isEvent = typeof(T) == typeof(PersistentEvent);
@@ -49,24 +50,36 @@ namespace Exceptionless.Core.Repositories {
             return _entityType.ToLower();
         }
 
-        public void InvalidateCache(string cacheKey) {
+        protected void InvalidateCache(string cacheKey, bool autoScopeCacheKey = true)
+        {
             if (!EnableCache || Cache == null)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(cacheKey));
+            Cache.Remove(autoScopeCacheKey ? GetScopedCacheKey(cacheKey) : cacheKey);
         }
 
-        public virtual void InvalidateCache(T document) {
+        protected virtual void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments)
+        {
             if (!EnableCache || Cache == null)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(document.Id));
+            if (documents == null)
+                throw new ArgumentNullException("documents");
+
+            documents.ForEach(d => Cache.Remove(GetScopedCacheKey(d.Id)));
+        }
+
+        public void InvalidateCache(T document) {
+            InvalidateCache(new[] { document });
+        }
+
+        public void InvalidateCache(ICollection<T> documents) {
+            InvalidateCache(documents, null);
         }
 
         protected string GetScopedCacheKey(string cacheKey) {
             return String.Concat(GetTypeName(), "-", cacheKey);
         }
-
 
         protected FindResults<T> Find(ElasticSearchOptions<T> options) {
             return FindAs<T>(options);
@@ -89,9 +102,9 @@ namespace Exceptionless.Core.Repositories {
 
             result = new FindResults<TModel>();
 
-            var searchDescriptor = options.SortBy.Count == 0 
-                ? new SearchDescriptor<T>().Query(options.GetElasticSearchQuery()) 
-                : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter());
+            var searchDescriptor = options.SortBy.Count == 0 ?
+                new SearchDescriptor<T>().Query(options.GetElasticSearchQuery(_supportsSoftDeletes))
+                : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter(_supportsSoftDeletes));
 
             searchDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
             searchDescriptor.IgnoreUnavailable();
@@ -158,7 +171,7 @@ namespace Exceptionless.Core.Repositories {
                     return result;
             }
 
-            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
+            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes)).Size(1);
             if (options.Fields.Count > 0)
                 searchDescriptor.Source(s => s.Include(options.Fields.ToArray()));
             else
@@ -204,12 +217,14 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("options");
 
             options.Fields.Add("id");
-            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>()).Size(1);
+            var searchDescriptor = new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter<T>(_supportsSoftDeletes)).Size(1);
 
             var elasticSearchOptions = options as ElasticSearchOptions<T>;
-            searchDescriptor.Indices(elasticSearchOptions != null && elasticSearchOptions.Indices.Any() ? elasticSearchOptions.Indices.ToArray() : GetIndices());
-
-            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0) {
+            searchDescriptor.Indices(elasticSearchOptions != null && elasticSearchOptions.Indices.Any()
+                ? elasticSearchOptions.Indices.ToArray()
+                : GetIndices()); 
+            if (elasticSearchOptions != null && elasticSearchOptions.SortBy.Count > 0)
+            {
                 foreach (var sort in elasticSearchOptions.SortBy)
                     searchDescriptor.Sort(sort);
             }
@@ -228,8 +243,11 @@ namespace Exceptionless.Core.Repositories {
                     return result.Value;
             }
 
-            var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter())));
-            countDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
+            var countDescriptor = new CountDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter(_supportsSoftDeletes))));
+            countDescriptor.Indices(options.Indices.Any()
+                ? options.Indices.ToArray()
+                : GetIndices());
+			
             countDescriptor.IgnoreUnavailable();
 
             countDescriptor.Type(typeof(T));
@@ -249,10 +267,15 @@ namespace Exceptionless.Core.Repositories {
             return result.Value;
         }
 
-        protected IDictionary<string, long> SimpleAggregation(ElasticSearchOptions<T> options, Expression<Func<T, object>> fieldExpression) {
-            var searchDescriptor = new SearchDescriptor<T>().Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter()))).Aggregations(a => a.Terms("simple", sel => sel.Field(fieldExpression).Size(10)));
-
-            searchDescriptor.Indices(options.Indices.Any() ? options.Indices.ToArray() : GetIndices());
+        protected IDictionary<string, long> SimpleAggregation(ElasticSearchOptions<T> options, Expression<Func<T, object>> fieldExpression)
+        {
+            var searchDescriptor = new SearchDescriptor<T>()
+                .Query(f => f.Filtered(s => s.Filter(f2 => options.GetElasticSearchFilter(_supportsSoftDeletes))))
+                .Aggregations(a => a.Terms("simple", sel => sel.Field(fieldExpression).Size(10)));
+            
+            searchDescriptor.Indices(options.Indices.Any()
+                ? options.Indices.ToArray()
+                : GetIndices());
 
             _elasticClient.EnableTrace();
             var aggResults = _elasticClient.Search<T>(searchDescriptor);
@@ -318,6 +341,7 @@ namespace Exceptionless.Core.Repositories {
             var foundItems = new List<T>();
             var itemsToFind = new List<string>();
             var multiGet = new MultiGetDescriptor();
+			
             // TODO Use the index..
             foreach (var id in ids.Except(results.Select(i => i.Id))) {
                 string index = GetIndexName(id);
@@ -364,14 +388,23 @@ namespace Exceptionless.Core.Repositories {
             return _index.VersionedName;
         }
 
-        public FindResults<T> GetAll(string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {
-            var search = new ElasticSearchOptions<T>().WithPaging(paging).WithSort(sort, sortOrder);
+        public FindResults<T> GetAll(string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null)
+        {
+            var search = new ElasticSearchOptions<T>()
+                .WithPaging(paging)
+                .WithSort(sort, sortOrder);
 
             return Find(search);
         }
 
-        public FindResults<T> GetBySearch(string systemFilter, string userFilter = null, string query = null, string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null) {
-            var search = new ElasticSearchOptions<T>().WithSystemFilter(systemFilter).WithFilter(userFilter).WithQuery(query, false).WithSort(sort, sortOrder).WithPaging(paging);
+        public FindResults<T> GetBySearch(string systemFilter, string userFilter = null, string query = null, string sort = null, SortOrder sortOrder = SortOrder.Ascending, PagingOptions paging = null)
+        {
+            var search = new ElasticSearchOptions<T>()
+                .WithSystemFilter(systemFilter)
+                .WithFilter(userFilter)
+                .WithQuery(query, false)
+                .WithSort(sort, sortOrder)
+                .WithPaging(paging);
 
             return Find(search);
         }

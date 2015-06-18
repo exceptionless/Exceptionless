@@ -12,5 +12,7 @@ namespace Exceptionless.Core.Repositories {
         void Remove(T document, bool sendNotification = true);
         void Remove(ICollection<T> documents, bool sendNotification = true);
         void RemoveAll();
+        event EventHandler<DocumentChangeEventArgs<T>> DocumentChanging;
+        event EventHandler<DocumentChangeEventArgs<T>> DocumentChanged;
     }
 }

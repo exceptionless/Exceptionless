@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -38,12 +40,26 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationIds(organizationIds)));
         }
 
-        public override void InvalidateCache(T document) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments)
+        {
+            if (!EnableCache)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(String.Concat("org:", document.OrganizationId)));
-            base.InvalidateCache(document);
+            if (documents == null)
+                throw new ArgumentNullException("documents");
+
+            var combinedDocuments = new List<T>();
+            combinedDocuments.AddRange(documents);
+            if (originalDocuments != null)
+                combinedDocuments.AddRange(originalDocuments);
+
+            combinedDocuments
+                .Cast<IOwnedByOrganization>()
+                .SelectMany(d => d.OrganizationId)
+                .Distinct()
+                .ForEach(organizationId => InvalidateCache("org:" + organizationId));
+
+            base.InvalidateCache(documents, originalDocuments);
         }
     }
 }

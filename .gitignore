@@ -167,3 +167,5 @@ lib
 node_modules
 App_Data
 Exceptionless.sln.GhostDoc.xml
+/Libraries/elasticsearch-*
+/Libraries/MongoDB

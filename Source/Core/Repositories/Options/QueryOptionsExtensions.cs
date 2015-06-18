@@ -25,6 +25,11 @@ namespace Exceptionless.Core.Repositories {
             return options;
         }
 
+        public static T WithDeleted<T>(this T options) where T : QueryOptions {
+            options.IncludeSoftDeletes = true;
+            return options;
+        }
+
         public static T WithOrganizationIds<T>(this T options, params string[] ids) where T : QueryOptions {
             options.OrganizationIds.AddRange(ids.Distinct());
             return options;

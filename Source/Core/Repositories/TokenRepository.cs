@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
@@ -91,14 +92,17 @@ namespace Exceptionless.Core.Repositories {
                 .WithExpiresIn(expiresIn));
         }
         
-        public override void InvalidateCache(Token token) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<Token> tokens, ICollection<Token> originalTokens) {
+            if (!EnableCache)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-org:", token.OrganizationId)));
-            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId)));
-            Cache.Remove(GetScopedCacheKey(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId)));
-            base.InvalidateCache(token);
+            foreach (var token in tokens) {
+                InvalidateCache(String.Concat("type:", token.Type, "-org:", token.OrganizationId));
+                InvalidateCache(String.Concat("type:", token.Type, "-project:", token.ProjectId ?? token.DefaultProjectId));
+                InvalidateCache(String.Concat("type:", token.Type, "-org:", token.OrganizationId, "-project:", token.ProjectId ?? token.DefaultProjectId));
+            }
+
+            base.InvalidateCache(tokens, originalTokens);
         }
     }
 }
