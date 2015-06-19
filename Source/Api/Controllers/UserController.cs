@@ -71,9 +71,9 @@ namespace Exceptionless.Api.Controllers {
                 return NotFound();
 
             List<ViewUser> results = _repository.GetByOrganizationId(organizationId).Documents.Select(Mapper.Map<User, ViewUser>).ToList();
-            var org = _organizationRepository.GetById(organizationId, true);
-            if (org.Invites.Any())
-                results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
+            var organization = _organizationRepository.GetById(organizationId, true);
+            if (organization.Invites.Any())
+                results.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
             page = GetPage(page);
             limit = GetLimit(limit);

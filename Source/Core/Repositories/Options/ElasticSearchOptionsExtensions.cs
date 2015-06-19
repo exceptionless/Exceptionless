@@ -207,7 +207,7 @@ namespace Exceptionless.Core.Repositories {
                 nameFormat = String.Format("'{0}-'yyyyMM", typeof(T).Name.ToLower());
 
             var indices = new List<string>();
-            for (DateTime current = utcStart.Value; current <= utcEnd.Value; current = current.AddDays(1)) {
+            for (DateTime current = utcStart.Value; current <= utcEnd.Value; current = current.AddMonths(1)) {
                 indices.Add(current.ToString(nameFormat));
             }
 
