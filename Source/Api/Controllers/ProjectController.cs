@@ -52,7 +52,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
-            var viewProjects = projects.Documents.Select(Mapper.Map<Project, ViewProject>).ToList();
+            var viewProjects = projects.Documents.Select(p => Map<ViewProject>(p, true)).ToList();
             return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore, page, projects.Total);
         }
 
@@ -80,7 +80,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = _repository.GetByOrganizationIds(organizationIds, options);
-            var viewProjects = projects.Documents.Select(Mapper.Map<Project, ViewProject>).ToList();
+            var viewProjects = projects.Documents.Select(p => Map<ViewProject>(p, true)).ToList();
             return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
@@ -97,7 +97,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null)
                 return NotFound();
 
-            var viewProject = Mapper.Map<Project, ViewProject>(project);
+            var viewProject = Map<ViewProject>(project, true);
             return Ok(PopulateProjectStats(viewProject));
         }
 
@@ -426,6 +426,7 @@ namespace Exceptionless.Api.Controllers {
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
                 pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
             });
+
             base.CreateMaps();
         }
 

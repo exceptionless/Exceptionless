@@ -5,7 +5,6 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
@@ -70,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            List<ViewUser> results = _repository.GetByOrganizationId(organizationId).Documents.Select(Mapper.Map<User, ViewUser>).ToList();
+            var results = _repository.GetByOrganizationId(organizationId).Documents.Select(u => Map<ViewUser>(u, true)).ToList();
             var organization = _organizationRepository.GetById(organizationId, true);
             if (organization.Invites.Any())
                 results.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));

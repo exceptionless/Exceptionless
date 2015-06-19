@@ -313,7 +313,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            var eventUserDescription = Mapper.Map<UserDescription, EventUserDescription>(description);
+            var eventUserDescription = Map<EventUserDescription>(description);
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 

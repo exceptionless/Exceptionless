@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = _repository.GetByIds(GetAssociatedOrganizationIds(), options);
-            var viewOrganizations = organizations.Documents.Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            var viewOrganizations = organizations.Documents.Select(o => Map<ViewOrganization>(o, true)).ToList();
             return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = _repository.GetByCriteria(criteria, options, sort, paid, suspended);
-            var viewOrganizations = organizations.Documents.Select(Mapper.Map<Organization, ViewOrganization>).ToList();
+            var viewOrganizations = organizations.Documents.Select(o => Map<ViewOrganization>(o, true)).ToList();
             return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore, page, organizations.Total);
         }
 
@@ -109,7 +109,7 @@ namespace Exceptionless.Api.Controllers {
             if (organization == null)
                 return NotFound();
 
-            var viewOrganization = Mapper.Map<Organization, ViewOrganization>(organization);
+            var viewOrganization = Map<ViewOrganization>(organization, true);
             return Ok(PopulateOrganizationStats(viewOrganization));
         }
 
@@ -252,8 +252,8 @@ namespace Exceptionless.Api.Controllers {
                 after = "in_" + after;
 
             var invoiceService = new StripeInvoiceService();
-            var invoices = invoiceService.List(new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after }).Select(Mapper.Map<InvoiceGridModel>).ToList();
-
+            var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
+            var invoices = invoiceService.List(invoiceOptions).Select(ig => Map<InvoiceGridModel>(ig)).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
 
