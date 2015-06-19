@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Messaging.Models;
@@ -17,7 +18,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
 
         [Fact]
-        public void CanCreateUpdateRemove() {
+        public async Task CanCreateUpdateRemove() {
             _repository.RemoveAll();
             Assert.Equal(0, _repository.Count());
 
@@ -25,6 +26,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Null(organization.Id);
 
             _repository.Add(organization);
+            await _client.RefreshAsync();
             Assert.NotNull(organization.Id);
             
             organization = _repository.GetById(organization.Id);
@@ -37,8 +39,10 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
 
         [Fact]
-        public void CanFindMany() {
+        public async Task CanFindMany() {
             _repository.RemoveAll();
+
+            await _client.RefreshAsync();
             Assert.Equal(0, _repository.Count());
 
             _repository.Add(new[] {
@@ -47,7 +51,7 @@ namespace Exceptionless.Api.Tests.Repositories {
                 new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
             });
 
-            _client.Refresh();
+            await _client.RefreshAsync();
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
@@ -63,6 +67,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(2, organizations.Total);
 
             _repository.Remove(organizations.Documents);
+            await _client.RefreshAsync();
+
             Assert.Equal(1, _repository.Count());
             _repository.RemoveAll();
         }

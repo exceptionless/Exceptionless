@@ -35,7 +35,7 @@ namespace Exceptionless.Core.Utility {
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange();
+                .WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _eventIndex.VersionedName));
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange();
+                    filter.WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _eventIndex.VersionedName));
                 }
             }
 
@@ -188,7 +188,7 @@ namespace Exceptionless.Core.Utility {
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange();
+                .WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _eventIndex.VersionedName));
 
             // if no start date then figure out first event date
             if (!filter.UseStartDate) {
@@ -207,7 +207,7 @@ namespace Exceptionless.Core.Utility {
                 if (firstEvent != null) {
                     utcStart = firstEvent.Source.Date.UtcDateTime;
                     filter.WithDateRange(utcStart, utcEnd, "date");
-                    filter.WithIndicesFromDateRange();
+                    filter.WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _eventIndex.VersionedName));
                 }
             }
 

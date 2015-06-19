@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Tests.Stats {
             RemoveData();
             await CreateDataAsync(eventCount, false);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
