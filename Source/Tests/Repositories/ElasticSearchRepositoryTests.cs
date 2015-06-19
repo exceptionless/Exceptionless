@@ -9,8 +9,14 @@ using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class ElasticSearchRepositoryTests {
+        public readonly IEventRepository _eventRepository = IoC.GetInstance<IEventRepository>();
         public readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
+
+        public ElasticSearchRepositoryTests() {
+            _eventRepository.RemoveAll();
+            _repository.RemoveAll();
+        }
 
         [Fact]
         public void CanCreateUpdateRemove() {

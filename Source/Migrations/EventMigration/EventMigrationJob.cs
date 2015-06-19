@@ -23,7 +23,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NLog.Fluent;
 using UAParser;
-using OldModels = Exceptionless.EventMigration.Models;
 #pragma warning disable 1998
 
 namespace Exceptionless.EventMigration {

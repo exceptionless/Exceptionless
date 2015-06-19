@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class CollectionNameConversionMigration : CollectionMigration {
         public CollectionNameConversionMigration() : base("1.0.33", "project.hook") {
             Description = "Rename project.hook collection to webhook.";

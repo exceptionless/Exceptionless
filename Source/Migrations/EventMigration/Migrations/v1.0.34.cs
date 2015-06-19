@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class ConvertEmailAddressesToLowerCaseMigration : CollectionMigration {
         public ConvertEmailAddressesToLowerCaseMigration() : base("1.0.34", "user") {
             Description = "Convert email addresses to lower case and remove any duplicate properties.";

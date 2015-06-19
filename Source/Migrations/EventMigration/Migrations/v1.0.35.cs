@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class UpdateWebhookEventTypesAndVersionMigration : CollectionMigration {
         public UpdateWebhookEventTypesAndVersionMigration() : base("1.0.35", "webhook") {
             Description = "Change EventType names and add a webhook version";

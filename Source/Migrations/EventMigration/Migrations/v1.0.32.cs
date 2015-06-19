@@ -5,7 +5,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class OrganizationConversionMigration : CollectionMigration {
         public OrganizationConversionMigration(): base("1.0.32", "organization") {
             Description = "Rename various organization fields";

@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class ErrorOccurrenceDateLocalToUtcMigration : CollectionMigration {
         public ErrorOccurrenceDateLocalToUtcMigration() : base("1.0.27", "error") {
             Description = "Change occurrence date ticks to be stored in utc ticks.";

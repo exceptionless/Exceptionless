@@ -4,7 +4,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class RemoveInvalidTokensMigration : CollectionMigration {
         public RemoveInvalidTokensMigration() : base("1.0.38", "token") {
             Description = "Ensure all current tokens are valid.";

@@ -42,7 +42,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public async Task CanFindMany() {
             _repository.RemoveAll();
 
-            await _client.RefreshAsync();
+            await _client.RefreshAsync(r => r.Force());
             Assert.Equal(0, _repository.Count());
 
             _repository.Add(new[] {

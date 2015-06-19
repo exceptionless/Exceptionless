@@ -4,7 +4,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class EnsureWebhookOrganizationIsSetMigration : CollectionMigration {
         public EnsureWebhookOrganizationIsSetMigration() : base("1.0.37", "webhook") {
             Description = "Ensure the webhook organization id is set to the current organization.";

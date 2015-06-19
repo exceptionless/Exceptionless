@@ -4,7 +4,7 @@ using MongoDB.Driver;
 using MongoDB.Driver.Builders;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class UpdateFixedAndHiddenMigration : CollectionMigration {
         public UpdateFixedAndHiddenMigration() : base("1.0.28", "errorstack") {
             Description = "Update fixed and hidden flags on error docs.";

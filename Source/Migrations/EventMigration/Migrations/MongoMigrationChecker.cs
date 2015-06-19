@@ -1,9 +1,10 @@
 ﻿using System;
 using Exceptionless.Core.Repositories;
+using Exceptionless.EventMigration.Repositories;
 using MongoMigrations;
 using NLog.Fluent;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public static class MongoMigrationChecker {
         private static bool _isUpdating;
         public static void ThrowIfNotLatestVersion(string connectionString, string databaseName) {

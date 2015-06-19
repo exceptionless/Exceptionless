@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class UpdateOveragesImplementationMigration : CollectionMigration {
         public UpdateOveragesImplementationMigration()
             : base("1.0.29", "organization") {

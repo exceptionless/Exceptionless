@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class UpdateWebhookVersionAndFieldNamesMigration : CollectionMigration {
         public UpdateWebhookVersionAndFieldNamesMigration() : base("1.0.36", "webhook") {
             Description = "Change webhook version and field names";

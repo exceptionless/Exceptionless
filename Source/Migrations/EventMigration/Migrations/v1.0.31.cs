@@ -5,7 +5,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class ProjectConversionMigration : CollectionMigration {
         public ProjectConversionMigration() : base("1.0.31", "project") {
             Description = "Migrate ApiKeys to the token repository and rename various project fields.";

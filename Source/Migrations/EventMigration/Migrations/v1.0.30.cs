@@ -3,7 +3,7 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoMigrations;
 
-namespace Exceptionless.Core.Migrations {
+namespace Exceptionless.EventMigration.Migrations {
     public class RemoveExistingUsageCountsMigration : CollectionMigration {
         public RemoveExistingUsageCountsMigration() : base("1.0.30", "organization") {
             Description = "Remove existing usage counts from organizations";
