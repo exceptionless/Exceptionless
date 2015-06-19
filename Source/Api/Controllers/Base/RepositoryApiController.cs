@@ -213,10 +213,11 @@ namespace Exceptionless.Api.Controllers {
         protected override void CreateMaps() {
             base.CreateMaps();
 
-            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
-                Mapper.CreateMap<TModel, TViewModel>();
             if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
                 Mapper.CreateMap<TNewModel, TModel>();
+
+            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
+                Mapper.CreateMap<TModel, TViewModel>();
         }
     }
 }

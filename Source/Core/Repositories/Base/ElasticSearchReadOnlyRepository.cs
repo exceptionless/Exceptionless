@@ -82,26 +82,24 @@ namespace Exceptionless.Core.Repositories {
         }
 
         protected FindResults<T> Find(ElasticSearchOptions<T> options) {
-            return FindAs<T>(options);
+            return FindAs(options);
         }
 
-        protected FindResults<TModel> FindAs<TModel>(ElasticSearchOptions<T> options) where TModel : class, new() {
+        protected FindResults<T> FindAs(ElasticSearchOptions<T> options) {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            FindResults<TModel> result = null;
+            FindResults<T> result = null;
             if (EnableCache) {
                 if (options.UseCache) {
-                    result = Cache.Get<FindResults<TModel>>(GetScopedCacheKey(options.CacheKey));
+                    result = Cache.Get<FindResults<T>>(GetScopedCacheKey(options.CacheKey));
                     Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
                 }
 
                 if (result != null)
                     return result;
             }
-
-            result = new FindResults<TModel>();
-
+            
             var searchDescriptor = options.SortBy.Count == 0 ?
                 new SearchDescriptor<T>().Query(options.GetElasticSearchQuery(_supportsSoftDeletes))
                 : new SearchDescriptor<T>().Filter(options.GetElasticSearchFilter(_supportsSoftDeletes));
@@ -132,17 +130,10 @@ namespace Exceptionless.Core.Repositories {
 
             options.HasMore = options.UseLimit && results.Total > options.GetLimit();
 
-            var items = results.Documents.ToList();
-            result.Total = results.Total;
-
-            if (typeof(T) != typeof(TModel)) {
-                if (Mapper.FindTypeMapFor<T, TModel>() == null)
-                    Mapper.CreateMap<T, TModel>();
-
-                result.Documents = items.Select(Mapper.Map<T, TModel>).ToList();
-            } else {
-                result.Documents = items as List<TModel>;
-            }
+            result = new FindResults<T> {
+                Documents = results.Documents.ToList(),
+                Total = results.Total
+            };
 
             if (EnableCache && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
@@ -152,18 +143,18 @@ namespace Exceptionless.Core.Repositories {
 
 
         protected T FindOne(OneOptions options) {
-            return FindOneAs<T>(options);
+            return FindOneAs(options);
         }
 
-        protected TModel FindOneAs<TModel>(OneOptions options) where TModel : class, new() {
+        protected T FindOneAs(OneOptions options) {
             if (options == null)
                 throw new ArgumentNullException("options");
 
-            TModel result = null;
+            T result = null;
 
             if (EnableCache) {
                 if (options.UseCache) {
-                    result = Cache.Get<TModel>(GetScopedCacheKey(options.CacheKey));
+                    result = Cache.Get<T>(GetScopedCacheKey(options.CacheKey));
                     Log.Trace().Message("Cache {0}: type={1}", result != null ? "hit" : "miss", _entityType).Write();
                 }
 
@@ -186,25 +177,15 @@ namespace Exceptionless.Core.Repositories {
             }
 
             _elasticClient.EnableTrace();
-            var item = _elasticClient.Search<T>(searchDescriptor).Documents.FirstOrDefault();
+            result = _elasticClient.Search<T>(searchDescriptor).Documents.FirstOrDefault();
             _elasticClient.DisableTrace();
-
-            if (typeof(T) != typeof(TModel)) {
-                if (Mapper.FindTypeMapFor<T, TModel>() == null)
-                    Mapper.CreateMap<T, TModel>();
-
-                result = Mapper.Map<T, TModel>(item);
-            } else {
-                result = item as TModel;
-            }
-
+            
             if (EnableCache && result != null && options.UseCache)
                 Cache.Set(GetScopedCacheKey(options.CacheKey), result, options.GetCacheExpirationDate());
 
             return result;
         }
-
-
+        
         public bool Exists(string id) {
             if (String.IsNullOrEmpty(id))
                 return false;
