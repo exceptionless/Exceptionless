@@ -10,6 +10,7 @@ using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
 using Exceptionless.Core.Plugins.EventProcessor;
 using Exceptionless.Core.Plugins.EventUpgrader;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Utility;
 using FluentValidation;
 using Foundatio.Caching;
@@ -30,8 +31,8 @@ namespace Exceptionless.EventMigration {
         private readonly JsonSerializerSettings _settings;
         private readonly IQueue<EventMigrationBatch> _queue;
 
-        public EventMigrationJob(JsonSerializerSettings settings, IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
-            : base(elasticClient, eventUpgraderPluginManager, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
+        public EventMigrationJob(JsonSerializerSettings settings, IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, EventIndex eventIndex, StackIndex stackIndex, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
+            : base(elasticClient, eventUpgraderPluginManager, eventIndex, stackIndex, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
             _settings = settings; 
             _queue = queue;
         }

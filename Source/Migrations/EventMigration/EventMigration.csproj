@@ -138,7 +138,6 @@
     <Compile Include="StackMigrationJob.cs" />
     <Compile Include="UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="MongoCopyJob.cs" />
     <Compile Include="ResetDataStoresJob.cs" />
     <Compile Include="EventMigrationJob.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
