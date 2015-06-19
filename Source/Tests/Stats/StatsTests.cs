@@ -177,7 +177,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var projects = ProjectData.GenerateSampleProjects();
             _projectRepository.Add(projects);
 
-            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.Now.SubtractDays(60), endDate: DateTimeOffset.Now);
+            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
         }

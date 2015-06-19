@@ -55,7 +55,7 @@ namespace Exceptionless.Core.Repositories {
 
             var search = new ElasticSearchOptions<PersistentEvent>()
                 .WithDateRange(utcStart, utcEnd, field ?? "date")
-                .WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _index.VersionedName))
+                .WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _index.VersionedName))
                 .WithFilter(!String.IsNullOrEmpty(systemFilter) ? Filter<PersistentEvent>.Query(q => q.QueryString(qs => qs.DefaultOperator(Operator.And).Query(systemFilter))) : null)
                 .WithQuery(userFilter)
                 .WithPaging(paging)
@@ -148,7 +148,7 @@ namespace Exceptionless.Core.Repositories {
 
             var results = Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _index.VersionedName))
+                .WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _index.VersionedName))
                 .WithSort(s => s.OnField(e => e.Date).Descending())
                 .WithLimit(10)
                 .WithFields("id", "date")
@@ -195,7 +195,7 @@ namespace Exceptionless.Core.Repositories {
 
             var results = Find(new ElasticSearchOptions<PersistentEvent>()
                 .WithDateRange(utcStart, utcEnd, "date")
-                .WithIndicesFromDateRange(String.Format("'{0}-'yyyy.MM.dd", _index.VersionedName))
+                .WithIndicesFromDateRange(String.Format("'{0}-'yyyyMM", _index.VersionedName))
                 .WithSort(s => s.OnField(e => e.Date).Ascending())
                 .WithLimit(10)
                 .WithFields("id", "date")

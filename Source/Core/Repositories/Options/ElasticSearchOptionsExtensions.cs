@@ -204,7 +204,7 @@ namespace Exceptionless.Core.Repositories {
                 utcEnd = DateTime.UtcNow;
 
             if (String.IsNullOrEmpty(nameFormat))
-                nameFormat = String.Format("'{0}-'yyyy.MM.dd", typeof(T).Name.ToLower());
+                nameFormat = String.Format("'{0}-'yyyyMM", typeof(T).Name.ToLower());
 
             var indices = new List<string>();
             for (DateTime current = utcStart.Value; current <= utcEnd.Value; current = current.AddDays(1)) {
