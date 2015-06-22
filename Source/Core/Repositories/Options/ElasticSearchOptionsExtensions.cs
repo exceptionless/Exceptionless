@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Exceptionless.DateTimeExtensions;
 using Nest;
 
 namespace Exceptionless.Core.Repositories {
@@ -206,8 +207,11 @@ namespace Exceptionless.Core.Repositories {
             if (String.IsNullOrEmpty(nameFormat))
                 nameFormat = String.Format("'{0}-'yyyyMM", typeof(T).Name.ToLower());
 
+            // Use the end of the month as we are using monthly indexes.
+            var utcEndOfMonth = utcEnd.Value.EndOfMonth();
+
             var indices = new List<string>();
-            for (DateTime current = utcStart.Value; current <= utcEnd.Value; current = current.AddMonths(1)) {
+            for (DateTime current = utcStart.Value; current <= utcEndOfMonth; current = current.AddMonths(1)) {
                 indices.Add(current.ToString(nameFormat));
             }
 
