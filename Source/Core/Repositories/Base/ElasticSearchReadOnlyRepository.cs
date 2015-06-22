@@ -315,7 +315,7 @@ namespace Exceptionless.Core.Repositories {
 
                 var notCachedIds = ids.Except(results.Select(i => i.Id)).ToArray();
                 if (notCachedIds.Length == 0)
-                    return new FindResults<T>();
+                    return new FindResults<T> { Documents = results, Total = results.Count };
             }
 
             // try using the object id to figure out what index the entity is located in
