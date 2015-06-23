@@ -48,7 +48,9 @@ namespace Exceptionless.Api.Controllers {
             if (model == null)
                 return NotFound();
 
-            model = modelUpdateFunc(model);
+            if (modelUpdateFunc != null)
+                model = modelUpdateFunc(model);
+
             _repository.Save(model);
             await AfterUpdateAsync(model);
 
@@ -63,7 +65,9 @@ namespace Exceptionless.Api.Controllers {
             if (models == null || models.Count == 0)
                 return NotFound();
 
-            models.ForEach(m => modelUpdateFunc(m));
+            if (modelUpdateFunc != null)
+                models.ForEach(m => modelUpdateFunc(m));
+
             _repository.Save(models);
             models.ForEach(async m => await AfterUpdateAsync(m));
 
