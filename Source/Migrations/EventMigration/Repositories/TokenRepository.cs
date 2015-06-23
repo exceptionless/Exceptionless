@@ -86,7 +86,7 @@ namespace Exceptionless.EventMigration.Repositories {
         }
         
         public ICollection<Token> GetOldest(string id = null, int batchSize = 50) {
-            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            var query = id != null ? Query.GT(FieldNames.Id, id) : Query.Null;
             return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
         }
 

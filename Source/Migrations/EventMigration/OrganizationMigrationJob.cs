@@ -113,13 +113,17 @@ namespace Exceptionless.EventMigration {
             var items = _organizationMigrationRepository.GetOldest(mostRecent, _batchSize);
             while (items.Count > 0) {
                 items.ForEach(organization => {
-                    Debug.Assert(_organizationValidator.Validate(organization).IsValid, "organization is invalid");
+                    var validationResult = _organizationValidator.Validate(organization);
+                    Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(organization);
                 });
 
+                var organizationsWithUsers = items.Where(o => _userMigrationRepository.GetByOrganizationId(o.Id).Count > 0).ToList();
+                Debug.Assert(organizationsWithUsers.Count == items.Count, "One or more organizations do not have any users");
+
                 Log.Info().Message("Migrating organizations {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
                 try {
-                    _organizationRepository.Add(items, sendNotification: false);
+                    _organizationRepository.Add(organizationsWithUsers, sendNotification: false);
                 } catch (Exception ex) {
                     Debugger.Break();
                     Log.Error().Exception(ex).Message("An error occurred while migrating organizations").Write();
@@ -145,13 +149,18 @@ namespace Exceptionless.EventMigration {
             var items = _projectMigrationRepository.GetOldest(mostRecent, _batchSize);
             while (items.Count > 0) {
                 items.ForEach(project => {
-                    Debug.Assert(_projectValidator.Validate(project).IsValid, "project is invalid");
+                    var validationResult = _projectValidator.Validate(project);
+                    Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(project);
                 });
+              
+                var projectsWithNullOrganization = items.Where(p => _organizationRepository.GetById(p.OrganizationId, true) == null).ToList();
+                var projectsWithOrganization = items.Where(p => _organizationRepository.GetById(p.OrganizationId, true) != null).ToList();
+                Debug.Assert(projectsWithOrganization.Count == items.Count, "One or more projects do not have any organizations");
 
                 Log.Info().Message("Migrating projects {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
                 try {
-                    _projectRepository.Add(items, sendNotification: false);
+                    _projectRepository.Add(projectsWithOrganization, sendNotification: false);
                 } catch (Exception ex) {
                     Debugger.Break();
                     Log.Error().Exception(ex).Message("An error occurred while migrating projects").Write();
@@ -177,7 +186,8 @@ namespace Exceptionless.EventMigration {
             var items = _tokenMigrationRepository.GetOldest(mostRecent, _batchSize);
             while (items.Count > 0) {
                 items.ForEach(token => {
-                    Debug.Assert(_tokenValidator.Validate(token).IsValid, "token is invalid");
+                    var validationResult = _tokenValidator.Validate(token);
+                    Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(token);
                 });
 
@@ -209,7 +219,13 @@ namespace Exceptionless.EventMigration {
             var items = _userMigrationRepository.GetOldest(mostRecent, _batchSize);
             while (items.Count > 0) {
                 items.ForEach(user => {
-                    Debug.Assert(_userValidator.Validate(user).IsValid, "user is invalid");
+                    if (!user.IsEmailAddressVerified && String.IsNullOrEmpty(user.VerifyEmailAddressToken)) {
+                        user.CreateVerifyEmailAddressToken();
+                        // TODO: Do we want to resend the verify email address token?
+                    }
+
+                    var validationResult = _userValidator.Validate(user);
+                    Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(user);
                 });
 
@@ -241,7 +257,8 @@ namespace Exceptionless.EventMigration {
             var items = _webHookMigrationRepository.GetOldest(mostRecent, _batchSize);
             while (items.Count > 0) {
                 items.ForEach(webHook => {
-                    Debug.Assert(_webHookValidator.Validate(webHook).IsValid, "webHook is invalid");
+                    var validationResult = _webHookValidator.Validate(webHook);
+                    Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(webHook);
                 });
 
