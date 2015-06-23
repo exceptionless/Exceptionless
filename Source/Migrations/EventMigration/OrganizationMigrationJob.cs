@@ -48,6 +48,7 @@ namespace Exceptionless.EventMigration {
 
         public OrganizationMigrationJob(
             IElasticClient client,
+            ICacheClient cacheClient,
             OrganizationIndex organizationIndex,
             IValidator<Organization> organizationValidator,
             IValidator<Project> projectValidator,
@@ -58,19 +59,19 @@ namespace Exceptionless.EventMigration {
             ICacheClient cache) {
             var mongoDatabase = GetMongoDatabase();
             _organizationValidator = organizationValidator;
-            _organizationRepository = new OrganizationRepository(client, organizationIndex, organizationValidator);
+            _organizationRepository = new OrganizationRepository(client, organizationIndex, organizationValidator, cacheClient);
             _organizationMigrationRepository = new OrganizationMigrationRepository(mongoDatabase, organizationValidator);
             _projectValidator = projectValidator;
-            _projectRepository = new ProjectRepository(client, organizationIndex, projectValidator);
+            _projectRepository = new ProjectRepository(client, organizationIndex, projectValidator, cacheClient);
             _projectMigrationRepository = new ProjectMigrationRepository(mongoDatabase, projectValidator);
             _tokenValidator = tokenValidator;
-            _tokenRepository = new TokenRepository(client, organizationIndex, tokenValidator);
+            _tokenRepository = new TokenRepository(client, organizationIndex, tokenValidator, cacheClient);
             _tokenMigrationRepository = new TokenMigrationRepository(mongoDatabase, tokenValidator);
             _userValidator = userValidator;
-            _userRepository = new UserRepository(client, organizationIndex, userValidator);
+            _userRepository = new UserRepository(client, organizationIndex, userValidator, cacheClient);
             _userMigrationRepository = new UserMigrationRepository(mongoDatabase, userValidator);
             _webHookValidator = webHookValidator;
-            _webHookRepository = new WebHookRepository(client, organizationIndex, webHookValidator);
+            _webHookRepository = new WebHookRepository(client, organizationIndex, webHookValidator, cacheClient);
             _webHookMigrationRepository = new WebHookMigrationRepository(mongoDatabase, webHookValidator);
             _lockProvider = lockProvider;
             _cache = cache;
@@ -154,7 +155,6 @@ namespace Exceptionless.EventMigration {
                     SetCreatedAndModifiedDates(project);
                 });
               
-                var projectsWithNullOrganization = items.Where(p => _organizationRepository.GetById(p.OrganizationId, true) == null).ToList();
                 var projectsWithOrganization = items.Where(p => _organizationRepository.GetById(p.OrganizationId, true) != null).ToList();
                 Debug.Assert(projectsWithOrganization.Count == items.Count, "One or more projects do not have any organizations");
 
