@@ -53,6 +53,11 @@ namespace Exceptionless.EventMigration.Repositories {
             var query = Query.In(FieldNames.OrganizationIds, new List<BsonValue> { new BsonObjectId(new ObjectId(id)) });
             return Find<User>(new MongoOptions().WithQuery(query).WithCacheKey(String.Concat("org:", id)));
         }
+        
+        public ICollection<User> GetOldest(string id = null, int batchSize = 50) {
+            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
+        }
 
         #region Collection Setup
 

@@ -32,6 +32,11 @@ namespace Exceptionless.EventMigration.Repositories {
             UpdateBuilder update = Update.Inc(FieldNames.NextSummaryEndOfDayTicks, TimeSpan.TicksPerDay);
             return UpdateAll(new QueryOptions().WithIds(ids), update);
         }
+        
+        public ICollection<Project> GetOldest(string id = null, int batchSize = 50) {
+            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
+        }
 
         #region Collection Setup
 

@@ -253,6 +253,11 @@ namespace Exceptionless.EventMigration.Repositories {
             return Math.Max(0, org.GetMaxEventsPerMonthWithBonus() - (int)monthlyErrorCount.Value);
         }
 
+        public ICollection<Organization> GetOldest(string id = null, int batchSize = 50) {
+            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
+        }
+
         #region Collection Setup
 
         public const string CollectionName = "organization";

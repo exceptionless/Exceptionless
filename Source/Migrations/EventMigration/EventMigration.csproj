@@ -175,6 +175,7 @@
     <Compile Include="Repositories\TokenRepository.cs" />
     <Compile Include="Repositories\UserRepository.cs" />
     <Compile Include="Repositories\WebHookRepository.cs" />
+    <Compile Include="OrganizationMigrationJob.cs" />
     <Compile Include="StackMigrationJob.cs" />
     <Compile Include="UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Util.cs" />

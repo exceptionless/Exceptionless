@@ -84,6 +84,11 @@ namespace Exceptionless.EventMigration.Repositories {
                 .WithCacheKey(useCache ? String.Concat("project:", projectId) : null)
                 .WithExpiresIn(expiresIn));
         }
+        
+        public ICollection<Token> GetOldest(string id = null, int batchSize = 50) {
+            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
+        }
 
         #region Collection Setup
 

@@ -1,0 +1,349 @@
+﻿using System;
+using System.Configuration;
+using System.Diagnostics;
+using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
+using Exceptionless.Core.Utility;
+using FluentValidation;
+using Foundatio.Caching;
+using Foundatio.Jobs;
+using Foundatio.Lock;
+using Foundatio.Messaging;
+using MongoDB.Driver;
+using Nest;
+using NLog.Fluent;
+using Token = Exceptionless.Core.Models.Token;
+
+#pragma warning disable 1998
+
+namespace Exceptionless.EventMigration {
+    public class OrganizationMigrationJob : JobBase {
+        private static readonly DateTime MIN_OBJECTID_DATE = new DateTime(2000, 1, 1);
+        private readonly IValidator<Organization> _organizationValidator;
+        private readonly OrganizationRepository _organizationRepository;
+        private readonly OrganizationMigrationRepository _organizationMigrationRepository;
+        private readonly IValidator<Project> _projectValidator;
+        private readonly ProjectRepository _projectRepository;
+        private readonly ProjectMigrationRepository _projectMigrationRepository;
+        private readonly IValidator<Token> _tokenValidator;
+        private readonly TokenRepository _tokenRepository;
+        private readonly TokenMigrationRepository _tokenMigrationRepository;
+        private readonly IValidator<User> _userValidator;
+        private readonly UserRepository _userRepository;
+        private readonly UserMigrationRepository _userMigrationRepository;
+        private readonly IValidator<WebHook> _webHookValidator;
+        private readonly WebHookRepository _webHookRepository;
+        private readonly WebHookMigrationRepository _webHookMigrationRepository;
+        private readonly ILockProvider _lockProvider;
+        private readonly ICacheClient _cache;
+
+        private readonly int _batchSize;
+        private static IPAddress _ipAddress;
+
+        public OrganizationMigrationJob(
+            IElasticClient client,
+            OrganizationIndex organizationIndex,
+            IValidator<Organization> organizationValidator,
+            IValidator<Project> projectValidator,
+            IValidator<Token> tokenValidator,
+            IValidator<User> userValidator,
+            IValidator<WebHook> webHookValidator,
+            ILockProvider lockProvider, 
+            ICacheClient cache) {
+            var mongoDatabase = GetMongoDatabase();
+            _organizationValidator = organizationValidator;
+            _organizationRepository = new OrganizationRepository(client, organizationIndex, organizationValidator);
+            _organizationMigrationRepository = new OrganizationMigrationRepository(mongoDatabase, organizationValidator);
+            _projectValidator = projectValidator;
+            _projectRepository = new ProjectRepository(client, organizationIndex, projectValidator);
+            _projectMigrationRepository = new ProjectMigrationRepository(mongoDatabase, projectValidator);
+            _tokenValidator = tokenValidator;
+            _tokenRepository = new TokenRepository(client, organizationIndex, tokenValidator);
+            _tokenMigrationRepository = new TokenMigrationRepository(mongoDatabase, tokenValidator);
+            _userValidator = userValidator;
+            _userRepository = new UserRepository(client, organizationIndex, userValidator);
+            _userMigrationRepository = new UserMigrationRepository(mongoDatabase, userValidator);
+            _webHookValidator = webHookValidator;
+            _webHookRepository = new WebHookRepository(client, organizationIndex, webHookValidator);
+            _webHookMigrationRepository = new WebHookMigrationRepository(mongoDatabase, webHookValidator);
+            _lockProvider = lockProvider;
+            _cache = cache;
+
+            _batchSize = ConfigurationManager.AppSettings.GetInt("Migration:BatchSize", 50);
+        }
+
+        protected override IDisposable GetJobLock() {
+            return _lockProvider.AcquireLock("OrganizationMigrationJob");
+        }
+
+        protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
+            OutputPublicIp();
+
+            var result = MigrateOrganizations();
+            if (result != JobResult.Success)
+                return result;
+
+            result = MigrateProjects();
+            if (result != JobResult.Success)
+                return result;
+
+            result = MigrateTokens();
+            if (result != JobResult.Success)
+                return result;
+
+            result = MigrateUsers();
+            if (result != JobResult.Success)
+                return result;
+
+            return MigrateWebHooks();
+        }
+
+        private JobResult MigrateOrganizations() {
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var mostRecent = _cache.Get<string>("migration-organizationid");
+            var items = _organizationMigrationRepository.GetOldest(mostRecent, _batchSize);
+            while (items.Count > 0) {
+                items.ForEach(organization => {
+                    Debug.Assert(_organizationValidator.Validate(organization).IsValid, "organization is invalid");
+                    SetCreatedAndModifiedDates(organization);
+                });
+
+                Log.Info().Message("Migrating organizations {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                try {
+                    _organizationRepository.Add(items, sendNotification: false);
+                } catch (Exception ex) {
+                    Debugger.Break();
+                    Log.Error().Exception(ex).Message("An error occurred while migrating organizations").Write();
+                    return JobResult.FromException(ex, String.Format("An error occurred while migrating organizations: {0}", ex.Message));
+                }
+
+                var lastId = items.Last().Id;
+                _cache.Set("migration-organizationid", lastId);
+                items = _organizationMigrationRepository.GetOldest(lastId, _batchSize);
+                total += items.Count;
+            }
+
+            Log.Info().Message("Finished migrating organizations.").Write();
+            return JobResult.Success;
+        }
+        
+        private JobResult MigrateProjects() {
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var mostRecent = _cache.Get<string>("migration-projectid");
+            var items = _projectMigrationRepository.GetOldest(mostRecent, _batchSize);
+            while (items.Count > 0) {
+                items.ForEach(project => {
+                    Debug.Assert(_projectValidator.Validate(project).IsValid, "project is invalid");
+                    SetCreatedAndModifiedDates(project);
+                });
+
+                Log.Info().Message("Migrating projects {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                try {
+                    _projectRepository.Add(items, sendNotification: false);
+                } catch (Exception ex) {
+                    Debugger.Break();
+                    Log.Error().Exception(ex).Message("An error occurred while migrating projects").Write();
+                    return JobResult.FromException(ex, String.Format("An error occurred while migrating projects: {0}", ex.Message));
+                }
+
+                var lastId = items.Last().Id;
+                _cache.Set("migration-projectid", lastId);
+                items = _projectMigrationRepository.GetOldest(lastId, _batchSize);
+                total += items.Count;
+            }
+
+            Log.Info().Message("Finished migrating projects.").Write();
+            return JobResult.Success;
+        }
+        
+        private JobResult MigrateTokens() {
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var mostRecent = _cache.Get<string>("migration-tokenid");
+            var items = _tokenMigrationRepository.GetOldest(mostRecent, _batchSize);
+            while (items.Count > 0) {
+                items.ForEach(token => {
+                    Debug.Assert(_tokenValidator.Validate(token).IsValid, "token is invalid");
+                    SetCreatedAndModifiedDates(token);
+                });
+
+                Log.Info().Message("Migrating tokens {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                try {
+                    _tokenRepository.Add(items, sendNotification: false);
+                } catch (Exception ex) {
+                    Debugger.Break();
+                    Log.Error().Exception(ex).Message("An error occurred while migrating tokens").Write();
+                    return JobResult.FromException(ex, String.Format("An error occurred while migrating tokens: {0}", ex.Message));
+                }
+
+                var lastId = items.Last().Id;
+                _cache.Set("migration-tokenid", lastId);
+                items = _tokenMigrationRepository.GetOldest(lastId, _batchSize);
+                total += items.Count;
+            }
+
+            Log.Info().Message("Finished migrating tokens.").Write();
+            return JobResult.Success;
+        }
+        
+        private JobResult MigrateUsers() {
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var mostRecent = _cache.Get<string>("migration-userid");
+            var items = _userMigrationRepository.GetOldest(mostRecent, _batchSize);
+            while (items.Count > 0) {
+                items.ForEach(user => {
+                    Debug.Assert(_userValidator.Validate(user).IsValid, "user is invalid");
+                    SetCreatedAndModifiedDates(user);
+                });
+
+                Log.Info().Message("Migrating users {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                try {
+                    _userRepository.Add(items, sendNotification: false);
+                } catch (Exception ex) {
+                    Debugger.Break();
+                    Log.Error().Exception(ex).Message("An error occurred while migrating users").Write();
+                    return JobResult.FromException(ex, String.Format("An error occurred while migrating users: {0}", ex.Message));
+                }
+
+                var lastId = items.Last().Id;
+                _cache.Set("migration-userid", lastId);
+                items = _userMigrationRepository.GetOldest(lastId, _batchSize);
+                total += items.Count;
+            }
+
+            Log.Info().Message("Finished migrating users.").Write();
+            return JobResult.Success;
+        }
+        
+        private JobResult MigrateWebHooks() {
+            int total = 0;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+
+            var mostRecent = _cache.Get<string>("migration-webHookid");
+            var items = _webHookMigrationRepository.GetOldest(mostRecent, _batchSize);
+            while (items.Count > 0) {
+                items.ForEach(webHook => {
+                    Debug.Assert(_webHookValidator.Validate(webHook).IsValid, "webHook is invalid");
+                    SetCreatedAndModifiedDates(webHook);
+                });
+
+                Log.Info().Message("Migrating webHooks {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
+                try {
+                    _webHookRepository.Add(items, sendNotification: false);
+                } catch (Exception ex) {
+                    Debugger.Break();
+                    Log.Error().Exception(ex).Message("An error occurred while migrating webHooks").Write();
+                    return JobResult.FromException(ex, String.Format("An error occurred while migrating webHooks: {0}", ex.Message));
+                }
+
+                var lastId = items.Last().Id;
+                _cache.Set("migration-webHookid", lastId);
+                items = _webHookMigrationRepository.GetOldest(lastId, _batchSize);
+                total += items.Count;
+            }
+
+            Log.Info().Message("Finished migrating webHooks.").Write();
+            return JobResult.Success;
+        }
+        
+        private static void SetCreatedAndModifiedDates<T>(T value) where T : class, IIdentity, IHaveCreatedDate {
+            ObjectId objectId;
+            if (ObjectId.TryParse(value.Id, out objectId) && objectId.CreationTime > MIN_OBJECTID_DATE) {
+                if (value.CreatedUtc == DateTime.MinValue)
+                    value.CreatedUtc = ObjectId.Parse(value.Id).CreationTime;
+
+            }
+
+            var utcNow = DateTime.UtcNow;
+            var dates = value as IHaveDates;
+            if (value.CreatedUtc < MIN_OBJECTID_DATE) {
+                value.CreatedUtc = utcNow;
+                if (dates != null)
+                    dates.ModifiedUtc = utcNow;
+            }
+
+            if (dates != null && dates.ModifiedUtc == DateTime.MinValue)
+                dates.ModifiedUtc = value.CreatedUtc;
+        }
+
+        private MongoDatabase GetMongoDatabase() {
+            var connectionString = ConfigurationManager.ConnectionStrings["Migration:MongoConnectionString"];
+            if (connectionString == null)
+                throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
+
+            if (String.IsNullOrEmpty(connectionString.ConnectionString))
+                throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
+
+            MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
+            var url = new MongoUrl(connectionString.ConnectionString);
+
+            MongoServer server = new MongoClient(url).GetServer();
+            return server.GetDatabase(url.DatabaseName);
+        }
+
+        private static bool _publicIpDisplayed;
+
+        private static void OutputPublicIp() {
+            if (_ipAddress == null)
+                _ipAddress = Util.GetExternalIP();
+
+            if (_ipAddress != null && !_publicIpDisplayed) {
+                _publicIpDisplayed = true;
+                Log.Info().Message("Public IP: " + _ipAddress).Write();
+            }
+        }
+    }
+
+    public class OrganizationMigrationRepository : Repositories.OrganizationRepository {
+        public OrganizationMigrationRepository(MongoDatabase database, IValidator<Organization> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(database, validator, cacheClient, messagePublisher) {
+            EnableCache = false;
+        }
+    }
+
+    public class ProjectMigrationRepository : Repositories.ProjectRepository {
+        public ProjectMigrationRepository(MongoDatabase database, IValidator<Project> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(database, validator, cacheClient, messagePublisher) {
+            EnableCache = false;
+        }
+    }
+    
+    public class TokenMigrationRepository : Repositories.TokenRepository {
+        public TokenMigrationRepository(MongoDatabase database, IValidator<Token> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(database, validator, cacheClient, messagePublisher) {
+            EnableCache = false;
+        }
+    }
+    
+    public class UserMigrationRepository : Repositories.UserRepository {
+        public UserMigrationRepository(MongoDatabase database, IValidator<User> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(database, validator, cacheClient, messagePublisher) {
+            EnableCache = false;
+        }
+    }
+    
+    public class WebHookMigrationRepository : Repositories.WebHookRepository {
+        public WebHookMigrationRepository(MongoDatabase database, IValidator<WebHook> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) 
+            : base(database, validator, cacheClient, messagePublisher) {
+            EnableCache = false;
+        }
+    }
+}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Exceptionless.Core.Models;
 using FluentValidation;
 using Foundatio.Caching;
@@ -28,6 +29,11 @@ namespace Exceptionless.EventMigration.Repositories {
                 .WithQuery(query)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))
                 .WithExpiresIn(TimeSpan.FromMinutes(5)));
+        }
+        
+        public ICollection<WebHook> GetOldest(string id = null, int batchSize = 50) {
+            var query = id != null ? Query.GT(FieldNames.Id, ObjectId.Parse(id)) : Query.Null;
+            return _collection.Find(query).SetSortOrder(SortBy.Ascending(FieldNames.Id)).SetLimit(batchSize).ToList();
         }
 
         #region Collection Setup
