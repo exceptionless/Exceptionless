@@ -19,7 +19,7 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public FindResults<WebHook> GetByOrganizationIdOrProjectId(string organizationId, string projectId) {
-            var filter = Filter<WebHook>.Term(e => e.OrganizationId, organizationId) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
+            var filter = (Filter<WebHook>.Term(e => e.OrganizationId, organizationId) && Filter<WebHook>.Missing(e => e.ProjectId)) || Filter<WebHook>.Term(e => e.ProjectId, projectId);
             return Find(new ElasticSearchOptions<WebHook>()
                 .WithFilter(filter)
                 .WithCacheKey(String.Concat("org:", organizationId, "-project:", projectId))

@@ -50,7 +50,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(0, _repository.GetByProjectId(TestConstants.ProjectId).Total);
             Assert.Equal(1, _repository.GetByProjectId(TestConstants.ProjectIdWithNoRoles).Total);
         }
-
+        
         protected void RemoveData() {
             _repository.RemoveAll();
         }
