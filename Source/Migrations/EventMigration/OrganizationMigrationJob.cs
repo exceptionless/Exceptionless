@@ -188,7 +188,6 @@ namespace Exceptionless.EventMigration {
                 items.ForEach(token => {
                     var validationResult = _tokenValidator.Validate(token);
                     Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
-                    SetCreatedAndModifiedDates(token);
                 });
 
                 Log.Info().Message("Migrating tokens {0:N0} total {1:N0}/s...", total, total > 0 ? total / stopwatch.Elapsed.TotalSeconds : 0).Write();
