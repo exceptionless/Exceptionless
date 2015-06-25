@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
@@ -117,6 +118,9 @@ namespace Exceptionless.EventMigration {
                     var validationResult = _organizationValidator.Validate(organization);
                     Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(organization);
+ 
+                    UpdateUsage(organization.Usage);
+                    UpdateUsage(organization.OverageHours);
                 });
 
                 var organizationsWithUsers = items.Where(o => _userMigrationRepository.GetByOrganizationId(o.Id).Count > 0).ToList();
@@ -140,7 +144,25 @@ namespace Exceptionless.EventMigration {
             Log.Info().Message("Finished migrating organizations.").Write();
             return JobResult.Success;
         }
-        
+
+        private void UpdateUsage(ICollection<UsageInfo> usage) {
+            var usagesToRemove = new List<UsageInfo>();
+
+            foreach (var ui in usage) {
+                if (ui.Limit == 0 && ui.TooBig > 0) {
+                    ui.Limit = ui.TooBig;
+                    ui.TooBig = 0;
+                } else if (ui.TooBig > 0 && ui.TooBig % 1000 == 0) {
+                    ui.TooBig = 0;
+                }
+
+                if (ui.Limit <= 0)
+                    usagesToRemove.Add(ui);
+            }
+
+            usagesToRemove.ForEach(u => usage.Remove(u));
+        }
+
         private JobResult MigrateProjects() {
             int total = 0;
             var stopwatch = new Stopwatch();
