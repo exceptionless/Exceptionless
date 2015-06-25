@@ -55,7 +55,7 @@ namespace Exceptionless.Core {
                 ContractResolver = contractResolver
             };
             settings.AddModelConverters();
-
+            
             container.RegisterSingle<IContractResolver>(() => contractResolver);
             container.RegisterSingle<JsonSerializerSettings>(settings);
             container.RegisterSingle<JsonSerializer>(JsonSerializer.Create(settings));
