@@ -106,6 +106,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
+                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.VerifyEmailAddressToken).Index(FieldIndexOption.NotAnalyzed))
