@@ -6,6 +6,8 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories.Configuration {
     public class OrganizationIndex : IElasticSearchIndex {
+        private const string KEYWORD_LOWERCASE = "keyword_lowercase";
+
         public string Name { get { return "organizations"; } }
 
         public int Version { get { return 1; } }
@@ -26,7 +28,9 @@ namespace Exceptionless.Core.Repositories.Configuration {
         }
 
         public CreateIndexDescriptor CreateIndex(CreateIndexDescriptor idx) {
-            return idx.AddMapping<Application>(GetApplicationMap)
+            var keywordLowercaseAnalyzer = new CustomAnalyzer { Filter = new List<string> { "lowercase" }, Tokenizer = "keyword" };
+            return idx.Analysis(descriptor => descriptor.Analyzers(bases => bases.Add(KEYWORD_LOWERCASE, keywordLowercaseAnalyzer)))
+                      .AddMapping<Application>(GetApplicationMap)
                       .AddMapping<Organization>(GetOrganizationMap)
                       .AddMapping<Project>(GetProjectMap)
                       .AddMapping<Models.Token>(GetTokenMap)
@@ -51,13 +55,23 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                 .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
-                 .Object<Invite>(f => f.Name(o => o.Invites.First()).RootPath().Properties(ip => ip
+                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .Object<Invite>(f => f.Name(o => o.Invites.First()).RootPath().Properties(ip => ip
                         .String(fu => fu.Name(i => i.Token).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteToken))
                         .String(fu => fu.Name(i => i.EmailAddress).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteEmail))))
+                    .Object<UsageInfo>(ui => ui.Name(o => o.Usage.First()).RootPath().Properties(ip => ip
+                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.Organization.UsageDate))
+                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.Organization.UsageTotal))
+                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.Organization.UsageBlocked))
+                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.Organization.UsageLimit))
+                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.Organization.UsageTooBig))))
+                    .Object<UsageInfo>(ui => ui.Name(o => o.OverageHours.First()).RootPath().Properties(ip => ip
+                        .Date(fu => fu.Name(i => i.Date).IndexName(Fields.Organization.OverageHoursDate))
+                        .Number(fu => fu.Name(i => i.Total).IndexName(Fields.Organization.OverageHoursTotal))
+                        .Number(fu => fu.Name(i => i.Blocked).IndexName(Fields.Organization.OverageHoursBlocked))
+                        .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.Organization.OverageHoursLimit))
+                        .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.Organization.OverageHoursTooBig))))
                 );
-
-                // TODO: Do we need to add entries for overage hours and usage... We probably want to query by this..
         }
 
         private PutMappingDescriptor<Project> GetProjectMap(PutMappingDescriptor<Project> map) {
@@ -92,7 +106,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Dynamic()
                 .TimestampField(ts => ts.Enabled().Path(u => u.ModifiedUtc).IgnoreMissing(false))
                 .Properties(p => p
-                    .String(f => f.Name(u => u.EmailAddress).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.EmailAddress).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.PasswordResetToken).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.VerifyEmailAddressToken).Index(FieldIndexOption.NotAnalyzed))
                     .Object<OAuthAccount>(f => f.Name(o => o.OAuthAccounts.First()).RootPath().Properties(mp => mp
@@ -115,6 +129,18 @@ namespace Exceptionless.Core.Repositories.Configuration {
             public class Organization {
                 public const string InviteToken = "invite.token";
                 public const string InviteEmail = "invite.email";
+
+                public const string UsageDate = "usage.date";
+                public const string UsageTotal = "usage.total";
+                public const string UsageBlocked = "usage.blocked";
+                public const string UsageLimit = "usage.limit";
+                public const string UsageTooBig = "usage.toobig";
+
+                public const string OverageHoursDate = "overage.date";
+                public const string OverageHoursTotal = "overage.total";
+                public const string OverageHoursBlocked = "overage.blocked";
+                public const string OverageHoursLimit = "overage.limit";
+                public const string OverageHoursTooBig = "overage.toobig";
             }
 
             public class User {
