@@ -58,29 +58,21 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
                     .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Name).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.StripeCustomerId).IndexName("stripe").Index(FieldIndexOption.NotAnalyzed))
                     .Boolean(f => f.Name(u => u.HasPremiumFeatures).IndexName("premium"))
                     .String(f => f.Name(u => u.PlanId).IndexName("plan").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.PlanName).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.PlanDescription).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.PlanDescription).Index(FieldIndexOption.No))
                     .String(f => f.Name(u => u.CardLast4).Index(FieldIndexOption.NotAnalyzed))
                     .Date(f => f.Name(u => u.SubscribeDate).IndexName("subscribed"))
                     .Number(f => f.Name(u => u.BillingStatus).IndexName("status"))
-                    .Date(f => f.Name(u => u.BillingChangeDate))
                     .String(f => f.Name(u => u.BillingChangedByUserId).Index(FieldIndexOption.NotAnalyzed))
                     .Number(f => f.Name(u => u.BillingPrice).IndexName("price"))
                     .Boolean(f => f.Name(u => u.IsSuspended).IndexName("suspended"))
                     .String(f => f.Name(u => u.SuspendedByUserId).Index(FieldIndexOption.NotAnalyzed))
-                    .Date(f => f.Name(u => u.SuspensionDate))
-                    .Number(f => f.Name(u => u.SuspensionCode))
                     .String(f => f.Name(u => u.SuspensionNotes).Index(FieldIndexOption.NotAnalyzed))
-                    .Number(f => f.Name(u => u.MaxUsers))
-                    .Number(f => f.Name(u => u.MaxProjects))
-                    .Number(f => f.Name(u => u.MaxEventsPerMonth))
-                    .Number(f => f.Name(u => u.BonusEventsPerMonth))
-                    .Date(f => f.Name(u => u.BonusExpiration))
                     .Number(f => f.Name(u => u.RetentionDays).IndexName("retention"))
+                    .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
                     .Object<Invite>(f => f.Name(o => o.Invites.First()).RootPath().Properties(ip => ip
                         .String(fu => fu.Name(i => i.Token).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteToken))
                         .String(fu => fu.Name(i => i.EmailAddress).Index(FieldIndexOption.NotAnalyzed).IndexName(Fields.Organization.InviteEmail))))
@@ -97,8 +89,6 @@ namespace Exceptionless.Core.Repositories.Configuration {
                         .Number(fu => fu.Name(i => i.Limit).IndexName(Fields.Organization.OverageHoursLimit))
                         .Number(fu => fu.Name(i => i.TooBig).IndexName(Fields.Organization.OverageHoursTooBig))))
                 );
-
-            // TODO: Do we have to do number types?
         }
 
         private PutMappingDescriptor<Project> GetProjectMap(PutMappingDescriptor<Project> map) {
@@ -111,13 +101,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Name).Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.PromotedTabs).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.CustomContent).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.CustomContent).Index(FieldIndexOption.No))
+                    .Object<ClientConfiguration>(f => f.Name(u => u.Configuration).Dynamic(false))
+                    .Object<Dictionary<string, NotificationSettings>>(f => f.Name(u => u.NotificationSettings).Dynamic(false))
+                    .Object<DataDictionary>(f => f.Name(u => u.Data).Dynamic(false))
                 );
-
-              // TODO: Should we be setting the client configuration settings to not be indexed?
-              // TODO: We should also ignore project notification settings..
         }
 
         private PutMappingDescriptor<Models.Token> GetTokenMap(PutMappingDescriptor<Models.Token> map) {
@@ -137,7 +126,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .String(f => f.Name(e => e.UserId).IndexName("user").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.Refresh).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.Scopes).Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.Notes).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(u => u.Notes).Index(FieldIndexOption.No))
                 );
         }
 
@@ -151,7 +140,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                     .Date(f => f.Name(e => e.ModifiedUtc).IndexName("modified"))
                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(e => e.OrganizationIds).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                    .String(f => f.Name(u => u.FullName).IndexName("name").Analyzer(KEYWORD_LOWERCASE))
+                    .String(f => f.Name(u => u.FullName).IndexName("name"))
                     .String(f => f.Name(u => u.EmailAddress).IndexName("email").Analyzer(KEYWORD_LOWERCASE))
                     .String(f => f.Name(u => u.Password).Index(FieldIndexOption.NotAnalyzed))
                     .String(f => f.Name(u => u.Salt).Index(FieldIndexOption.NotAnalyzed))
@@ -170,12 +159,12 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 .Index(VersionedName)
                 .Dynamic()
                 .Properties(p => p
-                     .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
-                     .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.Url).IndexName("url").Index(FieldIndexOption.NotAnalyzed))
-                     .String(f => f.Name(e => e.EventTypes).IndexName("types").Index(FieldIndexOption.NotAnalyzed))
+                    .Date(f => f.Name(e => e.CreatedUtc).IndexName("created"))
+                    .String(f => f.Name(e => e.Id).IndexName("id").Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.OrganizationId).IndexName("organization").Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.ProjectId).IndexName("project").Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.Url).Index(FieldIndexOption.NotAnalyzed))
+                    .String(f => f.Name(e => e.EventTypes).IndexName("types").Index(FieldIndexOption.NotAnalyzed))
                 );
         }
 

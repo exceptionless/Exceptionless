@@ -103,7 +103,12 @@ namespace Exceptionless.EventMigration {
             if (result != JobResult.Success)
                 return result;
 
-            return MigrateWebHooks();
+            result = MigrateWebHooks();
+
+            _cache.FlushAll();
+            Log.Info().Message("Clearing the cache").Write();
+
+            return result;
         }
 
         private JobResult MigrateOrganizations() {
@@ -175,6 +180,14 @@ namespace Exceptionless.EventMigration {
                     var validationResult = _projectValidator.Validate(project);
                     Debug.Assert(validationResult.IsValid, validationResult.Errors.ToErrorMessage());
                     SetCreatedAndModifiedDates(project);
+
+                    var settingsToRemove = new List<string>();
+                    project.NotificationSettings.ForEach(pair => {
+                        if (_userMigrationRepository.GetById(pair.Key, true) == null)
+                            settingsToRemove.Add(pair.Key);
+                    });
+
+                    settingsToRemove.ForEach(s => project.NotificationSettings.Remove(s));
                 });
               
                 var projectsWithOrganization = items.Where(p => _organizationRepository.GetById(p.OrganizationId, true) != null).ToList();
