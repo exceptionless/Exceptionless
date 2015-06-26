@@ -27,7 +27,7 @@ namespace Exceptionless.Core.Repositories {
                 throw new ArgumentNullException("ids");
 
             string script = String.Format("ctx._source.next_summary_end_of_day_ticks += {0};", TimeSpan.TicksPerDay);
-            return UpdateAll((string)null, new QueryOptions().WithProjectIds(ids), script, false);
+            return UpdateAll((string)null, new QueryOptions().WithIds(ids), script, false);
         }
     }
 }
