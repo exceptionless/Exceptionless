@@ -30,7 +30,7 @@ namespace Exceptionless.Api.Tests.Stats {
             RemoveData();
             await CreateDataAsync(eventCount, false);
 
-            _client.Refresh(d => d.Force());
+            await _client.RefreshAsync(d => d.Force());
             _metricsClient.DisplayStats();
             var result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "project:" + TestConstants.ProjectId);
             Assert.Equal(eventCount, result.Total);
@@ -39,7 +39,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(_stackRepository.Count(), result.Timeline.Sum(t => t.New));
 
             var stacks = _stackRepository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
-            foreach (var stack in stacks) {
+            foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
@@ -64,7 +64,7 @@ namespace Exceptionless.Api.Tests.Stats {
             Assert.Equal(_stackRepository.Count(), result.Timeline.Sum(t => t.New));
 
             var stacks = _stackRepository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithLimit(100));
-            foreach (var stack in stacks) {
+            foreach (var stack in stacks.Documents) {
                 result = _stats.GetOccurrenceStats(startDate, DateTime.UtcNow, null, userFilter: "stack:" + stack.Id);
                 Console.WriteLine("{0} - {1} : {2}", stack.Id, stack.TotalOccurrences, result.Total);
                 //Assert.Equal(stack.TotalOccurrences, result.Total);
@@ -177,7 +177,7 @@ namespace Exceptionless.Api.Tests.Stats {
             var projects = ProjectData.GenerateSampleProjects();
             _projectRepository.Add(projects);
 
-            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.Now.SubtractDays(60), endDate: DateTimeOffset.Now);
+            var events = EventData.GenerateEvents(eventCount, projectIds: multipleProjects ? projects.Select(p => p.Id).ToArray() : new[] { TestConstants.ProjectId }, startDate: DateTimeOffset.UtcNow.SubtractDays(60), endDate: DateTimeOffset.UtcNow);
             foreach (var eventGroup in events.GroupBy(ev => ev.ProjectId))
                 await _eventPipeline.RunAsync(eventGroup);
         }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Exceptionless.Core.Authorization;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
-using MongoDB.Bson;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class UserData {

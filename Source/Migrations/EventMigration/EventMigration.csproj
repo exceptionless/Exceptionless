@@ -121,10 +121,64 @@
     </Compile>
     <Compile Include="JobBootstrapper.cs" />
     <Compile Include="MigrationJobBase.cs" />
+    <Compile Include="Migrations\MongoMigrationChecker.cs" />
+    <Compile Include="Migrations\v1.0.27.cs" />
+    <Compile Include="Migrations\v1.0.28.cs" />
+    <Compile Include="Migrations\v1.0.29.cs" />
+    <Compile Include="Migrations\v1.0.30.cs" />
+    <Compile Include="Migrations\v1.0.31.cs" />
+    <Compile Include="Migrations\v1.0.32.cs" />
+    <Compile Include="Migrations\v1.0.33.cs" />
+    <Compile Include="Migrations\v1.0.34.cs" />
+    <Compile Include="Migrations\v1.0.35.cs" />
+    <Compile Include="Migrations\v1.0.36.cs" />
+    <Compile Include="Migrations\v1.0.37.cs" />
+    <Compile Include="Migrations\v1.0.38.cs" />
     <Compile Include="QueueEventMigrationsJob.cs" />
+    <Compile Include="Repositories\ApplicationRepository.cs" />
+    <Compile Include="Repositories\Base\CommonFieldNames.cs" />
+    <Compile Include="Repositories\Base\DocumentNotFoundException.cs" />
+    <Compile Include="Repositories\Base\DuplicateDocumentException.cs" />
+    <Compile Include="Repositories\Base\IMongoRepositoryManagement.cs" />
+    <Compile Include="Repositories\Base\IReadOnlyRepository.cs" />
+    <Compile Include="Repositories\Base\IRepository.cs" />
+    <Compile Include="Repositories\Base\IRepositoryOwnedByOrganization.cs" />
+    <Compile Include="Repositories\Base\IRepositoryOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Repositories\Base\IRepositoryOwnedByProject.cs" />
+    <Compile Include="Repositories\Base\IRepositoryOwnedByStack.cs" />
+    <Compile Include="Repositories\Base\MongoOptions.cs" />
+    <Compile Include="Repositories\Base\MongoOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\MongoPagingOptions.cs" />
+    <Compile Include="Repositories\Base\MongoReadOnlyRepository.cs" />
+    <Compile Include="Repositories\Base\MongoRepository.cs" />
+    <Compile Include="Repositories\Base\MongoRepositoryManager.cs" />
+    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganization.cs" />
+    <Compile Include="Repositories\Base\MongoRepositoryOwnedByOrganizationAndProject.cs" />
+    <Compile Include="Repositories\Base\MultiOptions.cs" />
+    <Compile Include="Repositories\Base\OneOptions.cs" />
+    <Compile Include="Repositories\Base\PagingOptions.cs" />
+    <Compile Include="Repositories\Base\PagingOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\PagingWitSortByOptions.cs" />
+    <Compile Include="Repositories\Base\QueryOptions.cs" />
+    <Compile Include="Repositories\Base\QueryOptionsExtensions.cs" />
+    <Compile Include="Repositories\Base\RepositoryConstants.cs" />
+    <Compile Include="Repositories\Base\SortOrder.cs" />
+    <Compile Include="Repositories\Interfaces\IApplicationRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IOrganizationRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IProjectRepository.cs" />
+    <Compile Include="Repositories\Interfaces\ITokenRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IUserRepository.cs" />
+    <Compile Include="Repositories\Interfaces\IWebHookRepository.cs" />
+    <Compile Include="Repositories\MongoQueryExtensions.cs" />
+    <Compile Include="Repositories\OrganizationRepository.cs" />
+    <Compile Include="Repositories\ProjectRepository.cs" />
+    <Compile Include="Repositories\TokenRepository.cs" />
+    <Compile Include="Repositories\UserRepository.cs" />
+    <Compile Include="Repositories\WebHookRepository.cs" />
+    <Compile Include="OrganizationMigrationJob.cs" />
     <Compile Include="StackMigrationJob.cs" />
+    <Compile Include="UtcDateTimeOffsetSerializer.cs" />
     <Compile Include="Util.cs" />
-    <Compile Include="MongoCopyJob.cs" />
     <Compile Include="ResetDataStoresJob.cs" />
     <Compile Include="EventMigrationJob.cs" />
     <Compile Include="Models\ClientConfiguration.cs" />
@@ -155,6 +209,10 @@
     <ProjectReference Include="..\..\Core\Exceptionless.Core.csproj">
       <Project>{3E5B39D5-7ACD-486B-9F90-59116B67952D}</Project>
       <Name>Exceptionless.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\MongoMigrations\MongoMigrations.csproj">
+      <Project>{fcb2cf19-ebe7-4dcf-bd48-ec164015ba3f}</Project>
+      <Name>MongoMigrations</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

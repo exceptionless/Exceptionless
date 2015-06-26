@@ -20,7 +20,7 @@ namespace Exceptionless.Core.Billing {
             if (user == null)
                 return false;
 
-            var organizations = _organizationRepository.GetByIds(user.OrganizationIds).Where(o => o.PlanId == FreePlan.Id);
+            var organizations = _organizationRepository.GetByIds(user.OrganizationIds).Documents.Where(o => o.PlanId == FreePlan.Id);
             return !organizations.Any();
         }
 
@@ -28,7 +28,7 @@ namespace Exceptionless.Core.Billing {
             if (organization == null || String.IsNullOrWhiteSpace(organization.Id))
                 return false;
 
-            int numberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Count + organization.Invites.Count;
+            long numberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Total + organization.Invites.Count;
             return organization.MaxUsers <= -1 || numberOfUsers < organization.MaxUsers;
         }
 
@@ -58,7 +58,7 @@ namespace Exceptionless.Core.Billing {
                 return false;
             }
 
-            int currentNumberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Count() + organization.Invites.Count;
+            long currentNumberOfUsers = _userRepository.GetByOrganizationId(organization.Id).Total + organization.Invites.Count;
             int maxUsers = plan.MaxUsers != -1 ? plan.MaxUsers : int.MaxValue;
             if (currentNumberOfUsers > maxUsers) {
                 message = String.Format("Please remove {0} user{1} and try again.", currentNumberOfUsers - maxUsers, (currentNumberOfUsers - maxUsers) > 0 ? "s" : String.Empty);
@@ -73,7 +73,7 @@ namespace Exceptionless.Core.Billing {
             }
 
             // Ensure the user can't be apart of more than one free plan.
-            if (String.Equals(plan.Id, FreePlan.Id) && user != null && _organizationRepository.GetByIds(user.OrganizationIds).Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
+            if (String.Equals(plan.Id, FreePlan.Id) && user != null && _organizationRepository.GetByIds(user.OrganizationIds).Documents.Any(o => String.Equals(o.PlanId, FreePlan.Id))) {
                 message = "You already have one free account. You are not allowed to create more than one free account.";
                 return false;
             }

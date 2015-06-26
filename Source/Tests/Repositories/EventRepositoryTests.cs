@@ -8,8 +8,8 @@ using Exceptionless.DateTimeExtensions;
 using Exceptionless.Helpers;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Utility;
 using Exceptionless.Tests.Utility;
-using MongoDB.Bson;
 using Nest;
 using Xunit;
 
@@ -52,14 +52,14 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(events.Count, _repository.Count());
 
             var results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(2).WithLimit(2));
-            Assert.Equal(2, results.Count);
-            Assert.Equal(results.First().Id, events[2].Id);
-            Assert.Equal(results.Last().Id, events[3].Id);
+            Assert.Equal(2, results.Documents.Count);
+            Assert.Equal(results.Documents.First().Id, events[2].Id);
+            Assert.Equal(results.Documents.Last().Id, events[3].Id);
 
             results = _repository.GetByOrganizationId(TestConstants.OrganizationId, new PagingOptions().WithPage(3).WithLimit(2));
-            Assert.Equal(2, results.Count);
-            Assert.Equal(results.First().Id, events[4].Id);
-            Assert.Equal(results.Last().Id, events[5].Id);
+            Assert.Equal(2, results.Documents.Count);
+            Assert.Equal(results.Documents.First().Id, events[4].Id);
+            Assert.Equal(results.Documents.Last().Id, events[5].Id);
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             Debug.WriteLine("Before {0}: {1}", sortedIds[2].Item1, sortedIds[2].Item2.ToLongTimeString());
             _client.Refresh(r => r.Force(false));
             string query = String.Format("stack:{0} project:{1} date:[now-1h TO now+1h]", TestConstants.StackId, TestConstants.ProjectId);
-            var results = _repository.GetByOrganizationIds(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20)).ToArray();
+            var results = _repository.GetByOrganizationIds(new[] { TestConstants.OrganizationId }, query, new PagingOptions().WithLimit(20)).Documents.ToArray();
             Assert.True(results.Length > 0);
 
             for (int i = 0; i < sortedIds.Count; i++) {
@@ -151,9 +151,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _client.Refresh();
             var results = _repository.GetByReferenceId(TestConstants.ProjectId, referenceId);
-            Assert.True(results.Count > 0);
-            Assert.NotNull(results.FirstOrDefault());
-            Assert.Equal(referenceId, results.FirstOrDefault().ReferenceId);
+            Assert.True(results.Total > 0);
+            Assert.NotNull(results.Documents.First());
+            Assert.Equal(referenceId, results.Documents.First().ReferenceId);
         }
 
         [Fact]
@@ -170,8 +170,8 @@ namespace Exceptionless.Api.Tests.Repositories {
 
             _client.Refresh();
             var events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE));
-            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
-            foreach (var ev in events)
+            Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Total);
+            foreach (var ev in events.Documents)
                 Assert.False(ev.IsFixed);
         }
         
@@ -192,7 +192,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.Add(events);
 
             _client.Refresh();
-            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).ToList();
+            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => {
                 Assert.False(e.IsHidden);
@@ -204,7 +204,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _repository.HideAllByClientIpAndDate(TestConstants.OrganizationId, _clientIpAddress, DateTime.UtcNow.SubtractDays(3), DateTime.UtcNow.AddDays(2));
 
             _client.Refresh();
-            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).ToList();
+            events = _repository.GetByStackId(TestConstants.StackId2, new PagingOptions().WithLimit(NUMBER_OF_EVENTS_TO_CREATE)).Documents.ToList();
             Assert.Equal(NUMBER_OF_EVENTS_TO_CREATE, events.Count);
             events.ForEach(e => Assert.True(e.IsHidden));
         }

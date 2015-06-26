@@ -99,7 +99,7 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(model.InviteToken))
-				AddInvitedUserToOrganization(model.InviteToken, user);
+                AddInvitedUserToOrganization(model.InviteToken, user);
 
             Log.Info().Message("\"{0}\" logged in.", user.EmailAddress).Tag("Login").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
             return Ok(new TokenResult { Token = GetToken(user) });
@@ -186,22 +186,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("github")]
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult GitHub(JObject value) {
-            var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
-                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "GitHub").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
-                return NotFound();
-            }
-
-            if (String.IsNullOrEmpty(Settings.Current.GitHubAppId) || String.IsNullOrEmpty(Settings.Current.GitHubAppSecret))
-                return NotFound();
-
-            var client = new GitHubWithPrivateEmailsClient(new RequestFactory(), new RuntimeClientConfiguration {
-                ClientId = Settings.Current.GitHubAppId,
-                ClientSecret = Settings.Current.GitHubAppSecret,
-                RedirectUri = authInfo.RedirectUri
-            });
-
-            return ExternalLogin(client, authInfo);
+            return ExternalLogin(value.ToObject<ExternalAuthInfo>(), Settings.Current.GitHubAppId, Settings.Current.GitHubAppSecret, (f, c) => new GitHubWithPrivateEmailsClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -209,22 +194,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("google")]
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Google(JObject value) {
-            var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
-                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "Google").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
-                return NotFound();
-            }
-
-            if (String.IsNullOrEmpty(Settings.Current.GoogleAppId) || String.IsNullOrEmpty(Settings.Current.GoogleAppSecret))
-                return NotFound();
-
-            var client = new GoogleClient(new RequestFactory(), new RuntimeClientConfiguration {
-                ClientId = Settings.Current.GoogleAppId,
-                ClientSecret = Settings.Current.GoogleAppSecret,
-                RedirectUri = authInfo.RedirectUri
-            });
-
-            return ExternalLogin(client, authInfo);
+            return ExternalLogin(value.ToObject<ExternalAuthInfo>(), Settings.Current.GoogleAppId, Settings.Current.GoogleAppSecret, (f, c) => new GoogleClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -232,22 +202,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("facebook")]
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Facebook(JObject value) {
-            var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
-                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "Facebook").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
-                return NotFound();
-            }
-
-            if (String.IsNullOrEmpty(Settings.Current.FacebookAppId) || String.IsNullOrEmpty(Settings.Current.FacebookAppSecret))
-                return NotFound();
-
-            var client = new FacebookClient(new RequestFactory(), new RuntimeClientConfiguration {
-                ClientId = Settings.Current.FacebookAppId,
-                ClientSecret = Settings.Current.FacebookAppSecret,
-                RedirectUri = authInfo.RedirectUri
-            });
-
-            return ExternalLogin(client, authInfo);
+            return ExternalLogin(value.ToObject<ExternalAuthInfo>(), Settings.Current.FacebookAppId, Settings.Current.FacebookAppSecret, (f, c) => new FacebookClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -255,22 +210,7 @@ namespace Exceptionless.Api.Controllers {
         [Route("live")]
         [ResponseType(typeof(TokenResult))]
         public IHttpActionResult Live(JObject value) {
-            var authInfo = value.ToObject<ExternalAuthInfo>();
-            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
-                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login", "WindowsLive").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
-                return NotFound();
-            }
-
-            if (String.IsNullOrEmpty(Settings.Current.MicrosoftAppId) || String.IsNullOrEmpty(Settings.Current.MicrosoftAppSecret))
-                return NotFound();
-
-            var client = new WindowsLiveClient(new RequestFactory(), new RuntimeClientConfiguration {
-                ClientId = Settings.Current.MicrosoftAppId,
-                ClientSecret = Settings.Current.MicrosoftAppSecret,
-                RedirectUri = authInfo.RedirectUri
-            });
-
-            return ExternalLogin(client, authInfo);
+            return ExternalLogin(value.ToObject<ExternalAuthInfo>(), Settings.Current.MicrosoftAppId, Settings.Current.MicrosoftAppSecret, (f, c) => new WindowsLiveClient(f, c));
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -393,8 +333,8 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!user.HasValidPasswordResetTokenExpiration()) {
-                Log.Error().Message("Reset password failed for \"{0}\": Verify Email Address Token has expired.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
-                return BadRequest("Verify Email Address Token has expired.");
+                Log.Error().Message("Reset password failed for \"{0}\": Password Reset Token has expired.", user.EmailAddress).Tag("Reset Password").Identity(user.EmailAddress).Property("User", user).ContextProperty("HttpActionContext", ActionContext).Write();
+                return BadRequest("Password Reset Token has expired.");
             }
 
             if (!IsValidPassword(model.Password)) {
@@ -443,8 +383,22 @@ namespace Exceptionless.Api.Controllers {
 
             _isFirstUserChecked = true;
         }
+        
+        private IHttpActionResult ExternalLogin<TClient>(ExternalAuthInfo authInfo, string appId, string appSecret, Func<IRequestFactory, IClientConfiguration, TClient> createClient) where TClient : OAuth2Client {
+            if (authInfo == null || String.IsNullOrEmpty(authInfo.Code)) {
+                Log.Error().Message("External login failed: Unable to get auth info.").Tag("External Login").Property("Auth Info", authInfo).ContextProperty("HttpActionContext", ActionContext).Write();
+                return NotFound();
+            }
 
-        private IHttpActionResult ExternalLogin(OAuth2Client client, ExternalAuthInfo authInfo) {
+            if (String.IsNullOrEmpty(appId) || String.IsNullOrEmpty(appSecret))
+                return NotFound();
+
+            var client = createClient(new RequestFactory(), new RuntimeClientConfiguration {
+                ClientId = appId,
+                ClientSecret = appSecret,
+                RedirectUri = authInfo.RedirectUri
+            });
+
             UserInfo userInfo;
             try {
                 userInfo = client.GetUserInfo(authInfo.Code);
@@ -566,7 +520,7 @@ namespace Exceptionless.Api.Controllers {
 
 
         private string GetToken(User user) {
-            var token = _tokenManager.Create(user);
+            var token = _tokenManager.GetOrCreate(user);
             return token.Id;
         }
 

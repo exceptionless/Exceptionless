@@ -15,7 +15,6 @@ using Exceptionless.Api.Utility;
 using Exceptionless.Core;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Jobs;
-using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
@@ -47,9 +46,6 @@ namespace Exceptionless.Api {
             var exceptionlessContractResolver = contractResolver as ExceptionlessContractResolver;
             if (exceptionlessContractResolver != null)
                 exceptionlessContractResolver.UseDefaultResolverFor(typeof(Connection).Assembly);
-
-            if (Settings.Current.ShouldAutoUpgradeDatabase)
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
 
             Config = new HttpConfiguration();
             Config.DependencyResolver = new SimpleInjectorWebApiDependencyResolver(container);
@@ -114,7 +110,7 @@ namespace Exceptionless.Api {
                 if (String.IsNullOrEmpty(projectId)) {
                     var firstOrgId = ctx.Request.User.GetOrganizationIds().FirstOrDefault();
                     if (!String.IsNullOrEmpty(firstOrgId)) {
-                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).FirstOrDefault();
+                        var project = projectRepository.GetByOrganizationId(firstOrgId, useCache: true).Documents.FirstOrDefault();
                         if (project != null)
                             return project;
                     }
@@ -153,9 +149,10 @@ namespace Exceptionless.Api {
                 JobRunner.RunContinuousAsync<MailMessageJob>(cancellationToken: token);
                 JobRunner.RunContinuousAsync<EventNotificationsJob>(cancellationToken: token);
                 JobRunner.RunContinuousAsync<WebHooksJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token);
-                JobRunner.RunContinuousAsync<StaleAccountsJob>(cancellationToken: token);
+                JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token, interval: TimeSpan.FromHours(1));
+                JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
+                JobRunner.RunContinuousAsync<StaleAccountsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
 
                 JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
             } else {

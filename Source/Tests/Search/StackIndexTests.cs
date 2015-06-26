@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Repositories;
-using Exceptionless.Core.Serialization;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using Newtonsoft.Json;
 using Xunit;
@@ -14,6 +13,7 @@ using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 namespace Exceptionless.Api.Tests.Repositories {
     public class StackIndexTests {
         private readonly IStackRepository _repository = IoC.GetInstance<IStackRepository>();
+        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private static bool _createdStacks;
 
@@ -31,7 +31,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetById(string id, int count) {
             var result = GetByFilter("id:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -40,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOrganizationId(string id, int count) {
             var result = GetByFilter("organization:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -49,7 +49,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByProjectId(string id, int count) {
             var result = GetByFilter("project:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -59,7 +59,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByType(string type, int count) {
             var result = GetByFilter("type:" + type);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByFirst(string first, int count) {
             var result = GetByFilter("first:" + first);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -78,7 +78,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByLast(string last, int count) {
             var result = GetByFilter("last:" + last);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -89,7 +89,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOccurrences(string occurrences, int count) {
             var result = GetByFilter("occurrences:" + occurrences);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -101,7 +101,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByTitle(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -112,7 +112,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByTag(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -120,7 +120,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByFixedOn(string fixedOn, int count) {
             var result = GetByFilter("fixedon:" + fixedOn);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -129,7 +129,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByFixed(bool @fixed, int count) {
             var result = GetByFilter("fixed:" + @fixed.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -138,7 +138,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByHidden(bool hidden, int count) {
             var result = GetByFilter("hidden:" + hidden.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -147,7 +147,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByRegressed(bool regressed, int count) {
             var result = GetByFilter("regressed:" + regressed.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -156,7 +156,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByCritical(bool critical, int count) {
             var result = GetByFilter("critical:" + critical.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -166,7 +166,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByLinks(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -175,11 +175,12 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByDescription(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         private void CreateStacks() {
-            ElasticSearchConfiguration.ConfigureMapping(_client, true);
+            _configuration.DeleteIndexes(_client);
+            _configuration.ConfigureIndexes(_client);
 
             var serializer = IoC.GetInstance<JsonSerializer>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "stack*.json", SearchOption.AllDirectories)) {
@@ -198,7 +199,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _client.Refresh();
         }
 
-        private ICollection<Stack> GetByFilter(string filter) {
+        private FindResults<Stack> GetByFilter(string filter) {
             return _repository.GetByFilter(null, filter, null, SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }

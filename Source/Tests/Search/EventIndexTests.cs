@@ -1,10 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Plugins.EventParser;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using Xunit;
 using Xunit.Extensions;
@@ -13,6 +13,7 @@ using SortOrder = Exceptionless.Core.Repositories.SortOrder;
 namespace Exceptionless.Api.Tests.Repositories {
     public class EventIndexTests {
         private readonly IEventRepository _repository = IoC.GetInstance<IEventRepository>();
+        private readonly ElasticSearchConfiguration _configuration = IoC.GetInstance<ElasticSearchConfiguration>();
         private readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         private static bool _createdEvents;
 
@@ -30,7 +31,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetById(string id, int count) {
             var result = GetByFilter("id:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -39,7 +40,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOrganizationId(string id, int count) {
             var result = GetByFilter("organization:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -48,7 +49,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByProjectId(string id, int count) {
             var result = GetByFilter("project:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -58,7 +59,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByStackId(string id, int count) {
             var result = GetByFilter("stack:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -67,7 +68,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByReferenceId(string id, int count) {
             var result = GetByFilter("reference:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -76,7 +77,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetBySessionId(string id, int count) {
             var result = GetByFilter("session:" + id);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -86,7 +87,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByType(string type, int count) {
             var result = GetByFilter("type:" + type);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -94,7 +95,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetBySource(string source, int count) {
             var result = GetByFilter("source:" + source);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -102,7 +103,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByLevel(string level, int count) {
             var result = GetByFilter("level:" + level);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -112,7 +113,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByDate(string date, int count) {
             var result = GetByFilter("date:" + date);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -121,7 +122,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByFirst(bool first, int count) {
             var result = GetByFilter("first:" + first.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -130,7 +131,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByMessage(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -142,7 +143,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByTag(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -154,7 +155,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByValue(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -163,7 +164,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByFixed(bool @fixed, int count) {
             var result = GetByFilter("fixed:" + @fixed.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -172,7 +173,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByHidden(bool hidden, int count) {
             var result = GetByFilter("hidden:" + hidden.ToString().ToLower());
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -183,7 +184,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByVersion(string version, int count) {
             var result = GetByFilter("version:" + version);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -193,7 +194,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByMachine(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -204,7 +205,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByIP(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -213,7 +214,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByArchitecture(string architecture, int count) {
             var result = GetByFilter("architecture:" + architecture);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -224,7 +225,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByUserAgent(string userAgent, int count) {
             var result = GetByFilter("useragent:" + userAgent);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -233,7 +234,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByPath(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -243,7 +244,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByBrowser(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -253,7 +254,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByBrowserVersion(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -262,7 +263,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByBrowserMajorVersion(string browserMajorVersion, int count) {
             var result = GetByFilter("browser.major:" + browserMajorVersion);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -272,7 +273,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByDevice(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -285,7 +286,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOS(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -296,7 +297,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOSVersion(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -305,7 +306,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByOSMajorVersion(string osMajorVersion, int count) {
             var result = GetByFilter("os.major:" + osMajorVersion);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -315,7 +316,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByBot(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result); 
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -326,7 +327,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByErrorCode(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
         
         [Theory]
@@ -336,7 +337,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByErrorMessage(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -345,7 +346,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByErrorTargetMethod(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -355,7 +356,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByErrorTargetType(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -367,7 +368,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByErrorType(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -380,7 +381,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByUser(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -389,7 +390,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByUserName(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -399,7 +400,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByUserEmailAddress(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         [Theory]
@@ -408,7 +409,7 @@ namespace Exceptionless.Api.Tests.Repositories {
         public void GetByUserDescription(string filter, int count) {
             var result = GetByFilter(filter);
             Assert.NotNull(result);
-            Assert.Equal(count, result.Count);
+            Assert.Equal(count, result.Total);
         }
 
         //[Theory]
@@ -416,11 +417,12 @@ namespace Exceptionless.Api.Tests.Repositories {
         //public void GetByCustomData(string filter, int count) {
         //    var result = GetByFilter(filter);
         //    Assert.NotNull(result);
-        //    Assert.Equal(count, result.Count);
+        //    Assert.Equal(count, result.Total);
         //}
 
         private void CreateEvents() {
-            ElasticSearchConfiguration.ConfigureMapping(_client, true);
+            _configuration.DeleteIndexes(_client);
+            _configuration.ConfigureIndexes(_client);
 
             var parserPluginManager = IoC.GetInstance<EventParserPluginManager>();
             foreach (var file in Directory.GetFiles(@"..\..\Search\Data\", "event*.json", SearchOption.AllDirectories)) {
@@ -436,7 +438,7 @@ namespace Exceptionless.Api.Tests.Repositories {
             _client.Refresh();
         }
 
-        private ICollection<PersistentEvent> GetByFilter(string filter) {
+        private FindResults<PersistentEvent> GetByFilter(string filter) {
             return _repository.GetByFilter(null, filter, null, SortOrder.Descending, null, DateTime.MinValue, DateTime.MaxValue, new PagingOptions());
         }
     }

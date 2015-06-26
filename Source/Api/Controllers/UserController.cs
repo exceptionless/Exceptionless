@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
-using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Models;
 using Exceptionless.Api.Utility;
@@ -69,14 +69,14 @@ namespace Exceptionless.Api.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            List<ViewUser> results = _repository.GetByOrganizationId(organizationId).Select(Mapper.Map<User, ViewUser>).ToList();
-            var org = _organizationRepository.GetById(organizationId, true);
-            if (org.Invites.Any())
-                results.AddRange(org.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
+            var users = MapCollection<ViewUser>(_repository.GetByOrganizationId(organizationId).Documents, true).ToList();
+            var organization = _organizationRepository.GetById(organizationId, true);
+            if (organization.Invites.Any())
+                users.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));
 
             page = GetPage(page);
             limit = GetLimit(limit);
-            return OkWithResourceLinks(results.Skip(GetSkip(page, limit)).Take(limit).ToList(), results.Count > limit, page);
+            return OkWithResourceLinks(users.Skip(GetSkip(page, limit)).Take(limit).ToList(), users.Count > limit, page);
         }
 
         /// <summary>
@@ -89,8 +89,8 @@ namespace Exceptionless.Api.Controllers {
         [HttpPatch]
         [HttpPut]
         [Route("{id:objectid}")]
-        public override IHttpActionResult Patch(string id, Delta<UpdateUser> changes) {
-            return base.Patch(id, changes);
+        public override Task<IHttpActionResult> PatchAsync(string id, Delta<UpdateUser> changes) {
+            return base.PatchAsync(id, changes);
         }
 
         /// <summary>

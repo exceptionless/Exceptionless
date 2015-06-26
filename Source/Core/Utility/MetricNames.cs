@@ -38,5 +38,6 @@ namespace Exceptionless.Core.AppStats {
 
         public const string EventNotificationQueueSize = "notification.queuesize";
         public const string WebHookQueueSize = "webhook.queuesize";
+        public const string WorkItemQueueSize = "workitem.queuesize";
     }
 }

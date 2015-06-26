@@ -11,9 +11,9 @@ Refer to the Exceptionless documentation here: [Exceptionless Docs](http://docs.
 
 1. We provide very reasonably priced hosting at [Exceptionless](http://exceptionless.com). By using our hosted service, you are supporting the project and helping it get better! We also provide set up and support services.
 2. If you would rather host Exceptionless yourself, you will need to follow these steps:
-  1. Setup `Elasticsearch` ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)) with our [`elasticsearch.yml`](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml) config, `Mongo` ([Linux](http://docs.mongodb.org/manual/administration/install-on-linux/), [Windows](http://docs.mongodb.org/manual/tutorial/install-mongodb-on-windows/)) and `Redis `servers  ([Linux](http://redis.io/download), [Windows](https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions. We also highly recommend that you setup Mongo in a replica set configuration.
+  1. Setup `Elasticsearch` ([Linux](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service.html), [Windows](http://www.elasticsearch.org/guide/en/elasticsearch/reference/current/setup-service-win.html)) with our [`elasticsearch.yml`](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml) config and `Redis `servers  ([Linux](http://redis.io/download), [Windows](https://github.com/MSOpenTech/redis)). We highly recommend that you run these on Linux systems because the Windows versions aren't as performant and reliable as the Linux versions.
   2. Setup IIS and add the Exceptionless API website ([Download](https://github.com/exceptionless/Exceptionless/releases)).
-  3. Update the connection strings in the `Web.config` file to point to your `Elasticsearch`, `MongoDB` and `Redis` servers.
+  3. Update the connection strings in the `Web.config` file to point to your `Elasticsearch` and `Redis` servers.
   4. Update the app settings (`BaseURL`, `EnableSSL`, `WebsiteMode`, etc..) in the `Web.config` file.
   5. Update the mail settings in the `Web.config` file.
   6. [Configure your clients](http://docs.exceptionless.io/contents/configuration/#self-hosted-options) to send errors to your installation.
@@ -31,7 +31,7 @@ _NOTE: If you simply want to use Exceptionless, just go to [http://exceptionless
 **This section is for development purposes only! If you are trying to self host Exceptionless, than please refer to the `Hosting Options` section above.**
 
 1. You will need to have [Visual Studio 2013](http://www.visualstudio.com/products/visual-studio-community-vs) installed.
-2. Start `Elasticsearch`, and `MongoDB` by running `StartBackendServers.bat`. *Please ensure that [dynamic scripting is enabled in the elasticsearch.yml file](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml#L12).*
+2. Start `Elasticsearch` by running `StartBackendServers.bat`. *Please ensure that [dynamic scripting is enabled in the elasticsearch.yml file](https://github.com/exceptionless/Exceptionless/blob/master/Libraries/elasticsearch.yml#L12).*
 3. Open the `Exceptionless.sln` Visual Studio solution file.
 4. Select `Exceptionless.Api` as startup projects.
 5. Run the project by pressing `F5` to start the server.

@@ -16,10 +16,12 @@ namespace Exceptionless.Core.Jobs {
     public class WebHooksJob : JobBase {
         private readonly IQueue<WebHookNotification> _queue;
         private readonly IWebHookRepository _webHookRepository;
+        private readonly JsonSerializerSettings _jsonSerializerSettings;
 
-        public WebHooksJob(IQueue<WebHookNotification> queue, IWebHookRepository webHookRepository) {
+        public WebHooksJob(IQueue<WebHookNotification> queue, IWebHookRepository webHookRepository, JsonSerializerSettings settings) {
             _queue = queue;
             _webHookRepository = webHookRepository;
+            _jsonSerializerSettings = settings;
         }
 
         protected async override Task<JobResult> RunInternalAsync(CancellationToken token) {
@@ -41,7 +43,7 @@ namespace Exceptionless.Core.Jobs {
 
             var client = new HttpClient();
             try {
-                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented));
+                var response = await client.PostAsJsonAsync(body.Url, body.Data.ToJson(Formatting.Indented, _jsonSerializerSettings), token);
                 if (response.StatusCode == HttpStatusCode.Gone) {
                     _webHookRepository.RemoveByUrl(body.Url);
                     Log.Warn().Project(body.ProjectId).Message("Deleting web hook: org={0} project={1} url={2}", body.OrganizationId, body.ProjectId, body.Url).Write();

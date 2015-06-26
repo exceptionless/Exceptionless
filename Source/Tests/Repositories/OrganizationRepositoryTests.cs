@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using Exceptionless.Api.Tests.Utility;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Messaging.Models;
@@ -7,11 +9,93 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
+using Nest;
 using Xunit;
 
 namespace Exceptionless.Api.Tests.Repositories {
     public class OrganizationRepositoryTests {
+        public readonly IElasticClient _client = IoC.GetInstance<IElasticClient>();
         public readonly IOrganizationRepository _repository = IoC.GetInstance<IOrganizationRepository>();
+
+        [Fact]
+        public async Task CanCreateUpdateRemove() {
+            _repository.RemoveAll();
+            Assert.Equal(0, _repository.Count());
+
+            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
+            Assert.Null(organization.Id);
+
+            _repository.Add(organization);
+            await _client.RefreshAsync();
+            Assert.NotNull(organization.Id);
+            
+            organization = _repository.GetById(organization.Id);
+            Assert.NotNull(organization);
+
+            organization.Name = "New organization";
+            _repository.Save(organization);
+
+            _repository.Remove(organization.Id);
+        }
+
+        [Fact]
+        public async Task CanFindMany() {
+            _repository.RemoveAll();
+
+            await _client.RefreshAsync(r => r.Force());
+            Assert.Equal(0, _repository.Count());
+
+            _repository.Add(new[] {
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 0 }, 
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 1 }, 
+                new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id, RetentionDays = 2 }
+            });
+
+            await _client.RefreshAsync();
+            var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
+            Assert.NotNull(organizations);
+            Assert.Equal(1, organizations.Documents.Count);
+
+            var organizations2 = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(2).WithLimit(1));
+            Assert.NotNull(organizations);
+            Assert.Equal(1, organizations.Documents.Count);
+
+            Assert.NotEqual(organizations.Documents.First(), organizations2.Documents.First());
+           
+            organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions());
+            Assert.NotNull(organizations);
+            Assert.Equal(2, organizations.Total);
+
+            _repository.Remove(organizations.Documents);
+            await _client.RefreshAsync();
+
+            Assert.Equal(1, _repository.Count());
+            _repository.RemoveAll();
+        }
+        
+        [Fact]
+        public void CanAddAndGetByCached() {
+            var cache = IoC.GetInstance<ICacheClient>() as InMemoryCacheClient;
+            Assert.NotNull(cache);
+            cache.FlushAll();
+            
+            var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
+            Assert.Null(organization.Id);
+
+            Assert.Equal(0, cache.Count);
+            _repository.Add(organization, true);
+            Assert.NotNull(organization.Id);
+            Assert.Equal(1, cache.Count);
+
+            cache.FlushAll();
+            Assert.Equal(0, cache.Count);
+            _repository.GetById(organization.Id, true);
+            Assert.NotNull(organization.Id);
+            Assert.Equal(1, cache.Count);
+
+            _repository.RemoveAll();
+            Assert.Equal(0, cache.Count);
+        }
 
         [Fact]
         public void CanIncrementUsage() {
@@ -24,7 +108,12 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.NotNull(messagePublisher);
             messagePublisher.Subscribe<PlanOverage>(messages.Add);
 
-            var o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            var o = _repository.Add(new Organization {
+                Name = "Test",
+                MaxEventsPerMonth = 750,
+                PlanId = BillingManager.FreePlan.Id
+            });
+
             Assert.False(_repository.IncrementUsage(o.Id, false, 4));
             Assert.Equal(0, messages.Count);
             Assert.Equal(4, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
@@ -39,7 +128,11 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(1, cache.Get<long>(GetHourlyBlockedCacheKey(o.Id)));
             Assert.Equal(1, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
 
-            o = _repository.Add(new Organization { Name = "Test", MaxEventsPerMonth = 750, PlanId = BillingManager.FreePlan.Id });
+            o = _repository.Add(new Organization {
+                Name = "Test",
+                MaxEventsPerMonth = 750,
+                PlanId = BillingManager.FreePlan.Id
+            });
             Assert.True(_repository.IncrementUsage(o.Id, false, 751));
             //Assert.Equal(2, messages.Count);
             Assert.Equal(751, cache.Get<long>(GetHourlyTotalCacheKey(o.Id)));
@@ -48,28 +141,23 @@ namespace Exceptionless.Api.Tests.Repositories {
             Assert.Equal(745, cache.Get<long>(GetMonthlyBlockedCacheKey(o.Id)));
         }
 
-        private string GetHourlyBlockedCacheKey(string organizationId)
-        {
+        private string GetHourlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetHourlyTotalCacheKey(string organizationId)
-        {
+        private string GetHourlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.ToString("MMddHH"), ":", organizationId);
         }
 
-        private string GetMonthlyBlockedCacheKey(string organizationId)
-        {
+        private string GetMonthlyBlockedCacheKey(string organizationId) {
             return String.Concat("usage-blocked", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
-        private string GetMonthlyTotalCacheKey(string organizationId)
-        {
+        private string GetMonthlyTotalCacheKey(string organizationId) {
             return String.Concat("usage-total", ":", DateTime.UtcNow.Date.ToString("MM"), ":", organizationId);
         }
 
-        private string GetUsageSavedCacheKey(string organizationId)
-        {
+        private string GetUsageSavedCacheKey(string organizationId) {
             return String.Concat("usage-saved", ":", organizationId);
         }
     }

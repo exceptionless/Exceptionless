@@ -12,7 +12,6 @@ using Exceptionless.Core.Billing;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
 using Newtonsoft.Json.Linq;
 
 namespace Exceptionless.App.Controllers.API {
@@ -50,7 +49,7 @@ namespace Exceptionless.App.Controllers.API {
             page = GetPage(page);
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
-            var results = _repository.GetByProjectId(projectId, options);
+            var results = _repository.GetByProjectId(projectId, options).Documents;
             return OkWithResourceLinks(results, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
         }
 
@@ -75,8 +74,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="409">The web hook already exists.</response>
         [Route]
         [HttpPost]
-        public override IHttpActionResult Post(NewWebHook webhook) {
-            return base.Post(webhook);
+        public override Task<IHttpActionResult> PostAsync(NewWebHook webhook) {
+            return base.PostAsync(webhook);
         }
 
         /// <summary>
@@ -89,8 +88,8 @@ namespace Exceptionless.App.Controllers.API {
         /// <response code="500">An error occurred while deleting one or more web hooks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         #endregion
@@ -105,7 +104,7 @@ namespace Exceptionless.App.Controllers.API {
         [OverrideAuthorization]
         [Authorize(Roles = AuthorizationRoles.Client)]
         [ApiExplorerSettings(IgnoreApi = true)]
-        public IHttpActionResult Subscribe(JObject data, int version = 1) {
+        public Task<IHttpActionResult> Subscribe(JObject data, int version = 1) {
             var webHook = new NewWebHook {
                 EventTypes = new[] { data.GetValue("event").Value<string>() },
                 Url = data.GetValue("target_url").Value<string>(),
@@ -117,7 +116,7 @@ namespace Exceptionless.App.Controllers.API {
             else
                 webHook.OrganizationId = Request.GetDefaultOrganizationId();
 
-            return Post(webHook);
+            return PostAsync(webHook);
         }
 
         /// <summary>
@@ -177,7 +176,7 @@ namespace Exceptionless.App.Controllers.API {
             if (ids == null || ids.Length == 0)
                 return new List<WebHook>();
 
-            ICollection<WebHook> webHooks = _repository.GetByIds(ids, useCache: useCache);
+            var webHooks = _repository.GetByIds(ids, useCache: useCache).Documents;
             if (webHooks == null)
                 return new List<WebHook>();
 

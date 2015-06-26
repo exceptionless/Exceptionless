@@ -67,7 +67,7 @@ namespace Exceptionless.Core.Jobs {
         }
 
         private void ProcessUserDescription(EventUserDescription description) {
-            var ev = _eventRepository.GetByReferenceId(description.ProjectId, description.ReferenceId).FirstOrDefault();
+            var ev = _eventRepository.GetByReferenceId(description.ProjectId, description.ReferenceId).Documents.FirstOrDefault();
             if (ev == null)
                 throw new DocumentNotFoundException(description.ReferenceId);
 

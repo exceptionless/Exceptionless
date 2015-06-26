@@ -6,9 +6,10 @@ using System.Net;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Plugins.EventUpgrader;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Models.Data;
+using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -35,11 +36,11 @@ namespace Exceptionless.EventMigration {
         protected readonly int _batchSize;
         private static IPAddress _ipAddress;
 
-        public MigrationJobBase(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) {
+        public MigrationJobBase(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, EventIndex eventIndex, StackIndex stackIndex, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) {
             _eventUpgraderPluginManager = eventUpgraderPluginManager;
             _mongoDatabase = GetMongoDatabase();
-            _eventRepository = new EventMigrationRepository(elasticClient, eventValidator);
-            _stackRepository = new StackMigrationRepository(elasticClient, _eventRepository, stackValidator);
+            _eventRepository = new EventMigrationRepository(elasticClient, eventIndex, eventValidator);
+            _stackRepository = new StackMigrationRepository(elasticClient, stackIndex, _eventRepository, stackValidator);
             _geoIpResolver = geoIpResolver;
             _lockProvider = lockProvider;
             _cache = cache;
@@ -377,7 +378,7 @@ namespace Exceptionless.EventMigration {
     }
 
     public class StackMigrationRepository : StackRepository {
-        public StackMigrationRepository(IElasticClient elasticClient, IEventRepository eventRepository, IValidator<Stack> validator = null) : base(elasticClient, eventRepository, validator, null, null) {
+        public StackMigrationRepository(IElasticClient elasticClient, StackIndex index, IEventRepository eventRepository, IValidator<Stack> validator = null) : base(elasticClient, index, eventRepository, validator, null, null) {
             EnableCache = false;
         }
         
@@ -387,7 +388,7 @@ namespace Exceptionless.EventMigration {
     }
 
     public class EventMigrationRepository : EventRepository {
-        public EventMigrationRepository(IElasticClient elasticClient, IValidator<PersistentEvent> validator = null) : base(elasticClient, validator, null) {
+        public EventMigrationRepository(IElasticClient elasticClient, EventIndex index, IValidator<PersistentEvent> validator = null) : base(elasticClient, index, validator, null) {
             EnableCache = false;
         }
         

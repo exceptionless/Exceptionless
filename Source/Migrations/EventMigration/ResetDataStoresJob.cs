@@ -1,13 +1,11 @@
 ﻿using System;
 using System.Configuration;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Foundatio.Caching;
 using Foundatio.Jobs;
-using MongoDB.Driver;
 using Nest;
 using NLog.Fluent;
 #pragma warning disable 1998
@@ -15,13 +13,13 @@ using NLog.Fluent;
 namespace Exceptionless.EventMigration {
     public class ResetDataStoresJob : JobBase {
         private readonly ICacheClient _cacheClient;
+        private readonly ElasticSearchConfiguration _configuration;
         private readonly IElasticClient _elasticClient;
-        private readonly MongoDatabase _mongoDatabase;
 
-        public ResetDataStoresJob(ICacheClient cacheClient, IElasticClient elasticClient, MongoDatabase mongoDatabase) {
+        public ResetDataStoresJob(ICacheClient cacheClient, ElasticSearchConfiguration configuration, IElasticClient elasticClient) {
             _cacheClient = cacheClient;
+            _configuration = configuration;
             _elasticClient = elasticClient;
-            _mongoDatabase = mongoDatabase;
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
@@ -32,21 +30,9 @@ namespace Exceptionless.EventMigration {
             _cacheClient.FlushAll();
 
             Log.Info().Message("Resetting elastic search").Write();
-            ElasticSearchConfiguration.ConfigureMapping(_elasticClient, true); // NOTE: Set this to true to wipe existing elastic search data.
-
-            foreach (var collectionName in _mongoDatabase.GetCollectionNames().Where(name => !name.StartsWith("system"))) {
-                Log.Info().Message("Dropping collection: {0}", collectionName).Write();
-                _mongoDatabase.DropCollection(collectionName);
-            }
-
-            Log.Info().Message("Creating indexes...").Write();
-            new ApplicationRepository(_mongoDatabase);
-            new OrganizationRepository(_mongoDatabase);
-            new ProjectRepository(_mongoDatabase);
-            new TokenRepository(_mongoDatabase);
-            new WebHookRepository(_mongoDatabase);
-            new UserRepository(_mongoDatabase);
-            Log.Info().Message("Finished creating indexes...").Write();
+            _configuration.DeleteIndexes(_elasticClient);
+            _configuration.ConfigureIndexes(_elasticClient);
+            Log.Info().Message("Finished resetting elastic search...").Write();
 
             return JobResult.Success;
         }

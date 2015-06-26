@@ -8,6 +8,7 @@ using Exceptionless.Core.Geo;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.DateTimeExtensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -22,7 +23,7 @@ namespace Exceptionless.EventMigration {
     public class QueueEventMigrationsJob : MigrationJobBase {
         private readonly IQueue<EventMigrationBatch> _queue;
 
-        public QueueEventMigrationsJob(IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) : base(elasticClient, eventUpgraderPluginManager, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
+        public QueueEventMigrationsJob(IQueue<EventMigrationBatch> queue, IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, EventIndex eventIndex, StackIndex stackIndex, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache) : base(elasticClient, eventUpgraderPluginManager, eventIndex, stackIndex, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
             _queue = queue;
         }
 

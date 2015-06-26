@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Messaging;
@@ -9,10 +11,9 @@ using Nest;
 
 namespace Exceptionless.Core.Repositories {
     public abstract class ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack<T> : ElasticSearchRepositoryOwnedByOrganizationAndProject<T>, IRepositoryOwnedByStack<T> where T : class, IOwnedByProject, IIdentity, IOwnedByStack, IOwnedByOrganization, new() {
-        public ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack(IElasticClient elasticClient, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null)
-            : base(elasticClient, validator, cacheClient, messagePublisher) {}
+        public ElasticSearchRepositoryOwnedByOrganizationAndProjectAndStack(IElasticClient elasticClient, IElasticSearchIndex index, IValidator<T> validator = null, ICacheClient cacheClient = null, IMessagePublisher messagePublisher = null) : base(elasticClient, index, validator, cacheClient, messagePublisher) {}
 
-        public virtual ICollection<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
+        public virtual FindResults<T> GetByStackId(string stackId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             return Find(new ElasticSearchOptions<T>()
                 .WithStackId(stackId)
                 .WithPaging(paging)
@@ -24,12 +25,12 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => RemoveAll(new QueryOptions().WithStackIds(stackIds)));
         }
 
-        public override void InvalidateCache(T document) {
-            if (!EnableCache || Cache == null)
+        protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments) {
+            if (!EnableCache)
                 return;
 
-            Cache.Remove(GetScopedCacheKey(String.Concat("stack:", document.StackId)));
-            base.InvalidateCache(document);
+            documents.ForEach(d => InvalidateCache(String.Concat("stack:", d.StackId)));
+            base.InvalidateCache(documents, originalDocuments);
         }
     }
 }

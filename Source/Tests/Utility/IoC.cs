@@ -1,8 +1,7 @@
 ﻿using System;
 using Exceptionless.Api.Tests.Mail;
-using Exceptionless.Core;
 using Exceptionless.Core.Mail;
-using Exceptionless.Core.Migrations;
+using Exceptionless.Core.Repositories.Configuration;
 using Nest;
 using SimpleInjector;
 
@@ -23,12 +22,11 @@ namespace Exceptionless.Api.Tests.Utility {
             var container = AppBuilder.CreateContainer(false);
             RegisterServices(container);
 
-            var searchclient = container.GetInstance<IElasticClient>();
-            searchclient.DeleteIndex(i => i.AllIndices());
-
-            if (Settings.Current.ShouldAutoUpgradeDatabase)
-                MongoMigrationChecker.EnsureLatest(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
-
+            var client = container.GetInstance<IElasticClient>();
+            var configuration = container.GetInstance<ElasticSearchConfiguration>();
+            configuration.DeleteIndexes(client);
+            configuration.ConfigureIndexes(client);
+            
             return container;
         }
     }

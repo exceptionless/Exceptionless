@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using Exceptionless.Core.Billing;
 using Exceptionless.Core.Models;
-using MongoDB.Bson;
 using Exceptionless.Core.Extensions;
+using Exceptionless.Core.Utility;
 
 namespace Exceptionless.Tests.Utility {
     internal static class OrganizationData {

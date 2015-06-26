@@ -7,6 +7,7 @@ using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories.Configuration;
 using FluentValidation;
 using Foundatio.Caching;
 using Foundatio.Jobs;
@@ -15,13 +16,12 @@ using MongoDB.Bson;
 using MongoDB.Driver.Builders;
 using Nest;
 using NLog.Fluent;
-using OldModels = Exceptionless.EventMigration.Models;
 #pragma warning disable 1998
 
 namespace Exceptionless.EventMigration {
     public class StackMigrationJob : MigrationJobBase {
-        public StackMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
-            : base(elasticClient, eventUpgraderPluginManager, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
+        public StackMigrationJob(IElasticClient elasticClient, EventUpgraderPluginManager eventUpgraderPluginManager, EventIndex eventIndex, StackIndex stackIndex, IValidator<Stack> stackValidator, IValidator<PersistentEvent> eventValidator, IGeoIPResolver geoIpResolver, ILockProvider lockProvider, ICacheClient cache)
+            : base(elasticClient, eventUpgraderPluginManager, eventIndex, stackIndex, stackValidator, eventValidator, geoIpResolver, lockProvider, cache) {
         }
 
         protected override IDisposable GetJobLock() {

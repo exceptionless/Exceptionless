@@ -5,80 +5,20 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Web.Http;
 using AutoMapper;
-using Exceptionless.Core.Extensions;
-using Exceptionless.Core.Repositories;
 using Exceptionless.Api.Utility;
-using Exceptionless.Core.Helpers;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Models;
+using Exceptionless.Core.Repositories;
 using FluentValidation;
-using MongoDB.Driver;
 using NLog.Fluent;
+
 #pragma warning disable 1998
 
 namespace Exceptionless.Api.Controllers {
-    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ExceptionlessApiController
-            where TRepository : IRepository<TModel>
-            where TModel : class, IIdentity, new()
-            where TViewModel : class, IIdentity, new()
-            where TNewModel : class, new()
-            where TUpdateModel : class, new() {
-        protected readonly TRepository _repository;
-        protected static readonly bool _isOwnedByOrganization = typeof(IOwnedByOrganization).IsAssignableFrom(typeof(TModel));
-        protected static readonly bool _isOrganization = typeof(TModel) == typeof(Organization);
+    public abstract class RepositoryApiController<TRepository, TModel, TViewModel, TNewModel, TUpdateModel> : ReadOnlyRepositoryApiController<TRepository, TModel, TViewModel> where TRepository : IRepository<TModel> where TModel : class, IIdentity, new() where TViewModel : class, IIdentity, new() where TNewModel : class, new() where TUpdateModel : class, new() {
+        public RepositoryApiController(TRepository repository) : base(repository) {}
 
-        public RepositoryApiController(TRepository repository) {
-            _repository = repository;
-
-            Run.Once(CreateMaps);
-        }
-
-        protected virtual void CreateMaps() {
-            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
-                Mapper.CreateMap<TModel, TViewModel>();
-            if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
-                Mapper.CreateMap<TNewModel, TModel>();
-        }
-
-        #region Get
-
-        public virtual IHttpActionResult GetById(string id) {
-            TModel model = GetModel(id);
-            if (model == null)
-                return NotFound();
-
-            if (typeof(TViewModel) == typeof(TModel))
-                return Ok(model);
-
-            return Ok(Mapper.Map<TModel, TViewModel>(model));
-        }
-
-        protected virtual TModel GetModel(string id, bool useCache = true) {
-            if (String.IsNullOrEmpty(id))
-                return null;
-
-            TModel model = _repository.GetById(id, useCache);
-            if (_isOwnedByOrganization && model != null && !CanAccessOrganization(((IOwnedByOrganization)model).OrganizationId))
-                return null;
-
-            return model;
-        }
-
-        protected virtual ICollection<TModel> GetModels(string[] ids, bool useCache = true) {
-            if (ids == null || ids.Length == 0)
-                return new List<TModel>();
-
-            ICollection<TModel> models = _repository.GetByIds(ids, useCache: useCache);
-            if (_isOwnedByOrganization && models != null)
-                models = models.Where(m => CanAccessOrganization(((IOwnedByOrganization)m).OrganizationId)).ToList();
-
-            return models;
-        }
-
-        #endregion
-
-        #region Post
-
-        public virtual IHttpActionResult Post(TNewModel value) {
+        public virtual async Task<IHttpActionResult> PostAsync(TNewModel value) {
             if (value == null)
                 return BadRequest();
 
@@ -87,7 +27,7 @@ namespace Exceptionless.Api.Controllers {
             if (!_isOrganization && orgModel != null && String.IsNullOrEmpty(orgModel.OrganizationId) && GetAssociatedOrganizationIds().Any())
                 orgModel.OrganizationId = GetDefaultOrganizationId();
 
-            TModel mapped = Mapper.Map<TNewModel, TModel>(value);
+            TModel mapped = Map<TModel>(value);
             var permission = CanAdd(mapped);
             if (!permission.Allowed)
                 return Permission(permission);
@@ -95,30 +35,70 @@ namespace Exceptionless.Api.Controllers {
             TModel model;
             try {
                 model = AddModel(mapped);
-            } catch (MongoWriteConcernException) {
-                return Conflict();
+                await AfterAddAsync(model);
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
 
-            var viewModel = Mapper.Map<TModel, TViewModel>(model);
-            return Created(new Uri(GetEntityLink(model.Id)), viewModel);
+            return Created(new Uri(GetEntityLink(model.Id)), Map<TViewModel>(model, true));
+        }
+
+        protected async Task<IHttpActionResult> UpdateModelAsync(string id, Func<TModel, TModel> modelUpdateFunc) {
+            TModel model = GetModel(id);
+            if (model == null)
+                return NotFound();
+
+            if (modelUpdateFunc != null)
+                model = modelUpdateFunc(model);
+
+            _repository.Save(model);
+            await AfterUpdateAsync(model);
+
+            if (typeof(TViewModel) == typeof(TModel))
+                return Ok(model);
+
+            return Ok(Map<TViewModel>(model, true));
+        }
+
+        protected async Task<IHttpActionResult> UpdateModelsAsync(string[] ids, Func<TModel, TModel> modelUpdateFunc) {
+            var models = GetModels(ids);
+            if (models == null || models.Count == 0)
+                return NotFound();
+
+            if (modelUpdateFunc != null)
+                models.ForEach(m => modelUpdateFunc(m));
+
+            _repository.Save(models);
+            models.ForEach(async m => await AfterUpdateAsync(m));
+
+            if (typeof(TViewModel) == typeof(TModel))
+                return Ok(models);
+
+            return Ok(Map<TViewModel>(models, true));
         }
 
         protected virtual string GetEntityLink(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id });
+            return Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+                id
+            });
         }
 
         protected virtual string GetEntityResourceLink(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new { id }), type);
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TModel).Name), new {
+                id
+            }), type);
         }
 
         protected virtual string GetEntityLink<TEntityType>(string id) {
-            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id });
+            return Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+                id
+            });
         }
 
         protected virtual string GetEntityResourceLink<TEntityType>(string id, string type) {
-            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new { id }), type);
+            return GetResourceLink(Url.Link(String.Format("Get{0}ById", typeof(TEntityType).Name), new {
+                id
+            }), type);
         }
 
         protected virtual PermissionResult CanAdd(TModel value) {
@@ -136,30 +116,35 @@ namespace Exceptionless.Api.Controllers {
             return _repository.Add(value);
         }
 
-        #endregion
+        protected virtual Task<TModel> AfterAddAsync(TModel value) {
+            return Task.FromResult(value);
+        }
 
-        #region Patch
+        protected virtual Task<TModel> AfterUpdateAsync(TModel value) {
+            return Task.FromResult(value);
+        }
 
-        public virtual IHttpActionResult Patch(string id, Delta<TUpdateModel> changes) {
-            // if there are no changes in the delta, then ignore the request
-            if (changes == null || !changes.GetChangedPropertyNames().Any())
-                return Ok();
-            
+        public virtual async Task<IHttpActionResult> PatchAsync(string id, Delta<TUpdateModel> changes) {
             TModel original = GetModel(id, false);
             if (original == null)
                 return NotFound();
+
+            // if there are no changes in the delta, then ignore the request
+            if (changes == null || !changes.GetChangedPropertyNames().Any())
+                return OkModel(original);
 
             var permission = CanUpdate(original, changes);
             if (!permission.Allowed)
                 return Permission(permission);
 
             try {
-                UpdateModel(original, changes);
+                await UpdateModelAsync(original, changes);
+                await AfterPatchAsync(original);
             } catch (ValidationException ex) {
                 return BadRequest(ex.Errors.ToErrorMessage());
             }
 
-            return Ok();
+            return OkModel(original);
         }
 
         protected virtual PermissionResult CanUpdate(TModel original, Delta<TUpdateModel> changes) {
@@ -169,18 +154,18 @@ namespace Exceptionless.Api.Controllers {
 
             if (changes.GetChangedPropertyNames().Contains("OrganizationId"))
                 return PermissionResult.DenyWithMessage("OrganizationId cannot be modified.");
-            
+
             return PermissionResult.Allow;
         }
 
-        protected virtual TModel UpdateModel(TModel original, Delta<TUpdateModel> changes) {
+        protected virtual async Task<TModel> UpdateModelAsync(TModel original, Delta<TUpdateModel> changes) {
             changes.Patch(original);
             return _repository.Save(original);
         }
 
-        #endregion
-
-        #region Delete
+        protected virtual Task<TModel> AfterPatchAsync(TModel value) {
+            return Task.FromResult(value);
+        }
 
         public virtual async Task<IHttpActionResult> DeleteAsync(string[] ids) {
             var items = GetModels(ids, false);
@@ -204,7 +189,7 @@ namespace Exceptionless.Api.Controllers {
 
             try {
                 await DeleteModels(items);
-            } catch (Exception ex){
+            } catch (Exception ex) {
                 Log.Error().Exception(ex).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
                 return StatusCode(HttpStatusCode.InternalServerError);
             }
@@ -224,10 +209,19 @@ namespace Exceptionless.Api.Controllers {
             return PermissionResult.Allow;
         }
 
-        protected virtual async Task DeleteModels(ICollection<TModel> values) {
+        protected virtual Task DeleteModels(ICollection<TModel> values) {
             _repository.Remove(values);
+            return Task.FromResult(0);
         }
 
-        #endregion
+        protected override void CreateMaps() {
+            base.CreateMaps();
+
+            if (Mapper.FindTypeMapFor<TNewModel, TModel>() == null)
+                Mapper.CreateMap<TNewModel, TModel>();
+
+            if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
+                Mapper.CreateMap<TModel, TViewModel>();
+        }
     }
 }

@@ -1,9 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Security.Claims;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Models;
-using Exceptionless.Core.Models.Admin;
 
 namespace Exceptionless.Api.Security {
     public class TokenManager {
@@ -15,7 +15,11 @@ namespace Exceptionless.Api.Security {
             _tokenRepository = tokenRepository;
         }
 
-        public Token Create(User user) {
+        public Token GetOrCreate(User user) {
+            var existingToken = _tokenRepository.GetByUserId(user.Id).Documents.FirstOrDefault(t => t.ExpiresUtc > DateTime.UtcNow && t.Type == TokenType.Access);
+            if (existingToken != null)
+                return existingToken;
+
             var token = new Token {
                 Id = StringExtensions.GetNewToken(),
                 UserId = user.Id,

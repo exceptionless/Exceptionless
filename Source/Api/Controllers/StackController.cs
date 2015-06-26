@@ -16,7 +16,6 @@ using Exceptionless.Core.Plugins.WebHook;
 using Exceptionless.Core.Queues.Models;
 using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
-using Exceptionless.Core.Models.Admin;
 using Exceptionless.Core.Models.Stats;
 using Foundatio.Queues;
 using Newtonsoft.Json.Linq;
@@ -393,7 +392,7 @@ namespace Exceptionless.Api.Controllers {
             if (!_billingManager.HasPremiumFeatures(stack.OrganizationId))
                 return PlanLimitReached("Promote to External is a premium feature used to promote an error stack to an external system. Please upgrade your plan to enable this feature.");
 
-            List<WebHook> promotedProjectHooks = _webHookRepository.GetByProjectId(stack.ProjectId).Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
+            List<WebHook> promotedProjectHooks = _webHookRepository.GetByProjectId(stack.ProjectId).Documents.Where(p => p.EventTypes.Contains(WebHookRepository.EventTypes.StackPromoted)).ToList();
             if (!promotedProjectHooks.Any())
                 return NotImplemented("No promoted web hooks are configured for this project. Please add a promoted web hook to use this feature.");
 
@@ -420,8 +419,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more stacks.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         protected override async Task DeleteModels(ICollection<Stack> values) {
@@ -466,7 +465,7 @@ namespace Exceptionless.Api.Controllers {
            
             List<Stack> stacks;
             try {
-                stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+                stacks = _repository.GetByFilter(systemFilter, userFilter, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
             } catch (ApplicationException ex) {
                 Log.Error().Exception(ex)
                     .Property("Search Filter", new { SystemFilter = systemFilter, UserFilter = userFilter, Sort = sort, Time = time, Offset = offset, Page = page, Limit = limit })
@@ -642,7 +641,7 @@ namespace Exceptionless.Api.Controllers {
                 return Ok(new object[0]);
 
             var stackIds = terms.Skip(skip).Take(limit + 1).Select(t => t.Term).ToArray();
-            var stacks = _stackRepository.GetByIds(stackIds).Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
+            var stacks = _stackRepository.GetByIds(stackIds).Documents.Select(s => s.ApplyOffset(timeInfo.Offset)).ToList();
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase)) {
                 var summaries = GetStackSummaries(stacks, terms);

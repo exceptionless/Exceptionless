@@ -5,6 +5,6 @@ namespace Exceptionless.Core.Models {
         /// <summary>
         /// Unique id that identifies a document.
         /// </summary>
-        string Id { get; }
+        string Id { get; set; }
     }
 }

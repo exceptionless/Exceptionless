@@ -9,8 +9,17 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 
 namespace Exceptionless.Api.Hubs {
+    public interface IMessageBusHubClientMethods {
+        void entityChanged(EntityChanged entityChanged);
+        void planChanged(PlanChanged planChanged);
+        void planOverage(PlanOverage planOverage);
+        void userMembershipChanged(UserMembershipChanged userMembershipChanged);
+        void releaseNotification(ReleaseNotification notification);
+        void systemNotification(SystemNotification notification);
+    }
+
     [HubName("messages")]
-    public class MessageBusHub : Hub {
+    public class MessageBusHub : Hub<IMessageBusHubClientMethods> {
         private readonly ConnectionMapping _userIdConnections = new ConnectionMapping();
 
         public MessageBusHub(IMessageSubscriber subscriber) {
@@ -37,7 +46,10 @@ namespace Exceptionless.Api.Hubs {
                     Groups.Remove(connectionId, userMembershipChanged.OrganizationId).Wait();
             }
 
-            Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
+            try
+            {
+                Clients.Group(userMembershipChanged.OrganizationId).userMembershipChanged(userMembershipChanged);
+            } catch (NullReferenceException) { } // TODO: Remove this when SignalR bug is fixed.
         }
 
         private void OnEntityChanged(EntityChanged entityChanged) {
@@ -106,7 +118,8 @@ namespace Exceptionless.Api.Hubs {
 
         public override Task OnReconnected() {
             foreach (string organizationId in Context.User.GetOrganizationIds())
-                Groups.Add(Context.ConnectionId, organizationId);
+                if (organizationId != null)
+                    Groups.Add(Context.ConnectionId, organizationId);
 
             if (!_userIdConnections.GetConnections(Context.User.GetUserId()).Contains(Context.ConnectionId))
                 _userIdConnections.Add(Context.User.GetUserId(), Context.ConnectionId);

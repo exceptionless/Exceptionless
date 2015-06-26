@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Exceptionless.Core.Models.Admin {
-    public class Token : IOwnedByOrganizationAndProjectWithIdentity {
+namespace Exceptionless.Core.Models {
+    public class Token : IOwnedByOrganizationAndProjectWithIdentity, IHaveDates {
         public Token() {
             Scopes = new HashSet<string>();
         }

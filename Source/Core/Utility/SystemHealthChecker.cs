@@ -2,27 +2,23 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Migrations;
 using Exceptionless.Core.Queues.Models;
 using Foundatio.Caching;
 using Foundatio.Messaging;
 using Foundatio.Queues;
 using Foundatio.Storage;
-using MongoDB.Driver;
 using Nest;
 
 namespace Exceptionless.Core.Utility {
     public class SystemHealthChecker {
         private readonly ICacheClient _cacheClient;
-        private readonly MongoDatabase _db;
         private readonly IElasticClient _elasticClient;
         private readonly IFileStorage _storage;
         private readonly IQueue<StatusMessage> _queue;
         private readonly IMessageBus _messageBus;
 
-        public SystemHealthChecker(ICacheClient cacheClient, MongoDatabase db, IElasticClient elasticClient, IFileStorage storage, IQueue<StatusMessage> queue, IMessageBus messageBus) {
+        public SystemHealthChecker(ICacheClient cacheClient, IElasticClient elasticClient, IFileStorage storage, IQueue<StatusMessage> queue, IMessageBus messageBus) {
             _cacheClient = cacheClient;
-            _db = db;
             _elasticClient = elasticClient;
             _storage = storage;
             _queue = queue;
@@ -35,19 +31,6 @@ namespace Exceptionless.Core.Utility {
                     return HealthCheckResult.NotHealthy("Cache Not Working");
             } catch (Exception ex) {
                 return HealthCheckResult.NotHealthy("Cache Not Working: " + ex.Message);
-            }
-
-            return HealthCheckResult.Healthy;
-        }
-
-        public HealthCheckResult CheckMongo() {
-            try {
-                _db.Server.Ping();
-
-                if (!IsDbUpToDate())
-                    return HealthCheckResult.NotHealthy("Mongo DB Schema Outdated");
-            } catch (Exception ex) {
-                return HealthCheckResult.NotHealthy("Mongo Not Working: " + ex.Message);
             }
 
             return HealthCheckResult.Healthy;
@@ -119,10 +102,6 @@ namespace Exceptionless.Core.Utility {
             if (!result.IsHealthy)
                 return result;
 
-            result = CheckMongo();
-            if (!result.IsHealthy)
-                return result;
-
             result = await CheckElasticSearchAsync();
             if (!result.IsHealthy)
                 return result;
@@ -140,22 +119,6 @@ namespace Exceptionless.Core.Utility {
                 return result;
 
             return HealthCheckResult.Healthy;
-        }
-
-        private static bool? _dbIsUpToDate;
-        private static DateTime _lastDbUpToDateCheck;
-        private static readonly object _dbIsUpToDateLock = new object();
-
-        public static bool IsDbUpToDate() {
-            lock (_dbIsUpToDateLock) {
-                if (_dbIsUpToDate.HasValue && (_dbIsUpToDate.Value || DateTime.Now.Subtract(_lastDbUpToDateCheck).TotalSeconds < 10))
-                    return _dbIsUpToDate.Value;
-
-                _lastDbUpToDateCheck = DateTime.Now;
-                _dbIsUpToDate = MongoMigrationChecker.IsUpToDate(Settings.Current.MongoConnectionString, Settings.Current.MongoDatabaseName);
-
-                return _dbIsUpToDate.Value;
-            }
         }
     }
 

@@ -135,7 +135,7 @@ namespace Exceptionless.Api.Controllers {
             var timeInfo = GetTimeInfo(time, offset);
             var options = new PagingOptions { Page = page, Limit = limit };
 
-            ICollection<PersistentEvent> events;
+            FindResults<PersistentEvent> events;
             try {
                 events = _repository.GetByFilter(systemFilter, processResult.ExpandedQuery, sortBy.Item1, sortBy.Item2, timeInfo.Field, timeInfo.UtcRange.Start, timeInfo.UtcRange.End, options);
             } catch (ApplicationException ex) {
@@ -151,7 +151,7 @@ namespace Exceptionless.Api.Controllers {
             }
             
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(events.Select(e => {
+                return OkWithResourceLinks(events.Documents.Select(e => {
                     var summaryData = _formattingPluginManager.GetEventSummaryData(e);
                     return new EventSummaryModel {
                         TemplateKey = summaryData.TemplateKey,
@@ -159,9 +159,9 @@ namespace Exceptionless.Api.Controllers {
                         Date = e.Date,
                         Data = summaryData.Data
                     };
-                }).ToList(), options.HasMore, page);
+                }).ToList(), options.HasMore, page, events.Total);
 
-            return OkWithResourceLinks(events, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page);
+            return OkWithResourceLinks(events.Documents, options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, events.Total);
         }
 
         /// <summary>
@@ -313,7 +313,7 @@ namespace Exceptionless.Api.Controllers {
             if (project == null || !User.GetOrganizationIds().ToList().Contains(project.OrganizationId))
                 return NotFound();
 
-            var eventUserDescription = Mapper.Map<UserDescription, EventUserDescription>(description);
+            var eventUserDescription = Map<EventUserDescription>(description);
             eventUserDescription.ProjectId = projectId;
             eventUserDescription.ReferenceId = referenceId;
 
@@ -454,8 +454,8 @@ namespace Exceptionless.Api.Controllers {
         /// <response code="500">An error occurred while deleting one or more event occurrences.</response>
         [HttpDelete]
         [Route("{ids:objectids}")]
-        public async Task<IHttpActionResult> DeleteAsync(string ids) {
-            return await base.DeleteAsync(ids.FromDelimitedString());
+        public Task<IHttpActionResult> DeleteAsync(string ids) {
+            return base.DeleteAsync(ids.FromDelimitedString());
         }
 
         protected override void CreateMaps() {
