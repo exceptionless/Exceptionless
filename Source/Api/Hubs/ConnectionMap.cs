@@ -9,6 +9,9 @@ namespace Exceptionless.Api.Hubs {
         public int Count { get { return _connections.Count; } }
 
         public void Add(string key, string connectionId) {
+            if (String.IsNullOrEmpty(key))
+                return;
+
             lock (_connections) {
                 HashSet<string> connections;
                 if (!_connections.TryGetValue(key, out connections)) {
@@ -22,14 +25,21 @@ namespace Exceptionless.Api.Hubs {
         }
 
         public IEnumerable<string> GetConnections(string key) {
-            HashSet<string> connections;
-            if (_connections.TryGetValue(key, out connections))
-                return connections;
+            if (!String.IsNullOrEmpty(key)) {
+                lock (_connections) {
+                    HashSet<string> connections;
+                    if (_connections.TryGetValue(key, out connections))
+                        return connections;
+                }
+            }
 
             return Enumerable.Empty<string>();
         }
 
         public void Remove(string key, string connectionId) {
+            if (String.IsNullOrEmpty(key))
+                return;
+
             lock (_connections) {
                 HashSet<string> connections;
                 if (!_connections.TryGetValue(key, out connections))
