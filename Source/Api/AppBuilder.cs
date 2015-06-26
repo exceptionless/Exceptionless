@@ -152,8 +152,7 @@ namespace Exceptionless.Api {
                 JobRunner.RunContinuousAsync<DailySummaryJob>(cancellationToken: token, interval: TimeSpan.FromHours(1));
                 JobRunner.RunContinuousAsync<DownloadGeoIPDatabaseJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
                 JobRunner.RunContinuousAsync<RetentionLimitsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
-                JobRunner.RunContinuousAsync<StaleAccountsJob>(cancellationToken: token, interval: TimeSpan.FromDays(1));
-
+            
                 JobRunner.RunContinuousAsync<WorkItemJob>(instanceCount: 2, cancellationToken: token);
             } else {
                 Log.Info().Message("Jobs running out of process.").Write();

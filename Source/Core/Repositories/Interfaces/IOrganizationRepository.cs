@@ -7,7 +7,6 @@ namespace Exceptionless.Core.Repositories {
     public interface IOrganizationRepository : IRepository<Organization> {
         Organization GetByInviteToken(string token, out Invite invite);
         Organization GetByStripeCustomerId(string customerId);
-        FindResults<Organization> GetAbandoned(int? limit = 20);
         FindResults<Organization> GetByRetentionDaysEnabled(PagingOptions paging);
         FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null);
         BillingPlanStats GetBillingPlanStats();

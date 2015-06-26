@@ -46,19 +46,7 @@ namespace Exceptionless.Core.Repositories {
                 .WithFields("id", "name", "retention_days")
                 .WithPaging(paging));
         }
-
-        public FindResults<Organization> GetAbandoned(int? limit = 20) {
-            // TODO: This is not going to work right now because LastEventDate doesn't exist any more. Maybe create a daily job to update first event, last event and odometer.
-            var filter = Filter<Organization>.MatchAll();
-            filter &= Filter<Organization>.Term(o => o.PlanId, BillingManager.FreePlan.Id);
-            //filter &= Filter<Organization>.Range(r => r.OnField(o => o.TotalEventCount).LowerOrEquals(0));
-            filter &= Filter<Organization>.Range(r => r.OnField(o => o.CreatedUtc).GreaterOrEquals(DateTime.UtcNow.Date.SubtractDays(90)));
-            //filter &= Filter<Organization>.Range(r => r.OnField(o => o.LastEventDate).GreaterOrEquals(DateTime.UtcNow.Date.SubtractDays(90)));
-            filter &= Filter<Organization>.Missing(m => m.StripeCustomerId);
-
-            return Find(new ElasticSearchOptions<Organization>().WithFilter(filter).WithFields("id", "name").WithLimit(limit));
-        }
-
+        
         public FindResults<Organization> GetByCriteria(string criteria, PagingOptions paging, OrganizationSortBy sortBy, bool? paid = null, bool? suspended = null) {
             var filter = Filter<Organization>.MatchAll();
             if (!String.IsNullOrWhiteSpace(criteria))
