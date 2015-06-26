@@ -117,6 +117,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
                 );
 
               // TODO: Should we be setting the client configuration settings to not be indexed?
+              // TODO: We should also ignore project notification settings..
         }
 
         private PutMappingDescriptor<Models.Token> GetTokenMap(PutMappingDescriptor<Models.Token> map) {
