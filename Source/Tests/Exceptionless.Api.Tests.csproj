@@ -152,6 +152,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Billing\BillingManagerTests.cs" />
     <Compile Include="Controllers\EventControllerTests.cs" />
     <Compile Include="Jobs\TestJob.cs" />
     <Compile Include="Mail\MailerTests.cs" />

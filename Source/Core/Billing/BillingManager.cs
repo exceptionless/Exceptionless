@@ -86,6 +86,10 @@ namespace Exceptionless.Core.Billing {
             return Plans.FirstOrDefault(p => String.Equals(p.Id, planId, StringComparison.OrdinalIgnoreCase));
         }
 
+        public static BillingPlan GetBillingPlanByUpsellingRetentionPeriod(int retentionDays) {
+            return Plans.Where(p => p.RetentionDays > retentionDays).OrderBy(p => p.RetentionDays).ThenBy(p => p.Price).FirstOrDefault();
+        }
+
         public static void ApplyBillingPlan(Organization organization, BillingPlan plan, User user = null, bool updateBillingPrice = true) {
             organization.PlanId = plan.Id;
             organization.PlanName = plan.Name;

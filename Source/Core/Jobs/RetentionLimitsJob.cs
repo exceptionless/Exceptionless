@@ -42,13 +42,9 @@ namespace Exceptionless.Core.Jobs {
             Log.Info().Message("Enforcing event count limits for organization '{0}' with Id: '{1}'", organization.Name, organization.Id).Write();
 
             try {
-                // use the next higher plans retention days to enable us to upsell them
-                var nextPlan = BillingManager.Plans
-                    .Where(p => p.RetentionDays > organization.RetentionDays)
-                    .OrderByDescending(p => p.RetentionDays)
-                    .FirstOrDefault();
-
                 int retentionDays = organization.RetentionDays;
+
+                var nextPlan = BillingManager.GetBillingPlanByUpsellingRetentionPeriod(organization.RetentionDays);
                 if (nextPlan != null)
                     retentionDays = nextPlan.RetentionDays;
 
