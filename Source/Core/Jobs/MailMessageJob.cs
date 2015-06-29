@@ -45,13 +45,13 @@ namespace Exceptionless.Core.Jobs {
             } catch (Exception ex) {
                 // TODO: Change to async once vnext is released.
                 _metricsClient.Counter(MetricNames.EmailsSendErrors);
-                Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
-
                 queueEntry.Abandon();
+
+                Log.Error().Exception(ex).Message("Error sending message: id={0} error={1}", queueEntry.Id, ex.Message).Write();
+                return JobResult.FromException(ex);
             }
 
             queueEntry.Complete();
-
             return JobResult.Success;
         }
     }

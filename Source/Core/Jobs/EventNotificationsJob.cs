@@ -219,7 +219,6 @@ namespace Exceptionless.Core.Jobs {
             }
 
             queueEntry.Complete();
-
             return JobResult.Success;
         }
     }
