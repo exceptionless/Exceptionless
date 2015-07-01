@@ -91,6 +91,15 @@ namespace Exceptionless.Api.Tests.Repositories {
         }
         
         [Theory]
+        [InlineData("_missing_:submission", 2)]
+        [InlineData("submission:UnobservedTaskException", 1)]
+        public void GetBySubmissionMethod(string filter, int count) {
+            var result = GetByFilter(filter);
+            Assert.NotNull(result);
+            Assert.Equal(count, result.Total);
+        }
+
+        [Theory]
         [InlineData("\"GET /Print\"", 1)]
         public void GetBySource(string source, int count) {
             var result = GetByFilter("source:" + source);
