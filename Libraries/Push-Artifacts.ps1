@@ -1,4 +1,4 @@
-$base_dir = Resolve-Path ".\..\"   
+$base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
