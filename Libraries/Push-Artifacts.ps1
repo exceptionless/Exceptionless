@@ -1,24 +1,33 @@
-& {
-    [CmdletBinding()]
-    param()
-
-    git ?
-} -ErrorAction SilentlyContinue -ErrorVariable fail
-
 $base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
 if (!(Test-Path -Path $artifactsDir)) {
+    Write-Host "Cloning repository..."
     git clone $env:BUILD_REPO_URL $artifactsDir
+    
+    If ($LastExitCode -ne 0) {
+        Write-Error "An error occurred while cloning the repository."
+        Return $LastExitCode
+    }
+    
     Push-Location $artifactsDir
 } else { 
+    Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
     git pull
+    
+    If ($LastExitCode -ne 0) {
+        Write-Error "An error occurred while pulling the latest changes."
+        Return $LastExitCode
+    }
 }
 
-git -q rm -r *
 
+Write-Host "Removing existing files".
+git rm -r * -q
+
+Write-Host "Copying build artifacts".
 ROBOCOPY "$sourceDir\Api" $artifactsDir /XD "$sourceDir\Api\obj" "$sourceDir\Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" > log:nul
 ROBOCOPY "$artifactsDir\bin" "$artifactsDir\App_Data\JobRunner\bin\" /S > log:nul
 Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\Job.exe" -Destination "$artifactsDir\App_Data\JobRunner\" 
@@ -31,14 +40,16 @@ ROBOCOPY "$sourceDir\Migrations\EventMigration\bin\Release" "$artifactsDir\App_D
 ROBOCOPY "$sourceDir\WebJobs\continuous" "$artifactsDir\App_Data\jobs\continuous" /S > log:nul
 ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" /S > log:nul
 
+Write-Host "Committing the latest changes...".
 git add *
 git commit -a -m "Build $env:APPVEYOR_BUILD_VERSION"
 git push origin master
 
-if ($fail) {
-    $fail.Exception
+If ($LastExitCode -ne 0) {
+    Write-Error "An error occurred while committing the latest changes."
+    Return $LastExitCode
+} Else {
+    Write-Host "Finished committing the latest changes".
 }
-
-"$(git ? 2>&1 )"
 
 Pop-Location
