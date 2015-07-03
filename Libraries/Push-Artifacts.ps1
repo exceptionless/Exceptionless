@@ -4,7 +4,7 @@ $sourceDir = "$base_dir\Source"
 
 if (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository..."
-    git clone $env:BUILD_REPO_URL $artifactsDir
+    git clone $env:BUILD_REPO_URL $artifactsDir 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while cloning the repository."
@@ -15,7 +15,7 @@ if (!(Test-Path -Path $artifactsDir)) {
 } else { 
     Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
-    git pull
+    git pull 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while pulling the latest changes."
@@ -25,7 +25,7 @@ if (!(Test-Path -Path $artifactsDir)) {
 
 
 Write-Host "Removing existing files".
-git rm -r * -q
+git rm -r * -q 2>&1 | %{ "$_" }
 
 Write-Host "Copying build artifacts".
 ROBOCOPY "$sourceDir\Api" $artifactsDir /XD "$sourceDir\Api\obj" "$sourceDir\Api\App_Data" /S /XF "*.nuspec" "*.settings" "*.cs" "packages.config" "*.csproj" "*.user" "*.suo" "*.xsd" "*.ide" > log:nul
@@ -41,9 +41,9 @@ ROBOCOPY "$sourceDir\WebJobs\continuous" "$artifactsDir\App_Data\jobs\continuous
 ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" /S > log:nul
 
 Write-Host "Committing the latest changes...".
-git add *
-git commit -a -m "Build $env:APPVEYOR_BUILD_VERSION"
-git push origin master
+git add * 2>&1 | %{ "$_" }
+git commit -a -m "Build $env:APPVEYOR_BUILD_VERSION" 2>&1 | %{ "$_" }
+git push origin master 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while committing the latest changes."
