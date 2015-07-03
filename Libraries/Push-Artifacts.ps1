@@ -41,9 +41,9 @@ ROBOCOPY "$sourceDir\WebJobs\continuous" "$artifactsDir\App_Data\jobs\continuous
 ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" /S /NFL /NDL /NJH /NJS /nc /ns /np
 
 Write-Host "Committing the latest changes...."
-git add * 2>&1 | %{ "$_" }
-git commit -a -m "Build $env:APPVEYOR_BUILD_VERSION" 2>&1 | %{ "$_" }
-git push origin master 2>&1 | %{ "$_" }
+git add * -q 2>&1 | %{ "$_" }
+git commit -a -m "Build $env:APPVEYOR_BUILD_VERSION" -q 2>&1 | %{ "$_" }
+git push origin master -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while committing the latest changes."
