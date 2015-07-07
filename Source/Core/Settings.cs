@@ -75,7 +75,17 @@ namespace Exceptionless.Core {
         public bool EnableAzureStorage { get; private set; }
 
         public int BulkBatchSize { get; private set; }
-        
+
+        internal string SmtpHost { get; private set; }
+
+        internal int SmtpPort { get; private set; }
+
+        internal bool SmtpEnableSsl { get; private set; }
+
+        internal string SmtpUser { get; private set; }
+
+        internal string SmtpPassword { get; private set; }
+
         public override void Initialize() {
             EnvironmentVariablePrefix = "Exceptionless_";
 
@@ -119,6 +129,12 @@ namespace Exceptionless.Core {
             StripeApiKey = GetString("StripeApiKey");
             StorageFolder = GetString("StorageFolder");
             BulkBatchSize = GetInt("BulkBatchSize", 1000);
+
+            SmtpHost = GetString("SmtpHost");
+            SmtpPort = GetInt("SmtpPort", 587);
+            SmtpEnableSsl = GetBool("SmtpEnableSsl", true);
+            SmtpUser = GetString("SmtpUser");
+            SmtpPassword = GetString("SmtpPassword");
 
             AzureStorageConnectionString = GetConnectionString("AzureStorageConnectionString");
             EnableAzureStorage = GetBool("EnableAzureStorage", !String.IsNullOrEmpty(AzureStorageConnectionString));
