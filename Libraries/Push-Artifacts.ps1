@@ -32,8 +32,8 @@ ROBOCOPY "$sourceDir\Api" "$artifactsDir" /XD "$sourceDir\Api\obj" "$sourceDir\A
 ROBOCOPY "$artifactsDir\bin" "$artifactsDir\App_Data\JobRunner\bin\" /S /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\Job.exe" -Destination "$artifactsDir\App_Data\JobRunner\" 
 Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\Job.pdb" -Destination "$artifactsDir\App_Data\JobRunner\" 
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\CommandLine.dll" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
-Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\CommandLine.xml" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
+Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\bin\CommandLine.dll" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
+Copy-Item -Path "$base_dir\packages\Foundatio.*\tools\bin\CommandLine.xml" -Destination "$artifactsDir\App_Data\JobRunner\bin\" 
 Copy-Item -Path "$sourceDir\WebJobs\App.config" -Destination "$artifactsDir\App_Data\JobRunner\Job.exe.config" 
 Copy-Item -Path "$sourceDir\WebJobs\Job.bat" -Destination "$artifactsDir\App_Data\JobRunner\"
 Copy-Item -Path "$sourceDir\WebJobs\NLog.config" -Destination "$artifactsDir\App_Data\JobRunner\"
