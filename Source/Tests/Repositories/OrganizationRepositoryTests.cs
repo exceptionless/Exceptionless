@@ -19,7 +19,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanCreateUpdateRemove() {
+            await _client.RefreshAsync();
             _repository.RemoveAll();
+            await _client.RefreshAsync();
             Assert.Equal(0, _repository.Count());
 
             var organization = new Organization { Name = "Test Organization", PlanId = BillingManager.FreePlan.Id };
@@ -40,9 +42,9 @@ namespace Exceptionless.Api.Tests.Repositories {
 
         [Fact]
         public async Task CanFindMany() {
+            await _client.RefreshAsync();
             _repository.RemoveAll();
-
-            await _client.RefreshAsync(r => r.Force());
+            await _client.RefreshAsync();
             Assert.Equal(0, _repository.Count());
 
             _repository.Add(new[] {
@@ -52,6 +54,8 @@ namespace Exceptionless.Api.Tests.Repositories {
             });
 
             await _client.RefreshAsync();
+            Assert.Equal(3, _repository.Count());
+
             var organizations = _repository.GetByRetentionDaysEnabled(new PagingOptions().WithPage(1).WithLimit(1));
             Assert.NotNull(organizations);
             Assert.Equal(1, organizations.Documents.Count);
