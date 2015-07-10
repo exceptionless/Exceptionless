@@ -8,7 +8,9 @@ environment:
   API_URL: https://#{api.hostheader}
   BUILD_REPO_URL:
     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCUMQAue0lh2sYqQ/TQlDbwg==
-    
+  BUILD_APP_REPO_URL:
+     secure: vuYBT6D5arel88+Py/H3nnMPd4hInIXvr2cwhJaZSSSvJnmg+9sX1P5+bTWaJskYpGztHVMg0Iq7hgUCMKjh23w8WBrutLiUsixRE0LBjroIVJaRsYG1okSko0fNKVOCyOLKGt19Qrk45/TrTFlGMQ==
+     
 init:
   - git config --global core.autocrlf true
   - git config --global user.email "builds@exceptionless.io"

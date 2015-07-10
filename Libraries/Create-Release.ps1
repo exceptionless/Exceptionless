@@ -26,9 +26,9 @@ $releaseDir = "$base_dir\release"
 $releaseArtifactsDir = "$releaseDir\artifacts"
 $releaseTempDir = "$releaseDir\temp"
     
-Clone-Repository $env:BUILD_REPO_URL "$releaseArtifactsDir\app"
+Clone-Repository $env:BUILD_APP_REPO_URL "$releaseArtifactsDir\app"
 Clone-Repository $env:BUILD_REPO_URL "$releaseArtifactsDir\api"
-
+    
 Write-Host "Copying release artifacts"
 If (Test-Path -Path $releaseTempDir) {
     Remove-Item -Recurse -Force $releaseTempDir | Out-Null
@@ -37,8 +37,9 @@ If (Test-Path -Path $releaseTempDir) {
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\Libraries\Start-ElasticSearch.ps1" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\Libraries\elasticsearch.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\Libraries\Start-Website.ps1" -Destination $releaseTempDir
-"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\1.LaunchExceptionless.bat" -Encoding "UTF8"
+"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\1.LaunchExceptionless.bat" -Encoding "ascii"
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
