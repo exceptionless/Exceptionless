@@ -40,6 +40,19 @@ before_test:
 after_test:
   - ps: .\Libraries\Push-Artifacts.ps1
 
+before_deploy:
+  - ps: .\Libraries\Create-Release.ps1
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: 0s81q7bweVLTFSOKxnIhan7el6bIFiN8HJ1kYJzOkeFXX7wgGSq9bs/rV53X9qpf
+  artifact: release\exceptionless.zip 
+  draft: true
+  on:
+    branch: master
+    appveyor_repo_tag: true
+
 notifications:
   - provider: Slack
     auth_token:
