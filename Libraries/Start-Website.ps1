@@ -17,3 +17,4 @@
 
 $wwwroot = Resolve-path ".\wwwroot"
 Start-Website $wwwroot 50000
+Start-Process -Path "http://localhost:50000"
