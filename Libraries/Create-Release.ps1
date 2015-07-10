@@ -37,15 +37,18 @@ If (Test-Path -Path $releaseTempDir) {
 ROBOCOPY "$releaseArtifactsDir\api" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\api\.git" /XF "exceptionless.png" "favicon.ico" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtifactsDir\app\.git" /S /XF "web.config" /NFL /NDL /NJH /NJS /nc /ns /np
 Copy-Item -Path "$base_dir\Libraries\Start-ElasticSearch.ps1" -Destination $releaseTempDir
+Copy-Item -Path "$base_dir\Libraries\Start-Website.ps1" -Destination $releaseTempDir
+"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\1.LaunchExceptionless.bat" -Encoding "UTF8"
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
-(Get-Content $webConfig) | Foreach-Object { $_ -replace "http://localhost:9001/#","http://localhost:50000" }  | Out-File $webConfig
+(Get-Content $webConfig) | Foreach-Object { $_ -replace "http://localhost:9001/#","http://localhost:50000/#" } | Out-File $webConfig -Encoding "UTF8"
 
 $apiConfig = [xml](Get-Content $webConfig)
 $appConfig = [xml](Get-Content "$releaseArtifactsDir\app\web.config")
-$apiConfig.SelectSingleNode("configuration").AppendChild($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/location"), $true))
-$apiConfig.SelectSingleNode("configuration/system.webServer").AppendChild($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/system.webServer/rewrite"), $true))
+$apiConfig.SelectSingleNode("configuration").AppendChild($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/location"), $true)) | Out-Null
+$apiConfig.SelectSingleNode("configuration/system.webServer").AppendChild($apiConfig.CreateComment($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/system.webServer/rewrite"), $true).OuterXml)) | Out-Null
+
 $apiConfig.Save($webConfig)
 
 Write-Host "Zipping release"
