@@ -43,9 +43,16 @@ Copy-Item -Path "$base_dir\Libraries\Start-Website.ps1" -Destination $releaseTem
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
-(Get-Content $webConfig) | Foreach-Object { $_ -replace "http://localhost:9001/#","http://localhost:50000/#" } | Out-File $webConfig -Encoding "UTF8"
 
 $apiConfig = [xml](Get-Content $webConfig)
+$apiConfig.SelectSingleNode('//appSettings/add[@key="BaseURL"]/@value').'#text' = 'http://localhost:50000/#'
+$apiConfig.SelectSingleNode('//appSettings/add[@key="EnableDailySummary"]/@value').'#text' = 'true'
+$apiConfig.SelectSingleNode('//system.web/compilation/@debug').'#text' = 'false'
+$customErrors = $apiConfig.CreateElement("customErrors")
+$customErrors.SetAttribute('mode','RemoteOnly')
+$apiConfig.SelectSingleNode('//configuration/system.web').AppendChild($customErrors)
+
+# Copy settings from app web.config
 $appConfig = [xml](Get-Content "$releaseArtifactsDir\app\web.config")
 $apiConfig.SelectSingleNode("configuration").AppendChild($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/location"), $true)) | Out-Null
 $apiConfig.SelectSingleNode("configuration/system.webServer").AppendChild($apiConfig.CreateComment($apiConfig.ImportNode($appConfig.SelectSingleNode("configuration/system.webServer/rewrite"), $true).OuterXml)) | Out-Null
