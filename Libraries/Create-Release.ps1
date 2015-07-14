@@ -21,7 +21,7 @@ Function Clone-Repository([string] $repoUrl, [string] $directory) {
     }
 }
 
-$base_dir = Resolve-Path ".\..\"   
+$base_dir = Resolve-Path ".\"
 $releaseDir = "$base_dir\release"
 $releaseArtifactsDir = "$releaseDir\artifacts"
 $releaseTempDir = "$releaseDir\temp"
