@@ -1,9 +1,7 @@
 using System;
-using System.Configuration;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Geo;
 using Exceptionless.Core.Plugins.EventUpgrader;
 using Exceptionless.DateTimeExtensions;
@@ -41,7 +39,7 @@ namespace Exceptionless.EventMigration {
         }
 
         private DateTime GetStartDate() {
-            bool resume = ConfigurationManager.AppSettings.GetBool("Migration:Resume", true);
+            bool resume = MigrationSettings.Current.MigrationCanResume;
             if (resume) {
                 // Return the last queued day so we can reprocess the last day.
                 long ticks;

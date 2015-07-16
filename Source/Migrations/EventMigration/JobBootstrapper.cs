@@ -27,7 +27,7 @@ namespace Exceptionless.EventMigration {
             try {
                 insulationAssembly = Assembly.Load("Exceptionless.Insulation");
             } catch (Exception ex) {
-                Log.Error().Message("Unable to load the insulation asssembly.").Exception(ex).Write();
+                Log.Error().Message("Unable to load the insulation assembly.").Exception(ex).Write();
             }
 
             if (insulationAssembly != null)

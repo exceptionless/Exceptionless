@@ -77,7 +77,7 @@ namespace Exceptionless.EventMigration {
             _lockProvider = lockProvider;
             _cache = cache;
 
-            _batchSize = ConfigurationManager.AppSettings.GetInt("Migration:BatchSize", 50);
+            _batchSize = MigrationSettings.Current.MigrationBatchSize;
         }
 
         protected override IDisposable GetJobLock() {
@@ -336,15 +336,12 @@ namespace Exceptionless.EventMigration {
         }
 
         private MongoDatabase GetMongoDatabase() {
-            var connectionString = ConfigurationManager.ConnectionStrings["Migration:MongoConnectionString"];
-            if (connectionString == null)
-                throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
-
-            if (String.IsNullOrEmpty(connectionString.ConnectionString))
+            var connectionString = MigrationSettings.Current.MigrationMongoConnectionString;
+            if (String.IsNullOrEmpty(connectionString))
                 throw new ConfigurationErrorsException("Migration:MongoConnectionString was not found in the app.config.");
 
             MongoDefaults.MaxConnectionIdleTime = TimeSpan.FromMinutes(1);
-            var url = new MongoUrl(connectionString.ConnectionString);
+            var url = new MongoUrl(connectionString);
 
             MongoServer server = new MongoClient(url).GetServer();
             return server.GetDatabase(url.DatabaseName);
