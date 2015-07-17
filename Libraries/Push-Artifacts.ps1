@@ -1,7 +1,7 @@
 Function Git-Pull() {
     Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
-    git pull 2>&1 | %{ "$_" }
+    git pull --rebase 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while pulling the latest changes."
@@ -29,10 +29,9 @@ Git-Pull
 $branch = "$env:APPVEYOR_REPO_BRANCH";
 if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
-    git fetch origin "ref/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
+    git fetch origin "+refs/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/merge:$($branch)" -q 2>&1 | %{ "$_" }
 }
 
-git fetch -q 2>&1 | %{ "$_" }
 $branches = git branch 2> $null
 if ("$branches" -match $branch) {
     Write-Host "Checking out branch: $branch"
