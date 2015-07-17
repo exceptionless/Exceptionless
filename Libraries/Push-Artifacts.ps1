@@ -29,16 +29,16 @@ if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 }
 
 if ((git branch 2> $null) -match $branch) {
+    Write-Host "Checking out branch: $branch"
     git checkout $branch -q 2>&1 | %{ "$_" }
 } else {
+    Write-Host "Checking out new branch: $branch"
     git checkout -b $branch -q 2>&1 | %{ "$_" }
 }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while changing to branch: $branch"
     Return $LastExitCode
-} Else {
-    Write-Host "Changed to branch: $branch"
 }
 
 Write-Host "Removing existing files."
@@ -62,7 +62,7 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
-git push origin $branch -q 2>&1 | %{ "$_" }
+git push origin "$branch" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while committing the latest changes."
