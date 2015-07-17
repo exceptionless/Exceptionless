@@ -1,7 +1,7 @@
 Function Git-Pull() {
     Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
-    git pull --rebase 2>&1 | %{ "$_" }
+    git pull 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while pulling the latest changes."
