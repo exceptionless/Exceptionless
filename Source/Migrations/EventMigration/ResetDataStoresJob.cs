@@ -23,7 +23,7 @@ namespace Exceptionless.EventMigration {
         }
 
         protected override async Task<JobResult> RunInternalAsync(CancellationToken token) {
-            if (!ConfigurationManager.AppSettings.GetBool("Migration:CanResetData").GetValueOrDefault())
+            if (!MigrationSettings.Current.MigrationCanResetData)
                 return JobResult.FailedWithMessage("Migration:CanResetData was not set in the app.config.");
 
             Log.Info().Message("Flushing redis cache").Write();

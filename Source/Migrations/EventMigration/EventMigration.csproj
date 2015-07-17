@@ -121,6 +121,7 @@
     </Compile>
     <Compile Include="JobBootstrapper.cs" />
     <Compile Include="MigrationJobBase.cs" />
+    <Compile Include="MigrationSettings.cs" />
     <Compile Include="Migrations\MongoMigrationChecker.cs" />
     <Compile Include="Migrations\v1.0.27.cs" />
     <Compile Include="Migrations\v1.0.28.cs" />
