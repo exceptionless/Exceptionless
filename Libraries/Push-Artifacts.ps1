@@ -1,3 +1,14 @@
+Function Git-Pull() {
+    Write-Host "Pulling latest changes..."
+    Push-Location $artifactsDir
+    git pull 2>&1 | %{ "$_" }
+    
+    If ($LastExitCode -ne 0) {
+        Write-Error "An error occurred while pulling the latest changes."
+        Return $LastExitCode
+    }
+}
+
 $base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
@@ -10,18 +21,10 @@ if (!(Test-Path -Path $artifactsDir)) {
         Write-Error "An error occurred while cloning the repository."
         Return $LastExitCode
     }
-    
-    Push-Location $artifactsDir
-} else { 
-    Write-Host "Pulling latest changes..."
-    Push-Location $artifactsDir
-    git pull 2>&1 | %{ "$_" }
-    
-    If ($LastExitCode -ne 0) {
-        Write-Error "An error occurred while pulling the latest changes."
-        Return $LastExitCode
-    }
 }
+
+Push-Location $artifactsDir
+Git-Pull
 
 $branch = "$env:APPVEYOR_REPO_BRANCH";
 if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
@@ -34,7 +37,7 @@ $branches = git branch 2> $null
 if ($branches -match $branch) {
     Write-Host "Checking out branch: $branch"
     git checkout $branch -q 2>&1 | %{ "$_" }
-    git pull origin $branch -q 2>&1 | %{ "$_" }
+    Git-Pull
 } else {
     Write-Host "Checking out new branch: $branch"
     git checkout -b $branch -q 2>&1 | %{ "$_" }
