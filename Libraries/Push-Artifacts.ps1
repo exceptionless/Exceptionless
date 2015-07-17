@@ -29,18 +29,18 @@ Git-Pull
 $branch = "$env:APPVEYOR_REPO_BRANCH";
 if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
-    git fetch origin "+ref/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
+    git fetch origin "ref/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
 }
 
 git fetch -q 2>&1 | %{ "$_" }
 $branches = git branch 2> $null
-if ($branches -match $branch) {
+if ("$branches" -match $branch) {
     Write-Host "Checking out branch: $branch"
     git checkout $branch -q 2>&1 | %{ "$_" }
     Git-Pull
 } else {
     Write-Host "Checking out new branch: $branch"
-    git checkout -b $branch -q 2>&1 | %{ "$_" }
+    git checkout -b "$branch" -q 2>&1 | %{ "$_" }
 }
 
 If ($LastExitCode -ne 0) {
