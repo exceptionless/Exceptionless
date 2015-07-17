@@ -16,8 +16,8 @@ $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
 If (!(Test-Path -Path $artifactsDir)) {
-    Write-Host "Cloning repository..."
-    git clone "$env:BUILD_REPO_URL" $artifactsDir 2>&1 | %{ "$_" }
+    Write-Host "Cloning repository into $($artifactsDir)..."
+    git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while cloning the repository."
@@ -71,7 +71,7 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
-git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
+git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
 git push origin "$branch" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
