@@ -28,7 +28,9 @@ if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
 }
 
-if ((git branch 2> $null) -match $branch) {
+git fetch 2>&1 | %{ "$_" }
+$branches = git branch 2> $null
+if ($branches -match $branch) {
     Write-Host "Checking out branch: $branch"
     git checkout $branch -q 2>&1 | %{ "$_" }
 } else {
