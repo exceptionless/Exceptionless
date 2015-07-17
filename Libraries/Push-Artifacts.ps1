@@ -23,7 +23,12 @@ if (!(Test-Path -Path $artifactsDir)) {
     }
 }
 
-git checkout -b $env:APPVEYOR_REPO_BRANCH
+if ((git branch 2> $null) -match "$env:APPVEYOR_REPO_BRANCH") {
+    git checkout "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
+} else {
+    git checkout -b "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
+}
+
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while changing to branch: $env:APPVEYOR_REPO_BRANCH"
     Return $LastExitCode
@@ -52,7 +57,7 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR Commit: $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
-git push origin $env:APPVEYOR_REPO_BRANCH -q 2>&1 | %{ "$_" }
+git push origin "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while committing the latest changes."
