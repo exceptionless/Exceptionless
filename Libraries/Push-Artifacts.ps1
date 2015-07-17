@@ -26,14 +26,15 @@ if (!(Test-Path -Path $artifactsDir)) {
 Push-Location $artifactsDir
 Git-Pull
 
-$branch = "$env:APPVEYOR_REPO_BRANCH";
-if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
+$branch = "$env:APPVEYOR_REPO_BRANCH"
+If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
-    git fetch origin "+refs/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/merge:$($branch)" -q 2>&1 | %{ "$_" }
+    git fetch origin "+refs/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
 }
 
 $branches = git branch 2> $null
-if ("$branches" -match $branch) {
+Write-Host "Current branches: $branches"
+If ("$branches" -match "$branch") {
     Write-Host "Checking out branch: $branch"
     git checkout $branch -q 2>&1 | %{ "$_" }
     Git-Pull
