@@ -23,12 +23,14 @@ if (!(Test-Path -Path $artifactsDir)) {
     }
 }
 
+
 $branch = "$env:APPVEYOR_REPO_BRANCH";
 if ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
+    git fetch origin "pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
 }
 
-git fetch 2>&1 | %{ "$_" }
+git fetch -q 2>&1 | %{ "$_" }
 $branches = git branch 2> $null
 if ($branches -match $branch) {
     Write-Host "Checking out branch: $branch"
