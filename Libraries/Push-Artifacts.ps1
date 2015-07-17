@@ -1,7 +1,9 @@
-Function Git-Pull() {
+Function Git-Pull([string] $branch) {
     Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
-    git pull 2>&1 | %{ "$_" }
+    
+    git pull origin $branch -q 2>&1 | %{ "$_" }
+    git checkout . -q 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while pulling the latest changes."
@@ -13,9 +15,9 @@ $base_dir = Resolve-Path ".\"
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
-if (!(Test-Path -Path $artifactsDir)) {
+If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository..."
-    git clone $env:BUILD_REPO_URL $artifactsDir 2>&1 | %{ "$_" }
+    git clone "$env:BUILD_REPO_URL" $artifactsDir 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while cloning the repository."
@@ -24,20 +26,19 @@ if (!(Test-Path -Path $artifactsDir)) {
 }
 
 Push-Location $artifactsDir
-Git-Pull
+Git-Pull "master"
 
 $branch = "$env:APPVEYOR_REPO_BRANCH"
 If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
-    git fetch origin "+refs/pull/$($env:APPVEYOR_PULL_REQUEST_NUMBER)/head:$($branch)" -q 2>&1 | %{ "$_" }
 }
 
-$branches = git branch 2> $null
-Write-Host "Current branches: $branches"
-If ("$branches" -match "$branch") {
+$branches = (git branch) 2> $null
+Write-Host $branches.Replace(" ", "").Replace("*", "")
+If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch") -eq $True) {
     Write-Host "Checking out branch: $branch"
-    git checkout $branch -q 2>&1 | %{ "$_" }
-    Git-Pull
+    git checkout "$branch" -q 2>&1 | %{ "$_" }
+    Git-Pull "$branch"
 } else {
     Write-Host "Checking out new branch: $branch"
     git checkout -b "$branch" -q 2>&1 | %{ "$_" }
