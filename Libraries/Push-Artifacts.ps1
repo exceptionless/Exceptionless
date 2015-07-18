@@ -17,7 +17,7 @@ $sourceDir = "$base_dir\Source"
 
 If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository into $($artifactsDir)..."
-    git clone "$env:BUILD_REPO_URL" "$artifactsDir" 2>&1 | %{ "$_" }
+    git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while cloning the repository."
@@ -36,7 +36,6 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 }
 
 $branches = (git branch) 2> $null
-Write-Host $branches.Replace(" ", "").Replace("*", "")
 If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch") -eq $True) {
     Write-Host "Checking out branch: $branch"
     git checkout "$branch" -q 2>&1 | %{ "$_" }
