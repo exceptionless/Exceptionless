@@ -1,12 +1,3 @@
-Function Git-Pull([string] $branch) {
-    Write-Host "Pulling latest changes..."
-    git pull origin "$branch" -q 2>&1 | %{ "$_" }
-    If ($LastExitCode -ne 0) {
-        Write-Error "An error occurred while pulling the latest changes."
-        Return $LastExitCode
-    }
-}
-
 $base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
@@ -16,14 +7,12 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     Return
 }
 
-If (!(Test-Path -Path $artifactsDir)) {
-    Write-Host "Cloning repository into $($artifactsDir)..."
-    git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
-    
-    If ($LastExitCode -ne 0) {
-        Write-Error "An error occurred while cloning the repository."
-        Return $LastExitCode
-    }
+Write-Host "Cloning repository into $($artifactsDir)..."
+git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
+
+If ($LastExitCode -ne 0) {
+    Write-Error "An error occurred while cloning the repository."
+    Return $LastExitCode
 }
 
 Push-Location $artifactsDir
@@ -33,8 +22,6 @@ $branches = (git branch -r) 2> $null
 If (($branches.Replace(" ", "").Split([environment]::NewLine) -contains "origin/$($env:APPVEYOR_REPO_BRANCH)") -eq $True) {
     Write-Host "Checking out branch: $env:APPVEYOR_REPO_BRANCH"
     git checkout "$env:APPVEYOR_REPO_BRANCH" -f -q 2>&1 | %{ "$_" }
-    git reset --hard "origin/$($env:APPVEYOR_REPO_BRANCH)" -q 2>&1 | %{ "$_" }
-    Git-Pull "$env:APPVEYOR_REPO_BRANCH"
 } else {
     Write-Host "Checking out new branch: $env:APPVEYOR_REPO_BRANCH"
     git checkout -b "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
