@@ -23,13 +23,15 @@ If (!(Test-Path -Path $artifactsDir)) {
         Write-Error "An error occurred while cloning the repository."
         Return $LastExitCode
     }
-    
-    Push-Location $artifactsDir
-} else {
-    Push-Location $artifactsDir
-    git fetch --all -q 2>&1 | %{ "$_" }
-    Git-Pull "master"
 }
+
+Push-Location $artifactsDir
+
+# else {
+#    Push-Location $artifactsDir
+#    git fetch --all -q 2>&1 | %{ "$_" }
+#    Git-Pull "master"
+#}
     
 $branch = "$env:APPVEYOR_REPO_BRANCH"
 If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
@@ -37,8 +39,8 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 }
 
 git fetch --all -f -q 2>&1 | %{ "$_" }
-$branches = (git branch) 2> $null
-If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch") -eq $True) {
+$branches = (git branch -r) 2> $null
+If (($branches.Replace(" ", "").Split([environment]::NewLine) -contains "origin/$($branch)") -eq $True) {
     Write-Host "Checking out branch: $branch"
     git checkout "$branch" -f -q 2>&1 | %{ "$_" }
     git reset --hard "origin/$($branch)" -q 2>&1 | %{ "$_" }
@@ -74,7 +76,6 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
-Git-Pull "$branch"
 git push origin "$branch" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
