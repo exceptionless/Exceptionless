@@ -11,6 +11,11 @@ $base_dir = Resolve-Path ".\"
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
+If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
+    Write-Host "Artifacts will not be created for pull requests."
+    Return
+}
+
 If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository into $($artifactsDir)..."
     git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
@@ -21,39 +26,22 @@ If (!(Test-Path -Path $artifactsDir)) {
     }
 }
 
-If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
-    Get-ChildItem Env:
-    #& ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
-}
-
-
 Push-Location $artifactsDir
-
-# else {
-#    Push-Location $artifactsDir
-#    git fetch --all -q 2>&1 | %{ "$_" }
-#    Git-Pull "master"
-#}
-    
-$branch = "$env:APPVEYOR_REPO_BRANCH"
-If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
-    $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
-}
 
 git fetch --all -f -q 2>&1 | %{ "$_" }
 $branches = (git branch -r) 2> $null
-If (($branches.Replace(" ", "").Split([environment]::NewLine) -contains "origin/$($branch)") -eq $True) {
-    Write-Host "Checking out branch: $branch"
-    git checkout "$branch" -f -q 2>&1 | %{ "$_" }
-    git reset --hard "origin/$($branch)" -q 2>&1 | %{ "$_" }
-    Git-Pull "$branch"
+If (($branches.Replace(" ", "").Split([environment]::NewLine) -contains "origin/$($env:APPVEYOR_REPO_BRANCH)") -eq $True) {
+    Write-Host "Checking out branch: $env:APPVEYOR_REPO_BRANCH"
+    git checkout "$env:APPVEYOR_REPO_BRANCH" -f -q 2>&1 | %{ "$_" }
+    git reset --hard "origin/$($env:APPVEYOR_REPO_BRANCH)" -q 2>&1 | %{ "$_" }
+    Git-Pull "$env:APPVEYOR_REPO_BRANCH"
 } else {
-    Write-Host "Checking out new branch: $branch"
-    git checkout -b "$branch" -q 2>&1 | %{ "$_" }
+    Write-Host "Checking out new branch: $env:APPVEYOR_REPO_BRANCH"
+    git checkout -b "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
 }
 
 If ($LastExitCode -ne 0) {
-    Write-Error "An error occurred while changing to branch: $branch"
+    Write-Error "An error occurred while changing to branch: $env:APPVEYOR_REPO_BRANCH"
     Return $LastExitCode
 }
 
@@ -78,7 +66,7 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
-git push origin "$branch" -q 2>&1 | %{ "$_" }
+git push origin "$env:APPVEYOR_REPO_BRANCH" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
     Write-Error "An error occurred while committing the latest changes."
