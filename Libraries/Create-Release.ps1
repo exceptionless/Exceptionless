@@ -21,8 +21,8 @@ Function Clone-Repository([string] $repoUrl, [string] $directory) {
     }
 }
 
-If ($env:APPVEYOR_REPO_BRANCH -ne 'master') {
-    Write-Host "The release will only be created from the master branch."
+If ($env:APPVEYOR_REPO_BRANCH -ne 'master' -or $env:APPVEYOR_REPO_TAG -ne $True) {
+    Write-Host "The release will only be created from a tag on the master branch."
     Return
 }
 
