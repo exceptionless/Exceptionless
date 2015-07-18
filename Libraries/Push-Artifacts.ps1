@@ -1,8 +1,8 @@
-Function Git-Pull() {
+Function Git-Pull([string] $branch) {
     Write-Host "Pulling latest changes..."
     Push-Location $artifactsDir
     
-    git pull -q 2>&1 | %{ "$_" }
+    git pull origin "$branch" -q 2>&1 | %{ "$_" }
     git checkout . -q 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
@@ -17,7 +17,7 @@ $sourceDir = "$base_dir\Source"
 
 If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository into $($artifactsDir)..."
-    git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
+    git clone "$env:BUILD_REPO_URL" "$artifactsDir" 2>&1 | %{ "$_" }
     
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while cloning the repository."
@@ -27,7 +27,7 @@ If (!(Test-Path -Path $artifactsDir)) {
     Push-Location $artifactsDir
 } else {
     Push-Location $artifactsDir
-    Git-Pull
+    Git-Pull "master"
 }
 
 $branch = "$env:APPVEYOR_REPO_BRANCH"
@@ -40,7 +40,7 @@ Write-Host $branches.Replace(" ", "").Replace("*", "")
 If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch") -eq $True) {
     Write-Host "Checking out branch: $branch"
     git checkout "$branch" -q 2>&1 | %{ "$_" }
-    Git-Pull
+    Git-Pull "$branch"
 } else {
     Write-Host "Checking out new branch: $branch"
     git checkout -b "$branch" -q 2>&1 | %{ "$_" }
