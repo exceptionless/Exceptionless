@@ -1,23 +1,10 @@
-Function Git-Pull([string] $branch) {
-    Write-Host "Pulling latest changes..."
-    Push-Location $artifactsDir
-    
-    git pull origin "$branch" -q 2>&1 | %{ "$_" }
-    git checkout . -q 2>&1 | %{ "$_" }
-    
-    If ($LastExitCode -ne 0) {
-        Write-Error "An error occurred while pulling the latest changes."
-        Return $LastExitCode
-    }
-}
-
 $base_dir = Resolve-Path ".\"   
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
-If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
-    & ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
-}
+#If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
+#    & ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
+#}
 
 If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository into $($artifactsDir)..."
@@ -31,9 +18,9 @@ If (!(Test-Path -Path $artifactsDir)) {
     Push-Location $artifactsDir
 } else {
     Push-Location $artifactsDir
-    Git-Pull "master"
+    git fetch --all -q 2>&1 | %{ "$_" }
 }
-
+    
 $branch = "$env:APPVEYOR_REPO_BRANCH"
 If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
     $branch = "$($env:APPVEYOR_REPO_BRANCH)-$($env:APPVEYOR_PULL_REQUEST_NUMBER)"
@@ -42,8 +29,8 @@ If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
 $branches = (git branch) 2> $null
 If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch") -eq $True) {
     Write-Host "Checking out branch: $branch"
-    git checkout "$branch" -q 2>&1 | %{ "$_" }
-    Git-Pull "$branch"
+    git checkout "$branch" -f -q 2>&1 | %{ "$_" }
+    git reset --hard "origin/$($branch)" -q 2>&1 | %{ "$_" }
 } else {
     Write-Host "Checking out new branch: $branch"
     git checkout -b "$branch" -q 2>&1 | %{ "$_" }
