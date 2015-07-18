@@ -22,7 +22,8 @@ If (!(Test-Path -Path $artifactsDir)) {
 }
 
 If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
-    & ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
+    Get-ChildItem Env:
+    #& ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
 }
 
 
