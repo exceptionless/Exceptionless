@@ -1,9 +1,6 @@
 Function Git-Pull([string] $branch) {
     Write-Host "Pulling latest changes..."
-    Push-Location $artifactsDir
-    
     git pull origin "$branch" -q 2>&1 | %{ "$_" }
-    
     If ($LastExitCode -ne 0) {
         Write-Error "An error occurred while pulling the latest changes."
         Return $LastExitCode
@@ -45,7 +42,7 @@ If (($branches.Replace(" ", "").Replace("*", "").Split("\n") -contains "$branch"
     Write-Host "Checking out branch: $branch"
     git checkout "$branch" -f -q 2>&1 | %{ "$_" }
     git reset --hard "origin/$($branch)" -q 2>&1 | %{ "$_" }
-    Git-Pull $branch
+    Git-Pull "$branch"
 } else {
     Write-Host "Checking out new branch: $branch"
     git checkout -b "$branch" -q 2>&1 | %{ "$_" }
@@ -77,6 +74,7 @@ ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" 
 Write-Host "Committing the latest changes...."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
+Git-Pull "$branch"
 git push origin "$branch" -q 2>&1 | %{ "$_" }
 
 If ($LastExitCode -ne 0) {
