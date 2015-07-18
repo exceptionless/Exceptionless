@@ -11,10 +11,6 @@ $base_dir = Resolve-Path ".\"
 $artifactsDir = "$base_dir\artifacts"
 $sourceDir = "$base_dir\Source"
 
-#If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
-#    & ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
-#}
-
 If (!(Test-Path -Path $artifactsDir)) {
     Write-Host "Cloning repository into $($artifactsDir)..."
     git clone "$env:BUILD_REPO_URL" "$artifactsDir" -q 2>&1 | %{ "$_" }
@@ -24,6 +20,11 @@ If (!(Test-Path -Path $artifactsDir)) {
         Return $LastExitCode
     }
 }
+
+If ($env:APPVEYOR_PULL_REQUEST_NUMBER -ne $null) {
+    & ((Split-Path $MyInvocation.InvocationName) + "\Enable-Rdp.ps1")
+}
+
 
 Push-Location $artifactsDir
 
