@@ -174,7 +174,7 @@ namespace Exceptionless.Api.Controllers {
 
             StripeInvoice stripeInvoice = null;
             try {
-                var invoiceService = new StripeInvoiceService();
+                var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
                 stripeInvoice = invoiceService.Get(id);
             } catch (Exception ex) {
                 Log.Error().Exception(ex).Message("An error occurred while getting the invoice: " + id).Identity(ExceptionlessUser.EmailAddress).Property("User", ExceptionlessUser).ContextProperty("HttpActionContext", ActionContext).Write();
@@ -251,7 +251,7 @@ namespace Exceptionless.Api.Controllers {
             if (!String.IsNullOrEmpty(after) && !after.StartsWith("in_"))
                 after = "in_" + after;
 
-            var invoiceService = new StripeInvoiceService();
+            var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
             var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
             var invoices = MapCollection<InvoiceGridModel>(invoiceService.List(invoiceOptions), true).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
@@ -336,8 +336,8 @@ namespace Exceptionless.Api.Controllers {
             if (!String.Equals(organization.PlanId, plan.Id) && !_billingManager.CanDownGrade(organization, plan, ExceptionlessUser, out message))
                 return Ok(ChangePlanResult.FailWithMessage(message));
 
-            var customerService = new StripeCustomerService();
-            var subscriptionService = new StripeSubscriptionService();
+            var customerService = new StripeCustomerService(Settings.Current.StripeApiKey);
+            var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
 
             try {
                 // If they are on a paid plan and then downgrade to a free plan then cancel their stripe subscription.
@@ -672,7 +672,7 @@ namespace Exceptionless.Api.Controllers {
                 if (!String.IsNullOrEmpty(organization.StripeCustomerId)) {
                     Log.Info().Message("Canceling stripe subscription for the organization '{0}' with Id: '{1}'.", organization.Name, organization.Id).Property("User", currentUser).ContextProperty("HttpActionContext", ActionContext).Write();
 
-                    var subscriptionService = new StripeSubscriptionService();
+                    var subscriptionService = new StripeSubscriptionService(Settings.Current.StripeApiKey);
                     var subs = subscriptionService.List(organization.StripeCustomerId).Where(s => !s.CanceledAt.HasValue);
                     foreach (var sub in subs)
                         subscriptionService.Cancel(organization.StripeCustomerId, sub.Id);
