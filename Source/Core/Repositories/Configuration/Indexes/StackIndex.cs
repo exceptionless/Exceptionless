@@ -15,7 +15,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {
-                { typeof(Stack), "stack" }
+                { typeof(Stack), "stacks" }
             };
         }
 

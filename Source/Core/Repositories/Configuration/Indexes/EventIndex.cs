@@ -16,7 +16,7 @@ namespace Exceptionless.Core.Repositories.Configuration {
 
         public virtual IDictionary<Type, string> GetIndexTypeNames() {
             return new Dictionary<Type, string> {
-                { typeof(PersistentEvent), "event" }
+                { typeof(PersistentEvent), "events" }
             };
         }
 
