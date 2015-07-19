@@ -114,7 +114,7 @@ namespace Exceptionless.Core {
             MaximumEventPostSize = GetInt("MaximumEventPostSize", Int32.MaxValue);
             EnableDailySummary = GetBool("EnableDailySummary");
             MetricsServerName = GetString("MetricsServerName") ?? "127.0.0.1";
-            MetricsServerPort = GetInt("MetricsServerPort", 12000);
+            MetricsServerPort = GetInt("MetricsServerPort", 8125);
             EnableMetricsReporting = GetBool("EnableMetricsReporting");
             IntercomAppSecret = GetString("IntercomAppSecret");
             EnableAccountCreation = GetBool("EnableAccountCreation", true);
