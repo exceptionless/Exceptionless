@@ -48,11 +48,11 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.1.0.272\lib\net45\Foundatio.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.1.0.292\lib\net45\Foundatio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Foundatio.Redis, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\packages\Foundatio.Redis.1.0.272\lib\net45\Foundatio.Redis.dll</HintPath>
+      <HintPath>..\..\..\packages\Foundatio.Redis.1.0.292\lib\net45\Foundatio.Redis.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="MongoDB.Bson, Version=1.10.0.62, Culture=neutral, PublicKeyToken=f686731cfb9cc103, processorArchitecture=MSIL">
