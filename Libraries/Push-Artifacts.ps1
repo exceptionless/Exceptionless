@@ -50,6 +50,8 @@ ROBOCOPY "$sourceDir\Migrations\EventMigration\bin\Release" "$artifactsDir\App_D
 ROBOCOPY "$sourceDir\WebJobs\continuous" "$artifactsDir\App_Data\jobs\continuous" /S /NFL /NDL /NJH /NJS /nc /ns /np
 ROBOCOPY "$sourceDir\WebJobs\triggered" "$artifactsDir\App_Data\jobs\triggered" /S /NFL /NDL /NJH /NJS /nc /ns /np
 
+Get-ChildItem -Path "$artifactsDir\App_Data\jobs" -Recurse -Include *.bat | Foreach-Object { Add-Content -Path $_.FullName -Value "`r`nREM $env:APPVEYOR_BUILD_VERSION" }
+
 Write-Host "Committing the latest changes..."
 git add * 2>&1 | %{ "$_" }
 git commit -a -m "Build: $env:APPVEYOR_BUILD_VERSION Author: $env:APPVEYOR_REPO_COMMIT_AUTHOR $($env:APPVEYOR_REPO_NAME)@$($env:APPVEYOR_REPO_COMMIT)" -q 2>&1 | %{ "$_" }
