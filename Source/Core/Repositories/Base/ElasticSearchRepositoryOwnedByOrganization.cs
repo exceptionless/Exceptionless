@@ -21,13 +21,22 @@ namespace Exceptionless.Core.Repositories {
         }
 
         public virtual FindResults<T> GetByOrganizationId(string organizationId, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
-            return GetByOrganizationIds(new[] { organizationId }, paging, useCache, expiresIn);
+            if (String.IsNullOrEmpty(organizationId))
+                return new FindResults<T> { Documents = new List<T>(), Total = 0 };
+
+            string cacheKey = String.Concat("org:", organizationId);
+            return Find(new ElasticSearchOptions<T>()
+                .WithOrganizationId(organizationId)
+                .WithPaging(paging)
+                .WithCacheKey(useCache ? cacheKey : null)
+                .WithExpiresIn(expiresIn));
         }
 
         public virtual FindResults<T> GetByOrganizationIds(ICollection<string> organizationIds, PagingOptions paging = null, bool useCache = false, TimeSpan? expiresIn = null) {
             if (organizationIds == null || organizationIds.Count == 0)
                 return new FindResults<T> { Documents = new List<T>(), Total = 0 };
-
+            
+            // NOTE: There is no way to currently invalidate this.. If you try and cache this result, you should expect it to be dirty.
             string cacheKey = String.Concat("org:", String.Join("", organizationIds).GetHashCode().ToString());
             return Find(new ElasticSearchOptions<T>()
                 .WithOrganizationIds(organizationIds)
@@ -40,8 +49,7 @@ namespace Exceptionless.Core.Repositories {
             await Task.Run(() => RemoveAll(new QueryOptions().WithOrganizationIds(organizationIds)));
         }
 
-        protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments)
-        {
+        protected override void InvalidateCache(ICollection<T> documents, ICollection<T> originalDocuments) {
             if (!EnableCache)
                 return;
 

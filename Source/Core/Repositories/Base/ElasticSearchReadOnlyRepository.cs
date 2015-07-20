@@ -140,8 +140,7 @@ namespace Exceptionless.Core.Repositories {
 
             return result;
         }
-
-
+        
         protected T FindOne(OneOptions options) {
             return FindOneAs(options);
         }
