@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
 using System.Web.Http;
 using System.Web.Http.Results;
-using AutoMapper;
 using Exceptionless.Api.Extensions;
 using Exceptionless.Api.Security;
 using Exceptionless.Api.Utility;
@@ -229,59 +227,5 @@ namespace Exceptionless.Api.Controllers {
 
             return filter.Contains("organization:");
         }
-
-        #region Mapping
-
-        private bool _mapsCreated = false;
-        private static readonly object _lock = new object();
-        private void EnsureMaps() {
-            if (_mapsCreated)
-                return;
-
-            lock (_lock) {
-                if (_mapsCreated)
-                    return;
-
-                CreateMaps();
-
-                _mapsCreated = true;
-            }
-        }
-
-        protected virtual void CreateMaps() { }
-
-        protected TDestination Map<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
-            var destination = Mapper.Map<TDestination>(source);
-            if (isResult)
-                AfterResultMap(destination);
-            return destination;
-        }
-
-        protected ICollection<TDestination> MapCollection<TDestination>(object source, bool isResult = false) {
-            EnsureMaps();
-            var destination = Mapper.Map<ICollection<TDestination>>(source);
-            if (isResult)
-                destination.ForEach(d => AfterResultMap(d));
-            return destination;
-        }
-
-        protected virtual void AfterResultMap(object model) {
-            var dataModel = model as IData;
-            if (dataModel != null)
-                dataModel.Data.RemoveSensitiveData();
-
-            var enumerable = model as IEnumerable;
-            if (enumerable == null)
-                return;
-
-            foreach (var item in enumerable) {
-                var itemDataModel = item as IData;
-                if (itemDataModel != null)
-                    itemDataModel.Data.RemoveSensitiveData();
-            }
-        }
-
-        #endregion
     }
 }

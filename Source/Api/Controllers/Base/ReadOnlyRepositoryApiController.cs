@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using AutoMapper;
+using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Filter;
 using Exceptionless.Core.Models;
 using Exceptionless.Core.Repositories;
@@ -97,10 +99,62 @@ namespace Exceptionless.Api.Controllers {
 
             return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
+        
+        #region Mapping
 
-        protected override void CreateMaps() {
+        private static bool _mapsCreated = false;
+        private static readonly object _lock = new object();
+        private void EnsureMaps() {
+            if (_mapsCreated)
+                return;
+
+            lock (_lock) {
+                if (_mapsCreated)
+                    return;
+
+                CreateMaps();
+
+                _mapsCreated = true;
+            }
+        }
+       
+        protected virtual void CreateMaps() {
             if (Mapper.FindTypeMapFor<TModel, TViewModel>() == null)
                 Mapper.CreateMap<TModel, TViewModel>();
         }
+
+        protected TDestination Map<TDestination>(object source, bool isResult = false) {
+            EnsureMaps();
+            var destination = Mapper.Map<TDestination>(source);
+            if (isResult)
+                AfterResultMap(destination);
+            return destination;
+        }
+
+        protected ICollection<TDestination> MapCollection<TDestination>(object source, bool isResult = false) {
+            EnsureMaps();
+            var destination = Mapper.Map<ICollection<TDestination>>(source);
+            if (isResult)
+                destination.ForEach(d => AfterResultMap(d));
+            return destination;
+        }
+
+        protected virtual void AfterResultMap(object model) {
+            var dataModel = model as IData;
+            if (dataModel != null)
+                dataModel.Data.RemoveSensitiveData();
+
+            var enumerable = model as IEnumerable;
+            if (enumerable == null)
+                return;
+
+            foreach (var item in enumerable) {
+                var itemDataModel = item as IData;
+                if (itemDataModel != null)
+                    itemDataModel.Data.RemoveSensitiveData();
+            }
+        }
+
+        #endregion
     }
 }
