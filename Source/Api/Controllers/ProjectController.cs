@@ -53,7 +53,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = _repository.GetByOrganizationIds(GetAssociatedOrganizationIds(), options);
-            var viewProjects = MapCollection<ViewProject>(projects.Documents.ToList(), true).ToList();
+            var viewProjects = MapCollection<ViewProject>(projects.Documents, true).ToList();
             return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore, page, projects.Total);
         }
 
@@ -81,7 +81,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var projects = _repository.GetByOrganizationIds(organizationIds, options);
-            var viewProjects = MapCollection<ViewProject>(projects.Documents.ToList(), true).ToList();
+            var viewProjects = MapCollection<ViewProject>(projects.Documents, true).ToList();
             return OkWithResourceLinks(PopulateProjectStats(viewProjects), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, projects.Total);
         }
 
