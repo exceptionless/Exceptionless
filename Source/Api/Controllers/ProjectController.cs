@@ -16,6 +16,7 @@ using Exceptionless.Core.Repositories;
 using Exceptionless.Core.Utility;
 using Exceptionless.Api.Utility;
 using Exceptionless.Core.Models;
+using NLog.Fluent;
 
 namespace Exceptionless.Api.Controllers {
     [RoutePrefix(API_PREFIX + "/projects")]
@@ -424,7 +425,11 @@ namespace Exceptionless.Api.Controllers {
 
         protected override void CreateMaps() {
             Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
-                pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
+                try {
+                    pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("Unable to load organization. Message: {0}", ex.Message).Write();
+                }
             });
 
             base.CreateMaps();
