@@ -93,9 +93,9 @@ namespace Exceptionless.Api.Controllers {
             }
 
             if (!String.IsNullOrEmpty(mode) && String.Equals(mode, "summary", StringComparison.InvariantCultureIgnoreCase))
-                return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore, page, models.Total);
+                return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents.ToList(), true), options.HasMore, page, models.Total);
 
-            return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents, true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
+            return OkWithResourceLinks(MapCollection<TViewModel>(models.Documents.ToList(), true), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, models.Total);
         }
 
         protected override void CreateMaps() {

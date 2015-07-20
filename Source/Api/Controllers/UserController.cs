@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             if (!CanAccessOrganization(organizationId))
                 return NotFound();
 
-            var users = MapCollection<ViewUser>(_repository.GetByOrganizationId(organizationId).Documents, true).ToList();
+            var users = MapCollection<ViewUser>(_repository.GetByOrganizationId(organizationId).Documents.ToList(), true).ToList();
             var organization = _organizationRepository.GetById(organizationId, true);
             if (organization.Invites.Any())
                 users.AddRange(organization.Invites.Select(i => new ViewUser { EmailAddress = i.EmailAddress, IsInvite = true }));

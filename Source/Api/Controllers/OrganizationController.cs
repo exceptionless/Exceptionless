@@ -69,7 +69,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = _repository.GetByIds(GetAssociatedOrganizationIds(), options);
-            var viewOrganizations = MapCollection<ViewOrganization>(organizations.Documents, true).ToList();
+            var viewOrganizations = MapCollection<ViewOrganization>(organizations.Documents.ToList(), true).ToList();
             return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore && !NextPageExceedsSkipLimit(page, limit), page, organizations.Total);
         }
 
@@ -83,7 +83,7 @@ namespace Exceptionless.Api.Controllers {
             limit = GetLimit(limit);
             var options = new PagingOptions { Page = page, Limit = limit };
             var organizations = _repository.GetByCriteria(criteria, options, sort, paid, suspended);
-            var viewOrganizations = MapCollection<ViewOrganization>(organizations.Documents, true).ToList();
+            var viewOrganizations = MapCollection<ViewOrganization>(organizations.Documents.ToList(), true).ToList();
             return OkWithResourceLinks(PopulateOrganizationStats(viewOrganizations), options.HasMore, page, organizations.Total);
         }
 
@@ -253,7 +253,7 @@ namespace Exceptionless.Api.Controllers {
 
             var invoiceService = new StripeInvoiceService(Settings.Current.StripeApiKey);
             var invoiceOptions = new StripeInvoiceListOptions { CustomerId = organization.StripeCustomerId, Limit = limit + 1, EndingBefore = before, StartingAfter = after };
-            var invoices = MapCollection<InvoiceGridModel>(invoiceService.List(invoiceOptions), true).ToList();
+            var invoices = MapCollection<InvoiceGridModel>(invoiceService.List(invoiceOptions).ToList(), true).ToList();
             return OkWithResourceLinks(invoices.Take(limit).ToList(), invoices.Count > limit, i => i.Id);
         }
 

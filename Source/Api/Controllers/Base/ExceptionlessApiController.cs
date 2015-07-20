@@ -260,6 +260,7 @@ namespace Exceptionless.Api.Controllers {
 
         protected ICollection<TDestination> MapCollection<TDestination>(object source, bool isResult = false) {
             EnsureMaps();
+            
             var destination = Mapper.Map<ICollection<TDestination>>(source);
             if (isResult)
                 destination.ForEach(d => AfterResultMap(d));
