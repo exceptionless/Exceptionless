@@ -41,11 +41,8 @@ Alternatively, you can [watch this short YouTube video](http://youtu.be/wROzlVuB
 
 ## Roadmap
 
-We are currently in the planning process for 2.1. However, this is a list of high level things that we are planning to do:
-- ~~JavaScript Client **([Completed](https://github.com/exceptionless/Exceptionless.JavaScript))**~~
-- [Improve Self Hosted experience](https://github.com/exceptionless/Exceptionless/issues/77) **(In Progress)**.
-- ~~Improved support for machines that don't fully support PCL libraries. **([Completed](https://github.com/exceptionless/Exceptionless.Net/issues/12))**~~
-- Bug fixes (Example: [Serialization](https://github.com/exceptionless/Exceptionless.Net/issues/2)) **(In Progress)**
+We are currently in the planning process for 3.1. However, this is a list of high level things that we are planning to do:
+- Bug fixes **(In Progress)**
 - New Dashboards
 - vnext support
 - [Let us know what you'd like us to work on!](https://github.com/exceptionless/Exceptionless/issues)
@@ -66,3 +63,5 @@ Thanks to the community for your support!
 Thanks to [JetBrains](http://jetbrains.com) for a community [WebStorm](https://www.jetbrains.com/webstorm/) and [ReSharper](https://www.jetbrains.com/resharper/) license to use on this project. It's the best JavaScript IDE/Visual Studio productivity enhancement hands down.
 
 Thanks to [Red Gate](http://www.red-gate.com) for providing an open source license for a [.NET Developer Bundle](http://www.red-gate.com/products/dotnet-development/). It's an indepensible tool when you need to track down a performance/memory issue.
+
+Thanks to [OzCode](http://oz-code.com/) for providing an open source license to use on this project. It adds a ton of value to the already amazing VS debugger.
