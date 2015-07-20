@@ -18,9 +18,10 @@ discovery.zen.ping.multicast.enabled: false
 #transport.tcp.compress: true
 http.jsonp.enable: true
 http.cors.enabled: true
-http.cors.allow-origin: http://kibana.exceptionless.io
+http.cors.allow-origin: http://dashboards.localhost.com
 
 #cloud:
-#  azure:
-#    storage_account: exgeo
-#    storage_key: key_here
+#    azure:
+#        storage:
+#            account: your_azure_storage_account
+#            key: your_azure_storage_key
