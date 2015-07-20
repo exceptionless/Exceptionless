@@ -422,15 +422,17 @@ namespace Exceptionless.Api.Controllers {
 
             return Ok();
         }
-
+        
         protected override void CreateMaps() {
-            Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
-                try {
-                    pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
-                } catch (Exception ex) {
-                    Log.Error().Exception(ex).Message("Unable to load organization. Message: {0}", ex.Message).Write();
-                }
-            });
+            if (Mapper.FindTypeMapFor<Project, ViewProject>() == null) {
+                Mapper.CreateMap<Project, ViewProject>().AfterMap((p, pi) => {
+                    try {
+                        pi.OrganizationName = _organizationRepository.GetById(p.OrganizationId, true).Name;
+                    } catch (Exception ex) {
+                        Log.Error().Exception(ex).Message("Unable to load organization. Message: {0}", ex.Message).Write();
+                    }
+                });
+            }
 
             base.CreateMaps();
         }
