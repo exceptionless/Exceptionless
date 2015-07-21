@@ -44,7 +44,7 @@ ROBOCOPY "$releaseArtifactsDir\app" "$releaseTempDir\wwwroot" /XD "$releaseArtif
 Copy-Item -Path "$base_dir\Libraries\Start-ElasticSearch.ps1" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\Libraries\elasticsearch.yml" -Destination $releaseTempDir
 Copy-Item -Path "$base_dir\Libraries\Start-Website.ps1" -Destination $releaseTempDir
-"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\1.LaunchExceptionless.bat" -Encoding "ascii"
+"PowerShell .\Start-Elasticsearch.ps1`r`nPowerShell .\Start-Website.ps1" | Out-File "$releaseTempDir\Start.bat" -Encoding "ascii"
 
 Write-Host "Merging configuration"
 $webConfig = "$releaseTempDir\wwwroot\web.config"
