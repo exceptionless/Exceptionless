@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using Exceptionless.Core.Extensions;
 using Newtonsoft.Json;
+using NLog.Fluent;
 
 namespace Exceptionless.Core {
     public abstract class SettingsBase<T> : SingletonBase<T>, IInitializable where T : class {
@@ -74,21 +75,27 @@ namespace Exceptionless.Core {
             if (String.IsNullOrEmpty(name))
                 return null;
 
-            string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "config.json");
-            // check to see if environment specific config exists and use that instead
-            if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\", "config.json")))
-                configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\", "config.json");
+            if (_configVariables == null) {
+                try {
+                    string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin", "config.json");
+                    // check to see if environment specific config exists and use that instead
+                    if (File.Exists(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\", "config.json")))
+                        configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "..\\", "config.json");
 
-            if (!File.Exists(configPath))
-                return null;
+                    if (!File.Exists(configPath)) {
+                        _configVariables = new Dictionary<string, string>();
+                        return null;
+                    }
 
-            if (_configVariables == null)
-                _configVariables = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(configPath));
+                    _configVariables = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText(configPath));
+                } catch (Exception ex) {
+                    Log.Error().Exception(ex).Message("Unable to load config.json file. Error: {0}", ex.Message);
+                    _configVariables = new Dictionary<string, string>();
+                    return null;
+                }
+            }
 
-            if (!_configVariables.ContainsKey(name))
-                return null;
-
-            return _configVariables[name];
+            return _configVariables.ContainsKey(name) ? _configVariables[name] : null;
         }
 
         protected static string EnvironmentVariablePrefix { get; set; }
