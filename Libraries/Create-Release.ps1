@@ -66,9 +66,9 @@ $apiConfig.SelectSingleNode("configuration/system.webServer").AppendChild($apiCo
 $apiConfig.Save($webConfig)
 
 Write-Host "Zipping release"
-If (Test-Path -Path "$releaseDir\exceptionless.zip") {
-    Remove-Item -Recurse -Force "$releaseDir\exceptionless.zip" | Out-Null
+If (Test-Path -Path "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zip") {
+    Remove-Item -Recurse -Force "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zip" | Out-Null
 }
 
 Add-Type -assembly "system.io.compression.filesystem"
-[io.compression.zipfile]::CreateFromDirectory($releaseTempDir, "$releaseDir\exceptionless.zip")
+[io.compression.zipfile]::CreateFromDirectory($releaseTempDir, "$releaseDir\Exceptionless.$($env:APPVEYOR_BUILD_VERSION).zip")
