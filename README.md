@@ -1,7 +1,7 @@
 # Exceptionless
 [![Build status](https://ci.appveyor.com/api/projects/status/4ept2hsism8bygls?svg=true)](https://ci.appveyor.com/project/Exceptionless/exceptionless) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/exceptionless/Discuss)
 
-The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.io) provides real-time error reporting for your JavaScript, Node, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
+The definition of the word exceptionless is: to be without exception. [Exceptionless](http://exceptionless.com) provides real-time error reporting for your JavaScript, Node, ASP.NET, Web API, WebForms, WPF, Console, and MVC apps. It organizes the gathered information into simple actionable data that will help your app become exceptionless!
 
 ## Using Exceptionless
 Refer to the [Exceptionless documentation wiki](https://github.com/exceptionless/Exceptionless/wiki/Getting-Started).
@@ -12,7 +12,7 @@ We provide very reasonably priced hosting at [Exceptionless](http://exceptionles
 If you would rather host Exceptionless yourself, you will need to follow the [self hosting documentation](https://github.com/exceptionless/Exceptionless/wiki/Self-Hosting).
 
 ## Contributing
-_In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.io) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan._
+_In appreciation for anyone who submits a non-trivial pull request, we will give you a free [Exceptionless](http://exceptionless.com) paid plan for a year. After your pull request is accepted, simply send an email to team@exceptionless.io with the name of your organization and we will upgrade you to a paid plan._
 
 1. Please read the [contributing document](https://github.com/exceptionless/Exceptionless/blob/master/CONTRIBUTING.md).
 2. Please follow the steps below to start configuring your Exceptionless development environment.
